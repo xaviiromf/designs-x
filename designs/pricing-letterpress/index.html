@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quote builder, Quarry Lane Press</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English&family=Work+Sans:wght@400;600&display=swap">
+<style>
+:root {
+  /* colour */
+  --bed: #DCDFDB;        /* page ground: press bed grey */
+  --paper: #F7F6F1;      /* docket surface */
+  --ink: #2A2623;        /* text and checked controls: warm rubber-base black */
+  --graphite: #5B6168;   /* secondary text, control outlines, the drawing's lines */
+  --reflex: #1E2D8F;     /* the one accent: total and button only */
+  --furniture: #A3A9A4;  /* the one sum rule, swatch rings */
+
+  /* type */
+  --f-display: "IM Fell English", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --f-text: "Work Sans", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --t-sm: 0.875rem;
+  --t-base: 1rem;
+  --t-md: 1.25rem;
+  --t-lg: 1.563rem;
+  --t-xl: 2.441rem;
+  --lh-tight: 1.1;
+  --lh-snug: 1.35;
+  --lh-body: 1.55;
+  --track-display: -0.01em;
+  --measure: 60ch;
+
+  /* space and size */
+  --s-1: 0.25rem; --s-2: 0.5rem; --s-3: 0.75rem; --s-4: 1rem; --s-5: 1.5rem;
+  --s-6: 2rem; --s-7: 3rem; --s-8: 4.5rem; --s-9: 7rem;
+  --max: 75rem;
+  --col-a: 12.5rem;      /* product and quantity: fits the four-step quantity row */
+  --radius: 2px;
+  --control: 1.125rem;
+  --swatch: 1rem;
+  --stroke: 1.5px;
+  --hair: 1px;
+  --dur: 240ms;          /* drawing transitions; the JS tween reads this too */
+  --sticky-h: 0px;       /* set by the script on phones */
+  /* tick stroke is --paper; a data URI cannot read custom properties */
+  --tick: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.5l3 3 6-7' fill='none' stroke='%23F7F6F1' stroke-width='2'/%3E%3C/svg%3E");
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bed);
+  color: var(--ink);
+  font: 400 var(--t-base)/var(--lh-body) var(--f-text);
+}
+
+.quote { padding: var(--s-9) var(--s-6); }
+.wrap { max-width: var(--max); margin-inline: auto; }
+
+/* header: headline, intro and drawing read as one column */
+.head { margin-bottom: var(--s-5); }
+.head h2 {
+  margin: 0 0 var(--s-3);
+  font: 400 var(--t-xl)/var(--lh-tight) var(--f-display);
+  letter-spacing: var(--track-display);
+}
+.head p { margin: 0; max-width: var(--measure); }
+
+/* the drawing */
+.press { margin: 0 0 var(--s-8); background: var(--bed); }
+.press svg { display: block; width: 100%; overflow: hidden; }
+.press path, .press rect, .press line, .press text { transition: fill var(--dur), opacity var(--dur); }
+.sheet, .glue { stroke: var(--graphite); stroke-width: var(--hair); stroke-linejoin: round; }
+/* outline type: the stroke is painted under a --bed fill, which hides the overlapping contours inside variable-font glyphs */
+.plan { fill: var(--bed); stroke: var(--graphite); stroke-width: calc(2 * var(--hair)); paint-order: stroke; font-family: var(--f-text); font-weight: 600; }
+.cutline { stroke: var(--graphite); stroke-width: var(--hair); stroke-dasharray: 6 4; }
+.leader { stroke: var(--ink); stroke-width: var(--hair); }
+.cap {
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--s-1) var(--s-4);
+  margin-top: var(--s-2);
+  font-size: var(--t-sm); color: var(--graphite);
+  font-variant-numeric: tabular-nums;
+}
+.cap .warn { color: var(--ink); }
+.cap .run { display: none; }
+
+/* form grid: product and quantity | paper and impression | inks and edges | docket */
+.builder {
+  display: grid;
+  grid-template-columns: var(--col-a) 1fr 1fr 1.15fr;
+  gap: var(--s-7) var(--s-5);
+  align-items: start;
+}
+.col { display: grid; gap: var(--s-6); min-width: 0; }
+.docket { position: sticky; top: var(--s-6); }
+
+fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
+legend { padding: 0; font: 600 var(--t-md)/var(--lh-snug) var(--f-text); margin-bottom: var(--s-2); }
+.note { margin: var(--s-2) 0 0; font-size: var(--t-sm); color: var(--ink); }
+.note:empty { display: none; }
+
+/* native controls, restyled */
+input[type="radio"], input[type="checkbox"] {
+  appearance: none; -webkit-appearance: none;
+  width: var(--control); height: var(--control); margin: 0;
+  border: var(--stroke) solid var(--graphite);
+  background: var(--bed);
+  border-radius: 50%;
+  cursor: pointer;
+}
+input[type="checkbox"] { border-radius: var(--radius); }
+input:checked { border-color: var(--ink); background: var(--ink); box-shadow: inset 0 0 0 3px var(--bed); }
+input[type="checkbox"]:checked { box-shadow: none; background: var(--tick) center / 100% no-repeat, var(--ink); }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+
+.opt {
+  display: grid;
+  grid-template-columns: var(--control) 1fr auto;
+  column-gap: var(--s-3);
+  align-items: start;
+  padding-block: var(--s-1);
+  cursor: pointer;
+}
+.opt input { margin-top: calc((var(--lh-body) * 1em - var(--control)) / 2); }
+.opt-price { color: var(--graphite); font-size: var(--t-sm); text-align: right; font-variant-numeric: tabular-nums; padding-top: 0.1em; }
+.opt-desc { grid-column: 2 / -1; color: var(--graphite); font-size: var(--t-sm); line-height: var(--lh-snug); }
+.opt-sw { grid-template-columns: var(--control) var(--swatch) 1fr auto; }
+.opt-sw .opt-desc { grid-column: 3 / -1; }
+
+.sw {
+  width: var(--swatch); height: var(--swatch); border-radius: 50%;
+  background: var(--c, var(--paper));
+  box-shadow: inset 0 0 0 var(--hair) var(--furniture); /* keeps pale swatches visible on the bed */
+  margin-top: calc((var(--lh-body) * 1em - var(--swatch)) / 2);
+}
+
+.chips { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-4); }
+.chip { display: inline-flex; align-items: center; gap: var(--s-2); cursor: pointer; }
+.chip .sw { margin: 0; }
+
+.back { margin: var(--s-2) 0 var(--s-2) calc(var(--control) + var(--s-3)); display: none; }
+.back legend { font-size: var(--t-sm); margin-bottom: var(--s-2); }
+.paper:has(input[value="duplex"]:checked) .back { display: block; }
+
+/* quantity, a segmented radio row that never wraps */
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; }
+.seg label { position: relative; min-width: 0; }
+.seg input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; }
+.seg span {
+  display: block;
+  padding: var(--s-2) var(--s-3);
+  border: var(--hair) solid var(--graphite);
+  margin-left: calc(-1 * var(--hair));
+  font-variant-numeric: tabular-nums;
+}
+.seg label:first-child span { margin-left: 0; border-radius: var(--radius) 0 0 var(--radius); }
+.seg label:last-child span { border-radius: 0 var(--radius) var(--radius) 0; }
+.seg input:checked + span { background: var(--ink); border-color: var(--ink); color: var(--paper); position: relative; }
+.seg input:focus-visible + span { outline: 2px solid var(--ink); outline-offset: 3px; position: relative; z-index: 1; }
+
+/* the job docket */
+.docket { background: var(--paper); padding: var(--s-5); }
+.docket h3 { margin: 0 0 var(--s-4); font: 600 var(--t-md)/var(--lh-snug) var(--f-text); }
+.docket p, .docket dt { hyphens: manual; text-wrap: pretty; }
+.lines { margin: 0; font-variant-numeric: tabular-nums; }
+.line { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s-4); padding-block: var(--s-1); }
+.line dd { margin: 0; text-align: right; white-space: nowrap; }
+.total {
+  margin: var(--s-3) 0 0; padding-top: var(--s-3);
+  border-top: var(--hair) solid var(--furniture);
+  display: grid; grid-template-columns: 1fr auto; align-items: baseline;
+  font-variant-numeric: tabular-nums;
+}
+.total-label { font-weight: 600; }
+.total-amt { font: 400 var(--t-xl)/var(--lh-tight) var(--f-display); color: var(--reflex); text-align: right; }
+.per { grid-column: 1 / -1; text-align: right; font-size: var(--t-sm); color: var(--graphite); }
+.foot { margin: var(--s-5) 0 var(--s-4); font-size: var(--t-sm); }
+.go {
+  display: block; width: 100%;
+  padding: var(--s-3) var(--s-4);
+  border: 0; border-radius: var(--radius);
+  background: var(--reflex); color: var(--paper);
+  font: 600 var(--t-base)/var(--lh-snug) var(--f-text);
+  text-align: left; cursor: pointer;
+}
+.go:hover { background: var(--ink); }
+.small { margin: var(--s-2) 0 0; font-size: var(--t-sm); color: var(--graphite); }
+
+/* tablet: two control columns, docket beside the second row */
+@media (max-width: 1179.98px) {
+  .builder { grid-template-columns: 1fr 1fr; }
+  .docket { position: static; }
+}
+
+/* phone: one column, drawing and total stay in view */
+@media (max-width: 759.98px) {
+  html { scroll-padding-top: calc(var(--sticky-h) + var(--s-3)); }
+  .quote { padding: var(--s-7) var(--s-4); }
+  .press {
+    position: sticky; top: 0; z-index: 2;
+    margin-inline: calc(-1 * var(--s-4));
+    padding: var(--s-3) var(--s-4) var(--s-2);
+    margin-bottom: var(--s-5);
+  }
+  .cap { align-items: baseline; }
+  .cap .cut { display: none; }
+  .cap .cut.warn { display: block; order: -1; flex-basis: 100%; }
+  .cap .run { display: block; font-size: var(--t-base); color: var(--ink); }
+  .run-amt { font: 400 var(--t-lg)/var(--lh-tight) var(--f-display); color: var(--reflex); }
+  .builder { display: flex; flex-direction: column; gap: var(--s-6); }
+  .col { display: contents; }
+  .docket { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .press path, .press rect, .press line, .press text { transition: none; }
+}
+
+@media (forced-colors: active) {
+  input:checked, .seg input:checked + span { forced-color-adjust: none; background: Highlight; border-color: Highlight; color: HighlightText; }
+}
+</style>
+</head>
+<body>
+<main>
+<section class="quote" aria-labelledby="quote-title">
+  <div class="wrap">
+    <header class="head">
+      <h2 id="quote-title">Price your card by weight, ink and bite</h2>
+      <p>Pick a paper, your inks, how deep they press and an edge colour. The drawing shows your card cut edge-on and magnified, so you can see what each choice does before you pay for it.</p>
+    </header>
+
+    <figure class="press" id="press">
+      <svg id="xsec" role="img" aria-label="Cross-section of a 600gsm cotton card, 0.9 mm thick, with a deep impression in navy and sage, and gold painted edges." xmlns="http://www.w3.org/2000/svg"></svg>
+      <figcaption class="cap">
+        <span class="cut" id="cut" aria-live="polite">Cut through the stems of the names</span>
+        <span class="run" aria-hidden="true"><span class="run-amt" id="run">$565</span> for <span id="run-qty">100</span></span>
+        <span class="measure" id="measure" aria-live="polite">0.9 mm, 600gsm cotton, shown at 80&times;</span>
+      </figcaption>
+    </figure>
+
+    <form class="builder" id="builder" action="#" novalidate aria-labelledby="quote-title">
+      <div class="col col-a">
+        <fieldset>
+          <legend>Product</legend>
+          <label class="opt"><input type="radio" name="product" value="inv" checked><span class="opt-name">Wedding invitations</span><span></span><span class="opt-desc">5 &times; 7 in</span></label>
+          <label class="opt"><input type="radio" name="product" value="card"><span class="opt-name">Business cards</span><span></span><span class="opt-desc">3.5 &times; 2 in</span></label>
+        </fieldset>
+        <fieldset>
+          <legend>Quantity</legend>
+          <div class="seg" id="qty">
+            <label><input type="radio" name="qty" value="50"><span>50</span></label>
+            <label><input type="radio" name="qty" value="100" checked><span>100</span></label>
+            <label><input type="radio" name="qty" value="150"><span>150</span></label>
+            <label><input type="radio" name="qty" value="200"><span>200</span></label>
+          </div>
+        </fieldset>
+      </div>
+
+      <div class="col col-b">
+        <fieldset class="paper">
+          <legend>Paper</legend>
+          <label class="opt"><input type="radio" name="paper" value="p300"><span class="opt-name">300gsm Lettra</span><span class="opt-price" data-price="p300">$1.60 a card</span><span class="opt-desc">Pearl white cotton that takes a gentle bite</span></label>
+          <label class="opt"><input type="radio" name="paper" value="p600" checked><span class="opt-name">600gsm Lettra</span><span class="opt-price" data-price="p600">$2.40 a card</span><span class="opt-desc">Fluorescent white cotton, thick enough for a deep impression</span></label>
+          <label class="opt"><input type="radio" name="paper" value="duplex"><span class="opt-name">1200gsm duplex</span><span class="opt-price" data-price="duplex">$3.90 a card</span><span class="opt-desc">Two sheets pasted back to back. Choose the back colour.</span></label>
+          <fieldset class="back">
+            <legend>Back colour</legend>
+            <div class="chips">
+              <label class="chip"><input type="radio" name="back" value="pearl" checked><span class="sw" data-c="pearl"></span>Pearl</label>
+              <label class="chip"><input type="radio" name="back" value="blush"><span class="sw" data-c="blush"></span>Blush</label>
+              <label class="chip"><input type="radio" name="back" value="sage"><span class="sw" data-c="sage"></span>Sage grey</label>
+            </div>
+          </fieldset>
+        </fieldset>
+        <fieldset>
+          <legend>Impression</legend>
+          <label class="opt"><input type="radio" name="imp" value="kiss"><span class="opt-name">Kiss</span><span class="opt-price">Included</span><span class="opt-desc">Ink sits on the surface</span></label>
+          <label class="opt"><input type="radio" name="imp" value="standard"><span class="opt-name">Standard</span><span class="opt-price">Included</span><span class="opt-desc">A bite you can feel</span></label>
+          <label class="opt"><input type="radio" name="imp" value="deep" checked><span class="opt-name">Deep</span><span class="opt-price" data-price="deep">$0.35 a card</span><span class="opt-desc">A bite you can see across the table</span></label>
+          <p class="note" id="deep-note"></p>
+        </fieldset>
+      </div>
+
+      <div class="col col-c">
+        <fieldset>
+          <legend>Inks</legend>
+          <label class="opt opt-sw"><input type="checkbox" name="ink" value="navy" checked><span class="sw" data-c="navy"></span><span class="opt-name">Navy</span><span class="opt-price">$95</span></label>
+          <label class="opt opt-sw"><input type="checkbox" name="ink" value="rubine"><span class="sw" data-c="rubine"></span><span class="opt-name">Rubine</span><span class="opt-price">$95</span></label>
+          <label class="opt opt-sw"><input type="checkbox" name="ink" value="sage" checked><span class="sw" data-c="sage"></span><span class="opt-name">Sage</span><span class="opt-price">$95</span></label>
+          <label class="opt opt-sw"><input type="checkbox" name="ink" value="black"><span class="sw" data-c="black"></span><span class="opt-name">Black</span><span class="opt-price">$95</span></label>
+          <label class="opt opt-sw"><input type="checkbox" name="ink" value="blind"><span class="sw" data-c="blind"></span><span class="opt-name">Blind</span><span class="opt-price">$95</span><span class="opt-desc">Pressed with no ink</span></label>
+          <p class="note" id="ink-note" aria-live="polite"></p>
+        </fieldset>
+        <fieldset class="edges">
+          <legend>Edges</legend>
+          <label class="opt opt-sw"><input type="radio" name="edge" value="none"><span class="sw" data-c="none"></span><span class="opt-name">Unpainted</span><span class="opt-price">Included</span></label>
+          <label class="opt opt-sw"><input type="radio" name="edge" value="gold" checked><span class="sw" data-c="gold"></span><span class="opt-name">Gold</span><span class="opt-price" data-price="edge">$40 + $0.60 a card</span></label>
+          <label class="opt opt-sw"><input type="radio" name="edge" value="blush"><span class="sw" data-c="blush"></span><span class="opt-name">Blush</span><span class="opt-price" data-price="edge">$40 + $0.60 a card</span></label>
+          <label class="opt opt-sw"><input type="radio" name="edge" value="navy"><span class="sw" data-c="navy"></span><span class="opt-name">Navy</span><span class="opt-price" data-price="edge">$40 + $0.60 a card</span></label>
+          <label class="opt opt-sw"><input type="radio" name="edge" value="rubine"><span class="sw" data-c="rubine"></span><span class="opt-name">Rubine</span><span class="opt-price" data-price="edge">$40 + $0.60 a card</span></label>
+        </fieldset>
+      </div>
+
+      <div class="docket" role="group" aria-labelledby="docket-title">
+        <h3 id="docket-title">Quote</h3>
+        <dl class="lines" id="lines">
+          <div class="line"><dt>Plates, 2 colours</dt><dd>$190</dd></div>
+          <div class="line"><dt>Paper and printing &times;100</dt><dd>$240</dd></div>
+          <div class="line"><dt>Deep impression</dt><dd>$35</dd></div>
+          <div class="line"><dt>Gold edges</dt><dd>$100</dd></div>
+        </dl>
+        <p class="total" aria-live="polite" aria-atomic="true">
+          <span class="total-label">Total</span>
+          <span class="total-amt" id="total">$565</span>
+          <span class="per" id="per">$5.65 a card</span>
+        </p>
+        <p class="foot">You get a digital proof within 3 working days. Printing takes about two weeks after you approve it.</p>
+        <button class="go" type="submit">Request a proof</button>
+        <p class="small">No payment until you approve the proof.</p>
+      </div>
+    </form>
+  </div>
+</section>
+</main>
+
+<script>
+(() => {
+  // Content colours are data, not theme tokens.
+  const INK = { navy: "#2B3550", rubine: "#B0124F", sage: "#6F8467", black: "#232323", blind: null };
+  const EDGE = { none: null, gold: "#B8954A", blush: "#E3B8B2", navy: "#2B3550", rubine: "#B0124F" };
+  const BACK = { pearl: "#F4F2EC", blush: "#EAD3CD", sage: "#C9D0C4" };
+  const PAPER = {
+    p300:   { mm: 0.45, face: "#F4F2EC", label: "300gsm cotton" },
+    p600:   { mm: 0.9,  face: "#FAFAF8", label: "600gsm cotton" },
+    duplex: { mm: 1.8,  face: "#FAFAF8", label: "1200gsm duplex" }
+  };
+  const BITE = { kiss: 0.02, standard: 0.12, deep: 0.3 }; // mm
+  const EDGE_MM = 0.15, INK_PX = 3; // ink film is drawn 3px at every scale so it can be seen
+  const TYPE_MM = 2.5; // em of the printed line in mm (about 7pt); letters and stems use the same scale as the sheet
+  const CUT_EM = 0.12; // the cut runs 0.12em above the baseline: below the A's bar, through the bowls
+  const WARN = "Deep impression on 300gsm pushes through to the back. Choose 600gsm or duplex to keep the back flat.";
+  // Prices in cents.
+  const JOB = {
+    inv:  { qty: [50, 100, 150, 200], paper: { p300: 160, p600: 240, duplex: 390 }, deep: 35, edge: 60, line: "Ada & Tom", cap: "Cut through the stems of the names" },
+    card: { qty: [100, 250, 500],      paper: { p300: 45,  p600: 70,  duplex: 120 }, deep: 10, edge: 20, line: "Ada Moss", cap: "Cut through the stems of the name" }
+  };
+  const PLATE = 9500, EDGE_SETUP = 4000;
+
+  function price(s) {
+    const j = JOB[s.product], n = s.inks.length, lines = [];
+    const colours = s.inks.filter(i => i !== "blind").length;
+    let what = colours + (colours === 1 ? " colour" : " colours");
+    if (s.inks.includes("blind")) what = colours ? what + " and blind" : "blind";
+    lines.push(["Plates, " + (n ? what : "none chosen"), n * PLATE]);
+    lines.push(["Paper and printing ×" + s.qty, j.paper[s.paper] * s.qty]);
+    if (s.imp === "deep") lines.push(["Deep impression", j.deep * s.qty]);
+    if (s.edge !== "none") lines.push([s.edge[0].toUpperCase() + s.edge.slice(1) + " edges", EDGE_SETUP + j.edge * s.qty]);
+    const total = lines.reduce((t, l) => t + l[1], 0);
+    return { lines, total, per: Math.round(total / s.qty) };
+  }
+  console.assert(price({ product: "inv", qty: 100, paper: "p600", inks: ["navy", "sage"], imp: "deep", edge: "gold" }).total === 56500, "default quote must be $565");
+
+  const usd = (c, cents) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD",
+    minimumFractionDigits: cents ? 2 : 0, maximumFractionDigits: cents ? 2 : 0 }).format(c / 100);
+
+  const $ = id => document.getElementById(id);
+  const form = $("builder"), svg = $("xsec"), press = $("press");
+  const css = getComputedStyle(document.documentElement);
+  const DUR = parseFloat(css.getPropertyValue("--dur")) || 240, FONT = css.getPropertyValue("--f-text");
+  const NS = "http://www.w3.org/2000/svg";
+  const el = (tag, cls) => { const e = document.createElementNS(NS, tag); if (cls) e.setAttribute("class", cls); svg.appendChild(e); return e; };
+  const plan = el("text", "plan"), cutline = el("line", "cutline");
+  const sheet = el("path", "sheet"), back = el("path", "sheet"), glue = el("line", "glue");
+  const inkLayer = el("g");
+  const edgeL = el("rect"), edgeR = el("rect"), leader = el("line", "leader");
+  const ctx = document.createElement("canvas").getContext("2d", { willReadFrequently: true });
+
+  document.querySelectorAll(".sw[data-c]").forEach(sw => {
+    const k = sw.dataset.c, c = sw.closest(".back") ? BACK[k] : sw.closest(".edges") ? EDGE[k] : INK[k];
+    if (c) sw.style.setProperty("--c", c);
+  });
+
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)");
+  const phone = matchMedia("(max-width: 759.98px)");
+  let stems = [], W = 0, H = 0, fs = 0, asc = 0, band = 0, gap = 0, PADB = 0, x0 = 0, tw = 0, scale = 80, cur = null, raf = 0, product = "inv";
+
+  function read() {
+    const f = new FormData(form);
+    return { product: f.get("product"), qty: +f.get("qty"), paper: f.get("paper"), back: f.get("back"),
+      inks: f.getAll("ink"), imp: f.get("imp"), edge: f.get("edge") };
+  }
+
+  // Set the printed line as real type, then read the stems off one scanline at the cut height,
+  // so every bite sits exactly under the stem that made it.
+  function layout(s) {
+    scale = phone.matches ? 40 : 80;
+    W = svg.clientWidth;
+    fs = TYPE_MM * scale; gap = 0.2 * scale; x0 = 0.4 * scale;
+    ctx.font = `600 ${fs}px ${FONT}`;
+    // whole words that fit the strip (phones show the first word only), never a dangling ampersand
+    let text = JOB[s.product].line.split(" ")[0];
+    if (!phone.matches) for (const w of JOB[s.product].line.split(" ").slice(1))
+      if (ctx.measureText(text + " " + w).width < W - x0 - EDGE_MM * scale - 8) text += " " + w; else break;
+    text = text.replace(/ &$/, "");
+    const m = ctx.measureText(text);
+    tw = Math.ceil(m.width); asc = Math.ceil(m.actualBoundingBoxAscent);
+    const xh = Math.ceil(ctx.measureText("x").actualBoundingBoxAscent);
+    ctx.canvas.width = tw + 2; ctx.canvas.height = 1;
+    ctx.font = `600 ${fs}px ${FONT}`;
+    ctx.fillText(text, 0, CUT_EM * fs + 0.5);
+    const row = ctx.getImageData(0, 0, tw + 2, 1).data, starts = [0];
+    [...text].forEach((c, i) => { if (c === " ") starts.push(ctx.measureText(text.slice(0, i + 1)).width); });
+    stems = [];
+    for (let x = 0, a = -1; x <= tw + 1; x++) {
+      const on = x <= tw && row[x * 4 + 3] > 127;
+      if (on && a < 0) a = x;
+      if (!on && a >= 0) { stems.push({ x: x0 + a, w: x - a, word: starts.filter(w => w <= a).length - 1 }); a = -1; }
+    }
+    stems = stems.filter(t => t.x + t.w < W - EDGE_MM * scale - 8);
+    inkLayer.replaceChildren(...stems.map(() => document.createElementNS(NS, "rect")));
+    plan.textContent = text; plan.setAttribute("x", x0); plan.style.fontSize = fs + "px";
+    cutline.setAttribute("x1", x0 - gap); cutline.setAttribute("x2", Math.min(W, x0 + tw + gap));
+    PADB = Math.ceil(0.12 * scale) + 20; // room for show-through bumps and the leader
+    band = phone.matches ? xh + 2 : asc; // phones crop the letters at the x-height
+    if (!phone.matches) setH(band + gap + 1.8 * scale + PADB); // reserve for duplex, so the form never jumps
+  }
+
+  function setH(h) { H = h; svg.style.height = h + "px"; svg.setAttribute("viewBox", `0 0 ${W} ${h}`); }
+
+  // p: T sheet thickness, S front-layer thickness, D bite depth, B bump on the back (all px)
+  function draw(p) {
+    if (phone.matches) setH(Math.ceil(band + gap + p.T + PADB)); // the sticky bar follows the sheet
+    const bot = H - PADB, top = bot - p.T; // the sheet rests on the bed and grows upward
+    let up = `M0 ${top}`, down = "";
+    stems.forEach(t => {
+      const s = p.D * 0.35;
+      up += ` L${t.x - s} ${top} L${t.x} ${top + p.D} L${t.x + t.w} ${top + p.D} L${t.x + t.w + s} ${top}`;
+    });
+    up += ` L${W} ${top} L${W} ${bot}`;
+    for (let i = stems.length - 1; i >= 0; i--) {
+      const t = stems[i], s = p.B * 1.4;
+      down += ` L${t.x + t.w + s} ${bot} L${t.x + t.w} ${bot + p.B} L${t.x} ${bot + p.B} L${t.x - s} ${bot}`;
+    }
+    down += ` L0 ${bot} Z`;
+    sheet.setAttribute("d", up + down);
+    back.setAttribute("d", `M0 ${top + p.S} L${W} ${top + p.S} L${W} ${bot}` + down);
+    glue.setAttribute("x1", 0); glue.setAttribute("x2", W);
+    glue.setAttribute("y1", top + p.S); glue.setAttribute("y2", top + p.S);
+    [...inkLayer.children].forEach((r, i) => {
+      const t = stems[i];
+      r.setAttribute("x", t.x); r.setAttribute("width", t.w);
+      r.setAttribute("y", top + Math.max(0, p.D - INK_PX)); r.setAttribute("height", INK_PX); // the film never rises above the surface
+    });
+    const e = EDGE_MM * scale;
+    [[edgeL, 0], [edgeR, W - e]].forEach(([r, x]) => {
+      r.setAttribute("x", x); r.setAttribute("width", e);
+      r.setAttribute("y", top); r.setAttribute("height", p.T);
+    });
+    plan.setAttribute("y", top - gap);
+    cutline.setAttribute("y1", top - gap - CUT_EM * fs); cutline.setAttribute("y2", top - gap - CUT_EM * fs);
+    const lx = stems.length ? Math.round(stems[0].x + stems[0].w / 2) + 0.5 : 0; // on the pixel grid, so 1px stays crisp
+    leader.setAttribute("x1", lx); leader.setAttribute("x2", lx);
+    leader.setAttribute("y1", bot + p.B + 3); leader.setAttribute("y2", H);
+    leader.style.opacity = p.B > 0.5 ? 1 : 0;
+    if (phone.matches) document.documentElement.style.setProperty("--sticky-h", press.offsetHeight + "px");
+  }
+
+  function animate(to) {
+    cancelAnimationFrame(raf);
+    if (!cur || reduce.matches) { cur = to; draw(cur); return; }
+    const from = { ...cur }, t0 = performance.now();
+    const step = now => {
+      const k = Math.min(1, (now - t0) / DUR), e = 1 - Math.pow(1 - k, 3);
+      cur = {}; for (const key in to) cur[key] = from[key] + (to[key] - from[key]) * e;
+      draw(cur);
+      if (k < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+  }
+
+  function setQty(s) {
+    const list = JOB[s.product].qty, keep = list.includes(s.qty) ? s.qty : 100;
+    $("qty").innerHTML = list.map(q => `<label><input type="radio" name="qty" value="${q}"${q === keep ? " checked" : ""}><span>${q}</span></label>`).join("");
+    s.qty = keep;
+  }
+
+  function update(relayout) {
+    const s = read();
+    if (s.product !== product) { product = s.product; setQty(s); relayout = true; }
+    if (relayout) layout(s);
+    const j = JOB[s.product], pp = PAPER[s.paper], q = price(s);
+
+    // option prices for this product
+    for (const k in j.paper) document.querySelector(`[data-price="${k}"]`).textContent = usd(j.paper[k], true) + " a card";
+    document.querySelector('[data-price="deep"]').textContent = usd(j.deep, true) + " a card";
+    document.querySelectorAll('[data-price="edge"]').forEach(e => e.textContent = `${usd(EDGE_SETUP)} + ${usd(j.edge, true)} a card`);
+
+    // docket
+    const cents = q.lines.some(l => l[1] % 100);
+    $("lines").innerHTML = q.lines.map(([label, c]) => `<div class="line"><dt>${label}</dt><dd>${usd(c, cents)}</dd></div>`).join("");
+    $("total").textContent = usd(q.total, q.total % 100);
+    $("per").textContent = usd(q.per, true) + " a card";
+    $("run").textContent = $("total").textContent;
+    $("run-qty").textContent = s.qty;
+
+    // notes: the show-through explanation sits under the drawing that shows it
+    const thin = s.paper === "p300" && s.imp === "deep" && s.inks.length > 0;
+    $("cut").textContent = thin ? WARN : j.cap;
+    $("cut").classList.toggle("warn", thin);
+    $("deep-note").textContent = thin ? "See the drawing: on 300gsm this shows through to the back." : "";
+    $("ink-note").textContent = s.inks.length ? "" : "Choose at least one ink, or blind for an uninked impression.";
+
+    // drawing
+    const T = pp.mm * scale, D = s.inks.length ? BITE[s.imp] * scale : 0;
+    const B = Math.max(0, BITE[s.imp] - 0.4 * pp.mm) * scale * (s.inks.length ? 1 : 0);
+    const duplex = s.paper === "duplex";
+    sheet.style.fill = pp.face;
+    back.style.fill = duplex ? BACK[s.back] : pp.face;
+    glue.style.opacity = duplex ? 1 : 0;
+    [...inkLayer.children].forEach((r, i) => {
+      const c = s.inks.length ? INK[s.inks[stems[i].word % s.inks.length]] : null;
+      r.style.fill = c || "none";
+    });
+    [edgeL, edgeR].forEach(r => r.style.fill = EDGE[s.edge] || pp.face);
+    animate({ T, S: duplex ? T / 2 : T, D, B });
+
+    // words
+    const mm = pp.mm.toFixed(pp.mm < 1 ? 2 : 1).replace(/0$/, "");
+    $("measure").textContent = phone.matches ? `${mm} mm, ${pp.label.split(" ")[0]}, ${scale}×` : `${mm} mm, ${pp.label}, shown at ${scale}×`;
+    const inkWords = s.inks.filter(i => i !== "blind");
+    const how = !s.inks.length ? "with no impression yet"
+      : `with a ${s.imp} impression ${inkWords.length ? "in " + inkWords.join(" and ") : "and no ink"}${s.inks.includes("blind") && inkWords.length ? " plus a blind plate" : ""}`;
+    svg.setAttribute("aria-label", `Cross-section of a ${pp.label} card, ${mm} mm thick${duplex ? " with a " + s.back + " back" : ""}, ${how}, and ${s.edge === "none" ? "unpainted" : s.edge + " painted"} edges.` +
+      (thin ? " The impression pushes bumps through the back." : ""));
+  }
+
+  form.addEventListener("change", () => update(false));
+  form.addEventListener("submit", e => e.preventDefault()); // wire to the shop's proof-request endpoint
+  let w0 = 0;
+  // deferred a frame: update() sets the svg's own height, which would re-enter this observer
+  new ResizeObserver(() => requestAnimationFrame(() => { if (svg.clientWidth !== w0) { w0 = svg.clientWidth; cur = null; update(true); } })).observe(svg);
+  // stems are read from the rendered type, so re-read them once Work Sans arrives
+  document.fonts.load(`600 1em ${FONT}`).then(() => { cur = null; update(true); });
+})();
+</script>
+</body>
+</html>
