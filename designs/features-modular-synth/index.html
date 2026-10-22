@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crease, a 10 HP wavefolding oscillator by Halde Instruments</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@400;500&family=Sofia+Sans+Condensed:wght@600..700&family=Sofia+Sans+Extra+Condensed:wght@800&display=swap">
+<style>
+:root {
+  /* colour: a warm case dark and the materials of a PCB front panel */
+  --case: #231A15;   /* chosen warm brown-black, the page */
+  --panel: #12443A;  /* green soldermask panel */
+  --silk: #ECE6D6;   /* silkscreen ink */
+  --enig: #CDA45E;   /* exposed gold copper: panel rings, holes, outputs box, feature sockets only */
+  --cv: #4E9BE0;     /* control voltage cables */
+  --audio: #E0609A;  /* audio cables */
+  --silk-dim: color-mix(in srgb, var(--silk) 72%, var(--case));
+  --panel-edge: color-mix(in srgb, var(--panel) 80%, var(--silk));
+  --sheen: rgb(255 255 255 / .3);
+
+  /* type: Sofia Sans in three widths */
+  --font-sans: "Sofia Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-cond: "Sofia Sans Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --font-xcond: "Sofia Sans Extra Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --fs-h2: clamp(2.75rem, 1.55rem + 4.9vw, 4.5rem);
+  --fs-h3: clamp(1.375rem, 1.2rem + .6vw, 1.625rem);
+  --fs-body: clamp(1.0625rem, 1rem + .2vw, 1.125rem);
+  --fs-small: .875rem;
+  --fs-jack: .8125rem;
+  --measure: 58ch;
+
+  /* spacing */
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px;
+  --s6: 32px; --s7: 48px; --s8: 72px; --s9: 112px;
+  --gutter: clamp(16px, 4vw, 48px);
+
+  /* hardware units: 1 HP = 5.08 mm, the panel is 10 HP by 128.5 mm */
+  --hp: clamp(20px, 2vw, 25.2px);
+  --socket-col: 72px;   /* each feature's margin holding its jack name and socket */
+  --socket: 22px;
+  --ring: 3px;          /* socket ring */
+  --lane: 28px;         /* phone: cable lane left of the features */
+  --cable: 5px;
+  --cable-on: 7px;
+  --rule: 1.5px;        /* ruler, link underline */
+  --focus: 2px;
+  --swatch-w: 28px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--case);
+  color: var(--silk-dim);
+  font: 400 var(--fs-body)/1.55 var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+h2, h3, p, ul, figure, figcaption { margin: 0; padding: 0; }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+[data-signal="cv"] { --c: var(--cv); }
+[data-signal="audio"] { --c: var(--audio); }
+
+.patched { padding-block: var(--s9); }
+.wrap { max-width: calc(1200px + 2 * var(--gutter)); margin-inline: auto; padding-inline: var(--gutter); }
+
+/* header */
+.head { max-width: 46rem; margin-bottom: var(--s8); }
+.head h2 {
+  font: 800 var(--fs-h2)/.95 var(--font-xcond);
+  letter-spacing: -.01em;
+  color: var(--silk);
+  margin-bottom: var(--s5);
+}
+.head .intro { max-width: var(--measure); margin-bottom: var(--s4); }
+.key {
+  display: flex; flex-wrap: wrap; gap: var(--s2) var(--s5);
+  font: 500 var(--fs-small)/1.4 var(--font-sans);
+}
+.key span { display: inline-flex; align-items: center; gap: var(--s2); }
+.swatch { width: var(--swatch-w); height: var(--cable); border-radius: 3px; background: var(--c); }
+
+/* a panel name quoted in running text, set like the silkscreen it quotes */
+.legend { font: 600 .9em var(--font-cond); letter-spacing: .02em; color: var(--silk); white-space: nowrap; }
+
+/* the rig: panel | patch space | features */
+.rig {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--s5);
+  align-items: start;
+}
+.panel { grid-column: 1 / 4; display: grid; justify-items: start; gap: var(--s3); }
+.panel svg { display: block; width: calc(10 * var(--hp)); height: auto; }
+.panel .pcb { fill: var(--panel); }
+.panel .edge { fill: none; stroke: var(--panel-edge); stroke-width: 1px; }
+.panel .enig { fill: var(--enig); }
+.panel .hole { fill: var(--case); }
+.panel .silk { fill: var(--silk); font-family: var(--font-cond); font-weight: 700; text-anchor: middle; }
+.panel .skirt { fill: var(--silk-dim); }
+.panel .cap { fill: var(--silk); }
+.panel .ptr { stroke: var(--panel); stroke-width: .9; stroke-linecap: round; }
+.panel .tick { stroke: var(--silk); stroke-width: .45; }
+.panel .outbox { fill: none; stroke: var(--enig); stroke-width: .45; }
+.plug .cap, .plug circle:first-child { fill: var(--c); }
+.plug circle + circle { fill: color-mix(in srgb, var(--c) 55%, var(--case)); }
+
+.ruler {
+  width: calc(10 * var(--hp));
+  height: 12px;
+  display: flex; align-items: center; gap: var(--s2);
+  border-inline: var(--rule) solid var(--silk-dim);
+  font: 500 var(--fs-small)/1 var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+.ruler::before, .ruler::after { content: ""; flex: 1; height: var(--rule); background: var(--silk-dim); }
+.specs {
+  width: max-content;
+  list-style: none;
+  font: 500 var(--fs-small)/1.5 var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  margin-top: var(--s1);
+}
+.specs li { white-space: nowrap; }
+
+.features {
+  grid-column: 7 / 13;
+  list-style: none;
+  display: grid;
+  gap: calc(3.5 * var(--hp)); /* scales with the panel so its bottom rail stays above the last title */
+}
+.features > li {
+  display: grid;
+  grid-template-columns: var(--socket-col) minmax(0, 1fr);
+  border-radius: 2px;
+}
+.features > li:focus-visible { outline: var(--focus) solid var(--silk); outline-offset: 10px; }
+.features h3 {
+  grid-column: 2; grid-row: 1;
+  font: 600 var(--fs-h3)/1.15 var(--font-cond);
+  color: var(--silk);
+  margin-bottom: var(--s2);
+}
+.features li > p:last-child { grid-column: 2; grid-row: 2; max-width: var(--measure); }
+/* jack name printed above its socket, as on the panel; the socket centres on the title's first line */
+.jack {
+  grid-column: 1; grid-row: 1 / span 2;
+  display: flex; flex-direction: column; align-items: center; gap: var(--s1);
+  margin-top: calc(var(--fs-h3) * .6 - var(--socket) / 2 - var(--s1) - var(--fs-jack) * 1.1);
+  padding-right: var(--s4);
+  font: 650 var(--fs-jack)/1.1 var(--font-cond);
+  letter-spacing: .02em;
+  color: var(--silk);
+  white-space: nowrap;
+}
+.socket {
+  width: var(--socket); height: var(--socket);
+  border-radius: 50%;
+  border: var(--ring) solid var(--enig);
+  background: radial-gradient(circle, var(--c) 0 58%, var(--case) 62%);
+}
+
+.manual {
+  grid-column: 7 / 13;
+  padding-left: var(--socket-col);
+  margin-top: var(--s8);
+  font: 500 var(--fs-body)/1.4 var(--font-sans);
+}
+.manual a {
+  color: var(--silk);
+  text-decoration: underline var(--rule) var(--silk-dim);
+  text-underline-offset: 4px;
+  border-radius: 2px;
+}
+.manual a:hover { text-decoration-color: var(--silk); }
+.manual a:focus-visible { outline: var(--focus) solid var(--silk); outline-offset: 4px; }
+
+/* cables, drawn by the script */
+.cables {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.cable { opacity: 1; transition: opacity .16s, filter .16s; }
+.cable .body { fill: none; stroke: var(--c); stroke-width: var(--cable); stroke-linecap: round; stroke-linejoin: round; transition: stroke-width .16s; }
+.cable .sheen { fill: none; stroke: var(--sheen); stroke-width: 1.5px; stroke-linecap: round; }
+.plug { transition: filter .16s; }
+
+/* a feature in hand: its cable thickens, its plugs brighten, the rest step back */
+.rig:has(.features li:is(:hover, :focus-within)) .cable { opacity: .35; }
+.rig:has(li[data-jack="fold-cv"]:is(:hover, :focus-within)) [data-jack="fold-cv"]:not(li),
+.rig:has(li[data-jack="sym-cv"]:is(:hover, :focus-within)) [data-jack="sym-cv"]:not(li),
+.rig:has(li[data-jack="v-oct"]:is(:hover, :focus-within)) [data-jack="v-oct"]:not(li),
+.rig:has(li[data-jack="sine"]:is(:hover, :focus-within)) [data-jack="sine"]:not(li) {
+  opacity: 1; --cable: var(--cable-on); filter: brightness(1.18);
+}
+
+@media (max-width: 1099.98px) {
+  .panel { grid-column: 1 / 5; }
+  .features, .manual { grid-column: 6 / 13; }
+  :root { --socket-col: 64px; }
+}
+
+@media (max-width: 759.98px) {
+  :root { --socket: 12px; --ring: 2px; --cable: 3.5px; --cable-on: 5px; }
+  .patched { padding-block: var(--s8); }
+  .head { margin-bottom: var(--s7); }
+  .rig { display: block; }
+  .panel { margin: 0 0 var(--s8) var(--lane); }
+  .features { gap: var(--s6); }
+  /* the socket sits in the lane on the title's first line; the jack name follows the title */
+  .features > li { display: block; position: relative; padding-left: var(--lane); }
+  .features > li:focus-visible { outline-offset: 6px; }
+  .features h3 { display: inline; }
+  .jack { display: inline; margin: 0 0 0 var(--s2); padding: 0; color: var(--silk-dim); }
+  .socket { position: absolute; left: calc(var(--lane) - var(--socket) - var(--s1)); top: calc(var(--fs-h3) * .62 - var(--socket) / 2); }
+  .features li > p:last-child { margin-top: var(--s2); }
+  .manual { padding-left: var(--lane); margin-top: var(--s7); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cable, .cable .body, .plug { transition: none; }
+}
+</style>
+</head>
+<body>
+<main>
+<section class="patched" aria-labelledby="patched-title">
+  <div class="wrap">
+    <header class="head">
+      <h2 id="patched-title">Patch these four first</h2>
+      <p class="intro">Crease is a 10&nbsp;HP analogue wavefolding oscillator: a sine core, a six-stage folder and two CV inputs to move it.</p>
+      <p class="key">
+        <span><i class="swatch" data-signal="cv" aria-hidden="true"></i>Blue cables carry control voltage.</span>
+        <span><i class="swatch" data-signal="audio" aria-hidden="true"></i>Pink carries audio.</span>
+      </p>
+    </header>
+
+    <div class="rig">
+      <figure class="panel">
+        <svg viewBox="0 0 50.5 128.5" role="img" aria-label="Crease front panel, 10 HP. Knobs: FOLD, TUNE and SYMMETRY. Inputs: FOLD CV, SYM CV, SYNC and 1V/OCT. Outputs: FOLD OUT and SINE OUT. Patched: FOLD CV, SYM CV and 1V/OCT with blue control voltage cables, and SINE OUT with a pink audio cable.">
+          <rect class="pcb" width="50.5" height="128.5" rx=".5"/>
+          <rect class="edge" x=".2" y=".2" width="50.1" height="128.1" rx=".4" vector-effect="non-scaling-stroke"/>
+          <g>
+            <ellipse class="enig" cx="7.5" cy="3" rx="2.7" ry="1.8"/><ellipse class="hole" cx="7.5" cy="3" rx="1.9" ry="1.05"/>
+            <ellipse class="enig" cx="43" cy="3" rx="2.7" ry="1.8"/><ellipse class="hole" cx="43" cy="3" rx="1.9" ry="1.05"/>
+            <ellipse class="enig" cx="7.5" cy="125.5" rx="2.7" ry="1.8"/><ellipse class="hole" cx="7.5" cy="125.5" rx="1.9" ry="1.05"/>
+            <ellipse class="enig" cx="43" cy="125.5" rx="2.7" ry="1.8"/><ellipse class="hole" cx="43" cy="125.5" rx="1.9" ry="1.05"/>
+          </g>
+          <text class="silk" x="25.25" y="10.4" font-size="2.4" letter-spacing=".6">HALDE</text>
+          <text class="silk" x="25.25" y="18.2" font-size="5.8">CREASE</text>
+
+          <!-- FOLD: seven ticks bound its six fold stages -->
+          <g transform="translate(25.25 35)">
+            <g class="tick">
+              <line y1="-11.6" y2="-13.2" transform="rotate(-135)"/><line y1="-11.6" y2="-13.2" transform="rotate(-90)"/>
+              <line y1="-11.6" y2="-13.2" transform="rotate(-45)"/><line y1="-11.6" y2="-13.2"/>
+              <line y1="-11.6" y2="-13.2" transform="rotate(45)"/><line y1="-11.6" y2="-13.2" transform="rotate(90)"/>
+              <line y1="-11.6" y2="-13.2" transform="rotate(135)"/>
+            </g>
+            <circle class="skirt" r="9.6"/><circle class="cap" r="7.2"/>
+            <line class="ptr" y1="-2.4" y2="-9.4" transform="rotate(40)"/>
+          </g>
+          <text class="silk" x="25.25" y="51.2" font-size="2.8">FOLD</text>
+
+          <!-- 2 x 4 field: knobs and unpatched jacks on the left; the four patched jacks in one column on the right, nearest the features -->
+          <g font-size="2.6">
+            <text class="silk" x="12.5" y="58.6">TUNE</text>
+            <text class="silk" x="12.5" y="74.6">SYMMETRY</text>
+            <text class="silk" x="12.5" y="90.6">SYNC</text>
+            <text class="silk" x="12.5" y="106.6">FOLD OUT</text>
+            <text class="silk" x="38" y="58.6">FOLD CV</text>
+            <text class="silk" x="38" y="74.6">SYM CV</text>
+            <text class="silk" x="38" y="90.6">1V/OCT</text>
+            <text class="silk" x="38" y="106.6">SINE OUT</text>
+          </g>
+          <g transform="translate(12.5 64.6)">
+            <circle class="skirt" r="4.4"/><circle class="cap" r="3.2"/>
+            <line class="ptr" y1="-1.1" y2="-4.2" transform="rotate(-20)"/>
+          </g>
+          <g transform="translate(12.5 80.6)">
+            <circle class="skirt" r="4.4"/><circle class="cap" r="3.2"/>
+            <line class="ptr" y1="-1.1" y2="-4.2" transform="rotate(25)"/>
+          </g>
+          <rect class="outbox" x="3.6" y="102.4" width="43.3" height="15.6" rx=".8"/>
+          <g transform="translate(12.5 96.6)"><circle class="enig" r="3.35"/><circle class="hole" r="2.45"/></g>
+          <g transform="translate(12.5 112.6)"><circle class="enig" r="3.35"/><circle class="hole" r="2.45"/></g>
+          <g transform="translate(38 64.6)"><circle class="enig" r="3.35"/><circle class="hole" r="2.45"/></g>
+          <g transform="translate(38 80.6)"><circle class="enig" r="3.35"/><circle class="hole" r="2.45"/></g>
+          <g transform="translate(38 96.6)"><circle class="enig" r="3.35"/><circle class="hole" r="2.45"/></g>
+          <g transform="translate(38 112.6)"><circle class="enig" r="3.35"/><circle class="hole" r="2.45"/></g>
+
+          <g class="plug" data-jack="fold-cv" data-signal="cv" transform="translate(38 64.6)"><circle r="2.85"/><circle r="1.3"/></g>
+          <g class="plug" data-jack="sym-cv" data-signal="cv" transform="translate(38 80.6)"><circle r="2.85"/><circle r="1.3"/></g>
+          <g class="plug" data-jack="v-oct" data-signal="cv" transform="translate(38 96.6)"><circle r="2.85"/><circle r="1.3"/></g>
+          <g class="plug" data-jack="sine" data-signal="audio" transform="translate(38 112.6)"><circle r="2.85"/><circle r="1.3"/></g>
+        </svg>
+        <div class="ruler" aria-hidden="true">10 HP</div>
+        <figcaption>
+          <ul class="specs">
+            <li>24&nbsp;mm deep</li>
+            <li>+12&nbsp;V 58&nbsp;mA&ensp;−12&nbsp;V 52&nbsp;mA</li>
+            <li>Keyed 10-pin power cable included</li>
+          </ul>
+        </figcaption>
+      </figure>
+
+      <ul class="features">
+        <li data-jack="fold-cv" data-signal="cv" tabindex="0">
+          <h3>Six folds on one knob</h3>
+          <p class="jack"><span><span class="vh">Blue cable from </span>FOLD CV</span><span class="socket" aria-hidden="true"></span></p>
+          <p>Turn <span class="legend">FOLD</span> and the sine picks up harmonics in six distinct stages, so the sweet spots are easy to find again. Patch an envelope into <span class="legend">FOLD CV</span> for plucks that open bright and close soft.</p>
+        </li>
+        <li data-jack="sym-cv" data-signal="cv" tabindex="0">
+          <h3>Fold it off-centre</h3>
+          <p class="jack"><span><span class="vh">Blue cable from </span>SYM CV</span><span class="socket" aria-hidden="true"></span></p>
+          <p><span class="legend">SYMMETRY</span> shifts the wave before it folds. Off-centre folds add even harmonics, the hollow, reedy tones a symmetrical folder never reaches. Send a slow LFO here and the tone breathes.</p>
+        </li>
+        <li data-jack="v-oct" data-signal="cv" tabindex="0">
+          <h3>Holds pitch over five octaves</h3>
+          <p class="jack"><span><span class="vh">Blue cable from </span>1V/OCT</span><span class="socket" aria-hidden="true"></span></p>
+          <p>A thermally matched transistor pair tracks within 3&nbsp;cents over five octaves. Every Crease is tuned by hand against a precision voltage source before it ships.</p>
+        </li>
+        <li data-jack="sine" data-signal="audio" tabindex="0">
+          <h3>A clean sine beside the fold</h3>
+          <p class="jack"><span><span class="vh">Pink cable from </span>SINE OUT</span><span class="socket" aria-hidden="true"></span></p>
+          <p><span class="legend">SINE OUT</span> carries the untouched wave while <span class="legend">FOLD OUT</span> carries the folded one. Layer the sine underneath as a sub, or patch it into another oscillator’s FM input.</p>
+        </li>
+      </ul>
+
+      <!-- crease-manual.pdf is a stub; replace with the real manual and update the size -->
+      <p class="manual"><a href="crease-manual.pdf">Download the Crease manual (PDF, 23&nbsp;KB)</a></p>
+
+      <svg class="cables" aria-hidden="true" focusable="false"></svg>
+    </div>
+  </div>
+</section>
+</main>
+
+<script>
+// Patch cables: measure each panel plug and feature socket, hang a cable between them.
+(() => {
+  const rig = document.querySelector('.rig');
+  const svg = rig.querySelector('.cables');
+  const NS = 'http://www.w3.org/2000/svg';
+  const phone = matchMedia('(max-width: 759.98px)');
+  const TRACK = 8;  // px between parallel cables on phones
+  const make = (tag, attrs, parent) => {
+    const el = document.createElementNS(NS, tag);
+    for (const k in attrs) el.setAttribute(k, attrs[k]);
+    return parent.appendChild(el);
+  };
+  // orthogonal route through pts with rounded corners
+  const route = (pts, r) => {
+    let d = `M${pts[0]}`;
+    for (let i = 1; i < pts.length - 1; i++) {
+      const [a, b, c] = [pts[i - 1], pts[i], pts[i + 1]];
+      const l1 = Math.hypot(b[0] - a[0], b[1] - a[1]), l2 = Math.hypot(c[0] - b[0], c[1] - b[1]);
+      const k = Math.min(r, l1 / 2, l2 / 2);
+      d += ` L${b[0] - (b[0] - a[0]) / l1 * k} ${b[1] - (b[1] - a[1]) / l1 * k}`
+        + ` Q${b} ${b[0] + (c[0] - b[0]) / l2 * k} ${b[1] + (c[1] - b[1]) / l2 * k}`;
+    }
+    return d + ` L${pts[pts.length - 1]}`;
+  };
+
+  function draw() {
+    const R = rig.getBoundingClientRect();
+    const box = el => {
+      const b = el.getBoundingClientRect();
+      return { l: b.left - R.left, r: b.right - R.left, t: b.top - R.top, b: b.bottom - R.top, w: b.width };
+    };
+    const centre = el => { const b = box(el); return [(b.l + b.r) / 2, (b.t + b.b) / 2, b.w / 2]; };
+    const fig = box(rig.querySelector('.panel')), panel = box(rig.querySelector('.panel svg'));
+    const edge = Math.max(panel.r, box(rig.querySelector('.specs')).r);
+    svg.replaceChildren();
+    svg.setAttribute('viewBox', `0 0 ${R.width} ${R.height}`);
+    const wires = make('g', {}, svg), plugs = make('g', {}, svg);
+    const items = [...rig.querySelectorAll('.features li')], n = items.length;
+
+    items.forEach((li, k) => {
+      const { jack, signal } = li.dataset;
+      const [x1, y1, r1] = centre(rig.querySelector(`.panel .plug[data-jack="${jack}"]`));
+      const [x2, y2, r2] = centre(li.querySelector('.socket'));
+      let d;
+      if (phone.matches) {
+        // nested routes, so no two cross: off the panel's right edge, down beside panel and specs, back left under the specs, down the lane.
+        // The top jack takes the outer right track, the lowest crossing and the inner lane track.
+        const xr = edge + 16 + (n - 1 - k) * TRACK;
+        const yh = fig.b + 16 + (n - 1 - k) * TRACK;
+        const xl = x2 - k * TRACK;
+        const pts = [[x1, y1], [xr, y1], [xr, yh], [xl, yh], [xl, y2]];
+        if (xl !== x2) pts.push([x2, y2]);
+        d = route(pts, 10);
+      } else {
+        // the stiff plug boot carries the cable level off the panel, so no cable crosses a jack, legend or the outputs box;
+        // then it hangs: a level start and a second control point s below the chord, slack growing with length.
+        // A cable climbing to its socket stays below its chord along its whole length.
+        const xs = panel.r + 6, dx = x2 - xs, dy = y2 - y1;
+        const s = Math.min(110, Math.max(24, .12 * Math.hypot(dx, dy)));
+        // a steep drop still dips below its socket and rises into it, clear of the jack name above
+        const c2y = Math.max(y1 + 2 * dy / 3 + s, y2 + s / 2);
+        d = `M${x1} ${y1} L${xs} ${y1} C${xs + dx / 3} ${y1} ${xs + 2 * dx / 3} ${c2y} ${x2} ${y2}`;
+      }
+      const g = make('g', { class: 'cable', 'data-jack': jack, 'data-signal': signal }, wires);
+      make('path', { class: 'body', d }, g);
+      make('path', { class: 'sheen', d, transform: 'translate(0 -1)' }, g);
+      for (const [x, y, r] of [[x1, y1, r1], [x2, y2, r2 * .62]]) {
+        const p = make('g', { class: 'plug', 'data-jack': jack, 'data-signal': signal, transform: `translate(${x} ${y})` }, plugs);
+        make('circle', { r }, p);
+        make('circle', { r: r * .46 }, p);
+      }
+    });
+  }
+
+  new ResizeObserver(draw).observe(rig);
+  document.fonts.ready.then(draw);
+})();
+</script>
+</body>
+</html>
