@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Witness Cone: glaze recipes fired before you mix</title>
+<!-- Fontsource build keeps the lnum feature that Google's build drops -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/alegreya-sans@5.2.8/latin-400.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/alegreya-sans@5.2.8/latin-500.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/alegreya-sans@5.2.8/latin-800.css">
+<style>
+  :root {
+    /* chrome */
+    --porcelain: #ECEEEA;
+    --slip: #D8DBD3;
+    --tenmoku: #2E2420;
+    --oxide: #5E5550;
+    /* clay body: B-Mix 5 fires warm buff, seen on each tile's bare foot */
+    --body: #DCD2BF;
+    /* glaze corners: data, used only on tiles */
+    --glaze-copper: #2E8C5A;
+    --glaze-cobalt: #1E3A9E;
+    --glaze-rutile: #CFA24E;
+
+    --font: "Alegreya Sans", "Gill Sans", "Gill Sans MT", Seravek, Calibri, "Trebuchet MS", sans-serif;
+
+    --fs-display: clamp(2.5rem, 4.6vw + 0.5rem, 3.75rem);
+    --fs-wordmark: 1.375rem;
+    --fs-lede: 1.375rem;
+    --fs-body: 1.125rem;
+    --fs-readout-title: 1.75rem;
+    --fs-small: 1rem;
+    --fs-caption: 0.875rem;
+    --fs-tile-code: 0.75rem;
+
+    --s-1: 0.25rem; --s-2: 0.5rem; --s-3: 0.75rem; --s-4: 1rem; --s-5: 1.5rem;
+    --s-6: 2rem; --s-7: 3rem; --s-8: 4.5rem; --s-9: 7rem;
+
+    --gutter: var(--s-6);
+    --measure-max: 1240px;
+    --tile-gap: 12px;
+    /* resolves against .blend (a size container): six tiles and five gaps fill row F, capped at 76px */
+    --tile-w: clamp(40px, calc((100cqi - 5 * var(--tile-gap)) / 6), 76px);
+    --tile-h: calc(var(--tile-w) * 4 / 3);
+    --foot: 78%;
+    --tile-radius: 3px;
+    --button-radius: 2px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--porcelain);
+    color: var(--tenmoku);
+    font-family: var(--font);
+    font-size: var(--fs-body);
+    line-height: 1.5;
+  }
+  a { color: inherit; }
+  :focus-visible { outline: 3px solid var(--tenmoku); outline-offset: 3px; }
+  .skip { position: absolute; left: var(--s-4); top: -4rem; padding: var(--s-2) var(--s-4); background: var(--tenmoku); color: var(--porcelain); }
+  .skip:focus { top: var(--s-4); }
+
+  .hero {
+    max-width: calc(var(--measure-max) + 2 * var(--gutter));
+    margin: 0 auto;
+    padding: var(--s-5) var(--gutter) var(--s-8);
+  }
+
+  /* header */
+  .masthead nav {
+    display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-5);
+  }
+  .masthead { padding-bottom: var(--s-8); }
+  .wordmark { font-weight: 800; font-size: var(--fs-wordmark); text-decoration: none; letter-spacing: -0.01em; }
+  .masthead ul { display: flex; gap: var(--s-5); margin: 0; padding: 0; list-style: none; }
+  .masthead li a { font-size: var(--fs-small); font-weight: 500; text-decoration: none; padding: var(--s-2) 0; }
+  .masthead li a:hover { text-decoration: underline; text-underline-offset: 0.2em; }
+
+  /* layout: three columns share one top line (cap height of h1, apex label and h2) */
+  .stage {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: var(--gutter);
+    row-gap: var(--s-7);
+    align-items: start;
+  }
+  .copy { grid-column: 1 / 5; }
+  .blend { grid-column: 5 / 10; margin: 0; container-type: inline-size; }
+  .readout { grid-column: 10 / 13; }
+  h1, .corner.is-apex, .readout h2 { text-box: trim-start cap alphabetic; }
+
+  /* copy */
+  h1 {
+    font-size: var(--fs-display); font-weight: 800; line-height: 1.02; letter-spacing: -0.012em;
+    max-width: 12ch; margin: 0 0 var(--s-5); text-wrap: balance;
+  }
+  .lede { font-size: var(--fs-lede); line-height: 1.45; max-width: 34rem; margin: 0 0 var(--s-6); text-wrap: pretty; }
+  .actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-4) var(--s-5); }
+  .button {
+    display: inline-flex; align-items: center; min-height: 3rem; padding: 0 var(--s-5);
+    font: 500 var(--fs-body)/1 var(--font); font-variant-numeric: lining-nums; text-decoration: none; border-radius: var(--button-radius);
+    background: var(--tenmoku); color: var(--porcelain); border: 2px solid var(--tenmoku); cursor: pointer;
+  }
+  .button.is-quiet { background: transparent; color: var(--tenmoku); }
+  .button:hover { background: var(--oxide); border-color: var(--oxide); color: var(--porcelain); }
+  .textlink { font-weight: 500; text-underline-offset: 0.2em; text-decoration-thickness: 1px; }
+  .textlink:hover { text-decoration-thickness: 2px; }
+
+  /* the triaxial blend */
+  .corner { font-size: var(--fs-caption); line-height: 1.4; color: var(--oxide); margin: 0; font-variant-numeric: lining-nums; }
+  .corner.is-apex { text-align: center; margin-bottom: var(--s-3); }
+  .corners-base { display: flex; justify-content: space-between; gap: var(--s-4); margin-top: var(--s-3); }
+  .tiles { display: grid; gap: var(--tile-gap); }
+  .row { display: flex; justify-content: center; gap: var(--tile-gap); }
+
+  .tile {
+    /* nested oklab mix of the three corner glazes, weights set per tile in --a and --c */
+    --glaze: color-mix(in oklab, color-mix(in oklab, var(--glaze-copper) var(--a), var(--glaze-cobalt)), var(--glaze-rutile) var(--c));
+    --pool: color-mix(in oklab, var(--glaze), var(--tenmoku) 38%);
+    --break: color-mix(in oklab, var(--glaze), var(--body) 45%);
+    --dip-l: 0px; --dip-r: 2px; --flip: 1;
+    position: relative; flex: none; display: block; overflow: hidden;
+    width: var(--tile-w); height: var(--tile-h); border-radius: var(--tile-radius);
+    background: var(--body);
+    text-decoration: none;
+    transition: outline-color 120ms ease-out;
+    outline: 2px solid transparent; outline-offset: 3px;
+  }
+  /* uneven dip lines, so no two neighbouring tiles share an edge */
+  .tile:nth-child(2n) { --flip: -1; }
+  .tile:nth-child(3n) { --dip-l: 3px; --dip-r: 0px; }
+  .row:nth-child(3n+1) .tile { --dip-r: 3px; }
+  .row:nth-child(even) .tile:nth-child(odd) { --dip-l: 2px; }
+  .tile::after { /* the glaze: thins to a break over the edges, pools above the dip line */
+    content: ""; position: absolute; inset: 0 0 calc(100% - var(--foot)); scale: var(--flip) 1;
+    background: linear-gradient(to bottom, var(--glaze) 80%, var(--pool));
+    box-shadow: inset 0 2px 0 var(--break), inset 2px 0 0 var(--break), inset -2px 0 0 var(--break);
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--dip-r)), 72% calc(100% - 1px), 46% 100%, 21% calc(100% - 2px), 0 calc(100% - var(--dip-l)));
+  }
+  .tile::before { /* hanging hole, punched through glaze and clay to the page */
+    content: ""; position: absolute; z-index: 1; top: 9%; left: 50%; width: 12%; aspect-ratio: 1; translate: -50% 0;
+    border-radius: 50%; background: var(--porcelain); box-shadow: 0 0 0 1px var(--pool);
+  }
+  .tile span { /* code written on the foot, like underglaze pencil */
+    position: absolute; inset: var(--foot) 0 0; display: grid; place-items: center;
+    font-size: var(--fs-tile-code); font-weight: 500; line-height: 1; color: var(--tenmoku);
+    font-variant-numeric: lining-nums tabular-nums;
+  }
+  .tile:hover { outline-color: var(--oxide); }
+  .tile.is-featured { box-shadow: 0 0 0 3px var(--porcelain), 0 0 0 5px var(--tenmoku); }
+  .tile:focus-visible { outline: 3px solid var(--tenmoku); outline-offset: 6px; }
+
+  figcaption { font-size: var(--fs-caption); line-height: 1.4; color: var(--oxide); max-width: 24rem; margin-top: var(--s-5); }
+
+  /* picked recipe */
+  .readout h2 { font-size: var(--fs-readout-title); font-weight: 800; line-height: 1.1; margin: 0 0 var(--s-3); }
+  .readout .note { margin: 0 0 var(--s-2); text-wrap: pretty; }
+  .readout .fired { font-size: var(--fs-caption); color: var(--oxide); margin: 0; }
+  table { width: 100%; max-width: 20rem; border-collapse: collapse; margin: var(--s-4) 0 var(--s-5); font-size: var(--fs-small); font-weight: 500; }
+  caption { text-align: left; font-size: var(--fs-caption); font-weight: 400; color: var(--oxide); padding-bottom: var(--s-2); }
+  th, td { padding: var(--s-1) 0; text-align: left; font-weight: inherit; }
+  td { text-align: right; font-variant-numeric: lining-nums tabular-nums; }
+  tbody:first-of-type tr:first-child > * { border-top: 1px solid var(--slip); padding-top: var(--s-3); }
+  .total > * { color: var(--oxide); font-weight: 400; }
+  .adds tr:first-child > * { border-top: 1px solid var(--slip); padding-top: var(--s-3); }
+  .readout form { margin: 0; }
+  .includes { font-size: var(--fs-caption); color: var(--oxide); margin: 0 0 var(--s-2); }
+  .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  /* tablet: narrow copy column with the recipe under it, triangle on the right */
+  @media (max-width: 1199px) {
+    :root { --tile-gap: 10px; }
+    .masthead { padding-bottom: var(--s-7); }
+    .copy { grid-column: 1 / 7; }
+    .blend { grid-column: 7 / -1; grid-row: 1 / span 2; }
+    .readout { grid-column: 1 / 7; }
+  }
+  @media (max-width: 759px) {
+    :root { --gutter: var(--s-4); --tile-gap: 7px; --fs-lede: 1.1875rem; }
+    .masthead { padding-bottom: var(--s-6); }
+    .stage { row-gap: var(--s-6); }
+    .copy, .blend, .readout { grid-column: 1 / -1; grid-row: auto; }
+    .masthead .wide { display: none; }
+    /* the recipe is far below on phones, so browsing keeps the filled style here */
+    .actions .button.is-quiet { background: var(--tenmoku); color: var(--porcelain); }
+  }
+  @media (max-width: 560px) {
+    .masthead ul { gap: var(--s-4); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tile { transition: none; }
+  }
+</style>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <div class="hero" id="top">
+    <header class="masthead">
+      <nav aria-label="Main">
+        <a class="wordmark" href="#top">Witness Cone</a>
+        <ul>
+          <li><a href="recipes">Recipes</a></li>
+          <li class="wide"><a href="test-tiles">Test tiles</a></li>
+          <li class="wide"><a href="firing-notes">Firing notes</a></li>
+          <li><a href="cart">Cart (0)</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <main class="stage" id="main">
+      <div class="copy">
+        <h1>See the glaze fired before you mix a bucket.</h1>
+        <p class="lede">Every recipe here was mixed, dipped and fired at cone 6 oxidation on three clay bodies before we listed it. Order the fired tile with the recipe card and check it against your clay.</p>
+        <div class="actions">
+          <a class="button is-quiet" href="recipes">Browse 140 recipes</a>
+          <a class="textlink" href="firing-notes/how-we-test">Read how we test</a>
+        </div>
+      </div>
+
+      <figure class="blend">
+        <p class="corner is-apex">Copper carbonate 3%</p>
+        <div class="tiles">
+          <div class="row">
+            <a class="tile" href="recipes/blend-14/a1" style="--a:100%;--c:0%" data-note="Glossy grass green, near black where it pools." aria-label="A1 recipe: copper carbonate 3%"><span>A1</span></a>
+          </div>
+          <div class="row">
+            <a class="tile" href="recipes/blend-14/b1" style="--a:80%;--c:0%" data-note="Deep sea green, blue-black in the pools." aria-label="B1 recipe: copper carbonate 2.4%, cobalt carbonate 0.2%"><span>B1</span></a>
+            <a class="tile" href="recipes/blend-14/b2" style="--a:100%;--c:20%" data-note="Moss green with fine rutile streaks where it runs." aria-label="B2 recipe: copper carbonate 2.4%, rutile 1.2%"><span>B2</span></a>
+          </div>
+          <div class="row">
+            <a class="tile" href="recipes/blend-14/c1" style="--a:60%;--c:0%" data-note="Glossy peacock teal, dark where it gathers." aria-label="C1 recipe: copper carbonate 1.8%, cobalt carbonate 0.4%"><span>C1</span></a>
+            <a class="tile" href="recipes/blend-14/c2" style="--a:75%;--c:20%" data-note="Teal green that breaks amber over edges." aria-label="C2 recipe: copper carbonate 1.8%, cobalt carbonate 0.2%, rutile 1.2%"><span>C2</span></a>
+            <a class="tile" href="recipes/blend-14/c3" style="--a:100%;--c:40%" data-note="Olive green, streaked gold where it runs thin." aria-label="C3 recipe: copper carbonate 1.8%, rutile 2.4%"><span>C3</span></a>
+          </div>
+          <div class="row">
+            <a class="tile" href="recipes/blend-14/d1" style="--a:40%;--c:0%" data-note="Deep blue teal, glassy and dark in the pools." aria-label="D1 recipe: copper carbonate 1.2%, cobalt carbonate 0.6%"><span>D1</span></a>
+            <a class="tile is-featured" href="recipes/blend-14/d2" style="--a:50%;--c:20%" data-note="Glossy slate teal, breaks brown where it runs thin over texture." aria-label="D2 recipe: copper carbonate 1.2%, cobalt carbonate 0.4%, rutile 1.2%" aria-current="true"><span>D2</span></a>
+            <a class="tile" href="recipes/blend-14/d3" style="--a:67%;--c:40%" data-note="Sage teal with honey streaks over edges." aria-label="D3 recipe: copper carbonate 1.2%, cobalt carbonate 0.2%, rutile 2.4%"><span>D3</span></a>
+            <a class="tile" href="recipes/blend-14/d4" style="--a:100%;--c:60%" data-note="Khaki gold, mottled green where it pools." aria-label="D4 recipe: copper carbonate 1.2%, rutile 3.6%"><span>D4</span></a>
+          </div>
+          <div class="row">
+            <a class="tile" href="recipes/blend-14/e1" style="--a:20%;--c:0%" data-note="Strong blue with a green cast where it pools." aria-label="E1 recipe: copper carbonate 0.6%, cobalt carbonate 0.8%"><span>E1</span></a>
+            <a class="tile" href="recipes/blend-14/e2" style="--a:25%;--c:20%" data-note="Denim blue, mottled with fine rutile speckle." aria-label="E2 recipe: copper carbonate 0.6%, cobalt carbonate 0.6%, rutile 1.2%"><span>E2</span></a>
+            <a class="tile" href="recipes/blend-14/e3" style="--a:33%;--c:40%" data-note="Muddy blue grey, brown variegation over texture." aria-label="E3 recipe: copper carbonate 0.6%, cobalt carbonate 0.4%, rutile 2.4%"><span>E3</span></a>
+            <a class="tile" href="recipes/blend-14/e4" style="--a:50%;--c:60%" data-note="Grey olive that runs to honey on the edges." aria-label="E4 recipe: copper carbonate 0.6%, cobalt carbonate 0.2%, rutile 3.6%"><span>E4</span></a>
+            <a class="tile" href="recipes/blend-14/e5" style="--a:100%;--c:80%" data-note="Honey amber with a faint green pool." aria-label="E5 recipe: copper carbonate 0.6%, rutile 4.8%"><span>E5</span></a>
+          </div>
+          <div class="row">
+            <a class="tile" href="recipes/blend-14/f1" style="--a:0%;--c:0%" data-note="Deep glossy cobalt, almost black where thick." aria-label="F1 recipe: cobalt carbonate 1%"><span>F1</span></a>
+            <a class="tile" href="recipes/blend-14/f2" style="--a:0%;--c:20%" data-note="Royal blue, breaking paler over edges." aria-label="F2 recipe: cobalt carbonate 0.8%, rutile 1.2%"><span>F2</span></a>
+            <a class="tile" href="recipes/blend-14/f3" style="--a:0%;--c:40%" data-note="Rutile blue: blue grey with brown streaks where thin." aria-label="F3 recipe: cobalt carbonate 0.6%, rutile 2.4%"><span>F3</span></a>
+            <a class="tile" href="recipes/blend-14/f4" style="--a:0%;--c:60%" data-note="Greyed brown, flecked blue where it pools." aria-label="F4 recipe: cobalt carbonate 0.4%, rutile 3.6%"><span>F4</span></a>
+            <a class="tile" href="recipes/blend-14/f5" style="--a:0%;--c:80%" data-note="Tan amber with a blue-grey haze in the pools." aria-label="F5 recipe: cobalt carbonate 0.2%, rutile 4.8%"><span>F5</span></a>
+            <a class="tile" href="recipes/blend-14/f6" style="--a:50%;--c:100%" data-note="Honey cream, streaky and broken over edges." aria-label="F6 recipe: rutile 6%"><span>F6</span></a>
+          </div>
+        </div>
+        <div class="corners-base">
+          <p class="corner">Cobalt carbonate 1%</p>
+          <p class="corner">Rutile 6%</p>
+        </div>
+        <figcaption>Triaxial blend 14 on the 20×5 base, cone 6 oxidation, B-Mix 5 stoneware. Pick a tile to see its recipe.</figcaption>
+      </figure>
+
+      <section class="readout" aria-labelledby="picked-title" aria-live="polite">
+        <h2 id="picked-title">Tile D2</h2>
+        <p class="note">Glossy slate teal, breaks brown where it runs thin over texture.</p>
+        <p class="fired">Fired 3 October 2026 in kiln 2</p>
+        <table>
+          <caption class="visually-hidden">Recipe for tile D2, parts by weight</caption>
+          <tbody>
+            <tr><th scope="row">Silica</th><td>20</td></tr>
+            <tr><th scope="row">Custer feldspar</th><td>20</td></tr>
+            <tr><th scope="row">Wollastonite</th><td>20</td></tr>
+            <tr><th scope="row">Ferro frit 3134</th><td>20</td></tr>
+            <tr><th scope="row">EPK</th><td>20</td></tr>
+            <tr class="total"><th scope="row">Total</th><td>100</td></tr>
+          </tbody>
+          <tbody class="adds">
+            <tr><th scope="row">+ Copper carbonate</th><td>1.2</td></tr>
+            <tr><th scope="row">+ Cobalt carbonate</th><td>0.4</td></tr>
+            <tr><th scope="row">+ Rutile</th><td>1.2</td></tr>
+          </tbody>
+        </table>
+        <p class="includes">Fired tile and recipe card</p>
+        <form action="cart" method="post">
+          <input type="hidden" name="tile" value="blend-14-d2">
+          <button class="button" type="submit">Add tile D2 to cart, $6</button>
+        </form>
+      </section>
+    </main>
+  </div>
+<script>
+  // Without this script each tile is a plain link to its recipe page.
+  const readout = document.querySelector('.readout');
+  const num = v => String(+v.toFixed(1));
+  document.querySelector('.tiles').addEventListener('click', e => {
+    const tile = e.target.closest('.tile');
+    if (!tile) return;
+    e.preventDefault();
+    const code = tile.textContent.trim(), r = code.charCodeAt(0) - 65, k = +code[1] - 1;
+    const adds = [['Copper carbonate', 3 * (5 - r) / 5], ['Cobalt carbonate', (r - k) / 5], ['Rutile', 6 * k / 5]];
+    readout.querySelector('.adds').innerHTML = adds.filter(([, v]) => v > 0)
+      .map(([name, v]) => `<tr><th scope="row">+ ${name}</th><td>${num(v)}</td></tr>`).join('');
+    readout.querySelector('h2').textContent = `Tile ${code}`;
+    readout.querySelector('.note').textContent = tile.dataset.note;
+    readout.querySelector('caption').textContent = `Recipe for tile ${code}, parts by weight`;
+    readout.querySelector('[name=tile]').value = `blend-14-${code.toLowerCase()}`;
+    readout.querySelector('button').textContent = `Add tile ${code} to cart, $6`;
+    const old = document.querySelector('.tile.is-featured');
+    old.classList.remove('is-featured'); old.removeAttribute('aria-current');
+    tile.classList.add('is-featured'); tile.setAttribute('aria-current', 'true');
+  });
+</script>
+</body>
+</html>
