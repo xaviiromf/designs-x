@@ -11,7 +11,7 @@ js: Reads the form, recalculates the itemised quote, and redraws an inline SVG o
 tags: [pricing, quote-builder, configurator, interactive, svg, print, letterpress, stationery, itemised, form]
 use_when:
   - The price is built from a few physical choices (material, thickness, finish, colour count) and the buyer cannot see what they are paying for in a flat mock-up.
-  - Craft or manufacturing businesses that quote per job: letterpress, foil, bookbinding, screen print, laser cutting, signage, packaging, bespoke paper goods.
+  - Craft or manufacturing businesses that quote per job, such as letterpress, foil, bookbinding, screen print, laser cutting, signage, packaging, bespoke paper goods.
   - You want an itemised quote, so people can see what each choice costs, rather than a headline price.
 avoid_when:
   - Fixed plans or subscription tiers with no configuration. Use a plan table.

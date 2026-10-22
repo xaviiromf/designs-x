@@ -10,7 +10,7 @@ fonts:
 js: Binds the Width and Weight range inputs to the tester's font-stretch and font-weight, writes the values into <output> readouts and the slider fill, and shows a confirmation line when the newsletter form is submitted (cleared again when the field is edited).
 tags: [footer, type-foundry, variable-font, type-tester, interactive, spot-colour, print, specimen, newsletter, dark, blue]
 use_when:
-  - The product is typography or has a variable font (or a similar live parameter) that visitors can try in place: foundries, font marketplaces, type-design studios, variable-font launches.
+  - The product is typography or has a variable font (or a similar live parameter) that visitors can try in place, such as foundries, font marketplaces, type-design studios, variable-font launches.
   - You want the footer to sell the newest product one last time instead of showing a giant wordmark.
   - The brand can carry one strong, saturated colour as its whole palette.
   - There are about four link groups plus a newsletter.

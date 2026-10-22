@@ -5,7 +5,7 @@ subject: Wenning Vale Ornithological Society (fictional) asking members and loca
 aesthetic: A marked-up survey map. Cool survey paper, OS-style grid blue, organiser's highlighter yellow and blue-black ink, lettered in one humanist sans with a condensed width for map labels.
 mode: light
 fonts:
-  - Cabin (Google Fonts, variable: ital, wdth 75-100, wght 400-700)
+  - Cabin (Google Fonts, variable with ital, wdth 75-100, wght 400-700)
 js: Progressive enhancement. Choosing a tetrad fills the detail panel under the map and renames the button "Take tetrad K"; submit swaps the form for a "Tetrad K is yours" confirmation. Without JS the radios and form submit normally.
 tags: [cta, sign-up, volunteer, map, grid, radio-group, survey, nature, form]
 use_when:
