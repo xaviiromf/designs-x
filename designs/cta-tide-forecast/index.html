@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Water at the slip</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* colour: ECDIS night palette. Each colour encodes one thing on the plot. */
+  --night-water: #0F2130; /* ground, night hours, button text */
+  --daylight: #21323C;    /* daylight bands: buff at about 9% over night-water, light rather than water */
+  --drying: #2E4A3A;      /* chart datum up to your depth: too shallow for you */
+  --buff: #DCD9B0;        /* primary ink, tide curve, your depth line, rough-sea outline, focus */
+  --sea-grey: #9FB3C2;    /* secondary text, axis labels, grid */
+  --magenta: #E27BD0;     /* go: sailable windows and the trial button only */
+  --o-drying: 0.35;       /* drying band, so day and night read through it */
+  --o-window: 0.45;       /* sailable windows other than the one the headline names */
+  --o-grid: 0.4;          /* the 2 m gridline */
+
+  /* type: one family. Sloping = water, upright = land and interface (chart lettering) */
+  --font: "Spectral", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --step--1: 0.875rem;
+  --step-0: 1.125rem;
+  --step-1: 1.5rem;
+  --step-3: clamp(2.25rem, 1.2rem + 4vw, 3.75rem);
+  --plot-label: 15px;
+  --lead-head: 1.08;
+  --lead-ui: 1.3;
+  --lead-body: 1.55;
+  --measure: 60ch;
+  --measure-head: 22ch;
+
+  /* spacing: about 1.618 steps */
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 20px; --s5: 32px; --s6: 52px; --s7: 84px;
+  --gutter: clamp(16px, 5vw, 64px);
+  --max: 1200px;
+  --hang: 0px;          /* y-axis labels hang into the gutter when there is room */
+  --plot-h: 280px;
+
+  /* controls */
+  --tap: 44px;          /* slider hit height */
+  --track: 2px;
+  --thumb: 22px;
+  --btn-h: 52px;
+  --readout-w: 2.6em;   /* "2.4 m" never shifts the slider */
+  --focus-w: 2px;
+  --focus-off: 3px;
+  --radius: 6px;        /* the button only */
+}
+/* two breakpoints: 600 (plot height, padding, ask row) and 900 (headline and control share a row, labels hang) */
+@media (min-width: 600px) { :root { --plot-h: 320px; } }
+@media (min-width: 900px) { :root { --hang: 40px; } }
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--night-water);
+  color: var(--buff);
+  font-family: var(--font);
+  font-size: var(--step-0);
+  line-height: var(--lead-body);
+}
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+.cta {
+  max-width: calc(var(--max) + 2 * var(--gutter));
+  margin: 0 auto;
+  padding: var(--s6) var(--gutter);
+  overflow-x: clip;
+}
+@media (min-width: 600px) { .cta { padding-block: var(--s7); } }
+
+/* water is sloping */
+.answer, .readout, .plot .water { font-style: italic; }
+
+.top { display: grid; gap: var(--s5); }
+@media (min-width: 900px) {
+  .top { grid-template-columns: 7fr 4fr; column-gap: calc(100% / 12); align-items: end; }
+}
+
+.answer {
+  margin: 0;
+  max-width: var(--measure-head);
+  font-size: var(--step-3);
+  font-weight: 400;
+  line-height: var(--lead-head);
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums lining-nums;
+  text-wrap: balance;
+}
+
+.control label { display: block; margin-bottom: var(--s2); font-size: var(--step-0); line-height: var(--lead-ui); }
+.control-row { display: flex; align-items: center; gap: var(--s4); }
+.readout {
+  font-size: var(--step-1);
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  min-width: var(--readout-w);
+  text-align: right;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+.hint { margin: var(--s2) 0 0; font-size: var(--step-0); line-height: var(--lead-ui); }
+.hint[hidden] { display: none; }
+
+input[type="range"] {
+  -webkit-appearance: none; appearance: none;
+  width: 100%; height: var(--tap); margin: 0;
+  background: transparent; cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track { height: var(--track); background: var(--sea-grey); }
+input[type="range"]::-moz-range-track { height: var(--track); background: var(--sea-grey); }
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: var(--thumb); height: var(--thumb); margin-top: calc((var(--track) - var(--thumb)) / 2);
+  border-radius: 50%; background: var(--buff); border: 0;
+}
+input[type="range"]::-moz-range-thumb { width: var(--thumb); height: var(--thumb); border-radius: 50%; background: var(--buff); border: 0; }
+
+/* phones: the plot bleeds to the screen edges so 72 hours get every pixel */
+.plot { margin: var(--s5) calc(-1 * var(--gutter)) 0; }
+@media (min-width: 600px) { .plot { margin-inline: calc(-1 * var(--hang)) 0; } }
+.plot svg { display: block; width: 100%; overflow: visible; }
+.plot text { font-family: var(--font); fill: var(--sea-grey); font-size: var(--step--1); font-variant-numeric: tabular-nums lining-nums; }
+.plot .water { font-size: var(--plot-label); }
+.plot .day, .plot .swell, .plot .tick { font-size: var(--step--1); }
+.plot .depth, .plot .rough { fill: var(--buff); }
+.plot noscript p { margin: 0; padding-inline: var(--gutter); max-width: var(--measure); color: var(--sea-grey); }
+@media (min-width: 600px) { .plot noscript p { padding-inline: var(--hang) 0; } }
+
+.ask {
+  display: grid; gap: var(--s4);
+  margin-top: var(--s5);
+}
+.ask p { margin: 0; max-width: var(--measure); }
+.ask .terms { color: var(--sea-grey); margin-top: var(--s4); }
+@media (min-width: 600px) {
+  .ask { grid-template-columns: 1fr auto; align-items: end; column-gap: var(--s6); margin-top: var(--s6); }
+}
+
+.trial {
+  display: flex; align-items: center; justify-content: center;
+  min-height: var(--btn-h); padding: var(--s3) var(--s5);
+  background: var(--magenta); color: var(--night-water);
+  border-radius: var(--radius);
+  font-size: var(--step-0); font-weight: 600; line-height: 1.2;
+  text-decoration: none;
+}
+.trial:hover { background: var(--buff); }
+@media (min-width: 600px) { .trial { display: inline-flex; } }
+
+input[type="range"]:focus-visible, .trial:focus-visible {
+  outline: var(--focus-w) solid var(--buff); outline-offset: var(--focus-off);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+<main>
+  <section class="cta" aria-labelledby="answer">
+    <div class="top">
+      <h2 class="answer" id="answer"><span id="answer-text">There’s water at Gull&nbsp;Point&nbsp;slip on Saturday from 08:45 to 14:35.</span></h2>
+      <div class="control">
+        <label for="depth">Depth your boat needs at the slip</label>
+        <div class="control-row">
+          <input id="depth" type="range" min="0.4" max="2.4" step="0.1" value="1.2" aria-valuetext="1.2 metres">
+          <span class="readout" id="readout" aria-hidden="true">1.2&nbsp;m</span>
+        </div>
+        <p class="hint" id="hint" hidden>Lower the depth, or check next weekend.</p>
+        <p class="sr-only" id="said" role="status"></p>
+      </div>
+    </div>
+
+    <figure class="plot" id="plot">
+      <svg id="tide" role="img" aria-label="Predicted tide at Gull&nbsp;Point&nbsp;slip, Friday to Sunday, in metres above chart datum. Daylight windows of 90 minutes or more with at least 1.2&nbsp;m of water and swell under 1&nbsp;m are shaded: Saturday 08:45 to 14:35, Sunday 09:20 to 15:20. Outlined, with the water but too much swell: Friday 08:10 to 13:55." hidden></svg>
+      <noscript><p>Predicted tide at Gull&nbsp;Point&nbsp;slip, Friday to Sunday, in metres above chart datum. Daylight windows of 90 minutes or more with at least 1.2&nbsp;m of water and swell under 1&nbsp;m are shaded: Saturday 08:45 to 14:35, Sunday 09:20 to 15:20. Outlined, with the water but too much swell: Friday 08:10 to 13:55.</p></noscript>
+    </figure>
+
+    <div class="ask">
+      <div>
+        <p>Neap reads the tide, swell and daylight for your slipway and shows only the hours you can launch and get back.</p>
+        <p class="terms">Free for 14 days, then $5 a month. No card to start.</p>
+      </div>
+      <a class="trial" href="#">Start 14-day free trial</a>
+    </div>
+  </section>
+</main>
+<script>
+// --- model: Gull Point is fictional. M2 + S2 (springs at Saturday 11:30) plus M4 and K1 for a real-looking curve.
+const SITE = "Gull Point slip";                  // non-breaking: the place name never splits across lines
+const DAYS = ["Friday", "Saturday", "Sunday"];
+const SUN = [[418, 1101], [420, 1098], [422, 1096]];   // sunrise, sunset (minutes after local midnight)
+const SWELL = [[1.3, "west"], [0.6, "south-west"], [0.4, "south-west"]]; // forecast swell per day: metres, from
+const MAX_SWELL = 1;                                     // above this a dinghy cannot be recovered safely on the slip
+const MIN_WINDOW = 90;                                   // shorter is not enough to launch, sail and recover
+const Z0 = 1.15, HW = 2130;                              // mean level above chart datum (m); Saturday 11:30
+// [amplitude m, period min, phase lag min]. M4 skews the curve (quick flood, slow ebb), K1 makes alternate highs unequal.
+const CONSTITUENTS = [[0.95, 745.236, 0], [0.25, 720, 0], [0.12, 372.618, 70], [0.14, 1436.07, 240]];
+const height = t => CONSTITUENTS.reduce((h, [a, period, lag]) => h + a * Math.cos(2 * Math.PI * (t - HW - lag) / period), Z0);
+
+// Daylight runs with at least d metres, rounded inward to 5 minutes so the window is never optimistic.
+// A run on a day whose swell is over MAX_SWELL is kept but marked rough: the water is there, the sea is not kind.
+function windows(d) {
+  const out = [];
+  SUN.forEach(([rise, set], day) => {
+    let start = null;
+    for (let m = rise; m <= set + 1; m++) {
+      const wet = m <= set && height(day * 1440 + m) >= d;
+      if (wet && start === null) start = m;
+      if (!wet && start !== null) {
+        const a = Math.ceil(start / 5) * 5, b = Math.floor((m - 1) / 5) * 5;
+        if (b - a >= MIN_WINDOW) out.push({ day, start: a, end: b, rough: SWELL[day][0] > MAX_SWELL });
+        start = null;
+      }
+    }
+  });
+  return out;
+}
+const clock = m => String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0");
+const metres = d => d.toFixed(1) + " m";
+const next = ws => ws.find(w => !w.rough);               // the headline names the next window you can actually use
+const span = w => `${DAYS[w.day]} ${clock(w.start)} to ${clock(w.end)}`;
+function headline(d) {
+  const w = next(windows(d));
+  if (!w) return `No daylight window with ${metres(d)} at ${SITE} this weekend.`;
+  return `There’s water at ${SITE} on ${DAYS[w.day]} from ${clock(w.start)} to ${clock(w.end)}.`;
+}
+function describe(d) {
+  const ws = windows(d), go = ws.filter(w => !w.rough), rough = ws.filter(w => w.rough);
+  const terms = `${MIN_WINDOW} minutes or more with at least ${metres(d)} of water and swell under ${MAX_SWELL} m`;
+  return `Predicted tide at ${SITE}, Friday to Sunday, in metres above chart datum. `
+    + (go.length ? `Daylight windows of ${terms} are shaded: ${go.map(span).join(", ")}.` : `No daylight window of ${terms}.`)
+    + (rough.length ? ` Outlined, with the water but too much swell: ${rough.map(span).join(", ")}.` : "");
+}
+// --- end model
+
+if (typeof document !== "undefined") {
+  const NS = "http://www.w3.org/2000/svg";
+  const Y_MIN = -0.3, Y_MAX = 3;
+  const input = document.getElementById("depth");
+  const answer = document.getElementById("answer-text");
+  const readout = document.getElementById("readout");
+  const hint = document.getElementById("hint");
+  const said = document.getElementById("said");
+  const fig = document.getElementById("plot");
+  const svg = document.getElementById("tide");
+  const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+  // self-check: copy in the HTML must be what the model says, and the finder must behave.
+  const DEFAULT = 1.2;
+  const noscript = fig.querySelector("noscript").textContent.replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim();
+  console.assert(answer.textContent === headline(DEFAULT), "static headline differs from model:", headline(DEFAULT));
+  console.assert(svg.getAttribute("aria-label") === describe(DEFAULT), "static aria-label differs from model:", describe(DEFAULT));
+  console.assert(noscript === describe(DEFAULT), "noscript differs from model");
+  console.assert(windows(-1).length === 3 && windows(-1).every((w, i) => w.start === Math.ceil(SUN[i][0] / 5) * 5 && w.end === Math.floor(SUN[i][1] / 5) * 5), "all-day windows wrong");
+  console.assert(windows(9).length === 0 && windows(Number(input.max)).length === 0, "the top of the slider must reach the empty state");
+  console.assert(windows(DEFAULT).every(w => height(w.day * 1440 + w.start) >= DEFAULT && height(w.day * 1440 + w.end) >= DEFAULT), "window edge is too shallow");
+  console.assert(windows(DEFAULT).filter(w => w.rough).map(w => w.day).join() === "0", "only Friday should be too rough");
+  console.assert(SUN.every(([r, s], i) => { for (let m = r; m <= s; m++) if (height(i * 1440 + m) >= 2.5) return false; return true; }), "daylight water reaches 2.5 m");
+
+  const el = (name, attrs, text) => {
+    const n = document.createElementNS(NS, name);
+    for (const k in attrs) n.setAttribute(k, attrs[k]);
+    if (text) n.textContent = text;
+    return n;
+  };
+
+  // Plot geometry (margins, label rows, stroke widths, dash) is literal on purpose: it is SVG drawing, not brand.
+  function draw(d) {
+    const hang = parseFloat(css("--hang")) || 0;
+    const W = fig.clientWidth, H = parseFloat(css("--plot-h"));
+    const left = Math.max(hang, 40), w = W - left;   // without a gutter to hang into, the labels take a 40px column
+    const x = t => left + (t / 4320) * w;
+    const y = h => ((Y_MAX - h) / (Y_MAX - Y_MIN)) * H;
+    const ws = windows(d), named = next(ws);
+    svg.setAttribute("viewBox", `0 0 ${W} ${H + 72}`);
+    svg.setAttribute("height", H + 72);
+    svg.replaceChildren();
+
+    SUN.forEach(([r, s], i) => svg.append(el("rect", { x: x(i * 1440 + r), y: 0, width: x(i * 1440 + s) - x(i * 1440 + r), height: H, fill: css("--daylight") })));
+    svg.append(el("rect", { x: left, y: y(d), width: w, height: y(0) - y(d), fill: css("--drying"), "fill-opacity": css("--o-drying") }));
+
+    for (const win of ws) {
+      const t = m => win.day * 1440 + m;
+      let p = `M${x(t(win.start))},${y(d)}`;
+      for (let m = win.start; m <= win.end; m += 5) p += `L${x(t(m)).toFixed(1)},${y(height(t(m))).toFixed(1)}`;
+      p += `L${x(t(win.end))},${y(d)}Z`;
+      svg.append(win.rough
+        ? el("path", { d: p, fill: "none", stroke: css("--buff"), "stroke-width": 1.5, "stroke-linejoin": "round" })
+        : el("path", { d: p, fill: css("--magenta"), "fill-opacity": win === named ? 1 : css("--o-window") }));
+    }
+
+    svg.append(el("line", { x1: left, x2: W, y1: y(2), y2: y(2), stroke: css("--sea-grey"), "stroke-opacity": css("--o-grid"), "stroke-width": 1 }));
+    svg.append(el("line", { x1: left, x2: W, y1: y(0), y2: y(0), stroke: css("--sea-grey"), "stroke-width": 1 }));
+
+    let curve = "";
+    for (let t = 0; t <= 4320; t += 10) curve += (t ? "L" : "M") + x(t).toFixed(1) + "," + y(height(t)).toFixed(1);
+    svg.append(el("path", { d: curve, fill: "none", stroke: css("--buff"), "stroke-width": 2, "stroke-linejoin": "round" }));
+    svg.append(el("line", { x1: left, x2: W, y1: y(d), y2: y(d), stroke: css("--buff"), "stroke-width": 1.5, "stroke-dasharray": "6 4" }));
+
+    // y labels: your depth wins over a fixed label it would collide with
+    [[2, "2 m"], [0, "CD"]].forEach(([h, label]) => {
+      if (Math.abs(y(h) - y(d)) >= 16) svg.append(el("text", { class: "water", x: left - 6, y: y(h) + 5, "text-anchor": "end" }, label));
+    });
+    svg.append(el("text", { class: "water depth", x: left - 6, y: y(d) + 5, "text-anchor": "end" }, metres(d)));
+
+    // the window the headline names: its edges carry the headline's two times
+    if (named) [[named.start, "end"], [named.end, "start"]].forEach(([m, anchor], i) => {
+      const X = x(named.day * 1440 + m);
+      svg.append(el("line", { x1: X, x2: X, y1: y(0), y2: H + 6, stroke: css("--magenta"), "stroke-width": 1 }));
+      svg.append(el("text", { class: "water tick", x: X + (i ? 4 : -4), y: H + 20, "text-anchor": anchor }, clock(m)));
+    });
+
+    DAYS.forEach((name, i) => {
+      const [h, from] = SWELL[i], rough = h > MAX_SWELL;
+      const swell = w < 750 ? `Swell ${metres(h)}` : `Swell ${metres(h)} from the ${from}${rough ? ", too rough" : ""}`;
+      svg.append(el("text", { class: "day", x: x(i * 1440), y: H + 42 }, w < 500 ? name.slice(0, 3) : name));
+      svg.append(el("text", { class: "water swell" + (rough ? " rough" : ""), x: x(i * 1440), y: H + 62 }, swell));
+    });
+  }
+
+  function render(d) {
+    readout.textContent = metres(d);
+    input.setAttribute("aria-valuetext", d.toFixed(1) + " metres");
+    answer.textContent = headline(d);
+    svg.setAttribute("aria-label", describe(d));
+    hint.hidden = Boolean(next(windows(d)));
+    draw(d);
+  }
+
+  let quiet;
+  function update() {
+    const d = Number(input.value);
+    render(d);
+    // speak the answer once the slider rests, not on every 0.1 m step
+    clearTimeout(quiet);
+    quiet = setTimeout(() => { said.textContent = headline(d) + (hint.hidden ? "" : " " + hint.textContent); }, 600);
+  }
+
+  svg.hidden = false;
+  input.addEventListener("input", update);
+  new ResizeObserver(() => draw(Number(input.value))).observe(fig);
+  render(Number(input.value));   // the browser may restore a slider value other than the default on reload
+}
+</script>
+</body>
+</html>
