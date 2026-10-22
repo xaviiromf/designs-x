@@ -1,6 +1,6 @@
 ---
 name: designs-x
-description: Curated, original front-end section designs (hero, features, pricing, testimonials, process, cta, footer, portfolio, crud) as self-contained HTML/CSS with design notes. Use when building or restyling a landing page, marketing section, portfolio page or CRUD records screen and you want a distinctive, non-templated starting point to adapt to the project's brand and stack.
+description: Curated, original front-end section designs (hero, features, pricing, testimonials, process, cta, footer, portfolio, crud, nav, story, gallery, faq, contact, team) as self-contained HTML/CSS with design notes. Use when building or restyling a landing page, marketing section, portfolio page or CRUD records screen and you want a distinctive, non-templated starting point to adapt to the project's brand and stack.
 ---
 
 # Using designs-x

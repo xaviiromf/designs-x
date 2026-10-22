@@ -1,6 +1,6 @@
 # Principles
 
-designs-x is a collection of front-end **sections** (hero, features, pricing, testimonials, process, call to action, footer, portfolio, CRUD) built to be read and reused by AI agents. Every design is original, self-contained HTML and CSS, and ships with a note that explains why it works.
+designs-x is a collection of front-end **sections** (hero, features, pricing, testimonials, process, call to action, footer, portfolio, CRUD, navigation, scroll story, gallery, FAQ, contact, team) built to be read and reused by AI agents. Every design is original, self-contained HTML and CSS, and ships with a note that explains why it works.
 
 This document is the taste behind the collection. Read it before using a design, and before making a new one.
 
@@ -28,7 +28,12 @@ Each design has one memorable element: a type treatment, a drawn diagram, an int
 Borders, rules, numbers, labels and dividers must encode something true about the content. Numbered markers only when the content is a real sequence. No eyebrow label above a heading unless it tells the reader something they need.
 
 ### Motion answers people
-Motion that responds to a person's action is welcome when it shows what changed. Ambient motion is used once per design at most, to draw attention to the one thing that matters. Every animation respects `prefers-reduced-motion`.
+Motion that responds to a person's action is welcome when it shows what changed. Every animation respects `prefers-reduced-motion`.
+
+The collection has two tiers, declared in `design.md`:
+
+- **Simple** designs use HTML and CSS, with plain JavaScript only where an interaction needs it. Ambient motion is used once at most, to draw attention to the one thing that matters.
+- **Detailed** designs use GSAP and Lenis (pinned versions, listed in `libraries`) and are choreographed end to end: page-load sequence, scroll-driven moments, and a considered response on every interactive item (buttons, links, menus, cards, form controls, cursor). The techniques and recipes live in `research/motion-techniques.md`. Choreography still has one signature moment; everything else supports it. Detailed designs must also: show final states under reduced motion with native scroll; give every hover effect a touch and keyboard equivalent; never hide the native cursor or trap the keyboard; animate only transform, opacity, clip-path and filters; stop Lenis while a menu or dialog is open.
 
 ### Words are design
 Copy is specific to the subject and written from the end user's side. Plain verbs, sentence case, no filler, no hype. Buttons say exactly what happens. No lorem ipsum: placeholder copy is real enough to judge the design by.
