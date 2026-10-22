@@ -7,6 +7,7 @@ mode: light              # light | dark
 fonts:
   - Family name (source, e.g. Google Fonts)
 js: none                 # none, or one sentence saying what the script does
+libraries: []            # non-vanilla runtime libraries, e.g. [GSAP 3.13 (ScrollTrigger, SplitText), Lenis 1.3]; empty for plain JS
 tags: [tag, tag, tag]
 use_when:
   - Situations where this design is a strong fit.

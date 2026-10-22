@@ -18,6 +18,7 @@ const designs = defineCollection({
     mode: z.enum(['light', 'dark']),
     fonts: z.array(z.string()),
     js: z.string(),
+    libraries: z.array(z.string()).default([]),
     tags: z.array(z.string()),
     use_when: z.array(z.string()),
     avoid_when: z.array(z.string()),

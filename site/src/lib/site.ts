@@ -29,6 +29,9 @@ export const readDesignFile = (d: Design, name: string) => {
 };
 export const hasPreview = (d: Design) => existsSync(designFile(d, 'preview.png'));
 
+/** library: needs GSAP, Lenis or another non-vanilla library; vanilla: plain JS; none: HTML and CSS only. */
+export const runtime = (d: Design) => (d.data.libraries.length ? 'library' : d.data.js.trim() === 'none' ? 'none' : 'vanilla');
+
 export const urls = (d: Design) => ({
   page: abs(`d/${d.id}/`),
   html: abs(`designs/${d.id}/index.html`),

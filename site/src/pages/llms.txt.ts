@@ -1,7 +1,8 @@
 import type { APIRoute } from 'astro';
-import { abs, getDesigns, SECTIONS, SECTION_NAMES, urls } from '../lib/site';
+import { abs, getDesigns, runtime, SECTIONS, SECTION_NAMES, urls } from '../lib/site';
 
 const sentence = (s: string) => s.trim().replace(/\.$/, '') + '.';
+const RUNTIME = { none: () => 'HTML and CSS only.', vanilla: () => 'Uses plain JavaScript.', library: (l: string[]) => `Uses JavaScript with ${l.join(', ')}.` };
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 export const GET: APIRoute = async () => {
@@ -23,7 +24,7 @@ export const GET: APIRoute = async () => {
     out.push('', `## ${SECTION_NAMES[s]}`, '');
     for (const d of items) {
       const u = urls(d);
-      out.push(`- [${d.data.title}](${u.html}): ${sentence(d.data.subject)} ${cap(sentence(d.data.aesthetic))} ${cap(d.data.mode)} mode. Notes: ${u.notes}`);
+      out.push(`- [${d.data.title}](${u.html}): ${sentence(d.data.subject)} ${cap(sentence(d.data.aesthetic))} ${cap(d.data.mode)} mode. ${RUNTIME[runtime(d)](d.data.libraries)} Notes: ${u.notes}`);
     }
   }
   return new Response(out.join('\n') + '\n', { headers: { 'Content-Type': 'text/plain; charset=utf-8' } });

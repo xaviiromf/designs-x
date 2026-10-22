@@ -1,6 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
-import { getDesigns, hasPreview, href, SECTIONS, SECTION_NAMES } from '../lib/site';
+import { getDesigns, hasPreview, href, runtime, SECTIONS, SECTION_NAMES } from '../lib/site';
 
 const designs = await getDesigns();
 const groups = SECTIONS.map((s) => ({ section: s, name: SECTION_NAMES[s], items: designs.filter((d) => d.data.section === s) })).filter((g) => g.items.length);
@@ -25,6 +25,7 @@ const groups = SECTIONS.map((s) => ({ section: s, name: SECTION_NAMES[s], items:
           {groups.map((g) => (
             <a href={`#${g.section}`} data-filter={g.section}>{g.name} <span class="n">{g.items.length}</span></a>
           ))}
+          <p class="legend"><span class="js js-vanilla">uses javascript</span> plain JS <span class="js js-library">uses javascript</span> GSAP, Lenis or other libraries</p>
         </nav>
         {groups.map((g) => (
           <section class="group" id={g.section} data-section={g.section} aria-labelledby={`${g.section}-h`}>
@@ -41,7 +42,10 @@ const groups = SECTIONS.map((s) => ({ section: s, name: SECTION_NAMES[s], items:
                     <span class="title">{d.data.title}</span>
                   </a>
                   <p class="subject">{d.data.subject}</p>
-                  <p class="mode"><span class={`dot ${d.data.mode}`} aria-hidden="true"></span>{d.data.mode === 'dark' ? 'Dark' : 'Light'}</p>
+                  <p class="mode"><span class={`dot ${d.data.mode}`} aria-hidden="true"></span>{d.data.mode === 'dark' ? 'Dark' : 'Light'}
+                    {runtime(d) !== 'none' && <span class={`js js-${runtime(d)}`}>uses javascript</span>}
+                    {runtime(d) === 'library' && <span class="libs">{d.data.libraries.join(', ')}</span>}
+                  </p>
                 </li>
               ))}
             </ul>
@@ -108,5 +112,10 @@ const groups = SECTIONS.map((s) => ({ section: s, name: SECTION_NAMES[s], items:
   .mode { margin: 0.5rem 0 0; font-size: var(--s-0); display: flex; align-items: center; gap: 0.45em; }
   .dot { width: 0.7em; height: 0.7em; border-radius: 50%; border: 1px solid var(--ink); }
   .dot.dark { background: var(--ink); }
+  .mode .js { margin-left: 0.6em; }
+  .libs { color: var(--muted); }
+  .legend { margin: 0 0 0 auto; align-self: center; font-size: var(--s-0); color: var(--muted); display: flex; flex-wrap: wrap; gap: 0.3em 0.5em; align-items: baseline; }
+  .legend .js { color: var(--ink); }
+  .legend .js-library { margin-left: 0.6em; }
   .empty { padding-block: var(--sp-4); border-top: 1px solid var(--rule); color: var(--muted); }
 </style>
