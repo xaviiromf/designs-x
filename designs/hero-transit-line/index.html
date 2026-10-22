@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Line 5 opens 28 November – Calder Metro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* colour: plum carries the line; blue and amber only mark real interchanges */
+  --paper: #F4F6F5;
+  --ink: #1B2A3A;
+  --ink-soft: #4A5866;
+  --line5: #A3238E;
+  --line1: #1F6FB2;
+  --line2: #E0A100;
+  --on-line: #FFFFFF;
+
+  --font: "Overpass", "Highway Gothic", "Atkinson Hyperlegible", system-ui, sans-serif;
+
+  /* type: 14 / 16 / 19 / 24 / headline */
+  --t-xs: 0.875rem;
+  --t-s: 1rem;
+  --t-m: 1.1875rem;
+  --t-l: 1.5rem;
+  --t-xl: clamp(2.5rem, 4.4vw, 3.25rem);
+  --t-name: clamp(var(--t-m), 1.6vw, var(--t-l)); /* station names grow with the strip */
+  --lh-tight: 1.02;
+  --lh-body: 1.5;
+  --lh-name: 1.25;
+  --measure: 34em;
+  --nudge: 0.12em;      /* Overpass numerals sit high in their box */
+
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+  --s-8: 64px;
+  --s-9: 96px;
+
+  --gutter: clamp(var(--s-4), 5vw, var(--s-8));
+  --max: 1280px;
+  --radius: 4px;
+  --focus-w: 3px;
+
+  /* diagram: scales with the viewport so the line outweighs the headline */
+  --bar: clamp(10px, 1.1vw, 16px);
+  --tick: clamp(14px, 1.2vw, 18px);
+  --tick-w: clamp(4px, 0.35vw, 5px);
+  --ring: clamp(22px, 2vw, 28px);
+  --ring-border: 3px;
+  --bullet: clamp(28px, 2.4vw, 36px);
+  --chip: 22px;
+  --chip-gap: 3px;
+  --rot: -45deg;
+  --label-h: calc(var(--t-name) * 9.5); /* room for the longest rotated name */
+  --tail: calc(var(--t-name) * 5.5);     /* room right of the last tick for its rotated name */
+  --min-col: 2rem;      /* phone: minutes column */
+  --row: 44px;          /* phone: minimum stop row height */
+  --draw: 1.4s;
+  --fade: 300ms;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: var(--t-m);
+  line-height: var(--lh-body);
+}
+.vh {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.nowrap { white-space: nowrap; }
+a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 0.2em; }
+a:hover { text-decoration-thickness: var(--focus-w); }
+a:focus-visible {
+  outline: var(--focus-w) solid var(--ink);
+  outline-offset: var(--focus-w);
+  box-shadow: 0 0 0 var(--focus-w) var(--paper); /* paper gap keeps the ring readable on any host background */
+}
+
+.wrap { max-width: calc(var(--max) + 2 * var(--gutter)); margin: 0 auto; padding: 0 var(--gutter); }
+
+/* header */
+.top { padding-block: var(--s-5); font-size: var(--t-s); font-weight: 700; }
+
+/* intro */
+.hero { padding-block: var(--s-7) var(--s-8); }
+h1 {
+  margin: 0;
+  max-width: 13em;
+  font-size: var(--t-xl);
+  font-weight: 800;
+  line-height: var(--lh-tight);
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.lede, .note { max-width: var(--measure); margin: 0; }
+.lede { margin-top: var(--s-5); }
+.note { margin-top: var(--s-3); font-weight: 500; }
+.actions {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-4) var(--s-6);
+  margin-top: var(--s-6);
+}
+.button {
+  display: inline-block;
+  padding: var(--s-3) var(--s-5);
+  border-radius: var(--radius);
+  background: var(--ink);
+  color: var(--on-line);
+  font-weight: 700;
+  text-decoration: none;
+}
+.button:hover { text-decoration: underline; text-decoration-thickness: 2px; }
+.actions a:not(.button) { font-weight: 500; }
+
+/* strip map */
+.map { position: relative; margin: var(--s-8) 0 0; }
+.roundel {
+  position: absolute; left: 0;
+  top: calc(var(--label-h) + var(--ring) / 2 - var(--bullet) / 2);
+  z-index: 1;
+  display: grid; place-items: center;
+  width: var(--bullet); height: var(--bullet);
+  border-radius: 50%;
+  background: var(--line5); color: var(--on-line);
+  font-size: var(--t-s); font-weight: 800; line-height: 1;
+  padding-top: var(--nudge);
+}
+.strip {
+  position: relative;
+  display: grid;
+  /* stops spaced by running time (2 or 3 minutes); each tick sits on a column start, the last column is the end of the line */
+  grid-template-columns: 2fr 2fr 2fr 3fr 2fr 2fr 3fr 2fr 3fr 3fr 0;
+  margin: 0;
+  padding: 0 var(--tail) 0 calc(var(--bullet) + var(--s-6));
+  list-style: none;
+}
+.strip::before {
+  content: "";
+  position: absolute;
+  left: calc(var(--bullet) / 2);
+  right: var(--tail); /* ends on the centre line of the terminus T-bar */
+  top: calc(var(--label-h) + (var(--ring) - var(--bar)) / 2);
+  height: var(--bar);
+  background: var(--line5);
+  transform-origin: 0 50%;
+  animation: draw-x var(--draw) linear both;
+}
+.strip li {
+  position: relative;
+  display: grid;
+  grid-template-rows: var(--label-h) var(--ring) calc(var(--chip) + var(--s-3)) auto;
+  justify-items: start;
+}
+/* each stop appears as the linear bar reaches it: its share of the 24-minute run */
+.strip li > * { animation: appear var(--fade) ease-out both; animation-delay: calc(var(--draw) * var(--m) / 24); }
+
+.stop { grid-row: 2; position: relative; z-index: 1; }
+.stop.tick {
+  align-self: end;
+  width: var(--tick-w);
+  height: calc(var(--bar) + var(--tick));
+  margin: 0 0 calc((var(--ring) - var(--bar)) / 2) calc(var(--tick-w) / -2);
+  background: var(--line5);
+}
+/* terminus: a T-bar crossing the line on both sides */
+[data-terminus] .stop.tick {
+  height: calc(var(--bar) + 2 * var(--tick));
+  margin-bottom: calc((var(--ring) - var(--bar)) / 2 - var(--tick));
+}
+.stop.ring {
+  width: var(--ring); height: var(--ring);
+  margin-left: calc(var(--ring) / -2);
+  border-radius: 50%;
+  background: var(--paper);
+  border: var(--ring-border) solid var(--ink);
+}
+
+.name {
+  position: absolute;
+  left: 0.1em; /* puts the rotated baseline, not the box corner, on the tick */
+  top: calc(var(--label-h) - var(--s-4) - var(--lh-name) * 1em);
+  height: calc(var(--lh-name) * 1em);
+  font-size: var(--t-name);
+  font-weight: 500;
+  line-height: var(--lh-name);
+  white-space: nowrap;
+  transform-origin: 0 100%;
+  transform: rotate(var(--rot));
+}
+[data-terminus] .name { font-weight: 700; }
+
+.xfer {
+  grid-row: 3;
+  display: flex; gap: var(--chip-gap);
+  margin-top: var(--s-2);
+  transform: translateX(calc(var(--chip) / -2)); /* first chip under the ring, the rest run right */
+}
+.chip {
+  display: grid; place-items: center;
+  width: var(--chip); height: var(--chip);
+  border-radius: 50%;
+  font-size: var(--t-xs); font-weight: 800; line-height: 1;
+  padding-top: var(--nudge);
+}
+.chip.l1 { background: var(--line1); color: var(--on-line); }
+.chip.l2 { background: var(--line2); color: var(--ink); }
+
+.min {
+  grid-row: 4;
+  position: relative;
+  transform: translateX(-50%);
+  font-size: var(--t-s);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-soft);
+}
+.unit { position: absolute; left: 100%; white-space: pre; } /* "24 min": the number stays centred on its tick */
+figcaption { font-size: var(--t-xs); color: var(--ink-soft); }
+
+@keyframes draw-x { from { transform: scaleX(0); } }
+@keyframes draw-y { from { transform: scaleY(0); } }
+@keyframes appear { from { opacity: 0; } }
+
+/* wide: headline left, copy right, so the strip rises into the space */
+@media (min-width: 1100px) {
+  .intro {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    column-gap: var(--s-6);
+  }
+  h1 { grid-column: 1 / 8; }
+  .copy { grid-column: 8 / 13; align-self: start; padding-top: 0.35em; }
+  .lede { margin-top: 0; }
+  .map { margin-top: 0; } /* the tall middle labels rise beside the headline, clear of the copy */
+}
+@media (min-width: 760px) {
+  h1 time { white-space: nowrap; } /* the date is one unit */
+  figcaption { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+}
+
+/* phone: the platform-column diagram (breakpoint mirrors 760px above) */
+@media (max-width: 759px) {
+  .hero { padding-top: var(--s-5); }
+  .actions { flex-direction: column; align-items: stretch; gap: var(--s-3); }
+  .button { text-align: center; }
+  .map { display: flex; flex-direction: column; margin-top: var(--s-7); }
+  figcaption { order: -1; margin: 0 0 var(--s-3); }
+  .roundel {
+    position: static;
+    margin-left: calc(var(--min-col) + var(--s-3) + var(--ring) / 2 - var(--bullet) / 2);
+  }
+  .strip { display: block; padding: 0; }
+  .strip::before {
+    left: calc(var(--min-col) + var(--s-3) + var(--ring) / 2 - var(--bar) / 2);
+    right: auto;
+    top: 0;
+    bottom: calc(var(--row) / 2);
+    width: var(--bar);
+    height: auto;
+    transform-origin: 50% 0;
+    animation-name: draw-y;
+  }
+  /* rows are evenly spaced here, so stagger by position, not minutes */
+  .strip li > * { animation-delay: calc(var(--draw) * var(--i) / 10); }
+  .strip li {
+    grid-template-rows: none;
+    grid-template-columns: var(--min-col) var(--ring) auto 1fr;
+    column-gap: var(--s-3);
+    align-items: center;
+    min-height: var(--row);
+  }
+  .min { grid-row: 1; grid-column: 1; justify-self: end; transform: none; }
+  .unit { display: none; }
+  .stop { grid-row: 1; grid-column: 2; }
+  .stop.tick, [data-terminus] .stop.tick {
+    align-self: center;
+    width: calc(var(--bar) / 2 + var(--tick));
+    height: var(--tick-w);
+    margin: 0 0 0 calc(var(--ring) / 2);
+  }
+  [data-terminus] .stop.tick {
+    width: calc(var(--bar) + 2 * var(--tick));
+    margin-left: calc(var(--ring) / 2 - var(--bar) / 2 - var(--tick));
+  }
+  .stop.ring { margin-left: 0; }
+  .name {
+    grid-row: 1; grid-column: 3;
+    position: static; height: auto;
+    padding-left: var(--s-1);
+    font-size: var(--t-m);
+    transform: none;
+    white-space: normal;
+  }
+  .xfer {
+    grid-row: 1; grid-column: 4;
+    margin: 0;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .strip::before, .strip li > * { animation: none; }
+}
+</style>
+</head>
+<body>
+<header class="wrap top">Calder Metro</header>
+
+<main>
+  <section class="wrap hero" aria-labelledby="hero-title">
+    <div class="intro">
+      <h1 id="hero-title">Line 5 opens <time datetime="2026-11-28">Saturday 28 November</time></h1>
+      <div class="copy">
+        <p class="lede">Trains every 6 minutes, 5:30 am to midnight. Every station is step&#8209;free, and St Brigid’s Hospital gets its own&nbsp;stop.</p>
+        <p class="note">Ride free all weekend, <span class="nowrap">28 and 29 November.</span></p>
+        <div class="actions">
+          <a class="button" href="/plan">Plan a trip on Line 5</a>
+          <a href="/timetable">See the opening weekend timetable</a>
+        </div>
+      </div>
+    </div>
+
+    <figure class="map" aria-labelledby="map-caption">
+      <span class="roundel" aria-hidden="true">5</span>
+      <ol class="strip" role="list" aria-label="Line 5 stations, Central Station to Kestrel Hill">
+        <li style="--i:0; --m:0" data-terminus>
+          <span class="stop ring" aria-hidden="true"></span>
+          <span class="name">Central Station</span>
+          <span class="xfer"><span class="vh">, change for Line 1 and Line 2</span><span class="chip l1" aria-hidden="true">1</span><span class="chip l2" aria-hidden="true">2</span></span>
+          <span class="min">0<span class="vh"> minutes from Central</span></span>
+        </li>
+        <li style="--i:1; --m:2">
+          <span class="stop tick" aria-hidden="true"></span>
+          <span class="name">Market Street</span>
+          <span class="min">2<span class="vh"> minutes from Central</span></span>
+        </li>
+        <li style="--i:2; --m:4">
+          <span class="stop tick" aria-hidden="true"></span>
+          <span class="name">Tannery Lane</span>
+          <span class="min">4<span class="vh"> minutes from Central</span></span>
+        </li>
+        <li style="--i:3; --m:6">
+          <span class="stop tick" aria-hidden="true"></span>
+          <span class="name">Foundry Yard</span>
+          <span class="min">6<span class="vh"> minutes from Central</span></span>
+        </li>
+        <li style="--i:4; --m:9">
+          <span class="stop tick" aria-hidden="true"></span>
+          <span class="name">Millrace</span>
+          <span class="min">9<span class="vh"> minutes from Central</span></span>
+        </li>
+        <li style="--i:5; --m:11">
+          <span class="stop tick" aria-hidden="true"></span>
+          <span class="name">Hollis Park</span>
+          <span class="min">11<span class="vh"> minutes from Central</span></span>
+        </li>
+        <li style="--i:6; --m:13">
+          <span class="stop tick" aria-hidden="true"></span>
+          <span class="name">St Brigid’s Hospital</span>
+          <span class="min">13<span class="vh"> minutes from Central</span></span>
+        </li>
+        <li style="--i:7; --m:16">
+          <span class="stop tick" aria-hidden="true"></span>
+          <span class="name">Copperfield</span>
+          <span class="min">16<span class="vh"> minutes from Central</span></span>
+        </li>
+        <li style="--i:8; --m:18">
+          <span class="stop tick" aria-hidden="true"></span>
+          <span class="name">Ashgrove</span>
+          <span class="min">18<span class="vh"> minutes from Central</span></span>
+        </li>
+        <li style="--i:9; --m:21">
+          <span class="stop ring" aria-hidden="true"></span>
+          <span class="name">Northgate College</span>
+          <span class="xfer"><span class="vh">, change for Line 2</span><span class="chip l2" aria-hidden="true">2</span></span>
+          <span class="min">21<span class="vh"> minutes from Central</span></span>
+        </li>
+        <li style="--i:10; --m:24" data-terminus>
+          <span class="stop tick" aria-hidden="true"></span>
+          <span class="name">Kestrel Hill</span>
+          <span class="min">24<span class="unit" aria-hidden="true"> min</span><span class="vh"> minutes from Central</span></span>
+        </li>
+      </ol>
+      <figcaption id="map-caption">Minutes from Central</figcaption>
+    </figure>
+  </section>
+</main>
+</body>
+</html>
