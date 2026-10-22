@@ -1,0 +1,140 @@
+---
+import { render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import { getDesigns, href, readDesignFile, SECTION_NAMES, urls, type Design } from '../../lib/site';
+
+export async function getStaticPaths() {
+  return (await getDesigns()).map((d) => ({ params: { slug: d.id }, props: { d } }));
+}
+const { d } = Astro.props as { d: Design };
+const { data } = d;
+const { Content } = await render(d);
+const source = readDesignFile(d, 'index.html');
+const u = urls(d);
+const raw = href(`designs/${d.id}/index.html`);
+const widths = [
+  { id: 'desktop', label: 'Desktop', note: 'full width' },
+  { id: 'tablet', label: 'Tablet', note: '768 px' },
+  { id: 'phone', label: 'Phone', note: '390 px' },
+];
+---
+<Base title={data.title} description={data.subject}>
+  <header class="head">
+    <p class="crumb"><a href={href()}>Designs</a> / <a href={href(`#${data.section}`)}>{SECTION_NAMES[data.section]}</a></p>
+    <h1>{data.title}</h1>
+    <p class="lede">{data.subject}</p>
+    <ul class="links" role="list">
+      <li><a href={raw}>Raw index.html</a></li>
+      <li><a href={href(`designs/${d.id}/design.md`)}>Raw design.md</a></li>
+      <li><a href={u.github}>Files on GitHub</a></li>
+    </ul>
+  </header>
+
+  <section class="stage" aria-label="Live preview">
+    <fieldset class="widths">
+      <legend class="visually-hidden">Preview width</legend>
+      {widths.map((w, i) => (
+        <label>
+          <input type="radio" name="w" value={w.id} id={`w-${w.id}`} checked={i === 0} />
+          <span>{w.label} <span class="muted">{w.note}</span></span>
+        </label>
+      ))}
+    </fieldset>
+    <div class="frame-wrap">
+      <div class="proof frame">
+        <iframe src={raw} title={`Live preview of ${data.title}`} loading="lazy"></iframe>
+      </div>
+    </div>
+  </section>
+
+  <div class="body">
+    <aside aria-labelledby="meta-h">
+      <h2 id="meta-h">Details</h2>
+      <dl class="meta">
+        <div><dt>Section</dt><dd>{SECTION_NAMES[data.section]}</dd></div>
+        <div><dt>Subject</dt><dd>{data.subject}</dd></div>
+        <div><dt>Aesthetic</dt><dd>{data.aesthetic}</dd></div>
+        <div><dt>Mode</dt><dd>{data.mode === 'dark' ? 'Dark' : 'Light'}</dd></div>
+        <div><dt>Fonts</dt><dd><ul role="list">{data.fonts.map((f) => <li>{f}</li>)}</ul></dd></div>
+        <div><dt>JavaScript</dt><dd>{data.js === 'none' ? 'None' : data.js}</dd></div>
+        <div><dt>Tags</dt><dd class="tags">{data.tags.join(', ')}</dd></div>
+        <div><dt>Use when</dt><dd><ul>{data.use_when.map((x) => <li>{x}</li>)}</ul></dd></div>
+        <div><dt>Avoid when</dt><dd><ul>{data.avoid_when.map((x) => <li>{x}</li>)}</ul></dd></div>
+      </dl>
+    </aside>
+    <article class="prose notes" aria-label="Design notes">
+      <Content />
+    </article>
+  </div>
+
+  <section class="source" aria-labelledby="src-h">
+    <div class="source-head">
+      <h2 id="src-h">Source</h2>
+      <p class="muted">index.html, {source.split('\n').length} lines</p>
+      <button type="button" class="copy" hidden>Copy code</button>
+      <span class="status" role="status"></span>
+    </div>
+    <pre tabindex="0" aria-label="Source of index.html"><code>{source}</code></pre>
+  </section>
+</Base>
+
+<script>
+  const btn = document.querySelector<HTMLButtonElement>('.copy')!;
+  const status = document.querySelector<HTMLElement>('.status')!;
+  if (navigator.clipboard) {
+    btn.hidden = false;
+    btn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(document.querySelector('.source code')!.textContent ?? '');
+        status.textContent = 'Copied to clipboard';
+      } catch {
+        status.textContent = 'Copy failed. Select the code and copy it by hand.';
+      }
+      setTimeout(() => (status.textContent = ''), 2500);
+    });
+  }
+</script>
+
+<style>
+  .head { padding-block: var(--sp-3) var(--sp-4); }
+  .crumb { margin: 0 0 var(--sp-2); font-size: var(--s-0); color: var(--muted); }
+  .crumb a { color: inherit; }
+  .head h1 { font-size: clamp(2rem, 1.4rem + 2.4vw, 3rem); margin: 0; letter-spacing: -0.025em; }
+  .lede { font-size: var(--s-2); margin: var(--sp-1) 0 var(--sp-3); max-width: 60ch; color: var(--muted); }
+  .links { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-3); font-size: var(--s-0); }
+
+  .widths { border: 0; padding: 0; margin: 0 0 var(--sp-3); display: flex; flex-wrap: wrap; gap: var(--sp-1); }
+  .widths label { position: relative; }
+  .widths input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+  .widths label > span { display: block; padding: 0.35em 0.9em; border: 1px solid var(--rule); border-radius: 999px; font-size: var(--s-0); }
+  .widths input:checked + span { border-color: var(--ink); background: var(--ink); color: var(--paper); }
+  .widths input:checked + span .muted { color: inherit; opacity: 0.75; }
+  .widths input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  .frame-wrap { padding: 14px; }
+  .frame { margin-inline: auto; width: 100%; transition: width 0.3s ease; }
+  .frame iframe { width: 100%; height: min(85vh, 56rem); border: 0; background: #fff; }
+  .stage:has(#w-tablet:checked) .frame { width: min(100%, 768px); }
+  .stage:has(#w-phone:checked) .frame { width: min(100%, 390px); }
+  @media (prefers-reduced-motion: reduce) { .frame { transition: none; } }
+
+  .body { display: grid; gap: var(--sp-4) var(--sp-5); padding-block: var(--sp-5); grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 60rem) { .body { grid-template-columns: minmax(16rem, 22rem) minmax(0, 1fr); } }
+  aside h2 { font-size: var(--s-3); margin: 0 0 var(--sp-3); }
+  .meta { margin: 0; font-size: var(--s-0); }
+  .meta > div { padding-block: 0.7rem; border-top: 1px solid var(--rule); }
+  .meta dt { color: var(--muted); }
+  .meta dd { margin: 0.15rem 0 0; }
+  .meta ul { margin: 0; padding-left: 1.1em; }
+  .meta ul[role='list'] { list-style: none; padding: 0; }
+  .meta li + li { margin-top: 0.3em; }
+
+  .source { padding-top: var(--sp-3); }
+  .source-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-1) var(--sp-3); margin-bottom: var(--sp-2); }
+  .source-head h2 { font-size: var(--s-3); margin: 0; }
+  .source-head p { margin: 0; font-size: var(--s-0); }
+  .copy { font: inherit; font-size: var(--s-0); color: var(--ink); background: transparent; border: 1px solid var(--ink); border-radius: 999px; padding: 0.35em 0.9em; cursor: pointer; }
+  .copy:hover { background: var(--ink); color: var(--paper); }
+  .status { font-size: var(--s-0); color: var(--muted); }
+  pre { margin: 0; background: var(--sheet); padding: var(--sp-3); max-height: 36rem; overflow: auto; line-height: 1.55; tab-size: 2; border-left: 2px solid var(--rule); }
+</style>

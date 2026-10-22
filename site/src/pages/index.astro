@@ -1,0 +1,112 @@
+---
+import Base from '../layouts/Base.astro';
+import { getDesigns, hasPreview, href, SECTIONS, SECTION_NAMES } from '../lib/site';
+
+const designs = await getDesigns();
+const groups = SECTIONS.map((s) => ({ section: s, name: SECTION_NAMES[s], items: designs.filter((d) => d.data.section === s) })).filter((g) => g.items.length);
+---
+<Base current="designs">
+  <section class="intro" aria-labelledby="intro-h">
+    <h1 id="intro-h">Front-end sections with the reasoning written down.</h1>
+    <div class="intro-text">
+      <p>designs-x is a collection of original landing page sections, from heroes to footers, each one a single HTML file you can open in a browser. Every design is made for a concrete subject and comes with notes on why it works, what must not change, and how to adapt it.</p>
+      <p class="muted">For agents: point yours at <a href={href('llms.txt')}>llms.txt</a>. It lists every design by section with links to the raw HTML and the notes. <a href={href('llms-full.txt')}>llms-full.txt</a> holds everything in one file, and <a href={href('designs.json')}>designs.json</a> the metadata.</p>
+    </div>
+  </section>
+
+  <section id="gallery" class="gallery" aria-labelledby="gallery-h">
+    <h2 id="gallery-h" class="visually-hidden">Designs</h2>
+    {designs.length === 0 ? (
+      <p class="empty">No designs published yet. The first ones are on their way.</p>
+    ) : (
+      <>
+        <nav class="filter" aria-label="Filter by section">
+          <a href="#gallery" data-filter="all" aria-current="true">All <span class="n">{designs.length}</span></a>
+          {groups.map((g) => (
+            <a href={`#${g.section}`} data-filter={g.section}>{g.name} <span class="n">{g.items.length}</span></a>
+          ))}
+        </nav>
+        {groups.map((g) => (
+          <section class="group" id={g.section} data-section={g.section} aria-labelledby={`${g.section}-h`}>
+            <h3 id={`${g.section}-h`}>{g.name}</h3>
+            <ul class="grid" role="list">
+              {g.items.map((d) => (
+                <li class="item">
+                  <a class="card" href={href(`d/${d.id}/`)}>
+                    <span class="proof">
+                      {hasPreview(d)
+                        ? <img src={href(`designs/${d.id}/preview.png`)} alt="" width="1440" height="900" loading="lazy" decoding="async" />
+                        : <span class="nopreview">Preview not captured yet</span>}
+                    </span>
+                    <span class="title">{d.data.title}</span>
+                  </a>
+                  <p class="subject">{d.data.subject}</p>
+                  <p class="mode"><span class={`dot ${d.data.mode}`} aria-hidden="true"></span>{d.data.mode === 'dark' ? 'Dark' : 'Light'}</p>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
+      </>
+    )}
+  </section>
+</Base>
+
+<script>
+  // Progressive enhancement: without JS the section links jump to each group.
+  const links = [...document.querySelectorAll<HTMLAnchorElement>('.filter a')];
+  const groups = [...document.querySelectorAll<HTMLElement>('.group')];
+  const apply = (f: string) => {
+    if (f !== 'all' && !groups.some((g) => g.dataset.section === f)) f = 'all';
+    groups.forEach((g) => (g.hidden = f !== 'all' && g.dataset.section !== f));
+    links.forEach((a) => a.toggleAttribute('aria-current', a.dataset.filter === f));
+  };
+  links.forEach((a) =>
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      const f = a.dataset.filter!;
+      history.replaceState(null, '', f === 'all' ? location.pathname : `#${f}`);
+      apply(f);
+    }),
+  );
+  apply(location.hash.slice(1) || 'all');
+</script>
+
+<style>
+  .intro { display: grid; gap: var(--sp-2) var(--sp-5); grid-template-columns: minmax(0, 1fr); padding-block: var(--sp-4) var(--sp-5); }
+  .intro h1 { font-size: clamp(2rem, 1.2rem + 3.2vw, 3.5rem); margin: 0; max-width: 16ch; letter-spacing: -0.025em; }
+  .intro-text { max-width: 38rem; align-self: end; }
+  .intro-text p { margin: 0 0 var(--sp-2); font-size: var(--s-2); line-height: 1.5; }
+  .intro-text p.muted { font-size: var(--s-1); }
+  @media (min-width: 60rem) { .intro { grid-template-columns: 1fr 1fr; } }
+
+  .filter { display: flex; flex-wrap: wrap; gap: var(--sp-1); padding-block: var(--sp-2); border-top: 1px solid var(--rule); position: sticky; top: 0; z-index: 2; background: var(--paper); }
+  .filter a { text-decoration: none; padding: 0.35em 0.8em; border: 1px solid transparent; border-radius: 999px; font-size: var(--s-0); }
+  .filter a .n { color: var(--muted); font-variant-numeric: tabular-nums; margin-left: 0.2em; }
+  .filter a[aria-current] { border-color: var(--ink); }
+  .filter a:hover { border-color: var(--rule); }
+
+  .group { padding-top: var(--sp-3); scroll-margin-top: 4rem; }
+  .group[hidden] { display: none; }
+  .group h3 { font-size: var(--s-3); margin: 0 0 var(--sp-4); }
+  @media (min-width: 60rem) {
+    .group { display: grid; grid-template-columns: 13rem minmax(0, 1fr); gap: var(--sp-3); padding-top: var(--sp-4); border-top: 1px solid var(--rule); margin-top: var(--sp-2); }
+    .group:first-of-type { border-top: 0; margin-top: 0; }
+    .group h3 { position: sticky; top: 4.5rem; align-self: start; padding-top: 14px; }
+  }
+  .grid { list-style: none; margin: 0 0 var(--sp-4); padding: 0; display: grid; gap: var(--sp-5) calc(var(--sp-4) + 14px); grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr)); }
+  .item { padding-inline: 14px; }
+  .card { display: block; text-decoration: none; }
+  .card .proof { display: block; aspect-ratio: 16 / 10; }
+  .card img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+  .card:hover .proof::before, .card:focus-visible .proof::before { --m: var(--accent); }
+  .card:focus-visible { outline-offset: 18px; }
+  .nopreview { display: grid; place-items: center; height: 100%; color: var(--muted); font-size: var(--s-0); }
+  .title { display: block; font-weight: 600; font-size: var(--s-2); margin-top: var(--sp-3); }
+  .card:hover .title { text-decoration: underline; }
+  .subject { margin: 0.25rem 0 0; color: var(--muted); font-size: var(--s-0); max-width: 52ch; }
+  .mode { margin: 0.5rem 0 0; font-size: var(--s-0); display: flex; align-items: center; gap: 0.45em; }
+  .dot { width: 0.7em; height: 0.7em; border-radius: 50%; border: 1px solid var(--ink); }
+  .dot.dark { background: var(--ink); }
+  .empty { padding-block: var(--sp-4); border-top: 1px solid var(--rule); color: var(--muted); }
+</style>
