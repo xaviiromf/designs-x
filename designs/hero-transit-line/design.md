@@ -6,8 +6,8 @@ aesthetic: In-car strip map and platform-column signage, enamel white with one l
 mode: light
 fonts:
   - Overpass (Google Fonts, weights 400, 500, 700, 800)
-js: none
-tags: [transit, wayfinding, diagram, public-sector, launch, accessibility, css-only]
+js: Opens two native dialogs (plan a trip, opening weekend timetable) and fills them from the station list in the markup; submitting the planner shows the journey time in place.
+tags: [transit, wayfinding, diagram, public-sector, launch, accessibility, dialog]
 use_when:
   - Announcing a route, line, itinerary or any real ordered sequence of places where position and time matter.
   - Public-service or civic launches where legibility and plain facts beat imagery.
@@ -39,6 +39,7 @@ avoid_when:
 - **`--label-h` and `--tail`.** They are multiples of `--t-name` and reserve room above the bar for the longest rotated name ("St Brigid's Hospital") and right of the last tick for "Kestrel Hill". If you shrink them, labels collide with the copy above or overflow the page.
 - **The 760px switch.** The horizontal map was checked at 768, 1024, 1100 and 1440. At 768 a 2-minute gap is about 44px, roughly 31px perpendicular between 45-degree labels against a 24px line box, so names at 19px do not collide. Below 760 it becomes vertical. Do not shrink names below 15px to keep it horizontal on narrower screens. The breakpoint is written twice (`min-width: 760px`, `max-width: 759px`) because media queries cannot read custom properties.
 - **Left alignment.** The header, h1, button, "5" roundel and the phone caption share one left edge. Nothing is centred.
+- **Dialogs.** The two buttons open native `<dialog>` elements via `showModal()`, so focus moves into the dialog, stays trapped, Esc closes it and focus returns to the button that opened it. Every dialog has a "Back to Line 5" button and a button to the other dialog, so there is no dead end. The planner is a form handled with `preventDefault`; nothing is sent to a server. Do not turn the buttons back into links to paths that do not exist.
 - **Termini.** Kestrel Hill ends in a T-bar (`[data-terminus] .stop.tick`), Central starts at an interchange ring after the roundel, and both names are weight 700.
 
 ## Adapting
@@ -48,7 +49,7 @@ avoid_when:
 3. If your longest name is longer than "St Brigid's Hospital" (20 characters), raise the `--label-h` multiplier. If your last station name is longer than "Kestrel Hill", raise the `--tail` multiplier.
 4. The minutes can be any cumulative measure (minutes, kilometres, fare zones). Change the visible unit on the last stop and the figcaption to say exactly what they are.
 5. Copy: the headline says what opens and when; keep the date on one line from 760px up. The lede gives what the map cannot show (frequency, hours, accessibility) and does not repeat stations or journey time. The note gives the opening offer. Button labels say exactly what happens.
-6. Links: `/plan` and `/timetable` are placeholders. Point them at the real journey planner and timetable.
+6. Actions: "Plan a trip" and "See the timetable" open in-page dialogs that read the station names and minutes from the `<ol>`, so editing the list updates both. The first train time (`first`, 5:30 am) is in the script. To use a real journey planner or timetable instead, replace the buttons with `<a href="https://..." target="_blank" rel="noopener">` and delete the dialogs and script.
 7. Fonts: if the Google Fonts request fails, the fallbacks have different metrics, so the rotated-label offset (`left: 0.1em`) may be slightly off. `--label-h` and `--tail` carry some slack for this. Self-host Overpass in production.
 8. In a component framework, render the stations from an array of `{ name, minutes, interchanges[], terminus }` and generate the grid tracks from the minute differences. Keep the markup flat (`li > .stop + .name + .xfer + .min`) so both the horizontal and vertical CSS keep working.
 
@@ -76,4 +77,5 @@ avoid_when:
 | `--rot` | Station name angle (-45deg). |
 | `--label-h`, `--tail` | Space reserved above the bar and right of the last tick for rotated names, as multiples of `--t-name`. |
 | `--min-col`, `--row` | Phone layout: width of the minutes column and minimum row height (44px). |
+| `--ring-border` (dialog) | Also the outline width of the planner's select boxes. |
 | `--draw`, `--fade` | Bar draw duration and each station's fade-in duration. |

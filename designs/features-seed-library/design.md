@@ -7,7 +7,7 @@ mode: light
 fonts:
   - Libre Franklin 400/500/600/700 (Google Fonts)
   - Barlow Condensed 600 (Google Fonts), only inside stamp impressions
-js: none
+js: Opens and closes the variety catalogue dialog from the lede button (native dialog showModal, closes on button, Escape or backdrop click).
 tags: [library, lending, loop, index-card, stamp, ruled, scroll-driven, civic, gardening]
 use_when:
   - The features are stages of a real loop or lifecycle (borrow, use, return; order, ship, renew) and you want to show who acts at each stage.
@@ -30,7 +30,7 @@ avoid_when:
 - **Library type.** Libre Franklin follows Franklin Gothic, the face of American library signage and supply catalogues, and sets everything people read. Barlow Condensed appears only inside stamps because band daters print a narrow gothic. That is also the only place uppercase appears, because a dater literally prints "MAR 21 2026".
 - **Stamps look inked, not drawn.** No frames: a band dater prints only the date line, at 28px in Barlow Condensed. Each stamp uses `mix-blend-mode: multiply` so the rulings show through, a slight rotation (-4deg and +2.5deg), the inline SVG filter `#ink` (fine turbulence displaces the glyph edges by 2.5px, a low-frequency turbulence knocks out patches of ink), and a CSS `mask-image` gradient that thins the ink toward one end (`--ink-dir`, opposite on each stamp), as when a dater is pressed at a slight angle. The violet is saturated (#4B2FA0) so it still reads violet after multiply. They sit in the Desk column and overlap its divider by 8px, the way a hurried stamp does.
 - **Quiet around the card.** The heading (two plain sentences, 30 to 40px at weight 600, one sentence per line on desktop), intro, one link and three secondary features are plain left-aligned text with no boxes, icons or numbers, so the card stays the loudest thing on the page. At 1100px and wider the left column holds all of this text: the lede at the top and the secondary features as a single 34ch column at the bottom, so the two columns balance and the card stands alone on the right. Below 1100px the secondary features follow the card, aligned to its left edge (a two-column title-plus-paragraph list from 600px). Never a three-up features row.
-- **One motion.** Stamps press on (scale 1.18 to 1, fading in) as each one scrolls into view, using `animation-timeline: view()` inside `@supports` and `prefers-reduced-motion: no-preference`. Elsewhere they are simply there. There are no hover effects.
+- **One motion.** Stamps press on (scale 1.18 to 1, fading in) as each one scrolls into view, using `animation-timeline: view()` inside `@supports` and `prefers-reduced-motion: no-preference`. Elsewhere they are simply there. There are no hover effects. The catalogue dialog opens without animation.
 - **Honest copy.** The Returned row says a failed crop is still returned and recorded, which takes the fear out of "bring seeds back".
 
 Reasoned exceptions to the collection's defaults: uppercase exists only inside stamp impressions (Default 5), because the dater prints it. The index rulings are not broadsheet hairlines (Default 3). They live only inside the card and carry the text baselines.
@@ -43,16 +43,17 @@ Reasoned exceptions to the collection's defaults: uppercase exists only inside s
 - **One card, one shadow, one rotation (`--card-tilt`, -0.6deg, 600px and wider).** Nothing else on the section is a box or has a shadow. Rotation is 0 on phones so edges never clip.
 - **Stamp accessibility.** Each stamp is `role="img"` with a full-date `aria-label`, and its visible text is `aria-hidden`. The table keeps explicit ARIA roles because the phone layout sets it to `display: block/grid`, which can strip table semantics (they are redundant but harmless at desktop widths).
 - **Headings.** The section starts at h2; the host page supplies the h1. The card's printed title "Ashby Seed Library" is an h3, and the secondary features are h3s after it.
-- **The link.** `href="/varieties"` is a placeholder; point it at the real catalogue. It is the only interactive element and has a 3px `--ink` focus ring.
+- **The catalogue button.** "Browse all 214 varieties" is a real `<button>` that opens a native `<dialog id="catalogue">` (a short card-file list on `--manila`). It is the only interactive element besides the dialog's close button; both have a 3px `--ink` focus ring. The dialog closes with its button, Escape or a click on the backdrop, and focus returns to the opener (native behaviour). It is the one transient exception to "nothing else is a box". Never swap it for a link to a path that does not exist.
 - **The filter is defined once** in a zero-size inline SVG at the top of `<body>`. Stamps reference `url(#ink)`, so the id must stay unique on the page.
 - **Reduced motion.** The animation lives entirely inside the `prefers-reduced-motion: no-preference` and `@supports` blocks, and the static state is the finished stamp.
 
 ## Adapting
 
-Change the `:root` tokens first, then the copy. Keep the artefact if the product has one: a rental agreement, a tool-library tag or a membership card can take the card's place with the same rows-plus-stamps logic. Stamp only the events the organisation records.
+Change the `:root` tokens first, then the copy. To send the catalogue button to a real catalogue, replace it with an `<a href="..." target="_blank" rel="noopener">` and delete the dialog and script, but only when that URL exists. Keep the artefact if the product has one: a rental agreement, a tool-library tag or a membership card can take the card's place with the same rows-plus-stamps logic. Stamp only the events the organisation records.
 
 - **Copy.** Keep four rows of one to three sentences each, written about the one lot on the card. Remarks run about 48ch at desktop, so a row of five lines is the practical maximum. Header fields should be specific (a real lot, a person) and short enough not to leave one-word orphans on a phone; wrap logical phrases in `.nw` (nowrap) spans. Stamp text is a date only, so it fits the 8.5rem Desk column.
 - **Layout.** At 1100px and wider the lede (row 1) and secondary list (row 2, aligned to the bottom) take columns 1 to 5; the card spans both rows in columns 6 to 12 (max 760px). Below 1100px everything stacks: lede, card, secondary list. Below 600px each table row becomes a grid: stage name and stamp share the first line (the stamp scaled to 0.85), remarks below, and column heads become visually hidden.
+- **Catalogue dialog.** Edit the `<li>` rows (name, then drawer and saving note) and the count in the footer line; the dialog scrolls when the list outgrows the viewport.
 - **Fields grid.** The header field grid's second column starts at `9rem + --s-3`, which matches where the Remarks text begins. If you change the Stage column width (`col.stage`), change both.
 
 | Token | Role |

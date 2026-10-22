@@ -56,6 +56,7 @@ a:focus-visible, button:focus-visible { outline: var(--focus) solid var(--lamp);
   padding: var(--s5) var(--gutter) 0;
 }
 .mark { font-weight: 700; text-decoration: none; }
+.linkish { appearance: none; background: none; border: 0; padding: 0; color: inherit; font: inherit; text-decoration: underline; text-underline-offset: 0.18em; text-decoration-thickness: 1px; cursor: pointer; }
 
 .hero {
   display: grid;
@@ -114,6 +115,25 @@ h1 {
 .hero:has(#t2100:checked) .off21,
 .hero:has(#t2300:checked) .off23,
 .hero:has(#t0100:checked) .off01 { opacity: 0; transition-duration: 0s; }
+
+/* In-page results: native dialogs, red light only, same outline language as the button */
+.panel {
+  width: min(32rem, calc(100% - 2 * var(--gutter))); max-height: calc(100% - 2 * var(--gutter)); overflow: auto;
+  margin: auto; padding: var(--s5);
+  background: var(--night); color: var(--lamp); border: 2px solid var(--lamp); border-radius: 0;
+}
+.panel::backdrop { background: rgba(34, 9, 10, .88); }
+.panel h2 { margin: 0 0 var(--s3); font-size: var(--fs-time); line-height: 1.1; font-weight: 700; }
+.panel p { margin: 0 0 var(--s3); max-width: var(--measure); text-wrap: pretty; }
+.panel .ref { font-size: var(--fs-time); font-weight: 700; font-variant-numeric: tabular-nums; }
+.panel label { display: block; margin-bottom: var(--s2); font-weight: 700; }
+.panel input[type=text] {
+  display: block; width: 100%; margin-bottom: var(--s4); padding: var(--s3);
+  background: transparent; color: var(--lamp); border: 2px solid var(--lamp); border-radius: 0; font: inherit;
+}
+.panel input:focus-visible { outline: var(--focus) solid var(--lamp); outline-offset: var(--focus-gap); }
+.panel .acts { display: flex; flex-wrap: wrap; gap: var(--s3); margin-top: var(--s4); }
+.panel .cta { flex: 0 0 auto; }
 
 /* Booking */
 fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
@@ -199,9 +219,9 @@ legend { padding: 0; font-weight: 700; }
 </style>
 </head>
 <body>
-<header class="top">
-  <a class="mark" href="./">Tolar Observatory</a>
-  <a href="#">Find my booking</a>
+<header class="top" id="top">
+  <a class="mark" href="#top">Tolar Observatory</a>
+  <button class="linkish" type="button" id="find-open">Find my booking</button>
 </header>
 <main class="hero">
   <div class="intro">
@@ -321,7 +341,7 @@ legend { padding: 0; font-weight: 700; }
     </svg>
   </figure>
 
-  <form class="book" action="#" method="get">
+  <form class="book" id="book">
     <fieldset aria-describedby="pick">
       <legend>Tours tonight, Saturday 14 November</legend>
       <p class="pick" id="pick">Pick a start time to turn the star wheel. The Large and Small Magellanic Clouds (LMC and SMC) stay up all night.</p>
@@ -352,5 +372,83 @@ legend { padding: 0; font-weight: 700; }
     <p class="note">This page uses red light only, so you can keep it open on the platform without spoiling anyone’s night vision.</p>
   </form>
 </main>
+
+<dialog class="panel" id="confirm" aria-labelledby="confirm-title">
+  <h2 id="confirm-title">Seats held</h2>
+  <p id="confirm-text"></p>
+  <p>Reference</p>
+  <p class="ref" id="confirm-ref"></p>
+  <p>Keep this reference. “Find my booking” at the top of the page looks it up.</p>
+  <div class="acts"><button class="cta" type="button" data-close>Back to the tours</button></div>
+</dialog>
+
+<dialog class="panel" id="find" aria-labelledby="find-title">
+  <h2 id="find-title">Find my booking</h2>
+  <form id="find-form">
+    <label for="find-ref">Booking reference</label>
+    <input type="text" id="find-ref" name="ref" placeholder="TOL-2300-4821" autocomplete="off" autocapitalize="characters" required>
+    <p id="find-out" role="status"></p>
+    <div class="acts">
+      <button class="cta" type="submit">Look up booking</button>
+      <button class="cta" type="button" data-close>Back to the tours</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+(function () {
+  var TOURS = {
+    '2100': { name: '9 pm', pickup: '8:15 pm' },
+    '2300': { name: '11 pm', pickup: '10:15 pm' },
+    '0100': { name: '1 am', pickup: '12:15 am' }
+  };
+  var booked = {}; // shortcut: kept in memory for this visit only; wire to the booking system when reusing
+  var opener = null;
+
+  function open(dlg) {
+    opener = document.activeElement;
+    dlg.showModal();
+  }
+  function close(dlg) {
+    dlg.close();
+    if (opener && opener.focus) opener.focus();
+  }
+  document.querySelectorAll('dialog').forEach(function (dlg) {
+    dlg.querySelectorAll('[data-close]').forEach(function (b) { b.addEventListener('click', function () { close(dlg); }); });
+    // Escape and backdrop clicks close it; focus goes back to what opened it
+    dlg.addEventListener('cancel', function (e) { e.preventDefault(); close(dlg); });
+    dlg.addEventListener('click', function (e) { if (e.target === dlg) close(dlg); });
+  });
+
+  var confirmDlg = document.getElementById('confirm');
+  document.getElementById('book').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var v = e.currentTarget.elements.tour.value;
+    var t = TOURS[v];
+    var ref = 'TOL-' + v + '-' + (1000 + Math.floor(Math.random() * 9000));
+    booked[ref] = t;
+    document.getElementById('confirm-text').textContent =
+      'Your seats on the ' + t.name + ' tour, Saturday 14 November, are held. We pick you up from your hotel in San Pedro at ' + t.pickup + '.';
+    document.getElementById('confirm-ref').textContent = ref;
+    open(confirmDlg);
+  });
+
+  var findDlg = document.getElementById('find');
+  var findRef = document.getElementById('find-ref');
+  var findOut = document.getElementById('find-out');
+  document.getElementById('find-open').addEventListener('click', function () {
+    findOut.textContent = '';
+    open(findDlg);
+  });
+  document.getElementById('find-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var ref = findRef.value.trim().toUpperCase();
+    var t = booked[ref];
+    findOut.textContent = t
+      ? 'Found: ' + t.name + ' tour, Saturday 14 November. Pickup from your hotel at ' + t.pickup + '.'
+      : 'No booking found for ' + ref + '. References look like TOL-2300-4821 and are shown when you book.';
+  });
+})();
+</script>
 </body>
 </html>

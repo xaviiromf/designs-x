@@ -7,7 +7,7 @@ mode: light
 fonts:
   - IM Fell English (Google Fonts), H2 and the quote total only
   - Work Sans 400 and 600 (Google Fonts), everything else, tabular numerals in the docket
-js: Reads the form, recalculates the itemised quote, and redraws an inline SVG of the card cut edge-on (the printed line in outline above, sheet thickness, bite depth, ink, edge paint, show-through) with a tween that reads --dur.
+js: Reads the form, recalculates the itemised quote, and redraws an inline SVG of the card cut edge-on (the printed line in outline above, sheet thickness, bite depth, ink, edge paint, show-through) with a tween that reads --dur. On submit it opens a modal proof confirmation (the itemised quote, a way back, and a mailto link) instead of sending anything.
 tags: [pricing, quote-builder, configurator, interactive, svg, print, letterpress, stationery, itemised, form]
 use_when:
   - The price is built from a few physical choices (material, thickness, finish, colour count) and the buyer cannot see what they are paying for in a flat mock-up.
@@ -32,6 +32,7 @@ avoid_when:
 - **The palette comes from the press room, and avoids the cream default.** A cool press-bed grey ground rather than the cream, serif and terracotta default; Lettra white only for the paper and the docket; a warm rubber-base black (not blue-black, not #111); and Reflex Blue, a letterpress staple, used only for the total and the button, so the accent is never confused with the customer's navy ink.
 - **Type from the shop's lineage.** IM Fell English keeps the ink spread of Fell type, used only for the H2 and the total. Work Sans draws on early Stephenson Blake and Miller & Richard grotesques, the job-shop faces.
 - **Phones keep the effect in view.** Below 760px the strip plus "$565 for 100" and "0.9 mm, 600gsm, 40×" is `position: sticky`. The script writes the bar height into `--sticky-h` and `html { scroll-padding-top }` uses it. Verified by focusing every control forwards and backwards at 390x844 and 360x640, in the default, duplex, 300gsm-deep and business-card states: no control was hidden under the bar.
+- **Request a proof ends in the page, not on a server.** The form has no `action`. The `submit` handler calls `preventDefault`, then opens a native `<dialog>` (`showModal`) headed "Proof requested" that repeats the docket, the total and the per-card price, with a "Back to the quote" button (autofocused, closes the dialog and returns focus to the submit button) and an "Email this quote to the press" `mailto:` link (`target="_blank" rel="noopener"`, quote pre-filled in the body). Esc and a click on the backdrop also close it. With no ink chosen the dialog does not open; focus moves to the first ink checkbox, next to its explanatory note. This is the only link or button in the file that leaves the form, and it cannot reach a 404 or 405 on GitHub Pages.
 - **Motion only answers a choice.** Thickness, bite, bumps and the letters' position tween in JS over `--dur`. Ink, back, edge and glue colours and opacities use CSS transitions. `prefers-reduced-motion` makes both instant.
 
 ## Do not touch
@@ -42,6 +43,7 @@ avoid_when:
 - **One accent.** Reflex Blue is the total and the button only. Checked controls and focus rings are `--ink`. Ink, edge and paper colours are content data in the script (`INK`, `EDGE`, `BACK`, `PAPER`), not theme tokens; keep the navy ink (#2B3550) greyer than Reflex.
 - **IM Fell for two things only:** the H2 and the total (and the phone bar's total, which repeats it). Its old-style figures make quantities and prices ambiguous (100 reads as "Ioo").
 - **One rule in the docket**, above the total. No rules between lines and no border round the docket.
+- **The dialog's exits.** Keep "Back to the quote" and Esc working, and keep `autofocus` on the back button. Do not turn the dialog into a route or a page.
 - **Accessibility wiring:** the section and the form are labelled by the H2. Every group is a fieldset with a legend. The SVG has `role="img"` and an `aria-label` rebuilt on each change. The docket total is `aria-live="polite"` and atomic. The caption (including the show-through sentence), the measurement and the ink note are polite live regions. The phone bar's total is `aria-hidden` because it duplicates the docket. Control outlines and the drawing's lines use `--graphite` (about 4.6:1). Under `forced-colors` checked controls switch to `Highlight`.
 - **The 760px breakpoint** is shared by the CSS and by the script's `matchMedia` (scale 80x or 40x). Change both together.
 - **The default job** (100 invitations, 600gsm, navy and sage, deep, gold edges) must total $565 ($5.65 a card). A `console.assert` checks the price model, and the static HTML shows the same numbers.
@@ -53,7 +55,7 @@ avoid_when:
 3. For another craft, keep the idea of one physical section drawn to a stated scale and swap what it shows. For foil, draw the foil as a raised layer. For screen print, show ink deposit height. For laser cutting, show kerf and material thickness. Write a new `draw()`, but keep the rest of the structure: tween numbers, CSS for colours, the caption stating the scale.
 4. Copy length: option names should stay short (weight or name only) with detail in the description line, because the price column takes the right edge. Docket labels should fit one line at about 300px.
 5. Layout: at 1180px and wider the form has four tracks: product and quantity (`--col-a`, 12.5rem) | paper and impression | inks and edges | the sticky docket (1.15fr). Below that it is two columns with the docket beside inks and edges. On phones it is one column (`.col` becomes `display: contents`, so one `--s-6` gap governs every fieldset) with the sticky bar. Cut options, not columns: paper sizes, foil, envelope liners and a printed back are real upsells, but they would dilute the drawing. Add them as further fieldsets only if each one changes the drawing.
-6. Wire the form's `submit` handler (it currently calls `preventDefault`) to the shop's proof-request endpoint, and keep the button label "Request a proof".
+6. Replace the placeholder `proofs@quarrylane.example` (the dialog's `mailto:`) with the shop's address. To send the request to a real endpoint, `fetch` it from the `submit` handler and open the dialog on success; never give the form an `action`, so the file stays safe inside an iframe. Keep the button label "Request a proof".
 7. Fonts load with `display=swap` and no metric-matched fallback. The H2 reflows once on swap; the drawing re-reads its stems when Work Sans arrives (`document.fonts.load`).
 
 | Token | Role |
@@ -77,5 +79,6 @@ avoid_when:
 | `--control`, `--swatch` | Radio and checkbox size; colour swatch size |
 | `--stroke`, `--hair` | Control outline width; 1px lines (drawing, rules, segments) |
 | `--tick` | Checkbox tick as a data URI (its stroke repeats `--paper`, since a data URI cannot read tokens) |
+| `--measure` in the dialog | The proof dialog reuses `--paper`, `--ink`, `--reflex`, `--radius` and the docket's classes (`.lines`, `.total`, `.go`); it adds no tokens |
 | `--dur` | 240ms, CSS transitions in the drawing and the JS tween (the script reads this token) |
 | `--sticky-h` | Set by the script to the phone bar's height and used for `scroll-padding-top` |

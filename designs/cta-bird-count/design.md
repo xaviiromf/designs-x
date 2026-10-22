@@ -6,7 +6,7 @@ aesthetic: A marked-up survey map. Cool survey paper, OS-style grid blue, organi
 mode: light
 fonts:
   - Cabin (Google Fonts, variable with ital, wdth 75-100, wght 400-700)
-js: Progressive enhancement. Choosing a tetrad fills the detail panel under the map and renames the button "Take tetrad K"; submit swaps the form for a "Tetrad K is yours" confirmation. Without JS the radios and form submit normally.
+js: Choosing a tetrad fills the detail panel under the map and renames the button "Take tetrad K"; submit is handled in JS (no request is sent) and swaps the form for a "Tetrad K is yours" confirmation, with a "Change my tetrad" button that reopens the map and form with the choice kept.
 tags: [cta, sign-up, volunteer, map, grid, radio-group, survey, nature, form]
 use_when:
   - The ask is to claim one specific slot from a small, spatial or tabular set (survey squares, allotment plots, stall pitches, litter-pick routes, rota shifts on a grid).
@@ -50,6 +50,7 @@ avoid_when:
 - **Map has 0 radius and the grid lines are the 1px gaps** of the grid showing its blue background. Inputs and the button keep a 2px radius.
 - **Water stays clear of the letters.** The river runs through the bottom third of row 4 (`--r:4`, the B-G-L-R-W row) and dips once across the line into F in row 5; the reservoir sits on the M/N boundary between the two letters. "River Wenning" sits just under the line in Q's top band. Feature labels must stay on paper or hatch: grid blue on `--water-fill` is about 4:1, below AA for 0.8rem text.
 - **The detail panel never changes height.** The script appends an `aria-hidden` ghost copy of every open square's entry into `.detail`, and all children share one grid cell, so the panel is always as tall as its longest entry at the current width and the form below it (on phones) never jumps. The empty state has the same three-line shape (reference, prompt, explanation). The live content is the inner `#detail`, `aria-live="polite"`.
+- **No dead ends.** The form has no `action`/`method`; submit is always intercepted. The confirmation keeps its "Change my tetrad" button (re-enables the map fieldset, hides `#done`, shows `#signup`, focuses the chosen square). The contact mailto opens with `target="_blank" rel="noopener"`.
 - **Motion:** only the 120ms fill on selection. Reduced motion removes it.
 - **No bird illustrations, no tally marks, no eyebrow over the h2.**
 - **Heading level:** the section uses an h2 because it is meant to sit inside a page. Make it the h1 when the section is used on its own.
@@ -60,7 +61,7 @@ avoid_when:
 2. **Re-letter and re-place the squares.** For a different grid, change `repeat(5, ...)` in `.grid`, the `20%` step in the axis rules, the axis numbers and the `.sq100` prefix, and each square's `--c`/`--r`. The corner northing is left out on purpose so it does not crowd the first easting. Open squares carry `data-place`, `data-habitat`, `data-species` and `data-birds`; the script reads only these, so rename the data attributes and the sentence in `show()` for another domain (for example plot size and soil for allotments).
 3. **Redraw the water** (or roads, or market aisles) in the 0-100 SVG viewBox over the grid, and position the italic labels in percentages. Keep it to one or two features.
 4. **Copy:** keep the lead's structure: when, what, how many are covered, how many need someone, how long it takes. Keep "Take" through heading, button and confirmation, define the slot noun once and then use only that noun. Keep a way for beginners to ask for company, and a contact.
-5. **Wire the form:** set the real `action`. The script validates that a square is chosen ("Choose a yellow tetrad on the map first."), then runs native validation on name and email, then shows the confirmation. Replace the confirmation swap with your real request, and build it from `new FormData(form)` before the script disables the map fieldset: a disabled fieldset drops the tetrad value.
+5. **Wire the form:** the form has no `action` on purpose, so it can never navigate to a missing endpoint (a POST returns 405 on static hosts). The script validates that a square is chosen ("Choose a yellow tetrad on the map first."), then runs native validation on name and email, then shows the confirmation. Replace the confirmation swap with your real request (`fetch`, not a native submit), and build it from `new FormData(form)` before the script disables the map fieldset: a disabled fieldset drops the tetrad value.
 6. **Longer copy** pushes the left column down; the atlas column stays sticky. Below 900px the layout is one column: heading, lead, map, key, detail, form, with the map capped at `--map-max-tablet`.
 7. **Hatch colour:** the stroke inside the `--hatch-tile` data URI is a literal hex (`#C2D2E0`, `--grid` 25% into `--paper`) because CSS variables cannot reach into a data URI. Recompute it when you change `--grid` or `--paper`.
 

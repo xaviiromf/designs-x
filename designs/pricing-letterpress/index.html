@@ -214,6 +214,20 @@ input[type="checkbox"]:checked { box-shadow: none; background: var(--tick) cente
   .docket { width: 100%; }
 }
 
+/* proof confirmation: a native modal dialog, so focus is trapped and Esc closes it */
+.proof {
+  width: min(30rem, calc(100% - 2 * var(--s-4))); max-height: calc(100% - 2 * var(--s-4)); overflow: auto;
+  margin: auto; padding: var(--s-5);
+  border: 0; border-radius: var(--radius);
+  background: var(--paper); color: var(--ink);
+}
+.proof::backdrop { background: color-mix(in srgb, var(--ink) 60%, transparent); }
+.proof h3 { margin: 0 0 var(--s-2); font: 600 var(--t-md)/var(--lh-snug) var(--f-text); }
+.proof p { margin: 0 0 var(--s-4); max-width: var(--measure); }
+.proof .lines { margin-bottom: var(--s-2); }
+.proof .total { margin-bottom: var(--s-5); }
+.proof .mail { display: block; margin-top: var(--s-4); color: var(--ink); font-size: var(--t-sm); }
+
 @media (prefers-reduced-motion: reduce) {
   .press path, .press rect, .press line, .press text { transition: none; }
 }
@@ -241,7 +255,7 @@ input[type="checkbox"]:checked { box-shadow: none; background: var(--tick) cente
       </figcaption>
     </figure>
 
-    <form class="builder" id="builder" action="#" novalidate aria-labelledby="quote-title">
+    <form class="builder" id="builder" novalidate aria-labelledby="quote-title">
       <div class="col col-a">
         <fieldset>
           <legend>Product</legend>
@@ -324,6 +338,15 @@ input[type="checkbox"]:checked { box-shadow: none; background: var(--tick) cente
   </div>
 </section>
 </main>
+
+<dialog class="proof" id="proof" aria-labelledby="proof-title">
+  <h3 id="proof-title">Proof requested</h3>
+  <p>We will send a digital proof of this quote within 3 working days. Nothing is charged until you approve it.</p>
+  <dl class="lines" id="proof-lines"></dl>
+  <p class="total"><span class="total-label">Total</span><span class="total-amt" id="proof-total"></span><span class="per" id="proof-per"></span></p>
+  <button class="go" type="button" id="proof-back" autofocus>Back to the quote</button>
+  <a class="mail" id="proof-mail" href="mailto:proofs@quarrylane.example" target="_blank" rel="noopener">Email this quote to the press</a>
+</dialog>
 
 <script>
 (() => {
@@ -537,7 +560,22 @@ input[type="checkbox"]:checked { box-shadow: none; background: var(--tick) cente
   }
 
   form.addEventListener("change", () => update(false));
-  form.addEventListener("submit", e => e.preventDefault()); // wire to the shop's proof-request endpoint
+  // The outcome is shown in the page: a dialog with the quote and a way back. Wire to the shop's proof endpoint where marked.
+  const dlg = $("proof");
+  form.addEventListener("submit", e => {
+    e.preventDefault();
+    const s = read(), q = price(s);
+    if (!s.inks.length) { const first = form.querySelector('input[name="ink"]'); first.focus(); return; } // the ink note already explains
+    const cents = q.lines.some(l => l[1] % 100);
+    $("proof-lines").innerHTML = $("lines").innerHTML;
+    $("proof-total").textContent = $("total").textContent;
+    $("proof-per").textContent = $("per").textContent;
+    const text = `Proof request, ${JOB[s.product].line}\n` + q.lines.map(([l, c]) => `${l}: ${usd(c, cents)}`).join("\n") + `\nTotal: ${usd(q.total, q.total % 100)}`;
+    $("proof-mail").href = "mailto:proofs@quarrylane.example?subject=" + encodeURIComponent("Proof request") + "&body=" + encodeURIComponent(text); // shortcut: placeholder address, replace with the shop's
+    dlg.showModal(); // focus goes to "Back to the quote" and returns to the button on close
+  });
+  $("proof-back").addEventListener("click", () => dlg.close());
+  dlg.addEventListener("click", e => { if (e.target === dlg) dlg.close(); }); // click on the backdrop
   let w0 = 0;
   // deferred a frame: update() sets the svg's own height, which would re-enter this observer
   new ResizeObserver(() => requestAnimationFrame(() => { if (svg.clientWidth !== w0) { w0 = svg.clientWidth; cur = null; update(true); } })).observe(svg);

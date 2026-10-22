@@ -7,8 +7,8 @@ mode: light
 fonts:
   - Archivo, variable wdth 62-125 and wght 100-900 (Google Fonts)
   - Permanent Marker (Google Fonts), plan names on the tape only
-js: none
-tags: [pricing, rows, sport, climbing, gym, handwritten, tape, colour-coded, membership, no-js]
+js: Opens a native <dialog> checkout from each buy button (focus moves into it and returns to the button on close), handles its form with preventDefault and shows an in-dialog confirmation with a Back to prices button.
+tags: [pricing, rows, sport, climbing, gym, handwritten, tape, colour-coded, membership, dialog]
 use_when:
   - A small physical venue or club (climbing or bouldering gym, dance studio, makerspace, pool) sells two to four plans that differ by how often you come.
   - Each plan can honestly be compared on one number, such as cost per visit or per session.
@@ -45,6 +45,7 @@ avoid_when:
 - **The per-visit line in every price block.** Same position, same wording pattern. It is the question people actually ask at the desk.
 - **Ink on tape contrast.** Ink on yellow is 10.1:1, on green 6.5:1, on pink 6.6:1. If you change a tape colour, keep ink-on-tape at 4.5:1 or above; mid greens and pinks drop below quickly.
 - **Phone bleed.** The tape's negative left margin must equal `--gutter`, and its padding-left must add the gutter back, or text will touch the screen edge or the page will scroll sideways. `.wall` has `overflow-x: clip` only to trim the rotated corners; check `document.documentElement.scrollWidth <= innerWidth` after changes rather than trusting the clip.
+- **The checkout dialog.** The buy controls are real `<button>`s that open the single shared `<dialog id="checkout">` via `showModal()`; keep it native so focus trapping, Escape and focus return to the opener come for free. The form must keep `preventDefault` (this page is shown in an iframe on GitHub Pages where any POST returns 405). On submit, focus moves to the confirmation heading, and "Back to prices" closes the dialog. The dialog has no radius, no tape colours and no shadow; it only borrows ink, wall and the button style. `margin: auto` on `.checkout` is required because of the global `margin: 0` reset.
 - **No motion.** Tape is not animated on. The only state change is the button filling with ink on hover and on keyboard focus (transition disabled under `prefers-reduced-motion`). Focus also shows a 3px ink outline at 3px offset (`--focus-w`).
 - **`role="list"` on `.details`.** `list-style: none` makes Safari/VoiceOver drop list semantics; the role restores them.
 
@@ -54,7 +55,7 @@ avoid_when:
 2. **Copy.** Plan names must be short (one to two words, about 13 characters) to fit the strip in marker, and should share a grammatical form (all nouns: "Day pass", "10-visit card", "Monthly"). Keep the price figure short (£ and up to three digits). The unit says what the price buys ("a day", "for 10 visits", "a month"). The per-visit line always comes next and always says cost per visit or session. Details are two to four short plain sentences. Buttons name the exact action ("Buy a 10-visit card"), no arrows. The lede should state the decision rule your numbers support.
 3. **More or fewer plans.** Two to four rows work. For a fourth, add a `--tape-4` token and `.plan:nth-child(4) .tape { --c: var(--tape-4); --r: 1.9deg; --tail: 30px; --tear: polygon(...); }` with its own tear (square left end, diagonal right end with two or three irregular steps). Alternate the rotation sign between neighbours and keep it between 1.5 and 2.5deg.
 4. **Breakpoints.** Below 900px: stacked rows (tape, price, details, button). 900-1099px: three columns; tape and price span two rows so the button sits right under the details. 1100px and up: four columns, buttons left-aligned at the start of the last (max-content) track. If your longest button label is longer than about 30 characters, raise the 1100px breakpoint. From 600px to 899px the single column leaves wall to the right; that is intended (the chart reads top to bottom).
-5. **Links.** The `href`s (`#checkout-day-pass`, `#checkout-10-visit-card`, `#checkout-monthly`) are placeholders. Swap them for real checkout URLs.
+5. **Checkout.** The buy buttons open an in-page dialog that collects an email and confirms (nothing is sent anywhere). To go live, replace the submit handler's confirmation with a call to your booking or payment endpoint (still with `preventDefault`), or turn the buttons into `<a href="https://..." target="_blank" rel="noopener">` links to your hosted checkout and delete the dialog and script. Plan name, price and per-visit text in the dialog are read from the plan row, so no copy is duplicated.
 6. **Another handwritten source.** For a different venue the "tape" can become another real labelling material from that world (a masking-tape label on a pool lane board, chalk on a slate), but keep exactly one such element per row and keep the rest quiet.
 7. **Stack translation.** In React or Vue, map plans to `<article class="plan">` from data with `{ name, colour, price, unit, perVisit, details[], cta, href, rotate, tail, tear }`; set the tape's `--c`, `--r`, `--tail` and `--tear` as inline custom properties instead of `nth-child` if order may change.
 8. **Fonts.** Both families load from Google Fonts with fallbacks (Helvetica Neue/Arial; Marker Felt/Comic Sans/cursive). The fallbacks have no width axis, so `font-stretch` is ignored and the h2, prices and buttons render narrower if Archivo fails to load. Nothing breaks.

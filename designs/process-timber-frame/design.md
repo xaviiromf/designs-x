@@ -6,7 +6,7 @@ aesthetic: Framing-yard material language. A flat green-oak post with a snapped 
 mode: light
 fonts:
   - Vollkorn (Google Fonts, variable 400-900 with italics)
-js: none
+js: One inline script opens the survey-request dialog from the button, validates the three fields, and shows a confirmation inside the dialog; nothing is sent anywhere.
 tags: [process, timeline, craft, building, oak, roman-numerals, sticky-intro, svg]
 use_when:
   - A real, ordered sequence of four to eight stages where the order and the duration of each stage matter.
@@ -44,7 +44,7 @@ avoid_when:
 - **Lining figures.** Keep `font-variant-numeric: lining-nums` on `body`, so Arabic durations never read as Roman I.
 - **Fixed mark height** (`--mark-h`). Only the width changes from mark to mark. The top of each mark lines up with the cap height of its stage title (the small negative `margin-top` on `h3`).
 - **Stage V copy** must keep explaining what the marks are. Without it the numerals turn into decoration.
-- **Semantics:** `<section aria-labelledby>` with an `<h2>`, then `<ol role="list">` of `<li>` each with an `<h3>`. Mark SVGs are `aria-hidden`; the list order carries the sequence. The button has a 3px iron-stain outline offset 3px on `:focus-visible` and a minimum height of 44px. Below 861px the button is visually after the list but stays in the intro in the DOM; it is the only focusable element, so focus order is not confused.
+- **Semantics:** `<section aria-labelledby>` with an `<h2>`, then `<ol role="list">` of `<li>` each with an `<h3>`. Mark SVGs are `aria-hidden`; the list order carries the sequence. The button has a 3px iron-stain outline offset 3px on `:focus-visible` and a minimum height of 44px. Below 861px the button is visually after the list but stays in the intro in the DOM; it is the only focusable element on the page, so focus order is not confused. The dialog uses native `showModal()`: focus starts in the name field, Esc and Cancel close it, focus returns to the button, and the confirmation moves focus to its heading. Do not replace it with a non-modal div.
 
 ## Adapting
 
@@ -53,7 +53,7 @@ avoid_when:
 3. **More or fewer stages:** compose new marks from `#cut` and `#vee` (VII = V + two strokes, VIII = V + three). Stroke pitch is 21 viewBox units and each stroke is 16 units wide; the viewBox is 60 units tall. Set each SVG's `viewBox` and `width` to fit its strokes, centred on 0. IIII is 82 units, which is about 55px on the 64px phone post; marks much wider than that crowd it, so this pattern is best kept under nine stages.
 4. **Layout:** at 861px and above the intro occupies columns 1 to 4 (1 to 5 below 1100px) and stays sticky, and the list fills columns 6 to 12. At 860px and below everything stacks, the sticky positioning is removed and the button and note move under the list. At 640px and below the post narrows to 64px, marks drop to 40px, body text drops to 17px to keep a reasonable measure next to the post, and stage padding tightens. Longer body copy just makes the post taller; the post never needs resizing.
 5. In a component framework, render the marks from a small numeral-to-strokes map, and keep the post as a CSS background on the list.
-6. The button links to `#book-survey`, a deliberate placeholder with no target on this page. Point it at the real booking route.
+6. The button opens an in-page `<dialog>` (name, email, site postcode). Submit is handled in JS with `preventDefault`, so it never POSTs; the dialog then confirms and offers "Back to the process". To go live, send the three field values to the real booking route in the submit handler (or replace the button with a link to a real booking page), and keep the confirmation state.
 
 | Token | Role |
 |---|---|

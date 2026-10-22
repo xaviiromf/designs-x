@@ -51,6 +51,7 @@ avoid_when:
 - **The quote is the largest text in the row.** Keep it unboxed. The chart well is the only panel, with a 2px radius and no shadow.
 - **Only facts that vary go in the dl.** The departure pitch (440.0 Hz) is the chart's zero line and the gold A4 tick, so there is no "A4 on leaving" row and no arrow between two Hz figures.
 - Accessibility: nothing on the page is focusable; the `:focus-visible` rule is a safety net for adapted content such as a link inside a quote. Keep `role="img"` with a written `aria-label` on each plot SVG, keep `aria-hidden` on the keyboard and the HTML labels, and keep the dl as the readable data.
+- No dead ends: the section has no links, buttons or forms, so nothing can lead to a missing page or a failed POST. If you add a link (for example "book a tuning"), point it to an anchor that exists in your page or to a `mailto:`/`tel:` link with `target="_blank" rel="noopener"`; never `href="#"`.
 
 ## Adapting
 

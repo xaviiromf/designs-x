@@ -8,7 +8,7 @@ fonts:
   - Sofia Sans 400/500 (Google Fonts), body, specs, link
   - Sofia Sans Condensed 600-700 variable range (Google Fonts), feature titles and in-text panel names 600, jack labels 650, panel silkscreen 700
   - Sofia Sans Extra Condensed 800 (Google Fonts), section headline
-js: Measures each patched panel jack and each feature socket at every width, then draws an SVG patch cable between them (a hanging cable from 760px up, nested lanes on phones); redraws on resize and after fonts load.
+js: Measures each patched panel jack and each feature socket at every width, then draws an SVG patch cable between them (a hanging cable from 760px up, nested lanes on phones); redraws on resize and after fonts load. A second small script opens and closes the quick-reference dialog.
 tags: [hardware, synthesizer, eurorack, diagram, svg, cables, dark, product, connections]
 use_when:
   - A hardware product whose features map one-to-one onto physical inputs, ports, controls or connectors (synth modules, audio interfaces, pedals, dev boards, network gear).
@@ -32,9 +32,11 @@ avoid_when:
 - **Cable craft.** Each cable is a 5px round-capped stroke plus a 1.5px white-at-30% stroke offset 1px up as a rubber sheen, with a plug disc at both ends drawn after all cables so plugs always sit on top. From 760px up the cable leaves the jack level (the stiff plug boot) until just past the panel edge, then hangs: the second control point sits `s` below the chord, with `s = clamp(0.12 × length, 24, 110)px`, so slack grows with the cable's length. A cable climbing to a higher socket stays below its chord along its whole length. A steep drop dips below its socket and rises into it, so it never crosses the jack name above the socket.
 - **Phones keep the cables.** Below 760px the features get a 28px lane on their left (text indented by the lane). The cables are nested so none cross: each leaves the panel's right edge level, runs down a track beside the panel and specs, turns back left under the specs, and drops down the lane into its socket. The top jack takes the outermost right track, the lowest crossing and the innermost lane track, so it drops straight into the first socket; each later cable sits one 8px track further in on the right and further out in the lane. No cable crosses text, a jack or a legend. The socket sits in the lane on the title's first line, and the jack name follows the title in the condensed face and silk-dim, rather than sitting above the title as an eyebrow.
 - **Motion answers the person.** Hovering or focusing a feature (`:has()` with `:hover, :focus-within` on the `li`) thickens its cable from 5 to 7px (3.5 to 5px on phones), brightens its plugs, and dims the other cables to 35% over 160ms. There is no load animation and no ambient motion.
-- **Copy from the patching hand.** The headline is an instruction from the player's side. The intro states what the module is; the key states what the cables mean. Each paragraph names the jack or knob as printed and says what happens when you patch it. The manual link names the action and the file type and size instead of an arrow.
+- **Copy from the patching hand.** The headline is an instruction from the player's side. The intro states what the module is; the key states what the cables mean. Each paragraph names the jack or knob as printed and says what happens when you patch it. The manual button names what it opens instead of using an arrow.
 
 Reasoned exceptions to the collection's defaults: uppercase appears only on jack and knob names (Default 5), because that is exactly how they are printed on the hardware; it is tracked only 0.02em and never sits above a heading as a category eyebrow. The page is dark (Default 2), but the accents are two signal colours plus plated gold that stays on the copper, all taken from the object.
+
+No dead ends: the one action that used to link to a PDF stub now opens the quick reference as a native modal `<dialog>` in the same file. It traps focus, closes on Escape, on the Close button or on a backdrop click, and returns focus to the button that opened it. Nothing in the section navigates away or submits.
 
 Trade-offs, stated: each feature `li` has `tabindex="0"` so keyboard users get the same cable emphasis as a pointer. Focus only changes the drawing, so screen-reader users gain nothing from it and keyboard users get four extra tab stops; drop the tabindex if that costs more than the parity is worth. The section has an `h2` and `h3`s but no `h1`; the host product page supplies the `h1`. The specs list is the figure's `figcaption`.
 
@@ -49,7 +51,7 @@ Trade-offs, stated: each feature `li` has `tabindex="0"` so keyboard users get t
 - **Phone lane geometry.** `--lane` (28px), `--socket` (12px on phones, near the lane's right edge) and the 8px track step (`TRACK` in the script) are tuned together. Four cables fit; the outermost lane track sits in the 16px page gutter. The panel's left margin equals the lane so the panel lines up with the feature text.
 - **Without JS** the cables are absent, but the panel still shows coloured plugs and every socket repeats its plug colour and jack name, so the mapping survives. Keep the CSS-drawn plug colour in `.socket`.
 - **Accessibility.** The panel SVG is `role="img"` with an `aria-label` listing every control and what is patched. The cable SVG is `aria-hidden`. Each jack label carries a visually hidden "Blue cable from" or "Pink cable from" so colour is never the only carrier. Panel legends are 2.6 mm in the SVG, about 10px at the phone floor of `--hp` (20px).
-- **The manual link points at a stub.** `crease-manual.pdf` (23 KB) is a one-page stand-in shipped in the folder; replace it with the real PDF and correct the size in the link text.
+- **The quick-reference dialog.** Keep it a native modal `<dialog>` opened with `showModal()` so focus handling stays correct, and keep a visible Close button. Its text must stay in step with the feature copy and specs.
 
 ## Adapting
 
@@ -84,3 +86,5 @@ Geometry constants are literal on purpose and live next to what they measure: th
 | `--lane` | Phone cable lane left of the panel and features (28px) |
 | `--cable` / `--cable-on` | Cable width at rest and when its feature is hovered or focused |
 | `--rule` / `--focus` / `--swatch-w` | Ruler and underline weight (1.5px), focus ring width (2px), key swatch length (28px) |
+
+To link a real manual instead, replace the button with an `<a href="https://…" target="_blank" rel="noopener">` to a hosted PDF and delete the dialog and its script. Never point it at a relative file that is not served.

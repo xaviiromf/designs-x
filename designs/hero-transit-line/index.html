@@ -122,7 +122,42 @@ h1 {
   text-decoration: none;
 }
 .button:hover { text-decoration: underline; text-decoration-thickness: 2px; }
-.actions a:not(.button) { font-weight: 500; }
+button { font: inherit; border: 0; cursor: pointer; }
+button:focus-visible, select:focus-visible {
+  outline: var(--focus-w) solid var(--ink);
+  outline-offset: var(--focus-w);
+  box-shadow: 0 0 0 var(--focus-w) var(--paper);
+}
+.link {
+  padding: var(--s-2) 0; background: none; color: inherit; font-weight: 500;
+  text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.2em; text-align: left;
+}
+.link:hover { text-decoration-thickness: var(--focus-w); }
+
+/* in-page results: plan a trip, timetable */
+dialog {
+  width: min(32rem, calc(100% - 2 * var(--gutter))); max-height: calc(100dvh - 2 * var(--s-5));
+  padding: var(--s-5); overflow: auto;
+  background: var(--paper); color: var(--ink);
+  border: var(--focus-w) solid var(--ink); border-radius: var(--radius);
+}
+dialog::backdrop { background: color-mix(in srgb, var(--ink) 60%, transparent); }
+dialog h2 { margin: 0 0 var(--s-4); font-size: var(--t-l); font-weight: 800; line-height: var(--lh-tight); }
+dialog p { margin: 0 0 var(--s-4); }
+.field { display: block; margin-bottom: var(--s-4); font-weight: 700; }
+select {
+  display: block; width: 100%; margin-top: var(--s-1); padding: var(--s-3);
+  font: inherit; font-weight: 500; color: var(--ink); background: var(--paper);
+  border: var(--ring-border) solid var(--ink); border-radius: var(--radius);
+}
+.result { min-height: 1.5em; margin: var(--s-4) 0 0; font-weight: 500; }
+.result:empty { display: none; }
+.dialog-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-6); margin-top: var(--s-4); }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: var(--t-s); }
+caption { text-align: left; padding-bottom: var(--s-3); }
+th, td { padding: var(--s-2) var(--s-2) var(--s-2) 0; text-align: left; border-bottom: 1px solid var(--ink-soft); }
+thead th { font-weight: 700; }
+tbody th { font-weight: 500; }
 
 /* strip map */
 .map { position: relative; margin: var(--s-8) 0 0; }
@@ -326,8 +361,8 @@ figcaption { font-size: var(--t-xs); color: var(--ink-soft); }
         <p class="lede">Trains every 6 minutes, 5:30 am to midnight. Every station is step&#8209;free, and St Brigid’s Hospital gets its own&nbsp;stop.</p>
         <p class="note">Ride free all weekend, <span class="nowrap">28 and 29 November.</span></p>
         <div class="actions">
-          <a class="button" href="/plan">Plan a trip on Line 5</a>
-          <a href="/timetable">See the opening weekend timetable</a>
+          <button type="button" class="button" data-open="plan-dialog" aria-haspopup="dialog">Plan a trip on Line 5</button>
+          <button type="button" class="link" data-open="timetable-dialog" aria-haspopup="dialog">See the opening weekend timetable</button>
         </div>
       </div>
     </div>
@@ -397,5 +432,82 @@ figcaption { font-size: var(--t-xs); color: var(--ink-soft); }
     </figure>
   </section>
 </main>
+
+<dialog id="plan-dialog" aria-labelledby="plan-title">
+  <h2 id="plan-title">Plan a trip on Line 5</h2>
+  <form id="plan-form" novalidate>
+    <label class="field">From <select id="plan-from" name="from"></select></label>
+    <label class="field">To <select id="plan-to" name="to"></select></label>
+    <button type="submit" class="button">Show journey time</button>
+  </form>
+  <p class="result" id="plan-result" role="status"></p>
+  <div class="dialog-actions">
+    <button type="button" class="link" data-open="timetable-dialog">See the opening weekend timetable</button>
+    <button type="button" class="link" data-close>Back to Line 5</button>
+  </div>
+</dialog>
+
+<dialog id="timetable-dialog" aria-labelledby="tt-title">
+  <h2 id="tt-title">Opening weekend timetable</h2>
+  <p>First trains on Saturday 28 November. After that, trains every 6 minutes until midnight. Ride free all weekend.</p>
+  <table>
+    <caption>First train from each station</caption>
+    <thead><tr><th scope="col">Station</th><th scope="col">To Kestrel Hill</th><th scope="col">To Central</th></tr></thead>
+    <tbody id="tt-body"></tbody>
+  </table>
+  <div class="dialog-actions">
+    <button type="button" class="link" data-open="plan-dialog">Plan a trip on Line 5</button>
+    <button type="button" class="link" data-close>Back to Line 5</button>
+  </div>
+</dialog>
+
+<script>
+(() => {
+  const stops = [...document.querySelectorAll('.strip li')].map(li => ({
+    name: li.querySelector('.name').textContent,
+    min: Number(li.style.getPropertyValue('--m'))
+  }));
+  const end = stops[stops.length - 1].min;
+  const first = 5 * 60 + 30; // first train leaves each terminus at 5:30 am
+  const clock = t => `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')} am`;
+  const text = (tag, s) => Object.assign(document.createElement(tag), { textContent: s });
+
+  const from = document.getElementById('plan-from');
+  const to = document.getElementById('plan-to');
+  stops.forEach((s, i) => {
+    from.add(new Option(s.name, i, i === 0, i === 0));
+    to.add(new Option(s.name, i, i === stops.length - 1, i === stops.length - 1));
+  });
+
+  const body = document.getElementById('tt-body');
+  stops.forEach((s, i) => {
+    const row = body.insertRow();
+    row.append(text('th', s.name), text('td', i === stops.length - 1 ? 'Last stop' : clock(first + s.min)),
+      text('td', i === 0 ? 'Last stop' : clock(first + end - s.min)));
+    row.firstChild.scope = 'row';
+  });
+
+  const result = document.getElementById('plan-result');
+  document.getElementById('plan-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const a = stops[from.value], b = stops[to.value];
+    result.textContent = a === b
+      ? 'Choose two different stations.'
+      : `${a.name} to ${b.name}: ${Math.abs(a.min - b.min)} minutes on Line 5, with a train every 6 minutes. Free all weekend.`;
+  });
+
+  document.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => {
+    const open = b.closest('dialog');
+    if (open) open.close(); // closing first returns focus to the page opener, so the next dialog hands it back there
+    document.getElementById(b.dataset.open).showModal();
+  }));
+  document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => b.closest('dialog').close()));
+  // click on the backdrop closes
+  document.querySelectorAll('dialog').forEach(d => d.addEventListener('click', e => {
+    const r = d.getBoundingClientRect();
+    if (e.target === d && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom)) d.close();
+  }));
+})();
+</script>
 </body>
 </html>

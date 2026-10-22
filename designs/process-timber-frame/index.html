@@ -96,6 +96,9 @@
     max-width: 34ch;
   }
   .book {
+    border: 0;
+    font-family: inherit;
+    cursor: pointer;
     display: inline-flex;
     align-items: center;
     min-height: 44px;
@@ -179,6 +182,41 @@
     color: var(--pencil);
   }
 
+
+  /* Survey request dialog: opens from the button, closes back to it */
+  .survey {
+    width: min(30rem, calc(100% - 2 * var(--s-4)));
+    padding: var(--s-6);
+    background: var(--limewash);
+    color: var(--iron-stain);
+    border: 2px solid var(--iron-stain);
+    border-radius: 2px;
+  }
+  .survey::backdrop { background: color-mix(in srgb, var(--iron-stain) 55%, transparent); }
+  .survey h2 { margin: 0; font-size: var(--fs-stage); font-weight: 800; line-height: 1.1; }
+  .survey p { margin: var(--s-3) 0 0; }
+  .survey h2:focus { outline: none; }
+  .survey label { display: block; margin-top: var(--s-4); font-weight: 700; }
+  .survey input {
+    display: block;
+    width: 100%;
+    min-height: 44px;
+    margin-top: var(--s-1);
+    padding: var(--s-2) var(--s-3);
+    font: inherit;
+    color: inherit;
+    background: transparent;
+    border: 2px solid var(--iron-stain);
+    border-radius: 2px;
+  }
+  .survey input:focus-visible, .survey button:focus-visible {
+    outline: 3px solid var(--iron-stain);
+    outline-offset: 3px;
+  }
+  .survey .actions { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: var(--s-5); }
+  .survey .book { margin-top: 0; }
+  .survey .quiet { background: transparent; color: var(--iron-stain); border: 2px solid var(--iron-stain); }
+
   @media (max-width: 1100px) {
     :root { --gutter: 40px; }
     .intro { grid-column: 1 / 6; }
@@ -236,7 +274,7 @@
       <h2 id="process-title">From survey&nbsp;pegs to raising day</h2>
       <p class="lede">We build green-oak frames for houses in the Welsh Marches. This is what happens between your first call and the morning your frame stands up.</p>
       <p class="total">Most frames take 15 to 23 weeks from survey to raising.</p>
-      <a class="book" href="#book-survey">Book a site survey</a>
+      <button class="book" type="button" id="book-open" aria-haspopup="dialog">Book a site survey</button>
       <p class="note">Surveys within 40 miles of Hereford are free.</p>
     </div>
 
@@ -291,6 +329,57 @@
       </li>
     </ol>
   </section>
+
+  <dialog class="survey" id="survey" aria-labelledby="survey-title">
+    <form id="survey-form" novalidate>
+      <h2 id="survey-title">Book a site survey</h2>
+      <p>Tell us where the frame will stand. We will email you to agree a day for the visit.</p>
+      <label for="s-name">Your name</label>
+      <input id="s-name" name="name" autocomplete="name" required>
+      <label for="s-email">Email</label>
+      <input id="s-email" name="email" type="email" autocomplete="email" required>
+      <label for="s-site">Site postcode</label>
+      <input id="s-site" name="site" autocomplete="postal-code" required>
+      <p id="survey-error" role="alert" hidden></p>
+      <div class="actions">
+        <button class="book" type="submit">Request survey</button>
+        <button class="book quiet" type="button" data-close>Cancel</button>
+      </div>
+    </form>
+    <div id="survey-done" hidden>
+      <h2 id="survey-done-title" tabindex="-1">Survey requested</h2>
+      <p id="survey-done-text"></p>
+      <div class="actions"><button class="book" type="button" data-close>Back to the process</button></div>
+    </div>
+  </dialog>
 </main>
+<script>
+(() => {
+  const dlg = document.getElementById('survey');
+  const form = document.getElementById('survey-form');
+  const done = document.getElementById('survey-done');
+  const err = document.getElementById('survey-error');
+  const open = () => {
+    form.reset(); form.hidden = false; done.hidden = true; err.hidden = true;
+    dlg.showModal();
+    document.getElementById('s-name').focus();
+  };
+  document.getElementById('book-open').addEventListener('click', open);
+  dlg.addEventListener('click', e => { if (e.target === dlg || e.target.closest('[data-close]')) dlg.close(); });
+  form.addEventListener('submit', e => {
+    e.preventDefault(); // nothing is sent anywhere; the outcome is shown in the dialog
+    const f = form.elements;
+    const bad = [f.name, f.email, f.site].find(x => !x.value.trim() || !x.checkValidity());
+    if (bad) {
+      err.textContent = bad === f.email ? 'Enter an email address like name@example.com.' : 'Fill in your ' + (bad === f.name ? 'name.' : 'site postcode.');
+      err.hidden = false; bad.focus(); return;
+    }
+    document.getElementById('survey-done-text').textContent =
+      'Thanks, ' + f.name.value.trim() + '. We will email ' + f.email.value.trim() + ' to arrange a visit to ' + f.site.value.trim() + '.';
+    form.hidden = true; done.hidden = false;
+    document.getElementById('survey-done-title').focus();
+  });
+})();
+</script>
 </body>
 </html>

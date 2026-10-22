@@ -6,8 +6,8 @@ aesthetic: An astronomer's red-light night mode with a working planisphere, the 
 mode: dark
 fonts:
   - Atkinson Hyperlegible Next (Google Fonts, variable 200-800 with italics)
-js: none
-tags: [astronomy, booking, tourism, planisphere, svg, has-selector, single-hue, dark, no-js]
+js: Opens two native dialogs in place (booking confirmation with a reference, and a booking lookup); the wheel itself needs no script.
+tags: [astronomy, booking, tourism, planisphere, svg, has-selector, single-hue, dark, dialog]
 use_when:
   - A booking or choice where each option changes what the visitor will get, and an instrument from the subject's world can show that change.
   - Night-time, outdoor or low-light use where a page must not dazzle (observatories, night tours, theatre or ship's bridge tools).
@@ -49,12 +49,12 @@ avoid_when:
 - **Chart label sizes are in SVG user units**, set through `--fs-chart` so they never render below about 12px: 17 at 1280px and up, 20 at 1024-1279px (wheel about 471px), 24 below 600px (about 13px on a 358px wheel). Month names are 13 units. Below 600px only Canopus, Sirius, Achernar, LMC, SMC, 14 Nov, the hour scale and East/West show (`.x`, `.mon`, `.ns` are hidden); East and West stay because the sky notes rely on them. Rings and ticks use `vector-effect: non-scaling-stroke` so they stay 1px at any size.
 - **Below 1024px the wheel is cropped** to its top 400 of 640 units (just under the horizon's lowest point at 369 and the South label), with no border; the fieldset's first divider closes it. It is `position: sticky; top: 0` on the page background, so it stays in view while the options are tapped. On desktop it is a full circle, sticky, with the top of its hour scale set on the h1 cap height.
 - **Accessibility:** native radios in a fieldset with legend, described by the line that says the wheel turns with the choice (`aria-describedby`); the checked row gets a 1px `--lamp` outline at `--radius` 6px (the only rounded rectangle; the radio dots are circles) and a filled dot; keyboard focus shows a 2px `--lamp` outline 3px off the whole row; `prefers-reduced-motion` removes the turn and label fades; a `forced-colors` rule repaints the custom radio in CanvasText and Highlight. Each radio's accessible name is its whole row (time, seats, sky note): verbose, but the sky is the point of the choice.
-- **Placeholders:** "Find my booking" (`href="#"`) and the form (`action="#"`, GET with `tour=2100|2300|0100`) have no real targets. Wire them to the booking system when reusing.
+- **No dead ends:** the wordmark is an anchor to `#top`. "Book seats on this tour" and "Find my booking" never leave the page: the form handles `submit` in the one script (`preventDefault`) and opens a native `<dialog>` (`#confirm` with a generated reference, `#find` with a lookup that answers in place). Both dialogs are modal, close with Escape, the backdrop or "Back to the tours", and return focus to the control that opened them. They reuse the button outline, `--night` and `--lamp` only; keep them in that language. Bookings are kept in memory for the visit, so the lookup only finds references issued on this page; swap `booked` and the generated reference for the real booking system when reusing.
 - All text flush left on one edge; no centred text, no all caps, sentence case.
 
 ## Adapting
 
-Change the `:root` tokens first. For a different red-light subject (a night safari, a ship's bridge, a sleep clinic) keep the single hue and recheck contrast: `--lamp` must stay at least 4.5:1 on both `--night` and `--disk`. Deeper reds than about `#E8402E` fail AA for body text on a dark this saturated.
+Change the `:root` tokens first. The booking confirmation and lookup are stand-ins: replace the `TOURS` map (names and pickup times, 45 minutes before the start) and the reference format, and send the form to your booking system from the `submit` handler instead of the in-memory object. For a different red-light subject (a night safari, a ship's bridge, a sleep clinic) keep the single hue and recheck contrast: `--lamp` must stay at least 4.5:1 on both `--night` and `--disk`. Deeper reds than about `#E8402E` fail AA for body text on a dark this saturated.
 
 For another observatory: recompute the SVG for its latitude, date and LST (the original was built with a short Python script: equal-area polar projection, `alt = 0` horizon per azimuth, galactic-to-equatorial rotation, about 45 bright stars to magnitude 2.9). In the northern hemisphere, centre on the north pole, put East on the right of the window and turn the disk counterclockwise (negative `--turn`). Keep label count near eight on desktop and six on phones.
 

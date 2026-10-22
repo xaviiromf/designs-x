@@ -148,12 +148,46 @@ input[type="range"]::-moz-range-thumb { width: var(--thumb); height: var(--thumb
   background: var(--magenta); color: var(--night-water);
   border-radius: var(--radius);
   font-size: var(--step-0); font-weight: 600; line-height: 1.2;
-  text-decoration: none;
+  border: 0; font-family: inherit; cursor: pointer;
 }
 .trial:hover { background: var(--buff); }
 @media (min-width: 600px) { .trial { display: inline-flex; } }
 
-input[type="range"]:focus-visible, .trial:focus-visible {
+/* trial dialog: the only place a visitor can go from the button, and it always closes back to the forecast */
+.dlg {
+  width: min(30rem, calc(100% - 2 * var(--gutter)));
+  margin: auto; padding: 0; /* padding sits on the children so a click on it is not read as a click on the backdrop */
+  background: var(--daylight); color: var(--buff);
+  border: 1px solid var(--sea-grey); border-radius: 0;
+  font: inherit; line-height: var(--lead-body);
+}
+.dlg::backdrop { background: color-mix(in srgb, var(--night-water) 82%, transparent); }
+.dlg form, .dlg #dlg-done { padding: var(--s5); }
+.dlg h2 { margin: 0 0 var(--s3); font-size: var(--step-1); font-weight: 600; line-height: var(--lead-ui); }
+.dlg h2:focus { outline: none; }
+.dlg p { margin: 0 0 var(--s4); max-width: var(--measure); }
+.dlg .muted { color: var(--sea-grey); }
+.dlg label { display: block; margin-bottom: var(--s2); line-height: var(--lead-ui); }
+.dlg input[type="email"] {
+  display: block; width: 100%; min-height: var(--btn-h); padding: var(--s2) var(--s3);
+  background: var(--night-water); color: var(--buff);
+  border: 1px solid var(--sea-grey); border-radius: var(--radius);
+  font: inherit;
+}
+.dlg .err { margin: var(--s2) 0 0; color: var(--buff); }
+.dlg .err[hidden] { display: none; }
+.dlg .row { display: flex; flex-wrap: wrap; gap: var(--s3); margin-top: var(--s4); }
+.dlg .trial { display: inline-flex; }
+.dlg .back {
+  min-height: var(--btn-h); padding: var(--s3) var(--s4);
+  background: none; color: var(--buff);
+  border: 1px solid var(--sea-grey); border-radius: var(--radius);
+  font: inherit; cursor: pointer;
+}
+.dlg .back:hover { border-color: var(--buff); }
+.dlg [hidden] { display: none; }
+
+input[type="range"]:focus-visible, .trial:focus-visible, .dlg :focus-visible {
   outline: var(--focus-w) solid var(--buff); outline-offset: var(--focus-off);
 }
 
@@ -188,10 +222,30 @@ input[type="range"]:focus-visible, .trial:focus-visible {
         <p>Neap reads the tide, swell and daylight for your slipway and shows only the hours you can launch and get back.</p>
         <p class="terms">Free for 14 days, then $5 a month. No card to start.</p>
       </div>
-      <a class="trial" href="#">Start 14-day free trial</a>
+      <button class="trial" type="button" id="trial" aria-haspopup="dialog">Start 14-day free trial</button>
     </div>
   </section>
 </main>
+
+<dialog class="dlg" id="dlg" aria-labelledby="dlg-title">
+  <form id="dlg-form" novalidate>
+    <h2 id="dlg-title">Start your 14-day free trial</h2>
+    <p class="muted">Neap sends the first forecast for your slipway tomorrow morning. No card to start.</p>
+    <label for="email">Email address</label>
+    <input id="email" type="email" name="email" autocomplete="email" required aria-describedby="email-err">
+    <p class="err" id="email-err" role="alert" hidden>Enter an email address like name@example.com.</p>
+    <div class="row">
+      <button class="trial" type="submit">Start free trial</button>
+      <button class="back" type="button" data-close>Back to the forecast</button>
+    </div>
+  </form>
+  <div id="dlg-done" hidden>
+    <h2 id="dlg-done-title" tabindex="-1">Your trial has started</h2>
+    <p>The first forecast for Gull&nbsp;Point&nbsp;slip goes to <strong id="sent-to"></strong> tomorrow morning.</p>
+    <p class="muted">This is a sample page, so nothing was sent.</p>
+    <div class="row"><button class="trial" type="button" data-close>Back to the forecast</button></div>
+  </div>
+</dialog>
 <script>
 // --- model: Gull Point is fictional. M2 + S2 (springs at Saturday 11:30) plus M4 and K1 for a real-looking curve.
 const SITE = "Gull Point slip";                  // non-breaking: the place name never splits across lines
@@ -343,6 +397,23 @@ if (typeof document !== "undefined") {
     clearTimeout(quiet);
     quiet = setTimeout(() => { said.textContent = headline(d) + (hint.hidden ? "" : " " + hint.textContent); }, 600);
   }
+
+  // trial dialog: handled here, nothing is submitted anywhere. Native <dialog> traps focus, closes on Escape and returns focus to the button.
+  const dlg = document.getElementById("dlg"), form = document.getElementById("dlg-form"), done = document.getElementById("dlg-done");
+  const email = document.getElementById("email"), err = document.getElementById("email-err");
+  document.getElementById("trial").addEventListener("click", () => dlg.showModal());
+  dlg.addEventListener("click", e => { if (e.target === dlg || e.target.closest("[data-close]")) dlg.close(); });
+  dlg.addEventListener("close", () => { form.reset(); form.hidden = false; done.hidden = true; err.hidden = true; email.removeAttribute("aria-invalid"); });
+  form.addEventListener("submit", e => {
+    e.preventDefault();
+    const ok = email.checkValidity();
+    err.hidden = ok;
+    if (ok) email.removeAttribute("aria-invalid"); else email.setAttribute("aria-invalid", "true");
+    if (!ok) return email.focus();
+    document.getElementById("sent-to").textContent = email.value.trim();
+    form.hidden = true; done.hidden = false;
+    document.getElementById("dlg-done-title").focus();
+  });
 
   svg.hidden = false;
   input.addEventListener("input", update);

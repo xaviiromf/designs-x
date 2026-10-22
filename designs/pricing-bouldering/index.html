@@ -126,6 +126,33 @@
     font-size: var(--fs-fine); color: var(--pencil); max-width: 72ch;
   }
 
+  /* checkout dialog: opens from the buy buttons, closes back to the button that opened it */
+  .buy { cursor: pointer; }
+  .checkout {
+    margin: auto; /* the global margin reset would pin the dialog top-left */
+    width: min(440px, calc(100% - 2 * var(--gutter)));
+    padding: var(--s-5);
+    background: var(--wall); color: var(--ink);
+    border: var(--border-w) solid var(--ink); border-radius: 0;
+  }
+  .checkout::backdrop { background: color-mix(in srgb, var(--ink) 70%, transparent); }
+  .checkout h3 { font-size: var(--fs-lede); font-weight: 700; font-stretch: 108%; line-height: 1.2; }
+  .checkout h3:focus { outline: none; }
+  .checkout form, .checkout .done { display: grid; gap: var(--s-4); }
+  .checkout .sum { font-variant-numeric: tabular-nums; }
+  .checkout label { display: grid; gap: var(--s-1); font-weight: 600; }
+  .checkout input {
+    font: 400 var(--fs-body)/1.3 var(--font-sans); color: var(--ink);
+    background: transparent; border: var(--border-w) solid var(--ink); border-radius: var(--radius);
+    padding: var(--s-3);
+  }
+  .checkout input:focus-visible { outline: var(--focus-w) solid var(--ink); outline-offset: var(--focus-w); }
+  .checkout .actions { display: flex; flex-wrap: wrap; gap: var(--s-3); }
+  .checkout .buy { display: inline-block; width: auto; }
+  .checkout .fill { background: var(--ink); color: var(--wall); }
+  .checkout .fill:hover, .checkout .fill:focus-visible { background: transparent; color: var(--ink); }
+  .checkout [hidden] { display: none; }
+
   @media (max-width: 599px) {
     .buy { display: block; text-align: center; width: 100%; }
   }
@@ -185,7 +212,7 @@
           <li>Shoe hire £4. Liquid chalk is free at the desk.</li>
           <li>First time bouldering? The 20-minute safety induction is free with any plan.</li>
         </ul>
-        <a class="buy" href="#checkout-day-pass">Buy a day pass</a>
+        <button class="buy" type="button">Buy a day pass</button>
       </article>
 
       <article class="plan" aria-labelledby="plan-ten">
@@ -198,7 +225,7 @@
           <li>Valid for 12 months from your first visit.</li>
           <li>Share it: anyone can use a visit off your card.</li>
         </ul>
-        <a class="buy" href="#checkout-10-visit-card">Buy a 10-visit card</a>
+        <button class="buy" type="button">Buy a 10-visit card</button>
       </article>
 
       <article class="plan" aria-labelledby="plan-month">
@@ -213,12 +240,61 @@
           <li>Cancel with 30 days' notice.</li>
           <li>Three sessions a week is how most of our regulars climb.</li>
         </ul>
-        <a class="buy" href="#checkout-monthly">Start a monthly membership</a>
+        <button class="buy" type="button">Start a monthly membership</button>
       </article>
     </div>
 
     <p class="fine">Every plan covers all the walls, the training board and the stretching room. Students, under&#8209;18s and over&#8209;65s get 20% off any plan with ID at the desk.</p>
   </section>
 </main>
+<dialog class="checkout" id="checkout" aria-labelledby="co-title">
+  <form id="co-form" method="dialog">
+    <h3 id="co-title" tabindex="-1">Day pass</h3>
+    <p class="sum" id="co-sum"></p>
+    <label>Email for your receipt
+      <input type="email" name="email" autocomplete="email" required>
+    </label>
+    <p class="fine" style="margin:0">Pay at the desk on your first visit. Nothing is charged here.</p>
+    <div class="actions">
+      <button class="buy fill" type="submit" id="co-confirm">Confirm</button>
+      <button class="buy" type="button" data-close>Cancel</button>
+    </div>
+  </form>
+  <div class="done" id="co-done" hidden>
+    <h3 id="co-done-title" tabindex="-1">You're booked in</h3>
+    <p id="co-done-msg"></p>
+    <div class="actions"><button class="buy fill" type="button" data-close>Back to prices</button></div>
+  </div>
+</dialog>
+<script>
+(function () {
+  var dlg = document.getElementById('checkout');
+  if (!dlg || !dlg.showModal) return;
+  var form = document.getElementById('co-form'), done = document.getElementById('co-done');
+  var title = document.getElementById('co-title'), sum = document.getElementById('co-sum');
+  var plan = '';
+  document.querySelectorAll('.plan .buy').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var a = b.closest('.plan');
+      plan = a.querySelector('h3').textContent.trim();
+      title.textContent = plan;
+      sum.textContent = a.querySelector('.price').textContent.replace(/\s+/g, ' ').trim() + '. ' + a.querySelector('.per-visit').textContent.trim() + '.';
+      document.getElementById('co-confirm').textContent = 'Confirm ' + plan.toLowerCase();
+      form.reset(); form.hidden = false; done.hidden = true;
+      dlg.showModal();
+    });
+  });
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (!form.reportValidity()) return;
+    document.getElementById('co-done-msg').textContent = 'Your ' + plan.toLowerCase() + ' is saved. We sent the receipt to ' + form.email.value + '. Show it at the desk.';
+    form.hidden = true; done.hidden = false;
+    document.getElementById('co-done-title').focus();
+  });
+  dlg.addEventListener('click', function (e) {
+    if (e.target === dlg || e.target.hasAttribute('data-close')) dlg.close(); // close() returns focus to the button that opened it
+  });
+})();
+</script>
 </body>
 </html>
