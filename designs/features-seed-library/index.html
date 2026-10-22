@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ashby Seed Library: how borrowing works</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600&family=Libre+Franklin:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* colour */
+    --blotter: #D6E0E6;   /* germination blotter paper: page ground */
+    --manila: #EFDFA9;    /* checkout card stock */
+    --ink: #1E2B26;       /* all text */
+    --ink-soft: #44524B;  /* secondary text */
+    --print: #2D5A86;     /* the card's pre-printed layer: title, field labels, column heads (darkened --rule, 5.4:1 on manila) */
+    --rule: #7FA3C4;      /* card rulings, decorative only */
+    --violet: #4B2FA0;    /* Borrowed stamp only */
+    --red: #A8322B;       /* index-card header rule, Returned stamp */
+    --shadow-ink: color-mix(in srgb, var(--ink) 25%, transparent);
+    --card-shadow: 0 1px 0 color-mix(in srgb, var(--ink) 10%, transparent), 0 12px 24px -16px var(--shadow-ink);
+    --radius-card: 6px;
+    --card-tilt: -0.6deg;
+
+    /* type */
+    --font-text: "Libre Franklin", "Franklin Gothic Medium", "Franklin Gothic", "Helvetica Neue", Arial, sans-serif;
+    --font-stamp: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+    --t-xs: 13px;
+    --t-sm: 15px;
+    --t-base: 17px;
+    --t-md: 21px;
+    --t-stamp: 28px;
+    --t-xl: clamp(30px, 3vw, 40px);
+    --pitch: 28px;        /* card ruling pitch = card line-height */
+    --rule-y: 21px;       /* where a ruling sits inside each 28px band (just under the baseline) */
+    --header-drop: 3px;   /* red header rule sits this much lower than a blue ruling, so title descenders clear it */
+
+    /* space */
+    --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px;
+    --s-6: 32px; --s-7: 48px; --s-8: 72px; --s-9: 112px;
+    --gutter: clamp(16px, 4vw, 48px);
+    --container: 1200px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--blotter);
+    color: var(--ink);
+    font: 400 var(--t-base)/var(--pitch) var(--font-text);
+    -webkit-font-smoothing: antialiased;
+  }
+  h2, h3, p, dl, dd { margin: 0; }
+  .visually-hidden {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+
+  .seeds {
+    padding: var(--s-8) var(--gutter);
+  }
+  .seeds__inner {
+    max-width: var(--container);
+    margin: 0 auto;
+    display: grid;
+    gap: var(--s-7);
+  }
+
+  /* ---------- quiet text around the card ---------- */
+  .lede h2 {
+    font-size: var(--t-xl);
+    line-height: 1.15;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    max-width: 16em;
+  }
+  .lede h2 span { display: block; text-wrap: balance; }
+  .lede p {
+    margin-top: var(--s-5);
+    max-width: 52ch;
+  }
+  .lede a {
+    display: inline-block;
+    margin-top: var(--s-4);
+    color: var(--ink);
+    font-weight: 500;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.22em;
+  }
+  .lede a:focus-visible {
+    outline: 3px solid var(--ink);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  .more { display: grid; gap: var(--s-5); max-width: 760px; }
+  .more h3 {
+    font-size: var(--t-base);
+    line-height: 1.4;
+    font-weight: 600;
+  }
+  .more p {
+    font-size: var(--t-sm);
+    line-height: 1.45;
+    color: var(--ink-soft);
+    max-width: 34ch;
+    margin-top: var(--s-2);
+  }
+
+  /* ---------- the checkout card ---------- */
+  .card {
+    max-width: 760px;
+    padding: var(--pitch) var(--s-4) calc(var(--pitch) * 2);
+    border-radius: var(--radius-card);
+    box-shadow: var(--card-shadow);
+    background-color: var(--manila);
+    background-image:
+      linear-gradient(var(--red), var(--red)),
+      repeating-linear-gradient(to bottom,
+        transparent 0 var(--rule-y),
+        var(--rule) var(--rule-y) calc(var(--rule-y) + 1px),
+        transparent calc(var(--rule-y) + 1px) var(--pitch));
+    background-repeat: no-repeat;
+    /* red rule on the title line, blue rulings from the next line to one line above the bottom edge */
+    background-position: 0 calc(var(--pitch) + var(--rule-y) + var(--header-drop)), 0 calc(var(--pitch) * 2);
+    background-size: 100% 2px, 100% calc(100% - var(--pitch) * 3);
+  }
+  /* printed layer (form ink) vs entry layer (--ink): the card reads as filled in */
+  .card__title { font-size: var(--t-base); font-weight: 700; color: var(--print); }
+
+  /* second column starts where the Remarks text does */
+  .fields { display: grid; grid-template-columns: calc(9rem + var(--s-3)) 1fr; }
+  .fields > div { grid-column: 1 / -1; }
+  .fields > .lot { grid-column: 1; }
+  .fields > .saver { grid-column: 2; }
+  /* label inline with value at line-height 1, so both share the ruled baseline */
+  .fields dt, .fields dd { display: inline; }
+  .fields dt, .col-label {
+    font-size: var(--t-xs); line-height: 1; font-weight: 500; color: var(--print);
+    margin-right: var(--s-2);
+  }
+  .fields dd { font-weight: 500; }
+  .nw { white-space: nowrap; }
+
+  .log {
+    width: 100%;
+    margin-top: var(--pitch);
+    border-collapse: collapse;
+    text-align: left;
+  }
+  .log th, .log td {
+    padding: 0 var(--s-3) var(--pitch);
+    vertical-align: top;
+    font-weight: 400;
+  }
+  .log thead th, .log tbody tr:last-child > * { padding-bottom: 0; }
+  .log tr > :first-child { padding-left: 0; }
+  .log tr > :not(:first-child) { border-left: 1px solid var(--rule); }
+  .log col.stage { width: 9rem; }
+  .log col.desk { width: 8.5rem; }
+  .stage-name { font-size: var(--t-md); line-height: 1; font-weight: 700; letter-spacing: -0.01em; }
+  .log td.desk { position: relative; }
+
+  /* rubber date stamps */
+  .stamp {
+    position: absolute;
+    top: 0;
+    left: calc(var(--s-2) * -1);
+    padding: var(--s-2) var(--s-3);
+    color: var(--violet);
+    font: 600 var(--t-stamp)/1 var(--font-stamp);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    mix-blend-mode: multiply;
+    filter: url(#ink);
+    /* ink runs out toward one end of the impression, as on a band dater pressed at a slight angle */
+    -webkit-mask-image: linear-gradient(var(--ink-dir), #000 45%, #000b);
+    mask-image: linear-gradient(var(--ink-dir), #000 45%, #000b);
+    transform: rotate(var(--tilt));
+    transform-origin: 30% 60%;
+  }
+  .stamp--borrowed { --tilt: -4deg; --ink-dir: 100deg; }
+  .stamp--returned { --tilt: 2.5deg; --ink-dir: 260deg; color: var(--red); top: calc(var(--s-1) * -1); }
+
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      .stamp {
+        animation: press linear both;
+        animation-timeline: view();
+        animation-range: entry 100% cover 22%;
+      }
+      @keyframes press {
+        0%, 40% { opacity: 0; transform: rotate(var(--tilt)) scale(1.18); }
+        100% { opacity: 1; transform: rotate(var(--tilt)) scale(1); }
+      }
+    }
+  }
+
+  /* phone: each row becomes stage + stamp on one line, remarks below */
+  @media (max-width: 599.98px) {
+    .fields { grid-template-columns: 1fr; }
+    .fields > .lot, .fields > .saver { grid-column: 1; }
+    .log, .log tbody, .log tr, .log th, .log td { display: block; }
+    .log thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    .log tr { display: grid; grid-template-columns: 1fr auto; }
+    .log tbody tr:not(:last-child) { padding-bottom: var(--pitch); }
+    .log th, .log td { padding: 0; }
+    .log tr > :not(:first-child) { border-left: 0; }
+    .log td.remarks { grid-column: 1 / -1; grid-row: 2; }
+    .log td.desk { grid-column: 2; grid-row: 1; }
+    .stamp { left: auto; right: 0; top: calc(var(--s-2) * -1); transform-origin: 100% 50%; scale: 0.85; }
+  }
+
+  @media (min-width: 600px) {
+    .card { padding-inline: var(--s-6) var(--s-5); transform: rotate(var(--card-tilt)); }
+    .more > div { display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 34ch); column-gap: var(--s-6); align-items: baseline; }
+    .more p { margin-top: 0; }
+  }
+
+  @media (min-width: 1100px) {
+    .seeds { padding-block: var(--s-9); }
+    .seeds__inner {
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      column-gap: var(--s-5);
+      row-gap: var(--s-8);
+    }
+    /* left column holds all the quiet text; the card stands alone on the right */
+    .lede, .more { grid-column: 1 / 6; padding-right: var(--s-6); }
+    .lede { grid-row: 1; }
+    .more { grid-row: 2; align-self: end; }
+    .more > div { display: block; }
+    .more p { margin-top: var(--s-1); }
+    .card { grid-column: 6 / 13; grid-row: 1 / 3; align-self: start; }
+  }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <filter id="ink" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
+    <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="4" result="grain"/>
+    <feDisplacementMap in="SourceGraphic" in2="grain" scale="2.5" xChannelSelector="R" yChannelSelector="G" result="rough"/>
+    <feTurbulence type="fractalNoise" baseFrequency="0.05 0.11" numOctaves="3" seed="17" result="blotch"/>
+    <feColorMatrix in="blotch" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -3.2 0 0 0 2.5" result="mask"/>
+    <feComposite in="rough" in2="mask" operator="in"/>
+  </filter>
+</svg>
+
+<main>
+<section class="seeds" aria-labelledby="seeds-title">
+  <div class="seeds__inner">
+    <div class="lede">
+      <h2 id="seeds-title"><span>Borrow seeds in spring.</span> <span>Bring some back in fall.</span></h2>
+      <p>The seed library lends heirloom vegetable, herb and flower seeds for free. Every packet comes with its own checkout card, and the card follows the seeds through the season.</p>
+      <a href="/varieties">Browse all 214 varieties</a>
+    </div>
+
+    <article class="card" aria-label="Checkout card for lot 26-031">
+      <h3 class="card__title">Ashby Seed Library</h3>
+      <dl class="fields">
+        <div><dt>Variety</dt> <dd><span class="nw">Cherokee Trail of Tears</span> <span class="nw">pole bean</span></dd></div>
+        <div class="lot"><dt>Lot</dt> <dd>26-031</dd></div>
+        <div class="saver"><dt>Saved by</dt> <dd>Ruth Okafor, <span class="nw">7th season</span></dd></div>
+      </dl>
+
+      <table class="log" role="table">
+        <caption class="visually-hidden">What the seed library does at each stage of the season</caption>
+        <colgroup><col class="stage"><col><col class="desk"></colgroup>
+        <thead role="rowgroup">
+          <tr role="row">
+            <th scope="col" role="columnheader"><span class="col-label">Stage</span></th>
+            <th scope="col" role="columnheader"><span class="col-label">Remarks</span></th>
+            <th scope="col" role="columnheader"><span class="col-label">Desk</span></th>
+          </tr>
+        </thead>
+        <tbody role="rowgroup">
+          <tr role="row">
+            <th scope="row" role="rowheader"><span class="stage-name">Borrowed</span></th>
+            <td class="remarks" role="cell">Take up to six packets a season from the drawers at any branch. Your Ashby library card is all you need, and there is no fee.</td>
+            <td class="desk" role="cell"><span class="stamp stamp--borrowed" role="img" aria-label="Stamped borrowed March 21, 2026"><span aria-hidden="true">Mar 21 2026</span></span></td>
+          </tr>
+          <tr role="row">
+            <th scope="row" role="rowheader"><span class="stage-name">Sown</span></th>
+            <td class="remarks" role="cell">This lot tested <span class="nw">9 of 10</span> sprouted in March, so sow at packet spacing. When a card shows fewer than <span class="nw">8 in 10</span>, sow thicker.</td>
+            <td class="desk" role="cell"><span class="visually-hidden">No stamp</span></td>
+          </tr>
+          <tr role="row">
+            <th scope="row" role="rowheader"><span class="stage-name">Grown</span></th>
+            <td class="remarks" role="cell">These beans climb past six feet, so give them a tall trellis. Bring questions to the Saturday seed clinic at the Main Street branch, 10 to noon, May to September.</td>
+            <td class="desk" role="cell"><span class="visually-hidden">No stamp</span></td>
+          </tr>
+          <tr role="row">
+            <th scope="row" role="rowheader"><span class="stage-name">Returned</span></th>
+            <td class="remarks" role="cell">Bring back seeds from your two or three strongest plants, dry and in a labeled envelope. If the crop failed, return the card anyway and tell us what happened. We note it for the next grower.</td>
+            <td class="desk" role="cell"><span class="stamp stamp--returned" role="img" aria-label="Stamped returned September 30, 2026"><span aria-hidden="true">Sep 30 2026</span></span></td>
+          </tr>
+        </tbody>
+      </table>
+    </article>
+
+    <div class="more">
+      <div>
+        <h3>Marked for beginners</h3>
+        <p>Beans, peas, lettuce and tomatoes pollinate themselves, so the seed you save grows true. Their drawer labels say easy to save.</p>
+      </div>
+      <div>
+        <h3>A history for every variety</h3>
+        <p>The card file keeps every season a lot has spent in Ashby: who grew it, how it germinated and how much came back.</p>
+      </div>
+      <div>
+        <h3>Envelopes and screens at the desk</h3>
+        <p>Coin envelopes, labels and drying screens are free at every branch. Seed-cleaning night is the first Thursday of October.</p>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+</body>
+</html>
