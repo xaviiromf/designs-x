@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Take a square for the winter bird count | Wenning Vale Ornithological Society</title>
+<meta name="description" content="Sign up for the Wenning Vale winter bird count by picking one of the eight survey tetrads that still need a counter.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cabin:ital,wdth,wght@0,75..100,400..700;1,75..100,400..700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Colour: the materials of a marked-up survey map */
+    --paper: #F4F6F2;      /* cool survey paper, not cream */
+    --ink: #1C2733;        /* blue-black survey ink: text, chosen square, button */
+    --grid: #2C64A8;       /* grid lines, hatch, water, focus, links */
+    --highlight: #F5CF3A;  /* "needs a counter", and nothing else */
+    --pencil: #56616D;     /* secondary text, grid numbers, taken letters, field borders */
+    --rule: #C9D2DA;       /* the one divider */
+    --water: color-mix(in srgb, var(--grid) 60%, var(--paper));        /* river line */
+    --water-fill: color-mix(in oklch, var(--grid) 34%, #E4F0FF);       /* reservoir: a clear blue tint over paper and highlighter */
+    /* Hatch for covered squares: one 9px tile, so every square hatches identically.
+       Stroke is --grid mixed 25% into --paper (#C2D2E0); change it with the palette. */
+    --hatch-tile: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='9'%3E%3Cpath d='M-1 1l2-2M0 9l9-9M8 10l2-2' stroke='%23C2D2E0' stroke-width='1'/%3E%3C/svg%3E");
+    --hatch-size: 9px;
+
+    /* Type: Cabin, one family; a condensed width is the map lettering */
+    --font: "Cabin", "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif;
+    --root-size: 106.25%;  /* 17px base */
+    --map-width: 87.5%;
+    --t-xs: 0.8rem;
+    --t-sm: 0.9rem;
+    --t-base: 1rem;
+    --t-md: 1.25rem;
+    --t-lg: clamp(1.25rem, 2.6vw, 2rem);
+    --t-xl: clamp(2.25rem, 3.2vw + 1rem, 3.25rem);
+    --lh-tight: 1.05;
+    --lh-snug: 1.3;
+    --lh-lead: 1.5;
+    --lh-body: 1.55;
+    --measure: 34em;
+    --form-max: 26em;
+
+    /* Space (px: 4 8 12 16 24 32 48 64 96) */
+    --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px;
+    --s-6: 32px; --s-7: 48px; --s-8: 64px; --s-9: 96px;
+
+    /* Map and controls */
+    --map-max: 600px;
+    --map-max-tablet: 520px;  /* keeps the form near the fold on one-column tablets */
+    --axis: 28px;          /* gutter for the grid numbers */
+    --axis-gap: var(--s-2);
+    --swatch: 18px;
+    --button-min: 12em;
+    --radius: 2px;
+    --fill-time: 120ms;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { font-size: var(--root-size); -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font);
+    font-size: var(--t-base);
+    line-height: var(--lh-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  p { margin: 0; }
+  a { color: var(--grid); text-underline-offset: 0.15em; }
+  :focus-visible { outline: 3px solid var(--grid); outline-offset: 2px; }
+
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+
+  /* Section */
+  .count {
+    max-width: calc(1200px + 2 * var(--s-7));
+    margin-inline: auto;
+    padding: var(--s-9) var(--s-7);
+  }
+  .count form {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-template-rows: repeat(4, auto) 1fr;
+    column-gap: var(--s-7);
+  }
+  .count form > * { grid-column: 1 / 6; }
+
+  h2 {
+    margin: 0;
+    font-size: var(--t-xl);
+    line-height: var(--lh-tight);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+  .lead {
+    margin-top: var(--s-5);
+    max-width: var(--measure);
+    font-size: var(--t-md);
+    line-height: var(--lh-lead);
+    text-wrap: pretty;
+  }
+  .ref { font-stretch: var(--map-width); font-weight: 700; }
+
+  /* The atlas column: map, key and what the chosen square holds */
+  .count .atlas {
+    grid-column: 6 / 13;
+    grid-row: 1 / -1;
+    justify-self: end;
+    align-self: start;
+    position: sticky;
+    top: var(--s-6);
+    width: 100%;
+    max-width: var(--map-max);
+    /* top grid line sits on the cap height of the h2 */
+    margin-top: calc(var(--t-xl) * 0.17 - var(--axis));
+  }
+
+  /* The map: the call to action */
+  .map {
+    margin: 0;
+    padding: var(--axis) var(--s-3) 0 var(--axis);
+    border: 0;
+    min-width: 0;
+  }
+  .plot { position: relative; }
+  .grid {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 1px;
+    background: var(--grid);
+    border: 1px solid var(--grid);
+  }
+  .sq {
+    grid-column: var(--c);
+    grid-row: var(--r);
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+    font-stretch: var(--map-width);
+    font-weight: 700;
+    font-size: var(--t-lg);
+    line-height: 1;
+    transition: background-color var(--fill-time), color var(--fill-time);
+  }
+  /* Covered squares stay faint so the gaps shout */
+  .sq.taken {
+    color: var(--pencil);
+    font-weight: 500;
+    background: var(--hatch-tile) 0 0 / var(--hatch-size) var(--hatch-size) var(--paper);
+  }
+  .sq.open { background: var(--highlight); color: var(--ink); cursor: pointer; }
+  .sq.open:hover { box-shadow: inset 0 0 0 2px var(--ink); }
+  input:checked + .sq {
+    background: var(--ink);
+    color: var(--paper);
+    box-shadow: inset 0 0 0 3px var(--highlight);
+  }
+  input:focus-visible + .sq { outline: 3px solid var(--grid); outline-offset: -10px; }
+  input:checked:focus-visible + .sq { outline-color: var(--highlight); }
+  input:disabled:checked + .sq { cursor: default; }
+
+  .axis {
+    position: absolute;
+    font-size: var(--t-xs);
+    line-height: 1;
+    color: var(--pencil);
+    font-variant-numeric: tabular-nums;
+  }
+  .axis.e { bottom: calc(100% + var(--axis-gap)); left: calc(var(--i) * 20%); transform: translateX(-50%); }
+  .axis.n { right: calc(100% + var(--axis-gap)); top: calc((5 - var(--i)) * 20%); transform: translateY(-50%); }
+  /* 100 km square letters hang left of the first easting, so "70" stays on its line */
+  .axis .sq100 { position: absolute; right: 100%; padding-right: var(--s-1); font-weight: 700; }
+
+  .water {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    pointer-events: none;
+  }
+  .water .river { fill: none; stroke: var(--water); stroke-width: 3px; stroke-linecap: round; stroke-linejoin: round; }
+  .water .lake { fill: var(--water-fill); stroke: var(--water); stroke-width: 1px; }
+  /* Feature labels stay on paper or hatch: grid blue on --water-fill is below AA */
+  .feature {
+    position: absolute;
+    pointer-events: none;
+    font-size: var(--t-xs);
+    font-style: italic;
+    line-height: 1;
+    color: var(--grid);
+    white-space: nowrap;
+    text-shadow: 0 0 2px var(--paper), 0 0 2px var(--paper), 0 0 4px var(--paper);
+  }
+
+  /* Key */
+  .key {
+    display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-5);
+    margin: var(--s-5) 0 0 var(--axis); padding: 0; list-style: none;
+    font-size: var(--t-sm); color: var(--pencil);
+  }
+  .key li { display: flex; align-items: center; gap: var(--s-2); }
+  .sw { width: var(--swatch); height: var(--swatch); border: 1px solid var(--grid); }
+  .sw.open { background: var(--highlight); }
+  .sw.taken { background: var(--hatch-tile) 0 0 / var(--hatch-size) var(--hatch-size) var(--paper); }
+  .sw.yours { background: var(--ink); box-shadow: inset 0 0 0 3px var(--highlight); }
+
+  /* Square detail: every entry is stacked in one cell (the script adds hidden copies),
+     so the panel is always as tall as its longest entry and nothing below it jumps */
+  .detail { display: grid; margin: var(--s-5) 0 0 var(--axis); max-width: var(--measure); }
+  .detail > * { grid-area: 1 / 1; }
+  .detail .ghost { visibility: hidden; }
+  .detail .empty { color: var(--pencil); }
+  .detail .ref { display: block; font-size: var(--t-sm); }
+  .detail .place { font-size: var(--t-md); line-height: var(--lh-snug); font-weight: 600; }
+  .detail .about { margin-top: var(--s-1); }
+
+  /* Form */
+  .signup {
+    margin-top: var(--s-6);
+    padding-top: var(--s-5);
+    border-top: 1px solid var(--rule);
+    max-width: var(--form-max);
+  }
+  .field { display: grid; gap: var(--s-1); margin-bottom: var(--s-4); }
+  .field label, .days legend { font-size: var(--t-sm); font-weight: 600; }
+  .field input {
+    font: inherit;
+    color: var(--ink);
+    width: 100%;
+    padding: var(--s-2) var(--s-3);
+    background: transparent;
+    border: 1px solid var(--pencil);
+    border-radius: var(--radius);
+  }
+  .field input:focus-visible { outline-offset: 0; border-color: var(--grid); }
+  .days { border: 0; margin: 0 0 var(--s-4); padding: 0; min-width: 0; }
+  .days legend { padding: 0; margin-bottom: var(--s-2); }
+  .days div { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-5); }
+  .days label, .pair { display: inline-flex; align-items: center; gap: var(--s-2); cursor: pointer; }
+  .days input, .pair input { width: var(--swatch); height: var(--swatch); margin: 0; flex: none; accent-color: var(--ink); }
+  .pair { margin-bottom: var(--s-5); }
+  .error { margin-bottom: var(--s-3); font-weight: 600; }
+  button {
+    font: inherit;
+    font-weight: 700;
+    color: var(--paper);
+    background: var(--ink);
+    border: 0;
+    border-radius: var(--radius);
+    padding: var(--s-4) var(--s-5);
+    min-width: var(--button-min);
+    cursor: pointer;
+    transition: background-color var(--fill-time);
+  }
+  button:hover { background: var(--grid); }
+  .fine { margin-top: var(--s-4); font-size: var(--t-sm); color: var(--pencil); }
+
+  .done { margin-top: var(--s-6); padding-top: var(--s-5); border-top: 1px solid var(--rule); max-width: var(--form-max); }
+  .done:focus { outline: none; }
+  .done .yours { font-size: var(--t-md); font-weight: 700; margin-bottom: var(--s-2); }
+
+  @media (max-width: 899px) {
+    :root { --axis-gap: var(--s-1); }
+    .count { padding: var(--s-8) var(--s-4); }
+    .count form { display: block; }
+    .count .atlas { position: static; justify-self: start; max-width: var(--map-max-tablet); margin-top: var(--s-6); }
+    .key, .detail { margin-left: 0; }
+    .key { margin-top: var(--s-4); }
+    .signup, .done { max-width: none; }
+    button { width: 100%; }
+  }
+  @media (min-width: 900px) and (max-width: 1099px) {
+    .count { padding-inline: var(--s-6); }
+    .count form { column-gap: var(--s-6); }
+    .count form > * { grid-column: 1 / 7; }
+    .count .atlas { grid-column: 7 / 13; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <section class="count" aria-labelledby="count-title">
+    <form id="count-form" action="/winter-count/sign-up" method="post">
+      <h2 id="count-title">Take a square for the winter bird count</h2>
+      <p class="lead">On Saturday 9 and Sunday 10 January, the Wenning Vale Ornithological Society counts every bird in the 25 tetrads (2 km squares) of the vale. Seventeen already have a counter. Pick one of the eight yellow tetrads, walk it for two hours between 8am and 3pm, and send us your tally.</p>
+
+      <div class="atlas">
+      <fieldset class="map">
+        <legend class="sr-only">Choose a tetrad. Yellow tetrads still need a counter.</legend>
+        <div class="plot">
+          <div class="grid">
+          <input class="sr-only" type="radio" name="tetrad" id="t-A" value="A" disabled>
+          <label class="sq taken" for="t-A" style="--c:1;--r:5"><span aria-hidden="true">A</span><span class="sr-only">Tetrad A, High Bentham, taken</span></label>
+          <input class="sr-only" type="radio" name="tetrad" id="t-B" value="B" required data-place="Low Bentham fields" data-habitat="Hedgerows and wet pasture." data-species="38" data-birds="655">
+          <label class="sq open" for="t-B" style="--c:1;--r:4"><span aria-hidden="true">B</span><span class="sr-only">Tetrad B, Low Bentham fields, needs a counter</span></label>
+          <input class="sr-only" type="radio" name="tetrad" id="t-C" value="C" disabled>
+          <label class="sq taken" for="t-C" style="--c:1;--r:3"><span aria-hidden="true">C</span><span class="sr-only">Tetrad C, Mewith Head, taken</span></label>
+          <input class="sr-only" type="radio" name="tetrad" id="t-D" value="D" disabled>
+          <label class="sq taken" for="t-D" style="--c:1;--r:2"><span aria-hidden="true">D</span><span class="sr-only">Tetrad D, Burn Moor, taken</span></label>
+          <input class="sr-only" type="radio" name="tetrad" id="t-E" value="E" disabled>
+          <label class="sq taken" for="t-E" style="--c:1;--r:1"><span aria-hidden="true">E</span><span class="sr-only">Tetrad E, Great Harlow, taken</span></label>
+          <input class="sr-only" type="radio" name="tetrad" id="t-F" value="F" required data-place="Mill Beck" data-habitat="Wooded gill, steep in places." data-species="29" data-birds="240">
+          <label class="sq open" for="t-F" style="--c:2;--r:5"><span aria-hidden="true">F</span><span class="sr-only">Tetrad F, Mill Beck, needs a counter</span></label>
+          <input class="sr-only" type="radio" name="tetrad" id="t-G" value="G" disabled>
+          <label class="sq taken" for="t-G" style="--c:2;--r:4"><span aria-hidden="true">G</span><span class="sr-only">Tetrad G, Robert Hall, taken</span></label>
+          <input class="sr-only" type="radio" name="tetrad" id="t-H" value="H" disabled>
+          <label class="sq taken" for="t-H" style="--c:2;--r:3"><span aria-hidden="true">H</span><span class="sr-only">Tetrad H, Lowgill, taken</span></label>
+          <input class="sr-only" type="radio" name="tetrad" id="t-I" value="I" disabled>
+          <label class="sq taken" for="t-I" style="--c:2;--r:2"><span aria-hidden="true">I</span><span class="sr-only">Tetrad I, Keasden Beck, taken</span></label>
+          <input class="sr-only" type="radio" name="tetrad" id="t-J" value="J" disabled>
+          <label class="sq taken" for="t-J" style="--c:2;--r:1"><span aria-hidden="true">J</span><span class="sr-only">Tetrad J, Crutchenber Fell, taken</span></label>
+          <input class="sr-only" type="radio" name="tetrad" id="t-K" value="K" required data-place="Hollin Moss" data-habitat="Open moor south of the reservoir, wet underfoot." data-species="31" data-birds="412">
+          <label class="sq open" for="t-K" style="--c:3;--r:5"><span aria-hidden="true">K</span><span class="sr-only">Tetrad K, Hollin Moss, needs a counter</span></label>
+          <input class="sr-only" type="radio" name="tetrad" id="t-L" value="L" disabled>
+          <label class="sq taken" for="t-L" style="--c:3;--r:4"><span aria-hidden="true">L</span><span class="sr-only">Tetrad L, Wenning Bank, taken</span></label>
+          <input class="sr-only" type="radio" name="tetrad" id="t-M" value="M" required data-place="Hollin Reservoir dam" data-habitat="Wildfowl on open water; bring a scope if you have one." data-species="34" data-birds="1,180">
+          <label class="sq open" for="t-M" style="--c:3;--r:3"><span aria-hidden="true">M</span><span class="sr-only">Tetrad M, Hollin Reservoir dam, needs a counter</span></label>
+          <input class="sr-only" type="radio" name="tetrad" id="t-N" value="N" disabled>
+          <label class="sq taken" for="t-N" style="--c:3;--r:2"><span aria-hidden="true">N</span><span class="sr-only">Tetrad N, Hollin Hill, taken</span></label>
+          <input class="sr-only" type="radio" name="tetrad" id="t-P" value="P" disabled>
+          <label class="sq taken" for="t-P" style="--c:3;--r:1"><span aria-hidden="true">P</span><span class="sr-only">Tetrad P, Bowland Knotts, taken</span></label>
+          <input class="sr-only" type="radio" name="tetrad" id="t-Q" value="Q" disabled>
+          <label class="sq taken" for="t-Q" style="--c:4;--r:5"><span aria-hidden="true">Q</span><span class="sr-only">Tetrad Q, Clapham Station, taken</span></label>
+          <input class="sr-only" type="radio" name="tetrad" id="t-R" value="R" required data-place="Clapdale farms" data-habitat="Stubble fields and farmyards." data-species="33" data-birds="870">
+          <label class="sq open" for="t-R" style="--c:4;--r:4"><span aria-hidden="true">R</span><span class="sr-only">Tetrad R, Clapdale farms, needs a counter</span></label>
+          <input class="sr-only" type="radio" name="tetrad" id="t-S" value="S" disabled>
+          <label class="sq taken" for="t-S" style="--c:4;--r:3"><span aria-hidden="true">S</span><span class="sr-only">Tetrad S, Austwick Moss, taken</span></label>
+          <input class="sr-only" type="radio" name="tetrad" id="t-T" value="T" disabled>
+          <label class="sq taken" for="t-T" style="--c:4;--r:2"><span aria-hidden="true">T</span><span class="sr-only">Tetrad T, Feizor, taken</span></label>
+          <input class="sr-only" type="radio" name="tetrad" id="t-U" value="U" required data-place="Fell End" data-habitat="Rough grazing, few paths." data-species="14" data-birds="96">
+          <label class="sq open" for="t-U" style="--c:4;--r:1"><span aria-hidden="true">U</span><span class="sr-only">Tetrad U, Fell End, needs a counter</span></label>
+          <input class="sr-only" type="radio" name="tetrad" id="t-V" value="V" disabled>
+          <label class="sq taken" for="t-V" style="--c:5;--r:5"><span aria-hidden="true">V</span><span class="sr-only">Tetrad V, Wharfe, taken</span></label>
+          <input class="sr-only" type="radio" name="tetrad" id="t-W" value="W" required data-place="Wenning riverside" data-habitat="Footpath along the river the whole way." data-species="41" data-birds="720">
+          <label class="sq open" for="t-W" style="--c:5;--r:4"><span aria-hidden="true">W</span><span class="sr-only">Tetrad W, Wenning riverside, needs a counter</span></label>
+          <input class="sr-only" type="radio" name="tetrad" id="t-X" value="X" disabled>
+          <label class="sq taken" for="t-X" style="--c:5;--r:3"><span aria-hidden="true">X</span><span class="sr-only">Tetrad X, Crummack, taken</span></label>
+          <input class="sr-only" type="radio" name="tetrad" id="t-Y" value="Y" required data-place="Keasden village" data-habitat="Gardens, churchyard and lanes." data-species="36" data-birds="510">
+          <label class="sq open" for="t-Y" style="--c:5;--r:2"><span aria-hidden="true">Y</span><span class="sr-only">Tetrad Y, Keasden village, needs a counter</span></label>
+          <input class="sr-only" type="radio" name="tetrad" id="t-Z" value="Z" disabled>
+          <label class="sq taken" for="t-Z" style="--c:5;--r:1"><span aria-hidden="true">Z</span><span class="sr-only">Tetrad Z, Moughton Scar, taken</span></label>
+          </div>
+          <svg class="water" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+            <path class="river" d="M0 83.5 C4 82 8 77.5 13.5 78 C19 78.5 20 84.5 25.5 84 C31 83.5 33 77.5 39 76.5 C45 75.5 47 79.5 53 79 C58.5 78.5 61 75 66 75.5 C71 76 73.5 79 78.5 79 C84 79 86.5 78.2 91 77.5 C95 76.8 97.5 74 100 72" vector-effect="non-scaling-stroke"/>
+            <path class="lake" d="M44 45.5 L53 46 C57 44 61 40 59.5 37 C58 35 54 36 51 37 C47.5 38 43.5 39 43 42 C42.8 43.5 43.3 44.6 44 45.5 Z" vector-effect="non-scaling-stroke"/>
+          </svg>
+          <span class="feature" style="left: 61.5%; top: 80.75%" aria-hidden="true">River Wenning</span>
+          <span class="feature" style="left: 61%; top: 41%" aria-hidden="true">Hollin Reservoir</span>
+          <span class="axis e" style="--i:0" aria-hidden="true"><span class="sq100">SD</span>70</span>
+          <span class="axis e" style="--i:1" aria-hidden="true">72</span>
+          <span class="axis e" style="--i:2" aria-hidden="true">74</span>
+          <span class="axis e" style="--i:3" aria-hidden="true">76</span>
+          <span class="axis e" style="--i:4" aria-hidden="true">78</span>
+          <span class="axis e" style="--i:5" aria-hidden="true">80</span>
+          <span class="axis n" style="--i:0" aria-hidden="true">60</span>
+          <span class="axis n" style="--i:1" aria-hidden="true">62</span>
+          <span class="axis n" style="--i:2" aria-hidden="true">64</span>
+          <span class="axis n" style="--i:3" aria-hidden="true">66</span>
+          <span class="axis n" style="--i:4" aria-hidden="true">68</span>
+        </div>
+      </fieldset>
+
+      <ul class="key" aria-label="Map key">
+        <li><span class="sw open" aria-hidden="true"></span>Needs a counter</li>
+        <li><span class="sw taken" aria-hidden="true"></span>Taken</li>
+        <li><span class="sw yours" aria-hidden="true"></span>Your tetrad</li>
+      </ul>
+
+      <div class="detail">
+        <div id="detail" aria-live="polite">
+          <p class="place empty"><span class="ref">No tetrad chosen</span>Pick a yellow tetrad on the map</p>
+          <p class="about empty">Its habitat and last year's tally will show here.</p>
+        </div>
+      </div>
+      </div>
+
+      <div class="signup" id="signup">
+        <div class="field">
+          <label for="name">Your name</label>
+          <input id="name" name="name" type="text" autocomplete="name" required>
+        </div>
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" autocomplete="email" required>
+        </div>
+        <fieldset class="days">
+          <legend>I can count on</legend>
+          <div>
+            <label><input type="radio" name="day" value="saturday">Saturday</label>
+            <label><input type="radio" name="day" value="sunday">Sunday</label>
+            <label><input type="radio" name="day" value="either" checked>Either day</label>
+          </div>
+        </fieldset>
+        <label class="pair"><input type="checkbox" name="pair" value="yes">I'm new: pair me with an experienced counter</label>
+        <p class="error" id="tetrad-error" role="alert" hidden>Choose a yellow tetrad on the map first.</p>
+        <button type="submit" id="take">Take a tetrad</button>
+        <p class="fine">New to this? Tick the box and a regular will walk your tetrad with you. Questions? Email <a href="mailto:count@wenningvale-birds.example">count@wenningvale-birds.example</a>.</p>
+      </div>
+
+      <div class="done" id="done" tabindex="-1" hidden>
+        <p class="yours"><span class="ref" id="done-ref">Tetrad K</span> is yours.</p>
+        <p>We'll post your recording card and a 1:25,000 map of <span id="done-map">tetrad K</span> by 2 January.</p>
+      </div>
+    </form>
+  </section>
+</main>
+<script>
+  (() => {
+    const form = document.getElementById('count-form');
+    const detail = document.getElementById('detail');
+    const button = document.getElementById('take');
+    const error = document.getElementById('tetrad-error');
+    const el = (tag, cls, text) => Object.assign(document.createElement(tag), { className: cls, textContent: text });
+
+    const entry = (input) => {
+      const d = input.dataset;
+      const place = el('p', 'place', d.place);
+      place.prepend(el('span', 'ref', 'Tetrad ' + input.value));
+      return [place, el('p', 'about', `${d.habitat} Last year: ${d.species} species, ${d.birds} birds.`)];
+    };
+    // Hidden copies of every entry share the panel's grid cell, so it reserves the tallest one's height.
+    form.querySelectorAll('input[name=tetrad]:not(:disabled)').forEach((input) => {
+      const ghost = el('div', 'ghost', '');
+      ghost.setAttribute('aria-hidden', 'true');
+      ghost.append(...entry(input));
+      detail.parentNode.append(ghost);
+    });
+
+    const show = (input) => {
+      detail.replaceChildren(...entry(input));
+      button.textContent = 'Take tetrad ' + input.value;
+      error.hidden = true;
+    };
+
+    form.addEventListener('change', (e) => { if (e.target.name === 'tetrad') show(e.target); });
+    const restored = form.querySelector('input[name=tetrad]:checked');
+    if (restored) show(restored);
+
+    form.noValidate = true;
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const chosen = form.querySelector('input[name=tetrad]:checked');
+      if (!chosen) {
+        error.hidden = false;
+        form.querySelector('input[name=tetrad]:not(:disabled)').focus();
+        return;
+      }
+      if (!form.checkValidity()) { form.reportValidity(); return; }
+      // A real request goes here, built from new FormData(form) BEFORE the map is disabled:
+      // a disabled fieldset drops the tetrad value from the form data.
+      document.getElementById('done-ref').textContent = 'Tetrad ' + chosen.value;
+      document.getElementById('done-map').textContent = 'tetrad ' + chosen.value;
+      document.getElementById('signup').hidden = true;
+      form.querySelector('.map').disabled = true;
+      const done = document.getElementById('done');
+      done.hidden = false;
+      done.focus();
+    });
+  })();
+</script>
+</body>
+</html>
