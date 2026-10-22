@@ -1,0 +1,1247 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stock and shelf prices, Larch Street Grocer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800&family=Golos+Text:wght@400;500;600&display=swap">
+<style>
+:root {
+  /* colour */
+  --floor: #F0F0EE;      /* page ground: fluorescent-lit shop floor, neutral grey */
+  --ticket: #FFFFFF;     /* shelf tickets, inputs, table body, dialogs */
+  --ink: #1E1D1F;        /* text and prices: price-gun black */
+  --ink-soft: #55585C;   /* secondary text, hints, column headers */
+  --rail: #1D4F91;       /* shelf-channel blue: the plastic rail under tickets, filled buttons, focus ring */
+  --rail-dark: #163E73;  /* hover on filled buttons */
+  --reduced: #FFD43B;    /* low-stock tab, just-changed highlight; always carries ink text */
+  --useby: #C4122F;      /* use-by sticker, errors, the confirm-delete button */
+  --useby-dark: #A50E27; /* hover on the confirm-delete button */
+  --on-accent: #FFFFFF;  /* text on rail blue and use-by red */
+  --line: rgba(30, 29, 31, 0.18); /* table rules */
+  --edge: #7A7B7F;       /* input and button borders, 4.2:1 on white */
+  --backdrop: rgba(30, 29, 31, 0.5);
+
+  /* type */
+  --font-price: "Big Shoulders Display", "Arial Narrow", sans-serif;
+  --font-ui: "Golos Text", system-ui, sans-serif;
+  --t-2xs: 0.75rem;
+  --t-xs: 0.8125rem;
+  --t-s: 0.875rem;
+  --t-m: 1rem;
+  --t-l: 1.25rem;
+  --t-xl: 1.5625rem;
+  --t-h2: 2rem;
+  --t-price-row: 1.75rem;
+  --t-price-detail: clamp(4rem, 10vw, 6rem);
+  --lh-body: 1.5;
+  --lh-table: 1.35;
+  --lh-price: 0.9;
+  --track-price: 0.005em;
+
+  /* space */
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px;
+  --s-5: 24px; --s-6: 32px; --s-7: 48px; --s-8: 64px;
+  --r-ticket: 2px;
+  --r-control: 3px;
+  --target: 44px;
+  --target-sm: 36px;     /* row Edit/Delete and column-header sort buttons on desktop (pointer) only */
+  --max: 1200px;
+  --flash: 1.6s;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--floor); color: var(--ink);
+  font: 400 var(--t-m)/var(--lh-body) var(--font-ui);
+}
+h2, h3, p, dl, dd { margin: 0; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--rail); outline-offset: 2px; }
+.vh { position: absolute !important; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.num { font-variant-numeric: tabular-nums; }
+
+.stock { max-width: var(--max); margin: 0 auto; padding: var(--s-7) var(--s-5) 0; }
+
+/* header band */
+.head { display: flex; flex-wrap: wrap; gap: var(--s-4) var(--s-6); justify-content: space-between; align-items: flex-start; padding-bottom: var(--s-6); }
+.head-text { max-width: 62ch; }
+.head h2 { font-size: var(--t-h2); font-weight: 600; line-height: 1.2; margin-bottom: var(--s-3); }
+.head p + p { margin-top: var(--s-2); }
+.tally { font-variant-numeric: tabular-nums; }
+
+/* buttons */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2);
+  min-height: var(--target); padding: 0 var(--s-4); border-radius: var(--r-control);
+  border: 1px solid var(--edge); background: var(--ticket); color: var(--ink);
+  font-weight: 600; cursor: pointer; text-decoration: none;
+}
+.btn:hover { border-color: var(--ink); }
+.btn-go { background: var(--rail); border-color: var(--rail); color: var(--on-accent); }
+.btn-go:hover { background: var(--rail-dark); border-color: var(--rail-dark); }
+.btn-del { background: var(--useby); border-color: var(--useby); color: var(--on-accent); }
+.btn-del:hover { background: var(--useby-dark); border-color: var(--useby-dark); }
+.btn-sm { min-height: var(--target-sm); padding: 0 var(--s-3); font-size: var(--t-s); }
+.btn-text { border-color: transparent; background: none; font-weight: 500; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--ink-soft); }
+.btn-text:hover { border-color: transparent; text-decoration-color: var(--ink); text-decoration-thickness: 2px; }
+.nw { white-space: nowrap; }
+
+/* form band */
+.editor {
+  display: grid; gap: var(--s-5) var(--s-7);
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  grid-template-areas: "fields shelf" "actions shelf";
+  padding: var(--s-6) 0; border-top: 2px solid var(--ink);
+}
+.fields { grid-area: fields; display: grid; gap: var(--s-4); min-width: 0; }
+.fields h3 { font-size: var(--t-l); font-weight: 600; line-height: 1.25; overflow-wrap: anywhere; }
+.row.row-3 { grid-template-columns: repeat(auto-fit, minmax(6rem, 1fr)); }
+.row { display: grid; gap: var(--s-4); grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); align-items: start; }
+.f { display: grid; gap: var(--s-1); min-width: 0; }
+.f > label, .f .lab { font-weight: 500; font-size: var(--t-s); }
+.hint { font-size: var(--t-xs); color: var(--ink-soft); }
+.f input:not([type=checkbox]), .f select, .search input, .sortby select {
+  width: 100%; min-height: var(--target); padding: 0 var(--s-3);
+  background: var(--ticket); border: 1px solid var(--edge); border-radius: var(--r-control);
+  font-variant-numeric: tabular-nums;
+}
+.f select, .sortby select { padding-right: var(--s-2); }
+.f input[aria-invalid=true], .f select[aria-invalid=true] { border: 2px solid var(--useby); }
+.money { position: relative; }
+.money span { position: absolute; left: var(--s-3); top: 50%; transform: translateY(-50%); color: var(--ink-soft); pointer-events: none; }
+.f .money input { padding-left: calc(var(--s-3) + var(--s-4)); }
+.check { display: flex; align-items: center; gap: var(--s-3); min-height: var(--target); font-weight: 500; font-size: var(--t-s); cursor: pointer; align-self: end; }
+.check input { width: 22px; height: 22px; margin: 0; accent-color: var(--rail); }
+.err { font-size: var(--t-s); color: var(--useby); font-weight: 500; }
+.err::before {
+  content: "!"; display: inline-grid; place-items: center; width: 1.15em; height: 1.15em; margin-right: var(--s-2);
+  border-radius: 50%; background: var(--useby); color: var(--on-accent); font-size: var(--t-2xs); font-weight: 600; vertical-align: 0.05em;
+}
+.actions { grid-area: actions; display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: center; min-width: 0; }
+.status { flex-basis: 100%; min-width: 0; font-size: var(--t-s); color: var(--ink-soft); min-height: 1.5em; overflow-wrap: anywhere; }
+.status a, .status button.link { color: var(--ink); font-weight: 600; text-underline-offset: 3px; }
+button.link { background: none; border: 0; padding: 0; text-decoration: underline; cursor: pointer; }
+
+/* the shelf: live ticket on its rail */
+.shelf { grid-area: shelf; align-self: start; position: sticky; top: var(--s-5); display: grid; gap: var(--s-3); min-width: 0; }
+.shelf-cap { font-size: var(--t-s); color: var(--ink-soft); }
+/* the plastic channel: a top and a bottom lip, drawn level with the ticket's own rail borders */
+.rail {
+  --lip-t: 4px; --lip-b: 7px; --rail-pt: 0px;
+  display: flex; justify-content: flex-end; padding-top: var(--rail-pt);
+  background: linear-gradient(var(--rail), var(--rail)) left var(--rail-pt) / 100% var(--lip-t) no-repeat,
+              linear-gradient(var(--rail), var(--rail)) left bottom / 100% var(--lip-b) no-repeat;
+}
+.rail--lg { --rail-pt: var(--s-5); padding-inline: var(--s-5); }
+.rail--sm { --lip-t: 3px; --lip-b: 5px; padding-inline: var(--s-2) var(--s-3); }
+.line-calc { font-size: var(--t-s); font-variant-numeric: tabular-nums; }
+
+/* ticket anatomy */
+.tk {
+  --tkp: var(--t-price-row);
+  position: relative; display: inline-grid; align-content: start; gap: 2px;
+  background: var(--ticket); color: var(--ink);
+  border: 1px solid var(--line); border-top: var(--lip-t, 4px) solid var(--rail); border-bottom: var(--lip-b, 7px) solid var(--rail);
+  border-radius: var(--r-ticket); padding: var(--s-2) var(--s-3) var(--s-2);
+  line-height: var(--lh-table); text-align: left;
+}
+.tk-name { font-weight: 500; font-size: var(--t-s); overflow-wrap: anywhere; }
+.tk-was { display: flex; align-items: baseline; justify-content: flex-end; gap: var(--s-2); font-size: var(--t-s); }
+.tk-was s { font: 800 calc(var(--tkp) * 0.4)/1 var(--font-price); letter-spacing: var(--track-price); text-decoration-thickness: 2px; }
+.tk-price {
+  font: 800 var(--tkp)/var(--lh-price) var(--font-price); letter-spacing: var(--track-price);
+  display: flex; align-items: flex-start; white-space: nowrap;
+}
+.tk-price .pn { font-size: 0.56em; line-height: 1; margin-left: 0.04em; margin-top: 0.06em; }
+.tk-price.tk-none { color: var(--ink-soft); }
+.tk-meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 var(--s-3); font-size: var(--t-xs); font-variant-numeric: tabular-nums; }
+.tk-sku { color: var(--ink-soft); }
+.tk-low {
+  position: absolute; left: var(--s-2); top: -4px; transform: translateY(-100%);
+  background: var(--reduced); color: var(--ink); font-size: var(--t-xs); font-weight: 600; line-height: 1.3;
+  padding: 1px var(--s-2); border-radius: var(--r-ticket) var(--r-ticket) 0 0; white-space: nowrap;
+}
+.tk-stk {
+  position: absolute; right: -10px; top: -12px; transform: rotate(-4deg);
+  background: var(--useby); color: var(--on-accent); font-size: var(--t-xs); font-weight: 600; line-height: 1.3;
+  padding: 2px var(--s-2); border-radius: var(--r-ticket); white-space: nowrap;
+}
+.tk-price { justify-content: flex-end; }
+.tk--lg { --tkp: var(--t-price-detail); width: 100%; padding: var(--s-4) var(--s-5); gap: var(--s-2); }
+.tk--lg .tk-name { font-size: var(--t-m); }
+.tk--lg .tk-meta { font-size: var(--t-s); }
+/* one width for every row ticket, as on a real shelf edge */
+.tk--sm { width: 7rem; padding: var(--s-1) var(--s-2) 3px; }
+.tk--sm .tk-meta { font-size: var(--t-2xs); justify-content: flex-end; text-align: right; }
+.tk--sm .tk-low { font-size: var(--t-2xs); left: var(--s-1); top: -3px; }
+/* hangs under the rail lip so it never covers the unit price */
+.tk--sm .tk-stk { font-size: var(--t-2xs); top: auto; bottom: -22px; right: -8px; }
+
+/* list band */
+.list { padding: var(--s-6) 0 var(--s-7); border-top: 2px solid var(--ink); }
+.list h3 { font-size: var(--t-l); font-weight: 600; margin-bottom: var(--s-4); }
+.tools { display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-5); align-items: end; margin-bottom: var(--s-3); }
+.search { display: grid; gap: var(--s-1); flex: 1 1 18rem; max-width: 26rem; }
+.search label, .sortby label { font-weight: 500; font-size: var(--t-s); }
+.filters { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.filters button {
+  min-height: var(--target); padding: 0 var(--s-4); border-radius: var(--r-control);
+  border: 1px solid var(--edge); background: var(--ticket); font-weight: 500; cursor: pointer;
+}
+.filters button[aria-pressed=true] { background: var(--ink); border-color: var(--ink); color: var(--ticket); }
+.filters .c { font-variant-numeric: tabular-nums; margin-left: var(--s-1); font-weight: 600; }
+.filters .short { display: none; }
+.sortby { display: none; }
+.showing { font-size: var(--t-s); color: var(--ink-soft); margin-bottom: var(--s-3); font-variant-numeric: tabular-nums; }
+
+table.stock-table { width: 100%; border-collapse: collapse; background: var(--ticket); line-height: var(--lh-table); font-variant-numeric: tabular-nums; }
+.stock-table th { text-align: left; font-weight: 500; font-size: var(--t-s); color: var(--ink-soft); border-bottom: 2px solid var(--ink); padding: 0; background: var(--floor); }
+.stock-table th.n { text-align: right; }
+.sort { all: unset; box-sizing: border-box; display: inline-flex; align-items: center; gap: var(--s-1); min-height: var(--target-sm); padding: var(--s-2) var(--s-3); cursor: pointer; }
+.sort:focus-visible { outline: 3px solid var(--rail); outline-offset: -3px; }
+.sort:hover { color: var(--ink); }
+.sort .ar { font-size: 0.7em; width: 0.8em; color: var(--ink); }
+.th-m { display: none; }
+.stock-table td { padding: var(--s-2) var(--s-3); border-bottom: 1px solid var(--line); vertical-align: middle; }
+.stock-table td.n { text-align: right; }
+.stock-table td.c-price { padding-inline: 0; }
+.stock-table tr:has(.tk-low) td.c-price { padding-top: var(--s-5); }
+.stock-table tr:has(.tk-stk) td.c-price { padding-bottom: calc(var(--s-2) + var(--s-3)); }
+.stock-table td.c-act { white-space: nowrap; text-align: right; }
+.stock-table td.c-act .btn + .btn { margin-left: var(--s-2); }
+.stock-table tr.flash td { animation: flash var(--flash) ease-out; }
+@keyframes flash { from { background: var(--reduced); } to { background: var(--ticket); } }
+.b-name {
+  all: unset; cursor: pointer; font-weight: 500; overflow-wrap: anywhere;
+  text-decoration: underline; text-decoration-color: var(--ink-soft); text-decoration-thickness: 1px; text-underline-offset: 3px;
+}
+.b-name:hover { text-decoration-thickness: 2px; }
+.b-name:focus-visible { outline: 3px solid var(--rail); outline-offset: 2px; }
+.soft { color: var(--ink-soft); }
+.c-use.warn { color: var(--useby); font-weight: 500; }
+
+.empty { background: var(--ticket); padding: var(--s-6) var(--s-5); border-top: 2px solid var(--ink); display: grid; gap: var(--s-4); justify-items: start; }
+.empty p { max-width: 55ch; }
+.empty .btns { display: flex; flex-wrap: wrap; gap: var(--s-3); }
+
+.list-foot { margin-top: var(--s-6); display: flex; flex-wrap: wrap-reverse; gap: var(--s-6); justify-content: space-between; align-items: end; }
+.totals { display: grid; gap: var(--s-4); flex: 0 1 34rem; font-variant-numeric: tabular-nums; }
+.grand { display: flex; justify-content: space-between; gap: var(--s-4); font-weight: 600; font-size: var(--t-l); border-top: 2px solid var(--ink); padding-top: var(--s-3); }
+.by-aisle { width: 100%; border-collapse: collapse; font-size: var(--t-s); }
+.by-aisle caption { text-align: left; font-weight: 500; padding-bottom: var(--s-2); }
+.by-aisle th, .by-aisle td { padding: var(--s-1) 0; border-bottom: 1px solid var(--line); text-align: left; font-weight: 400; }
+.by-aisle td { text-align: right; }
+
+/* undo bar */
+.undo {
+  position: sticky; bottom: 0; z-index: 2;
+  display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: center;
+  background: var(--ticket); border-top: 2px solid var(--ink); padding: var(--s-3) var(--s-5);
+  margin: 0 calc(-1 * var(--s-5));
+}
+.undo p { flex: 1 1 14rem; font-weight: 500; }
+
+/* dialogs */
+dialog {
+  --dlg-pad: var(--s-6);
+  border: 0; border-radius: var(--r-control); padding: var(--dlg-pad); background: var(--ticket); color: var(--ink);
+  width: min(36rem, calc(100vw - 2 * var(--s-4))); max-height: calc(100dvh - 2 * var(--s-4));
+}
+dialog::backdrop { background: var(--backdrop); }
+dialog h3 { font-size: var(--t-l); font-weight: 600; line-height: 1.3; margin-bottom: var(--s-4); overflow-wrap: anywhere; }
+dialog .btns { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: var(--s-5); }
+/* the details buttons stay in view when the dialog scrolls on a short screen */
+#details .btns { position: sticky; bottom: calc(-1 * var(--dlg-pad)); background: var(--ticket); padding: var(--s-3) 0 var(--dlg-pad); margin-bottom: calc(-1 * var(--dlg-pad)); border-top: 1px solid var(--line); }
+dialog .rail { margin: var(--s-2) 0 var(--s-5); }
+.facts { display: grid; grid-template-columns: max-content 1fr; gap: var(--s-2) var(--s-5); font-size: var(--t-s); font-variant-numeric: tabular-nums; }
+.facts dt { color: var(--ink-soft); }
+.facts dd { overflow-wrap: anywhere; }
+.facts .warn { color: var(--useby); font-weight: 500; }
+
+@media (max-width: 959px) {
+  .editor { grid-template-columns: minmax(0, 1fr); grid-template-areas: "fields" "shelf" "actions"; }
+  .shelf { position: static; }
+}
+
+@media (max-width: 639px) {
+  .stock { padding: var(--s-6) var(--s-4) 0; }
+  .undo { margin: 0 calc(-1 * var(--s-4)); padding: var(--s-3) var(--s-4); }
+  .actions .btn-go { flex: 1 1 100%; }
+  .actions .btn:not(.btn-go) { flex: 1 1 100%; }
+  .search { max-width: none; }
+  .row.row-check { grid-template-columns: 1fr; }
+  dialog { --dlg-pad: var(--s-4); }
+  .row.row-sku { grid-template-columns: minmax(0, 1fr); }
+  .filters { display: grid; grid-template-columns: repeat(3, 1fr); flex: 1 1 100%; }
+  .filters button { padding: 0 var(--s-2); }
+  .filters .long { display: none; }
+  .filters .short { display: inline; }
+  .facts { grid-template-columns: 1fr; gap: 0; }
+  .facts dd { margin-bottom: var(--s-2); }
+}
+
+/* the table needs about 780px; below that it becomes a list */
+@media (max-width: 799px) {
+  .sortby { display: grid; gap: var(--s-1); flex: 1 1 100%; }
+  /* the table becomes a list; roles are set explicitly in the markup so it stays a table to screen readers */
+  table.stock-table, .stock-table tbody { display: block; }
+  .stock-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .sort { display: none; }
+  .th-m { display: inline; }
+  .stock-table tr {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--s-4); align-items: start;
+    grid-template-areas: "name act" "sku price" "aisle price" "qty price" "use price" "val price" ". price";
+    grid-template-rows: auto repeat(5, auto) 1fr;
+    padding: var(--s-2) var(--s-4) var(--s-4); border-bottom: 1px solid var(--line);
+  }
+  .stock-table td { display: block; padding: 0; border: 0; text-align: left; font-size: var(--t-s); }
+  .stock-table td.n { text-align: left; }
+  .stock-table td[data-label]::before { content: attr(data-label) " "; color: var(--ink-soft); }
+  .stock-table td.c-name { grid-area: name; font-size: var(--t-m); }
+  .stock-table td.c-sku { grid-area: sku; }
+  .stock-table td.c-aisle { grid-area: aisle; }
+  .stock-table td.c-qty { grid-area: qty; }
+  .stock-table td.c-use { grid-area: use; }
+  .stock-table td.c-use.none { display: none; }
+  .stock-table td.c-val { grid-area: val; }
+  .b-name { display: flex; align-items: center; min-height: var(--target); }
+  .stock-table td.c-price { grid-area: price; padding: var(--s-2) 0 0; }
+  .stock-table tr:has(.tk-low) td.c-price { padding-top: var(--s-5); }
+  .stock-table tr:has(.tk-stk) td.c-price { padding-bottom: var(--s-5); }
+  .rail--sm { padding-inline: var(--s-2); }
+  .stock-table td.c-act { grid-area: act; justify-self: end; }
+  .stock-table td.c-act .btn { min-height: var(--target); min-width: var(--target); }
+  .stock-table td.c-act .b-del { display: none; } /* Delete lives in the details dialog on narrow screens */
+  .stock-table tr.flash { animation: flash var(--flash) ease-out; }
+  .stock-table tr.flash td { animation: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stock-table tr.flash, .stock-table tr.flash td { animation: none !important; }
+  .stock-table tr.flash td, .stock-table tr.flash { background: var(--reduced); }
+}
+
+@media (forced-colors: active) {
+  .tk-low, .tk-stk { border: 1px solid CanvasText; }
+}
+</style>
+</head>
+<body>
+<main>
+<section class="stock" aria-labelledby="stock-title">
+  <header class="head">
+    <div class="head-text">
+      <h2 id="stock-title">Stock and shelf prices</h2>
+      <p>Larch Street Grocer. Keep counts and shelf prices for the shop floor. Changes stay in this tab until you close it.</p>
+      <p class="tally" id="tally">24 products across 6 aisles.</p>
+    </div>
+    <a class="btn btn-go" id="head-add" href="#stock-form">Add a product</a>
+  </header>
+
+  <div class="list" id="list">
+    <h3 id="list-title">Stock list</h3>
+    <div class="tools">
+      <div class="search" role="search">
+        <label for="q">Search products</label>
+        <input type="search" id="q" placeholder="Product, SKU or aisle" autocomplete="off">
+      </div>
+      <div class="filters" role="group" aria-label="Show">
+        <button type="button" data-filter="all" data-name="All" aria-pressed="true">All <span class="c" id="c-all">24</span></button>
+        <button type="button" data-filter="low" data-name="Running low" aria-pressed="false"><span class="long">Running low</span><span class="short">Low</span> <span class="c" id="c-low">0</span></button>
+        <button type="button" data-filter="soon" data-name="Use-by soon" aria-pressed="false"><span class="long">Use-by soon</span><span class="short">Use-by</span> <span class="c" id="c-soon">0</span></button>
+      </div>
+      <div class="sortby">
+        <label for="sortby">Sort by</label>
+        <select id="sortby"></select>
+      </div>
+    </div>
+    <p class="showing" id="showing">Showing 24 of 24 products</p>
+
+    <table class="stock-table" id="table" role="table" aria-labelledby="list-title">
+      <thead role="rowgroup">
+        <tr role="row" id="head-row"></tr>
+      </thead>
+      <tbody role="rowgroup" id="rows"></tbody>
+    </table>
+
+    <div class="empty" id="no-results" hidden>
+      <p id="no-results-text"></p>
+      <div class="btns"><button type="button" class="btn" id="clear-search">Clear search</button></div>
+    </div>
+    <div class="empty" id="empty" hidden>
+      <p>No products on the list yet. Add the first one with the form below, or bring back the sample stock.</p>
+      <div class="btns">
+        <button type="button" class="btn btn-go" id="empty-add">Add a product</button>
+        <button type="button" class="btn" id="empty-reset">Reset sample data</button>
+      </div>
+    </div>
+
+    <div class="list-foot">
+      <button type="button" class="btn" id="reset-open">Reset sample data</button>
+      <div class="totals">
+        <p class="grand"><span>Stock value at shelf price</span><span id="grand">£0.00</span></p>
+        <table class="by-aisle">
+          <caption>By aisle</caption>
+          <tbody id="by-aisle"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+
+  <form class="editor" id="stock-form" novalidate aria-labelledby="form-title">
+    <div class="fields">
+      <h3 id="form-title">Add a product</h3>
+      <div class="f">
+        <label for="product">Product name</label>
+        <input id="product" name="product" autocomplete="off" maxlength="80" aria-describedby="err-product">
+        <p class="err" id="err-product" hidden></p>
+      </div>
+      <div class="row row-sku">
+        <div class="f">
+          <label for="sku">SKU</label>
+          <input id="sku" name="sku" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-describedby="hint-sku err-sku">
+          <p class="hint" id="hint-sku">Shelf label code, e.g. <span class="nw">DAI-0142</span></p>
+          <p class="err" id="err-sku" hidden></p>
+        </div>
+        <div class="f">
+          <label for="aisle">Aisle</label>
+          <select id="aisle" name="aisle" aria-describedby="err-aisle"></select>
+          <p class="err" id="err-aisle" hidden></p>
+        </div>
+      </div>
+      <div class="row row-3">
+        <div class="f">
+          <label for="price">Shelf price</label>
+          <div class="money"><span id="cur" aria-hidden="true">£</span><input id="price" name="price" inputmode="decimal" autocomplete="off" aria-describedby="hint-price err-price"></div>
+          <p class="hint" id="hint-price">e.g. <span class="nw">1.45</span></p>
+          <p class="err" id="err-price" hidden></p>
+        </div>
+        <div class="f">
+          <label for="packSize">Pack size</label>
+          <input id="packSize" name="packSize" inputmode="decimal" autocomplete="off" aria-describedby="err-packSize">
+          <p class="err" id="err-packSize" hidden></p>
+        </div>
+        <div class="f">
+          <label for="packUnit">Pack unit</label>
+          <select id="packUnit" name="packUnit" aria-describedby="err-packUnit"></select>
+          <p class="err" id="err-packUnit" hidden></p>
+        </div>
+      </div>
+      <div class="row">
+        <div class="f">
+          <label for="qty">In stock</label>
+          <input id="qty" name="qty" inputmode="numeric" autocomplete="off" aria-describedby="hint-qty err-qty">
+          <p class="hint" id="hint-qty">Units on the shelf and in the back</p>
+          <p class="err" id="err-qty" hidden></p>
+        </div>
+        <div class="f">
+          <label for="reorderAt">Reorder at</label>
+          <input id="reorderAt" name="reorderAt" inputmode="numeric" autocomplete="off" aria-describedby="hint-reorderAt err-reorderAt">
+          <p class="hint" id="hint-reorderAt">Flag as running low at this count</p>
+          <p class="err" id="err-reorderAt" hidden></p>
+        </div>
+      </div>
+      <div class="row row-check">
+        <label class="check"><input type="checkbox" id="perishable" name="perishable"> Perishable</label>
+        <div class="f">
+          <label for="useBy">Use-by date</label>
+          <input type="date" id="useBy" name="useBy" aria-describedby="hint-useBy err-useBy">
+          <p class="hint" id="hint-useBy">Required for perishable products</p>
+          <p class="err" id="err-useBy" hidden></p>
+        </div>
+      </div>
+    </div>
+
+    <aside class="shelf" aria-labelledby="shelf-cap">
+      <p class="shelf-cap" id="shelf-cap">Shelf ticket preview</p>
+      <div class="rail rail--lg" id="preview" aria-live="off"></div>
+      <p class="line-calc" id="line-calc"></p>
+    </aside>
+
+    <div class="actions">
+      <button type="submit" class="btn btn-go" id="submit">Add to stock list</button>
+      <button type="button" class="btn" id="clear">Clear form</button>
+      <p class="status" id="status"></p>
+    </div>
+  </form>
+
+  <div class="undo" id="undo" hidden>
+    <p id="undo-text"></p>
+    <button type="button" class="btn btn-go" id="undo-btn">Undo delete</button>
+    <button type="button" class="btn" id="undo-dismiss">Dismiss</button>
+  </div>
+
+  <p class="vh" aria-live="polite" id="live"></p>
+</section>
+</main>
+
+<dialog id="details" aria-labelledby="details-title">
+  <h3 id="details-title"></h3>
+  <div class="rail rail--lg" id="details-ticket"></div>
+  <dl class="facts" id="details-facts"></dl>
+  <div class="btns">
+    <button type="button" class="btn btn-go" id="details-edit">Edit product</button>
+    <button type="button" class="btn" id="details-delete">Delete product</button>
+    <button type="button" class="btn" id="details-close">Close</button>
+  </div>
+</dialog>
+
+<dialog id="confirm-del" aria-labelledby="del-title" aria-describedby="del-text">
+  <h3 id="del-title"></h3>
+  <p id="del-text"></p>
+  <div class="btns">
+    <button type="button" class="btn btn-del" id="del-yes">Delete product</button>
+    <button type="button" class="btn" id="del-no" autofocus>Keep it</button>
+  </div>
+</dialog>
+
+<dialog id="confirm-reset" aria-labelledby="reset-title">
+  <h3 id="reset-title">Replace the current list with the 24 sample products?</h3>
+  <p>Your changes in this tab will be lost.</p>
+  <div class="btns">
+    <button type="button" class="btn btn-del" id="reset-yes">Reset sample data</button>
+    <button type="button" class="btn" id="reset-no" autofocus>Keep my list</button>
+  </div>
+</dialog>
+
+<script>
+/* ---------- config: change these to adapt ---------- */
+const CURRENCY = 'GBP';
+const LOCALE = 'en-GB';
+const MINOR = 'p'; // suffix for unit prices under one major unit ("72.5p per litre")
+const STORE_KEY = 'designs-x:crud-grocery-stock:v1';
+const AISLES = ['Fresh produce', 'Bakery', 'Dairy and chilled', 'Tins and dry goods', 'Drinks', 'Household']; // aisle n = AISLES[n-1]
+const PACK_UNITS = ['each', 'g', 'kg', 'ml', 'l'];
+const SOON_DAYS = 2;
+const MAX_PENCE = 999999, MAX_QTY = 99999, MAX_REORDER = 9999, MAX_PACK = 99999;
+
+// [product, sku, aisle, pence, packSize, packUnit, qty, reorderAt, perishable, use-by in days from today or null]
+const SEED = [
+  ['Braeburn apples', 'FRU-0311', 1, 195, 6, 'each', 34, 10, true, 9],
+  ['Baby spinach', 'FRU-0420', 1, 135, 200, 'g', 4, 8, true, 1],
+  ['Bananas, loose', 'FRU-0102', 1, 18, 1, 'each', 120, 40, true, 4],
+  ['Sourdough loaf', 'BAK-0108', 2, 325, 800, 'g', 9, 6, true, 3],
+  ['Wholemeal rolls', 'BAK-0214', 2, 120, 6, 'each', 14, 6, true, 4],
+  ['Crumpets', 'BAK-0230', 2, 95, 6, 'each', 0, 5, true, 5],
+  ['Semi-skimmed milk', 'DAI-0142', 3, 145, 2, 'l', 72, 20, true, 6],
+  ['Free-range eggs', 'DAI-0210', 3, 210, 6, 'each', 30, 12, true, 14],
+  ['Mature cheddar', 'DAI-0318', 3, 375, 400, 'g', 18, 6, true, 21],
+  ['Greek yogurt', 'DAI-0405', 3, 165, 500, 'g', 11, 6, true, -1],
+  ['Butter', 'DAI-0122', 3, 225, 250, 'g', 24, 8, true, 30],
+  ['Houmous', 'DAI-0533', 3, 125, 200, 'g', 9, 6, true, 8],
+  ['Chicken thighs', 'DAI-0610', 3, 450, 1, 'kg', 5, 6, true, 2],
+  ['Chopped tomatoes', 'TIN-0101', 4, 55, 400, 'g', 60, 24, false, null],
+  ['Baked beans', 'TIN-0126', 4, 85, 415, 'g', 48, 24, false, null],
+  ['Basmati rice', 'DRY-0204', 4, 240, 1, 'kg', 15, 6, false, null],
+  ['Penne', 'DRY-0310', 4, 95, 500, 'g', 3, 8, false, null],
+  ['Ground coffee', 'DRY-0422', 4, 425, 227, 'g', 12, 4, false, null],
+  ['Teabags', 'DRY-0415', 4, 300, 80, 'each', 20, 6, false, null],
+  ['Olive oil', 'DRY-0530', 4, 499, 500, 'ml', 10, 4, false, null],
+  ['Orange juice', 'DRK-0118', 5, 199, 1, 'l', 16, 6, true, 10],
+  ['Sparkling water', 'DRK-0201', 5, 65, 1.5, 'l', 40, 12, false, null],
+  ['Washing-up liquid', 'HSE-0112', 6, 125, 450, 'ml', 4, 6, false, null],
+  ['Toilet roll', 'HSE-0230', 6, 450, 9, 'each', 10, 4, false, null],
+];
+
+/* ---------- dates (ISO yyyy-mm-dd, compared as whole UTC days) ---------- */
+const pad = n => String(n).padStart(2, '0');
+const todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+const dayNum = iso => Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10)) / 864e5;
+const addDays = (iso, n) => new Date((dayNum(iso) + n) * 864e5).toISOString().slice(0, 10);
+const isDate = s => /^\d{4}-\d{2}-\d{2}$/.test(s) && addDays(s, 0) === s;
+const fmtDate = (iso, opts) => new Date(dayNum(iso) * 864e5).toLocaleDateString(LOCALE, { timeZone: 'UTC', ...opts });
+
+/* ---------- money: integer pence everywhere; division only for display ---------- */
+const MONEY = new Intl.NumberFormat(LOCALE, { style: 'currency', currency: CURRENCY });
+const money = p => MONEY.format(p / 100);
+const SYMBOL = MONEY.formatToParts(0).find(x => x.type === 'currency').value;
+const NUM = new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 3 });
+const COUNT = new Intl.NumberFormat(LOCALE);
+
+const ERR = {
+  product: 'Enter the product name as it appears on the shelf.',
+  priceMin: `Enter a price above ${money(0)}, like 1.45.`,
+  pricePenny: 'Prices stop at the penny: use 2 decimal places at most.',
+  priceNaN: 'Enter pounds and pence with one decimal point, like 1.45.',
+  priceMax: `Prices stop at ${money(MAX_PENCE)}.`,
+  whole: 'Count whole units, like 12.',
+  pack: 'Pack size must be above 0, like 500 or 1.5.',
+  useBy: 'Perishable products need a use-by date.',
+  useByBad: 'Enter the use-by date as day, month and year.',
+};
+
+function parsePrice(raw) {
+  let s = String(raw).trim().replace(SYMBOL, '').trim();
+  if (s === '') return { error: ERR.priceMin };
+  if (/^-/.test(s)) return { error: ERR.priceMin };
+  if (/^\d+,\d{1,2}$/.test(s)) s = s.replace(',', '.'); // "1,45": a lone comma before 1-2 digits is the decimal point
+  if (!/^\d*\.?\d*$/.test(s) || s === '.') return { error: ERR.priceNaN };
+  const [whole, frac = ''] = s.split('.');
+  if (frac.length > 2) return { error: ERR.pricePenny };
+  const pence = Number(whole || 0) * 100 + Number(frac.padEnd(2, '0'));
+  if (pence <= 0) return { error: ERR.priceMin };
+  if (pence > MAX_PENCE) return { error: ERR.priceMax };
+  return { value: pence };
+}
+
+function parseInteger(raw, max, name) {
+  const s = String(raw).trim();
+  if (s === '') return { error: `Enter a count for ${name.toLowerCase()}, like 12.` };
+  if (/^-/.test(s) && !/^-0+$/.test(s)) return { error: `${name} can't be below 0.` };
+  if (/^-0+$/.test(s)) return { value: 0 };
+  if (/^\d*[.,]\d+$/.test(s)) return { error: ERR.whole };
+  if (!/^\d+$/.test(s)) return { error: ERR.whole };
+  const n = Number(s);
+  if (n > max) return { error: `${name} stops at ${COUNT.format(max)}.` };
+  return { value: n };
+}
+
+function parseDecimal(raw) { // pack size: > 0, up to 3 decimals
+  const t = String(raw).trim();
+  if (/^\d+,\d{3}$/.test(t)) return { error: `Write ${t.replace(',', '')} or ${t.replace(',', '.')}: a comma before 3 digits could mean either.` };
+  const s = t.replace(/^(\d*),(\d+)$/, '$1.$2');
+  if (!/^\d*\.?\d*$/.test(s) || !/\d/.test(s)) return { error: ERR.pack };
+  if ((s.split('.')[1] || '').length > 3) return { error: 'Pack size goes to 3 decimal places at most.' };
+  const milli = Number(s.split('.')[0] || 0) * 1000 + Number((s.split('.')[1] || '').padEnd(3, '0'));
+  if (milli <= 0) return { error: ERR.pack };
+  if (milli > MAX_PACK * 1000) return { error: `Pack size stops at ${COUNT.format(MAX_PACK)}.` };
+  return { value: milli / 1000 };
+}
+
+/* Unit price, in tenths of a penny per kg, litre or item, rounded half-up with integer maths. */
+function unitPrice(pence, size, unit) {
+  const milli = Math.round(size * 1000);
+  if (!pence || !milli || !PACK_UNITS.includes(unit)) return null;
+  if (unit === 'each' && milli === 1000) return null;
+  const per = { each: ' each', g: ' per kg', kg: ' per kg', ml: ' per litre', l: ' per litre' }[unit];
+  const num = pence * 10000 * (unit === 'g' || unit === 'ml' ? 1000 : 1);
+  const tenths = Math.floor((2 * num + milli) / (2 * milli));
+  if (tenths === 0) return '<0.1' + MINOR + per;
+  if (tenths < 1000) return (tenths % 10 ? (tenths / 10).toFixed(1) : tenths / 10) + MINOR + per;
+  return money(Math.floor((tenths + 5) / 10)) + per;
+}
+
+const lineValue = r => r.pricePence * r.qty;
+const stockValue = list => list.reduce((sum, r) => sum + lineValue(r), 0);
+const packText = r => r.packUnit === 'each' ? (r.packSize === 1 ? '' : NUM.format(r.packSize)) : `${NUM.format(r.packSize)} ${r.packUnit}`;
+const label = r => { const p = packText(r); return p ? `${r.product}, ${p}` : r.product; };
+const aisleName = n => `${n} ${AISLES[n - 1]}`;
+
+function flagsOf(r, today) {
+  const days = r.useBy ? dayNum(r.useBy) - dayNum(today) : null;
+  return {
+    low: r.qty <= r.reorderAt, out: r.qty === 0,
+    past: days !== null && days < 0,
+    soon: !!r.perishable && days !== null && days >= 0 && days <= SOON_DAYS,
+    days,
+  };
+}
+
+/* ---------- validation: one function for submit, preview and the self-test ---------- */
+const FIELD_NAMES = { product: 'Product name', sku: 'SKU', aisle: 'Aisle', price: 'Shelf price', packSize: 'Pack size', packUnit: 'Pack unit', qty: 'In stock', reorderAt: 'Reorder at', useBy: 'Use-by date' };
+
+function validate(raw, list, editingId) {
+  const v = {}, e = {};
+  const name = String(raw.product || '').trim().replace(/\s+/g, ' ');
+  if (name.length < 2) e.product = ERR.product;
+  else if (name.length > 60) e.product = 'Keep the product name to 60 characters, as on the shelf label.';
+  else v.product = name;
+
+  const sku = String(raw.sku || '').trim().toUpperCase();
+  if (!sku) e.sku = 'Enter the SKU from the shelf label, like DAI-0142.';
+  else if (!/^[A-Z0-9-]{3,12}$/.test(sku)) e.sku = 'Use 3 to 12 letters, digits or hyphens, like DAI-0142.';
+  else {
+    const dup = list.find(r => r.sku === sku && r.id !== editingId);
+    if (dup) e.sku = `SKU ${sku} already belongs to ${label(dup)}. Use a different SKU.`;
+    else v.sku = sku;
+  }
+
+  const aisle = Number(raw.aisle);
+  if (Number.isInteger(aisle) && aisle >= 1 && aisle <= AISLES.length) v.aisle = aisle;
+  else e.aisle = 'Choose the aisle this product sits in.';
+
+  const price = parsePrice(raw.price ?? '');
+  price.error ? e.price = price.error : v.pricePence = price.value;
+  const size = parseDecimal(raw.packSize ?? '');
+  size.error ? e.packSize = size.error : v.packSize = size.value;
+  PACK_UNITS.includes(raw.packUnit) ? v.packUnit = raw.packUnit : e.packUnit = 'Choose a pack unit.';
+  if (v.packUnit === 'each' && v.packSize !== undefined && !Number.isInteger(v.packSize)) { e.packSize = 'Items in a pack are whole, like 6.'; delete v.packSize; }
+  const qty = parseInteger(raw.qty ?? '', MAX_QTY, 'In stock');
+  qty.error ? e.qty = qty.error : v.qty = qty.value;
+  const re = parseInteger(raw.reorderAt ?? '', MAX_REORDER, 'Reorder at');
+  re.error ? e.reorderAt = re.error : v.reorderAt = re.value;
+
+  v.perishable = !!raw.perishable;
+  const useBy = String(raw.useBy || '').trim();
+  if (useBy && !isDate(useBy)) e.useBy = ERR.useByBad;
+  else if (!useBy && v.perishable) e.useBy = ERR.useBy;
+  else v.useBy = useBy || null;
+  return { v, e };
+}
+
+/* ---------- list operations (pure on the array they are given) ---------- */
+const addRecord = (list, rec) => { list.push(rec); return rec; };
+const updateRecord = (list, id, rec) => { const i = list.findIndex(r => r.id === id); list[i] = { ...rec, id }; return list[i]; };
+const removeRecord = (list, id) => { const index = list.findIndex(r => r.id === id); const [record] = list.splice(index, 1); return { record, index }; };
+const restoreRecord = (list, { record, index }) => { list.splice(Math.min(index, list.length), 0, record); return record; };
+const skuClash = (list, rec) => list.find(r => r.sku === rec.sku && r.id !== rec.id);
+let idSeq = 0;
+const newId = () => 'p' + Date.now().toString(36) + (idSeq++).toString(36);
+
+function seedRows(today) {
+  return SEED.map(([product, sku, aisle, pricePence, packSize, packUnit, qty, reorderAt, perishable, d], i) => ({
+    id: 's' + (i + 1), product, sku, aisle, pricePence, packSize, packUnit, qty, reorderAt, perishable,
+    useBy: d === null ? null : addDays(today, d),
+  }));
+}
+
+/* ---------- session storage, with an in-memory fallback ---------- */
+const int = (n, lo, hi) => Number.isInteger(n) && n >= lo && n <= hi;
+const isRecord = r => !!r && typeof r === 'object' && typeof r.id === 'string' && typeof r.product === 'string' && typeof r.sku === 'string'
+  && int(r.aisle, 1, AISLES.length) && int(r.pricePence, 1, MAX_PENCE) && typeof r.packSize === 'number' && r.packSize > 0 && r.packSize <= MAX_PACK
+  && PACK_UNITS.includes(r.packUnit) && int(r.qty, 0, MAX_QTY) && int(r.reorderAt, 0, MAX_REORDER) && typeof r.perishable === 'boolean'
+  && (r.useBy === null || (typeof r.useBy === 'string' && isDate(r.useBy)));
+function load() {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(STORE_KEY));
+    if (Array.isArray(saved)) {
+      const good = saved.filter(isRecord); // drop hand-edited or corrupt rows; reseed only if nothing usable is left
+      if (good.length || !saved.length) return good;
+    }
+  } catch (err) { /* blocked or corrupt: fall back to the seed in memory */ }
+  return seedRows(todayISO());
+}
+function save() { try { sessionStorage.setItem(STORE_KEY, JSON.stringify(rows)); } catch (err) { /* memory only */ } }
+
+/* ---------- self-test: #selftest ---------- */
+function runSelfTest() {
+  const eq = (name, got, want) => { if (JSON.stringify(got) !== JSON.stringify(want)) throw new Error(`SELFTEST FAIL ${name}: got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`); };
+  const ok = (name, cond) => { if (!cond) throw new Error('SELFTEST FAIL ' + name); };
+  for (const [s, p] of [['1.45', 145], ['£1,45', 145], [' 1,45 ', 145], ['2', 200], ['0.10', 10], ['9999.99', 999999]]) eq('parsePrice ' + s, parsePrice(s).value, p);
+  for (const s of ['1.005', '-1', '0', '1.2.3', 'abc', '', '10000', '1,2,3']) ok('parsePrice rejects ' + JSON.stringify(s), parsePrice(s).error);
+  eq('parsePrice 1.005 message', parsePrice('1.005').error, ERR.pricePenny);
+  eq('parseInteger 12', parseInteger('12', MAX_QTY, 'In stock').value, 12);
+  eq('parseInteger 12.5', parseInteger('12.5', MAX_QTY, 'In stock').error, ERR.whole);
+  eq('parseInteger -1', parseInteger('-1', MAX_QTY, 'In stock').error, "In stock can't be below 0.");
+  eq('parseInteger -0 is 0', parseInteger('-0', MAX_QTY, 'In stock').value, 0);
+  eq('parseDecimal 1.5', parseDecimal('1.5').value, 1.5);
+  eq('parseDecimal 0.25', parseDecimal('0.25').value, 0.25);
+  ok('parseDecimal rejects 0', parseDecimal('0').error);
+  ok('parseDecimal rejects 1.2345', parseDecimal('1.2345').error);
+  eq('parseDecimal 1,5', parseDecimal('1,5').value, 1.5);
+  ok('parseDecimal rejects ambiguous 1,234', parseDecimal('1,234').error);
+  eq('unit 145p / 2 l', unitPrice(145, 2, 'l'), '72.5p per litre');
+  eq('unit 250p / 400 g', unitPrice(250, 400, 'g'), '£6.25 per kg');
+  eq('unit 99p / 400 ml (247.5p rounds half-up)', unitPrice(99, 400, 'ml'), '£2.48 per litre');
+  eq('unit 210p / 6 each', unitPrice(210, 6, 'each'), '35p each');
+  eq('unit single item', unitPrice(100, 1, 'each'), null);
+  eq('unit tiny rounds to <0.1p', unitPrice(1, 99999, 'g'), '<0.1p per kg');
+  const sum = stockValue([{ pricePence: 10, qty: 3 }, { pricePence: 20, qty: 1 }]);
+  eq('integer stock value', sum, 50); ok('stock value is an integer', Number.isInteger(sum));
+
+  const today = '2026-10-22';
+  const list = seedRows(today), n = list.length;
+  const raw = { product: 'Oat milk', sku: 'dai-0999', aisle: '3', price: '£1,60', packSize: '1', packUnit: 'l', qty: '12', reorderAt: '4', perishable: true, useBy: '2026-10-30' };
+  let r = validate(raw, list, null);
+  eq('valid create has no errors', r.e, {});
+  eq('SKU upper-cased', r.v.sku, 'DAI-0999');
+  addRecord(list, { id: 't1', ...r.v });
+  eq('create adds one', list.length, n + 1);
+  ok('duplicate SKU fails', validate({ ...raw, product: 'Other' }, list, null).e.sku);
+  ok('perishable needs use-by', validate({ ...raw, useBy: '' }, list, null).e.useBy === ERR.useBy);
+  ok('unreadable use-by is an error, not dropped', validate({ ...raw, perishable: false, useBy: 'invalid' }, list, null).e.useBy === ERR.useByBad);
+  ok('each needs whole pack size', validate({ ...raw, packSize: '0.5', packUnit: 'each' }, list, null).e.packSize);
+  r = validate({ ...raw, price: '2.05' }, list, 't1');
+  eq('own SKU allowed on edit', r.e, {});
+  updateRecord(list, 't1', r.v);
+  eq('update changes price', list.find(x => x.id === 't1').pricePence, 205);
+  const mid = list[3].id, del = removeRecord(list, mid);
+  eq('delete removes', list.length, n); ok('deleted is gone', !list.some(x => x.id === mid));
+  restoreRecord(list, del);
+  eq('undo restores at index', list.findIndex(x => x.id === mid), 3);
+  const del2 = removeRecord(list, mid);
+  addRecord(list, { ...del2.record, id: 't2' });
+  ok('undo spots a reused SKU', skuClash(list, del2.record));
+  ok('stored rows are shape-checked', isRecord(list[0]) && !isRecord(null) && !isRecord({}) && !isRecord({ ...list[0], aisle: 9 }));
+  const f = rec => flagsOf({ qty: 10, reorderAt: 4, perishable: true, ...rec }, today);
+  ok('low at reorder level', f({ qty: 4 }).low && !f({ qty: 5 }).low);
+  ok('out of stock', f({ qty: 0 }).out);
+  ok('soon in 2 days', f({ useBy: '2026-10-24' }).soon && !f({ useBy: '2026-10-25' }).soon);
+  ok('soon today', f({ useBy: today }).soon);
+  ok('past yesterday', f({ useBy: '2026-10-21' }).past && !f({ useBy: '2026-10-21' }).soon);
+  ok('not perishable is never soon', !f({ perishable: false, useBy: '2026-10-23' }).soon);
+  console.log('SELFTEST PASS');
+}
+
+/* ---------- app state ---------- */
+let rows = load();
+let editingId = null, editReturn = null, triedSubmit = false;
+let query = '', filter = 'all', sort = { key: 'aisle', dir: 'asc' };
+let deleted = [], detailsId = null, dialogReturn = null; // deleted: undo stack of { record, index }, newest last
+
+const $ = s => document.querySelector(s);
+const form = $('#stock-form'), liveEl = $('#live');
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+let liveTimer;
+function announce(msg) { clearTimeout(liveTimer); liveEl.textContent = ''; liveTimer = setTimeout(() => { liveEl.textContent = msg; }, 60); }
+const plural = (n, one, many) => `${COUNT.format(n)} ${n === 1 ? one : many}`;
+
+/* ---------- the ticket ---------- */
+/* size 'sm' (table row) or 'lg' (preview, details); d.name prints a name line (the preview passes it, the dialog's heading names it instead) */
+function ticket(d, size, wasPence) {
+  const today = todayISO();
+  const fl = d.qty !== undefined && d.reorderAt !== undefined ? flagsOf(d, today) : {};
+  let priceHtml;
+  if (d.pricePence && d.pricePence < 100) { // under a pound, tickets print "18p", not "£0.18"
+    priceHtml = `<p class="tk-price" aria-hidden="true"><span>${d.pricePence}</span><span class="pn">${esc(MINOR)}</span></p>`;
+  } else if (d.pricePence) {
+    const parts = MONEY.formatToParts(d.pricePence / 100);
+    const di = parts.findIndex(x => x.type === 'decimal');
+    const whole = parts.slice(0, di < 0 ? parts.length : di).map(x => x.value).join('');
+    const frac = di < 0 ? '' : parts.slice(di + 1).map(x => x.value).join('');
+    priceHtml = `<p class="tk-price" aria-hidden="true"><span>${esc(whole)}</span><span class="pn">${esc(frac)}</span></p>`;
+  } else priceHtml = `<p class="tk-price tk-none" aria-hidden="true"><span>${esc(SYMBOL)}–</span><span class="pn">––</span></p>`;
+  const unit = d.pricePence && d.packSize ? unitPrice(d.pricePence, d.packSize, d.packUnit) : null;
+  const low = fl.out ? 'Out of stock' : fl.low ? `Low: ${COUNT.format(d.qty)} left` : '';
+  const stk = fl.past ? 'Past use-by' : fl.soon ? (fl.days === 0 ? 'Use by today' : `Use by ${fmtDate(d.useBy, { weekday: 'short' })}`) : '';
+  const was = wasPence && d.pricePence && wasPence !== d.pricePence ? money(wasPence) : '';
+  const spoken = [d.pricePence ? money(d.pricePence) : 'No price yet', unit, size !== 'sm' && d.sku ? `SKU ${d.sku}` : '', low, stk, was && `was ${was}`].filter(Boolean).join(', ');
+  const name = size === 'sm' || d.name === undefined ? '' : `<p class="tk-name">${esc(d.name || 'Product name')}</p>`;
+  return `<div class="tk tk--${size}">
+    <span class="vh">${esc(spoken)}</span>
+    ${low ? `<span class="tk-low" aria-hidden="true">${esc(low)}</span>` : ''}
+    ${name}
+    ${was ? `<p class="tk-was" aria-hidden="true">Was <s>${esc(was)}</s></p>` : ''}
+    ${priceHtml}
+    <p class="tk-meta" aria-hidden="true"><span>${esc(unit || '')}</span>${size !== 'sm' && d.sku ? `<span class="tk-sku">${esc(d.sku)}</span>` : ''}</p>
+    ${stk ? `<span class="tk-stk" aria-hidden="true">${esc(stk)}</span>` : ''}
+  </div>`;
+}
+
+/* ---------- list: filter, sort, render ---------- */
+const SORTS = {
+  product: { th: 'Product', say: ['product, A to Z', 'product, Z to A'] },
+  sku: { th: 'SKU', say: ['SKU, A to Z', 'SKU, Z to A'] },
+  aisle: { th: 'Aisle', say: ['aisle, 1 to 6', 'aisle, 6 to 1'] },
+  price: { th: 'Price', n: true, say: ['shelf price, lowest first', 'shelf price, highest first'] },
+  qty: { th: 'In stock', n: true, say: ['stock count, fewest first', 'stock count, most first'] },
+  useBy: { th: 'Use-by', say: ['use-by date, earliest first', 'use-by date, latest first'] },
+  value: { th: 'Value', n: true, say: ['stock value, lowest first', 'stock value, highest first'] },
+};
+const byName = (a, b) => a.product.localeCompare(b.product, LOCALE, { sensitivity: 'base' });
+function compare(a, b) {
+  const k = sort.key, dir = sort.dir === 'asc' ? 1 : -1;
+  if (k === 'useBy' && (!a.useBy || !b.useBy)) return (!a.useBy) - (!b.useBy) || byName(a, b); // no date sorts last
+  const val = { product: r => r.product.toLowerCase(), sku: r => r.sku, aisle: r => r.aisle, price: r => r.pricePence, qty: r => r.qty, useBy: r => r.useBy, value: lineValue }[k];
+  const x = val(a), y = val(b);
+  const c = typeof x === 'string' ? x.localeCompare(y, LOCALE) : x - y;
+  return c * dir || byName(a, b);
+}
+function matches(r, today) {
+  const fl = flagsOf(r, today);
+  if (filter === 'low' && !fl.low) return false;
+  if (filter === 'soon' && !(fl.soon || fl.past)) return false;
+  if (!query) return true;
+  const q = query.toLowerCase();
+  return [label(r), r.sku, aisleName(r.aisle)].some(s => s.toLowerCase().includes(q));
+}
+
+function renderHead() {
+  $('#head-row').innerHTML = Object.entries(SORTS).map(([k, s]) => {
+    const on = sort.key === k;
+    return `<th role="columnheader" scope="col" class="${s.n ? 'n' : ''}" ${on ? `aria-sort="${sort.dir === 'asc' ? 'ascending' : 'descending'}"` : ''}>
+      <button type="button" class="sort" data-sort="${k}">${s.th}<span class="ar" aria-hidden="true">${on ? (sort.dir === 'asc' ? '▲' : '▼') : ''}</span></button><span class="th-m">${s.th}</span></th>`;
+  }).join('') + '<th role="columnheader" scope="col"><span class="vh">Actions</span></th>';
+  $('#sortby').value = `${sort.key}:${sort.dir}`;
+}
+
+function rowHtml(r, today, hidden) {
+  const fl = flagsOf(r, today);
+  const use = r.useBy ? fmtDate(r.useBy, { weekday: 'short', day: 'numeric', month: 'short' }) : '–';
+  const L = esc(label(r));
+  return `<tr role="row" id="row-${r.id}" ${hidden ? 'hidden' : ''}>
+    <td role="cell" class="c-name"><button type="button" class="b-name" data-act="details" data-id="${r.id}" aria-haspopup="dialog">${L}</button></td>
+    <td role="cell" class="c-sku num">${esc(r.sku)}</td>
+    <td role="cell" class="c-aisle">${esc(aisleName(r.aisle))}</td>
+    <td role="cell" class="c-price n"><div class="rail rail--sm">${ticket(r, 'sm')}</div></td>
+    <td role="cell" class="c-qty n" data-label="In stock">${COUNT.format(r.qty)}</td>
+    <td role="cell" class="c-use${fl.soon || fl.past ? ' warn' : ''}${r.useBy ? '' : ' none'}" data-label="Use by">${use}</td>
+    <td role="cell" class="c-val n" data-label="Value">${money(lineValue(r))}</td>
+    <td role="cell" class="c-act">
+      <button type="button" class="btn btn-sm b-edit" data-act="edit" data-id="${r.id}" aria-label="Edit ${L}">Edit</button>
+      <button type="button" class="btn btn-sm btn-text b-del" data-act="delete" data-id="${r.id}" aria-label="Delete ${L}">Delete</button>
+    </td>
+  </tr>`;
+}
+
+function render() {
+  const today = todayISO();
+  const all = rows.map(r => ({ r, fl: flagsOf(r, today) }));
+  const low = all.filter(x => x.fl.low).length;
+  const soon = all.filter(x => x.fl.soon).length, past = all.filter(x => x.fl.past).length;
+  const total = stockValue(rows);
+
+  // header tally, generated from the data
+  if (!rows.length) $('#tally').textContent = 'No products yet.';
+  else {
+    const aisles = new Set(rows.map(r => r.aisle)).size;
+    let t = `${plural(rows.length, 'product', 'products')} across ${plural(aisles, 'aisle', 'aisles')}, worth ${money(total)} at shelf price. `;
+    t += `${COUNT.format(low)} ${low === 1 ? 'is' : 'are'} running low and ${COUNT.format(soon)} ${soon === 1 ? 'reaches its' : 'reach their'} use-by date in the next ${SOON_DAYS} days`;
+    t += past ? `; ${COUNT.format(past)} ${past === 1 ? 'is' : 'are'} past it.` : '.';
+    $('#tally').textContent = t;
+  }
+  $('#c-all').textContent = COUNT.format(rows.length);
+  $('#c-low').textContent = COUNT.format(low);
+  $('#c-soon').textContent = COUNT.format(soon + past);
+  document.querySelectorAll('[data-filter]').forEach(b => {
+    b.setAttribute('aria-pressed', String(b.dataset.filter === filter));
+    b.setAttribute('aria-label', `${b.dataset.name} ${b.querySelector('.c').textContent}`); // full name even when the visible label is short
+  });
+
+  // every row is rendered (hidden ones too) so #row-<id> anchors always resolve
+  const sorted = [...rows].sort(compare);
+  let shown = 0;
+  $('#rows').innerHTML = sorted.map(r => { const m = matches(r, today); shown += m; return rowHtml(r, today, !m); }).join('');
+  renderHead();
+
+  const empty = rows.length === 0;
+  $('#empty').hidden = !empty;
+  $('#table').hidden = empty || shown === 0;
+  $('#no-results').hidden = empty || shown > 0;
+  if (!empty && shown === 0) {
+    $('#no-results-text').textContent = query
+      ? `No product, SKU or aisle matches “${query}”.`
+      : filter === 'low' ? 'Nothing is running low right now.' : `Nothing reaches its use-by date in the next ${SOON_DAYS} days.`;
+    $('#clear-search').textContent = query ? 'Clear search' : 'Show all products';
+  }
+  $('#showing').textContent = empty ? '' : `Showing ${COUNT.format(shown)} of ${plural(rows.length, 'product', 'products')}`;
+
+  $('#grand').textContent = money(total);
+  $('#by-aisle').innerHTML = AISLES.map((a, i) => {
+    const sub = stockValue(rows.filter(r => r.aisle === i + 1));
+    return `<tr><th scope="row">${esc(aisleName(i + 1))}</th><td>${money(sub)}</td></tr>`;
+  }).join('');
+
+  // drop a "Show in list" link whose row no longer exists
+  const link = $('#status a');
+  if (link && !document.getElementById(link.hash.slice(1))) $('#status').textContent = '';
+  return shown;
+}
+
+function flash(id) {
+  const tr = document.getElementById('row-' + id);
+  if (!tr) return;
+  tr.classList.remove('flash'); void tr.offsetWidth; tr.classList.add('flash');
+  setTimeout(() => tr.classList.remove('flash'), reduceMotion.matches ? 4000 : 1700);
+}
+function focusRow(id, which = '.b-edit') {
+  const tr = document.getElementById('row-' + id);
+  const el = tr && !tr.hidden && !$('#table').hidden ? tr.querySelector(which) : null;
+  (el || $('#q')).focus();
+}
+function rowVisible(id) { const tr = document.getElementById('row-' + id); return tr && !tr.hidden; }
+
+/* ---------- the form ---------- */
+const FIELDS = ['product', 'sku', 'aisle', 'price', 'packSize', 'packUnit', 'qty', 'reorderAt', 'useBy'];
+const readForm = () => ({
+  ...Object.fromEntries(FIELDS.map(f => [f, form.elements[f].value])),
+  useBy: form.elements.useBy.validity.badInput ? 'invalid' : form.elements.useBy.value, // a half-typed date reads as '' otherwise
+  perishable: form.elements.perishable.checked,
+});
+
+function showErrors(e) {
+  for (const f of FIELDS) {
+    const input = form.elements[f], p = $('#err-' + f);
+    if (e[f]) { input.setAttribute('aria-invalid', 'true'); p.textContent = e[f]; p.hidden = false; }
+    else { input.removeAttribute('aria-invalid'); p.hidden = true; p.textContent = ''; }
+  }
+}
+
+function renderPreview() {
+  const raw = readForm();
+  const { v } = validate(raw, rows, editingId);
+  const name = v.product ? label({ ...v, packSize: v.packSize ?? 1, packUnit: v.packSize ? v.packUnit : 'each' }) : '';
+  const was = editingId ? rows.find(r => r.id === editingId)?.pricePence : null;
+  $('#preview').innerHTML = ticket({ ...v, name, sku: v.sku || raw.sku.trim().toUpperCase() }, 'lg', was);
+  $('#line-calc').textContent = v.pricePence && v.qty !== undefined
+    ? `This line: ${COUNT.format(v.qty)} × ${money(v.pricePence)} = ${money(v.pricePence * v.qty)}`
+    : 'This line’s stock value appears once the price and count are in.';
+}
+
+function resetForm() {
+  form.reset();
+  form.elements.aisle.value = '1';
+  form.elements.packUnit.value = 'each';
+  triedSubmit = false;
+  showErrors({});
+  renderPreview();
+}
+
+function setMode(id) {
+  editingId = id;
+  const r = id && rows.find(x => x.id === id);
+  $('#form-title').textContent = r ? `Edit ${label(r)}` : 'Add a product';
+  $('#submit').textContent = r ? 'Save changes' : 'Add to stock list';
+  $('#clear').textContent = r ? 'Cancel edit' : 'Clear form';
+}
+
+function startEdit(id) {
+  const r = rows.find(x => x.id === id);
+  if (!r) return;
+  setMode(id);
+  editReturn = id;
+  triedSubmit = false;
+  showErrors({});
+  const f = form.elements;
+  f.product.value = r.product; f.sku.value = r.sku; f.aisle.value = String(r.aisle);
+  f.price.value = (r.pricePence / 100).toFixed(2); f.packSize.value = String(r.packSize); f.packUnit.value = r.packUnit;
+  f.qty.value = String(r.qty); f.reorderAt.value = String(r.reorderAt); f.perishable.checked = !!r.perishable; f.useBy.value = r.useBy || '';
+  $('#status').textContent = '';
+  renderPreview();
+  form.scrollIntoView({ behavior: reduceMotion.matches ? 'auto' : 'smooth', block: 'start' });
+  f.product.focus({ preventScroll: true });
+  announce(`Editing ${label(r)}.`);
+}
+
+function cancelEdit(silent) {
+  const id = editReturn;
+  setMode(null); editReturn = null;
+  resetForm();
+  if (!silent) { announce('Edit cancelled.'); focusRow(id); }
+}
+
+form.addEventListener('submit', ev => {
+  ev.preventDefault();
+  $('#status').textContent = ''; // an earlier "Added …" line must not sit beside new errors
+  const { v, e } = validate(readForm(), rows, editingId);
+  const bad = FIELDS.filter(f => e[f]);
+  triedSubmit = true;
+  showErrors(e);
+  if (bad.length) {
+    form.elements[bad[0]].focus();
+    announce(`${bad.length === 1 ? '1 field needs' : bad.length + ' fields need'} fixing: ${bad.map(f => FIELD_NAMES[f]).join(', ')}.`);
+    return;
+  }
+  if (editingId) {
+    const id = editingId;
+    const rec = updateRecord(rows, id, v);
+    save();
+    setMode(null); editReturn = null;
+    resetForm();
+    render();
+    flash(id);
+    announce(`Saved changes to ${label(rec)}.`);
+    focusRow(id);
+  } else {
+    const rec = addRecord(rows, { id: newId(), ...v });
+    save();
+    resetForm();
+    render();
+    flash(rec.id);
+    const st = $('#status');
+    st.innerHTML = rowVisible(rec.id)
+      ? `Added ${esc(label(rec))}. <a href="#row-${rec.id}">Show in list</a>`
+      : `Added ${esc(label(rec))}. Hidden by your search or filter. <button type="button" class="link" data-show="${rec.id}">Clear search and show it</button>`;
+    announce(`Added ${label(rec)} to aisle ${rec.aisle}.`);
+    form.elements.product.focus();
+  }
+});
+
+form.addEventListener('input', () => {
+  if (triedSubmit) showErrors(validate(readForm(), rows, editingId).e);
+  renderPreview();
+});
+form.addEventListener('change', renderPreview);
+form.addEventListener('focusout', () => { if (triedSubmit) showErrors(validate(readForm(), rows, editingId).e); });
+form.addEventListener('keydown', ev => {
+  if (ev.key === 'Escape' && editingId) { ev.preventDefault(); ev.stopPropagation(); cancelEdit(); }
+});
+$('#clear').addEventListener('click', () => {
+  if (editingId) return cancelEdit();
+  resetForm(); $('#status').textContent = ''; announce('Form cleared.'); form.elements.product.focus();
+});
+$('#status').addEventListener('click', ev => {
+  const a = ev.target.closest('a[href^="#row-"]'), b = ev.target.closest('[data-show]');
+  const id = a ? a.hash.slice(5) : b?.dataset.show;
+  if (!id) return;
+  if (!rowVisible(id)) clearSearch(true); // the anchor then lands on a visible row
+  flash(id);
+  if (b) { document.getElementById('row-' + id)?.scrollIntoView({ block: 'center' }); }
+  setTimeout(() => focusRow(id), 0);
+});
+
+/* ---------- list controls ---------- */
+let showTimer;
+function announceShowing() { clearTimeout(showTimer); showTimer = setTimeout(() => announce($('#showing').textContent + '.'), 400); }
+$('#q').addEventListener('input', e => { query = e.target.value.trim(); render(); announceShowing(); });
+document.querySelectorAll('[data-filter]').forEach(b => b.addEventListener('click', () => { filter = b.dataset.filter; render(); announceShowing(); }));
+function clearSearch(silent) {
+  query = ''; filter = 'all'; $('#q').value = '';
+  render();
+  if (!silent) { $('#q').focus(); announce(`Search cleared. ${$('#showing').textContent}.`); }
+}
+$('#clear-search').addEventListener('click', () => clearSearch());
+
+function setSort(key, dir) {
+  sort = { key, dir };
+  render();
+  announce(`Sorted by ${SORTS[key].say[dir === 'asc' ? 0 : 1]}.`);
+}
+$('#head-row').addEventListener('click', e => {
+  const b = e.target.closest('[data-sort]');
+  if (!b) return;
+  const key = b.dataset.sort;
+  setSort(key, sort.key === key && sort.dir === 'asc' ? 'desc' : 'asc');
+  document.querySelector(`[data-sort="${key}"]`).focus();
+});
+$('#sortby').innerHTML = Object.entries(SORTS).flatMap(([k, s]) => ['asc', 'desc'].map((d, i) => {
+  const t = s.say[i]; return `<option value="${k}:${d}">${t[0].toUpperCase() + t.slice(1)}</option>`;
+})).join('');
+$('#sortby').addEventListener('change', e => { const [k, d] = e.target.value.split(':'); setSort(k, d); });
+
+$('#rows').addEventListener('click', e => {
+  const b = e.target.closest('[data-act]');
+  if (!b) return;
+  const id = b.dataset.id;
+  if (b.dataset.act === 'details') openDetails(id, b);
+  if (b.dataset.act === 'edit') startEdit(id);
+  if (b.dataset.act === 'delete') askDelete(id, () => document.querySelector(`#row-${id} .b-del`));
+});
+
+/* ---------- dialogs ---------- */
+function openDialog(dlg, returnTo) {
+  dialogReturn = returnTo;
+  dlg.showModal();
+}
+document.querySelectorAll('dialog').forEach(d => d.addEventListener('close', () => {
+  const back = typeof dialogReturn === 'function' ? dialogReturn() : dialogReturn;
+  dialogReturn = null;
+  if (back && back.isConnected) back.focus();
+}));
+document.querySelectorAll('dialog').forEach(d => d.addEventListener('click', e => { // backdrop only: a click on the dialog's own padding stays
+  const b = d.getBoundingClientRect();
+  if (e.target === d && (e.clientX < b.left || e.clientX > b.right || e.clientY < b.top || e.clientY > b.bottom)) d.close();
+}));
+
+function openDetails(id, trigger) {
+  const r = rows.find(x => x.id === id);
+  if (!r) return;
+  detailsId = id;
+  const fl = flagsOf(r, todayISO());
+  $('#details-title').textContent = label(r);
+  $('#details-ticket').innerHTML = ticket(r, 'lg');
+  const useNote = fl.past ? 'Past its use-by date' : fl.soon ? (fl.days === 0 ? 'Use by today' : `Use by in ${plural(fl.days, 'day', 'days')}`) : '';
+  const facts = [
+    ['Aisle', aisleName(r.aisle)], ['Pack', packText(r) || '1 each'], ['In stock', fl.out ? '0, out of stock' : COUNT.format(r.qty)], ['Reorder at', COUNT.format(r.reorderAt) + (fl.low && !fl.out ? ', running low' : '')],
+    ['Perishable', r.perishable ? 'Yes' : 'No'],
+    ['Use-by date', r.useBy ? fmtDate(r.useBy, { weekday: 'long', day: 'numeric', month: 'long' }) + (useNote ? `. ${useNote}` : '') : 'None'],
+    ['Line stock value', `${money(lineValue(r))} (${COUNT.format(r.qty)} × ${money(r.pricePence)})`],
+  ];
+  $('#details-facts').innerHTML = facts.map(([k, v]) => `<dt>${k}</dt><dd${(k === 'Use-by date' && useNote) ? ' class="warn"' : ''}>${esc(v)}</dd>`).join('');
+  openDialog($('#details'), () => document.querySelector(`#row-${id} .b-name`) || trigger);
+}
+$('#details-close').addEventListener('click', () => $('#details').close());
+$('#details-edit').addEventListener('click', () => { dialogReturn = null; $('#details').close(); startEdit(detailsId); });
+$('#details-delete').addEventListener('click', () => {
+  const id = detailsId;
+  dialogReturn = null; $('#details').close();
+  askDelete(id, () => document.querySelector(`#row-${id} .b-name`));
+});
+
+let pendingDelete = null;
+function askDelete(id, returnTo) {
+  const r = rows.find(x => x.id === id);
+  if (!r) return;
+  pendingDelete = id;
+  $('#del-title').textContent = `Delete ${label(r)}?`;
+  $('#del-text').textContent = `Its ${plural(r.qty, 'unit', 'units')} (${money(lineValue(r))} at shelf price) leave the stock list.`;
+  openDialog($('#confirm-del'), returnTo);
+  $('#del-no').focus();
+}
+$('#del-no').addEventListener('click', () => $('#confirm-del').close());
+$('#del-yes').addEventListener('click', () => {
+  const id = pendingDelete;
+  dialogReturn = null; $('#confirm-del').close();
+  if (editingId === id) cancelEdit(true);
+  deleted.push(removeRecord(rows, id));
+  save(); render();
+  showUndo();
+  $('#undo-btn').focus();
+  announce(`Deleted ${label(deleted.at(-1).record)}. Undo is available.`);
+});
+function showUndo() {
+  const n = deleted.length;
+  $('#undo').hidden = !n;
+  if (!n) return;
+  $('#undo-text').textContent = `Deleted ${label(deleted[n - 1].record)}.` + (n > 1 ? ` Undo again to restore ${n === 2 ? 'the one' : `the ${n - 1}`} before it.` : '');
+}
+$('#undo-btn').addEventListener('click', () => {
+  if (!deleted.length) return;
+  const clash = skuClash(rows, deleted.at(-1).record);
+  if (clash) {
+    const msg = `Can't undo: SKU ${clash.sku} is now used by ${label(clash)}. Change that SKU first, then undo.`;
+    $('#undo-text').textContent = msg;
+    announce(msg);
+    return;
+  }
+  const rec = restoreRecord(rows, deleted.pop());
+  showUndo();
+  save();
+  if (!render() || !rowVisible(rec.id)) clearSearch(true);
+  flash(rec.id);
+  announce(`Restored ${label(rec)}.`);
+  focusRow(rec.id);
+});
+function dismissUndo() {
+  const at = deleted.length ? deleted.at(-1).index : 0;
+  deleted = []; $('#undo').hidden = true;
+  const next = [...document.querySelectorAll('#rows tr:not([hidden]) .b-edit')][at] || null;
+  (next && !$('#table').hidden ? next : $('#q')).focus();
+  announce('Undo dismissed.');
+}
+$('#undo-dismiss').addEventListener('click', dismissUndo);
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && !$('#undo').hidden && !document.querySelector('dialog[open]')) dismissUndo();
+});
+
+function askReset(trigger) { openDialog($('#confirm-reset'), trigger); $('#reset-no').focus(); }
+$('#reset-open').addEventListener('click', e => askReset(e.currentTarget));
+$('#empty-reset').addEventListener('click', () => askReset($('#reset-open')));
+$('#reset-no').addEventListener('click', () => $('#confirm-reset').close());
+$('#reset-yes').addEventListener('click', () => {
+  rows = seedRows(todayISO());
+  save();
+  if (editingId) cancelEdit(true);
+  deleted = []; $('#undo').hidden = true;
+  $('#status').textContent = '';
+  query = ''; filter = 'all'; $('#q').value = '';
+  dialogReturn = $('#reset-open');
+  $('#confirm-reset').close();
+  render();
+  announce('Sample stock restored.');
+});
+function goToForm(ev) {
+  ev?.preventDefault(); // the header link still works as a plain #stock-form anchor without the script
+  form.scrollIntoView({ behavior: reduceMotion.matches ? 'auto' : 'smooth', block: 'start' });
+  form.elements.product.focus({ preventScroll: true });
+}
+$('#empty-add').addEventListener('click', goToForm);
+$('#head-add').addEventListener('click', goToForm);
+
+/* ---------- start ---------- */
+$('#cur').textContent = SYMBOL;
+$('#aisle').innerHTML = AISLES.map((a, i) => `<option value="${i + 1}">${esc(aisleName(i + 1))}</option>`).join('');
+$('#packUnit').innerHTML = PACK_UNITS.map(u => `<option value="${u}">${u}</option>`).join('');
+resetForm();
+render();
+if (location.hash === '#selftest') runSelfTest();
+</script>
+</body>
+</html>
