@@ -9,7 +9,7 @@ export const GET: APIRoute = async () => {
   const out = [
     '# designs-x',
     '',
-    '> Original front-end sections (hero, features, pricing, testimonials, process, call to action, footer) as self-contained HTML and CSS files, each with a design.md that explains what it is for, why it works, what must not change, and how to adapt it.',
+    '> Original front-end sections (hero, features, pricing, testimonials, process, call to action, footer, portfolio, CRUD) as self-contained HTML and CSS files, each with a design.md that explains what it is for, why it works, what must not change, and how to adapt it.',
     '',
     'Pick a design by its section, then by the use_when and avoid_when lists in its design.md. Map the target brand onto the `:root` CSS custom properties first, replace the copy, and translate to the target stack last.',
     '',

@@ -1,6 +1,6 @@
 # Principles
 
-designs-x is a collection of front-end **sections** (hero, features, pricing, testimonials, process, call to action, footer) built to be read and reused by AI agents. Every design is original, self-contained HTML and CSS, and ships with a note that explains why it works.
+designs-x is a collection of front-end **sections** (hero, features, pricing, testimonials, process, call to action, footer, portfolio, CRUD) built to be read and reused by AI agents. Every design is original, self-contained HTML and CSS, and ships with a note that explains why it works.
 
 This document is the taste behind the collection. Read it before using a design, and before making a new one.
 
@@ -10,6 +10,7 @@ This document is the taste behind the collection. Read it before using a design,
 - **Grounded in a real subject.** Each design is made for a specific, concrete product or organisation. Its palette, typography and layout come from that subject's world: its materials, its vernacular, its tools. A design for a climbing gym looks nothing like a design for a seed bank.
 - **One file that runs on its own.** `index.html` opens in a browser with no build step. CSS lives in a `<style>` block. JavaScript, if any, lives in one `<script>` block at the end. External fonts are allowed and declared.
 - **Tokenised.** Every colour, font family, type size and the spacing scale is a CSS custom property on `:root`. Porting a design to another brand starts by changing those variables, not by hunting through rules.
+- **Portfolio and CRUD sections** are larger, app-like sections. Portfolio designs carry interactive charts and editable contact/social links. CRUD designs create, read, update and delete typed records (text, integer, decimal, date, boolean, choice) kept only for the browser session.
 - **Explained.** `design.md` says what the design is for, why it works, what must not be changed, and how to adapt it.
 
 ## Taste
@@ -56,6 +57,7 @@ Every design meets this without announcing it:
 - `prefers-reduced-motion` respected.
 - Images and drawings have text alternatives, or are marked decorative.
 - No console errors.
+- No dead ends. Every link, button and form leads somewhere that works, in the same file: an anchor to an element that exists, or a visible in-page result (a confirmation, a panel, a dialog) with a way back. Forms never submit to a server; they handle `submit` in JavaScript and show the outcome. No `href="#"` placeholders and no relative paths to pages that do not exist. External destinations (mailto:, tel:, wa.me, social profiles) are allowed and open with `target="_blank" rel="noopener"`.
 
 ## How an AI should use a design
 

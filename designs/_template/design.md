@@ -1,6 +1,6 @@
 ---
 title: Short human name for the design
-section: hero            # hero | features | pricing | testimonials | process | cta | footer
+section: hero            # hero | features | pricing | testimonials | process | cta | footer | portfolio | crud
 subject: One sentence naming the concrete product or organisation this was designed for.
 aesthetic: A few words naming the visual direction and where it comes from.
 mode: light              # light | dark
