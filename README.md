@@ -22,6 +22,7 @@ PRINCIPLES.md               the taste behind the collection
 SKILL.md                    instructions for agents using a local clone
 site/                       Astro catalogue, deployed to GitHub Pages
 scripts/shot.sh             screenshot a design with system Chromium
+scripts/check-flows.mjs     node scripts/check-flows.mjs [slug] [--json|--self-test]: fail on dead links, broken flows, console errors
 ```
 
 ## Contributing a design
