@@ -15,9 +15,9 @@ Labels in the collection: a design that ships plain JavaScript gets the orange "
 
 ## 1. The sample
 
-### Sites analysed (60 entries, 57 distinct URLs)
+### Sites analysed (60 sites)
 
-Numbers are the order of analysis. Three domains appear twice (Lusion, Funtech, Locomotive), and two sites could not be inspected properly. Where the capture tool could not render a WebGL site, the analysis came from the shipped HTML, CSS and bundles; those findings are marked "inferred" in the entries.
+Numbers are the order of analysis. 61 to 63 were added last, replacing three repeat captures of the same domains (Lusion, Funtech, Locomotive), so 15, 37 and 40 are unused. Two sites could not be inspected properly (Podium, Bryony Wong). Where the capture tool could not render a WebGL site, the analysis came from the shipped HTML, CSS and bundles; those findings are marked "inferred" in the entries.
 
 **Agencies and studios**
 
@@ -26,7 +26,6 @@ Numbers are the order of analysis. Three domains appear twice (Lusion, Funtech, 
 - 9 https://emotion-agency.com/ (Emotion): 2000vh sticky WebGL story with idle-snap chapters, decoding mono text.
 - 12 https://dardo.studio/ (Dardo): chapter-snapped scroll, WebGPU dart flight, shared-element card-to-cover route transition.
 - 14 https://dirtverse.co/ (Dirt): Framer studio, circular video orbs drifting, pill nav highlighter, scroll-stepped services list.
-- 15 https://www.lusion.co (Lusion, second capture): same site, analysed from the 1.25 MB bundle.
 - 17 https://www.bigdirty.agency/ (Big Dirty): Webflow, vertical scroll pans a horizontal track of framed panels, running-rabbit mascot.
 - 20 https://cuberto.com/ (Cuberto): word-mask rise, clip-path window card, exclusion-blend cursor with states, scrubbed services accordion.
 - 23 https://auge-xp.com/ (AUGE): scramble preloader, colour-inverting curtain, directional clip reveals, hover fills.
@@ -37,7 +36,6 @@ Numbers are the order of analysis. Three domains appear twice (Lusion, Funtech, 
 - 31 https://unseen.co (Unseen): eyes loader, squeeze cursor, per-char text roll, DOM-synced WebGL planes. Inferred.
 - 33 https://locomotive.ca/en (Locomotive): text-shuffle hover and page transition, depixelate thumbnails, CSS progress variables.
 - 36 https://grandecharte.co (Grande Charte): glass 3D scroll iframe, word-mask rise with rotation, lens-bulge images.
-- 40 https://www.locomotive.ca (Locomotive, second capture): same site, from source.
 - 45 https://www.merci-michel.com/ (Merci Michel): WebGL chapter rail, masked wordmark loader. Inferred.
 - 51 https://podium.global/ (Podium): sports production studio. Unverified (shell failed); text-only evidence.
 - 52 https://www.immersive-g.com (Immersive Garden): velocity-triggered zoom-out "fast mode", dotted trail cursor. Inferred.
@@ -53,6 +51,8 @@ Numbers are the order of analysis. Three domains appear twice (Lusion, Funtech, 
 - 48 https://www.leeholmes.uk/ (Lee Holmes): DLA spotlight canvas, banded blur headline, scramble reveals, CSS `:has()` follower.
 - 55 https://www.jesperlandberg.com (Jesper Landberg): curved WebGL ribbon of sheets, rolling digits, shared-element flight.
 - 60 https://metic.studio/en (metic.): x-ray magnifier lens, pinned "the build" sequence with skip link.
+- 61 https://www.raviklaassens.com/ (Ravi Klaassens, R—K): Webflow + GSAP 3.15 + Lenis + Barba, framed hero that expands, awards list with sliding poster, optional hover sound.
+- 62 https://www.davidlubofsky.com (David Lubofsky): Nuxt + GSAP 3.11, ring-and-logo loader, drifting geometric shapes, case images that fall away on click, marker underlines with random tilt.
 
 **Product and SaaS**
 
@@ -87,30 +87,31 @@ Numbers are the order of analysis. Three domains appear twice (Lusion, Funtech, 
 - 19 https://gehry.getty.edu (Gehry, Getty): sketch preloader with sound gate, per-letter width title, chapter colour blocks.
 - 21 https://format.obys.agency/ (Format, Obys): curtain plus letter climb, filmstrip hand-off, scrubbed clock and shape morphs.
 - 22 https://experience2026.funtech.inc/ (Funtech): terminal boot loader, CRT stack, station engine.
-- 37 https://experience2026.funtech.inc (Funtech, second capture): same site, more detail on HUD and gates.
 - 46 https://www.offforum.com/ (OFFF Forum): rapid photo-flash hero, curtain route transition, bleeding footer wordmark.
 - 47 https://junkyardking.io/ (Junkyard King): browser brawler, impact frames, skewed glass HUD.
 - 49 https://palaraiffeisen.ch/ (Palaraiffeisen): sports venue, odometer preloader, tiled clip page transition, 3D building tour.
 - 35 https://inherited.band/ (Inherited): band site, SVG-filter glitch letters, clip curtain contact overlay.
 - 59 https://ohlalaride.com/ (Oh La La Ride): browser game, magnetic tilt buttons, results stamp sequence.
+- 63 https://www.SeeWhatEyeSee.org (See What Eye See): vision-loss simulator on three.js, scrambled intro lines, ragged noise wipes, eyelid-blink page transition, faded ambient sound.
 
 ### Stack observed
 
-Counts are entries out of 60 (bundled libraries were confirmed from source where the capture tool missed them).
+Counts are sites out of 60 (bundled libraries were confirmed from source where the capture tool missed them; sites 61 to 63 are included).
 
 | Library | Entries | Notes |
 |---|---|---|
-| GSAP (any version) | 31 | 29 on GSAP 3.x (3.15 the most common pinned version), 2 on legacy 1.x (Merci Michel, Resn). |
-| ScrollTrigger | 23 | Usually for scrub and pin; several sites pin with CSS `position: sticky` and only read progress. |
-| Lenis (or a Lenis wrapper) | 28 | Includes Locomotive Scroll v5 and Framer's built-in Lenis. Versions seen 1.3.1 to 1.3.26. |
-| GSAP + Lenis together | 23 | Almost always wired through `gsap.ticker` with `lagSmoothing(0)`. |
-| SplitText | 15 | Plus custom splitters (Palaraiffeisen, Splitting.js at Grande Charte). Most use `mask: 'lines'`. |
+| GSAP (any version) | 34 | 32 on GSAP 3.x (3.15 the most common pinned version; Lubofsky is on 3.11.4), 2 on legacy 1.x (Merci Michel, Resn). |
+| ScrollTrigger | 26 | Usually for scrub and pin; several sites pin with CSS `position: sticky` and only read progress. |
+| Lenis (or a Lenis wrapper) | 30 | Includes Locomotive Scroll v5 and Framer's built-in Lenis. Versions seen 1.3.1 to 1.3.26. |
+| GSAP + Lenis together | 25 | Almost always wired through `gsap.ticker` with `lagSmoothing(0)`. |
+| SplitText | 16 | Plus custom splitters (Palaraiffeisen, Splitting.js at Grande Charte, the legacy SplitText 3.0 build at Lubofsky). Most use `mask: 'lines'`. |
 | ScrambleTextPlugin | 3 | Plus 5 hand-rolled scramble or shuffle effects. |
-| Observer / Flip / CustomEase | 11 / 7 / 9 | Observer for wheel-stepped carousels, Flip for reflow, CustomEase for a house curve. |
-| Barba.js | 6 | Plus Astro/Nuxt/Next routers and the View Transitions API for page transitions. |
-| three.js | 22 | 33 entries use some WebGL or WebGPU (three, OGL, custom engines). |
+| Observer / Flip / CustomEase | 12 / 7 / 11 | Observer for wheel-stepped carousels, Flip for reflow, CustomEase for a house curve. |
+| Barba.js | 7 | Plus Astro/Nuxt/Next routers and the View Transitions API for page transitions. |
+| three.js | 23 | 34 sites use some WebGL or WebGPU (three, OGL, custom engines). |
 | Framer / Framer Motion | 4 / 3 | Framer sites still ship Lenis. |
-| Webflow | 4 | IX2 for basic interactions, GSAP for the rest. |
+| Webflow | 5 | IX2 for basic interactions, GSAP for the rest. |
+| Matter.js / Howler | 1 / 1 | Ravi Klaassens only: physics-driven award badges (inferred from config) and a hover sound layer. |
 | No animation library at all | 8 | Omarchy, Alex Van Holtz, Arc Marumo, Analogue, Cowboy, Singer, Velt, 14islands' own UI. Several of the best-judged sites are in this group. |
 
 What this means for designs-x: GSAP + Lenis is the dominant award stack, but it is spent on two things: scroll choreography (pins, scrub, chapters) and text splitting. Hover, menus and micro-interactions are mostly CSS transitions even on GSAP sites. WebGL is out of scope for a single-file section; every WebGL technique below has a DOM or canvas 2D translation.
@@ -171,7 +172,7 @@ House easing names used below: `expo.out` (= cubic-bezier(.16,1,.3,1), the most 
 - **Polished / cheap:** same DOM element before and after. Cheap is fading one logo out and another in at a different size.
 - **Reduced motion:** place it in the header directly.
 - **Touch:** same.
-- **Seen on:** Obys Grids 03, A24, Dirt, Resn (glyph becomes the 3D hero).
+- **Seen on:** Obys Grids 03, A24, Dirt, Resn (glyph becomes the 3D hero), Lubofsky (logo mark inside a progress ring, then in the header).
 
 #### LD6. Hero media scale-settle
 - **Sees:** the hero photo starts slightly zoomed and settles over two seconds while the type stays still.
@@ -375,6 +376,16 @@ House easing names used below: `expo.out` (= cubic-bezier(.16,1,.3,1), the most 
 - **Touch:** fewer cells.
 - **Seen on:** The Design Society.
 
+#### SC18. Scroll-popped badge cluster (inferred)
+- **Sees:** a cluster of award or logo badges pops in one by one as the user scrolls through the block, then keeps drifting slightly and springs back to its place when nudged.
+- **Recipe:** the source config (Matter.js 0.20, `scrollPerAward 30`, `popGap .18`, `popEase back.out(3.5)`, `popFrom .7`, air friction .07, weak home spring) suggests bodies with a spring to a home slot. Translation without a physics library: absolutely placed badges; a scrubbed timeline `fromTo(badge, {scale: .7, autoAlpha: 0}, {scale: 1, autoAlpha: 1, duration: .2, ease: 'back.out(3.5)'}, i * .18)` with `scrollTrigger: {start: 'top 35%', end: 'bottom bottom', scrub: true}`; ambient drift in `gsap.ticker`: `v += (home - pos) * .00004 * dt; v *= 1 - .07; pos += v`, with a small impulse from pointer speed.
+- **Timing:** pop 0.2s; stagger 0.18 of timeline length.
+- **Fits:** portfolio, testimonials, about.
+- **Polished / cheap:** badges link to their source and sit in a real list for screen readers; the drift stays under 12px. Cheap lets them tumble out of the layout or never settle.
+- **Reduced motion:** all badges shown, no drift.
+- **Touch:** pop on scroll only; no pointer impulse.
+- **Seen on:** Ravi Klaassens (inferred from source config; the capture did not reach it).
+
 ### 2.3 Hover
 
 #### HV1. Two-copy text roll
@@ -527,7 +538,7 @@ House easing names used below: `expo.out` (= cubic-bezier(.16,1,.3,1), the most 
 - **Polished / cheap:** depth-ordered, small, settles at rest. Cheap moves everything equally.
 - **Reduced motion:** off.
 - **Touch:** off (device motion only with permission, not recommended).
-- **Seen on:** Creative Ocean, Locomotive Lisa, Gehry, Analogue, Active Theory (inferred).
+- **Seen on:** Creative Ocean, Locomotive Lisa, Gehry, Analogue, Active Theory (inferred), See What Eye See (a depth map shifts pixels against the pointer in a shader; in the DOM use two or three cut-out layers).
 
 #### CU4. Spotlight or lens reveal
 - **Sees:** a circle under the pointer reveals a second layer: a lit area in a dark section, a blueprint view under a magnifier.
@@ -793,7 +804,7 @@ House easing names used below: `expo.out` (= cubic-bezier(.16,1,.3,1), the most 
 - **Polished / cheap:** scaleY, not height; tempo from the content if any. Cheap animates height.
 - **Reduced motion:** static bars.
 - **Touch:** same.
-- **Seen on:** Funtech, Emotion, Gehry, Unseen.
+- **Seen on:** Funtech, Emotion, Gehry, Unseen, See What Eye See, Ravi Klaassens. See MI9 for the audio behind it.
 
 #### MI7. Theme toggle without a flash
 - **Sees:** light and dark switch together across every token; the choice persists without a wrong-theme flash on reload.
@@ -814,6 +825,16 @@ House easing names used below: `expo.out` (= cubic-bezier(.16,1,.3,1), the most 
 - **Reduced motion:** static arrow.
 - **Touch:** same.
 - **Seen on:** Lusion, Dardo, Consensys.
+
+#### MI9. Sound layer with a remembered preference
+- **Sees:** a labelled Sound toggle starts a quiet ambient bed that fades in over a second or two; small clicks, whooshes and hover ticks accompany interactions. The choice is remembered, and the sound stops when the tab is hidden.
+- **Recipe:** off by default. One `AudioContext` created on the first user gesture, `HTMLAudioElement` (loop) into a `GainNode`. On: `ctx.resume()`, `audio.play()`, `gain.gain.cancelScheduledValues(t)`, `setValueAtTime(current, t)`, `linearRampToValueAtTime(1, t + 1.5)`. Off: ramp to 0, then `audio.pause()` after 1.6s. `localStorage` stores the choice (try/catch) but playback resumes only on the next `pointerdown` or `keydown`, because autoplay is blocked. `visibilitychange` calls `ctx.suspend()` / `resume()`. UI effects are short files with a cooldown (80 to 250ms), volume 0.35 to 0.7, overlap allowed for hovers and not for transitions.
+- **Timing:** fade 1.5s; effect cooldown 80 to 250ms.
+- **Fits:** nav (toggle), hero, story.
+- **Polished / cheap:** one control with `aria-pressed`, off by default, effects mirror real state changes. Cheap tries to autoplay, has no mute, keeps playing in a background tab or plays a sound on every hover.
+- **Reduced motion:** sound stays off until chosen; no effect on hover ticks.
+- **Touch:** same toggle; replace hover ticks with tap effects or none.
+- **Seen on:** Ravi Klaassens (howler effects with cooldowns and a music bed), See What Eye See (gain ramp, remembered choice, suspend on hide), Gehry (sound gate), Funtech.
 
 ### 2.8 Text and typography motion
 
@@ -859,13 +880,13 @@ House easing names used below: `expo.out` (= cubic-bezier(.16,1,.3,1), the most 
 
 #### TX5. Highlighter sweep behind words
 - **Sees:** a solid marker band wipes behind a phrase (or covers a line and wipes away), leaving the text emphasised.
-- **Recipe:** phrase `position: relative; isolation: isolate`; `::before {background: var(--mark); inset: -8% -.1em -12%; z-index: -1; transform: scaleX(0); transform-origin: left}`; `gsap.to(markEl, {scaleX: 1, duration: .65, ease: 'power2.inOut'})`. Per-line cover variant: SplitText lines, each with a bar `scaleX 1 -> 0` from the right, stagger 0.1. `box-decoration-break: clone` for multi-line inline marks.
+- **Recipe:** phrase `position: relative; isolation: isolate`; `::before {background: var(--mark); inset: -8% -.1em -12%; z-index: -1; transform: scaleX(0); transform-origin: left}`; `gsap.to(markEl, {scaleX: 1, duration: .65, ease: 'power2.inOut'})`. Per-line cover variant: SplitText lines, each with a bar `scaleX 1 -> 0` from the right, stagger 0.1. `box-decoration-break: clone` for multi-line inline marks. Hand-drawn variant: tilt the mark `rotate(±3.3deg)`, pick the sign and `transform-origin` (left or right) at random per phrase, trigger once at `top bottom-=25%`, `transition: transform 1.25s cubic-bezier(.77,0,.175,1)`.
 - **Timing:** 0.5 to 0.9s.
 - **Fits:** hero, features, testimonials.
 - **Polished / cheap:** the mark carries meaning (the phrase that answers the question). Default 7 warns against accenting a single headline word: use this only when the phrase is the content's point, and say why in `design.md`.
 - **Reduced motion:** mark shown.
 - **Touch:** same.
-- **Seen on:** Alex Van Holtz, The Design Society, Lando Norris, Browserbase.
+- **Seen on:** Alex Van Holtz, The Design Society, Lando Norris, Browserbase, Lubofsky (random-tilt marker underlines).
 
 #### TX6. Rotating word slot
 - **Sees:** the last word of a line cycles through options inside a fixed-width slot.
@@ -947,7 +968,7 @@ House easing names used below: `expo.out` (= cubic-bezier(.16,1,.3,1), the most 
 - **Polished / cheap:** clip-path, not width; inverse scale keeps the aspect. Cheap animates width/height.
 - **Reduced motion:** full frame.
 - **Touch:** simple fade-up.
-- **Seen on:** Lusion, Cowboy, Matcha Cartel, Cuberto.
+- **Seen on:** Lusion, Cowboy, Matcha Cartel, Cuberto, Ravi Klaassens (framed hero image opens to full bleed as the page starts).
 
 #### MD3. Poster-first video in view
 - **Sees:** videos show their first frame instantly and only play while visible.
@@ -977,7 +998,7 @@ House easing names used below: `expo.out` (= cubic-bezier(.16,1,.3,1), the most 
 - **Polished / cheap:** one source of truth for the index. Cheap lets the image lag the text.
 - **Reduced motion:** instant swap.
 - **Touch:** tap the list item.
-- **Seen on:** Dirt, Obys, Matcha Cartel, Sintra.
+- **Seen on:** Dirt, Obys, Matcha Cartel, Sintra, Ravi Klaassens (awards list poster slides with an `inset` clip, 0.6s `expo.inOut`).
 
 #### MD6. Rapid photo flash (high risk)
 - **Sees:** a full-bleed hero cycles through photos every half second to a second behind fixed text.
@@ -988,6 +1009,16 @@ House easing names used below: `expo.out` (= cubic-bezier(.16,1,.3,1), the most 
 - **Reduced motion:** one still.
 - **Touch:** same.
 - **Seen on:** OFFF.
+
+#### MD7. Ragged-edge wipe
+- **Sees:** an image or text block is revealed (or erased) left to right by an edge that tears: some parts lead, others lag, with fine fragments at the front, instead of a clean vertical line.
+- **Recipe:** the original runs a shader where the edge is offset by value noise sampled in element pixels, so the tear size is the same at any element size (it must be `highp` on phones). DOM translation: `clip-path: polygon()` with about 14 points on the moving edge and fixed vertex count; each point has a seeded offset in pixels (`jitter[i] = seed(i) * 90`). Tween `p` from 0 to 1 and set `x_i = p * (W + 90) - jitter[i]` on update, with corners at `0 0` and `0 100%`. Erase by the same travel with the polygon on the right side. Text variant: SplitText lines, same polygon per line with stagger 0.08.
+- **Timing:** 0.8 to 1.2s, `power2.inOut`.
+- **Fits:** hero, story, gallery.
+- **Polished / cheap:** noise in px, not %; the final frame is `clip-path: none`. Cheap is a clean gradient mask, or per-frame random jitter, which shimmers.
+- **Reduced motion:** crossfade.
+- **Touch:** same.
+- **Seen on:** See What Eye See (WebGL planes and intro lines; the wipe can run as a cross-wipe between two planes).
 
 ### 2.10 Transitions within a section
 
@@ -1040,6 +1071,26 @@ House easing names used below: `expo.out` (= cubic-bezier(.16,1,.3,1), the most 
 - **Reduced motion:** plain crossfade.
 - **Touch:** same.
 - **Seen on:** Arc Marumo, Junkyard King (impact frames, more extreme).
+
+#### TR6. Eyelid blink transition
+- **Sees:** two curved, softly feathered lids close from top and bottom, hold black for an instant, and open on the new view, which settles from slightly zoomed.
+- **Recipe:** the original draws the lids in a shader (curve amplitudes 0.12 and 0.08, feather 0.07 and 0.055). DOM: two fixed elements `height: 55vh; left: -10%; width: 120%; background: var(--ink); box-shadow: 0 0 40px 24px var(--ink)` with `border-radius: 0 0 50% 50% / 0 0 18vh 18vh` (top) and mirrored (bottom). Timeline: lids `yPercent` from -100 / 100 to 0 over 0.35s `power2.in`, swap the content while closed, lids back over 0.55s `power2.out` with the new view `scale 1.2 -> 1` over the same time.
+- **Timing:** about 0.9s total, content swapped at the midpoint.
+- **Fits:** story, gallery, portfolio, crud (detail panels).
+- **Polished / cheap:** only when the subject is sight, attention or a camera. The lid colour is the page ink. Cheap is a black fade under a page that has nothing to do with eyes.
+- **Reduced motion:** 150ms crossfade.
+- **Touch:** same.
+- **Seen on:** See What Eye See.
+
+#### TR7. Image-fall exit
+- **Sees:** after a click, the chosen card's image drops off the bottom of the screen, tilting as it falls, while the other items fade; the next view then appears.
+- **Recipe:** `gsap.timeline().to(others, {autoAlpha: 0, duration: .27, ease: 'power1'}).to(img, {y: () => innerHeight - rect.top + rect.height, rotation: '+=' + gsap.utils.random(-92, -40), duration: .7, ease: 'power3.in'}, '<-.2')`, then open the detail panel (NV7) or navigate. Measure `rect` on click, not on load. On touch, the tapped item plays the same sequence.
+- **Timing:** 0.27s fade, 0.7s fall.
+- **Fits:** portfolio, gallery, team.
+- **Polished / cheap:** the exit sequence is cancellable by Escape and never traps focus; the destination shows its own entrance so the fall reads as a hand-off. Cheap leaves a blank page while the next view loads.
+- **Reduced motion:** the chosen image fades; no fall.
+- **Touch:** same.
+- **Seen on:** Lubofsky.
 
 ---
 
@@ -1168,7 +1219,7 @@ Rules that go with the snippet:
 4. **Layout-thrashing animation.** Animating `width`, `height`, `top`, `left`, `max-height`, or reading `getBoundingClientRect` on every frame for dozens of elements (Creative Ocean curtain on `top`, Becane per-frame layout). Fix: transform, opacity, clip-path; cache rects on enter and resize; Flip or `grid-template-rows` for size changes.
 5. **Cursor followers that replace the real cursor.** `cursor: none` site-wide (Jackie Zhang Framer rules, Creative Ocean over video) leaves keyboard and low-vision users without orientation and lags behind the hand. Fix: keep the native cursor, use the follower as an additional label, show it only on `(hover: hover) and (pointer: fine)`, hide it on window leave.
 6. **Unreadable text during reveals.** Scattered words for most of a pin (The Design Society), long blur-ins, statements left at 15% opacity, scrambles on paragraphs, scrambled strings read aloud by screen readers. Fix: text readable at the resting point of every scrub, scrambles on short labels only with the real string in `aria-label`.
-7. **Preloaders that block ready content.** Fake timers, 3 to 8 second gates, no timeout (Illoca stayed on its loader indefinitely in software rendering; Funtech stalled at 70%). Fix: real progress, minimum about 1s, hard release at 5 to 8s, skip on repeat visits.
+7. **Preloaders that block ready content.** Fake timers, 3 to 8 second gates, no timeout (Illoca stayed on its loader indefinitely in software rendering; Funtech stalled at 70%). Fix: real progress, minimum about 1s, hard release at 5 to 8s (Ravi Klaassens ships an inline 8s timer that removes the loading class whatever happens), skip on repeat visits.
 8. **Two animation loops.** Lenis on its own `requestAnimationFrame` next to GSAP's ticker causes pins to jitter. Fix: the snippet in section 3.
 9. **Zoom disabled.** `maximum-scale=1, user-scalable=no` (Lusion, Active Theory, Santioni, Resn, Junkyard King). Never in this collection.
 10. **No reduced-motion path.** Most WebGL and scroll-story sites had none (Illoca, Unseen, Locomotive, Immersive Garden, 14islands). Fix: `gsap.matchMedia` branch that shows final states and skips Lenis.
