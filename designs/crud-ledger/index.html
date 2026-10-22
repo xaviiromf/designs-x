@@ -1,0 +1,1031 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>General journal, Hollis &amp; Pryce</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Besley:wght@500;700&family=IBM+Plex+Sans+Condensed:wght@400;500;600&display=swap">
+<style>
+:root {
+  /* colour: the green analysis pad */
+  --pad: #E8F0DF;     /* page and table ground */
+  --slip: #F7FAF2;    /* voucher slip, inputs, viewed row */
+  --rule: #8DB384;    /* printed ruling: decorative lines only, never text or control borders */
+  --ink: #1D2B45;     /* blue-black ledger ink: text, figures, ticks, primary button, focus, footing rules */
+  --pencil: #4A5D4B;  /* secondary text, descriptions, field borders */
+  --red: #AE2A20;     /* red ink: imbalance and validation errors only */
+
+  /* type */
+  --f-ui: "IBM Plex Sans Condensed", "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
+  --f-head: "Besley", "Clarendon", "Rockwell", Georgia, serif;
+  --t-xs: 0.8rem;
+  --t-s: 0.9375rem;   /* the one off-scale step: 15px table text, between 12.8 and 16 */
+  --t-m: 1rem;
+  --t-l: 1.25rem;
+  --t-xl: 1.5625rem;
+  --t-xxl: clamp(1.95rem, 1.4rem + 2vw, 2.45rem);
+  --lh-body: 1.45;
+  --lh-row: 1.3;
+
+  /* spacing, 4-based */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+  --s-8: 64px;
+  --row: 2.5rem;
+  --gutter: 16px;
+  --max: 1440px;
+  --slip-w: 360px;
+  --radius: 3px;
+  --slip-radius: 4px;
+}
+@media (min-width: 720px) { :root { --gutter: 32px; } }
+
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; background: var(--pad); color: var(--ink); }
+.ledger {
+  background: var(--pad); color: var(--ink);
+  font: 400 var(--t-m)/var(--lh-body) var(--f-ui);
+  font-variant-numeric: tabular-nums lining-nums;
+  padding-block: var(--s-6);
+}
+@media (min-width: 720px) { .ledger { padding-block: var(--s-8); } }
+.ledger :where(button, input, select) { font: inherit; color: inherit; }
+.ledger :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.ledger [hidden] { display: none !important; }
+.vh { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.wrap { max-width: var(--max); margin-inline: auto; padding-inline: var(--gutter); }
+
+/* heading */
+.ledger h2 {
+  font: 700 var(--t-xxl)/1.1 var(--f-head); letter-spacing: -0.01em; margin: 0 0 var(--s-3);
+}
+.lede { margin: 0 0 var(--s-6); max-width: 62ch; }
+
+/* buttons */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2);
+  min-height: 40px; padding: var(--s-2) var(--s-4); border-radius: var(--radius);
+  font-weight: 500; cursor: pointer; border: 1px solid var(--pencil); background: transparent; color: var(--ink);
+}
+.btn:hover { background: var(--slip); }
+.btn-ink { background: var(--ink); border-color: var(--ink); color: var(--slip); }
+.btn-ink:hover { background: color-mix(in srgb, var(--ink) 88%, var(--pencil)); }
+.btn-text {
+  border: 0; background: none; padding: var(--s-1) 0; cursor: pointer; font-weight: 500;
+  text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; min-height: 32px;
+}
+.btn-text:hover { text-decoration-thickness: 2px; }
+@media (max-width: 719px) { .btn, .btn-text { min-height: 44px; } }
+
+/* layout */
+.desk { display: grid; gap: var(--s-5); }
+@media (min-width: 1200px) {
+  .desk { grid-template-columns: minmax(0, 1fr) var(--slip-w); grid-template-areas: "tools tools" "journal slip"; column-gap: var(--s-6); align-items: start; }
+  .tools { grid-area: tools; }
+  .journal { grid-area: journal; }
+  .slip { grid-area: slip; position: sticky; top: var(--s-5); }
+  .only-narrow { display: none !important; }
+}
+@media (max-width: 1199px) { .slip:not([data-open="true"]) { display: none; } }
+
+/* toolbar */
+.tools { display: flex; flex-wrap: wrap; gap: var(--s-4) var(--s-5); align-items: flex-start; }
+.tools .field { min-width: 0; }
+.tools form { margin: 0; }
+.tools .new-btn { align-self: flex-end; margin-bottom: 22px; }
+@media (max-width: 719px) {
+  .tools { flex-direction: column; align-items: stretch; gap: var(--s-3); }
+  .tools .new-btn { align-self: stretch; margin: 0; }
+}
+
+/* fields */
+.field { display: grid; gap: var(--s-1); align-content: start; }
+.field label, legend { font-weight: 500; font-size: var(--t-s); padding: 0; }
+.hint { font-size: var(--t-xs); color: var(--pencil); margin: 0; min-height: 1.2em; }
+.ledger :is(input:not([type=checkbox]), select) {
+  background: var(--slip); border: 1px solid var(--pencil); border-radius: var(--radius);
+  min-height: 40px; padding: var(--s-2) var(--s-3); width: 100%; min-width: 0;
+}
+.tools select { min-width: 13rem; }
+.tools input[type=search] { min-width: 17rem; }
+@media (max-width: 719px) { .tools :is(select, input[type=search]) { min-width: 0; } .ledger :is(input:not([type=checkbox]), select) { min-height: 44px; } }
+.ledger input::placeholder { color: var(--pencil); opacity: 1; }
+.ledger [aria-invalid="true"] { border-color: var(--red); box-shadow: inset 0 0 0 1px var(--red); }
+.err { color: var(--red); font-size: var(--t-s); margin: 0; padding-left: var(--s-2); border-left: 3px solid var(--red); }
+.err[hidden] { display: none; }
+
+/* journal table */
+.journal { min-width: 0; }
+.jr { width: 100%; border-collapse: collapse; font-size: var(--t-s); line-height: var(--lh-row); }
+.jr th, .jr td { padding: var(--s-2) var(--s-2); text-align: left; vertical-align: top; }
+.jr thead th { font-size: var(--t-xs); font-weight: 600; color: var(--pencil); vertical-align: bottom; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+.jr thead button { border: 0; background: none; padding: 0; vertical-align: bottom; font-weight: 600; color: var(--pencil); cursor: pointer; display: inline-flex; gap: 2px; }
+.jr thead button:hover { color: var(--ink); }
+.jr th[aria-sort="ascending"] button, .jr th[aria-sort="descending"] button { color: var(--ink); }
+.jr .dir { display: inline-block; width: 0.8em; }
+.jr .num { text-align: right; white-space: nowrap; }
+.jr thead .num button { flex-direction: row-reverse; }
+@media (min-width: 720px) {
+  .jr .c-no { width: 5rem; }
+  .jr .c-date { width: 6.5rem; white-space: nowrap; }
+  .jr .c-vat { width: 3rem; }
+  .jr .c-dr, .jr .c-cr, .jr .c-bal { width: 7.5rem; }
+  .jr .c-cr { border-left: 3px double var(--rule); }
+  .jr .c-rec { width: 3.25rem; text-align: center; }
+}
+.jr tbody tr { min-height: var(--row); }
+.jr tbody td { padding-block: 7px; }
+.jr tbody.entry { border-bottom: 1px solid var(--rule); }
+.jr tbody.flat tr { border-bottom: 1px solid var(--rule); }
+.jr tbody tr:hover { background: color-mix(in srgb, var(--slip) 55%, transparent); }
+.jr tr.is-viewed { background: var(--slip); }
+@media (min-width: 720px) {
+  .jr tr.is-viewed > td:first-child { box-shadow: inset 3px 0 var(--ink); }
+  .jr tbody.unbal > tr > td:first-child, .jr tr.unbal > td:first-child { box-shadow: inset 3px 0 var(--red); }
+}
+.jr .out { display: block; color: var(--red); font-size: var(--t-xs); }
+.jr :is(.view, .desc), .details dd, .empty p { overflow-wrap: anywhere; }
+.jr .view {
+  display: block; border: 0; background: none; padding: 0; text-align: left; cursor: pointer;
+  font-weight: 500; text-decoration: underline transparent; text-underline-offset: 3px;
+}
+.jr .view:hover { text-decoration-color: currentColor; }
+.jr .is-cr .view, .jr .is-cr .desc { padding-left: 1.5em; }
+.jr .desc { display: block; color: var(--pencil); }
+.jr abbr { text-decoration: none; cursor: help; }
+.jr .sfx, .ph { display: none; }
+.tick { width: 32px; height: 32px; display: inline-grid; place-items: center; border: 0; background: none; cursor: pointer; border-radius: var(--radius); margin-block: -6px; }
+.tick svg { width: 20px; height: 20px; }
+.tick[aria-pressed="false"] svg { display: none; }
+.tick[aria-pressed="false"]::before { content: ""; width: 16px; height: 16px; border: 1px solid var(--pencil); border-radius: 2px; }
+.tick:hover { background: var(--slip); }
+
+/* footing: sticky under the rows from 720px, so the proof stays in view while posting */
+.jr tfoot td, .jr tfoot th { padding-block: var(--s-2); }
+@media (min-width: 720px) {
+  .jr tfoot { position: sticky; bottom: var(--bar-h, 0px); z-index: 1; background: var(--pad); }
+  .jr tfoot tr:first-child > * { background: linear-gradient(var(--rule), var(--rule)) top / 100% 1px no-repeat; }
+}
+.jr .f-note td { color: var(--pencil); padding-top: var(--s-4); }
+.jr .f-tot th { font: 600 var(--t-m)/1.3 var(--f-ui); padding-top: var(--s-4); }
+.jr .f-tot .num { font-size: var(--t-l); font-weight: 600; padding-top: var(--s-3); background: linear-gradient(var(--ink), var(--ink)) top / 100% 1px no-repeat; } /* not border-top: collapsed borders stay behind when the tfoot sticks */
+.jr .f-tot .c-cr { border-left-color: var(--rule); }
+.jr .f-rule td { padding: 0; }
+.dbl { display: block; height: 5px; border-block: 1px solid var(--ink); transform-origin: left; }
+.dbl.draw { animation: draw 240ms ease-out; }
+@keyframes draw { from { transform: scaleX(0); } }
+.jr .f-state td { padding-top: var(--s-3); padding-bottom: var(--s-4); text-align: right; }
+.jr .f-state p { margin: 0 0 0 auto; max-width: 34ch; text-wrap: balance; }
+.state-ok { font: 500 var(--t-l)/1.3 var(--f-head); }
+.state-oob { font: 500 var(--t-xl)/1.25 var(--f-head); color: var(--red); }
+.state-oob span { display: inline-block; } /* break between the two sentences, not inside one */
+.jr .f-state .btn { margin-top: var(--s-3); }
+.key { margin: var(--s-3) 0 0; font-size: var(--t-xs); color: var(--pencil); }
+.empty { padding: var(--s-7) var(--s-2) !important; }
+.empty p { margin: 0 0 var(--s-3); max-width: 46ch; }
+.empty .big { font: 500 var(--t-xl)/1.25 var(--f-head); }
+.empty .row { display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-5); }
+
+.session { margin-top: var(--s-6); color: var(--pencil); }
+.session p { margin: 0 0 var(--s-3); }
+.session .row { display: flex; flex-wrap: wrap; gap: var(--s-3); }
+
+/* status bar */
+.bar { position: sticky; bottom: 0; z-index: 2; margin-top: var(--s-5); display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-4); }
+.bar.on { background: var(--slip); border: 1px solid var(--pencil); border-radius: var(--slip-radius); padding: var(--s-2) var(--s-4); }
+.bar p { margin: 0; flex: 1 1 16rem; }
+.bar:not(.on) .bar-btn { display: none; }
+
+/* voucher slip */
+.slip { background: var(--slip); border: 1px solid var(--pencil); border-radius: var(--slip-radius); padding: var(--s-5); min-width: 0; }
+@media (max-width: 719px) { .slip { padding: var(--s-4); } }
+.slip-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s-3); margin-bottom: var(--s-4); }
+.slip h3 { font: 500 var(--t-l)/1.25 var(--f-head); margin: 0; }
+.slip h3:focus { outline: none; }
+.slip h3:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+@media (min-width: 1200px) { #slip-close { display: none; } }
+.slip form { display: grid; gap: var(--s-4); margin: 0; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); }
+.pair.entry-date { grid-template-columns: 7rem 1fr; }
+.slip fieldset .pair > .field + .field { border-left: 3px double var(--rule); padding-left: var(--s-3); }
+.slip fieldset { border: 0; padding: 0; margin: 0; min-width: 0; display: grid; gap: var(--s-1); }
+.slip fieldset label { font-weight: 400; color: var(--pencil); font-size: var(--t-xs); }
+.slip .money { text-align: right; }
+.check { display: flex; align-items: center; gap: var(--s-2); min-height: 40px; font-weight: 500; font-size: var(--t-s); }
+.check input { width: 20px; height: 20px; margin: 0; accent-color: var(--ink); }
+.slip .actions { display: flex; flex-wrap: wrap; gap: var(--s-3); }
+.slip-hint { margin: 0; font-size: var(--t-s); color: var(--pencil); }
+.slip-hint:empty { display: none; }
+.details dl { margin: 0 0 var(--s-5); display: grid; grid-template-columns: 8rem minmax(0, 1fr); font-size: var(--t-s); }
+.details dt, .details dd { margin: 0; padding: var(--s-2) 0; border-bottom: 1px solid var(--rule); }
+.details dt { color: var(--pencil); }
+.details dd.num { font-variant-numeric: tabular-nums lining-nums; }
+.details .oob { color: var(--red); }
+
+/* dialog */
+.confirm { border: 1px solid var(--pencil); border-radius: var(--slip-radius); background: var(--slip); color: var(--ink); padding: var(--s-5); max-width: min(30rem, calc(100vw - 2 * var(--gutter))); font: 400 var(--t-m)/var(--lh-body) var(--f-ui); font-variant-numeric: tabular-nums lining-nums; }
+.confirm::backdrop { background: color-mix(in srgb, var(--ink) 35%, transparent); }
+.confirm h3 { font: 500 var(--t-l)/1.25 var(--f-head); margin: 0 0 var(--s-3); }
+.confirm p { margin: 0 0 var(--s-5); }
+.confirm .actions { display: flex; flex-wrap: wrap; gap: var(--s-3); }
+.confirm :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.confirm button { font: inherit; }
+
+/* phones: the table becomes a ruled list */
+@media (max-width: 719px) {
+  .jr, .jr caption, .jr thead, .jr tbody, .jr tfoot { display: block; }
+  .jr thead tr { display: flex; flex-wrap: wrap; align-items: center; column-gap: var(--s-3); border-bottom: 1px solid var(--rule); }
+  .jr thead tr::before { content: "Sort by:"; font-size: var(--t-xs); font-weight: 600; color: var(--pencil); }
+  .jr thead th { display: flex; border: 0; padding: 0; width: auto; }
+  .jr thead .long { display: none; }
+  .jr thead .dir { width: auto; }
+  .jr thead th:not([data-sortable]) { display: none; }
+  .jr thead button { min-height: 44px; align-items: center; font-size: var(--t-s); }
+  .jr thead .num button { flex-direction: row; }
+  .jr tbody tr {
+    --ind: 0px;
+    display: grid; grid-template-columns: auto minmax(0, 1fr) auto 44px;
+    grid-template-areas: "no date out ." "acct acct amt rec" "desc desc vat rec" "bal bal bal bal";
+    column-gap: var(--s-2); padding-block: var(--s-2); padding-left: var(--ind);
+  }
+  .jr tbody tr:has(.is-cr) { --ind: 1.5em; }
+  .jr tbody td { padding: 0; width: auto; border: 0; }
+  .jr tbody :is(.c-no, .c-acct) { display: contents; }
+  .jr tbody .no { grid-area: no; font-weight: 600; padding-bottom: var(--s-2); }
+  .jr tbody .c-date { grid-area: date; font-weight: 600; }
+  .jr tbody .c-date:empty { display: none; }
+  .jr .out { grid-area: out; justify-self: end; font-size: var(--t-s); }
+  .jr .is-cr :is(.view, .desc) { padding-left: 0; }
+  .jr tbody .view { grid-area: acct; }
+  .jr tbody .desc { grid-area: desc; }
+  .jr tbody .c-vat { grid-area: vat; justify-self: end; color: var(--pencil); font-size: var(--t-xs); }
+  .jr tbody .c-dr, .jr tbody .c-cr { grid-area: amt; }
+  .jr tbody :is(.c-dr, .c-cr) { align-self: start; display: flex; justify-content: flex-end; gap: 0.3em; }
+  .jr tbody .nil { display: none; }
+  .jr tbody .c-bal { grid-area: bal; text-align: left; color: var(--pencil); }
+  .jr tbody .c-bal::before { content: "Balance "; }
+  .jr tbody .c-rec { grid-area: rec; grid-row: 2 / 4; align-self: center; }
+  .jr .sfx, .ph { display: inline; }
+  .jr .view { display: block; padding-block: 10px; margin-block: -10px; position: relative; } /* 44px tap area without reserving the height, so a wrapped account name pushes the description down */
+  .tick { width: 44px; height: 44px; margin: 0; }
+  .jr tbody.unbal tr, .jr tr.unbal { box-shadow: inset 3px 0 var(--red); padding-left: calc(var(--s-3) + var(--ind)); }
+  .jr tr.is-viewed { box-shadow: inset 3px 0 var(--ink); padding-left: calc(var(--s-3) + var(--ind)); }
+  .check { min-height: 44px; }
+  .jr .empty { padding-inline: 0 !important; }
+  .jr tfoot tr { display: block; }
+  .jr tfoot :is(td, th) { display: block; padding-inline: 0; }
+  .jr tfoot .blank { display: none; }
+  .jr .f-tot .num { display: flex; justify-content: space-between; border: 0; padding-block: var(--s-1); font-size: var(--t-m); background: none; }
+  .jr .f-tot .c-dr { border-top: 1px solid var(--ink); padding-top: var(--s-2); }
+  .jr .f-rule td:not(.blank) { display: none; }
+  .jr .f-rule td.c-cr { display: block; }
+  /* phones: tfoot dissolves so only the state line sticks, not the whole footing */
+  .jr tfoot { display: contents; }
+  .jr .f-state { position: sticky; bottom: var(--bar-h, 0px); z-index: 1; background: var(--pad); border-top: 1px solid var(--rule); }
+  .jr .f-state td { text-align: left; padding-block: var(--s-2); }
+  .jr .f-state p { margin: 0; max-width: none; }
+  .jr .f-state .state-oob { font-size: var(--t-l); }
+  .jr .f-state .btn { margin-top: var(--s-2); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dbl.draw { animation: none; }
+}
+</style>
+</head>
+<body>
+<section class="ledger" aria-labelledby="journal-title">
+  <div class="wrap">
+    <h2 id="journal-title" tabindex="-1">General journal</h2>
+    <p class="lede">Fenwick Joinery Ltd, September 2026, kept by Hollis &amp; Pryce. Every entry must balance before the month can be closed. All amounts in pounds sterling.</p>
+
+    <div class="desk">
+      <div class="tools">
+        <div class="field">
+          <label for="period">Period</label>
+          <select id="period"></select>
+        </div>
+        <div class="field">
+          <label for="account-filter">Account</label>
+          <select id="account-filter" aria-describedby="account-hint"></select>
+          <p class="hint" id="account-hint">Pick one account to see its running balance.</p>
+        </div>
+        <form role="search" id="search-form" class="field" aria-label="Search lines">
+          <label for="search">Search lines</label>
+          <input type="search" id="search" placeholder="Description, account or amount" autocomplete="off">
+        </form>
+        <button type="button" class="btn btn-ink new-btn only-narrow" id="new-line">New line</button>
+      </div>
+
+      <aside class="slip" id="slip" aria-labelledby="slip-title" data-open="false">
+        <div class="slip-head">
+          <h3 id="slip-title" tabindex="-1">New line</h3>
+          <button type="button" class="btn-text" id="slip-close">Close</button>
+        </div>
+
+        <form id="line-form" novalidate>
+          <div class="pair entry-date">
+            <div class="field">
+              <label for="f-entry">Entry no.</label>
+              <input id="f-entry" name="entry" inputmode="numeric" autocomplete="off" aria-describedby="e-entry">
+              <p class="err" id="e-entry" hidden></p>
+            </div>
+            <div class="field">
+              <label for="f-date">Date</label>
+              <input id="f-date" name="date" type="date" min="2000-01-01" max="2099-12-31" aria-describedby="e-date">
+              <p class="err" id="e-date" hidden></p>
+            </div>
+          </div>
+          <div class="field">
+            <label for="f-account">Account</label>
+            <select id="f-account" name="account" aria-describedby="e-account"></select>
+            <p class="err" id="e-account" hidden></p>
+          </div>
+          <div class="field">
+            <label for="f-description">Description</label>
+            <input id="f-description" name="description" autocomplete="off" aria-describedby="e-description">
+            <p class="err" id="e-description" hidden></p>
+          </div>
+          <fieldset>
+            <legend>Amount</legend>
+            <div class="pair">
+              <div class="field">
+                <label for="f-debit">Debit</label>
+                <input id="f-debit" name="debit" class="money" inputmode="decimal" autocomplete="off" aria-describedby="e-amount slip-hint">
+              </div>
+              <div class="field">
+                <label for="f-credit">Credit</label>
+                <input id="f-credit" name="credit" class="money" inputmode="decimal" autocomplete="off" aria-describedby="e-amount slip-hint">
+              </div>
+            </div>
+            <p class="err" id="e-amount" hidden></p>
+          </fieldset>
+          <div class="field">
+            <label for="f-vat">VAT rate</label>
+            <select id="f-vat" name="vat"></select>
+          </div>
+          <label class="check"><input type="checkbox" id="f-rec" name="reconciled"> Reconciled</label>
+          <p class="slip-hint" id="slip-hint"></p>
+          <div class="actions">
+            <button type="submit" class="btn btn-ink" id="f-submit">Post line</button>
+            <button type="button" class="btn" id="f-second">Clear form</button>
+          </div>
+        </form>
+
+        <div class="details" id="details" hidden>
+          <dl id="details-list"></dl>
+          <div class="actions">
+            <button type="button" class="btn btn-ink" id="d-edit">Edit line</button>
+            <button type="button" class="btn" id="d-delete">Delete line</button>
+            <button type="button" class="btn" id="d-close">Close</button>
+          </div>
+        </div>
+      </aside>
+
+      <div class="journal">
+        <table class="jr" id="jr">
+          <caption class="vh" id="jr-caption">Journal lines</caption>
+          <thead id="jr-head"></thead>
+          <tbody><tr><td>Loading the journal.</td></tr></tbody>
+          <tfoot id="jr-foot"></tfoot>
+        </table>
+        <p class="key">VAT: Ex exempt, O/S outside the scope. Rec. reconciled.</p>
+
+        <div class="session">
+          <p>These lines live in this browser tab and disappear when you close it.</p>
+          <div class="row">
+            <button type="button" class="btn" id="reset">Reset sample data</button>
+            <button type="button" class="btn" id="empty">Start an empty journal</button>
+          </div>
+        </div>
+
+        <div class="bar" id="bar">
+          <p role="status" id="status"></p>
+          <button type="button" class="btn bar-btn" id="undo" hidden>Undo</button>
+          <button type="button" class="btn-text bar-btn" id="dismiss">Dismiss</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <dialog class="confirm" id="confirm" aria-labelledby="confirm-title" aria-describedby="confirm-body">
+    <h3 id="confirm-title">Delete this line?</h3>
+    <p id="confirm-body"></p>
+    <div class="actions">
+      <button type="button" class="btn btn-ink" id="confirm-ok">Delete line</button>
+      <button type="button" class="btn" id="confirm-cancel" autofocus>Keep line</button>
+    </div>
+  </dialog>
+</section>
+
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+
+  /* ---------- Config: chart of accounts, VAT rates, sample journal ---------- */
+  const ACCOUNTS = {
+    '1000': 'Bank current account', '1100': 'Trade debtors', '1500': 'Vans', '1510': 'Van depreciation',
+    '2100': 'Trade creditors', '2200': 'VAT control', '2210': 'PAYE and NI', '4000': 'Sales: joinery',
+    '5000': 'Timber and materials', '7000': 'Wages', '7100': 'Workshop rent', '7200': 'Electricity',
+    '7900': 'Bank charges', '8000': 'Depreciation'
+  };
+  const VAT = {
+    '20': { label: 'Standard 20%', short: '20%', rate: 20 }, '5': { label: 'Reduced 5%', short: '5%', rate: 5 },
+    '0': { label: 'Zero-rated 0%', short: '0%', rate: 0 }, exempt: { label: 'Exempt', short: 'Ex' },
+    outside: { label: 'Outside the scope', short: 'O/S' }
+  };
+  // [entry, ISO date, [account, description, debit pence, credit pence, vat, reconciled]...]
+  const SEED = [
+    [39, '2026-08-28', [['1000', 'Ashby & Rowe paid on collection, oak staircase', 960000, 0, 'outside', 1], ['4000', 'Cash sale, oak staircase', 0, 800000, '20', 1], ['2200', 'Cash sale output VAT', 0, 160000, 'outside', 1]]],
+    [40, '2026-08-28', [['5000', 'M-7731 Morland Timber, sawn oak', 145000, 0, '20', 1], ['2200', 'M-7731 input VAT', 29000, 0, 'outside', 1], ['2100', 'M-7731 Morland Timber', 0, 174000, 'outside', 1]]],
+    [41, '2026-09-02', [['1100', 'INV-2214 Abbotsford Kitchens, larder units', 360000, 0, 'outside', 1], ['4000', 'INV-2214 larder units', 0, 300000, '20', 1], ['2200', 'INV-2214 output VAT', 0, 60000, 'outside', 1]]],
+    [42, '2026-09-04', [['1000', 'Abbotsford Kitchens paid INV-2214', 360000, 0, 'outside', 1], ['1100', 'INV-2214 settled', 0, 360000, 'outside', 1]]],
+    [43, '2026-09-05', [['7100', 'September rent, Unit 4 Calder Yard', 125000, 0, 'exempt', 1], ['1000', 'Standing order, Calder Yard Estates', 0, 125000, 'outside', 1]]],
+    [44, '2026-09-09', [['5000', 'M-7802 Morland Timber, oak and ash boards', 218450, 0, '20', 1], ['2200', 'M-7802 input VAT', 43690, 0, 'outside', 0], ['2100', 'M-7802 Morland Timber', 0, 262140, 'outside', 0]]],
+    [45, '2026-09-12', [['2100', 'Paid Morland Timber, M-7731', 174000, 0, 'outside', 1], ['1000', 'Faster payment to Morland Timber', 0, 174000, 'outside', 1]]],
+    [46, '2026-09-16', [['1100', 'INV-2215 Harrow Lane Surgery, reception desk', 526200, 0, 'outside', 0], ['4000', 'INV-2215 reception desk', 0, 438500, '20', 0], ['2200', 'INV-2215 output VAT', 0, 87700, 'outside', 0]]],
+    [47, '2026-09-18', [['7200', 'Northern Power, workshop electricity', 31248, 0, '20', 1], ['2200', 'Northern Power input VAT', 6250, 0, 'outside', 1], ['1000', 'Direct debit, Northern Power', 0, 37498, 'outside', 1]]],
+    [48, '2026-09-22', [['5000', 'Calder Hardware, hinge screws', 63, 0, '20', 0], ['1000', 'Card payment, Calder Hardware', 0, 63, 'outside', 1]]],
+    [49, '2026-09-26', [['7000', 'September wages, four staff', 648000, 0, 'outside', 1], ['2210', 'PAYE and NI due 22 October', 0, 129640, 'outside', 0], ['1000', 'BACS wages run', 0, 518360, 'outside', 1]]],
+    [50, '2026-09-30', [['7900', 'Account fee, September', 1840, 0, 'outside', 1], ['1000', 'Bank charges, September', 0, 1840, 'outside', 1]]],
+    [51, '2026-09-30', [['8000', 'Van depreciation, September', 42500, 0, 'outside', 0], ['1510', 'Ford Transit, 25% reducing balance', 0, 42500, 'outside', 0]]],
+    // left half-posted on purpose: the sample opens out of balance, so the first view shows the proof at work
+    [52, '2026-09-30', [['2100', 'Paid Morland Timber on account, M-7802', 20000, 0, 'outside', 0]]]
+  ];
+  const KEY = 'crud-ledger:v1';
+
+  /* ---------- Pure helpers: money in integer pence, dates as ISO strings ---------- */
+  const INT = new Intl.NumberFormat('en-GB');
+  const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const MONTH = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const WORDS = ['', 'one', 'two', 'three', 'four', 'five', 'six'];
+  const fmt = p => { const a = Math.abs(p); return (p < 0 ? '-' : '') + INT.format(Math.floor(a / 100)) + '.' + String(a % 100).padStart(2, '0'); };
+  const drcr = p => p === 0 ? '0.00' : `${fmt(Math.abs(p))} ${p > 0 ? 'Dr' : 'Cr'}`;
+  const ymd = iso => iso.split('-').map(Number);
+  const dShort = iso => { const [y, m, d] = ymd(iso); return `${d} ${MON[m - 1]} ${y}`; };
+  const dLong = iso => { const [y, m, d] = ymd(iso); return new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(Date.UTC(y, m - 1, d)); };
+  const periodName = p => { if (p === 'all') return 'all periods'; const [y, m] = ymd(p); return `${MONTH[m - 1]} ${y}`; };
+  // years 2000-2099 only: Date.UTC maps 0-99 to 19xx, and nothing older belongs in this journal
+  const validISO = s => { if (!/^20\d{2}-\d{2}-\d{2}$/.test(s)) return false; const [y, m, d] = ymd(s); const t = new Date(Date.UTC(y, m - 1, d)); return t.getUTCMonth() === m - 1 && t.getUTCDate() === d; };
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const listOf = a => new Intl.ListFormat('en-GB', { type: 'conjunction' }).format(a.map(String));
+
+  function parseMoney(s) {
+    const raw = String(s).trim();
+    let t = raw.replace(/^£/, '');
+    // commas and spaces only as thousands groups, so a decimal comma (1,50) is an error, never 150.00
+    if (/[,\s]/.test(t) && !/^\d{1,3}([,\s]\d{3})+(\.\d*)?$/.test(t)) throw new Error('Enter an amount in pounds and pence, like 1,240.50.');
+    t = t.replace(/[,\s]/g, '');
+    const m = /^(\d*)(?:\.(\d{0,2}))?$/.exec(t);
+    if (!m || !(m[1] || m[2])) {
+      const p = /^\d*\.(\d{3,})$/.exec(t);
+      if (p) throw new Error(`Pence go to two places: ${raw} has ${WORDS[p[1].length] || p[1].length}.`);
+      throw new Error('Enter an amount in pounds and pence, like 1,240.50.');
+    }
+    const pounds = (m[1] || '0').replace(/^0+(?=\d)/, '');
+    if (pounds.length > 7) throw new Error('Amounts go up to 9,999,999.99.');
+    return Number(pounds) * 100 + Number((m[2] || '').padEnd(2, '0')); // built from digit strings, no float maths
+  }
+  function parseEntryNo(s) {
+    const t = String(s).trim();
+    if (!/^\d+$/.test(t)) throw new Error('Enter a whole number, like 48.');
+    const n = Number(t);
+    if (n < 1 || n > 9999) throw new Error('Entry numbers run from 1 to 9999.');
+    return n;
+  }
+  const vatOf = (pence, rate) => Math.floor((pence * rate + 50) / 100); // half up, to the penny
+
+  // Validates raw form strings against the other lines of the book. Returns { errors: {field: message}, bad: [input ids], rec }.
+  function validateLine(raw, lines = [], selfId = null) {
+    const errors = {}, bad = [], rec = {};
+    try { rec.entry = parseEntryNo(raw.entry); } catch (x) { errors.entry = x.message; bad.push('f-entry'); }
+    if (validISO(raw.date)) rec.date = raw.date;
+    else { errors.date = /^\d{4}-/.test(raw.date) && !/^20/.test(raw.date) ? 'Enter a date from 2000 to 2099.' : 'Enter the date of the transaction.'; bad.push('f-date'); }
+    // an entry lives in one period, or a balanced entry could leave two months out of balance
+    const other = rec.entry && rec.date && lines.find(l => l.entry === rec.entry && l.id !== selfId && l.date.slice(0, 7) !== rec.date.slice(0, 7));
+    if (other) { errors.date = `Entry ${rec.entry} is in ${periodName(other.date.slice(0, 7))}. Date this line in that month, or use a new entry number.`; bad.push('f-date'); }
+    if (ACCOUNTS[raw.account]) rec.account = raw.account; else { errors.account = 'Choose the account this line posts to.'; bad.push('f-account'); }
+    const d = String(raw.description).trim().replace(/\s+/g, ' ');
+    if (d.length >= 3 && d.length <= 80) rec.description = d; else { errors.description = 'Describe the line in 3 to 80 characters.'; bad.push('f-description'); }
+    const dr = String(raw.debit).trim(), cr = String(raw.credit).trim();
+    let amountErr = null, amountBad = [];
+    if (!dr && !cr) { amountErr = 'Enter a debit or a credit for this line.'; amountBad = ['f-debit', 'f-credit']; }
+    else {
+      for (const [k, v, id] of [['debit', dr, 'f-debit'], ['credit', cr, 'f-credit']]) {
+        try { rec[k] = v ? parseMoney(v) : 0; } catch (x) { if (!amountErr) { amountErr = x.message; amountBad = [id]; } }
+      }
+      if (!amountErr && rec.debit > 0 && rec.credit > 0) { amountErr = 'Enter a debit or a credit, not both.'; amountBad = ['f-debit', 'f-credit']; }
+      else if (!amountErr && !rec.debit && !rec.credit) { amountErr = 'Amounts must be more than 0.00.'; amountBad = [dr ? 'f-debit' : 'f-credit']; }
+    }
+    if (amountErr) { errors.amount = amountErr; bad.push(...amountBad); }
+    rec.vat = VAT[raw.vat] ? raw.vat : '20';
+    rec.reconciled = !!raw.reconciled;
+    return { errors, bad, rec };
+  }
+
+  /* ---------- Book: { lines, seq }. All CRUD goes through these. ---------- */
+  function seedBook() {
+    const lines = []; let seq = 0;
+    for (const [entry, date, ls] of SEED) for (const [account, description, debit, credit, vat, r] of ls) {
+      seq++; lines.push({ id: 'L' + seq, seq, entry, date, account, description, debit, credit, vat, reconciled: !!r });
+    }
+    return { lines, seq };
+  }
+  const cloneLines = ls => ls.map(l => ({ ...l }));
+  function addLine(b, rec) { const seq = ++b.seq; const l = { ...rec, id: 'L' + seq, seq }; b.lines.push(l); return l; }
+  function updateLine(b, id, rec) { const l = b.lines.find(x => x.id === id); Object.assign(l, rec); return l; }
+  function deleteLine(b, id) { const i = b.lines.findIndex(x => x.id === id); return b.lines.splice(i, 1)[0]; }
+  const inPeriod = (l, p) => p === 'all' || l.date.slice(0, 7) === p;
+  function footing(lines, p) {
+    let dr = 0, cr = 0, rec = 0, n = 0;
+    for (const l of lines) if (inPeriod(l, p)) { dr += l.debit; cr += l.credit; n++; if (l.reconciled) rec++; }
+    return { dr, cr, diff: dr - cr, rec, n };
+  }
+  function entryStats(lines) {
+    const m = new Map();
+    for (const l of lines) {
+      let e = m.get(l.entry);
+      if (!e) m.set(l.entry, e = { entry: l.entry, dr: 0, cr: 0, date: l.date, last: 0, n: 0 });
+      e.dr += l.debit; e.cr += l.credit; e.n++;
+      if (l.date < e.date) e.date = l.date;
+      e.last = Math.max(e.last, l.seq);
+    }
+    return m;
+  }
+
+  /* ---------- Storage: sessionStorage, falling back to memory ---------- */
+  const okLine = l => l && typeof l.id === 'string' && Number.isInteger(l.seq) && Number.isInteger(l.entry) && validISO(l.date) &&
+    ACCOUNTS[l.account] && typeof l.description === 'string' && Number.isInteger(l.debit) && Number.isInteger(l.credit) && VAT[l.vat];
+  function load() {
+    try {
+      const d = JSON.parse(sessionStorage.getItem(KEY));
+      if (d && Array.isArray(d.lines) && Number.isInteger(d.seq) && d.lines.every(okLine)) return d;
+    } catch { /* blocked storage or bad JSON: use the sample */ }
+    return seedBook();
+  }
+  function save() { try { sessionStorage.setItem(KEY, JSON.stringify(book)); } catch { /* sandboxed iframe: the in-memory book still works */ } }
+
+  /* ---------- Self-test (#selftest), on a cloned in-memory book ---------- */
+  function runSelfTest() {
+    const ok = (c, msg) => { if (!c) throw new Error('SELFTEST FAIL: ' + msg); };
+    const throws = (f, msg) => { let t = false; try { f(); } catch { t = true; } ok(t, msg); };
+    ok(parseMoney('1,240.5') === 124050, "parseMoney('1,240.5')");
+    ok(parseMoney('£0.10') + parseMoney('0.20') === 30, '0.10 + 0.20 in pence');
+    ok(parseMoney(' 9,999,999.99 ') === 999999999, 'max amount');
+    throws(() => parseMoney('12.345'), '12.345 rejected');
+    throws(() => parseMoney('1.2.3'), '1.2.3 rejected');
+    throws(() => parseMoney('10,000,000'), 'over max rejected');
+    throws(() => parseMoney('1,50'), "decimal comma '1,50' rejected");
+    throws(() => parseMoney('1,2,3'), "'1,2,3' rejected");
+    ok(parseMoney('1 240.50') === 124050 && parseMoney('.5') === 50 && parseMoney('5.') === 500, 'space groups and short forms');
+    ok(!validISO('0001-01-01') && !validISO('1999-12-31') && validISO('2026-09-30') && !validISO('2026-02-30'), 'date range');
+    throws(() => parseEntryNo('4.5'), "entry '4.5' rejected");
+    ok(parseEntryNo('47') === 47, "entry '47'");
+    throws(() => parseEntryNo('0'), 'entry 0 rejected');
+    ok(vatOf(63, 20) === 13, 'vat(63, 20) half up');
+    ok(vatOf(99999, 20) === 20000, 'vat(99999, 20)');
+    ok(fmt(124050) === '1,240.50' && fmt(63) === '0.63' && fmt(0) === '0.00', 'format');
+    const v = validateLine({ entry: '48', date: '2026-09-30', account: '1000', description: 'Test line', debit: '10', credit: '5', vat: '20' });
+    ok(v.errors.amount === 'Enter a debit or a credit, not both.', 'both sides rejected');
+    ok(validateLine({ entry: '4.5', date: '2026-02-30', account: 'x', description: 'ab', debit: '', credit: '' }).bad.length === 6, 'all fields flagged');
+    const b = seedBook();
+    // the sample opens with entry 52 half-posted: September out by its 200.00 debit, August balanced
+    ok(footing(b.lines, '2026-09').diff === 20000 && footing(b.lines, '2026-08').diff === 0, 'seed opens 200.00 out');
+    const base = { date: '2026-09-30', account: '1000', description: 'Self-test', vat: 'outside', reconciled: false };
+    ok(validateLine({ ...base, entry: '52', date: '2026-10-01', debit: '', credit: '200' }, b.lines).errors.date, 'entry kept in one period');
+    addLine(b, { ...base, entry: 52, debit: 0, credit: 20000 });
+    ok(footing(b.lines, '2026-09').diff === 0 && footing(b.lines, 'all').diff === 0, 'finishing entry 52 balances');
+    const dr = addLine(b, { ...base, entry: 900, debit: 25000, credit: 0 });
+    ok(footing(b.lines, '2026-09').diff === 25000, 'unbalanced by the debit');
+    addLine(b, { ...base, entry: 900, account: '7900', debit: 0, credit: 25000 });
+    ok(footing(b.lines, '2026-09').diff === 0, 'balanced after the credit');
+    updateLine(b, dr.id, { debit: 27000 });
+    ok(footing(b.lines, '2026-09').diff === 2000 && entryStats(b.lines).get(900).dr === 27000, 'unbalanced by the change');
+    const snap = cloneLines(b.lines);
+    deleteLine(b, dr.id);
+    ok(!b.lines.some(l => l.id === dr.id), 'deleted');
+    b.lines = snap;
+    const back = b.lines.find(l => l.id === dr.id);
+    ok(back && back.seq === dr.seq && back.debit === 27000, 'undo restores id and seq');
+    const s = seedBook();
+    ok(s.lines.length === b.lines.length - 3 && footing(s.lines, '2026-09').diff === 20000, 'reset restores the sample');
+    console.log('SELFTEST PASS');
+  }
+
+  /* ---------- State ---------- */
+  let book = load();
+  const maxDate = () => book.lines.reduce((m, l) => l.date > m ? l.date : m, '2026-09-30');
+  const ui = {
+    period: '2026-09', account: '', q: '', sort: { key: 'date', dir: 1 },
+    mode: 'new', id: null, undo: null, snap: '', wasBalanced: null, lastDate: maxDate(), opener: null
+  };
+  const wide = matchMedia('(min-width: 1200px)');
+
+  /* ---------- Static options ---------- */
+  const accOptions = Object.entries(ACCOUNTS).map(([c, n]) => `<option value="${c}">${c} ${esc(n)}</option>`).join('');
+  $('account-filter').innerHTML = '<option value="">All accounts</option>' + accOptions;
+  $('f-account').innerHTML = '<option value="">Choose an account</option>' + accOptions;
+  $('f-vat').innerHTML = Object.entries(VAT).map(([k, v]) => `<option value="${k}">${v.label}</option>`).join('');
+
+  /* ---------- Rendering ---------- */
+  const TICK = '<svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M3 10.5c1.6 1 3 2.6 4.2 4.8C9.6 9.8 12.6 6.2 17 3.2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const COLS = [['no', 'No.', ''], ['date', 'Date', ''], ['account', 'Account<span class="long"> and description</span>', ''], [null, 'VAT', 'c-vat'], ['debit', 'Debit', 'num c-dr'], ['credit', 'Credit', 'num c-cr']];
+  const CMP = {
+    no: (a, b) => a.entry - b.entry || a.date.localeCompare(b.date) || a.seq - b.seq,
+    date: (a, b) => a.date.localeCompare(b.date) || a.entry - b.entry || a.seq - b.seq,
+    account: (a, b) => a.account.localeCompare(b.account) || a.date.localeCompare(b.date) || a.seq - b.seq,
+    debit: (a, b) => a.debit - b.debit || a.date.localeCompare(b.date) || a.seq - b.seq,
+    credit: (a, b) => a.credit - b.credit || a.date.localeCompare(b.date) || a.seq - b.seq
+  };
+  const vatCell = v => { const x = VAT[v]; return x.rate === undefined ? `<abbr title="${x.label}">${x.short}</abbr>` : x.short; };
+
+  function matches(l, q) {
+    if (!q) return true;
+    const hay = [l.description, l.account, ACCOUNTS[l.account], 'entry ' + l.entry,
+      l.debit ? fmt(l.debit) + ' ' + fmt(l.debit).replace(/,/g, '') : '', l.credit ? fmt(l.credit) + ' ' + fmt(l.credit).replace(/,/g, '') : ''].join(' ').toLowerCase();
+    return hay.includes(q.toLowerCase().replace(/^£/, ''));
+  }
+
+  function rowHTML(l, first, st, bal) {
+    const e = st.get(l.entry), out = e.dr - e.cr, isCr = l.credit > 0, name = ACCOUNTS[l.account];
+    const viewed = l.id === ui.id && ui.mode !== 'new';
+    return `<tr${viewed ? ' class="is-viewed" aria-current="true"' : ''}>
+      <td class="c-no">${first ? `<span class="no"><span class="ph">Entry </span>${l.entry}</span>${out ? `<span class="out">Out by ${fmt(Math.abs(out))}</span>` : ''}` : ''}</td>
+      <td class="c-date">${first ? dShort(l.date) : ''}</td>
+      <td class="c-acct${isCr ? ' is-cr' : ''}"><button type="button" class="view" data-view="${l.id}" data-k="view:${l.id}"><span class="vh">View entry ${l.entry} line: </span>${isCr ? 'To ' : ''}${l.account} ${esc(name)}</button><span class="desc">${esc(l.description)}</span></td>
+      <td class="c-vat">${vatCell(l.vat)}</td>
+      <td class="num c-dr${l.debit ? '' : ' nil'}">${l.debit ? fmt(l.debit) + '<span class="sfx"> Dr</span>' : ''}</td>
+      <td class="num c-cr${l.credit ? '' : ' nil'}">${l.credit ? fmt(l.credit) + '<span class="sfx"> Cr</span>' : ''}</td>
+      ${bal ? `<td class="num c-bal">${drcr(bal.get(l.id))}</td>` : ''}
+      <td class="c-rec"><button type="button" class="tick" aria-pressed="${l.reconciled}" aria-label="Reconciled, entry ${l.entry} line ${l.account} ${esc(name)}" data-tick="${l.id}" data-k="tick:${l.id}">${TICK}</button></td>
+    </tr>`;
+  }
+
+  function render() {
+    const focusKey = document.activeElement?.dataset?.k;
+    const lines = book.lines, st = entryStats(lines), p = ui.period, pName = periodName(p);
+    const { key, dir } = ui.sort, grouped = key === 'date' || key === 'no';
+    const showBal = !!ui.account && key === 'date';
+    const ncol = 7 + (showBal ? 1 : 0);
+
+    // period options: months in the data plus the current choice
+    const months = [...new Set(lines.map(l => l.date.slice(0, 7)).concat(p === 'all' ? [] : [p]))].sort();
+    $('period').innerHTML = months.map(m => `<option value="${m}">${periodName(m)}</option>`).join('') + '<option value="all">All periods</option>';
+    $('period').value = p;
+    $('account-hint').textContent = !ui.account ? 'Pick one account to see its running balance.'
+      : showBal ? 'Running balance in date order, all periods.' : 'Sort by date to see its running balance.';
+
+    // head
+    $('jr-head').innerHTML = '<tr>' + COLS.map(([k, label, c]) => {
+      if (!k) return `<th scope="col" class="${c}">${label}</th>`;
+      const s = key === k ? (dir > 0 ? 'ascending' : 'descending') : 'none';
+      return `<th scope="col" class="${c}" data-sortable aria-sort="${s}"><button type="button" data-sort="${k}" data-k="sort:${k}">${label}<span class="dir" aria-hidden="true">${s === 'ascending' ? '↑' : s === 'descending' ? '↓' : ''}</span></button></th>`;
+    }).join('') + (showBal ? '<th scope="col" class="num c-bal">Balance</th>' : '') + '<th scope="col" class="c-rec"><abbr title="Reconciled">Rec.</abbr></th></tr>';
+    $('jr-caption').textContent = `Journal lines, ${pName}`;
+
+    // body
+    const visible = lines.filter(l => inPeriod(l, p) && (!ui.account || l.account === ui.account) && matches(l, ui.q.trim()));
+    let bal = null;
+    if (showBal) {
+      bal = new Map(); let run = 0;
+      for (const l of lines.filter(x => x.account === ui.account).sort(CMP.date)) { run += l.debit - l.credit; bal.set(l.id, run); }
+    }
+    const table = $('jr');
+    table.querySelectorAll('tbody').forEach(t => t.remove());
+    let body = '';
+    if (!lines.length) {
+      body = `<tbody><tr><td class="empty" colspan="${ncol}"><p class="big">This journal is empty.</p>
+        <p>Post the first line of ${p === 'all' ? 'the books' : MONTH[ymd(p)[1] - 1] + '’s books'}, usually the opening bank balance.</p>
+        <div class="row"><button type="button" class="btn btn-ink" data-act="new">New line</button></div></td></tr></tbody>`;
+    } else if (!visible.length) {
+      const q = ui.q.trim();
+      const what = q ? `No lines match “${esc(q)}”` : ui.account ? `No lines for ${ui.account} ${esc(ACCOUNTS[ui.account])}` : 'No lines';
+      body = `<tbody><tr><td class="empty" colspan="${ncol}"><p class="big">${what} in ${pName}.</p><div class="row">
+        ${q ? '<button type="button" class="btn-text" data-act="clear-search">Clear search</button>' : ''}
+        ${ui.account ? '<button type="button" class="btn-text" data-act="all-accounts">Show all accounts</button>' : ''}</div></td></tr></tbody>`;
+    } else if (grouped) {
+      const groups = new Map();
+      for (const l of visible) (groups.get(l.entry) || groups.set(l.entry, []).get(l.entry)).push(l);
+      const order = [...groups.keys()].sort((a, b) => dir * (key === 'no' ? a - b : st.get(a).date.localeCompare(st.get(b).date) || a - b));
+      for (const n of order) {
+        const g = groups.get(n).sort((a, b) => (b.debit > 0) - (a.debit > 0) || a.seq - b.seq);
+        const e = st.get(n);
+        body += `<tbody class="entry${e.dr !== e.cr ? ' unbal' : ''}">` + g.map((l, i) => rowHTML(l, i === 0, st, bal)).join('') + '</tbody>';
+      }
+    } else {
+      body = '<tbody class="flat">' + visible.sort((a, b) => dir * CMP[key](a, b)).map(l => {
+        const e = st.get(l.entry);
+        return rowHTML(l, true, st, bal).replace('<tr', e.dr !== e.cr ? '<tr data-unbal' : '<tr');
+      }).join('') + '</tbody>';
+    }
+    $('jr-foot').insertAdjacentHTML('beforebegin', body);
+    table.querySelectorAll('tr[data-unbal]').forEach(tr => tr.classList.add('unbal'));
+
+    // footing: totals over the whole period, ignoring search and account filter
+    const f = footing(lines, p), balanced = f.n > 0 && f.diff === 0; // an empty period proves nothing, so no rule
+    const unb = [...st.values()].filter(e => e.dr !== e.cr && lines.some(l => l.entry === e.entry && inPeriod(l, p))).sort((a, b) => b.last - a.last);
+    const draw = balanced && ui.wasBalanced === false;
+    ui.wasBalanced = balanced;
+    let state;
+    if (!f.n) state = `<p class="state-ok">No lines in ${p === 'all' ? 'this journal' : pName} yet.</p>`;
+    else if (balanced) state = `<p class="state-ok">Balanced. ${f.rec} of ${f.n} lines reconciled.</p>`;
+    else {
+      const top = unb[0];
+      let s = `<span>Out of balance by ${fmt(Math.abs(f.diff))}.</span>`;
+      if (unb.length === 1) { const g = top.dr - top.cr; s += ` <span>Entry ${top.entry} needs a ${g > 0 ? 'credit' : 'debit'} of ${fmt(Math.abs(g))}.</span>`; }
+      else if (unb.length > 1) s += ` <span>Entries ${listOf(unb.map(e => e.entry).sort((a, b) => a - b))} are out of balance.</span>`;
+      state = `<p class="state-oob">${s}</p>${top ? `<button type="button" class="btn btn-ink" data-act="finish" data-entry="${top.entry}" data-k="finish">Finish entry ${top.entry}</button>` : ''}`;
+    }
+    const restCols = ncol - 6, dbl = `<span class="dbl${draw ? ' draw' : ''}"></span>`;
+    $('jr-foot').innerHTML =
+      (visible.length < f.n ? `<tr class="f-note"><td colspan="${ncol}">Showing ${visible.length} of ${f.n} lines. Totals cover ${p === 'all' ? 'all periods' : 'all of ' + pName}.</td></tr>` : '') +
+      `<tr class="f-tot"><th scope="row" colspan="4">Totals for ${pName}</th>
+        <td class="num c-dr"><span class="ph">Debits</span> ${fmt(f.dr)}</td><td class="num c-cr"><span class="ph">Credits</span> ${fmt(f.cr)}</td><td class="blank" colspan="${restCols}"></td></tr>
+      ${balanced ? `<tr class="f-rule" aria-hidden="true"><td class="blank" colspan="4"></td><td class="c-dr">${dbl}</td><td class="c-cr">${dbl}</td><td class="blank" colspan="${restCols}"></td></tr>` : ''}
+      <tr class="f-state"><td colspan="6">${state}</td><td class="blank" colspan="${restCols}"></td></tr>`;
+
+    $('empty').hidden = !lines.length;
+    if (ui.mode === 'view') renderDetails();
+    if (focusKey) document.querySelector(`[data-k="${focusKey}"]`)?.focus();
+  }
+
+  function renderDetails() {
+    const l = book.lines.find(x => x.id === ui.id);
+    if (!l) return setMode('new');
+    const e = entryStats(book.lines).get(l.entry), v = VAT[l.vat], amt = l.debit || l.credit;
+    $('slip-title').textContent = `Entry ${l.entry}, ${l.account} ${ACCOUNTS[l.account]}`;
+    const vatText = v.rate === undefined ? `None, ${v.label.toLowerCase()}` : v.rate === 0 ? 'None, zero-rated' : `${fmt(vatOf(amt, v.rate))} at ${v.rate}% of ${fmt(amt)}`;
+    const rows = [['Entry no.', l.entry], ['Date', dLong(l.date)], ['Account', `${l.account} ${esc(ACCOUNTS[l.account])}`], ['Description', esc(l.description)],
+      ['Debit', l.debit ? fmt(l.debit) : '–'], ['Credit', l.credit ? fmt(l.credit) : '–'], ['VAT rate', v.label], ['VAT element', vatText],
+      ['Reconciled', l.reconciled ? 'Yes' : 'No'],
+      ['Entry status', e.dr === e.cr ? `Balances: ${fmt(e.dr)} Dr, ${fmt(e.cr)} Cr` : `<span class="oob">Out by ${fmt(Math.abs(e.dr - e.cr))}</span>`]];
+    $('details-list').innerHTML = rows.map(([k, val]) => `<dt>${k}</dt><dd>${val}</dd>`).join('');
+  }
+
+  /* ---------- Status bar (the one live region) and undo ---------- */
+  function say(msg, undoLines) {
+    $('status').textContent = msg;
+    ui.undo = undoLines ? { lines: undoLines } : null;
+    $('undo').hidden = !ui.undo;
+    $('bar').classList.toggle('on', !!msg);
+  }
+
+  /* ---------- Slip: new, view, edit ---------- */
+  const F = id => $('f-' + id);
+  const FIELDS = { entry: 'e-entry', date: 'e-date', account: 'e-account', description: 'e-description', amount: 'e-amount' };
+  const readForm = () => ({ entry: F('entry').value, date: F('date').value, account: F('account').value, description: F('description').value,
+    debit: F('debit').value, credit: F('credit').value, vat: F('vat').value, reconciled: F('rec').checked });
+  function clearErrors() {
+    for (const id of Object.values(FIELDS)) { $(id).hidden = true; $(id).textContent = ''; }
+    $('line-form').querySelectorAll('[aria-invalid]').forEach(el => el.removeAttribute('aria-invalid'));
+  }
+  function showErrors(v) {
+    clearErrors();
+    for (const [k, msg] of Object.entries(v.errors)) { $(FIELDS[k]).textContent = msg; $(FIELDS[k]).hidden = false; }
+    for (const id of v.bad) $(id).setAttribute('aria-invalid', 'true');
+  }
+  // Clear a message as soon as its field becomes valid; never add new ones while typing.
+  function recheck() {
+    if (!$('line-form').querySelector('[aria-invalid]')) return;
+    const v = validateLine(readForm(), book.lines, ui.mode === 'edit' ? ui.id : null);
+    for (const [k, id] of Object.entries(FIELDS)) if (!$(id).hidden && !v.errors[k]) { $(id).hidden = true; $(id).textContent = ''; }
+    $('line-form').querySelectorAll('[aria-invalid]').forEach(el => { if (!v.bad.includes(el.id)) el.removeAttribute('aria-invalid'); });
+  }
+
+  function fillNew(opts = {}) {
+    clearErrors();
+    const st = entryStats(book.lines);
+    const unb = [...st.values()].filter(e => e.dr !== e.cr).sort((a, b) => b.last - a.last)[0];
+    const max = Math.max(0, ...st.keys());
+    const n = opts.entry ?? (unb ? unb.entry : max + 1);
+    const e = st.get(n);
+    F('entry').value = n;
+    F('date').value = opts.date ?? (e ? e.date : ui.lastDate);
+    F('account').value = ''; F('description').value = ''; F('debit').value = ''; F('credit').value = ''; F('rec').checked = false;
+    F('vat').value = opts.vat ?? '20';
+    let hint = '';
+    if (e && e.dr !== e.cr) {
+      const g = e.dr - e.cr, side = g > 0 ? 'credit' : 'debit';
+      F(side).value = fmt(Math.abs(g));
+      hint = `Entry ${n} is out by ${fmt(Math.abs(g))}. The ${side} is filled in for you.`;
+    }
+    $('slip-hint').textContent = opts.hint || hint;
+    ui.snap = JSON.stringify(readForm());
+  }
+  const dirty = () => !$('line-form').hidden && JSON.stringify(readForm()) !== ui.snap;
+  // Before anything replaces the form, ask whether to drop what was typed.
+  function guard(go) {
+    if (!dirty()) return go();
+    const edit = ui.mode === 'edit';
+    ask({ title: edit ? 'Discard your changes?' : 'Discard this line?', ok: 'Discard changes', cancel: edit ? 'Keep editing' : 'Keep this line',
+      body: edit ? `Your changes to this line in entry ${F('entry').value} have not been saved.` : 'The line you are writing has not been posted.',
+      back: F('entry'), onOk: go });
+  }
+
+  function setMode(mode, id = null) {
+    ui.mode = mode; ui.id = id;
+    const view = mode === 'view';
+    $('line-form').hidden = view; $('details').hidden = !view;
+    $('slip-close').hidden = mode !== 'new';
+    if (mode === 'new') {
+      $('slip-title').textContent = 'New line'; $('f-submit').textContent = 'Post line'; $('f-second').textContent = 'Clear form';
+    } else if (mode === 'edit') {
+      const l = book.lines.find(x => x.id === id);
+      $('slip-title').textContent = `Edit line in entry ${l.entry}`; $('f-submit').textContent = 'Save changes'; $('f-second').textContent = 'Cancel';
+      clearErrors();
+      F('entry').value = l.entry; F('date').value = l.date; F('account').value = l.account; F('description').value = l.description;
+      F('debit').value = l.debit ? fmt(l.debit) : ''; F('credit').value = l.credit ? fmt(l.credit) : ''; F('vat').value = l.vat; F('rec').checked = l.reconciled;
+      $('slip-hint').textContent = '';
+      ui.snap = JSON.stringify(readForm());
+    } else renderDetails();
+  }
+  const slipOpen = () => wide.matches || $('slip').dataset.open === 'true';
+  function openSlip(opener) {
+    if (!wide.matches && $('slip').dataset.open !== 'true') { ui.opener = opener; $('slip').dataset.open = 'true'; }
+  }
+  function closeSlip() {
+    const o = ui.opener, k = o?.dataset?.k;
+    $('slip').dataset.open = 'false'; ui.opener = null;
+    setMode('new'); fillNew(); render();
+    // render() rebuilds rows and footing, so find the opener again by its key
+    ((k && document.querySelector(`[data-k="${k}"]`)) || (o && document.contains(o) ? o : $('new-line'))).focus();
+  }
+  function rowButton(id) { return document.querySelector(`[data-view="${id}"]`); }
+  function showPeriodOf(date) { if (ui.period !== 'all' && date.slice(0, 7) !== ui.period) ui.period = date.slice(0, 7); }
+
+  function openNew(opener, opts) {
+    if (dirty()) return guard(() => { ui.snap = JSON.stringify(readForm()); openNew(opener, opts); });
+    openSlip(opener);
+    setMode('new'); fillNew(opts); render();
+    if (wide.matches) F(opts ? 'account' : 'entry').focus(); else $('slip-title').focus();
+  }
+  function view(id, opener) {
+    if (dirty()) return guard(() => { ui.snap = JSON.stringify(readForm()); view(id, opener); });
+    openSlip(opener);
+    setMode('view', id); render();
+    $('slip-title').focus();
+  }
+
+  /* ---------- Confirm dialog ---------- */
+  let pending = null, confirmed = false, dlgOpener = null;
+  function ask({ title, body, ok, cancel, onOk, back }) {
+    $('confirm-title').textContent = title; $('confirm-body').textContent = body;
+    $('confirm-ok').textContent = ok; $('confirm-cancel').textContent = cancel;
+    pending = onOk; confirmed = false; dlgOpener = back || document.activeElement;
+    $('confirm').showModal(); $('confirm-cancel').focus();
+  }
+  $('confirm-ok').addEventListener('click', () => { confirmed = true; $('confirm').close(); const f = pending; pending = null; f(); });
+  $('confirm-cancel').addEventListener('click', () => $('confirm').close());
+  $('confirm').addEventListener('close', () => { if (!confirmed && dlgOpener && document.contains(dlgOpener)) dlgOpener.focus(); });
+
+  /* ---------- Events ---------- */
+  $('line-form').addEventListener('submit', ev => {
+    ev.preventDefault();
+    const v = validateLine(readForm(), book.lines, ui.mode === 'edit' ? ui.id : null);
+    if (v.bad.length) { showErrors(v); $(v.bad[0]).focus(); return; }
+    const rec = v.rec;
+    if (ui.mode === 'edit') {
+      const id = ui.id;
+      updateLine(book, id, rec); save(); showPeriodOf(rec.date);
+      setMode('view', id); render();
+      say(`Changes saved to entry ${rec.entry}.`);
+      rowButton(id)?.focus();
+      return;
+    }
+    const l = addLine(book, rec); save();
+    ui.lastDate = rec.date; showPeriodOf(rec.date);
+    const e = entryStats(book.lines).get(rec.entry), gap = e.dr - e.cr;
+    if (gap) fillNew({ entry: rec.entry, date: rec.date, vat: rec.vat });
+    else { fillNew({ vat: rec.vat }); const n = F('entry').value; if (+n !== rec.entry && !$('slip-hint').textContent) $('slip-hint').textContent = `Entry ${rec.entry} balances. The next line starts entry ${n}.`; }
+    render();
+    say(`Line posted to entry ${rec.entry}. ${gap ? `Entry ${rec.entry} is out by ${fmt(Math.abs(gap))}.` : `Entry ${rec.entry} balances.`}`);
+    F('account').focus();
+  });
+  $('f-second').addEventListener('click', () => {
+    if (ui.mode === 'edit') { const id = ui.id; setMode('view', id); render(); $('d-edit').focus(); }
+    else { fillNew(); F('account').focus(); }
+  });
+  for (const id of ['entry', 'date', 'account', 'description', 'debit', 'credit']) {
+    F(id).addEventListener('input', recheck);
+    F(id).addEventListener('change', recheck);
+  }
+  for (const id of ['debit', 'credit']) F(id).addEventListener('blur', () => {
+    try { const p = parseMoney(F(id).value); if (p > 0) F(id).value = fmt(p); } catch { /* leave as typed; submit explains */ }
+    recheck();
+  });
+  $('f-description').addEventListener('blur', recheck);
+
+  $('slip-close').addEventListener('click', () => guard(closeSlip));
+  $('d-close').addEventListener('click', () => {
+    const id = ui.id;
+    if (!wide.matches) { ui.opener = rowButton(id); closeSlip(); return; }
+    setMode('new'); fillNew(); render(); rowButton(id)?.focus();
+  });
+  $('d-edit').addEventListener('click', () => { setMode('edit', ui.id); render(); F('entry').focus(); });
+  $('d-delete').addEventListener('click', () => {
+    const l = book.lines.find(x => x.id === ui.id), e = entryStats(book.lines).get(l.entry);
+    const after = (e.dr - l.debit) - (e.cr - l.credit);
+    const result = e.n === 1 ? `Entry ${l.entry} will have no lines left.` : after ? `Entry ${l.entry} will be out of balance by ${fmt(Math.abs(after))}.` : `Entry ${l.entry} will balance.`;
+    ask({
+      title: 'Delete this line?', ok: 'Delete line', cancel: 'Keep line',
+      body: `Entry ${l.entry}, ${l.account} ${ACCOUNTS[l.account]}, ${l.debit ? 'debit ' + fmt(l.debit) : 'credit ' + fmt(l.credit)}. ${result}`,
+      onOk: () => {
+        const snap = cloneLines(book.lines);
+        deleteLine(book, l.id); save();
+        if (!wide.matches) $('slip').dataset.open = 'false';
+        setMode('new'); fillNew(); render();
+        say(`Line deleted from entry ${l.entry}.`, snap);
+        $('undo').focus();
+        ui.undoFocus = l.id;
+      }
+    });
+  });
+
+  $('undo').addEventListener('click', () => {
+    if (!ui.undo) return;
+    book.lines = ui.undo.lines; save();
+    const id = ui.undoFocus, l = id && book.lines.find(x => x.id === id);
+    if (l) showPeriodOf(l.date);
+    if (ui.mode === 'new' && !dirty()) fillNew();
+    render();
+    say(l ? `Line restored to entry ${l.entry}.` : 'Lines restored.');
+    (l && rowButton(l.id) || $('journal-title')).focus();
+    ui.undoFocus = null;
+  });
+  $('dismiss').addEventListener('click', () => { say(''); $('journal-title').focus(); });
+
+  function replaceAll(next, opts) {
+    ask({
+      ...opts,
+      onOk: () => {
+        const snap = cloneLines(book.lines), n = book.lines.length;
+        book.lines = next; book.seq = Math.max(book.seq, ...next.map(l => l.seq)); save();
+        if (!wide.matches) $('slip').dataset.open = 'false';
+        setMode('new'); fillNew(); render();
+        say(next.length ? `Sample data reset. ${next.length} lines.` : `Journal emptied. ${n} lines removed.`, snap);
+        ui.undoFocus = null;
+        $('undo').focus();
+      }
+    });
+  }
+  $('reset').addEventListener('click', () => {
+    const s = seedBook();
+    replaceAll(s.lines, { title: 'Replace every line with the sample journal?', ok: 'Reset sample data', cancel: 'Keep my lines',
+      body: `Your ${book.lines.length} ${book.lines.length === 1 ? 'line' : 'lines'} will be replaced by the ${s.lines.length}-line sample journal for Fenwick Joinery. You can undo this.` });
+  });
+  $('empty').addEventListener('click', () => {
+    replaceAll([], { title: 'Remove every line from this journal?', ok: 'Start an empty journal', cancel: 'Keep my lines',
+      body: `All ${book.lines.length} lines will be removed. You can undo this.` });
+  });
+
+  $('new-line').addEventListener('click', ev => openNew(ev.currentTarget));
+  $('period').addEventListener('change', ev => { ui.period = ev.target.value; render(); });
+  $('account-filter').addEventListener('change', ev => { ui.account = ev.target.value; render(); });
+  $('search').addEventListener('input', ev => { ui.q = ev.target.value; render(); });
+  $('search-form').addEventListener('submit', ev => ev.preventDefault());
+
+  $('jr').addEventListener('click', ev => {
+    const b = ev.target.closest('button');
+    if (!b) return;
+    if (b.dataset.sort) {
+      const k = b.dataset.sort;
+      ui.sort = ui.sort.key === k ? { key: k, dir: -ui.sort.dir } : { key: k, dir: 1 };
+      render();
+    } else if (b.dataset.view) view(b.dataset.view, b);
+    else if (b.dataset.tick) {
+      const l = book.lines.find(x => x.id === b.dataset.tick);
+      updateLine(book, l.id, { reconciled: !l.reconciled }); save(); render();
+      say(`Entry ${l.entry}, ${l.account} ${ACCOUNTS[l.account]} marked ${l.reconciled ? 'reconciled' : 'not reconciled'}.`);
+    } else if (b.dataset.act === 'finish') {
+      const n = +b.dataset.entry, e = entryStats(book.lines).get(n);
+      openNew(b, { entry: n, date: e.date });
+    } else if (b.dataset.act === 'new') openNew(b);
+    else if (b.dataset.act === 'clear-search') { ui.q = ''; $('search').value = ''; render(); $('search').focus(); }
+    else if (b.dataset.act === 'all-accounts') { ui.account = ''; $('account-filter').value = ''; render(); $('account-filter').focus(); }
+  });
+
+  document.addEventListener('keydown', ev => {
+    if (ev.key !== 'Escape' || $('confirm').open || wide.matches || !slipOpen()) return;
+    if (ui.mode === 'view' && !ui.opener) ui.opener = rowButton(ui.id);
+    ev.preventDefault(); // or this same Escape would cancel the guard's dialog
+    guard(closeSlip);
+  });
+  wide.addEventListener('change', () => { if (wide.matches) $('slip').dataset.open = 'false'; else if (ui.mode !== 'new') $('slip').dataset.open = 'true'; });
+
+  // The sticky footing rests on top of the status bar when both are stuck.
+  new ResizeObserver(() => $('jr').style.setProperty('--bar-h', $('bar').offsetHeight + 'px')).observe($('bar'));
+
+  /* ---------- Start ---------- */
+  setMode('new'); fillNew(); render();
+  if (location.hash === '#selftest') runSelfTest();
+})();
+</script>
+</body>
+</html>
