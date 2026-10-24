@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bramling Street Bakery</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Karla:wght@300..800&family=Podkova:wght@400..800&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* colour: paper bag, greaseproof, flexo ink, bread clip */
+  --kraft: #B9906A;          /* header bar and open menu panel */
+  --kraft-crease: #8A6747;   /* 1px fold line under the bar (decorative) */
+  --kraft-fold: #CFAE8C;     /* 2px lit edge of the fold (decorative) */
+  --paper: #F6F7F2;          /* page body, cool greaseproof white */
+  --ink: #201C1A;            /* all text, Order ahead fill, focus rings, clip die line */
+  --ink-press: #3A322D;      /* Order ahead hover fill */
+  --ink-soft: #5A514B;       /* secondary text, on --paper only */
+  --clip: #3E9E5A;           /* the bread clip, nothing else */
+  --rule: #C9C6BC;           /* table rules and price leaders on paper (decorative) */
+
+  --f-stamp: "Podkova", "Rockwell", "Roboto Slab", Georgia, serif;
+  --f-text: "Karla", "Helvetica Neue", Arial, sans-serif;
+
+  /* major third from 17px */
+  --t-1: .85rem;
+  --t0: 1.0625rem;
+  --t1: 1.328rem;
+  --t2: 1.66rem;
+  --t3: 2.075rem;
+
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px;
+  --s6: 32px; --s7: 48px; --s8: 72px; --s9: 112px;
+
+  --gutter: 16px;
+  --max: 1180px;
+  --bar-h: 64px;
+  --radius-clip: 6px;        /* drawn into the clip path; the only radius */
+
+  --ease-out: cubic-bezier(.16,1,.3,1);
+  --ease-sweep: cubic-bezier(.35,0,0,1);
+  --ease-bag: cubic-bezier(.625,.05,0,1);
+  --ease-swap: cubic-bezier(.65,0,.35,1);
+  --ease-spring: cubic-bezier(.34,1.4,.64,1);
+}
+@media (min-width: 600px) { :root { --gutter: clamp(16px, 4vw, 48px); } }
+@media (min-width: 960px) { :root { --bar-h: 72px; } }
+
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-padding-top: calc(var(--bar-h) + var(--s4)); }
+body {
+  margin: 0; background: var(--paper); color: var(--ink);
+  font: 400 var(--t0)/1.55 var(--f-text);
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+[tabindex="-1"]:focus { outline: none; }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.wrap { max-width: var(--max); margin-inline: auto; padding-inline: var(--gutter); }
+
+/* HV2 directional underline sweep */
+.u {
+  text-decoration: none;
+  background: linear-gradient(currentColor, currentColor) 100% 100% / 0 var(--u-h, .07em) no-repeat;
+}
+@media (hover: none) { .u { background-size: 100% var(--u-h, .07em); } }
+@media (hover: hover) and (pointer: fine) {
+  .u:hover { background-position: 0 100%; background-size: 100% var(--u-h, .07em); }
+}
+.u:focus-visible { background-position: 0 100%; background-size: 100% var(--u-h, .07em); }
+@media (prefers-reduced-motion: no-preference) {
+  .u { transition: background-size .4s var(--ease-sweep); }
+}
+
+/* skip link */
+.skip {
+  position: fixed; z-index: 10; left: var(--gutter); top: 0;
+  padding: var(--s3) var(--s4); background: var(--ink); color: var(--paper);
+  font-weight: 600; text-decoration: none; transform: translateY(-120%);
+}
+.skip:focus-visible { transform: none; outline-color: var(--clip); }
+@media (prefers-reduced-motion: no-preference) { .skip { transition: transform .2s var(--ease-out); } }
+
+/* header bar: a paper bag with a straight fold at the bottom */
+.site {
+  position: sticky; top: 0; z-index: 5;
+  background: var(--kraft);
+  border-bottom: 1px solid var(--kraft-crease);
+  box-shadow: 0 2px 0 var(--kraft-fold);
+}
+.bar {
+  display: flex; align-items: center; gap: var(--s5);
+  min-height: var(--bar-h);
+  max-width: var(--max); margin-inline: auto; padding: var(--s2) var(--gutter);
+}
+.mark {
+  font: 800 var(--t1)/1 var(--f-stamp); letter-spacing: -.01em;
+  text-decoration: none; margin-right: auto; max-width: 9.5em;
+}
+.bar .hours { display: none; font-size: var(--t0); }
+.order {
+  display: none; align-items: center; min-height: 44px; padding: 0 var(--s4);
+  background: var(--ink); color: var(--paper);
+  font-weight: 600; text-decoration: none;
+}
+@media (hover: hover) and (pointer: fine) { .order:hover { background: var(--ink-press); } }
+.order:focus-visible { background: var(--ink-press); }
+@media (prefers-reduced-motion: no-preference) {
+  .order { transition: background-color .18s ease-out, transform .25s var(--ease-spring); }
+  .order:active { transform: scale(.97); transition-duration: .18s, .08s; }
+}
+@media (min-width: 640px) {
+  .order { display: inline-flex; }
+  .mark { font-size: var(--t2); max-width: none; }
+}
+@media (min-width: 1040px) {
+  .bar .hours { display: inline; }
+}
+
+/* the bread clip (summary) */
+.nav > summary {
+  list-style: none; cursor: pointer; display: block;
+  width: 92px; height: 52px; position: relative;
+  -webkit-tap-highlight-color: transparent;
+}
+.nav > summary::-webkit-details-marker { display: none; }
+.clip {
+  position: absolute; inset: 0;
+  transform-origin: 46px 32px;   /* the hole */
+}
+.clip svg { display: block; overflow: visible; }
+.clip path { fill: var(--clip); stroke: var(--ink); stroke-width: 2; stroke-linejoin: round; }
+.label {
+  position: absolute; left: 4px; right: 4px; top: 4px; height: 20px;
+  overflow: clip; text-align: center;
+  font: 800 15px/20px var(--f-stamp); letter-spacing: .01em;
+}
+.stack > span { display: block; }
+.stack { display: block; }
+.nav[open] .stack { transform: translateY(-50%); }
+.nav[open] .clip { transform: translateY(-3px) rotate(-9deg); }
+@media (prefers-reduced-motion: no-preference) {
+  /* closing (the closed-state rule) is faster than opening (the [open] rule) */
+  .clip { transition: transform .3s var(--ease-sweep); }
+  .stack { transition: transform .25s var(--ease-swap); }
+  .nav[open] .clip { transition: transform .45s var(--ease-spring); }
+  .nav[open] .stack { transition: transform .35s var(--ease-swap); }
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .nav:not([open]) > summary:hover .clip { transform: rotate(-3deg); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .nav:not([open]) > summary:focus-visible .clip { transform: rotate(-3deg); }
+}
+
+/* the panel: opens downward like a bag mouth */
+.nav::details-content {
+  position: absolute; left: 0; right: 0; top: 100%;
+  clip-path: inset(0 0 100% 0);
+}
+.nav[open]::details-content { clip-path: inset(0 0 -4px 0); }
+@media (prefers-reduced-motion: no-preference) {
+  .nav::details-content {
+    transition: clip-path .28s var(--ease-bag), content-visibility .28s allow-discrete;
+  }
+  .nav[open]::details-content { transition-duration: .4s; }
+}
+.panel {
+  background: var(--kraft);
+  border-top: 1px solid var(--kraft-crease);
+  border-bottom: 1px solid var(--kraft-crease);
+  box-shadow: 0 2px 0 var(--kraft-fold);
+  max-height: calc(100dvh - var(--bar-h));
+  overflow-y: auto; overscroll-behavior: contain;
+}
+.panel-in { max-width: var(--max); margin-inline: auto; padding: var(--s3) var(--gutter) var(--s4); }
+.places { list-style: none; margin: 0; padding: 0; }
+.places a {
+  display: block; min-height: 56px; padding: var(--s2) 0;
+  text-decoration: none;
+}
+.name {
+  --u-h: .09em;
+  font: 700 var(--t3)/1 var(--f-stamp); letter-spacing: -.015em;
+  padding-bottom: .08em;
+}
+.hint { display: block; margin-top: var(--s1); font-size: var(--t-1); line-height: 1.35; }
+@media (hover: hover) and (pointer: fine) {
+  .places a:hover .name { background-position: 0 100%; background-size: 100% var(--u-h); }
+}
+.places a:focus-visible .name { background-position: 0 100%; background-size: 100% var(--u-h); }
+@media (min-width: 960px) {
+  .panel-in { padding-block: var(--s5) var(--s6); }
+  .places { display: flex; justify-content: space-between; gap: var(--s5); }
+  .name { white-space: nowrap; }
+  .hint { font-size: var(--t0); max-width: 12em; }
+}
+
+/* hide on scroll down, show on scroll up (NV5 in CSS) */
+@supports (container-type: scroll-state) {
+  html { container-type: scroll-state; }
+  @container scroll-state(scrolled: bottom) {
+    .site:not(:has(.nav[open])):not(:focus-within) { transform: translateY(calc(-100% - 8px)); }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .site { transition: transform .4s var(--ease-out); }
+  }
+}
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+
+/* page body */
+.lead-hours { display: block; width: max-content; margin-top: var(--s5); font-weight: 600; }
+@media (min-width: 1040px) { .lead-hours { display: none; } }
+main section {
+  min-height: 70vh; padding-block: var(--s8) var(--s7);
+  display: grid; gap: var(--s4) var(--s5); align-content: start;
+}
+main section + section { border-top: 1px solid var(--rule); }
+@media (min-width: 900px) {
+  main section { grid-template-columns: repeat(12, 1fr); }
+  main section > h2 { grid-column: 1 / 4; }
+  main section > .body { grid-column: 4 / 11; }
+}
+h2 { margin: 0; font: 700 var(--t3)/1.1 var(--f-stamp); }
+.body { max-width: 62ch; }
+.body p { margin: 0 0 var(--s4); }
+.note { color: var(--ink-soft); }
+
+table { border-collapse: collapse; width: 100%; margin-bottom: var(--s5); }
+caption { text-align: left; color: var(--ink-soft); padding-bottom: var(--s3); }
+th, td { text-align: left; padding: var(--s3) 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-weight: 600; padding-right: var(--s5); width: 40%; }
+td { font-variant-numeric: lining-nums tabular-nums; }
+
+.price-list { list-style: none; margin: 0 0 var(--s5); padding: 0; }
+.price-list li { display: flex; align-items: baseline; gap: var(--s2); padding-block: var(--s2); }
+.price-list .item b { font-weight: 600; }
+.price-list .item small { display: block; font-size: var(--t-1); color: var(--ink-soft); }
+.price-list .lead { flex: 1; min-width: var(--s5); border-bottom: 2px dotted var(--ink-soft); transform: translateY(-.3em); align-self: flex-start; margin-top: 1.15em; }
+.price-list data { font-weight: 600; font-variant-numeric: lining-nums tabular-nums; }
+
+.channels { list-style: none; margin: var(--s5) 0; padding: 0; border-top: 1px solid var(--rule); }
+.channels a {
+  display: block; padding: var(--s4) 0; border-bottom: 1px solid var(--rule);
+  text-decoration: none;
+}
+.channels .u { font-weight: 600; font-size: var(--t1); }
+.channels small { display: block; color: var(--ink-soft); }
+@media (hover: hover) and (pointer: fine) {
+  .channels a:hover .u { background-position: 0 100%; background-size: 100% .07em; }
+}
+.channels a:focus-visible .u { background-position: 0 100%; background-size: 100% .07em; }
+@media (prefers-reduced-motion: no-preference) {
+  .channels a { transition: transform .25s var(--ease-spring); }
+  .channels a:active { transform: scale(.98); transition-duration: .08s; }
+}
+
+footer { border-top: 1px solid var(--rule); padding-block: var(--s6) var(--s7); }
+footer p { margin: var(--s3) 0 0; color: var(--ink-soft); }
+footer a { font-weight: 600; }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to hours and bread</a>
+
+<header class="site" id="top">
+  <div class="bar">
+    <a class="mark" href="#top">Bramling Street Bakery</a>
+    <a class="hours u" href="#hours">Open Tuesday to Sunday from 7:30</a>
+    <a class="order" href="#order">Order ahead</a>
+    <nav aria-label="Main">
+      <details class="nav">
+        <summary>
+          <span class="clip" aria-hidden="true">
+            <svg width="92" height="52" viewBox="0 0 92 52" focusable="false">
+              <path d="M7 1H85A6 6 0 0 1 91 7V45A6 6 0 0 1 85 51H54L49 37.2A6 6 0 1 0 43 37.2L38 51H7A6 6 0 0 1 1 45V7A6 6 0 0 1 7 1Z"/>
+            </svg>
+            <span class="label"><span class="stack"><span>Menu</span><span>Close</span></span></span>
+          </span>
+          <span class="vh">Menu</span>
+        </summary>
+        <div class="panel">
+          <div class="panel-in">
+            <ul class="places">
+              <li><a href="#hours"><span class="name u">Hours</span><span class="hint">Tuesday to Sunday from 7:30</span></a></li>
+              <li><a href="#bread"><span class="name u">Bread</span><span class="hint">Out of the oven at 7:15 and 11:00</span></a></li>
+              <li><a href="#pastry"><span class="name u">Pastry</span><span class="hint">Buns, croissants and tarts</span></a></li>
+              <li><a href="#order"><span class="name u">Order ahead</span><span class="hint">By 4pm the day before</span></a></li>
+              <li><a href="#find"><span class="name u">Find us</span><span class="hint">12 Bramling Street, S11</span></a></li>
+            </ul>
+          </div>
+        </div>
+      </details>
+    </nav>
+  </div>
+</header>
+
+<main id="main" tabindex="-1" class="wrap">
+  <h1 class="vh">Bramling Street Bakery, Sheffield</h1>
+  <a class="lead-hours u" href="#hours">Open Tuesday to Sunday from 7:30</a>
+
+  <section id="hours" tabindex="-1" aria-labelledby="h-hours">
+    <h2 id="h-hours">Hours</h2>
+    <div class="body">
+      <table>
+        <caption>Shop hours this week</caption>
+        <tbody>
+          <tr><th scope="row">Monday</th><td>Closed (we bake for wholesale)</td></tr>
+          <tr><th scope="row">Tuesday to Friday</th><td>7:30 to 15:00</td></tr>
+          <tr><th scope="row">Saturday</th><td>8:00 to 15:00</td></tr>
+          <tr><th scope="row">Sunday</th><td>8:00 to 12:00, or until the bread runs out</td></tr>
+        </tbody>
+      </table>
+      <p class="note">Bank holidays: Sunday hours. We put the week’s changes on the door and on this page.</p>
+    </div>
+  </section>
+
+  <section id="bread" tabindex="-1" aria-labelledby="h-bread">
+    <h2 id="h-bread">Bread</h2>
+    <div class="body">
+      <ul class="price-list">
+        <li><span class="item"><b>Country sourdough</b><small>900g</small></span><span class="lead"></span><data value="5.20">£5.20</data></li>
+        <li><span class="item"><b>Seeded rye</b></span><span class="lead"></span><data value="5.60">£5.60</data></li>
+        <li><span class="item"><b>White tin</b></span><span class="lead"></span><data value="3.60">£3.60</data></li>
+        <li><span class="item"><b>Baguette</b><small>Out at 7:30 and again at 11:00</small></span><span class="lead"></span><data value="2.40">£2.40</data></li>
+        <li><span class="item"><b>Spelt and honey</b><small>Saturdays only</small></span><span class="lead"></span><data value="5.40">£5.40</data></li>
+      </ul>
+      <p class="note">First bake out at 7:15, second at 11:00. If you want a loaf after 1pm, <a class="u" href="#order">order ahead</a>.</p>
+    </div>
+  </section>
+
+  <section id="pastry" tabindex="-1" aria-labelledby="h-pastry">
+    <h2 id="h-pastry">Pastry</h2>
+    <div class="body">
+      <ul class="price-list">
+        <li><span class="item"><b>Cardamom bun</b></span><span class="lead"></span><data value="3.20">£3.20</data></li>
+        <li><span class="item"><b>Almond croissant</b></span><span class="lead"></span><data value="3.60">£3.60</data></li>
+        <li><span class="item"><b>Eccles cake</b></span><span class="lead"></span><data value="2.80">£2.80</data></li>
+        <li><span class="item"><b>Custard tart</b></span><span class="lead"></span><data value="3.40">£3.40</data></li>
+        <li><span class="item"><b>Sourdough doughnut</b><small>Saturday and Sunday</small></span><span class="lead"></span><data value="3.00">£3.00</data></li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="order" tabindex="-1" aria-labelledby="h-order">
+    <h2 id="h-order">Order ahead</h2>
+    <div class="body">
+      <p>Order by 4pm the day before and we’ll hold it at the side hatch from 7:30. Whole cakes need 48 hours: lemon and polenta (8 inch, <data value="26.00">£26.00</data>) or chocolate rye (8 inch, <data value="28.00">£28.00</data>). Pay when you collect.</p>
+      <ul class="channels">
+        <li><a href="tel:+441144960372" target="_blank" rel="noopener"><span class="u">Call 0114 496 0372</span><small>Tuesday to Saturday, 7:30 to 15:00</small></a></li>
+        <li><a href="https://wa.me/447700900372?text=Hello%2C%20I%27d%20like%20to%20order%20for%20collection%20on%20" target="_blank" rel="noopener"><span class="u">Message us on WhatsApp</span><small>07700 900372, any time; we reply during opening hours</small></a></li>
+        <li><a href="mailto:orders@bramlingstreet.example?subject=Order%20for%20collection&amp;body=Collection%20day%3A%20%0AName%3A%20%0AWhat%20I%27d%20like%3A%20" target="_blank" rel="noopener"><span class="u">Email orders@bramlingstreet.example</span><small>Tell us the day, your name and what you’d like</small></a></li>
+      </ul>
+      <p class="note">Nothing is sent from this page. Each link opens your phone, WhatsApp or email.</p>
+    </div>
+  </section>
+
+  <section id="find" tabindex="-1" aria-labelledby="h-find">
+    <h2 id="h-find">Find us</h2>
+    <div class="body">
+      <p>12 Bramling Street, Sheffield S11 8YN. Buses 81, 82 and 83 stop outside the launderette across the road.</p>
+      <p>Step-free entrance on the left; the side hatch is for collections.</p>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <a class="u" href="#top">Back to the top</a>
+    <p>Bramling Street Bakery, baking since 1994.</p>
+  </div>
+</footer>
+
+<script>
+// Close the CSS menu when a place is chosen or Escape is pressed. Without this script the menu stays open and still works.
+const nav = document.querySelector('.nav');
+nav.addEventListener('click', e => { if (e.target.closest('.panel a')) nav.open = false; });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && nav.open) { nav.open = false; nav.querySelector('summary').focus(); }
+});
+</script>
+</body>
+</html>

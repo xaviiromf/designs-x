@@ -1,0 +1,1300 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ferntal lift passes: which pass pays for itself</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Krona+One&family=Signika:wght@300..700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* colour: the printed Ferntal trail map */
+    --snow: #E8EEF4;      /* ground: blue-white map paper, snow in shade */
+    --card: #FBFCFC;      /* card stock: chart board, selected pass, KeyCard */
+    --fir: #12302A;       /* ink, buttons, week-pass line (12.1:1 on snow) */
+    --fir-dark: #0B231E;  /* hovered buttons */
+    --shade: #55607A;     /* secondary text, day-pass line (5.4:1 on snow, 6.1:1 on card) */
+    --pole: #D65A00;      /* piste-edge pole: cheapest cable, chair, badge, focus; graphics only (3.4:1 on snow) */
+    --gentian: #1F5A9E;   /* season and family lines, break-even station (6.0:1 on snow) */
+    --fir-rgb: 18 48 42;           /* --fir as channels, for the alphas below */
+    --hair: rgb(85 96 122 / .3);   /* shade at reduced alpha: gridlines and hairlines */
+    --scrim: rgb(var(--fir-rgb) / .55);  /* dialog backdrop */
+    --tint: rgb(var(--fir-rgb) / .08);   /* quiet-button hover wash */
+    --shadow-card: 0 0 0 1px var(--fir), 0 10px 24px -14px rgb(var(--fir-rgb) / .35);  /* KeyCard only */
+
+    /* type: Krona One for headings and pass names, Signika (wayfinding signage) for the rest */
+    --font-display: "Krona One", Verdana, sans-serif;
+    --font-text: "Signika", "Trebuchet MS", sans-serif;
+    --fs-xs: .8125rem;   /* chart ticks, KeyCard fine print */
+    --fs-sm: .9375rem;   /* labels, hints, notes */
+    --fs-md: 1.0625rem;  /* body */
+    --fs-lg: clamp(.9375rem, .85rem + .4vw, 1.125rem);   /* pass names (Krona One) */
+    --fs-price: clamp(1.5rem, 1.25rem + 1vw, 2rem);      /* stub prices (Signika 600) */
+    --fs-xl: clamp(1.25rem, 1rem + 1.1vw, 1.75rem);      /* h3 */
+    --fs-xxl: clamp(1.5rem, 6.9vw, 4rem);                /* h2 */
+
+    /* spacing, 4-based */
+    --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px;
+    --sp-6: 32px; --sp-7: 48px; --sp-8: 72px; --sp-9: 112px;
+    --gutter: 16px;
+    --col-gap: 24px;
+    --max: 1240px;
+
+    /* shape */
+    --r-btn: 4px;
+    --r-pass: 6px;
+    --focus: 2px solid var(--pole);
+
+    /* motion: durations (s) and easings; the script reads the --t- and --gs- tokens */
+    --t-press: .12s; --t-fast: .15s; --t-hover: .2s; --t-sweep: .45s; --t-release: .45s; --t-dim: .3s;
+    --t-chrome: .5s; --t-rise: 1s; --t-rule: .9s; --t-line: 1.1s; --t-tick: .3s;
+    --t-pop: .35s; --t-reveal: .4s; --t-unpop: .2s; --t-ride: .3s; --t-reride: .9s; --t-swing: 1.2s;
+    --t-ghost: .25s; --t-swap: .35s; --t-xfade: .45s; --t-form-xfade: .3s; --t-seg: .4s;
+    --t-clip: .25s; --t-clip-in: .3s; --t-grow: .3s; --t-badge: .25s;
+    --t-dialog: .45s; --t-dialog-out: .3s; --t-backdrop: .3s; --t-scroll: 1.1s;
+    --t-axis: .4s; --t-fill: .4s; --t-tour: 2.4s; --t-free: .25s; --t-dim-ref: .4s; --t-scrub: .5s; --t-snap: .25s;
+    --ease-settle: cubic-bezier(.16, 1, .3, 1);     /* expo.out */
+    --ease-follow: cubic-bezier(.215, .61, .355, 1); /* power3.out */
+    --ease-sweep: cubic-bezier(.35, 0, 0, 1);
+    --ease-xfade: cubic-bezier(.25, .46, .45, .94);  /* power1.out */
+    --gs-settle: expo.out; --gs-follow: power3.out; --gs-xfade: power1.out; --gs-pop: back.out(2);
+    --gs-in: power3.in; --gs-close: power2.in; --gs-swing: elastic.out(1, .35);
+  }
+  @media (min-width: 600px) { :root { --gutter: 32px; } }
+  @media (min-width: 992px) { :root { --gutter: 56px; --fs-xxl: clamp(2.75rem, 4.4vw, 4rem); } }
+
+  /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  * { margin: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  html:has(dialog[open]) { overflow: hidden; }
+  body {
+    background: var(--snow);
+    color: var(--fir);
+    font: 400 var(--fs-md)/1.5 var(--font-text);
+    font-variant-numeric: tabular-nums;
+  }
+  a { color: inherit; }
+  :focus-visible { outline: var(--focus); outline-offset: 3px; }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+  }
+  [tabindex="-1"]:focus { outline: none; }
+  [hidden] { display: none !important; }
+
+  .ferntal {
+    max-width: var(--max);
+    margin-inline: auto;
+    padding: 0 var(--gutter) var(--sp-8);
+  }
+  .grid12 { display: grid; gap: var(--sp-5); }
+  @media (min-width: 992px) {
+    .grid12 { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--col-gap); }
+  }
+
+  /* HV2 directional underline: enters from the left, leaves to the right */
+  .ul { position: relative; text-decoration: none; padding-bottom: .06em; }
+  .ul::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: .07em;
+    background: currentColor; transform: scaleX(0); transform-origin: right center;
+    transition: transform var(--t-sweep) var(--ease-sweep);
+  }
+  @media (hover: hover) {
+    .ul:hover::after, .stub:hover .ul::after { transform: scaleX(1); transform-origin: left center; }
+  }
+  .ul:focus-visible::after, .stub:focus-visible .ul::after { transform: scaleX(1); transform-origin: left center; }
+  @media (hover: none) { .ul::after { transform: scaleX(1); } }
+
+  /* section bar */
+  .bar {
+    display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between;
+    gap: var(--sp-2) var(--sp-5);
+    padding-block: var(--sp-4);
+    border-bottom: 1px solid var(--hair);
+  }
+  .brand { font: 400 var(--fs-md)/1.3 var(--font-display); }
+  .bar ul {
+    list-style: none; padding: 0;
+    display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-5);
+    font-size: var(--fs-sm); font-weight: 500;
+  }
+  .bar a { display: inline-block; }
+
+  /* heading and lede */
+  .intro { padding-block: var(--sp-7) var(--sp-6); }
+  .title {
+    font: 400 var(--fs-xxl)/1.04 var(--font-display);
+    letter-spacing: -.01em;
+  }
+  .ln { display: block; overflow: clip; padding-block: .06em .12em; margin-block: -.06em -.12em; }
+  .ln > span { display: block; }
+  .lede { max-width: 52ch; margin-top: var(--sp-5); }
+
+  /* price stubs */
+  .stubs-wrap { position: relative; }
+  .rule {
+    position: absolute; left: 0; right: 0; top: 0; height: 1px;
+    background: var(--fir); transform-origin: left center;
+  }
+  .stubs-wrap > .rule { height: 2px; }
+  .stubs { list-style: none; padding: 0; display: grid; grid-template-columns: 1fr 1fr; }
+  .stubs li + li { border-left: 1px solid var(--hair); }
+  .stubs li:nth-child(3) { border-left: 0; }
+  .stubs li:nth-child(n + 3) { border-top: 1px solid var(--hair); }
+  @media (min-width: 768px) {
+    .stubs { grid-template-columns: repeat(4, 1fr); }
+    .stubs li:nth-child(3) { border-left: 1px solid var(--hair); }
+    .stubs li:nth-child(n + 3) { border-top: 0; }
+  }
+  .stub {
+    display: block; height: 100%;
+    padding: var(--sp-4) var(--sp-3) var(--sp-5) var(--sp-4);
+    text-decoration: none;
+    transition: opacity var(--t-dim) var(--ease-settle);
+  }
+  .stubs li:nth-child(2n + 1) .stub { padding-left: 0; }
+  @media (min-width: 768px) {
+    .stub, .stubs li:nth-child(3) .stub { padding-inline: var(--sp-5); }
+    .stubs li:first-child .stub { padding-left: 0; }
+  }
+  .stub-in { display: grid; gap: var(--sp-1); }
+  .stub-name { font: 400 var(--fs-lg)/1.3 var(--font-display); }
+  .stub-price { font-size: var(--fs-price); font-weight: 600; line-height: 1.15; }
+  .stub-note { font-size: var(--fs-sm); color: var(--shade); line-height: 1.35; }
+  /* HV7 sibling dimming */
+  @media (hover: hover) { .stubs:has(.stub:hover) .stub:not(:hover) { opacity: .5; } }
+  .stubs:has(.stub:focus-visible) .stub:not(:focus-visible) { opacity: .5; }
+  .stubs-foot { margin-top: var(--sp-3); font-size: var(--fs-sm); color: var(--shade); max-width: 62ch; }
+
+  /* the question and the lift-line chart */
+  .compare { padding-top: var(--sp-8); }
+  .compare-head {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+    gap: var(--sp-3) var(--sp-5);
+  }
+  h3 { font: 400 var(--fs-xl)/1.18 var(--font-display); letter-spacing: -.005em; }
+  .note { margin-top: var(--sp-2); font-size: var(--fs-sm); color: var(--shade); max-width: 62ch; }
+  .cmp { margin-top: var(--sp-5); row-gap: var(--sp-6); }
+  @media (min-width: 992px) {
+    .board-col { grid-column: 1 / 9; }
+    .answer { grid-column: 9 / -1; }
+  }
+
+  /* family switch */
+  .switch {
+    position: relative; display: inline-flex; align-items: center; gap: var(--sp-3);
+    min-height: 44px; font-weight: 500; cursor: pointer;
+  }
+  .switch input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+  .track {
+    flex: none; position: relative; width: 44px; height: 24px; border-radius: 12px;
+    background: var(--card); box-shadow: inset 0 0 0 1.5px var(--shade);
+  }
+  .knob {
+    position: absolute; top: 4px; left: 4px; width: 16px; height: 16px; border-radius: 50%;
+    background: var(--shade);
+    transition: transform var(--t-xfade) var(--ease-settle);
+  }
+  @media (hover: hover) { .switch:hover .track { box-shadow: inset 0 0 0 1.5px var(--fir); } }
+  .switch:has(:checked) .track { background: var(--fir); box-shadow: inset 0 0 0 1.5px var(--fir); }
+  .switch:has(:checked) .knob { transform: translateX(20px); background: var(--card); }
+  .switch:has(:focus-visible) .track { outline: var(--focus); outline-offset: 3px; }
+
+  .board {
+    position: relative;
+    aspect-ratio: 10 / 9;
+    touch-action: pan-y; user-select: none; -webkit-user-select: none;
+    cursor: grab;
+  }
+  .board.is-drag { cursor: grabbing; }
+  @media (min-width: 600px) { .board { aspect-ratio: 16 / 10; } }
+  .board-fill { position: absolute; inset: 0; background: var(--card); transform-origin: 50% 0; }
+  .board svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: visible; }
+  .grid { stroke: var(--hair); stroke-width: 1; }
+  .axis { stroke: var(--shade); stroke-width: 1; }
+  .mtick { stroke: var(--shade); stroke-width: 1; }
+  .t-x, .t-y { fill: var(--shade); font: 500 var(--fs-xs) var(--font-text); }
+  .l-day, .l-week, .l-flat, .l-cable { fill: none; stroke-linejoin: round; }
+  .l-day { stroke: var(--shade); stroke-width: 1.5; stroke-dasharray: 5 4; }
+  .l-week { stroke: var(--fir); stroke-width: 1.5; }
+  .l-flat { stroke: var(--gentian); stroke-width: 2.5; }
+  .l-cable { stroke: var(--pole); stroke-width: 3; }
+  .tw { stroke: var(--pole); stroke-width: 2; }
+  .stn { fill: var(--fir); }
+  .be { fill: var(--gentian); stroke: var(--card); stroke-width: 2; }
+  .guide { stroke: var(--fir); stroke-width: 1; stroke-dasharray: 2 3; }
+  .hanger, .bail { fill: none; stroke: var(--fir); stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+  .seat { fill: var(--pole); stroke: var(--fir); stroke-width: 1; }
+  .grip { fill: var(--fir); }
+  .ghost { stroke: var(--shade); stroke-width: 1; opacity: 0; }
+  .be-label, .ghost-tag {
+    position: absolute; left: 0; top: 0; margin: 0; pointer-events: none;
+    font: 600 var(--fs-sm)/1.25 var(--font-text);
+  }
+  .free { fill: var(--gentian); font: 600 var(--fs-xs) var(--font-text); }
+  .board:not(.wide) .free, .board.wide .free-tag { display: none; }
+  .free-tag {
+    position: absolute; left: 0; top: 0; margin: 0; pointer-events: none; padding: 0 4px;
+    background: var(--card); color: var(--gentian); font: 600 var(--fs-xs)/1.4 var(--font-text); white-space: nowrap;
+    clip-path: inset(0 100% 0 0);
+  }
+  .be-label {
+    max-width: 12.5em; padding: 2px 6px 3px 8px; text-wrap: balance;
+    background: var(--card); color: var(--gentian);
+    border-left: 2px solid var(--gentian);
+    clip-path: inset(0 100% 0 0);
+  }
+  .board.wide .be-label { max-width: none; white-space: nowrap; }
+  .ghost-tag {
+    padding: 2px 6px; border-radius: var(--r-btn);
+    background: var(--fir); color: var(--card); white-space: nowrap;
+    opacity: 0; visibility: hidden;
+  }
+
+  /* the range input is the real control; the chair follows it */
+  .days {
+    position: absolute; left: 0; width: 100%; height: 32px; margin: 0;
+    -webkit-appearance: none; appearance: none; background: none; cursor: pointer;
+    --fill: 42%;
+  }
+  .days:focus-visible { outline-offset: 2px; }
+  .days::-webkit-slider-runnable-track {
+    height: 4px; border-radius: 2px;
+    background: linear-gradient(var(--fir), var(--fir)) 0 0 / var(--fill) 100% no-repeat, var(--hair);
+  }
+  .days::-moz-range-track { height: 4px; border-radius: 2px; background: var(--hair); }
+  .days::-moz-range-progress { height: 4px; border-radius: 2px; background: var(--fir); }
+  .days::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 18px; height: 28px; margin-top: -12px; border: 0; border-radius: var(--r-btn);
+    background: linear-gradient(90deg, transparent 6px, var(--card) 6px 7px, transparent 7px 11px, var(--card) 11px 12px, transparent 12px) var(--fir);
+    transition: transform var(--t-release) var(--ease-follow);
+  }
+  .days::-moz-range-thumb {
+    width: 18px; height: 28px; border: 0; border-radius: var(--r-btn);
+    background: linear-gradient(90deg, transparent 6px, var(--card) 6px 7px, transparent 7px 11px, var(--card) 11px 12px, transparent 12px) var(--fir);
+  }
+  @media (hover: hover) { .days:hover::-webkit-slider-thumb { background-color: var(--fir-dark); transform: scaleY(1.08); } }
+  .days:active::-webkit-slider-thumb { transform: scale(.94); transition-duration: var(--t-press); }
+
+  .legend {
+    list-style: none; padding: 0; margin-top: var(--sp-3);
+    display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-5);
+    font-size: var(--fs-sm); color: var(--shade);
+  }
+  .legend li { display: inline-flex; align-items: center; gap: var(--sp-2); }
+  .legend svg { width: 28px; height: 10px; flex: none; }
+
+  .answer { display: grid; align-content: start; gap: var(--sp-5); }
+  .ro-n { display: block; font: 400 var(--fs-xl)/1.15 var(--font-display); margin-bottom: var(--sp-2); }
+  .why { position: relative; display: grid; gap: var(--sp-5); padding-top: var(--sp-4); }
+  .why::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--fir); }
+  html.live .why > article { grid-area: 1 / 1; }
+  .why h4 {
+    display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-3);
+    font: 400 var(--fs-lg)/1.3 var(--font-display);
+  }
+  .why h4 span { font: 600 var(--fs-md) var(--font-text); white-space: nowrap; }
+  .why p { margin-top: var(--sp-2); }
+
+  .daytable { margin-top: var(--sp-5); }
+  .daytable table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+  .daytable caption { text-align: left; font-weight: 600; padding-bottom: var(--sp-2); }
+  .daytable th, .daytable td { text-align: left; padding: var(--sp-1) var(--sp-3) var(--sp-1) 0; border-bottom: 1px solid var(--hair); vertical-align: top; }
+  html.live .daytable {
+    position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+  }
+  html:not(.live) .board, html:not(.live) .legend, html:not(.live) .readout, html:not(.live) .switch, html:not(.live) #buy-form { display: none; }
+  html.live .nojs { display: none; }
+  .nojs { margin-top: var(--sp-4); max-width: 52ch; }
+
+  /* buttons: MI1 press and release */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-height: 48px; padding: var(--sp-3) var(--sp-5);
+    border: 0; border-radius: var(--r-btn);
+    background: var(--fir); color: var(--card);
+    font: 600 var(--fs-md)/1.2 var(--font-text); text-align: center; text-decoration: none;
+    cursor: pointer; position: relative; isolation: isolate;
+    transition: transform var(--t-release) var(--ease-follow);
+  }
+  /* hover darkens through an opacity layer, so only opacity and transform animate */
+  .btn::before {
+    content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
+    background: var(--fir-dark); opacity: 0; transition: opacity var(--t-hover) linear;
+  }
+  @media (hover: hover) { .btn:hover::before { opacity: 1; } }
+  .btn:active { transform: scale(.97); transition-duration: var(--t-press); }
+  .btn-quiet { background: transparent; color: var(--fir); box-shadow: inset 0 0 0 2px var(--fir); }
+  .btn-quiet::before { background: var(--tint); }
+  .answer .btn { justify-self: start; }
+
+  /* MI2 masked label swap */
+  .swap { display: inline-grid; overflow: clip; vertical-align: bottom; }
+  .swap > span { grid-area: 1 / 1; }
+
+  /* buy form */
+  .buy { padding-top: var(--sp-9); }
+  .buy-grid { margin-top: var(--sp-6); row-gap: var(--sp-6); }
+  @media (min-width: 992px) {
+    .fields { grid-column: 1 / 8; }
+    .checkout { grid-column: 9 / -1; position: sticky; top: var(--sp-5); align-self: start; }
+  }
+  .fs { position: relative; border: 0; padding: var(--sp-5) 0 var(--sp-6); margin: 0; min-width: 0; }
+  .fs legend, .lbl { float: left; width: 100%; padding: 0; margin-bottom: var(--sp-3); font-size: var(--fs-sm); font-weight: 600; }
+  .fs legend + * { clear: both; }
+  .lbl { float: none; margin-bottom: 0; }
+
+  .cards { display: grid; gap: var(--sp-3); }
+  @media (min-width: 600px) { .cards { grid-template-columns: 1fr 1fr; } }
+  .card {
+    position: relative; display: grid; grid-template-columns: 1fr auto; gap: var(--sp-1) var(--sp-3);
+    padding: var(--sp-4); border-radius: var(--r-pass);
+    box-shadow: inset 0 0 0 1px var(--hair);
+    cursor: pointer; isolation: isolate;
+  }
+  /* the card ground and the 2px Fir border are opacity layers */
+  .card::before, .card::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; }
+  .card::before { z-index: -1; background: var(--card); transition: opacity var(--t-hover) linear; }
+  .card::after { box-shadow: inset 0 0 0 2px var(--fir); transition: opacity var(--t-fast) linear; }
+  .card input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+  .card-name { font: 400 var(--fs-lg)/1.3 var(--font-display); }
+  .card-price { font-weight: 600; justify-self: end; }
+  .card-note { font-size: var(--fs-sm); color: var(--shade); line-height: 1.35; }
+  .card-state {
+    display: flex; align-items: center; gap: var(--sp-2); align-self: end;
+    font-size: var(--fs-sm); font-weight: 600; visibility: hidden;
+  }
+  .badge { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--pole); }
+  .badge svg { width: 12px; height: 12px; fill: none; stroke: var(--fir); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+  @media (hover: hover) { .card:hover::after { opacity: 1; } }
+  .card:has(:checked)::before, .card:has(:checked)::after { opacity: 1; }
+  .card:has(:checked) .card-state { visibility: visible; }
+  .card:has(:focus-visible) { outline: var(--focus); outline-offset: 3px; }
+
+  /* cells that swap one block for another in place (CD9) */
+  .xcell { display: grid; }
+  .xcell > * {
+    grid-area: 1 / 1;
+    transition: opacity var(--t-form-xfade) var(--ease-xfade), visibility 0s;
+  }
+  .xcell > .off { opacity: 0; visibility: hidden; transition: opacity var(--t-form-xfade) var(--ease-xfade), visibility 0s var(--t-form-xfade); }
+
+  /* NV4 segmented ages: a Fir layer of inverted labels, clipped to the checked segment */
+  .seg {
+    position: relative; display: grid; grid-template-columns: repeat(3, 1fr);
+    border-radius: var(--r-btn); box-shadow: inset 0 0 0 1px var(--fir); background: var(--card);
+    --i: 0;
+  }
+  .seg:has([value="youth"]:checked) { --i: 1; }
+  .seg:has([value="child"]:checked) { --i: 2; }
+  .seg label, .seg-ink > span {
+    position: relative; display: grid; justify-items: center; align-content: center;
+    min-height: 56px; padding: var(--sp-2) var(--sp-1); text-align: center; line-height: 1.25;
+  }
+  .seg label { color: var(--shade); cursor: pointer; }
+  .seg b, .seg-ink b { font-weight: 600; color: var(--fir); }
+  .seg small, .seg-ink small { font-size: var(--fs-xs); }
+  .seg input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+  @media (hover: hover) { .seg label:hover { color: var(--fir); } }
+  .seg label:has(:focus-visible) { outline: var(--focus); outline-offset: 2px; border-radius: var(--r-btn); }
+  .seg-ink {
+    position: absolute; inset: 0; display: grid; grid-template-columns: repeat(3, 1fr);
+    border-radius: var(--r-btn); background: var(--fir); color: var(--card); pointer-events: none;
+    clip-path: inset(0 calc((2 - var(--i)) * 100% / 3) 0 calc(var(--i) * 100% / 3) round var(--r-btn));
+    transition: clip-path var(--t-seg) var(--ease-settle);
+  }
+  .seg-ink b { color: var(--card); }
+  .hint { font-size: var(--fs-sm); color: var(--shade); margin-top: var(--sp-2); max-width: 52ch; }
+  .fam-note { align-self: start; padding: var(--sp-3) var(--sp-4); border-left: 2px solid var(--fir); background: var(--card); }
+
+  .field { display: grid; }
+  .field .hint { margin-top: 2px; margin-bottom: var(--sp-2); }
+  .ctl { position: relative; max-width: 20rem; }
+  .ctl input {
+    width: 100%; min-height: 48px; padding: var(--sp-2) var(--sp-3);
+    border: 1px solid var(--shade); border-radius: var(--r-btn);
+    background: var(--card); color: var(--fir);
+    font: 400 var(--fs-md) var(--font-text); font-variant-numeric: tabular-nums;
+  }
+  @media (hover: hover) { .ctl input:hover { border-color: var(--fir); } }
+  .ctl input:focus-visible { outline: none; border-color: var(--fir); }
+  .ctl input[aria-invalid="true"] { border: 2px solid var(--pole); }
+  /* MI4: a pole-orange rule grows under the focused field */
+  .grow {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 3px; pointer-events: none;
+    background: var(--pole); border-radius: 0 0 var(--r-btn) var(--r-btn);
+    transform: scaleX(0); transform-origin: left center;
+    transition: transform var(--t-grow) var(--ease-settle);
+  }
+  .ctl:focus-within .grow { transform: scaleX(1); }
+  .err {
+    min-height: 1.45em; margin-top: var(--sp-2); font-size: var(--fs-sm); font-weight: 600; line-height: 1.4;
+    clip-path: inset(0 0 100% 0);
+    transition: clip-path var(--t-clip) var(--ease-settle);
+  }
+  .err.on { clip-path: inset(0 0 0 0); }
+  .err.on::before {
+    content: ""; display: inline-block; width: 8px; height: 8px; margin-right: var(--sp-2);
+    background: var(--pole); transform: rotate(45deg) translateY(-1px);
+  }
+  .season-note { align-self: start; }
+
+  .check {
+    position: relative; display: flex; align-items: center; gap: var(--sp-3);
+    min-height: 44px; font-weight: 500; cursor: pointer;
+  }
+  .check input { position: absolute; left: 0; top: 50%; width: 24px; height: 24px; margin: -12px 0 0; opacity: 0; cursor: pointer; }
+  .box {
+    flex: none; display: grid; place-items: center; width: 24px; height: 24px;
+    border: 1.5px solid var(--shade); border-radius: var(--r-btn); background: var(--card);
+  }
+  .box svg {
+    width: 16px; height: 16px; fill: none; stroke: var(--card); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round;
+    clip-path: inset(0 100% 0 0); transition: clip-path var(--t-clip) var(--ease-settle);
+  }
+  @media (hover: hover) { .check:hover .box { border-color: var(--fir); } }
+  .check:has(:checked) .box { background: var(--fir); border-color: var(--fir); }
+  .check:has(:checked) .box svg { clip-path: inset(0 0 0 0); }
+  .check:has(:focus-visible) .box { outline: var(--focus); outline-offset: 3px; }
+  .kc-field { margin-top: var(--sp-4); }
+  .kc-field:not([hidden]) { animation: clip-in var(--t-clip-in) var(--ease-settle); }
+  @keyframes clip-in { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
+
+  /* KeyCard: ISO/IEC 7810 ID-1, the only raised object */
+  .keycard {
+    position: relative; display: grid; grid-template-rows: auto 1fr auto;
+    aspect-ratio: 85.6 / 54; max-width: 25rem;
+    padding: 6% 7% 5%;
+    border-radius: 3.7% / 5.87%;
+    background: var(--card);
+    box-shadow: var(--shadow-card);
+  }
+  .kc-top { display: flex; justify-content: space-between; align-items: baseline; }
+  .kc-brand { font: 400 var(--fs-sm) var(--font-display); }
+  .kc-kind, .kc-no { font-size: var(--fs-xs); font-weight: 500; color: var(--shade); }
+  .kc-body { align-self: center; display: grid; }
+  .kc-pass { font: 400 var(--fs-lg)/1.3 var(--font-display); }
+  .kc-who, .kc-dates { font-size: var(--fs-sm); line-height: 1.35; }
+  .kc-dates { font-weight: 600; }
+  .sum { margin-top: var(--sp-5); max-width: 25rem; }
+  .sum div { display: flex; justify-content: space-between; gap: var(--sp-3); padding-block: var(--sp-2); border-bottom: 1px solid var(--hair); }
+  .sum dt { color: var(--shade); }
+  .sum dd { font-weight: 600; text-align: right; }
+  .sum .total { align-items: baseline; }
+  .sum .total dt { color: var(--fir); font-weight: 600; }
+  .sum .total dd { font-size: var(--fs-price); line-height: 1.1; }
+  .pay { width: 100%; max-width: 25rem; margin-top: var(--sp-5); }
+
+  /* includes and fine print */
+  .after { padding-top: var(--sp-8); row-gap: var(--sp-6); }
+  @media (min-width: 992px) {
+    .incl { grid-column: 1 / 8; }
+    .fine { grid-column: 1 / 8; }
+  }
+  .incl h3 { font-size: var(--fs-lg); }
+  .incl ul { list-style: none; padding: 0; margin-top: var(--sp-4); }
+  .incl li { padding: var(--sp-3) 0; max-width: 62ch; border-top: 1px solid var(--hair); }
+  .incl li:last-child { border-bottom: 1px solid var(--hair); }
+  .fine { font-size: var(--fs-sm); color: var(--shade); max-width: 46ch; }
+  .fine a { color: var(--fir); font-weight: 600; }
+
+  /* CD7 confirmation dialog */
+  .done {
+    width: min(34rem, calc(100% - 2 * var(--gutter))); max-width: none; margin: auto;
+    padding: 0; border: 0; background: transparent; color: var(--fir); overflow: visible;
+  }
+  .done::backdrop { background: var(--scrim); transition: opacity var(--t-backdrop) linear; }
+  @starting-style { .done[open]::backdrop { opacity: 0; } }
+  .done.out::backdrop { opacity: 0; }
+  .dlg { padding: var(--sp-6); border-radius: var(--r-pass); background: var(--card); box-shadow: 0 0 0 1px var(--fir); }
+  .dlg h2 { font: 400 var(--fs-xl)/1.18 var(--font-display); }
+  .dlg p { margin-top: var(--sp-3); }
+  .dlg-actions { display: flex; flex-wrap: wrap; gap: var(--sp-3); margin-block: var(--sp-5) var(--sp-4); }
+  @media (max-width: 599px) {
+    .done { width: 100%; margin: auto 0 0; }
+    .dlg { border-radius: var(--r-pass) var(--r-pass) 0 0; padding-bottom: calc(var(--sp-6) + env(safe-area-inset-bottom)); }
+    .dlg-actions .btn { flex: 1 1 100%; }
+  }
+
+  /* hidden starting states: only when the libraries loaded and motion is allowed */
+  @media (prefers-reduced-motion: no-preference) {
+    html.js [data-load] { visibility: hidden; }
+    html.js .ln > span { transform: translateY(110%); }
+    html.js .rule-load { transform: scaleX(0); }
+    html.js .stubs { clip-path: inset(0 100% 0 0); }
+    html.js .board-fill { transform: scaleY(0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after, ::backdrop { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+    .btn:active, .days:active::-webkit-slider-thumb { transform: none; }
+    .done[open] .dlg { transition: opacity .2s linear !important; }
+    @starting-style { .done[open] .dlg { opacity: 0; } }
+  }
+</style>
+</head>
+<body>
+<section class="ferntal" id="top" aria-labelledby="title">
+  <nav class="bar" aria-label="Lift passes">
+    <a class="brand ul" href="#top" data-load>Ferntal</a>
+    <ul>
+      <li><a class="ul" href="#passes" data-load>Passes</a></li>
+      <li><a class="ul" href="#compare" data-load>Which pass pays</a></li>
+      <li><a class="ul" href="#buy" data-load>Buy a pass</a></li>
+    </ul>
+  </nav>
+
+  <header class="intro">
+    <h2 class="title" id="title" tabindex="-1"><span class="ln"><span>Which Ferntal pass</span></span> <span class="ln"><span>pays for itself</span></span></h2>
+    <p class="lede">Every pass opens all seven lifts, from the Talbahn gondola to the Kar T-bar, for 41&nbsp;km of piste between 1,050 and 2,080&nbsp;m. Pick by how many days you’ll ski.</p>
+  </header>
+
+  <div class="stubs-wrap">
+    <span class="rule rule-load" aria-hidden="true"></span>
+    <ul class="stubs" id="passes" tabindex="-1" aria-label="Adult prices, 2026/27 season">
+      <li><a class="stub" href="#pass-day" data-pass="day"><span class="stub-in"><span class="stub-name"><span class="ul">Day pass</span></span><span class="stub-price">EUR&nbsp;62</span><span class="stub-note">One day, 8:30 to 16:30</span></span></a></li>
+      <li><a class="stub" href="#pass-week" data-pass="week"><span class="stub-in"><span class="stub-name"><span class="ul">Week pass</span></span><span class="stub-price">EUR&nbsp;318</span><span class="stub-note">Six days in a row</span></span></a></li>
+      <li><a class="stub" href="#pass-season" data-pass="season"><span class="stub-in"><span class="stub-name"><span class="ul">Season pass</span></span><span class="stub-price">EUR&nbsp;689</span><span class="stub-note">5 December to 6 April</span></span></a></li>
+      <li><a class="stub" href="#pass-family" data-pass="family"><span class="stub-in"><span class="stub-name"><span class="ul">Family pass</span></span><span class="stub-price">EUR&nbsp;1,590</span><span class="stub-note">The season for 2 adults and up to 3 children</span></span></a></li>
+    </ul>
+    <p class="stubs-foot">Adult prices. Youth 16 to 19 and children 6 to 15 pay less; children under 6 ski free.</p>
+  </div>
+
+  <section class="compare" id="compare" aria-labelledby="q">
+    <div class="compare-head">
+      <h3 id="q" tabindex="-1">How many days will you ski?</h3>
+      <label class="switch"><input type="checkbox" id="fam" role="switch" aria-describedby="note"><span class="track" aria-hidden="true"><span class="knob"></span></span>Family of four</label>
+    </div>
+    <p class="note" id="note">Each tick on the cable is one day skied; the cable is the cheapest way to pay for them.</p>
+
+    <div class="cmp grid12">
+      <div class="board-col">
+        <div class="board" id="board">
+          <span class="board-fill" aria-hidden="true"></span>
+          <svg id="chart" role="img" aria-label="Lift-line chart of the cheapest cost of skiing 1 to 20 days at Ferntal. The same figures are in the table that follows."></svg>
+          <p class="be-label" id="be-label" aria-hidden="true">Day 13: the season pass is cheaper</p>
+          <p class="free-tag swap" id="free-tag" aria-hidden="true"></p>
+          <p class="ghost-tag" id="ghost-tag" aria-hidden="true"></p>
+          <input class="days" type="range" id="days" min="1" max="20" step="1" value="14" aria-labelledby="q">
+        </div>
+        <ul class="legend" aria-hidden="true">
+          <li><svg viewBox="0 0 28 10"><path class="l-cable" d="M1 7 27 3"/><path class="tw" d="M9 2.5 10 8.5M18 1 19 7"/></svg>Cheapest way to pay</li>
+          <li><svg viewBox="0 0 28 10"><path class="l-day" d="M1 5h26"/></svg>Day passes only</li>
+          <li><svg viewBox="0 0 28 10"><path class="l-week" d="M1 5h26"/></svg>Whole weeks only</li>
+          <li><svg viewBox="0 0 28 10"><path class="l-flat" d="M1 5h26"/></svg><span class="swap" id="lg-flat"><span>Season pass</span></span></li>
+        </ul>
+        <div class="daytable"><table id="daytable">
+          <caption>Cheapest way to pay for 1 to 20 days at Ferntal, 2026/27</caption>
+          <thead><tr><th scope="col">Days</th><th scope="col">One adult</th><th scope="col">Two adults and two children</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">1</th><td>a day pass, EUR&nbsp;62</td><td>a day pass each, EUR&nbsp;186</td></tr>
+            <tr><th scope="row">2</th><td>2 day passes, EUR&nbsp;124</td><td>2 day passes each, EUR&nbsp;372</td></tr>
+            <tr><th scope="row">3</th><td>3 day passes, EUR&nbsp;186</td><td>3 day passes each, EUR&nbsp;558</td></tr>
+            <tr><th scope="row">4</th><td>4 day passes, EUR&nbsp;248</td><td>4 day passes each, EUR&nbsp;744</td></tr>
+            <tr><th scope="row">5</th><td>5 day passes, EUR&nbsp;310</td><td>5 day passes each, EUR&nbsp;930</td></tr>
+            <tr><th scope="row">6</th><td>one week pass, EUR&nbsp;318</td><td>one week pass each, EUR&nbsp;954</td></tr>
+            <tr><th scope="row">7</th><td>one week pass and 1 day pass, EUR&nbsp;380</td><td>one week pass and 1 day pass each, EUR&nbsp;1,140</td></tr>
+            <tr><th scope="row">8</th><td>one week pass and 2 day passes, EUR&nbsp;442</td><td>one week pass and 2 day passes each, EUR&nbsp;1,326</td></tr>
+            <tr><th scope="row">9</th><td>one week pass and 3 day passes, EUR&nbsp;504</td><td>one week pass and 3 day passes each, EUR&nbsp;1,512</td></tr>
+            <tr><th scope="row">10</th><td>one week pass and 4 day passes, EUR&nbsp;566</td><td>the family pass, EUR&nbsp;1,590</td></tr>
+            <tr><th scope="row">11</th><td>one week pass and 5 day passes, EUR&nbsp;628</td><td>the family pass, EUR&nbsp;1,590</td></tr>
+            <tr><th scope="row">12</th><td>two week passes, EUR&nbsp;636</td><td>the family pass, EUR&nbsp;1,590</td></tr>
+            <tr><th scope="row">13</th><td>the season pass, EUR&nbsp;689</td><td>the family pass, EUR&nbsp;1,590</td></tr>
+            <tr><th scope="row">14</th><td>the season pass, EUR&nbsp;689</td><td>the family pass, EUR&nbsp;1,590</td></tr>
+            <tr><th scope="row">15</th><td>the season pass, EUR&nbsp;689</td><td>the family pass, EUR&nbsp;1,590</td></tr>
+            <tr><th scope="row">16</th><td>the season pass, EUR&nbsp;689</td><td>the family pass, EUR&nbsp;1,590</td></tr>
+            <tr><th scope="row">17</th><td>the season pass, EUR&nbsp;689</td><td>the family pass, EUR&nbsp;1,590</td></tr>
+            <tr><th scope="row">18</th><td>the season pass, EUR&nbsp;689</td><td>the family pass, EUR&nbsp;1,590</td></tr>
+            <tr><th scope="row">19</th><td>the season pass, EUR&nbsp;689</td><td>the family pass, EUR&nbsp;1,590</td></tr>
+            <tr><th scope="row">20</th><td>the season pass, EUR&nbsp;689</td><td>the family pass, EUR&nbsp;1,590</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+
+      <div class="answer">
+        <p class="readout"><strong class="ro-n" id="ro-n">14 days.</strong> <span id="ro-t">Cheapest: the season pass, EUR&nbsp;689. Day passes alone would cost EUR&nbsp;868.</span></p>
+        <div class="why" id="why">
+          <article><h4>Day pass <span>EUR&nbsp;62</span></h4><p>1 to 5 days: buy by the day. Five day passes cost EUR&nbsp;310, still less than a week.</p></article>
+          <article><h4>Week pass <span>EUR&nbsp;318</span></h4><p>6 to 12 days: a week pass at EUR&nbsp;53 a day, plus day passes for the rest. Two weeks come to EUR&nbsp;636.</p></article>
+          <article><h4>Season pass <span>EUR&nbsp;689</span></h4><p>13 days or more: the season pass is cheaper, even if your days come as two full weeks. Every day after that costs nothing.</p></article>
+          <article><h4>Family pass <span>EUR&nbsp;1,590</span></h4><p>Two adults and two children pay EUR&nbsp;1,512 for 9 days with week and day passes. From the 10th day the family pass, EUR&nbsp;1,590, is cheaper, and a third child skis on it free.</p></article>
+        </div>
+        <a class="btn" id="load" href="#buy" data-pass="rec"><span class="swap" id="load-label"><span>Load the season pass onto a KeyCard</span></span></a>
+      </div>
+    </div>
+    <p class="sr-only" id="live" aria-live="polite"></p>
+  </section>
+
+  <section class="buy" id="buy" aria-labelledby="buy-title">
+    <h3 id="buy-title" tabindex="-1">Load a pass onto your KeyCard</h3>
+    <form class="buy-grid grid12" id="buy-form" novalidate aria-labelledby="buy-title">
+      <div class="fields">
+        <fieldset class="fs">
+          <span class="rule" aria-hidden="true"></span>
+          <legend>Pass</legend>
+          <div class="cards">
+            <label class="card" id="pass-day"><input type="radio" name="pass" value="day"><span class="card-name">Day pass</span><span class="card-price swap" data-price="day"><span>EUR&nbsp;62</span></span><span class="card-note">One day, 8:30 to 16:30</span><span class="card-state" aria-hidden="true"><span class="badge"><svg viewBox="0 0 12 12"><path d="M2.5 6.3 5 8.6l4.6-5"/></svg></span>Selected</span></label>
+            <label class="card" id="pass-week"><input type="radio" name="pass" value="week" checked><span class="card-name">Week pass</span><span class="card-price swap" data-price="week"><span>EUR&nbsp;318</span></span><span class="card-note">Six days in a row</span><span class="card-state" aria-hidden="true"><span class="badge"><svg viewBox="0 0 12 12"><path d="M2.5 6.3 5 8.6l4.6-5"/></svg></span>Selected</span></label>
+            <label class="card" id="pass-season"><input type="radio" name="pass" value="season"><span class="card-name">Season pass</span><span class="card-price swap" data-price="season"><span>EUR&nbsp;689</span></span><span class="card-note">5 December to 6 April</span><span class="card-state" aria-hidden="true"><span class="badge"><svg viewBox="0 0 12 12"><path d="M2.5 6.3 5 8.6l4.6-5"/></svg></span>Selected</span></label>
+            <label class="card" id="pass-family"><input type="radio" name="pass" value="family"><span class="card-name">Family pass</span><span class="card-price"><span>EUR&nbsp;1,590</span></span><span class="card-note">The season for 2 adults and up to 3 children</span><span class="card-state" aria-hidden="true"><span class="badge"><svg viewBox="0 0 12 12"><path d="M2.5 6.3 5 8.6l4.6-5"/></svg></span>Selected</span></label>
+          </div>
+        </fieldset>
+
+        <fieldset class="fs" id="who-fs">
+          <span class="rule" aria-hidden="true"></span>
+          <legend>Who is skiing</legend>
+          <div class="xcell" id="who-cell">
+            <div>
+              <div class="seg">
+                <label><input type="radio" name="age" value="adult" checked><b>Adult</b><small>20 to 64</small></label>
+                <label><input type="radio" name="age" value="youth"><b>Youth</b><small>16 to 19</small></label>
+                <label><input type="radio" name="age" value="child"><b>Child</b><small>6 to 15</small></label>
+                <div class="seg-ink" aria-hidden="true"><span><b>Adult</b><small>20 to 64</small></span><span><b>Youth</b><small>16 to 19</small></span><span><b>Child</b><small>6 to 15</small></span></div>
+              </div>
+              <p class="hint">Children under 6 ski free. Ask for a free KeyCard at the ticket office.</p>
+            </div>
+            <p class="fam-note off">Covers 2 adults and up to 3 children aged 6 to 15 at the same address.</p>
+          </div>
+        </fieldset>
+
+        <div class="fs">
+          <span class="rule" aria-hidden="true"></span>
+          <div class="xcell" id="date-cell">
+            <div class="field">
+              <label class="lbl" for="first">First day</label>
+              <p class="hint" id="first-hint">Week passes run six days in a row from this date.</p>
+              <div class="ctl"><input type="date" id="first" name="first" value="2026-12-19" min="2026-12-05" max="2027-04-01" aria-describedby="first-hint first-err"><span class="grow" aria-hidden="true"></span></div>
+              <p class="err" id="first-err"></p>
+            </div>
+            <p class="season-note off"><span class="lbl">Valid</span><br>Every day from 5 December 2026 to 6 April 2027.</p>
+          </div>
+        </div>
+
+        <fieldset class="fs">
+          <span class="rule" aria-hidden="true"></span>
+          <legend>KeyCard</legend>
+          <label class="check"><input type="checkbox" id="have" name="have"><span class="box" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M3 8.4 6.5 11.6 13 4.6"/></svg></span>I already have a Ferntal KeyCard</label>
+          <p class="hint" id="deposit-hint">New KeyCards carry a EUR&nbsp;5 deposit, refunded at any pass machine.</p>
+          <div class="field kc-field" id="kc-field" hidden>
+            <label class="lbl" for="kc">KeyCard number</label>
+            <p class="hint" id="kc-hint">Enter the 12 digits printed under the barcode on your KeyCard.</p>
+            <div class="ctl"><input id="kc" name="kc" inputmode="numeric" autocomplete="off" maxlength="16" aria-describedby="kc-hint kc-err" disabled><span class="grow" aria-hidden="true"></span></div>
+            <p class="err" id="kc-err"></p>
+          </div>
+        </fieldset>
+      </div>
+
+      <aside class="checkout" aria-label="Your pass">
+        <figure class="keycard" aria-label="KeyCard preview">
+          <div class="kc-top"><span class="kc-brand">Ferntal</span><span class="kc-kind">KeyCard 2026/27</span></div>
+          <div class="kc-body">
+            <span class="kc-pass swap" id="kc-pass"><span>Week pass</span></span>
+            <span class="kc-who swap" id="kc-who"><span>Adult, 20 to 64</span></span>
+            <span class="kc-dates swap" id="kc-dates"><span>19–24 Dec 2026</span></span>
+          </div>
+          <span class="kc-no swap" id="kc-no"><span>New KeyCard</span></span>
+        </figure>
+        <dl class="sum">
+          <div><dt>Pass</dt><dd class="swap" id="sum-pass"><span>EUR&nbsp;318</span></dd></div>
+          <div><dt>KeyCard deposit</dt><dd class="swap" id="sum-dep"><span>EUR&nbsp;5</span></dd></div>
+          <div class="total"><dt>Total</dt><dd class="swap" id="sum-tot"><span>EUR&nbsp;323</span></dd></div>
+        </dl>
+        <button class="btn pay" type="submit" id="pay"><span class="swap" id="pay-label"><span>Pay EUR&nbsp;323 and load pass</span></span></button>
+      </aside>
+    </form>
+    <p class="nojs">Passes are loaded onto KeyCards at any pass machine and at the ticket office in the Talbahn valley station.</p>
+
+    <div class="after grid12">
+      <section class="incl" aria-labelledby="incl-title">
+        <h3 id="incl-title">Every pass includes</h3>
+        <ul>
+          <li>All seven lifts and the Ferntal ski bus</li>
+          <li>Floodlit skiing on Ferntal piste 4, Tuesdays and Fridays 18:30 to 21:30 (week, season and family passes)</li>
+          <li>A lost KeyCard replaced at the ticket office with ID, EUR&nbsp;10</li>
+          <li>If all lifts close before 11:00 for weather, your day pass is refunded the same day</li>
+        </ul>
+      </section>
+      <p class="fine">Prices in euros for the 2026/27 season, 5 December 2026 to 6 April 2027. Youth and child passes need ID at the gate. Ticket office, 8:00 to 17:00: <a class="ul" href="mailto:kassa@ferntal.example" target="_blank" rel="noopener">kassa@ferntal.example</a></p>
+    </div>
+  </section>
+</section>
+
+<dialog class="done" id="done" aria-labelledby="done-title">
+  <div class="dlg">
+    <h2 id="done-title">Week pass loaded</h2>
+    <p id="done-body">Your pass is on a new KeyCard.</p>
+    <div class="dlg-actions">
+      <button class="btn" type="button" id="back">Back to passes</button>
+      <button class="btn btn-quiet" type="button" id="again">Buy another pass</button>
+    </div>
+    <a class="ul" id="mail" href="mailto:kassa@ferntal.example" target="_blank" rel="noopener">Email the ticket office</a>
+  </div>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  const root = document.documentElement;
+  root.classList.add('live');
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const css = getComputedStyle(root);
+  const T = n => parseFloat(css.getPropertyValue('--t-' + n));
+  const E = n => css.getPropertyValue('--gs-' + n).trim();
+
+  /* ---------- prices and the cheapest-path arithmetic ---------- */
+  const PRICES = {                      // EUR, 2026/27. Youth is about 75% of adult, child half.
+    day:    { adult: 62,  youth: 47,  child: 31 },
+    week:   { adult: 318, youth: 239, child: 159 },   // six days in a row
+    season: { adult: 689, youth: 517, child: 345 },
+    family: 1590,                       // season for 2 adults and up to 3 children aged 6 to 15
+    deposit: 5,
+    weekLength: 6
+  };
+  const SEASON = { from: '2026-12-05', to: '2027-04-06', lastWeekStart: '2027-04-01' };
+
+  // Cheapest way for one person to pay for n days: any mix of week and day passes, or the season pass.
+  function single(n, age) {
+    let best = { cost: PRICES.season[age], season: true, weeks: 0, days: 0 };
+    for (let w = 0; w <= Math.ceil(n / PRICES.weekLength); w++) {
+      const days = Math.max(0, n - w * PRICES.weekLength), cost = w * PRICES.week[age] + days * PRICES.day[age];
+      if (cost < best.cost) best = { cost, season: false, weeks: w, days };
+    }
+    return best;
+  }
+  // Two adults and two children 6 to 15: each person's cheapest mix, or the family pass.
+  function family(n) {
+    const a = single(n, 'adult'), c = single(n, 'child'), split = 2 * a.cost + 2 * c.cost;
+    return PRICES.family < split ? { cost: PRICES.family, season: true } : { cost: split, season: false, weeks: a.weeks, days: a.days, same: a.weeks === c.weeks && a.days === c.days && !c.season };
+  }
+  const breakEven = fn => { for (let n = 1; n <= 20; n++) if (fn(n).season) return n; };
+  const kids = PRICES.day.child * 2, grown = PRICES.day.adult * 2;
+  const MODELS = {
+    adult: { per: n => single(n, 'adult'), day: PRICES.day.adult, week: PRICES.week.adult, flat: PRICES.season.adult,
+             yMax: 1300, grid: [250, 500, 750, 1000, 1250], name: 'season' },   // gridlines sit at the same heights in both
+    family: { per: family, day: grown + kids, week: 2 * PRICES.week.adult + 2 * PRICES.week.child, flat: PRICES.family,
+              yMax: 2600, grid: [500, 1000, 1500, 2000, 2500], name: 'family' }
+  };
+  MODELS.adult.be = breakEven(MODELS.adult.per);
+  MODELS.family.be = breakEven(family);
+  // The copy states these numbers; if prices change, change the copy to match the asserts.
+  console.assert(MODELS.adult.be === 13, 'adult season break-even should be day 13, got', MODELS.adult.be);
+  console.assert(MODELS.family.be === 10, 'family break-even should be day 10, got', MODELS.family.be);
+  console.assert(single(5, 'adult').cost === 310 && single(12, 'adult').cost === 636 && single(9, 'adult').cost === 504 &&
+    single(13, 'adult').season && family(9).cost === 1512 && PRICES.week.adult / 6 === 53, 'copy figures');
+  for (let n = 1; n < MODELS.family.be; n++) console.assert(family(n).same, 'adults and children share a mix on day', n);
+
+  const eur = v => 'EUR\u00a0' + v.toLocaleString('en-US');
+  const NUM = ['', 'one', 'two', 'three', 'four'];
+  const mix = r => [r.weeks && (r.weeks === 1 ? 'one week pass' : `${NUM[r.weeks]} week passes`),
+    r.days && (r.days === 1 ? (r.weeks ? '1 day pass' : 'a day pass') : `${r.days} day passes`)].filter(Boolean).join(' and ');
+  const how = (n, key) => { const m = MODELS[key], r = m.per(n); return { r, text: r.season ? `the ${m.name} pass` : mix(r) + (key === 'family' ? ' each' : '') }; };
+  $('#daytable tbody').innerHTML = Array.from({ length: 20 }, (_, i) => {
+    const a = how(i + 1, 'adult'), f = how(i + 1, 'family');
+    return `<tr><th scope="row">${i + 1}</th><td>${a.text}, ${eur(a.r.cost)}</td><td>${f.text}, ${eur(f.r.cost)}</td></tr>`;
+  }).join('');
+
+  /* ---------- motion helpers (instant without GSAP or under reduced motion) ---------- */
+  let M = false, lenis = null;
+  const G = () => M && !!window.gsap;
+  const show = (el, on) => { el.style.opacity = on ? 1 : 0; el.style.visibility = on ? 'visible' : 'hidden'; };
+
+  // MI2 masked label swap: the old text leaves upward, the new one rises in.
+  function swap(box, text) {
+    const cur = box.lastElementChild;
+    if (cur && cur.textContent === text) return;
+    const nu = document.createElement('span');
+    nu.textContent = text;
+    if (!G() || !cur) { box.replaceChildren(nu); return; }
+    [...box.children].slice(0, -1).forEach(el => el.remove());
+    cur.setAttribute('aria-hidden', 'true');
+    box.append(nu);
+    gsap.to(cur, { yPercent: -100, duration: T('swap'), ease: E('settle'), onComplete: () => cur.remove() });
+    gsap.fromTo(nu, { yPercent: 100 }, { yPercent: 0, duration: T('swap'), ease: E('settle') });
+  }
+
+  /* ---------- the break-even lift line ---------- */
+  const board = $('#board'), svg = $('#chart'), range = $('#days'), beLabel = $('#be-label'), tag = $('#ghost-tag');
+  const freeTag = $('#free-tag');
+  const S = { day: +range.value, fam: false, ride: { d: +range.value }, shown: {}, why: -1, rec: '', revealed: false, pinned: false, tour: null };
+  const key = () => (S.fam ? 'family' : 'adult');
+  let geo = null;
+
+  function layer(k) {
+    const m = MODELS[k], { x, pad, base, W } = geo, f = v => v.toFixed(1);
+    const y = v => base - v / m.yMax * (base - pad.t);
+    const pts = Array.from({ length: 21 }, (_, n) => [x(n), y(m.per(n).cost)]);
+    geo.pts[k] = pts; geo.y[k] = y;
+    const grid = m.grid.map(v => `<line class="ax grid" x1="${pad.l}" x2="${W - pad.r}" y1="${f(y(v))}" y2="${f(y(v))}"/><text class="ax t-y" x="${pad.l - 8}" y="${f(y(v) + 4)}" text-anchor="end">${v.toLocaleString('en-US')}</text>`).join('');
+    let wk = `M${f(x(.5))} ${f(y(m.week))}`;
+    for (let i = 1; 6 * i + .5 < 20; i++) wk += `H${f(x(6 * i + .5))}V${f(y(m.week * (i + 1)))}`;
+    wk += `H${f(x(20))}`;
+    const towers = pts.slice(1).map(([px, py], i) => {
+      const [ax, ay] = pts[i], [bx, by] = pts[Math.min(20, i + 2)], len = Math.hypot(bx - ax, by - ay);
+      const nx = (ay - by) / len * 5, ny = (bx - ax) / len * 5;
+      return `<line class="tw" x1="${f(px - nx)}" y1="${f(py - ny)}" x2="${f(px + nx)}" y2="${f(py + ny)}"/>`;
+    }).join('');
+    const stn = ([px, py]) => `<rect class="stn" x="${f(px - 5)}" y="${f(py - 5)}" width="10" height="10"/>`;
+    const [bx, by] = pts[m.be];
+    return `<g class="layer layer-${k}">${grid}
+      <text class="ax t-y" x="14" y="${pad.t - 14}">EUR, ${k === 'adult' ? 'one adult' : 'two adults and two children'}</text>
+      <g clip-path="url(#plot)">
+        <g class="cl cl-ref"><path class="l-day" d="M${f(x(0))} ${f(y(0))}L${f(x(20))} ${f(y(m.day * 20))}"/></g>
+        <g class="cl cl-ref"><path class="l-week" d="${wk}"/></g>
+        <g class="cl cl-ref"><path class="l-flat" d="M${f(x(0))} ${f(y(m.flat))}H${f(x(20))}"/></g>
+      </g>
+      <g class="cl cl-cable"><path class="l-cable" d="M${pts.map(p => p.map(f).join(' ')).join('L')}"/></g>
+      <g>${towers}</g>${stn(pts[0])}${stn(pts[20])}
+      <rect class="be" x="${f(bx - 7)}" y="${f(by - 7)}" width="14" height="14"/>
+      ${pts.slice(m.be + 1).map(([px, py], i) => `<text class="free" data-n="${m.be + 1 + i}" x="${f(px)}" y="${f(py - 12)}" text-anchor="middle" style="clip-path: inset(0 100% 0 0)">free</text>`).join('')}
+    </g>`;
+  }
+
+  function build() {
+    const W = Math.round(board.clientWidth), H = Math.round(board.clientHeight);
+    if (!W || (geo && geo.W === W && geo.H === H)) return;
+    const narrow = W < 560, pad = { l: narrow ? 42 : 58, r: narrow ? 14 : 24, t: 34, b: 96 };
+    const step = (W - pad.l - pad.r) / 20, base = H - pad.b;
+    geo = { W, H, pad, step, base, x: d => pad.l + d * step, pts: {}, y: {}, s: Math.min(1.7, Math.max(1.15, W / 420)), wide: !narrow };
+    board.classList.toggle('wide', !narrow);
+    const { x } = geo;
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    svg.innerHTML = `<defs><clipPath id="plot"><rect x="${pad.l - 4}" y="${pad.t - 4}" width="${W - pad.l - pad.r + 8}" height="${base - pad.t + 8}"/></clipPath></defs>
+      ${layer('adult')}${layer('family')}
+      <line class="ax axis" x1="${pad.l}" x2="${W - pad.r}" y1="${base}" y2="${base}"/>
+      ${Array.from({ length: 20 }, (_, i) => `<line class="ax mtick" x1="${x(i + 1)}" x2="${x(i + 1)}" y1="${base}" y2="${base + 5}"/>`).join('')}
+      ${[1, 5, 10, 15].map(d => `<text class="ax t-x" x="${x(d)}" y="${base + 46}" text-anchor="middle">${d}</text>`).join('')}
+      <text class="ax t-x" x="${x(20) + 6}" y="${base + 46}" text-anchor="end">20 days</text>
+      <line class="ghost" id="ghost" x1="0" x2="0" y1="${pad.t}" y2="${base}"/>
+      <line class="guide" id="guide"/>
+      <g id="chair"><g class="drop"><g class="swing"><path class="hanger" d="M0 0V12Q0 15-3 15H-7"/><path class="bail" d="M0 8H8V26H11"/><path class="seat" d="M-11 14.5Q-11 13-9.5 13H-8.5Q-7 13-7 14.5V24.5H4Q5.75 24.5 5.75 26.25Q5.75 28 4 28H-9.5Q-11 28-11 26.5Z"/></g><circle class="grip" r="3.5"/></g></g>`;
+    geo.chair = $('#chair'); geo.guide = $('#guide'); geo.swing = $('.swing', svg); geo.drop = $('.drop', svg); geo.ghost = $('#ghost');
+    geo.free = { adult: $$('.layer-adult .free', svg), family: $$('.layer-family .free', svg) };
+    range.style.top = `${base + 54}px`;
+    range.style.left = `${x(1) - 9}px`;
+    range.style.width = `${x(20) - x(1) + 18}px`;
+    show($('.layer-family', svg), S.fam); show($('.layer-adult', svg), !S.fam);
+    placeLabel();
+    S.shown = {};
+    place(S.ride.d, true);
+    if (M && window.gsap && !S.revealed && !S.revealing) hideChart();
+  }
+
+  function placeLabel() {
+    const m = MODELS[key()], [bx, by] = geo.pts[key()][m.be];
+    beLabel.textContent = `Day ${m.be}: the ${m.name} pass is cheaper`;
+    const w = beLabel.offsetWidth, h = beLabel.offsetHeight;
+    beLabel.style.left = `${Math.max(geo.pad.l, Math.min(bx - 8, geo.W - geo.pad.r - w))}px`;
+    beLabel.style.top = `${by - h - 26}px`;  // clears the 'free' labels 12px above the cable
+  }
+
+  // Station pop and label reveal as the chair reaches the break-even day; both reverse below it.
+  function station(on, instant) {
+    const k = key();
+    if (S.shown[k] === on) return;
+    S.shown[k] = on;
+    const st = $(`.layer-${k} .be`, svg), refs = $$(`.layer-${k} .l-day, .layer-${k} .l-week`, svg);
+    if (G() && !instant) {
+      gsap.to(refs, on ? { opacity: .3, duration: T('dim-ref'), ease: E('settle'), overwrite: true }
+                       : { opacity: 1, duration: T('unpop'), ease: E('in'), overwrite: true });
+      st.style.visibility = '';
+      if (on) gsap.fromTo(st, { scale: 0 }, { scale: 1, duration: T('pop'), ease: E('pop'), transformOrigin: '50% 50%', overwrite: true });
+      else gsap.to(st, { scale: 0, duration: T('unpop'), ease: E('in'), transformOrigin: '50% 50%', overwrite: true });
+      gsap.to(beLabel, on ? { clipPath: 'inset(0 0% 0 0)', duration: T('reveal'), ease: E('settle'), overwrite: true }
+                          : { clipPath: 'inset(0 100% 0 0)', duration: T('unpop'), ease: E('in'), overwrite: true });
+    } else {
+      if (window.gsap) { gsap.killTweensOf([st, beLabel, ...refs]); gsap.set(st, { scale: 1, transformOrigin: '50% 50%' }); }
+      refs.forEach(el => { el.style.opacity = on ? .3 : 1; });
+      st.style.visibility = on ? '' : 'hidden';
+      beLabel.style.clipPath = on ? 'inset(0 0% 0 0)' : 'inset(0 100% 0 0)';
+    }
+  }
+
+  function place(d, instant) {
+    if (!geo) return;
+    const k = key(), pts = geo.pts[k], i = Math.min(19, Math.floor(d)), t = d - i;
+    const [ax, ay] = pts[i], [bx, by] = pts[i + 1], px = ax + (bx - ax) * t, py = ay + (by - ay) * t;
+    geo.chair.setAttribute('transform', `translate(${px.toFixed(1)} ${py.toFixed(1)}) scale(${geo.s})`);
+    const g = geo.guide, top = Math.min(py + 31 * geo.s, geo.base);
+    g.setAttribute('x1', px); g.setAttribute('x2', px); g.setAttribute('y1', top); g.setAttribute('y2', geo.base);
+    station(d >= MODELS[k].be - .001, instant);
+    // After the break-even every extra day is free: each tower gets a label (one counting tag on narrow boards).
+    geo.free[k].forEach(el => clipTo(el, d >= +el.dataset.n - .001, instant));
+    if (geo.wide) return;
+    const c = Math.floor(d + .001) - MODELS[k].be;
+    if (c > 0) {
+      swap(freeTag, `${c} free ${c === 1 ? 'day' : 'days'}`);
+      const w = freeTag.offsetWidth, s = geo.s;
+      let lx = px + 14 * s;
+      if (lx + w > geo.W - geo.pad.r) lx = px - 14 * s - w;
+      freeTag.style.left = `${lx.toFixed(1)}px`;
+      freeTag.style.top = `${(py + 12 * s).toFixed(1)}px`;
+    }
+    clipTo(freeTag, c > 0, instant);
+  }
+  function clipTo(el, on, instant) {
+    if (el._on === on) return;
+    el._on = on;
+    const cp = on ? 'inset(0 0% 0 0)' : 'inset(0 100% 0 0)';
+    if (G() && !instant) gsap.to(el, { clipPath: cp, duration: T('free'), ease: E('settle'), overwrite: true });
+    else { window.gsap && gsap.killTweensOf(el); el.style.clipPath = cp; }
+  }
+
+  function ride(to, from = to) {
+    if (!G()) { S.ride.d = to; place(to); return; }
+    gsap.to(S.ride, { d: to, duration: T('ride'), ease: E('follow'), overwrite: true, onUpdate: () => place(S.ride.d) });
+    if (to !== from) gsap.fromTo(geo.swing, { rotation: Math.sign(to - from) * 9 }, { rotation: 0, duration: T('swing'), ease: E('swing'), transformOrigin: '50% 0%', overwrite: true });
+  }
+
+  // TR4: the explanation crossfades only when the day crosses a threshold.
+  const whyItems = $$('#why > article');
+  let whyTl = null;
+  function showWhy(i) {
+    if (i === S.why) return;
+    const prev = S.why;
+    S.why = i;
+    if (G() && prev >= 0) {
+      whyTl && whyTl.kill();
+      gsap.set(whyItems.filter((_, k) => k !== i && k !== prev), { autoAlpha: 0 });
+      whyTl = gsap.timeline({ defaults: { duration: T('xfade'), ease: E('xfade') } })
+        .set(whyItems[i], { autoAlpha: 0 }).to(whyItems[i], { autoAlpha: 1 }, 0).to(whyItems[prev], { autoAlpha: 0 }, 0);
+    } else whyItems.forEach((el, k) => show(el, k === i));
+  }
+
+  let liveTimer = 0;
+  function render(src) {
+    const n = S.day, k = key(), h = how(n, k), m = MODELS[k];
+    const lead = `${n} ${n === 1 ? 'day' : 'days'}.`;
+    const text = `Cheapest: ${h.text}, ${eur(h.r.cost)}.` + (h.r.season ? ` Day passes alone would cost ${eur(m.day * n)}.` : '');
+    $('#ro-n').textContent = lead;
+    $('#ro-t').textContent = text;
+    range.value = n;
+    range.style.setProperty('--fill', `${(n - 1) / 19 * 100}%`);
+    range.setAttribute('aria-valuetext', `${lead} ${text}`);
+    const rec = h.r.season ? m.name : h.r.weeks ? 'week' : 'day';
+    showWhy(S.fam ? 3 : { day: 0, week: 1, season: 2 }[rec]);
+    if (rec !== S.rec) { S.rec = rec; swap($('#load-label'), `Load ${h.r.season ? 'the' : 'a'} ${rec} pass onto a KeyCard`); }
+    clearTimeout(liveTimer);
+    if (src !== 'range' && src !== 'init' && src !== 'scroll') liveTimer = setTimeout(() => { $('#live').textContent = `${lead} ${text}`; }, 600);
+  }
+
+  function setDay(n, src) {
+    n = Math.max(1, Math.min(20, Math.round(n)));
+    // Any direct input ends the in-view tour, and the chair settles from wherever it is.
+    if (src !== 'scroll' && S.tour) { S.tour.kill(); S.tour = null; src = 'force'; }
+    if (n === S.day && src !== 'force') return;
+    const from = S.day;
+    S.day = n;
+    render(src);
+    if (src !== 'scroll') ride(n, from);
+  }
+
+  range.addEventListener('input', () => setDay(+range.value, 'range'));
+
+  // Direct manipulation: drag (or tap) anywhere on the board; the chair snaps to tower ticks.
+  const dayAt = e => (e.clientX - board.getBoundingClientRect().left - geo.pad.l) / geo.step;
+  let drag = null;
+  board.addEventListener('pointerdown', e => {
+    if (e.button || e.target === range) return;
+    drag = { id: e.pointerId, touch: e.pointerType === 'touch', moved: false };
+    if (!drag.touch) { board.setPointerCapture(e.pointerId); board.classList.add('is-drag'); setDay(dayAt(e), 'drag'); }
+  });
+  board.addEventListener('pointermove', e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    drag.moved = true;
+    setDay(dayAt(e), 'drag');
+  });
+  const endDrag = e => {
+    if (drag && drag.touch && e.type === 'pointerup' && !drag.moved) setDay(dayAt(e), 'drag');
+    drag = null;
+    board.classList.remove('is-drag');
+  };
+  board.addEventListener('pointerup', endDrag);
+  board.addEventListener('pointercancel', () => { drag = null; board.classList.remove('is-drag'); });
+
+  // Family of four: the lines crossfade, the chair re-rides the new cable to the same day.
+  $('#fam').addEventListener('change', e => {
+    S.fam = e.target.checked;
+    const on = $(`.layer-${key()}`, svg), off = $(`.layer-${S.fam ? 'adult' : 'family'}`, svg);
+    if (G()) gsap.timeline({ defaults: { duration: T('xfade'), ease: E('xfade') } }).to(off, { autoAlpha: 0 }, 0).fromTo(on, { autoAlpha: 0 }, { autoAlpha: 1 }, 0);
+    else { show(on, true); show(off, false); }
+    swap($('#lg-flat'), S.fam ? 'Family pass' : 'Season pass');
+    S.shown[key()] = undefined;
+    placeLabel();
+    render('fam');
+    if (G()) {
+      station(false, true);
+      gsap.fromTo(S.ride, { d: 1 }, { d: S.day, duration: T('reride'), ease: E('settle'), overwrite: true, onUpdate: () => place(S.ride.d) });
+    } else { S.ride.d = S.day; place(S.day, true); }
+  });
+
+  /* ---------- the buy form ---------- */
+  const form = $('#buy-form'), first = $('#first'), have = $('#have'), kc = $('#kc');
+  const NAMES = { day: 'Day pass', week: 'Week pass', season: 'Season pass', family: 'Family pass' };
+  const AGES = { adult: 'Adult, 20 to 64', youth: 'Youth, 16 to 19', child: 'Child, 6 to 15' };
+  const D = s => { const [y, m, d] = s.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d)); };
+  const short = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+  const long = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', timeZone: 'UTC' });
+  const dated = p => p === 'day' || p === 'week';
+  const cardNo = v => (v.replace(/\D/g, '').match(/.{1,4}/g) || []).join(' ');
+  function validFor(pass) {
+    if (!dated(pass)) return short.formatRange(D(SEASON.from), D(SEASON.to));
+    if (!first.value) return 'Choose a first day';
+    const a = D(first.value);
+    return pass === 'day' ? short.format(a) : short.formatRange(a, new Date(a.getTime() + 5 * 864e5));
+  }
+  const xcell = (cell, second) => { const [a, b] = cell.children; a.classList.toggle('off', second); b.classList.toggle('off', !second); };
+
+  function sync() {
+    const pass = form.pass.value, age = form.age.value, fam = pass === 'family', own = have.checked;
+    $('#who-fs').disabled = fam;
+    xcell($('#who-cell'), fam);
+    first.disabled = !dated(pass);
+    first.max = pass === 'week' ? SEASON.lastWeekStart : SEASON.to;
+    xcell($('#date-cell'), !dated(pass));
+    $('#first-hint').textContent = pass === 'week' ? 'Week passes run six days in a row from this date.' : 'Your day pass works on this date only.';
+    const wasHidden = $('#kc-field').hidden;
+    $('#kc-field').hidden = !own; kc.disabled = !own; $('#deposit-hint').hidden = own;
+    if (wasHidden === own) { lenis && lenis.resize(); window.ScrollTrigger && ScrollTrigger.refresh(); }
+    $$('[data-price]').forEach(el => swap(el, eur(PRICES[el.dataset.price][age])));
+    const price = fam ? PRICES.family : PRICES[pass][age], dep = own ? 0 : PRICES.deposit;
+    swap($('#kc-pass'), NAMES[pass]);
+    swap($('#kc-who'), fam ? '2 adults and up to 3 children' : AGES[age]);
+    swap($('#kc-dates'), validFor(pass));
+    swap($('#kc-no'), own ? (cardNo(kc.value) || 'Your KeyCard') : 'New KeyCard');
+    swap($('#sum-pass'), eur(price));
+    swap($('#sum-dep'), dep ? eur(dep) : 'None');
+    swap($('#sum-tot'), eur(price + dep));
+    swap($('#pay-label'), `Pay ${eur(price + dep)} and load pass`);
+  }
+
+  // MI3 selection badge pop on the chosen pass card.
+  function pop(radio) {
+    if (!G()) return;
+    const b = $('.badge', radio.closest('.card'));
+    gsap.killTweensOf('.badge');
+    gsap.set('.badge', { clearProps: 'all' });
+    gsap.fromTo(b, { scale: .6, autoAlpha: 0 }, { scale: 1, autoAlpha: 1, duration: T('badge'), ease: E('pop'), clearProps: 'all' });
+  }
+  function pick(pass) {
+    const r = form.querySelector(`[name="pass"][value="${pass}"]`);
+    r.checked = true;
+    if (pass !== 'family') form.querySelector('[name="age"][value="adult"]').checked = true;
+    sync(); pop(r);
+    return r;
+  }
+
+  function setErr(input, msg) {
+    const el = $('#' + input.id + '-err');
+    input.setAttribute('aria-invalid', msg ? 'true' : 'false');
+    el.textContent = msg;
+    el.classList.toggle('on', !!msg);
+  }
+  form.addEventListener('change', e => {
+    if (e.target.name === 'pass') pop(e.target);
+    if (e.target === first) setErr(first, '');
+    sync();
+  });
+  form.addEventListener('input', e => { if (e.target === kc) { setErr(kc, ''); swap($('#kc-no'), cardNo(kc.value) || 'Your KeyCard'); } });
+
+  let orders = 0;
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const pass = form.pass.value, bad = [];
+    if (!first.disabled) {
+      const v = first.value, ok = v && v >= first.min && v <= first.max;
+      setErr(first, ok ? '' : pass === 'week'
+        ? 'Choose a first day between 5 December 2026 and 1 April 2027, so all six days fall in the season.'
+        : 'Choose a first day between 5 December 2026 and 6 April 2027.');
+      if (!ok) bad.push(first);
+    }
+    if (!kc.disabled) {
+      const ok = /^\d{12}$/.test(kc.value.replace(/\s/g, ''));
+      setErr(kc, ok ? '' : 'Enter the 12 digits printed under the barcode on your KeyCard.');
+      if (!ok) bad.push(kc);
+    }
+    if (bad.length) { bad[0].focus(); return; }
+    const order = `FT-26-${48213 + orders++}`, from = long.format(D(dated(pass) ? first.value : SEASON.from));
+    $('#done-title').textContent = `${NAMES[pass]} loaded`;
+    $('#done-body').textContent = have.checked
+      ? `Your pass is on KeyCard ${cardNo(kc.value)}. Hold the card near the gate at any lift from ${from}. Order ${order}.`
+      : `Your pass is on a new KeyCard. Collect it from any pass machine at the Talbahn valley station with order ${order}, then hold it near the gate at any lift from ${from}.`;
+    $('#mail').href = `mailto:kassa@ferntal.example?subject=${encodeURIComponent('Order ' + order)}`;
+    openDone();
+  });
+
+  /* ---------- CD7 confirmation dialog ---------- */
+  const dlg = $('#done'), panel = $('.dlg', dlg);
+  function openDone() {
+    dlg.showModal();
+    lenis && lenis.stop();
+    if (G()) gsap.fromTo(panel, { autoAlpha: 0, y: 12, scale: .98 }, { autoAlpha: 1, y: 0, scale: 1, duration: T('dialog'), ease: E('settle') });
+  }
+  function closeDone(then) {
+    if (!dlg.open || dlg.classList.contains('out')) return;
+    const fin = () => { dlg.classList.remove('out'); dlg.close(); lenis && lenis.start(); then && then(); };
+    if (!G()) return fin();
+    dlg.classList.add('out');
+    gsap.to(panel, { autoAlpha: 0, y: 8, scale: .98, duration: T('dialog-out'), ease: E('close'), onComplete: () => { fin(); gsap.set(panel, { clearProps: 'all' }); } });
+  }
+  dlg.addEventListener('cancel', e => { e.preventDefault(); closeDone(() => $('#pay').focus()); });
+  dlg.addEventListener('click', e => { if (e.target === dlg) closeDone(() => $('#pay').focus()); });
+  $('#back').addEventListener('click', () => closeDone(() => form.querySelector('[name="pass"]:checked').focus()));
+  $('#again').addEventListener('click', () => {
+    form.reset();
+    setErr(first, ''); setErr(kc, '');
+    sync();
+    closeDone(() => form.querySelector('[name="pass"]:checked').focus());
+  });
+
+  /* ---------- in-page links: smooth through Lenis, focus moves to the target ---------- */
+  function go(target, focusEl) {
+    const done = () => focusEl && focusEl.focus({ preventScroll: true });
+    if (lenis) lenis.scrollTo(target, { offset: -16, duration: T('scroll'), easing: t => (t === 1 ? 1 : 1 - Math.pow(2, -10 * t)), onComplete: done });
+    else { target.scrollIntoView({ behavior: M ? 'smooth' : 'auto', block: 'start' }); done(); }
+  }
+  document.addEventListener('click', e => {
+    const a = e.target.closest('a[href^="#"]');
+    const t = a && document.getElementById(a.getAttribute('href').slice(1));
+    if (!t) return;
+    e.preventDefault();
+    if (a.dataset.pass) return go($('#buy'), pick(a.dataset.pass === 'rec' ? S.rec : a.dataset.pass));
+    go(t, t.hasAttribute('tabindex') ? t : $('[tabindex="-1"]', t));
+  });
+
+  /* ---------- first render ---------- */
+  build();
+  render('init');
+  sync();
+  new ResizeObserver(() => { build(); }).observe(board);
+
+  function hideChart() {
+    gsap.set($$('.ax', svg), { autoAlpha: 0 });
+    gsap.set($$('.cl', svg), { clipPath: 'inset(0 100% 0 0)' });
+    gsap.set($$('.tw, .stn', svg), { scale: 0, transformOrigin: '50% 50%' });
+    gsap.set(geo.drop, { autoAlpha: 0, y: -14 });
+    if (!S.pinned) { S.ride.d = 1; place(1, true); }   // the pinned ride owns the chair
+  }
+  // Staggers and offsets below are literals: they only order the draw.
+  function revealChart() {
+    S.revealing = true;
+    const tl = gsap.timeline({ defaults: { ease: E('settle') }, onComplete: () => { S.revealed = true; } })
+      .to('.board-fill', { scaleY: 1, duration: T('fill') }, 0)
+      .to($$('.ax', svg), { autoAlpha: 1, duration: T('axis'), stagger: .01 }, .05)
+      .to($$('.cl-ref', svg), { clipPath: 'inset(0 0% 0 0)', duration: T('line'), stagger: .12 }, .15)
+      .to($$('.cl-cable', svg), { clipPath: 'inset(0 0% 0 0)', duration: T('line') }, .4)
+      .to($$('.tw', svg), { scale: 1, duration: T('tick'), ease: E('pop'), stagger: .025 }, .5)
+      .to($$('.stn', svg), { scale: 1, duration: T('tick'), ease: E('pop'), stagger: .3 }, .55)
+      .to(geo.drop, { autoAlpha: 1, y: 0, duration: T('reveal') }, .9)
+      .set($$('.cl', svg), { clearProps: 'clipPath' });
+    if (!S.pinned) tl.call(tour, null, 1.1);
+  }
+  // Without the pin, the chair rides the whole cable once (past the break-even) and settles on the chosen day.
+  function tour() {
+    const home = S.day, step = () => { place(S.ride.d); setDay(S.ride.d, 'scroll'); };
+    S.ride.d = 1;
+    S.tour = gsap.timeline({ onComplete: () => { S.tour = null; } })
+      .to(S.ride, { d: 20, duration: T('tour'), ease: 'power1.inOut', onUpdate: step })
+      .to(S.ride, { d: home, duration: T('reride'), ease: E('settle'), onUpdate: step });
+  }
+
+  /* ---------- choreography: GSAP + Lenis, only when they loaded ---------- */
+  if (!window.gsap || !window.ScrollTrigger || !window.Lenis) return;
+  root.classList.add('js');
+  gsap.registerPlugin(ScrollTrigger);
+  gsap.matchMedia().add({
+    motion: '(prefers-reduced-motion: no-preference)',
+    reduce: '(prefers-reduced-motion: reduce)',
+    fine: '(hover: hover) and (pointer: fine)',
+    pin: '(min-width: 768px) and (min-height: 640px)'
+  }, ctx => {
+    const { motion, fine, pin } = ctx.conditions;
+    M = motion;
+    if (!motion) { S.revealed = true; return; }
+
+    lenis = new Lenis({ lerp: .1, smoothWheel: true, autoRaf: false, anchors: false });
+    lenis.on('scroll', ScrollTrigger.update);
+    const tick = time => lenis.raf(time * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
+
+    // The signature: on tall enough screens the question pins and scrolling rides the chair from day 1 to day 20,
+    // so the day-13 station fires on its own. Dragging and the slider take over wherever the chair is.
+    const cmp = $('#compare');
+    S.pinned = pin && cmp.offsetHeight <= innerHeight - 32;
+    if (S.pinned) {
+      const proxy = { d: 1 };
+      S.ride.d = 1; place(1, true); setDay(1, 'scroll');
+      gsap.to(proxy, {
+        d: 20, ease: 'none',
+        scrollTrigger: { trigger: cmp, start: 'top top+=16', end: '+=1200', pin: true, scrub: T('scrub'),
+          snap: { snapTo: 1 / 19, duration: T('snap'), ease: E('follow') } },
+        onUpdate: () => { gsap.killTweensOf(S.ride); S.ride.d = proxy.d; place(proxy.d); setDay(proxy.d, 'scroll'); }
+      });
+    }
+
+    // Page load: chrome, masked heading lines, then the stub rule wipes the price row in; the chart arms at 0.6s.
+    if (!S.revealed) hideChart();
+    const armChart = () => (board.getBoundingClientRect().top < innerHeight * .92 ? revealChart()
+      : ScrollTrigger.create({ trigger: board, start: 'top 92%', once: true, onEnter: revealChart }));
+    gsap.timeline({ defaults: { ease: E('settle') } })
+      .fromTo('.bar [data-load]', { y: 6, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: T('chrome'), stagger: .06 }, 0)
+      .fromTo('.ln > span', { y: 0, yPercent: 110 }, { y: 0, yPercent: 0, duration: T('rise'), stagger: .08 }, .05)
+      .fromTo('.rule-load', { scaleX: 0 }, { scaleX: 1, duration: T('rule') }, .5)
+      .fromTo('.stubs', { clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0% 0 0)', duration: T('rule'), onComplete: () => { $('.stubs').style.clipPath = 'none'; } }, .5)  // 'none', so focus rings are not clipped
+      .call(() => { S.revealed || armChart(); }, null, .6);
+
+    document.fonts.ready.then(() => { lenis && lenis.resize(); ScrollTrigger.refresh(); });
+
+    // Fine pointers: a day cursor follows the pointer over the board, snapped to whole days.
+    let offFine = () => {};
+    if (fine) {
+      const qx = gsap.quickTo(tag, 'x', { duration: T('ghost'), ease: E('follow') });
+      const qy = gsap.quickTo(tag, 'y', { duration: T('ghost'), ease: E('follow') });
+      let gx = null;
+      const move = e => {
+        if (drag || !geo) return;
+        const d = Math.max(1, Math.min(20, Math.round(dayAt(e)))), k = key(), [px, py] = geo.pts[k][d];
+        if (!gx) { gx = gsap.quickTo(geo.ghost, 'x', { duration: T('ghost'), ease: E('follow') }); }
+        gx(px);
+        tag.textContent = `${d} ${d === 1 ? 'day' : 'days'}: ${eur(MODELS[k].per(d).cost)}`;
+        const w = tag.offsetWidth;
+        qx(px + 12 + w > geo.W ? px - 12 - w : px + 12);
+        qy(Math.max(0, py - 40));
+        gsap.to([tag, geo.ghost], { autoAlpha: 1, duration: T('hover'), overwrite: 'auto' });
+      };
+      const leave = () => gsap.to([tag, geo.ghost], { autoAlpha: 0, duration: T('hover'), overwrite: 'auto' });
+      const reset = () => { gx = null; };
+      board.addEventListener('pointermove', move);
+      board.addEventListener('pointerleave', leave);
+      board.addEventListener('pointerdown', leave);
+      const ro = new ResizeObserver(reset);
+      ro.observe(board);
+      offFine = () => { ro.disconnect(); board.removeEventListener('pointermove', move); board.removeEventListener('pointerleave', leave); board.removeEventListener('pointerdown', leave); };
+    }
+
+    return () => {
+      M = false;
+      S.pinned = false;
+      S.tour && S.tour.kill();
+      offFine();
+      whyTl && whyTl.kill();
+      gsap.ticker.remove(tick);
+      gsap.ticker.lagSmoothing(500, 33);
+      lenis.destroy();
+      lenis = null;
+    };
+  });
+})();
+</script>
+</body>
+</html>

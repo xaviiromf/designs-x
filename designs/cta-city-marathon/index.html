@@ -1,0 +1,891 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Merriton Marathon: entries for 2027 are open</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pathway+Extreme:opsz,wdth,wght@8..12,75..100,100..900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* colour: race-day kit */
+    --tyvek: #F7F8F6;    /* ground and bib: the cool white of a Tyvek race bib */
+    --asphalt: #23272D;  /* ink, primary buttons, focus ring (14.1:1 on tyvek) */
+    --kerb: #5D646C;     /* secondary text, hints, field borders (5.6:1 on tyvek) */
+    --course: #0E7CC2;   /* painted racing line: graphics only (line, ticks, underlines; 4.2:1 on tyvek, 3.3:1 on asphalt) */
+    --marshal: #D6F23A;  /* hi-vis vest: selected wave row and bib stripe, always with asphalt text (11.9:1) */
+    --flag: #A51C30;     /* inline errors only (7.0:1 on tyvek) */
+    --asphalt-lift: color-mix(in oklab, var(--asphalt) 84%, var(--tyvek)); /* hovered primary button (9.6:1 with tyvek) */
+    --road: color-mix(in oklab, var(--asphalt) 14%, var(--tyvek));         /* unpainted road under the course line */
+    --rule: color-mix(in oklab, var(--kerb) 45%, var(--tyvek));            /* wave row and bib edges */
+    --tint: color-mix(in srgb, var(--course) 8%, transparent);             /* hovered wave row */
+    --veil: rgb(35 39 45 / .58);                                          /* dialog backdrop */
+
+    /* type: Pathway Extreme only; width does the work */
+    --font: "Pathway Extreme", system-ui, sans-serif;
+    --t-xs: .875rem;                                   /* km figures, hints, labels, wave times */
+    --t-body: 1.0625rem;                               /* 17px body */
+    --lh-body: 1.55;
+    --lh-name: 1.5rem;                                 /* first line of a km post: name, figure and tick share it */
+    --t-h3: 1.66rem;
+    --t-h2: clamp(2.1rem, 1.3rem + 3vw, 3.6rem);
+    --t-mark: calc(100cqi / 5.17);                     /* fallback fit: MERRITON at wdth 75 / 900, tracked -0.025em, is 5.17em wide; JS refines */
+    --mark-track: -.025em;                             /* tight, like a printed bib number */
+    --t-bib: clamp(3.5rem, 12vw, 6rem);
+    --w-mark: 75%; --w-h2: 87.5%; --w-data: 87.5%; --w-text: 100%;
+
+    /* spacing, 4px base */
+    --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px;
+    --s6: 32px; --s7: 48px; --s8: 64px; --s9: 96px;
+    --gutter: clamp(16px, 4vw, 56px);
+    --measure: min(100% - 2 * var(--gutter), 1360px);
+    --km-col: 5.5rem;      /* fits "42.195 km" on one line */
+    --radius: 4px;       /* fields, rows, buttons, dialog */
+    --radius-bib: 10px;  /* the bib only */
+
+    /* motion: expo.out for entrances and state changes */
+    --ease-out: cubic-bezier(.16, 1, .3, 1);
+    --d-press: .12s; --d-release: .4s; --d-quick: .2s; --d-hover: .15s;
+    --d-field: .22s; --d-line: .3s; --d-sweep: .35s; --d-err: .25s;
+    --d-swap: .3s; --d-pop: .3s; --d-pass: .3s; --d-backdrop: .3s;
+  }
+
+  /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    margin: 0; background: var(--tyvek); color: var(--asphalt);
+    font-family: var(--font); font-size: var(--t-body); line-height: var(--lh-body);
+    font-weight: 400; font-stretch: var(--w-text);
+    -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+  }
+  h2, h3, p, ol, ul, fieldset, legend { margin: 0; padding: 0; }
+  ol, ul { list-style: none; }
+  fieldset { border: 0; min-width: 0; }
+  button, input { font: inherit; color: inherit; }
+  :focus-visible { outline: 3px solid var(--asphalt); outline-offset: 3px; }
+  h2:focus, h3:focus { outline: none; }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+  }
+  .data { font-size: var(--t-xs); font-weight: 600; font-stretch: var(--w-data); font-variant-numeric: tabular-nums; }
+
+  .cta { width: var(--measure); margin-inline: auto; padding-bottom: var(--s9); }
+
+  /* top bar: separate facts, no separators */
+  .bar {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "name btn" "date ." "count .";
+    column-gap: var(--s4); align-items: center; padding-top: var(--s4);
+  }
+  .bar__name { grid-area: name; font-weight: 700; }
+  .bar__date { grid-area: date; }
+  .bar__count { grid-area: count; }
+  .bar__btn { grid-area: btn; }
+  @media (min-width: 992px) {
+    .bar { grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-areas: none; column-gap: var(--s5); padding-top: var(--s5); }
+    .bar__name { grid-area: auto; grid-column: 1 / 4; }
+    .bar__date { grid-area: auto; grid-column: 4 / 8; }
+    .bar__count { grid-area: auto; grid-column: 8 / 11; }
+    .bar__btn { grid-area: auto; grid-column: 11 / 13; justify-self: end; }
+  }
+
+  /* the wordmark: one line at bib weight, fitted to the measure */
+  .mark-wrap { container-type: inline-size; margin-top: var(--s6); }
+  .mark {
+    display: flex; font-size: var(--t-mark); line-height: .8;
+    font-weight: 900; font-stretch: var(--w-mark); white-space: nowrap;
+    user-select: none; -webkit-user-select: none;
+  }
+  /* glyph boxes overhang the .8 line box; only the wrap takes the pointer, so the top bar stays hoverable */
+  .mark span { display: block; flex: none; transform-origin: 0 100%; pointer-events: none; }
+  .mark span + span { margin-left: var(--mark-track); }
+
+  /* intro */
+  .intro { display: grid; gap: var(--s5); margin-top: var(--s7); }
+  .intro h2 {
+    font-size: var(--t-h2); line-height: 1.02; font-weight: 700;
+    font-stretch: var(--w-h2); letter-spacing: -.01em; text-wrap: balance;
+  }
+  .lede { display: grid; gap: var(--s3); max-width: 62ch; }
+  @media (min-width: 992px) {
+    .intro { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--s5); }
+    .intro h2 { grid-column: 1 / 7; }
+    .lede { grid-column: 8 / 13; }
+  }
+
+  h3 { font-size: var(--t-h3); line-height: 1.15; font-weight: 700; font-stretch: var(--w-text); text-wrap: balance; }
+
+  .split { display: grid; gap: var(--s8); margin-top: var(--s9); }
+  @media (min-width: 992px) {
+    .split { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--s5); }
+    .course { grid-column: 1 / 6; }
+    .entry { grid-column: 7 / 13; }
+  }
+
+  /* the course: km posts spaced by real distance on the painted line */
+  .course { display: flex; flex-direction: column; }
+  .posts { flex: 1; display: flex; flex-direction: column; margin-top: var(--s6); min-height: 52rem; }
+  @media (min-width: 992px) { .posts { min-height: 0; } }
+  .post {
+    position: relative; flex: var(--km) 1 0px;
+    display: grid; grid-template-columns: var(--km-col) var(--s6) minmax(0, 1fr);
+    align-items: start; padding-bottom: var(--s3);
+  }
+  .post:last-child { flex: none; padding-bottom: 0; }
+  .post::before, .seg {
+    position: absolute; top: calc(var(--lh-name) / 2); height: 100%; width: 3px;
+    left: calc(var(--km-col) + var(--s6) / 2 - 1.5px);
+  }
+  .post:not(:last-child)::before { content: ""; background: var(--road); }
+  .seg { background: var(--course); transform-origin: 50% 0; }
+  .km { line-height: var(--lh-name); text-align: right; white-space: nowrap; padding-right: var(--s3); }
+  .tick {
+    position: relative; z-index: 1; justify-self: center;
+    width: 13px; height: 13px; margin-top: calc((var(--lh-name) - 13px) / 2);
+    border-radius: 50%; border: 2px solid var(--course); background: var(--course);
+  }
+  /* only the pass animates: the switch to the hidden start state at load must not fade */
+  .post.is-passed .tick { transition: background-color var(--d-pass), border-color var(--d-pass); }
+  .post.is-passed .km { transition: color var(--d-pass); }
+  .post__body strong { display: block; line-height: var(--lh-name); font-weight: 700; }
+  @media (max-width: 479px) { .km { padding-right: var(--s2); } .post { grid-template-columns: var(--km-col) var(--s5) minmax(0, 1fr); } .post::before, .seg { left: calc(var(--km-col) + var(--s5) / 2 - 1.5px); } }
+
+  /* the form */
+  .entry form, .done { display: grid; gap: var(--s5); }
+  .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--s4); row-gap: var(--s2); }
+  .field--wide { grid-column: 1 / -1; }
+  @media (max-width: 479px) { .fields { grid-template-columns: minmax(0, 1fr); } }
+  .field__box {
+    position: relative; border: 1px solid var(--kerb); border-radius: var(--radius);
+    overflow: clip; transition: border-color var(--d-hover);
+  }
+  .field__box:hover, .field__box:focus-within { border-color: var(--asphalt); }
+  .field input {
+    display: block; width: 100%; height: 3.5rem; padding: 1.35rem var(--s4) .35rem;
+    border: 0; border-radius: var(--radius); background: transparent; outline: none;
+  }
+  .field input::-webkit-calendar-picker-indicator { cursor: pointer; }
+  .field label {
+    position: absolute; left: var(--s4); top: 1rem; line-height: 1.5rem;
+    color: var(--kerb); font-weight: 600; font-stretch: var(--w-data);
+    transform-origin: 0 0; pointer-events: none;
+    transition: transform var(--d-field) var(--ease-out);
+  }
+  .field__box:focus-within label, .field input:not(:placeholder-shown) + label, .field--date label {
+    transform: translateY(-.62em) scale(.8);
+  }
+  .field__line {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
+    background: var(--course); transform: scaleX(0); transform-origin: 0 50%;
+    transition: transform var(--d-line) var(--ease-out), background-color var(--d-line);
+  }
+  .field__box:focus-within .field__line { transform: scaleX(1); }
+  .is-invalid .field__box { border-color: var(--flag); }
+  .is-invalid .field__line { transform: scaleX(1); background: var(--flag); }
+
+  /* one reserved line for hint and error, so nothing shifts */
+  .msg { display: grid; font-size: var(--t-xs); line-height: 1.35; padding-top: var(--s1); min-height: calc(var(--t-xs) * 1.35 + var(--s1)); }
+  .msg > * { grid-area: 1 / 1; }
+  .msg__hint { color: var(--kerb); transition: opacity var(--d-err); }
+  .msg__err {
+    color: var(--flag); font-weight: 600; visibility: hidden; opacity: 0; clip-path: inset(0 100% 0 0);
+    transition: clip-path var(--d-err) var(--ease-out), opacity var(--d-err), visibility 0s var(--d-err);
+  }
+  .is-invalid .msg__err { visibility: visible; opacity: 1; clip-path: inset(0); transition-delay: 0s; }
+  .is-invalid .msg__hint { opacity: 0; }
+
+  /* waves */
+  .waves legend { font-weight: 700; margin-bottom: var(--s3); }
+  .rows { display: grid; gap: var(--s2); }
+  .row {
+    position: relative; isolation: isolate; overflow: clip; cursor: pointer;
+    display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; column-gap: var(--s4);
+    padding: var(--s3) var(--s4); border: 1px solid var(--rule); border-radius: var(--radius);
+  }
+  .row::before {
+    content: ""; position: absolute; inset: 0; z-index: -1; background: var(--tint);
+    transform: scaleX(0); transform-origin: 100% 50%;
+    transition: transform var(--d-sweep) var(--ease-out), background-color var(--d-quick);
+  }
+  .row::after {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--asphalt);
+    transform: scaleY(0); transition: transform var(--d-sweep) var(--ease-out);
+  }
+  .row:hover::before, .row:active::before, .row:has(:focus-visible)::before { transform: scaleX(1); transform-origin: 0 50%; }
+  .row:has(:checked)::before { background: var(--marshal); transform: scaleX(1); transform-origin: 0 50%; }
+  .row:has(:checked)::after { transform: scaleY(1); }
+  .row:has(:focus-visible) { outline: 3px solid var(--asphalt); outline-offset: 2px; }
+  .row input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
+  .disc {
+    display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 50%;
+    border: 1.5px solid var(--asphalt); font-weight: 700; font-stretch: var(--w-data); line-height: 1;
+  }
+  .row:has(:checked) .disc { background: var(--asphalt); color: var(--tyvek); animation: pop var(--d-pop) var(--ease-out); }
+  .w-main { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: var(--s4); }
+  .w-time { min-width: 6.5rem; font-size: var(--t-body); font-weight: 700; }
+  .w-pace { color: var(--kerb); }
+  .row:has(:checked) .w-pace { color: var(--asphalt); }
+  .is-invalid .row { border-color: var(--flag); }
+
+  /* rules checkbox */
+  .consent__line { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s5); }
+  .check { position: relative; display: inline-flex; align-items: center; gap: var(--s3); cursor: pointer; }
+  .check input { position: absolute; left: 0; top: 50%; width: 22px; height: 22px; margin: -11px 0 0; opacity: 0; cursor: pointer; }
+  .box {
+    flex: none; display: grid; place-items: center; width: 22px; height: 22px;
+    border: 1.5px solid var(--kerb); border-radius: var(--radius);
+    transition: border-color var(--d-hover), background-color var(--d-quick);
+  }
+  .box path { fill: none; stroke: var(--tyvek); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset var(--d-line) var(--ease-out); }
+  .check:hover .box { border-color: var(--asphalt); }
+  .check input:checked + .box { background: var(--asphalt); border-color: var(--asphalt); }
+  .check input:checked + .box path { stroke-dashoffset: 0; }
+  .check input:focus-visible + .box { outline: 3px solid var(--asphalt); outline-offset: 2px; }
+  .is-invalid .box { border-color: var(--flag); }
+
+  /* buttons: asphalt with a course-blue line that runs in from the left */
+  .btn {
+    position: relative; display: inline-flex; align-items: center; justify-content: center;
+    min-height: 3rem; padding: 0 var(--s5); border: 0; border-radius: var(--radius); overflow: clip;
+    background: var(--asphalt); color: var(--tyvek); font-weight: 700; font-stretch: var(--w-text);
+    text-decoration: none; white-space: nowrap; cursor: pointer;
+    transition: background-color var(--d-quick), scale var(--d-release) var(--ease-out);
+  }
+  .btn::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--course);
+    transform: scaleX(0); transform-origin: 100% 50%; transition: transform var(--d-sweep) var(--ease-out);
+  }
+  .btn:hover, .btn:focus-visible { background: var(--asphalt-lift); }
+  .btn:hover::after, .btn:focus-visible::after { transform: scaleX(1); transform-origin: 0 50%; }
+  /* !important: GSAP writes an inline `scale: none` on elements it transforms (the magnetic buttons) */
+  .btn:active { scale: .97 !important; transition-duration: var(--d-quick), var(--d-press); }
+  .btn__label { display: inline-block; }
+  .btn--big { min-height: 3.5rem; padding-inline: var(--s6); }
+  @media (max-width: 599px) { .btn--big { width: 100%; } }
+  .price { display: inline-grid; overflow: clip; vertical-align: bottom; }
+  .price > span { grid-area: 1 / 1; transition: transform var(--d-swap) var(--ease-out); }
+  .price__new { transform: translateY(100%); }
+  .is-club .price__old { transform: translateY(-100%); }
+  .is-club .price__new { transform: none; }
+
+  /* text links: a resting hairline, a course-blue sweep in from the left and out to the right */
+  .tl {
+    position: relative; display: inline-block; padding: 0; border: 0; background: none;
+    color: var(--asphalt); font-weight: 600; text-decoration: none; white-space: nowrap; cursor: pointer;
+  }
+  .tl::before, .tl::after { content: ""; position: absolute; left: 0; right: 0; bottom: 1px; }
+  .tl::before { height: 1px; background: currentColor; }
+  .tl::after {
+    height: 2px; bottom: 0; background: var(--course); transform: scaleX(0); transform-origin: 100% 50%;
+    transition: transform var(--d-sweep) var(--ease-out);
+  }
+  .tl:hover::after, .tl:focus-visible::after, .tl:active::after { transform: scaleX(1); transform-origin: 0 50%; }
+
+  /* rules dialog */
+  dialog {
+    width: min(100% - 2 * var(--gutter), 36rem); max-height: calc(100dvh - 2 * var(--gutter));
+    padding: 0; border: 0; border-radius: var(--radius); background: var(--tyvek); color: var(--asphalt);
+  }
+  dialog::backdrop { background: var(--veil); }
+  dialog[open]::backdrop { animation: fade var(--d-backdrop) ease-out; }
+  .sheet { display: grid; gap: var(--s5); justify-items: start; padding: var(--s7) var(--s6) var(--s6); }
+  .sheet h2 { font-size: var(--t-h3); line-height: 1.15; font-weight: 700; }
+  .sheet ul { display: grid; gap: var(--s3); }
+  .sheet li { position: relative; padding-left: var(--s5); }
+  .sheet li::before { content: ""; position: absolute; left: 0; top: .7em; width: var(--s3); height: 3px; background: var(--course); }
+
+  /* confirmation and bib */
+  .done { justify-items: start; }
+  .done p { max-width: 52ch; }
+  .bib {
+    position: relative; width: min(100%, 25rem); margin-block: var(--s2) var(--s3);
+    border: 1px solid var(--rule); border-radius: var(--radius-bib); overflow: clip;
+    background: var(--tyvek); box-shadow: 0 1px 0 var(--asphalt); transform: rotate(-1deg);
+  }
+  .bib__stripe { padding: var(--s3) var(--s6); background: var(--marshal); font-weight: 700; }
+  .bib__num { padding: var(--s4) var(--s6) 0; font-size: var(--t-bib); line-height: .9; font-weight: 900; font-stretch: var(--w-mark); font-variant-numeric: tabular-nums; }
+  .bib__start { padding: var(--s2) var(--s6) 0; font-weight: 600; }
+  .bib__foot { padding: var(--s3) var(--s6) var(--s5); color: var(--kerb); font-size: var(--t-xs); }
+  .pin { position: absolute; width: 8px; height: 8px; border-radius: 50%; background: var(--tyvek); border: 1px solid var(--asphalt); }
+  .pin:nth-of-type(1) { top: 9px; left: 9px; }
+  .pin:nth-of-type(2) { top: 9px; right: 9px; }
+  .pin:nth-of-type(3) { bottom: 9px; left: 9px; }
+  .pin:nth-of-type(4) { bottom: 9px; right: 9px; }
+  .done__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s4) var(--s6); }
+
+  @keyframes pop { from { transform: scale(.6); } to { transform: scale(1); } }
+  @keyframes fade { from { opacity: 0; } }
+
+  /* Hidden start states exist only when the motion stack loaded and motion is welcome. */
+  @media (prefers-reduced-motion: no-preference) {
+    html.js .bar > * { opacity: 0; }
+    html.js .mark { clip-path: inset(-30% 100% -30% 0); }
+    html.js .mark span { will-change: transform; }
+    html.js .intro { clip-path: inset(0 100% 0 0); }
+    html.js .seg { transform: scaleY(0); }
+    html.js .post:not(.is-passed) .tick { background: var(--tyvek); border-color: var(--kerb); }
+    html.js .post:not(.is-passed) .km { color: var(--kerb); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :root {
+      --d-press: 0s; --d-release: 0s; --d-quick: 0s; --d-hover: 0s; --d-field: 0s; --d-line: 0s;
+      --d-sweep: 0s; --d-err: 0s; --d-swap: 0s; --d-pop: 0s; --d-pass: 0s; --d-backdrop: 0s;
+    }
+    .btn:active { scale: none !important; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <section class="cta" id="top" aria-labelledby="cta-h">
+    <header class="bar">
+      <p class="bar__name">Merriton Marathon</p>
+      <p class="bar__date"><time datetime="2027-04-18">Sunday 18 April 2027</time></p>
+      <p class="bar__count" id="countdown">Entries close 30 November</p>
+      <a class="btn bar__btn" href="#enter" data-magnet><span class="btn__label">Enter now</span></a>
+    </header>
+
+    <div class="mark-wrap">
+      <p class="sr-only">Merriton Marathon 2027</p>
+      <div class="mark" aria-hidden="true"><span>M</span><span>E</span><span>R</span><span>R</span><span>I</span><span>T</span><span>O</span><span>N</span></div>
+    </div>
+
+    <div class="intro">
+      <h2 id="cta-h" tabindex="-1">Entries for the 2027 race are open</h2>
+      <div class="lede">
+        <p>Merriton Marathon returns on Sunday 18 April 2027: one lap of the city on closed roads, starting and finishing in the old town.</p>
+        <p>There are 16,000 places, first come, first served, and 11,284 are left. Entries close on Monday 30 November, or sooner if the field fills.</p>
+        <p>Running for a charity? <a class="tl" href="mailto:charity@merriton-marathon.example?subject=Charity%20places%202027" target="_blank" rel="noopener">Ask about charity places</a></p>
+      </div>
+    </div>
+
+    <div class="split">
+      <section class="course" aria-labelledby="course-h">
+        <h3 id="course-h">One lap of the city, on closed roads</h3>
+        <ol class="posts">
+          <li class="post" style="--km: 5">
+            <span class="km data">0 km</span><span class="tick" aria-hidden="true"></span><span class="seg" aria-hidden="true"></span>
+            <div class="post__body"><strong>Corn Exchange Square</strong><p>Five waves start 12 minutes apart from 08:30.</p></div>
+          </li>
+          <li class="post" style="--km: 16.1">
+            <span class="km data">5 km</span><span class="tick" aria-hidden="true"></span><span class="seg" aria-hidden="true"></span>
+            <div class="post__body"><strong>Old Dock Road</strong><p>The first of eight water stations; the rest come every 5 km.</p></div>
+          </li>
+          <li class="post" style="--km: 13.9">
+            <span class="km data">21.1 km</span><span class="tick" aria-hidden="true"></span><span class="seg" aria-hidden="true"></span>
+            <div class="post__body"><strong>Halfway at Riverside Park</strong><p>Gels, toilets and the family cheer zone.</p></div>
+          </li>
+          <li class="post" style="--km: 7.195">
+            <span class="km data">35 km</span><span class="tick" aria-hidden="true"></span><span class="seg" aria-hidden="true"></span>
+            <div class="post__body"><strong>Merriton Bridge</strong><p>The only climb: 18 m over 600 m.</p></div>
+          </li>
+          <li class="post" id="finish">
+            <span class="km data">42.195 km</span><span class="tick" aria-hidden="true"></span>
+            <div class="post__body"><strong>Finish on Castle Street</strong><p>Medal, T-shirt and your chip time by text within the hour.</p></div>
+          </li>
+        </ol>
+      </section>
+
+      <div class="entry" id="enter">
+        <form id="entry-form" novalidate aria-labelledby="enter-h">
+          <h3 id="enter-h" tabindex="-1">Enter the 2027 race</h3>
+
+          <div class="fields">
+            <div class="field" data-field="first">
+              <div class="field__box">
+                <input id="f-first" name="first" type="text" autocomplete="given-name" placeholder=" " required>
+                <label for="f-first">First name</label>
+                <span class="field__line" aria-hidden="true"></span>
+              </div>
+              <p class="msg"><span class="msg__err" id="first-err">Enter your first name.</span></p>
+            </div>
+            <div class="field" data-field="last">
+              <div class="field__box">
+                <input id="f-last" name="last" type="text" autocomplete="family-name" placeholder=" " required>
+                <label for="f-last">Last name</label>
+                <span class="field__line" aria-hidden="true"></span>
+              </div>
+              <p class="msg"><span class="msg__err" id="last-err">Enter your last name.</span></p>
+            </div>
+            <div class="field field--wide" data-field="email">
+              <div class="field__box">
+                <input id="f-email" name="email" type="email" autocomplete="email" placeholder=" " required aria-describedby="email-hint">
+                <label for="f-email">Email</label>
+                <span class="field__line" aria-hidden="true"></span>
+              </div>
+              <p class="msg"><span class="msg__hint" id="email-hint">Your bib collection details go here.</span><span class="msg__err" id="email-err">Enter an email address like name@example.com.</span></p>
+            </div>
+            <div class="field field--date" data-field="dob">
+              <div class="field__box">
+                <input id="f-dob" name="dob" type="date" min="1920-01-01" max="2009-04-18" autocomplete="bday" required aria-describedby="dob-hint">
+                <label for="f-dob">Date of birth</label>
+                <span class="field__line" aria-hidden="true"></span>
+              </div>
+              <p class="msg"><span class="msg__hint" id="dob-hint">You must be 18 by race day.</span><span class="msg__err" id="dob-err">You need to be 18 by 18 April 2027, so born on or before 18 April 2009.</span></p>
+            </div>
+            <div class="field" data-field="club">
+              <div class="field__box">
+                <input id="f-club" name="club" type="text" placeholder=" " aria-describedby="club-hint">
+                <label for="f-club">Running club, optional</label>
+                <span class="field__line" aria-hidden="true"></span>
+              </div>
+              <p class="msg"><span class="msg__hint" id="club-hint">Leave blank if you're unattached. Club members pay £58.</span></p>
+            </div>
+          </div>
+
+          <fieldset class="waves" data-field="wave">
+            <legend>When do you expect to finish?</legend>
+            <div class="rows">
+              <label class="row"><input type="radio" name="wave" value="A" data-start="08:30" required><span class="disc" aria-hidden="true">A</span>
+                <span class="w-main"><span class="sr-only">Wave A, </span><span class="w-time">Under 3:15</span><span class="w-pace data">Faster than 4:37 per km</span></span><span class="data">Start 08:30</span></label>
+              <label class="row"><input type="radio" name="wave" value="B" data-start="08:42" required><span class="disc" aria-hidden="true">B</span>
+                <span class="w-main"><span class="sr-only">Wave B, </span><span class="w-time">3:15 to 3:45</span><span class="w-pace data">4:37 to 5:20 per km</span></span><span class="data">Start 08:42</span></label>
+              <label class="row"><input type="radio" name="wave" value="C" data-start="08:54" required><span class="disc" aria-hidden="true">C</span>
+                <span class="w-main"><span class="sr-only">Wave C, </span><span class="w-time">3:45 to 4:15</span><span class="w-pace data">5:20 to 6:03 per km</span></span><span class="data">Start 08:54</span></label>
+              <label class="row"><input type="radio" name="wave" value="D" data-start="09:06" required><span class="disc" aria-hidden="true">D</span>
+                <span class="w-main"><span class="sr-only">Wave D, </span><span class="w-time">4:15 to 5:00</span><span class="w-pace data">6:03 to 7:07 per km</span></span><span class="data">Start 09:06</span></label>
+              <label class="row"><input type="radio" name="wave" value="E" data-start="09:18" required><span class="disc" aria-hidden="true">E</span>
+                <span class="w-main"><span class="sr-only">Wave E, </span><span class="w-time">5:00 to 6:30</span><span class="w-pace data">7:07 to 9:15 per km</span></span><span class="data">Start 09:18</span></label>
+            </div>
+            <p class="msg"><span class="msg__err" id="wave-err">Choose the time you expect to finish in.</span></p>
+          </fieldset>
+
+          <div class="consent" data-field="rules">
+            <div class="consent__line">
+              <label class="check"><input type="checkbox" name="rules" required><span class="box" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M2.5 7.4 5.6 10.3 11.5 3.8" pathLength="1"/></svg></span>I have read the entry rules</label>
+              <button class="tl" type="button" id="rules-open" aria-haspopup="dialog">Read the entry rules</button>
+            </div>
+            <p class="msg"><span class="msg__err" id="rules-err">Tick to confirm you have read the entry rules.</span></p>
+          </div>
+
+          <div>
+            <button class="btn btn--big" type="submit" id="submit" data-magnet data-finish><span class="btn__label">Reserve my place,&nbsp;<span class="price"><span class="price__old" aria-hidden="false">£68</span><span class="price__new" aria-hidden="true">£58</span></span></span></button>
+          </div>
+        </form>
+
+        <div class="done" id="done" hidden>
+          <h3 id="done-h" tabindex="-1">Place reserved for <span id="done-name">you</span></h3>
+          <div class="bib" id="bib">
+            <span class="pin"></span><span class="pin"></span><span class="pin"></span><span class="pin"></span>
+            <p class="bib__stripe" id="bib-wave">Wave C</p>
+            <p class="bib__num" id="bib-num">7617</p>
+            <p class="bib__start" id="bib-start">Start 08:54, Corn Exchange Square</p>
+            <p class="bib__foot">Merriton Marathon, Sunday 18 April 2027</p>
+          </div>
+          <p id="done-text">Your bib is 7617, wave C.</p>
+          <div class="done__actions">
+            <button class="btn" type="button" id="change" data-finish><span class="btn__label">Change my details</span></button>
+            <a class="tl" href="#top">Back to the start</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<dialog id="rules" aria-labelledby="rules-h">
+  <div class="sheet">
+    <h2 id="rules-h">Entry rules</h2>
+    <ul>
+      <li>You must be 18 or over on race day.</li>
+      <li>The course closes 6 h 30 min after your wave starts, and a sweep bus follows the last runner.</li>
+      <li>Transfer your place to another runner for free until 1 March 2027.</li>
+      <li>Refunds of 80% until 1 February 2027, or defer to 2028 for £10.</li>
+      <li>Bone-conduction headphones only.</li>
+      <li>Answer the medical questions when you collect your bib.</li>
+    </ul>
+    <button class="btn" type="button" id="rules-close"><span class="btn__label">Close the rules</span></button>
+  </div>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  const root = document.documentElement;
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const libs = !!(window.gsap && window.ScrollTrigger && window.Lenis);
+  if (libs) { root.classList.add('js'); gsap.registerPlugin(ScrollTrigger); } // CDN blocked: no class, everything shows in its final state and still works
+  let lenis = null, motionOn = false;
+  const expoOut = t => (t === 1 ? 1 : 1 - 2 ** (-10 * t));
+
+  /* ---------- pure helpers (also asserted by #selftest) ---------- */
+  // Entries close Monday 30 November 2026.
+  const closeLine = (today) => {
+    const d = new Date(today); d.setHours(0, 0, 0, 0);
+    const days = Math.round((new Date(2026, 10, 30) - d) / 864e5);
+    return days > 1 ? `Entries close in ${days} days` : days === 1 ? 'Entries close tomorrow'
+      : days === 0 ? 'Entries close today' : 'Entries closed on 30 November';
+  };
+  // Equal blocks of 3,200 numbers per wave, 16,000 in all.
+  const BASE = { A: 1001, B: 4201, C: 7401, D: 10601, E: 13801 };
+  const hash = s => [...s.toLowerCase()].reduce((h, ch) => (h * 31 + ch.codePointAt(0)) >>> 0, 7);
+  const bibNumber = (wave, name) => BASE[wave] + hash(name) % 3200;
+  // Stride bulge: a gaussian stretch around letter c, normalised so the word fills W exactly and capped at scaleX 2.
+  const stretch = (w, W, c, A) => {
+    const g = w.map((_, i) => Math.exp(-((i - c) ** 2) / 2.42)); // sigma 1.1 letters
+    const W0 = w.reduce((a, b) => a + b, 0);
+    let G = 0, gp = 0;
+    g.forEach((v, i) => { G += w[i] * v; gp = Math.max(gp, v); });
+    const den = W * gp - 2 * G;
+    if (den > 0) A = Math.min(A, (2 * W0 - W) / den);
+    const k = W / (W0 + A * G);
+    return g.map(v => k * (1 + A * v));
+  };
+
+  /* ---------- countdown ---------- */
+  $('#countdown').textContent = closeLine(new Date());
+
+  /* ---------- anchors: smooth when Lenis runs, focus always moves ---------- */
+  const entry = $('#enter'), form = $('#entry-form'), done = $('#done');
+  const focusFor = { enter: () => $$('h3', entry).find(h => h.offsetParent), top: () => $('#cta-h') };
+  function go(el, focusEl) {
+    if (lenis) lenis.scrollTo(el, { duration: 1.1, easing: expoOut, offset: -16 });
+    else el.scrollIntoView();
+    focusEl?.focus({ preventScroll: true });
+  }
+  document.addEventListener('click', e => {
+    const a = e.target.closest('a[href^="#"]');
+    const id = a?.getAttribute('href').slice(1);
+    if (!id || !document.getElementById(id)) return;
+    e.preventDefault();
+    go(document.getElementById(id), focusFor[id]?.());
+  });
+  document.addEventListener('touchstart', () => {}, { passive: true }); // lets iOS show :active press states
+
+  /* ---------- wordmark fit (works without the libraries) ---------- */
+  const wrap = $('.mark-wrap'), mark = $('.mark'), letters = $$('.mark span');
+  let widths = [], W = 0, track = 0, lastKey = '';
+  function fit() {
+    letters.forEach(l => { l.style.transform = ''; });
+    const avail = mark.clientWidth, gaps = letters.length - 1;
+    const row = () => letters.reduce((s, l) => s + l.getBoundingClientRect().width, 0) + gaps * parseFloat(getComputedStyle(letters[1]).marginLeft);
+    const sum = row(), changed = sum > 0 && Math.abs(sum - avail) > .5;
+    if (changed) mark.style.fontSize = `${parseFloat(getComputedStyle(mark).fontSize) * avail / sum}px`;
+    widths = letters.map(l => l.getBoundingClientRect().width);
+    track = parseFloat(getComputedStyle(letters[1]).marginLeft);
+    W = avail - gaps * track; // what the scaled letter cells must add up to
+    lastKey = '';
+    return changed;
+  }
+  function draw(c, A, clip) {
+    const key = `${c.toFixed(3)} ${A.toFixed(3)}`;
+    if (key === lastKey && !clip) return;
+    lastKey = key;
+    const s = stretch(widths, W, c, A), centres = [];
+    let x = 0, left = 0;
+    letters.forEach((el, i) => {
+      const sy = Math.min(1, Math.max(.72, 1 / Math.sqrt(s[i])));
+      el.style.transform = `translate3d(${x.toFixed(2)}px,0,0) scale(${s[i].toFixed(4)},${sy.toFixed(4)})`;
+      x += widths[i] * (s[i] - 1);
+      centres.push(left + widths[i] * s[i] / 2);
+      left += widths[i] * s[i] + track;
+    });
+    if (clip) { // the reveal edge rides the centre of the bulge
+      const i0 = Math.min(Math.max(Math.floor(c), 0), centres.length - 2);
+      const xc = centres[i0] + (c - i0) * (centres[i0 + 1] - centres[i0]);
+      mark.style.clipPath = `inset(-30% ${Math.max(0, W - xc).toFixed(1)}px -30% 0)`;
+    }
+  }
+
+  /* ---------- finish line meets the submit button (wide layout) ---------- */
+  const course = $('.course'), finishTick = $('#finish .tick'), wideMQ = matchMedia('(min-width: 992px)');
+  function alignFinish() {
+    const before = course.style.marginBottom;
+    course.style.marginBottom = '';
+    const btn = $$('[data-finish]', entry).find(b => b.offsetParent);
+    if (wideMQ.matches && btn) {
+      const b = btn.getBoundingClientRect(), t = finishTick.getBoundingClientRect();
+      course.style.marginBottom = `${-((b.top + b.height / 2) - (t.top + t.height / 2)).toFixed(1)}px`;
+    }
+    return course.style.marginBottom !== before;
+  }
+  function layout() {
+    const changed = fit() | alignFinish();
+    if (changed && libs) ScrollTrigger.refresh();
+  }
+  const ready = Promise.race([
+    (document.fonts ? document.fonts.load('900 condensed 100px "Pathway Extreme"', 'MERITON').then(() => document.fonts.ready) : Promise.resolve()),
+    new Promise(r => setTimeout(r, 1000))
+  ]).catch(() => {}).then(layout);
+  document.fonts?.ready.then(layout);
+  let rz;
+  addEventListener('resize', () => { cancelAnimationFrame(rz); rz = requestAnimationFrame(layout); });
+  layout();
+
+  /* ---------- live price ---------- */
+  const submit = $('#submit'), club = form.elements.club;
+  const oldP = $('.price__old'), newP = $('.price__new');
+  const setPrice = () => {
+    const on = club.value.trim() !== '';
+    submit.classList.toggle('is-club', on);
+    oldP.setAttribute('aria-hidden', on);
+    newP.setAttribute('aria-hidden', !on);
+  };
+  club.addEventListener('input', setPrice);
+
+  /* ---------- validation ---------- */
+  const F = form.elements;
+  const valid = {
+    first: () => F.first.value.trim() !== '',
+    last: () => F.last.value.trim() !== '',
+    email: () => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(F.email.value.trim()),
+    dob: () => F.dob.value >= '1920-01-01' && F.dob.value <= '2009-04-18',
+    wave: () => F.wave.value !== '',
+    rules: () => F.rules.checked
+  };
+  function setInvalid(name, bad) {
+    const box = $(`[data-field="${name}"]`, form), hint = $('.msg__hint', box), err = $('.msg__err', box);
+    box.classList.toggle('is-invalid', bad);
+    $$('input', box).forEach(el => {
+      bad ? el.setAttribute('aria-invalid', 'true') : el.removeAttribute('aria-invalid');
+      const desc = bad ? err.id : hint?.id;
+      desc ? el.setAttribute('aria-describedby', desc) : el.removeAttribute('aria-describedby');
+    });
+  }
+  const recheck = e => {
+    const name = e.target.name;
+    if (valid[name] && $(`[data-field="${name}"]`, form).classList.contains('is-invalid') && valid[name]()) setInvalid(name, false);
+  };
+  form.addEventListener('input', recheck);
+  form.addEventListener('change', recheck);
+
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const bad = Object.keys(valid).filter(name => { const b = !valid[name](); setInvalid(name, b); return b; });
+    if (bad.length) {
+      const box = $(`[data-field="${bad[0]}"]`, form);
+      ($('input:checked', box) || $('input', box)).focus();
+      return;
+    }
+    showDone();
+  });
+
+  /* ---------- confirmation and back ---------- */
+  const bib = $('#bib');
+  function showDone() {
+    const first = F.first.value.trim(), last = F.last.value.trim(), wave = F.wave.value;
+    const start = $('input[name="wave"]:checked', form).dataset.start;
+    const num = bibNumber(wave, `${first} ${last}`), price = club.value.trim() ? '£58' : '£68';
+    $('#done-name').textContent = `${first} ${last}`;
+    $('#bib-wave').textContent = `Wave ${wave}`;
+    $('#bib-num').textContent = num;
+    $('#bib-start').textContent = `Start ${start}, Corn Exchange Square`;
+    $('#done-text').textContent = `Your bib is ${num}, wave ${wave}. Pay ${price} from the link sent to ${F.email.value.trim()} within 48 hours, or the place goes back to the pool.`;
+    const swap = () => {
+      form.hidden = true; form.style.opacity = ''; done.hidden = false;
+      layout();
+      go(entry, $('#done-h'));
+      if (motionOn) gsap.fromTo(bib, { clipPath: 'inset(0% 0% 100% 0%)', rotate: 0 },
+        { clipPath: 'inset(0% 0% 0% 0%)', rotate: -1, duration: .7, ease: 'expo.out', clearProps: 'clipPath' });
+    };
+    motionOn ? gsap.to(form, { opacity: 0, duration: .25, ease: 'none', onComplete: swap }) : swap();
+  }
+  $('#change').addEventListener('click', () => {
+    done.hidden = true; form.hidden = false;
+    layout();
+    go(entry, F.first);
+    if (motionOn) gsap.fromTo(form, { opacity: 0 }, { opacity: 1, duration: .5, ease: 'expo.out', clearProps: 'opacity' });
+  });
+
+  /* ---------- rules dialog ---------- */
+  const dlg = $('#rules'), opener = $('#rules-open');
+  opener.addEventListener('click', () => {
+    dlg.showModal();
+    lenis?.stop();
+    if (motionOn) gsap.fromTo(dlg, { opacity: 0, scale: .98 }, { opacity: 1, scale: 1, duration: .35, ease: 'expo.out', clearProps: 'all' });
+  });
+  $('#rules-close').addEventListener('click', () => dlg.close());
+  dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); }); // backdrop
+  dlg.addEventListener('close', () => { lenis?.start(); opener.focus(); });
+
+  /* ---------- self-test: load with #selftest ---------- */
+  window.runSelfTest = () => {
+    const ok = [];
+    const w = [1.05, .62, .66, .66, .3, .58, .7, .73].map(v => v * 100), Wt = w.reduce((a, b) => a + b, 0);
+    for (let c = -1; c <= 8.5; c += .25) for (const A of [0, .25, .6, .9, 1.6, 1.8, 3]) {
+      const s = stretch(w, Wt, c, A);
+      ok.push(Math.abs(s.reduce((a, v, i) => a + v * w[i], 0) - Wt) < .01, Math.max(...s) <= 2.0001);
+    }
+    ok.push(closeLine(new Date(2026, 9, 22)) === 'Entries close in 39 days', closeLine(new Date(2026, 10, 30)) === 'Entries close today',
+      closeLine(new Date(2026, 11, 1)) === 'Entries closed on 30 November', closeLine(new Date(2026, 10, 29)) === 'Entries close tomorrow');
+    for (const v of 'ABCDE') { const n = bibNumber(v, 'Ana Ruiz'); ok.push(n >= BASE[v] && n < BASE[v] + 3200); }
+    console.log(ok.every(Boolean) ? 'SELFTEST PASS' : `SELFTEST FAIL at ${ok.indexOf(false)}`);
+  };
+  if (location.hash === '#selftest') runSelfTest();
+
+  if (!libs) return;
+
+  /* ---------- motion: GSAP + Lenis, all inside matchMedia ---------- */
+  const intro = $('.intro'), barItems = $$('.bar > *');
+  let introDone = false;
+  const mm = gsap.matchMedia();
+  mm.add({
+    motion: '(prefers-reduced-motion: no-preference)',
+    reduce: '(prefers-reduced-motion: reduce)',
+    fine: '(hover: hover) and (pointer: fine)',
+    wide: '(min-width: 992px)'
+  }, (ctx) => {
+    const { motion, fine, wide } = ctx.conditions;
+    if (!motion) return; // reduced: CSS shows final states, native scroll, flat lockup
+
+    motionOn = true;
+    const ac = new AbortController(), sig = { signal: ac.signal };
+    lenis = new Lenis({ lerp: .1, smoothWheel: true, autoRaf: false });
+    lenis.on('scroll', ScrollTrigger.update);
+    const raf = (t) => lenis.raf(t * 1000);
+    gsap.ticker.add(raf);
+    gsap.ticker.lagSmoothing(0);
+
+    /* S1 + S2 + P1: the stride bulge */
+    let live = false, A = 0, cScroll = -1, cNow = -1;
+    const ptr = { c: 0, A: 0, blend: 0 };
+    const trig = ScrollTrigger.create({
+      trigger: wrap, start: 'clamp(top bottom)', end: 'bottom top',
+      onUpdate: (self) => { cScroll = -1 + self.progress * 9.5; },
+      onToggle: () => { if (live) onScreen() ? gsap.ticker.add(frame) : gsap.ticker.remove(frame); }
+    });
+    // ScrollTrigger calls progress 0 (page top) inactive, but the wordmark is on screen there
+    function onScreen() { const r = wrap.getBoundingClientRect(); return r.bottom > 0 && r.top < innerHeight; }
+    cScroll = -1 + trig.progress * 9.5;
+    function frame(time, dt) {
+      const v = Math.abs(trig.getVelocity());
+      const target = Math.max(Math.min(v * .0008, 1.35), ptr.A * ptr.blend); // at rest the lockup is flat, like the reduced-motion one
+      A += (target - A) * (1 - Math.pow(.9, dt / 16.67)); // frame-rate independent catch-up
+      cNow = cScroll + (ptr.c - cScroll) * ptr.blend;
+      draw(cNow, A);
+    }
+    const startLive = () => {
+      live = true; mark.style.clipPath = 'none'; lastKey = '';
+      if (onScreen()) gsap.ticker.add(frame);
+    };
+
+    /* L1 + L2 + L3: page load */
+    if (introDone) {
+      gsap.set(barItems, { opacity: 1 });
+      intro.style.clipPath = 'none';
+      startLive();
+    } else {
+      const proxy = { c: -1, A: 1.8 };
+      const tl = gsap.timeline({ paused: true, onComplete: () => { introDone = true; } });
+      tl.fromTo(barItems, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: .5, ease: 'expo.out', stagger: .06 }, 0)
+        // c runs on power3.out so the sprint stays visible (expo.out crosses all eight letters in 0.2s);
+        // A holds its stride on power2.in and lets go as the pack clears the N.
+        .to(proxy, { A: 0, duration: 1.5, ease: 'power2.in' }, .1)
+        .to(proxy, {
+          c: 8.5, duration: 1.5, ease: 'power3.out',
+          onStart: () => draw(proxy.c, proxy.A, true),
+          onUpdate: () => draw(proxy.c, proxy.A, true),
+          onComplete: startLive
+        }, .1)
+        .fromTo(intro, { clipPath: 'inset(0% 100% 0% 0%)' },
+          { clipPath: 'inset(0% 0% 0% 0%)', duration: .9, ease: 'expo.out', onComplete: () => { intro.style.clipPath = 'none'; } }, .55);
+      ready.then(() => tl.play());
+    }
+
+    const indexAt = (x) => { // fractional letter index from natural positions, centred on each letter
+      let L = 0;
+      for (let i = 0; i < widths.length; i++) {
+        if (x < L + widths[i] || i === widths.length - 1) return i + (x - L) / widths[i] - .5;
+        L += widths[i] + track;
+      }
+      return 0;
+    };
+    if (fine) {
+      const qc = gsap.quickTo(ptr, 'c', { duration: .45, ease: 'power3.out' });
+      let r = null;
+      wrap.addEventListener('pointerenter', (e) => {
+        if (!live) return;
+        r = mark.getBoundingClientRect();
+        gsap.killTweensOf(ptr, 'blend');
+        qc(indexAt(e.clientX - r.left), cNow);
+        ptr.blend = 1; ptr.A = .6;
+      }, sig);
+      wrap.addEventListener('pointermove', (e) => { if (r) qc(indexAt(e.clientX - r.left)); }, sig);
+      wrap.addEventListener('pointerleave', () => {
+        if (!r) return;
+        r = null;
+        gsap.to(ptr, { blend: 0, duration: .6, ease: 'expo.out' });
+      }, sig);
+    } else {
+      wrap.addEventListener('pointerdown', (e) => {
+        if (!live || e.pointerType === 'mouse') return;
+        const r = mark.getBoundingClientRect();
+        gsap.killTweensOf(ptr);
+        Object.assign(ptr, { c: indexAt(e.clientX - r.left), A: .9 });
+        gsap.timeline().to(ptr, { blend: 1, duration: .3, ease: 'expo.out' })
+          .to(ptr, { blend: 0, duration: .8, ease: 'expo.out' }, '+=.2');
+      }, sig);
+    }
+
+    /* S3: the course line draws as you read down; a post is passed when the paint reaches its tick.
+       The paint meets the page at 65% of the viewport (75% on phones), or lower when the page ends
+       before the finish could get there, so the line always completes at the bottom of the page. */
+    const posts = $$('.post'), segs = [];
+    const lineAt = () => {
+      const f = finishTick.getBoundingClientRect(), fy = f.top + scrollY + f.height / 2;
+      return 100 * Math.max(wide ? .65 : .75, Math.min(1, (fy - ScrollTrigger.maxScroll(window) + 2) / innerHeight));
+    };
+    const sync = () => segs.forEach((st, i) => {
+      if (i === 0) posts[0].classList.toggle('is-passed', st.progress > 0);
+      posts[i + 1].classList.toggle('is-passed', st.progress > .995);
+    });
+    let alive = true;
+    // built once the font is in, so the ticks are measured on the final layout (no pass/unpass flicker at load)
+    ready.then(() => alive && ctx.add(() => posts.slice(0, -1).forEach((post) => {
+      const tick = $('.tick', post), y = () => tick.offsetTop + tick.offsetHeight / 2;
+      const tw = gsap.fromTo($('.seg', post), { scaleY: 0 }, {
+        scaleY: 1, ease: 'none',
+        scrollTrigger: {
+          trigger: post, start: () => `top+=${y()} ${lineAt()}%`, end: () => `bottom+=${y()} ${lineAt()}%`,
+          scrub: true, invalidateOnRefresh: true, onUpdate: sync
+        }
+      });
+      segs.push(tw.scrollTrigger);
+      sync();
+    })));
+    ScrollTrigger.addEventListener('refresh', sync);
+
+    /* HV5: magnetic primary buttons (fine pointer only; keyboard focus never moves them) */
+    if (fine) $$('[data-magnet]').forEach((btn) => {
+      const label = $('.btn__label', btn);
+      const q = [gsap.quickTo(btn, 'x', { duration: .5, ease: 'power3.out' }), gsap.quickTo(btn, 'y', { duration: .5, ease: 'power3.out' }),
+        gsap.quickTo(label, 'x', { duration: .5, ease: 'power3.out' }), gsap.quickTo(label, 'y', { duration: .5, ease: 'power3.out' })];
+      let r = null;
+      btn.addEventListener('pointerenter', () => { r = btn.getBoundingClientRect(); }, sig);
+      btn.addEventListener('pointermove', (e) => {
+        if (!r) return;
+        const nx = (e.clientX - r.left) / r.width * 2 - 1, ny = (e.clientY - r.top) / r.height * 2 - 1;
+        q[0](nx * 5); q[1](-2 + ny * 3); q[2](-nx * 1.5); q[3](-ny * 1.5);
+      }, sig);
+      btn.addEventListener('pointerleave', () => {
+        r = null;
+        q.forEach((to) => to(0));
+      }, sig);
+    });
+
+    return () => {
+      ac.abort(); alive = false;
+      ScrollTrigger.removeEventListener('refresh', sync);
+      gsap.ticker.remove(frame);
+      gsap.ticker.remove(raf);
+      gsap.ticker.lagSmoothing(500, 33);
+      lenis.destroy(); lenis = null; motionOn = false;
+      letters.forEach((l) => { l.style.transform = ''; });
+      $$('.post').forEach((p) => p.classList.remove('is-passed'));
+    };
+  });
+})();
+</script>
+</body>
+</html>

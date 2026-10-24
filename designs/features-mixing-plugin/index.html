@@ -1,0 +1,1234 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>Brack 2408 channel strip</title>
+<meta name="description" content="Brack 2408, a mixing-console plugin modelled on a restored 1974 broadcast desk. Play a loop in the browser and switch stages to hear each one.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=PT+Serif:ital,wght@0,400;0,700;1,400&family=Signika:GRAD,wght@-30..0,300..700&display=swap">
+<style>
+:root {
+  /* Colour: a painted-steel desk in a dim control room. */
+  --room: #1A232C;          /* page: the control room at night */
+  --paint: #2C3946;         /* desk paint: faceplate, fields */
+  --ivory: #E8E2D2;         /* silkscreen legends, text, knob lines */
+  --steel: #9DAAB6;         /* secondary text, unlit lamps, slots */
+  --pilot: #9ED6B0;         /* a lit pilot lamp: lit caps, focus */
+  --peak: #D64B3C;          /* VU red zone and peak LED only */
+  --vu-black: #0E1215;      /* the meter face */
+  --vu-ink: #F6F0E2;        /* warm-white meter legends and needle */
+  --vu-glow: #FFE7C2;       /* the face lamp's warm light */
+  --vu-cover: #1D2329;      /* the movement cover at the foot of the face */
+  --screw-hi: #56626E;
+  --screw-lo: #232C35;
+  --shadow: 0 0 0;          /* rgb channels for shadows and scribed lines */
+  --sheen: 255 255 255;     /* rgb channels for highlights and glass */
+  --edge: color-mix(in oklab, var(--steel) 30%, var(--paint));
+  --rule: color-mix(in oklab, var(--steel) 28%, var(--room));
+  --slot: color-mix(in oklab, var(--room) 70%, black);
+  --knob-hi: #3A4754;
+  --knob-lo: #1C252E;
+  --skirt: color-mix(in oklab, var(--paint) 45%, black);
+
+  /* Type */
+  --font-legend: "Signika", "Trebuchet MS", system-ui, sans-serif;
+  --font-text: "PT Serif", Georgia, serif;
+  --step--2: .75rem;
+  --step--1: .8125rem;
+  --step-0: 1.0625rem;
+  --step-1: 1.375rem;
+  --step-2: 1.875rem;
+  --step-3: clamp(2.25rem, 1.6rem + 3vw, 3.5rem);
+
+  /* Space (4px base) */
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px;
+  --s6: 32px; --s7: 48px; --s8: 64px; --s9: 96px; --s10: 128px;
+  --gutter: clamp(16px, 4vw, 48px);
+  --max: 1240px;
+  --strip-w: 300px;
+  --hdr-h: 64px;
+
+  /* Radius by object */
+  --r-plate: 6px;
+  --r-cap: 3px;
+  --r-fader: 2px;
+
+  /* Motion: CSS transitions */
+  --m-lamp-on: .08s;   --m-ease-on: cubic-bezier(.25, .46, .45, .94);    /* power1.out */
+  --m-lamp-off: .28s;  --m-ease-off: cubic-bezier(.215, .61, .355, 1);   /* power2.out */
+  --m-stage: .3s;
+  --m-press: .12s;
+  --m-release: .4s;    --m-ease-release: cubic-bezier(.34, 1.56, .64, 1);
+  --m-swap: .35s;      --m-ease-swap: cubic-bezier(.65, 0, 0, 1);
+  --m-underline: .45s; --m-ease-underline: cubic-bezier(.35, 0, 0, 1);
+  --m-reveal: .2s;     --m-ease-expo: cubic-bezier(.16, 1, .3, 1);
+  --m-error: .25s;
+  --m-drift: .5s;      --m-ease-drift: cubic-bezier(.215, .61, .355, 1);
+  --m-drift-step: 20ms;
+  --m-beat: .652s;     --m-ease-eq: cubic-bezier(.7, 0, .2, 1);           /* one beat at 92 BPM */
+
+  /* Motion: read by the script (seconds and GSAP ease names) */
+  --g-rise: .9;     --ge-rise: expo.inOut;
+  --g-recall: .6;   --ge-recall: power3.out;
+  --g-lamp: .5;     /* ease: the "lamp" CustomEase */
+  --g-kick: .22;    --ge-kick: power2.out;
+  --g-settle: .9;   /* ease: the "vu-settle" CustomEase */
+  --g-vu: .3;       --ge-vu: power2.out;   /* VU ballistics: 300 ms */
+  --g-out: .15;     --ge-out: power1.in;
+  --g-in: .25;      --ge-in: power2.out;
+  --g-detent: .35;  --ge-detent: back.out(1.7);
+  --g-air: .25;     --ge-air: power3.out;
+  --g-rule: .9;     --ge-rule: expo.out;
+  --g-sheet: .5;    --ge-sheet: expo.inOut;
+  --g-links: .45;   --ge-links: expo.out;
+  --g-glare: 1.2;   --ge-glare: power3.out;
+}
+
+/* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+html.lenis, html.lenis body { height: auto; }
+.lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+.lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+.lenis.lenis-smooth iframe { pointer-events: none; }
+
+*, *::before, *::after { box-sizing: border-box; }
+html { background: var(--room); color: var(--ivory); -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--room); color: var(--ivory);
+  font: 400 var(--step-0)/1.6 var(--font-text);
+  -webkit-tap-highlight-color: color-mix(in oklab, var(--pilot) 25%, transparent);
+}
+h2, h3, h4, p, dl, dd, figure, fieldset { margin: 0; }
+fieldset { border: 0; padding: 0; min-width: 0; }
+button, input { font: inherit; color: inherit; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--pilot); outline-offset: 3px; }
+[tabindex="-1"]:focus { outline: none; }
+.nw { white-space: nowrap; }
+html:not(.js) .js-only { display: none; }
+.vh { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.wrap { width: min(100% - 2 * var(--gutter), var(--max)); margin-inline: auto; }
+.grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--s5); }
+
+/* Legends and the manual voice */
+.legend { font: 500 var(--step--1)/1.2 var(--font-legend); letter-spacing: .02em; color: var(--steel); }
+h2 {
+  font: 600 var(--step-3)/1.04 var(--font-legend); letter-spacing: -.012em;
+  font-variation-settings: "GRAD" 0; text-wrap: balance; max-width: 15ch;
+}
+h3 { font: 500 var(--step-1)/1.2 var(--font-legend); letter-spacing: -.005em; text-wrap: balance; }
+h4 { font: 500 var(--step-1)/1.2 var(--font-legend); }
+.lede { font-size: var(--step-1); line-height: 1.5; max-width: 34em; margin-top: var(--s5); color: var(--ivory); }
+.body { max-width: 58ch; color: var(--ivory); }
+.spec-line { font-size: var(--step--1); color: var(--steel); font-style: italic; }
+
+/* HV2: directional underline (in from the left, out to the right) */
+.ul { position: relative; text-decoration: none; }
+.ul::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -.14em; height: max(1px, .07em);
+  background: currentColor; transform: scaleX(0); transform-origin: right center;
+  transition: transform var(--m-underline) var(--m-ease-underline);
+}
+@media (hover: hover) and (pointer: fine) {
+  .ul:hover::after { transform: scaleX(1); transform-origin: left center; }
+}
+.ul:focus-visible::after, .ul[aria-current="true"]::after { transform: scaleX(1); transform-origin: left center; }
+@media (hover: none) {
+  .ul:not(.wordmark)::after { transform: scaleX(1); height: 1px; }
+}
+
+/* Skip link: off-screen until focused, then wipes down */
+.skip {
+  position: fixed; z-index: 50; top: var(--s2); left: var(--s2);
+  padding: var(--s2) var(--s4); background: var(--paint); color: var(--ivory);
+  font: 500 var(--step-0)/1.4 var(--font-legend); text-decoration: none; border-radius: var(--r-cap);
+  clip-path: inset(0 0 100% 0); transition: clip-path var(--m-reveal) var(--m-ease-expo);
+}
+.skip:focus { clip-path: inset(-6px); }
+
+/* Illuminated push-button cap: tabs, segmented radios, switches, primary buttons */
+.cap {
+  position: relative; isolation: isolate;
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s2);
+  min-height: 44px; padding: 0 var(--s4);
+  font: 500 var(--step-0)/1.2 var(--font-legend); letter-spacing: .02em;
+  font-variation-settings: "GRAD" -30;
+  color: var(--ivory); background: var(--paint);
+  border: 1px solid var(--edge); border-radius: var(--r-cap);
+  box-shadow: 0 2px 0 var(--skirt);
+  text-decoration: none; cursor: pointer; user-select: none;
+  transition: transform var(--m-release) var(--m-ease-release);
+}
+.cap::before {
+  content: ""; position: absolute; inset: -1px; z-index: -1; border-radius: inherit;
+  background: var(--pilot); opacity: 0;
+  transition: opacity var(--m-lamp-off) var(--m-ease-off);
+}
+@media (hover: hover) and (pointer: fine) {
+  .cap:hover::before, label:hover > .cap::before { opacity: .18; transition-duration: var(--m-lamp-on); }
+}
+.cap:focus-visible::before, input:focus-visible + .cap::before { opacity: .18; }
+input:focus-visible + .cap { outline: 2px solid var(--pilot); outline-offset: 3px; }
+.cap:active, label:active > .cap { transform: translateY(1px); transition-duration: var(--m-press); }
+.cap:active::before, label:active > .cap::before,
+.cap.is-lit::before, .cap[aria-selected="true"]::before, .cap[aria-pressed="true"]::before, :checked + .cap::before {
+  opacity: 1; transition: opacity var(--m-lamp-on) var(--m-ease-on);
+}
+.cap:active, label:active > .cap,
+.cap.is-lit, .cap[aria-selected="true"], .cap[aria-pressed="true"], :checked + .cap {
+  color: var(--room); font-variation-settings: "GRAD" 0;
+}
+.cap[aria-disabled="true"] { cursor: not-allowed; color: var(--steel); }
+.cap[aria-disabled="true"]::before { opacity: 0 !important; }
+.cap--big { min-height: 52px; padding: 0 var(--s5); }
+
+/* MI2: masked label swap, width reserved by sharing one cell */
+.swap { display: inline-grid; overflow: hidden; justify-items: start; }
+.swap > * { grid-area: 1 / 1; transition: transform var(--m-swap) var(--m-ease-swap); }
+.swap > :last-child { transform: translateY(110%); }
+.is-on > .swap > :first-child, [aria-expanded="true"] > .swap > :first-child, [aria-pressed="false"] > .swap > :first-child { transform: translateY(-110%); }
+.is-on > .swap > :last-child, [aria-expanded="true"] > .swap > :last-child, [aria-pressed="false"] > .swap > :last-child { transform: none; }
+
+/* ---------- Header ---------- */
+.hdr { position: sticky; top: 0; z-index: 30; background: var(--room); border-bottom: 1px solid var(--rule); }
+.hdr__in { display: flex; align-items: center; gap: var(--s6); min-height: var(--hdr-h); }
+.wordmark { margin-right: auto; font: 600 1.25rem/1 var(--font-legend); letter-spacing: -.01em; font-variation-settings: "GRAD" 0; }
+.nav { display: flex; gap: var(--s5); }
+.nav a { font: 500 var(--step-0)/1.4 var(--font-legend); letter-spacing: .02em; color: var(--ivory); }
+.menu-btn { display: none; }
+@media (max-width: 819px) {
+  .nav, .hdr .cap--cta { display: none; }
+  html.js .menu-btn { display: inline-flex; min-width: 6.5em; }
+  html:not(.js) .nav { display: flex; flex-wrap: wrap; gap: var(--s4); }
+  html:not(.js) .hdr__in { flex-wrap: wrap; padding-block: var(--s3); }
+}
+
+/* Mobile sheet (NV1) */
+html.menu-open { overflow: hidden; } /* locks scroll without Lenis too (reduced motion) */
+.sheet { display: none; }
+@media (max-width: 819px) {
+  html.js .sheet {
+    display: block; position: fixed; z-index: 25; inset: var(--hdr-h) 0 0;
+    background: var(--room); visibility: hidden; overflow-y: auto;
+    padding: var(--s7) var(--gutter);
+  }
+  .sheet ul { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s5); }
+  .sheet a { font: 500 var(--step-3)/1.1 var(--font-legend); letter-spacing: -.01em; color: var(--ivory); }
+}
+
+/* ---------- Strip section ---------- */
+.hero { padding-block: var(--s8) var(--s9); row-gap: 0; }
+.hero__intro { grid-column: 1 / 8; grid-row: 1; }
+.hero__controls { grid-column: 1 / 8; grid-row: 2; margin-top: var(--s7); }
+.strip { grid-column: 9 / 13; grid-row: 1 / 3; justify-self: center; align-self: start; width: var(--strip-w); }
+@media (min-width: 1200px) { /* the instrument is the hero */
+  :root { --strip-w: clamp(300px, 27vw, 400px); --knob: 60px; }
+  .strip { grid-column: 8 / 13; }
+}
+@media (min-width: 820px) and (max-width: 991px) {
+  :root { --strip-w: 248px; }
+  .strip { grid-column: 8 / 13; }
+}
+@media (max-width: 819px) {
+  .hero { display: block; padding-block: var(--s6) var(--s8); }
+  .lede { font-size: var(--step-0); margin-top: var(--s4); }
+  .strip { width: 100%; margin-top: var(--s5); }
+  .hero__controls { margin-top: var(--s6); }
+}
+
+/* Tabs and panels (CD9) */
+.tabs { display: none; }
+html.js .tabs { display: flex; gap: var(--s2); }
+html.js .tabs .cap { flex: 0 1 auto; min-width: 5.5em; }
+html.js:not(.booted) .tabs:not(.lit) .cap[aria-selected="true"] { color: var(--ivory); font-variation-settings: "GRAD" -30; }
+html.js:not(.booted) .tabs:not(.lit) .cap[aria-selected="true"]::before { opacity: 0; }
+.panels { display: grid; gap: var(--s8); }
+html.js .panels { gap: 0; margin-top: var(--s5); }
+html.js .panel { grid-area: 1 / 1; }
+html.js .panel:not(.is-active) { visibility: hidden; opacity: 0; }
+.panel { display: grid; gap: var(--s4); align-content: start; }
+.panel h3 { max-width: 30ch; }
+html.js .panel h3 { margin-top: var(--s2); }
+@media (max-width: 819px) {
+  html.js .tabs { gap: 6px; }
+  html.js .tabs .cap { flex: 1 1 0; min-width: 0; padding: 0 var(--s1); font-size: .9375rem; }
+}
+
+.control { display: grid; gap: var(--s2); margin-top: var(--s2); }
+.control > .cap { justify-self: start; min-width: 5.5em; }
+.seg { display: grid; gap: var(--s2); }
+.seg legend { padding: 0; margin-bottom: var(--s2); }
+.seg__caps { display: flex; flex-wrap: wrap; gap: var(--s2); }
+.seg label { position: relative; display: inline-flex; }
+.seg input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.seg .cap { min-width: 4.75em; pointer-events: none; }
+.seg label:has(:checked) { cursor: default; }
+@media (max-width: 819px) { /* after the base rules, so these win */
+  .seg__caps { flex-wrap: nowrap; gap: 6px; }
+  .seg label { flex: 1 1 0; }
+  .seg .cap { min-width: 0; width: 100%; padding: 0 var(--s1); }
+}
+
+/* Air shelf: the range input drawn as a fader slot with a fader cap */
+.range { display: grid; grid-template-columns: minmax(0, 22rem) auto; justify-content: start; align-items: center; column-gap: var(--s5); }
+.range label { grid-column: 1 / -1; margin-bottom: var(--s1); }
+.range output { font: 500 var(--step-1)/1 var(--font-legend); font-variant-numeric: tabular-nums; min-width: 4.5em; text-align: right; }
+input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 44px; margin: 0; background: transparent; cursor: pointer; }
+input[type="range"]:focus-visible { outline: none; }
+input[type="range"]::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: var(--slot); box-shadow: inset 0 1px 2px black; }
+input[type="range"]::-moz-range-track { height: 6px; border-radius: 3px; background: var(--slot); }
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 22px; height: 34px; margin-top: -14px; border-radius: var(--r-fader);
+  background: linear-gradient(90deg, transparent 9px, var(--steel) 9px 13px, transparent 13px), linear-gradient(var(--knob-hi), var(--knob-lo));
+  border: 1px solid var(--edge); box-shadow: 0 2px 0 var(--skirt);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 22px; height: 34px; border-radius: var(--r-fader);
+  background: linear-gradient(90deg, transparent 9px, var(--steel) 9px 13px, transparent 13px), linear-gradient(var(--knob-hi), var(--knob-lo));
+  border: 1px solid var(--edge);
+}
+@media (hover: hover) and (pointer: fine) {
+  input[type="range"]:hover::-webkit-slider-thumb { background: linear-gradient(90deg, transparent 9px, var(--ivory) 9px 13px, transparent 13px), linear-gradient(var(--knob-hi), var(--knob-lo)); }
+  input[type="range"]:hover::-moz-range-thumb { background: linear-gradient(90deg, transparent 9px, var(--ivory) 9px 13px, transparent 13px), linear-gradient(var(--knob-hi), var(--knob-lo)); }
+}
+input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px var(--room), 0 0 0 5px var(--pilot); }
+input[type="range"]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px var(--room), 0 0 0 5px var(--pilot); }
+
+/* ---------- The drawn channel strip ---------- */
+html.js:not(.booted) .strip { clip-path: inset(0 -12px); }
+.plate {
+  position: relative; background: var(--paint); border-radius: var(--r-plate);
+  padding: var(--s6) var(--s4) var(--s5);
+  box-shadow: inset 0 1px 0 rgb(var(--sheen) / .07), inset 0 -1px 0 rgb(var(--shadow) / .35);
+}
+html.js:not(.booted) .plate { transform: translateY(101%); }
+.screw {
+  position: absolute; width: 9px; height: 9px; border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, var(--screw-hi), var(--screw-lo) 75%);
+  box-shadow: 0 0 0 1px rgb(var(--shadow) / .35);
+}
+.screw::after { content: ""; position: absolute; left: 1px; right: 1px; top: 4px; height: 1px; background: rgb(var(--shadow) / .6); transform: rotate(var(--a, 20deg)); }
+.screw:nth-child(1) { top: 9px; left: 9px; --a: 28deg; }
+.screw:nth-child(2) { top: 9px; right: 9px; --a: -64deg; }
+.screw:nth-child(3) { bottom: 9px; left: 9px; --a: 82deg; }
+.screw:nth-child(4) { bottom: 9px; right: 9px; --a: 12deg; }
+
+.bridge { display: grid; gap: var(--s3); }
+.vu {
+  position: relative; overflow: hidden; border-radius: 3px; background: var(--vu-black);
+  aspect-ratio: 300 / 170;
+  box-shadow: 0 0 0 1px rgb(var(--shadow) / .55), 0 0 0 4px color-mix(in oklab, var(--paint) 70%, black);
+}
+.vu svg { display: block; width: 100%; height: 100%; }
+.vu text { font-family: var(--font-legend); font-weight: 500; fill: var(--vu-ink); text-anchor: middle; font-variant-numeric: tabular-nums; }
+.vu__scale text { font-size: 12px; }
+.vu__arc, .vu__ticks { fill: none; stroke: var(--vu-ink); stroke-width: 1.3; }
+.vu__red { fill: none; stroke: var(--peak); stroke-width: 7; }
+.vu__needle line { stroke: var(--vu-ink); stroke-width: 2; stroke-linecap: round; }
+.vu__cover { fill: var(--vu-cover); stroke: rgb(var(--sheen) / .08); }
+.vu__led { fill: var(--peak); opacity: .28; }
+.vu__unit { font-size: 15px; font-weight: 600; letter-spacing: .04em; }
+.vu__small { font-size: 11px; letter-spacing: .02em; }
+.vu__readout { display: none; font-size: 16px; }
+html.js:not(.booted) .vu__lit { opacity: .12; }
+.vu__glare {
+  position: absolute; inset: -24px; pointer-events: none;
+  background:
+    radial-gradient(60% 46% at 32% 18%, color-mix(in srgb, var(--vu-glow) 10%, transparent), transparent 70%),
+    linear-gradient(112deg, transparent 40%, rgb(var(--sheen) / .045) 47%, transparent 56%);
+}
+
+.play { width: 100%; justify-content: flex-start; padding-left: var(--s3); }
+.eq { display: inline-flex; align-items: flex-end; gap: 2px; width: 18px; height: 14px; flex: none; }
+.eq i { flex: 1; height: 100%; background: currentColor; transform-origin: 50% 100%; transform: scaleY(.3); transition: transform .2s var(--m-ease-off); }
+.eq i:nth-child(1) { --h: 1; }
+.eq i:nth-child(2) { --h: .62; animation-delay: -.163s; }
+.eq i:nth-child(3) { --h: .86; animation-delay: -.326s; }
+.eq i:nth-child(4) { --h: .54; animation-delay: -.489s; }
+@media (hover: hover) and (pointer: fine) { .play:hover:not(.is-on) .eq i { transform: scaleY(.45); } }
+.play:focus-visible:not(.is-on) .eq i { transform: scaleY(.45); }
+.play.is-on .eq i { animation: eq var(--m-beat) var(--m-ease-eq) infinite alternate; }
+.bridge.is-away .eq i { animation-play-state: paused; }
+@keyframes eq { from { transform: scaleY(.3); } to { transform: scaleY(var(--h)); } }
+.play:not(.js-ready) { display: none; }
+html.js .play.js-ready { display: inline-flex; }
+.bridge__note { font-size: var(--step--1); line-height: 1.45; color: var(--steel); font-style: italic; }
+.bridge__play { display: none; }
+@media (max-width: 819px) { html.js .lede__play { display: none; } html.js .bridge__play { display: inline; } }
+
+.modules { margin-top: var(--s5); }
+.mod { position: relative; padding: var(--s3) 0 var(--s2); border-top: 1px solid var(--edge); }
+.mod__lamp {
+  position: absolute; inset: 0 calc(-1 * var(--s4)); pointer-events: none; opacity: 0;
+  background: linear-gradient(90deg, color-mix(in oklab, var(--pilot) 9%, transparent), transparent 85%);
+  transition: opacity var(--m-stage) var(--m-ease-off);
+}
+.mod.is-on .mod__lamp { opacity: 1; }
+.mod__name { position: relative; display: flex; align-items: center; gap: 6px; font: 500 var(--step--1)/1 var(--font-legend); letter-spacing: .02em; color: var(--steel); font-variation-settings: "GRAD" -30; }
+.mod__name::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: color-mix(in oklab, var(--steel) 35%, var(--paint)); transition: background-color var(--m-stage); }
+.mod.is-on .mod__name { color: var(--ivory); font-variation-settings: "GRAD" 0; }
+.mod.is-on .mod__name::before { background: var(--pilot); box-shadow: 0 0 6px color-mix(in oklab, var(--pilot) 60%, transparent); }
+.knobs { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); margin-top: var(--s2); }
+.knob { display: grid; justify-items: center; gap: 1px; }
+.knob__ring { position: relative; width: var(--knob, 52px); height: var(--knob, 52px); }
+.knob__ring svg { position: absolute; inset: 0; fill: none; stroke: var(--steel); stroke-width: 1.4; stroke-linecap: round; opacity: .7; }
+.knob__cap {
+  position: absolute; inset: 21%; border-radius: 50%;
+  background: radial-gradient(circle at 50% 32%, var(--knob-hi), var(--knob-lo) 72%);
+  box-shadow: 0 2px 3px rgb(var(--shadow) / .5), inset 0 1px 0 rgb(var(--sheen) / .09);
+}
+.knob__cap::after { content: ""; position: absolute; left: calc(50% - 1px); top: 3px; width: 2px; height: 10px; border-radius: 1px; background: var(--ivory); }
+.knob__label { font: 500 var(--step--2)/1.2 var(--font-legend); letter-spacing: .02em; color: var(--steel); text-align: center; }
+.lamp-cap { display: grid; justify-items: center; align-content: center; gap: 7px; height: var(--knob, 52px); }
+.lamp-cap span { width: 26px; height: 16px; border-radius: var(--r-cap); background: var(--paint); border: 1px solid var(--edge); box-shadow: 0 2px 0 var(--skirt); position: relative; }
+.lamp-cap span::before { content: ""; position: absolute; inset: -1px; border-radius: inherit; background: var(--pilot); opacity: 0; transition: opacity var(--m-lamp-off) var(--m-ease-off); }
+.lamp-cap.is-on span::before { opacity: 1; transition: opacity var(--m-lamp-on) var(--m-ease-on); }
+@media (max-width: 819px) { /* phones: only the selected stage, so a changed control turns a knob beside the meter */
+  .modules { margin-top: var(--s4); }
+  .mod:not(.is-on) { display: none; }
+  .mod__lamp { inset: 0; }
+}
+
+/* ---------- Drift faders ---------- */
+.drift { padding-block: var(--s9); border-top: 1px solid var(--rule); row-gap: var(--s6); align-items: start; }
+.drift h3 { font: 400 var(--step-2)/1.15 var(--font-text); letter-spacing: -.01em; }
+.drift__text .control { justify-items: start; }
+.drift__text { grid-column: 1 / 5; display: grid; gap: var(--s4); }
+.drift__text p { color: var(--steel); font-size: var(--step-0); max-width: 34ch; }
+.faders {
+  --unity: 30%; --db-px: 40px; --slot-h: 188px;
+  grid-column: 5 / 13; display: grid; grid-template-columns: repeat(24, minmax(0, 1fr)); row-gap: var(--s6);
+}
+.fader { display: grid; justify-items: center; gap: var(--s2); }
+.fader__slot { position: relative; width: 100%; height: var(--slot-h); }
+.fader__slot::before { content: ""; position: absolute; left: calc(50% - 2px); width: 4px; top: 0; bottom: 0; border-radius: 2px; background: var(--slot); box-shadow: inset 0 1px 2px black; }
+.fader__slot::after { content: ""; position: absolute; left: calc(50% - 9px); width: 18px; top: var(--unity); height: 1px; background: var(--steel); opacity: .6; }
+.fader__ride { position: absolute; left: calc(50% - 11px); top: calc(var(--unity) - 15px); width: 22px; height: 30px; }
+.fader__cap {
+  display: block; width: 100%; height: 100%; border-radius: var(--r-fader);
+  background: linear-gradient(transparent 14px, var(--ivory) 14px 16px, transparent 16px), linear-gradient(var(--knob-hi), var(--knob-lo));
+  border: 1px solid var(--edge); box-shadow: 0 2px 0 var(--skirt);
+  transform: translateY(calc(var(--off) * var(--db-px) * -1));
+  transition: transform var(--m-drift) var(--m-ease-drift) calc(var(--c) * var(--m-drift-step));
+}
+.faders.is-flat .fader__cap { transform: translateY(0); }
+.fader__val { font: 500 var(--step--1)/1 var(--font-legend); font-variant-numeric: tabular-nums; color: var(--ivory); white-space: nowrap; }
+@media (max-width: 819px) {
+  .drift { padding-block: var(--s8); }
+  .drift__text, .faders { grid-column: 1 / -1; }
+  .faders { --db-px: 30px; --slot-h: 132px; grid-template-columns: repeat(12, minmax(0, 1fr)); }
+  .fader__val { font-size: var(--step--2); }
+}
+
+/* ---------- Specs and trial ---------- */
+.lower { padding-block: var(--s9); border-top: 1px solid var(--rule); row-gap: var(--s8); }
+.specs { grid-column: 1 / 7; }
+.trial { grid-column: 8 / 13; }
+.specs h3, .trial h3 { margin-bottom: var(--s5); }
+.spec-row { position: relative; display: grid; grid-template-columns: 7.5em minmax(0, 1fr); column-gap: var(--s4); padding-block: var(--s3) var(--s4); }
+.spec-row::before {
+  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: var(--edge);
+  transform: scaleX(var(--rule-x, 1)); transform-origin: left center;
+}
+.spec-row dt { font: 500 var(--step-0)/1.6 var(--font-legend); letter-spacing: .02em; color: var(--steel); }
+.spec-row dd { font-variant-numeric: tabular-nums; }
+@media (max-width: 819px) {
+  .specs, .trial { grid-column: 1 / -1; }
+  .spec-row { grid-template-columns: 1fr; }
+}
+
+.trial__intro { color: var(--ivory); max-width: 40ch; margin-bottom: var(--s6); }
+.trial__body { display: grid; }
+html.js .trial__body > * { grid-area: 1 / 1; }
+html:not(.js) .result { display: none; }
+html.js .result { visibility: hidden; opacity: 0; }
+form { display: grid; gap: var(--s5); align-content: start; }
+.field { position: relative; padding-top: 1.6em; }
+.field input {
+  width: 100%; height: 52px; padding: 0 var(--s3); border: 0; border-radius: 0;
+  background: var(--paint); color: var(--ivory); font: 400 var(--step-0)/1 var(--font-text);
+  border-bottom: 1px solid var(--steel);
+}
+.field input:focus-visible { outline: 2px solid var(--pilot); outline-offset: 3px; }
+.field label {
+  position: absolute; left: var(--s3); top: calc(1.6em + 14px); pointer-events: none;
+  font: 500 var(--step-0)/1.4 var(--font-legend); letter-spacing: .02em; color: var(--steel);
+  transform-origin: left center; transition: transform var(--m-reveal) var(--m-ease-off);
+}
+.field input:focus + label, .field input:not(:placeholder-shown) + label { transform: translateY(-2.45em) translateX(calc(-1 * var(--s3))) scale(.8); }
+.field::before, .field::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; pointer-events: none; opacity: 0; }
+.field::before { height: 1px; background: var(--ivory); transition: opacity .15s var(--m-ease-off); }
+.field::after { height: 2px; background: var(--pilot); transition: opacity var(--m-lamp-on) var(--m-ease-on); }
+@media (hover: hover) and (pointer: fine) { .field:hover::before { opacity: 1; } }
+.field:focus-within::after { opacity: 1; }
+.field input[aria-invalid="true"] { border-bottom-color: var(--peak); }
+.error {
+  min-height: 1.5em; margin-top: calc(-1 * var(--s3)); font-size: var(--step--1); color: var(--ivory);
+  clip-path: inset(0 0 100% 0); visibility: hidden;
+  transition: clip-path var(--m-error) var(--m-ease-expo), visibility 0s var(--m-error);
+}
+.error::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: var(--s2); border-radius: 50%; background: var(--peak); vertical-align: .08em; }
+.has-error .error { clip-path: inset(0); visibility: visible; transition: clip-path var(--m-error) var(--m-ease-expo); }
+form .cap--big { justify-self: start; }
+.result { display: grid; gap: var(--s4); align-content: start; }
+.result p { max-width: 40ch; }
+.link-btn {
+  justify-self: start; padding: var(--s2) 0; border: 0; background: none; cursor: pointer;
+  font: 500 var(--step-0)/1.4 var(--font-legend); letter-spacing: .02em; color: var(--ivory);
+  transition: transform var(--m-release) var(--m-ease-release);
+}
+.link-btn:active { transform: translateY(1px) scale(.98); transition-duration: var(--m-press); }
+@media (max-width: 819px) { form .cap--big { justify-self: stretch; } }
+
+/* ---------- Footer ---------- */
+.ftr { border-top: 1px solid var(--rule); padding-block: var(--s6) var(--s7); }
+.ftr__in { display: flex; flex-wrap: wrap; gap: var(--s4) var(--s6); align-items: baseline; }
+.ftr p { margin-right: auto; color: var(--steel); }
+.ftr a { font: 500 var(--step-0)/1.4 var(--font-legend); letter-spacing: .02em; }
+@media (max-width: 819px) { .ftr__in { flex-direction: column; } }
+
+/* Section anchors land below the sticky header when JS is off */
+[id] { scroll-margin-top: calc(var(--hdr-h) + var(--s5)); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0s !important; transition-delay: 0s !important; animation: none !important; }
+  .vu__needle, .vu__unit { display: none; }
+  .vu__readout { display: inline; }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#strip">Skip to the channel strip</a>
+
+<header class="hdr" id="top" tabindex="-1">
+  <div class="wrap hdr__in">
+    <a class="wordmark ul" href="#top">Brack Audio</a>
+    <nav class="nav" aria-label="Sections">
+      <a class="ul" href="#strip">The strip</a>
+      <a class="ul" href="#drift">Measured</a>
+      <a class="ul" href="#specs">Specs</a>
+    </nav>
+    <a class="cap cap--cta" href="#trial">Try it free</a>
+    <button class="cap menu-btn" type="button" aria-expanded="false" aria-controls="sheet" aria-label="Menu">
+      <span class="swap" aria-hidden="true"><span>Menu</span><span>Close</span></span>
+    </button>
+  </div>
+</header>
+
+<div class="sheet" id="sheet" inert>
+  <nav aria-label="Sections">
+    <ul>
+      <li><a class="ul" href="#strip">The strip</a></li>
+      <li><a class="ul" href="#drift">Measured</a></li>
+      <li><a class="ul" href="#specs">Specs</a></li>
+      <li><a class="ul" href="#trial">Try it free</a></li>
+    </ul>
+  </nav>
+</div>
+
+<main>
+  <section class="wrap" aria-labelledby="strip">
+    <div class="grid hero" data-spy="strip">
+      <div class="hero__intro">
+        <h2 id="strip" tabindex="-1">A 1974 broadcast desk, one strip on every track.</h2>
+        <p class="lede">Brack 2408 is a mixing-console plugin modelled on the Lindqvist <span class="nw">B-24</span>, a broadcast desk we spent two years restoring. Put it on every channel and your mix runs through the same preamp, EQ, dynamics and bus.<span class="lede__play"> Play the loop and switch stages to hear each one.</span></p>
+      </div>
+
+      <div class="strip">
+        <div class="plate">
+          <span class="screw" aria-hidden="true"></span><span class="screw" aria-hidden="true"></span><span class="screw" aria-hidden="true"></span><span class="screw" aria-hidden="true"></span>
+          <div class="bridge">
+            <div class="vu" role="img" aria-label="VU meter, scale from minus 20 to plus 3 VU, red from 0 VU. 0 VU is minus 18 dBFS.">
+              <svg viewBox="0 0 300 170" aria-hidden="true">
+                <defs>
+                  <radialGradient id="vu-glow" cx="50%" cy="-10%" r="95%">
+                    <stop offset="0" style="stop-color:var(--vu-glow)" stop-opacity=".2"/>
+                    <stop offset="1" style="stop-color:var(--vu-glow)" stop-opacity="0"/>
+                  </radialGradient>
+                </defs>
+                <g class="vu__lit">
+                  <rect width="300" height="170" fill="url(#vu-glow)"/>
+                  <g class="vu__scale">
+                    <path class="vu__arc" d="M61.2 113.6A168 168 0 0 1 247.2 69.5"/>
+                    <path class="vu__red" d="M184.7 54.5A171.5 171.5 0 0 1 248.4 66.3"/>
+                    <path class="vu__ticks" d="M61.2 113.6L53 106.2M85.9 91.1L79.3 82.2M102.8 80L97.4 70.5M118.8 72L114.4 61.9M140 64.4L137 53.8M153 61.3L150.9 50.5M167.9 59L166.7 48M184.7 58L184.6 47M203.6 58.9L204.7 48M224.5 62.5L227 51.8M247.2 69.5L251.2 59.3M69.5 104.9L65.4 100.6M110.2 76L107.5 70.7M128.7 68.1L126.6 62.4M193.9 58.2L194.1 52.2M213.8 60.3L214.8 54.4M235.6 65.5L237.4 59.8"/>
+                    <text x="43.3" y="101.5">−20</text>
+                    <text x="71.6" y="75.8">−10</text>
+                    <text x="90.9" y="63.2">−7</text>
+                    <text x="109.2" y="54">−5</text>
+                    <text x="133.5" y="45.3">−3</text>
+                    <text x="165.3" y="39.1">−1</text>
+                    <text x="184.5" y="38">0</text>
+                    <text x="206.1" y="39.1">+1</text>
+                    <text x="230" y="43.1">+2</text>
+                    <text x="255.9" y="51.2">+3</text>
+                  </g>
+                  <text class="vu__unit" x="150" y="128">VU</text>
+                  <text class="vu__small" x="266" y="22" style="text-anchor:end">Peak</text>
+                </g>
+                <circle class="vu__led" cx="278" cy="18.5" r="4.5"/>
+                <g class="vu__needle" transform="rotate(-48 186 226)"><line x1="186" y1="226" x2="186" y2="50"/></g>
+                <path class="vu__cover" d="M0 170V154Q150 138 300 154V170Z"/>
+                <text class="vu__readout" x="150" y="104">Level below −20 VU</text>
+              </svg>
+              <span class="vu__glare" aria-hidden="true"></span>
+            </div>
+            <button class="cap play" type="button" aria-label="Play the demo loop">
+              <span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+              <span class="swap" aria-hidden="true"><span>Play the demo loop</span><span>Stop the loop</span></span>
+            </button>
+            <p class="bridge__note js-only"><span class="bridge__play">Play the loop and switch stages to hear each one. </span>A 92 BPM loop made in your browser. It starts quietly.</p>
+          </div>
+
+          <p class="vh">Below the meter, a drawing of the strip's four stages mirrors the controls in the tabs: the transformer, air and ratio knobs turn and the drift lamp lights when you change those settings. The other knobs are fixed at the factory preset.</p>
+          <div class="modules" aria-hidden="true">
+            <svg width="0" height="0" style="position:absolute">
+              <defs>
+                <path id="t11" d="M-14.8 14.8L-17.3 17.3M-20 6.5L-23.3 7.6M-20.7 -3.3L-24.2 -3.8M-17 -12.3L-19.8 -14.4M-9.5 -18.7L-11.1 -21.8M0 -21L0 -24.5M9.5 -18.7L11.1 -21.8M17 -12.3L19.8 -14.4M20.7 -3.3L24.2 -3.8M20 6.5L23.3 7.6M14.8 14.8L17.3 17.3"/>
+                <path id="t4" d="M-14.1 -14.1L-17.7 -17.7M-5.2 -19.3L-6.5 -24.1M5.2 -19.3L6.5 -24.1M14.1 -14.1L17.7 -17.7"/>
+              </defs>
+            </svg>
+            <div class="mod is-on">
+              <span class="mod__lamp"></span>
+              <p class="mod__name">Preamp</p>
+              <div class="knobs">
+                <div class="knob" data-knob="transformer"><span class="knob__ring"><svg viewBox="-26 -26 52 52"><use href="#t4"/></svg><span class="knob__cap" style="transform:rotate(-15deg)"></span></span><span class="knob__label">Transformer</span></div>
+                <div class="knob" data-knob="drive" data-deg="54"><span class="knob__ring"><svg viewBox="-26 -26 52 52"><use href="#t11"/></svg><span class="knob__cap" style="transform:rotate(54deg)"></span></span><span class="knob__label">Drive</span></div>
+              </div>
+            </div>
+            <div class="mod">
+              <span class="mod__lamp"></span>
+              <p class="mod__name">EQ</p>
+              <div class="knobs">
+                <div class="knob" data-knob="low" data-deg="27"><span class="knob__ring"><svg viewBox="-26 -26 52 52"><use href="#t11"/></svg><span class="knob__cap" style="transform:rotate(27deg)"></span></span><span class="knob__label">Low</span></div>
+                <div class="knob" data-knob="lowmid" data-deg="-27"><span class="knob__ring"><svg viewBox="-26 -26 52 52"><use href="#t11"/></svg><span class="knob__cap" style="transform:rotate(-27deg)"></span></span><span class="knob__label">Low mid</span></div>
+                <div class="knob" data-knob="highmid" data-deg="27"><span class="knob__ring"><svg viewBox="-26 -26 52 52"><use href="#t11"/></svg><span class="knob__cap" style="transform:rotate(27deg)"></span></span><span class="knob__label">High mid</span></div>
+                <div class="knob" data-knob="air"><span class="knob__ring"><svg viewBox="-26 -26 52 52"><use href="#t11"/></svg><span class="knob__cap" style="transform:rotate(-67.5deg)"></span></span><span class="knob__label">Air</span></div>
+              </div>
+            </div>
+            <div class="mod">
+              <span class="mod__lamp"></span>
+              <p class="mod__name">Dynamics</p>
+              <div class="knobs">
+                <div class="knob" data-knob="ratio"><span class="knob__ring"><svg viewBox="-26 -26 52 52"><use href="#t4"/></svg><span class="knob__cap" style="transform:rotate(-15deg)"></span></span><span class="knob__label">Ratio</span></div>
+                <div class="knob" data-knob="threshold" data-deg="-54"><span class="knob__ring"><svg viewBox="-26 -26 52 52"><use href="#t11"/></svg><span class="knob__cap" style="transform:rotate(-54deg)"></span></span><span class="knob__label">Threshold</span></div>
+              </div>
+            </div>
+            <div class="mod">
+              <span class="mod__lamp"></span>
+              <p class="mod__name">Bus</p>
+              <div class="knobs">
+                <div class="knob" data-knob="glue" data-deg="27"><span class="knob__ring"><svg viewBox="-26 -26 52 52"><use href="#t11"/></svg><span class="knob__cap" style="transform:rotate(27deg)"></span></span><span class="knob__label">Glue</span></div>
+                <div class="knob" data-knob="output" data-deg="0"><span class="knob__ring"><svg viewBox="-26 -26 52 52"><use href="#t11"/></svg><span class="knob__cap" style="transform:rotate(0deg)"></span></span><span class="knob__label">Output</span></div>
+                <div class="knob"><span class="lamp-cap is-on" id="strip-drift"><span></span></span><span class="knob__label">Drift</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero__controls">
+        <div class="tabs" role="tablist" aria-label="Stages of the channel strip, in signal order">
+          <button class="cap" type="button" role="tab" id="t-preamp" aria-controls="p-preamp" aria-selected="true">Preamp</button>
+          <button class="cap" type="button" role="tab" id="t-eq" aria-controls="p-eq" aria-selected="false" tabindex="-1">EQ</button>
+          <button class="cap" type="button" role="tab" id="t-dyn" aria-controls="p-dyn" aria-selected="false" tabindex="-1">Dynamics</button>
+          <button class="cap" type="button" role="tab" id="t-bus" aria-controls="p-bus" aria-selected="false" tabindex="-1">Bus</button>
+        </div>
+        <div class="panels">
+          <div class="panel is-active" role="tabpanel" tabindex="0" id="p-preamp" aria-labelledby="t-preamp">
+            <h3>Push the input until it thickens</h3>
+            <p class="body">Three input transformers from the original desk's spares drawer. Nickel stays fast and clean, steel thickens the low mids, and iron adds the most harmonics when you drive it. Peaks are level-matched as you turn, so drive shows up as density on the meter, not as loudness.</p>
+            <fieldset class="seg control">
+              <legend class="legend">Transformer</legend>
+              <div class="seg__caps">
+                <label><input type="radio" name="transformer" value="off"><span class="cap">Off</span></label>
+                <label><input type="radio" name="transformer" value="nickel" checked><span class="cap">Nickel</span></label>
+                <label><input type="radio" name="transformer" value="steel"><span class="cap">Steel</span></label>
+                <label><input type="radio" name="transformer" value="iron"><span class="cap">Iron</span></label>
+              </div>
+            </fieldset>
+            <p class="spec-line">0.8% THD with iron at +12 dB drive.</p>
+          </div>
+          <div class="panel" role="tabpanel" tabindex="0" id="p-eq" aria-labelledby="t-eq">
+            <h3>Open up the top without the hiss</h3>
+            <p class="body">Four bands with proportional Q, so boosts stay broad and musical and deep cuts get surgical without touching a Q control. Frequencies click through the same 11 steps as the original's switched pots, so a setting is easy to repeat.</p>
+            <div class="range control">
+              <label class="legend" for="air">Air shelf at 8 kHz</label>
+              <input type="range" id="air" min="0" max="8" step="0.5" value="2" aria-valuetext="+2.0 dB">
+              <output for="air" id="air-out">+2.0 dB</output>
+            </div>
+            <p class="spec-line">Low shelf 35–440 Hz, low mid 120 Hz–2 kHz, high mid 600 Hz–8 kHz, high shelf 4.5–16 kHz.</p>
+          </div>
+          <div class="panel" role="tabpanel" tabindex="0" id="p-dyn" aria-labelledby="t-dyn">
+            <h3>A compressor and a gate on every channel</h3>
+            <p class="body">Feed-forward VCA compression with four ratios and a sidechain filter at 60, 120 or 240 Hz, so the kick stops pumping the whole bass. The gate has a 40 dB range and a hold you can set by ear.</p>
+            <fieldset class="seg control">
+              <legend class="legend">Ratio</legend>
+              <div class="seg__caps">
+                <label><input type="radio" name="ratio" value="off"><span class="cap">Off</span></label>
+                <label><input type="radio" name="ratio" value="2" checked><span class="cap">2:1</span></label>
+                <label><input type="radio" name="ratio" value="4"><span class="cap">4:1</span></label>
+                <label><input type="radio" name="ratio" value="10"><span class="cap">10:1</span></label>
+              </div>
+            </fieldset>
+            <p class="spec-line">Attack 0.1–30 ms, release 50 ms–1.2 s or auto.</p>
+          </div>
+          <div class="panel" role="tabpanel" tabindex="0" id="p-bus" aria-labelledby="t-bus">
+            <h3>Sum the channels the way the desk did</h3>
+            <p class="body">Every channel carries the tolerances we measured on the restored desk, with −62 dB of crosstalk between neighbours. Turn drift off and all 24 strips match exactly. Turn it on and the stereo image widens slightly, because no two channels sum quite the same.</p>
+            <div class="control js-only">
+              <span class="legend" id="drift-legend">Channel drift</span>
+              <button class="cap drift-switch" type="button" aria-pressed="true" aria-labelledby="drift-legend">
+                <span class="swap" aria-hidden="true"><span>On</span><span>Off</span></span>
+              </button>
+            </div>
+            <p class="spec-line">Bus compressor at 2:1, 4:1 or 10:1, attack 0.1–30 ms.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid drift" data-spy="drift">
+      <div class="drift__text">
+        <h3 id="drift" tabindex="-1">We measured all 24 channels, one at a time.</h3>
+        <p>No two came out the same, so no two strips in Brack 2408 do either. Below, the gain offset of each channel at 1 kHz, in dB, measured on the Lindqvist B-24 in March 2025. Fader heights are drawn 40 times larger than life.</p>
+        <div class="control js-only">
+          <span class="legend" id="drift-legend-2">Channel drift</span>
+          <button class="cap drift-switch" type="button" aria-pressed="true" aria-labelledby="drift-legend-2">
+            <span class="swap" aria-hidden="true"><span>On</span><span>Off</span></span>
+          </button>
+        </div>
+      </div>
+      <div class="faders" role="img" aria-label="Gain offsets of channels 1 to 24 in dB: +0.2, −0.1, 0.0, +0.3, −0.2, +0.1, −0.3, 0.0, +0.1, +0.2, −0.1, −0.2, +0.3, 0.0, −0.1, +0.1, +0.2, −0.3, 0.0, +0.1, −0.2, +0.2, −0.1, +0.1.">
+<div class="fader" style="--off:0.2;--c:11"><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">+0.2</span></div>
+<div class="fader" style="--off:-0.1;--c:10"><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">−0.1</span></div>
+<div class="fader" style="--off:0;--c:9"><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">0.0</span></div>
+<div class="fader" style="--off:0.3;--c:8"><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">+0.3</span></div>
+<div class="fader" style="--off:-0.2;--c:7"><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">−0.2</span></div>
+<div class="fader" style="--off:0.1;--c:6"><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">+0.1</span></div>
+<div class="fader" style="--off:-0.3;--c:5"><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">−0.3</span></div>
+<div class="fader" style="--off:0;--c:4"><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">0.0</span></div>
+<div class="fader" style="--off:0.1;--c:3"><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">+0.1</span></div>
+<div class="fader" style="--off:0.2;--c:2"><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">+0.2</span></div>
+<div class="fader" style="--off:-0.1;--c:1"><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">−0.1</span></div>
+<div class="fader" style="--off:-0.2;--c:0"><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">−0.2</span></div>
+<div class="fader" style="--off:0.3;--c:0"><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">+0.3</span></div>
+<div class="fader" style="--off:0;--c:1"><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">0.0</span></div>
+<div class="fader" style="--off:-0.1;--c:2"><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">−0.1</span></div>
+<div class="fader" style="--off:0.1;--c:3"><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">+0.1</span></div>
+<div class="fader" style="--off:0.2;--c:4"><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">+0.2</span></div>
+<div class="fader" style="--off:-0.3;--c:5"><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">−0.3</span></div>
+<div class="fader" style="--off:0;--c:6"><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">0.0</span></div>
+<div class="fader" style="--off:0.1;--c:7"><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">+0.1</span></div>
+<div class="fader" style="--off:-0.2;--c:8"><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">−0.2</span></div>
+<div class="fader" style="--off:0.2;--c:9"><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">+0.2</span></div>
+<div class="fader" style="--off:-0.1;--c:10"><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">−0.1</span></div>
+<div class="fader" style="--off:0.1;--c:11"><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">+0.1</span></div>
+      </div>
+    </div>
+
+    <div class="grid lower" data-spy="specs">
+      <div class="specs">
+        <h3 id="specs" tabindex="-1">What it runs on</h3>
+        <dl>
+          <div class="spec-row"><dt>Formats</dt><dd>VST3, AU and AAX, 64-bit.</dd></div>
+          <div class="spec-row"><dt>Systems</dt><dd>macOS 11 or later, native on Apple silicon; Windows 10 or later.</dd></div>
+          <div class="spec-row"><dt>CPU</dt><dd>About 0.4% per channel at 48 kHz on an M1 MacBook Air.</dd></div>
+          <div class="spec-row"><dt>Latency</dt><dd>Zero samples with oversampling off; 2x and 4x for bounces.</dd></div>
+          <div class="spec-row"><dt>Licence</dt><dd>£79 for three machines, no iLok, no subscription.</dd></div>
+          <div class="spec-row"><dt>Updates</dt><dd>Free through version 2.</dd></div>
+        </dl>
+      </div>
+
+      <div class="trial">
+        <h3 id="trial" tabindex="-1">Try it free for 21 days</h3>
+        <p class="trial__intro">The full plugin with nothing switched off. We email you a download link and nothing else.</p>
+        <div class="trial__body">
+          <form id="trial-form" aria-label="Trial request" novalidate>
+            <div class="field">
+              <input id="email" name="email" type="email" autocomplete="email" placeholder=" " required>
+              <label for="email">Your email</label>
+            </div>
+            <p class="error" id="email-error">Enter an email address like name@example.com.</p>
+            <fieldset class="seg">
+              <legend class="legend">Platform</legend>
+              <div class="seg__caps">
+                <label><input type="radio" name="platform" value="macOS" checked><span class="cap">macOS</span></label>
+                <label><input type="radio" name="platform" value="Windows"><span class="cap">Windows</span></label>
+              </div>
+            </fieldset>
+            <button class="cap cap--big" type="submit">Email me the trial</button>
+          </form>
+          <div class="result" id="trial-result" inert>
+            <h4 id="result-title" tabindex="-1">Trial link sent</h4>
+            <p>Check <strong id="r-email">your inbox</strong> for the <span id="r-platform">macOS</span> installer. The link works for 7 days.</p>
+            <button class="link-btn ul" type="button" id="trial-back">Use a different email</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="ftr">
+  <div class="wrap ftr__in">
+    <p>Made by two engineers in Sheffield.</p>
+    <a class="ul" href="mailto:support@brackaudio.example" target="_blank" rel="noopener">Email support</a>
+    <a class="ul" href="#top">Back to top</a>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/CustomEase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  const root = document.documentElement;
+  root.classList.add('js');
+  if (!window.gsap || !window.Lenis || !window.ScrollTrigger || !window.CustomEase) { // CDN blocked: static page, still readable
+    root.classList.remove('js');
+    return;
+  }
+  gsap.registerPlugin(ScrollTrigger, CustomEase);
+  CustomEase.create('lamp', 'M0,0 C0.18,0 0.32,0.04 0.46,0.24 0.6,0.46 0.7,0.86 1,1'); // filament: slow to glow, then up
+  CustomEase.create('vu-settle', 'M0,0 C0.25,0.1 0.35,0.95 0.62,1.015 0.78,1.02 0.88,0.996 1,1'); // about 1.5% past rest, then settles
+
+  const $ = (s, c = document) => c.querySelector(s);
+  const $$ = (s, c = document) => [...c.querySelectorAll(s)];
+  const css = getComputedStyle(root);
+  const T = k => parseFloat(css.getPropertyValue('--g-' + k));
+  const E = k => css.getPropertyValue('--ge-' + k).trim();
+  let reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let lenis = null, booted = false;
+  const dur = k => (reduce ? 0 : T(k));
+  const fmt = v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(1);
+
+  /* ---------- State, mirrored by the drawn strip ---------- */
+  const DRIFT = [0.2, -0.1, 0, 0.3, -0.2, 0.1, -0.3, 0, 0.1, 0.2, -0.1, -0.2, 0.3, 0, -0.1, 0.1, 0.2, -0.3, 0, 0.1, -0.2, 0.2, -0.1, 0.1];
+  const DETENT = { off: -45, nickel: -15, steel: 15, iron: 45, 2: -15, 4: 15, 10: 45 };
+  const air = $('#air'), airOut = $('#air-out'), driftBtns = $$('.drift-switch');
+  const state = {
+    stage: 0,
+    transformer: $('input[name=transformer]:checked').value,
+    air: +air.value,
+    ratio: $('input[name=ratio]:checked').value,
+    drift: true
+  };
+  const knobCaps = $$('.knob__cap');
+  const knobAngle = el => {
+    const k = el.closest('[data-knob]');
+    if (k.dataset.knob === 'transformer') return DETENT[state.transformer];
+    if (k.dataset.knob === 'ratio') return DETENT[state.ratio];
+    if (k.dataset.knob === 'air') return -135 + state.air / 8 * 270;
+    return +k.dataset.deg;
+  };
+  const knob = name => $(`[data-knob="${name}"] .knob__cap`);
+  const syncKnobs = () => gsap.set(knobCaps, { rotation: (i, el) => knobAngle(el) });
+  const turn = name => gsap.to(knob(name), { rotation: knobAngle(knob(name)), duration: dur('detent'), ease: E('detent'), overwrite: true });
+  const airTo = gsap.quickTo(knob('air'), 'rotation', { duration: T('air'), ease: E('air') });
+
+  /* ---------- Audio: a synthesised 92 BPM loop through a working strip ---------- */
+  const BPM = 92, STEP = 60 / BPM / 4, DRIVE = 1.8;
+  const VOICE_CH = [0, 1, 3, 4, 6]; // kick, snare, hat, bass, pad sit on measured channels 1, 2, 4, 5, 7
+  const shape = fn => { const c = new Float32Array(2048); for (let i = 0; i < 2048; i++) c[i] = fn(i / 2047 * 2 - 1); return c; };
+  const CURVES = {
+    off: null,
+    nickel: shape(x => Math.tanh(1.4 * x) / Math.tanh(1.4)),
+    steel: shape(x => Math.tanh(3.2 * x + 0.35 * x * x) / Math.tanh(3.2)),
+    iron: shape(x => Math.tanh(7 * x + 0.5 * x * x) / Math.tanh(7))
+  };
+  // Auto-gain matches peaks, not RMS: a 0.12 sine (the kick's peak after the trim) comes out at 0.12 again,
+  // so saturation shows on the VU as density (higher RMS), not as a louder peak.
+  const MAKEUP = {};
+  for (const [k, c] of Object.entries(CURVES)) {
+    if (!c) { MAKEUP[k] = 1; continue; }
+    let max = 0;
+    for (let i = 0; i < 256; i++) {
+      const xi = Math.max(-1, Math.min(1, 0.12 * DRIVE * Math.sin(i / 256 * 2 * Math.PI)));
+      max = Math.max(max, Math.abs(c[Math.round((xi + 1) / 2 * 2047)]));
+    }
+    MAKEUP[k] = 0.12 / max;
+  }
+  // Offsets the DynamicsCompressor's automatic make-up gain, calibrated so the VU's mean stays within about 1 dB across ratios.
+  const DYN_TRIM = { off: 0, 2: -2.5, 4: -4, 10: -5 };
+  const BASS = [[0, 82.41, 5], [7, 82.41, 2], [10, 98, 3], [14, 73.42, 2], [16, 65.41, 5], [22, 65.41, 2], [26, 61.74, 3], [30, 73.42, 2]];
+  const PAD = { 0: [164.81, 196, 246.94, 293.66, 369.99], 16: [130.81, 164.81, 196, 246.94] };
+  const KICK = [0, 7, 10, 16, 22, 26], SNARE = [4, 12, 20, 28];
+
+  const audio = {
+    ctx: null, playing: false, step: 0, next: 0, failed: false,
+    build() {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      const ctx = this.ctx = new AC();
+      const trim = new GainNode(ctx, { gain: 0.13 }); // input trim: the kick peaks at 0.12 into the preamp
+      this.drive = new GainNode(ctx);
+      this.shaper = new WaveShaperNode(ctx, { oversample: '4x' });
+      this.makeup = new GainNode(ctx);
+      const low = new BiquadFilterNode(ctx, { type: 'lowshelf', frequency: 110, gain: 2 });
+      const lowMid = new BiquadFilterNode(ctx, { type: 'peaking', frequency: 320, Q: 1.1, gain: -2 });
+      const highMid = new BiquadFilterNode(ctx, { type: 'peaking', frequency: 2600, Q: 0.9, gain: 1.5 });
+      this.air = new BiquadFilterNode(ctx, { type: 'highshelf', frequency: 8000, gain: 0 });
+      this.comp = new DynamicsCompressorNode(ctx, { threshold: -24, knee: 6, ratio: 2, attack: 0.005, release: 0.12 });
+      this.dynTrim = new GainNode(ctx); // offsets the compressor's automatic make-up gain
+      const lineUp = new GainNode(ctx, { gain: 5 }); // +14 dB before dynamics: the programme averages around -5 VU
+      const bus = new GainNode(ctx, { gain: 1 });
+      const glue = new DynamicsCompressorNode(ctx, { threshold: -14, knee: 4, ratio: 2, attack: 0.03, release: 0.2 });
+      this.an = new AnalyserNode(ctx, { fftSize: 1024 });
+      this.buf = new Float32Array(1024);
+      this.master = new GainNode(ctx, { gain: 0 });
+      [trim, this.drive, this.shaper, this.makeup, low, lowMid, highMid, this.air, lineUp, this.comp, this.dynTrim, bus, glue, this.an, this.master, ctx.destination]
+        .reduce((a, b) => a.connect(b));
+      this.ch = VOICE_CH.map(() => {
+        const g = new GainNode(ctx), p = new StereoPannerNode(ctx);
+        g.connect(p).connect(trim);
+        return { g, p };
+      });
+      this.noise = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
+      const d = this.noise.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      this.apply();
+    },
+    // Every control in the tabs lands here.
+    apply() {
+      if (!this.ctx) return;
+      const t = this.ctx.currentTime, set = (p, v) => p.setTargetAtTime(v, t, 0.02);
+      this.shaper.curve = CURVES[state.transformer];
+      set(this.drive.gain, state.transformer === 'off' ? 1 : DRIVE);
+      set(this.makeup.gain, MAKEUP[state.transformer]);
+      set(this.air.gain, state.air);
+      set(this.comp.ratio, state.ratio === 'off' ? 1 : +state.ratio);
+      set(this.dynTrim.gain, 10 ** (DYN_TRIM[state.ratio] / 20));
+      this.ch.forEach((c, i) => {
+        const off = state.drift ? DRIFT[VOICE_CH[i]] : 0;
+        set(c.g.gain, 10 ** (off / 20));
+        set(c.p.pan, off * 0.25); // measured offsets also skew each channel's pan law a little
+      });
+    },
+    cut(i) { return 1 + (state.drift ? DRIFT[VOICE_CH[i]] / 0.3 * 0.02 : 0); },
+    env(g, t, peak, a, d) {
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(peak, t + a);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + a + d);
+    },
+    noiseVoice(i, t, type, freq, peak, d) {
+      const ctx = this.ctx, src = new AudioBufferSourceNode(ctx, { buffer: this.noise });
+      const f = new BiquadFilterNode(ctx, { type, frequency: freq * this.cut(i) }), g = new GainNode(ctx, { gain: 0 });
+      src.connect(f).connect(g).connect(this.ch[i].g);
+      this.env(g, t, peak, 0.002, d);
+      src.start(t, Math.random() * 0.7); src.stop(t + d + 0.05);
+    },
+    tone(i, t, type, freq, peak, a, d, filter) {
+      const ctx = this.ctx, o = new OscillatorNode(ctx, { type, frequency: freq }), g = new GainNode(ctx, { gain: 0 });
+      let head = o;
+      if (filter) { const f = new BiquadFilterNode(ctx, { type: 'lowpass', frequency: filter * this.cut(i), Q: 4 }); o.connect(f); head = f; }
+      head.connect(g).connect(this.ch[i].g);
+      this.env(g, t, peak, a, d);
+      o.start(t); o.stop(t + a + d + 0.05);
+      return o;
+    },
+    play(s, t) {
+      if (KICK.includes(s)) {
+        const o = this.tone(0, t, 'sine', 150, 0.95, 0.003, 0.42);
+        o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(46, t + 0.12);
+      }
+      if (SNARE.includes(s)) { this.noiseVoice(1, t, 'highpass', 900, 0.5, 0.2); this.tone(1, t, 'triangle', 185, 0.3, 0.002, 0.09); }
+      if (s === 31) this.noiseVoice(1, t, 'highpass', 900, 0.12, 0.1);
+      if (s % 2 === 0) this.noiseVoice(2, t, 'highpass', 7000, s % 4 ? 0.14 : 0.22, 0.05);
+      else this.noiseVoice(2, t, 'highpass', 9500, 0.08, 0.03); // shaker on the off-steps: the air shelf's material
+      if (s === 15 || s === 29) this.noiseVoice(2, t, 'highpass', 7000, 0.12, 0.1);
+      for (const [at, f, len] of BASS) if (at === s) this.tone(3, t, 'sawtooth', f, 0.32, 0.01, len * STEP, 380);
+      if (PAD[s]) for (const f of PAD[s]) {
+        this.tone(4, t, 'sine', f, 0.045, 0.5, 16 * STEP);
+        this.tone(4, t, 'triangle', f * 1.002, 0.03, 0.5, 16 * STEP, 1800);
+      }
+    },
+    schedule() {
+      if (!this.playing || this.ctx.state !== 'running') return;
+      const now = this.ctx.currentTime;
+      if (this.next < now - 0.05) this.next = now + 0.05; // tab was asleep: skip, never burst
+      while (this.next < now + 0.1) { this.play(this.step, this.next); this.next += STEP; this.step = (this.step + 1) % 32; }
+    },
+    ms: 0,
+    level(dt) { // RMS in VU (0 VU = -18 dBFS): mean square of the last 1024 samples, integrated over about 100 ms
+      this.an.getFloatTimeDomainData(this.buf);
+      let sum = 0;
+      for (let i = 0; i < this.buf.length; i++) sum += this.buf[i] * this.buf[i];
+      this.ms += (sum / this.buf.length - this.ms) * (1 - Math.exp(-dt / 0.1));
+      return 10 * Math.log10(this.ms || 1e-12) + 18;
+    },
+    start() {
+      try {
+        if (!this.ctx) this.build();
+        this.ctx.resume().catch(() => this.fail());
+      } catch { return this.fail(); }
+      const now = this.ctx.currentTime, g = this.master.gain;
+      clearTimeout(this.sleep);
+      g.cancelScheduledValues(now); g.setValueAtTime(g.value, now); g.linearRampToValueAtTime(0.25, now + 2); // -12 dB, a 2 s fade-in
+      this.next = now + 0.06; this.step = 0; this.playing = true;
+      setPlayUI();
+    },
+    stop() {
+      const now = this.ctx.currentTime, g = this.master.gain;
+      g.cancelScheduledValues(now); g.setValueAtTime(g.value, now); g.linearRampToValueAtTime(0, now + 0.15);
+      this.playing = false;
+      this.sleep = setTimeout(() => !this.playing && this.ctx.suspend().catch(() => {}), 200);
+      setPlayUI();
+    },
+    fail() {
+      this.failed = true; this.playing = false;
+      const label = 'Sound isn’t available in this browser';
+      play.setAttribute('aria-disabled', 'true');
+      play.setAttribute('aria-label', label);
+      play.classList.remove('is-on');
+      $('.swap', play).replaceChildren(Object.assign(document.createElement('span'), { textContent: label }));
+    }
+  };
+
+  const play = $('.play');
+  play.classList.add('js-ready');
+  function setPlayUI() {
+    play.classList.toggle('is-on', audio.playing);
+    play.classList.toggle('is-lit', audio.playing);
+    play.setAttribute('aria-label', audio.playing ? 'Stop the loop' : 'Play the demo loop');
+  }
+  play.addEventListener('click', () => {
+    if (audio.failed) return;
+    audio.playing ? audio.stop() : audio.start();
+  });
+
+  /* ---------- The VU meter: RMS with 300 ms ballistics ---------- */
+  // A VU deflects in proportion to voltage, so the scale is linear in amplitude: -20 VU sits on the stop at -48deg, +1 VU at +6deg.
+  const VB = 54 / (10 ** (1 / 20) - 0.1), VA = -48 - 0.1 * VB;
+  const angle = db => Math.round(Math.min(24, Math.max(-48, VA + VB * 10 ** (db / 20))) * 20) / 20;
+  const needle = $('.vu__needle'), led = $('.vu__led'), readout = $('.vu__readout');
+  gsap.set(needle, { rotation: -48, svgOrigin: '186 226' });
+  const needleTo = gsap.quickTo(needle, 'rotation', { duration: T('vu'), ease: E('vu') });
+  const meter = { live: false, lastA: -48, ledAt: -1, textAt: 0, t: null }; // live: false while the power-on kick owns the needle
+  gsap.ticker.add(time => {
+    audio.schedule();
+    const dt = meter.t === null ? 0 : Math.min(0.1, time - meter.t);
+    meter.t = time;
+    const db = audio.playing && audio.ctx.state === 'running' ? audio.level(dt) : (audio.ms = 0, -Infinity);
+    const a = angle(db);
+    if (meter.live && a !== meter.lastA) { needleTo(a); meter.lastA = a; }
+    // Peak LED: lights in the red zone (above +1 VU), holds 150 ms, and fires at most about 3 times a second.
+    if (db > 1 && time - meter.ledAt > 0.34) meter.ledAt = time;
+    led.style.opacity = time - meter.ledAt < 0.15 ? 1 : '';
+    if (reduce && time - meter.textAt > 0.25) { // numeric readout in place of the needle
+      meter.textAt = time;
+      const v = Math.round(db);
+      readout.textContent = v < -20 ? 'Level below −20 VU' : `Level ${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v)} VU`;
+    }
+  });
+
+  /* ---------- Tabs (CD9 crossfade in one grid cell) ---------- */
+  const tabs = $$('[role=tab]'), panels = $$('[role=tabpanel]'), mods = $$('.mod');
+  let tabTl;
+  function selectTab(i, focus) {
+    if (focus) tabs[i].focus();
+    if (i === state.stage) return;
+    const old = panels[state.stage], next = panels[i];
+    tabs.forEach((t, j) => { t.setAttribute('aria-selected', j === i); t.tabIndex = j === i ? 0 : -1; });
+    mods.forEach((m, j) => m.classList.toggle('is-on', j === i));
+    panels.forEach((p, j) => p.classList.toggle('is-active', j === i));
+    tabTl?.progress(1).kill();
+    gsap.set(panels.filter(p => p !== old && p !== next), { autoAlpha: 0 });
+    tabTl = gsap.timeline()
+      .to(old, { autoAlpha: 0, y: -4, duration: dur('out'), ease: E('out') })
+      .fromTo(next, { autoAlpha: 0, y: 4 }, { autoAlpha: 1, y: 0, duration: dur('in'), ease: E('in') });
+    state.stage = i;
+  }
+  tabs.forEach((t, i) => {
+    t.addEventListener('click', () => selectTab(i));
+    t.addEventListener('keydown', e => {
+      const n = tabs.length;
+      const j = { ArrowRight: (i + 1) % n, ArrowLeft: (i + n - 1) % n, Home: 0, End: n - 1 }[e.key];
+      if (j === undefined) return;
+      e.preventDefault(); selectTab(j, true);
+    });
+  });
+
+  /* ---------- Controls: each changes the sound, the needle and a knob ---------- */
+  $$('input[name=transformer]').forEach(r => r.addEventListener('change', () => { state.transformer = r.value; turn('transformer'); audio.apply(); }));
+  $$('input[name=ratio]').forEach(r => r.addEventListener('change', () => { state.ratio = r.value; turn('ratio'); audio.apply(); }));
+  air.addEventListener('input', () => {
+    state.air = +air.value;
+    const txt = fmt(state.air) + ' dB';
+    airOut.value = txt; air.setAttribute('aria-valuetext', txt);
+    const a = knobAngle(knob('air'));
+    reduce ? gsap.set(knob('air'), { rotation: a }) : airTo(a);
+    audio.apply();
+  });
+  const faders = $('.faders'), faderVals = $$('.fader__val');
+  const faderLabel = faders.getAttribute('aria-label');
+  driftBtns.forEach(b => b.addEventListener('click', () => {
+    state.drift = !state.drift;
+    driftBtns.forEach(d => d.setAttribute('aria-pressed', state.drift));
+    $('#strip-drift').classList.toggle('is-on', state.drift);
+    faders.classList.toggle('is-flat', !state.drift);
+    faderVals.forEach((v, i) => { v.textContent = state.drift ? fmt(DRIFT[i]) : '0.0'; });
+    faders.setAttribute('aria-label', state.drift ? faderLabel : 'Channel drift is off: all 24 channels at 0.0 dB.');
+    audio.apply();
+  }));
+
+  /* ---------- Anchors (NV6): eased scroll, then focus the target ---------- */
+  const header = $('.hdr');
+  function go(hash) {
+    const target = hash === '#top' ? header : document.getElementById(hash.slice(1));
+    if (!target) return;
+    const y = target === header ? 0 : Math.max(0, target.getBoundingClientRect().top + scrollY - header.offsetHeight - 24);
+    const done = () => target.focus({ preventScroll: true });
+    if (lenis) lenis.scrollTo(y, { duration: Math.min(1.3, 0.65 + Math.abs(y - scrollY) / 4000), onComplete: done });
+    else { scrollTo(0, y); done(); }
+  }
+  document.addEventListener('click', e => {
+    const a = e.target.closest('a[href^="#"]');
+    if (!a || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button) return;
+    e.preventDefault();
+    if (location.hash !== a.hash) history.pushState(null, '', a.hash);
+    if (menuOpen) closeMenu(() => go(a.hash)); else go(a.hash);
+  });
+
+  // Section spy: the nav marks the section in the reading band.
+  const navLinks = $$('.nav a');
+  const spy = new IntersectionObserver(entries => entries.forEach(en => {
+    if (!en.isIntersecting) return;
+    navLinks.forEach(a => (a.hash === '#' + en.target.dataset.spy ? a.setAttribute('aria-current', 'true') : a.removeAttribute('aria-current')));
+  }), { rootMargin: '-40% 0px -55% 0px' });
+  $$('[data-spy]').forEach(s => spy.observe(s));
+
+  /* ---------- Mobile menu (NV1): one reversible timeline ---------- */
+  const menuBtn = $('.menu-btn'), sheet = $('#sheet'), sheetLinks = $$('#sheet a'), behind = [$('main'), $('.ftr'), $('.skip'), $('.wordmark')];
+  let menuOpen = false, afterClose = null;
+  const menuTl = gsap.timeline({ paused: true, onReverseComplete: () => closed() })
+    .fromTo(sheet, { clipPath: 'inset(0% 0% 100% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: T('sheet'), ease: E('sheet') })
+    .fromTo(sheetLinks, { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: T('links'), ease: E('links'), stagger: 0.05 }, '-=0.2');
+  function openMenu() {
+    menuOpen = true;
+    menuBtn.setAttribute('aria-expanded', 'true');
+    gsap.set(sheet, { visibility: 'visible' });
+    sheet.inert = false; behind.forEach(el => { el.inert = true; });
+    root.classList.add('menu-open'); lenis?.stop();
+    reduce ? menuTl.progress(1) : menuTl.timeScale(1).play();
+    sheetLinks[0].focus({ preventScroll: true });
+  }
+  function closeMenu(then) {
+    menuOpen = false; afterClose = then || null;
+    menuBtn.setAttribute('aria-expanded', 'false');
+    if (reduce || !menuTl.progress()) { menuTl.pause().progress(0, true); closed(); } else menuTl.timeScale(1.4).reverse();
+  }
+  function closed() {
+    gsap.set(sheet, { visibility: 'hidden' });
+    sheet.inert = true; behind.forEach(el => { el.inert = false; });
+    root.classList.remove('menu-open'); lenis?.start();
+    if (afterClose) { const f = afterClose; afterClose = null; f(); }
+    else (menuBtn.offsetParent ? menuBtn : $('.nav a')).focus({ preventScroll: true }); // the Menu button is hidden from 820px
+  }
+  menuBtn.addEventListener('click', () => (menuOpen ? closeMenu() : openMenu()));
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && menuOpen) closeMenu(); });
+  matchMedia('(min-width: 820px)').addEventListener('change', e => { if (e.matches && menuOpen) { menuTl.pause().progress(0, true); menuOpen = false; menuBtn.setAttribute('aria-expanded', 'false'); closed(); } });
+
+  /* ---------- Trial form: validate, then crossfade to the result ---------- */
+  const form = $('#trial-form'), email = $('#email'), result = $('#trial-result');
+  const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  const showError = bad => {
+    form.classList.toggle('has-error', bad);
+    email.setAttribute('aria-invalid', bad);
+    bad ? email.setAttribute('aria-describedby', 'email-error') : email.removeAttribute('aria-describedby');
+  };
+  const swap = (from, to, done) => {
+    from.inert = true; to.inert = false;
+    gsap.timeline({ onComplete: done })
+      .to(from, { autoAlpha: 0, y: -4, duration: dur('out'), ease: E('out') })
+      .fromTo(to, { autoAlpha: 0, y: 4 }, { autoAlpha: 1, y: 0, duration: dur('in'), ease: E('in') });
+  };
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const value = email.value.trim();
+    if (!EMAIL.test(value)) { showError(true); email.focus(); return; }
+    showError(false);
+    $('#r-email').textContent = value;
+    $('#r-platform').textContent = form.elements.platform.value;
+    swap(form, result, () => $('#result-title').focus());
+  });
+  email.addEventListener('input', () => { if (form.classList.contains('has-error') && EMAIL.test(email.value.trim())) showError(false); });
+  $('#trial-back').addEventListener('click', () => { if (!result.inert) swap(result, form, () => email.focus()); });
+
+  /* ---------- Choreography: everything that moves on its own ---------- */
+  const mm = gsap.matchMedia();
+  mm.add({
+    motion: '(prefers-reduced-motion: no-preference)',
+    reduce: '(prefers-reduced-motion: reduce)',
+    fine: '(hover: hover) and (pointer: fine)',
+    wide: '(min-width: 820px)'
+  }, ctx => {
+    const { motion, fine, wide } = ctx.conditions;
+    reduce = !motion;
+    syncKnobs();
+    if (!motion) { // Reduced motion: final states, native scroll, numeric meter readout.
+      booted = true; meter.live = true; root.classList.add('booted'); $('.tabs').classList.add('lit');
+      return;
+    }
+
+    lenis = new Lenis({ lerp: 0.1, smoothWheel: true, autoRaf: false });
+    lenis.on('scroll', ScrollTrigger.update);
+    const tick = time => lenis.raf(time * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
+
+    if (!booted) {
+      booted = true;
+      gsap.timeline({ onComplete: () => root.classList.add('booted') })
+        .fromTo('.plate', { y: 0, yPercent: 101 }, { y: 0, yPercent: 0, duration: T('rise'), ease: E('rise') }, 0.35)
+        .fromTo(knobCaps, { rotation: (i, el) => knobAngle(el) - 30 }, { rotation: (i, el) => knobAngle(el), duration: T('recall'), ease: E('recall'), stagger: 0.03 }, 0.9)
+        .fromTo('.vu__lit', { opacity: 0.12 }, { opacity: 1, duration: T('lamp'), ease: 'lamp' }, 1.1)
+        .add(() => $('.tabs').classList.add('lit'), 1.2)
+        // Signature: the power-on thump. Kick from the stop to +1 VU, fall back with VU overshoot, then hand over to the programme.
+        .to(needle, { rotation: 6, duration: T('kick'), ease: E('kick') }, 1.6)
+        .to(needle, { rotation: -48, duration: T('settle'), ease: 'vu-settle', onComplete: () => { meter.live = true; meter.lastA = null; } });
+    }
+
+    // S2: the 24 fader caps ride up from the bottom of their slots to the mix (outer wrapper only).
+    const rideFrom = (i, el) => el.parentNode.clientHeight - el.offsetTop - el.offsetHeight; // bottom of the slot
+    gsap.set('.fader__ride', { y: rideFrom }); // staggered scrubs only render their first child up front
+    gsap.fromTo('.fader__ride', { y: rideFrom }, {
+      y: 0, ease: 'none', stagger: { amount: 0.5 },
+      scrollTrigger: { trigger: '.faders', start: 'top 85%', end: 'center 55%', scrub: true, invalidateOnRefresh: true }
+    });
+    // S3: spec rules draw in from the left, one per row.
+    gsap.fromTo('.spec-row', { '--rule-x': 0 }, {
+      '--rule-x': 1, duration: T('rule'), ease: E('rule'), stagger: 0.06,
+      scrollTrigger: { trigger: '.specs dl', start: 'top 90%', once: true }
+    });
+    // MI6 bars rest while the meter bridge is off screen; the loop keeps playing.
+    const bridge = $('.bridge');
+    ScrollTrigger.create({ trigger: bridge, start: 'top bottom', end: 'bottom top', onToggle: s => bridge.classList.toggle('is-away', !s.isActive) });
+
+    // HV12: the meter glass reflects the room; the glare drifts against the pointer.
+    let move, leave;
+    if (fine && wide) {
+      const glare = $('.vu__glare');
+      const gx = gsap.quickTo(glare, 'x', { duration: T('glare'), ease: E('glare') });
+      const gy = gsap.quickTo(glare, 'y', { duration: T('glare'), ease: E('glare') });
+      move = e => { gx(-(e.clientX / innerWidth * 2 - 1) * 24); gy(-(e.clientY / innerHeight * 2 - 1) * 24); };
+      leave = () => { gx(0); gy(0); };
+      addEventListener('pointermove', move, { passive: true });
+      root.addEventListener('pointerleave', leave);
+    }
+
+    return () => {
+      gsap.ticker.remove(tick);
+      gsap.ticker.lagSmoothing(500, 33);
+      lenis.destroy(); lenis = null;
+      if (move) { removeEventListener('pointermove', move); root.removeEventListener('pointerleave', leave); }
+      bridge.classList.remove('is-away');
+      root.classList.add('booted'); $('.tabs').classList.add('lit'); meter.live = true; meter.lastA = null;
+    };
+  });
+})();
+</script>
+</body>
+</html>

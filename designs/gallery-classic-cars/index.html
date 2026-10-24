@@ -1,0 +1,1034 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cars we have restored</title>
+<meta name="description" content="Teme Valley Coachworks, Bromfield: the register of twelve classic cars restored in the workshop, with the hours logged and the paint each one left in.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hubot+Sans:wdth,wght@125,500..600&family=Hanken+Grotesk:wght@400..600&display=swap" rel="stylesheet">
+<style>
+  /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+  /* Hidden starting states only once the script runs with its libraries. */
+  html.js [data-rv] { opacity: 0; }
+  @media (prefers-reduced-motion: reduce) { html.js [data-rv] { opacity: 1; } }
+
+  :root {
+    /* The body shop: primer, bare metal, guide coat, red oxide. Car paints live in the CARS data. */
+    --primer: #C8CBC6;      /* high-build primer grey: the page */
+    --metal: #E6E8E6;       /* bare steel panel: record, preview card, form */
+    --guidecoat: #1D1F22;   /* guide-coat black: text (10.1:1 on primer, 13.4:1 on metal) */
+    --flat: #474D51;        /* flatted grey: secondary text (5.2:1 on primer, 7.2:1 on metal) */
+    --oxide: #86401C;       /* red-oxide primer, state only (4.6:1 on primer, 6.2:1 on metal) */
+    --rule: #959A95;        /* the one rule grey: row separators, floor lines, field rules */
+
+    /* Drawing materials (non-text) */
+    --art-chrome: #EEF1F3;
+    --art-edge: #7B8288;
+    --art-spoke: #8C9399;
+    --art-wall: #5E6368;
+    --art-glass: rgb(29 31 34 / .8);
+    --art-line: rgb(29 31 34 / .38);
+    --art-lamp: #F4F2E8;
+    --art-rim: #B4BABF;
+    --art-fuchs: #2C2F33;
+    --art-ash: #B98F5A;
+
+    --font-display: 'Hubot Sans', 'Arial', sans-serif;
+    --font-text: 'Hanken Grotesk', system-ui, sans-serif;
+    --wide: 125%;
+
+    /* 1.25 ratio from 17px */
+    --step--1: .85rem;
+    --step-0: 1.0625rem;
+    --step-1: 1.33rem;
+    --step-2: 1.66rem;
+    --step-3: clamp(2rem, 1.25rem + 3.1vw, 3.6rem);
+
+    --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 24px;
+    --space-6: 32px; --space-7: 48px; --space-8: 64px; --space-9: 96px; --space-10: 128px;
+    --gutter: clamp(16px, 4vw, 56px);
+    --max: 1280px;
+
+    /* Radius by hierarchy */
+    --r-chip: 3px;
+    --r-plate: 10px;
+    --r-panel: 14px;
+    --r-pill: 999px;
+
+    --ease-out: cubic-bezier(.16, 1, .3, 1);
+    --ease-inout: cubic-bezier(.65, 0, .35, 1);
+    --ease-sweep: cubic-bezier(.35, 0, 0, 1);
+    --ease-release: cubic-bezier(.215, .61, .355, 1);
+    --dur-fast: .2s;
+    --dur: .35s;
+    --dur-open: .5s;
+    --dur-slow: .6s;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { overflow-anchor: none; }
+  body {
+    margin: 0;
+    background: var(--primer);
+    color: var(--guidecoat);
+    font: 400 var(--step-0)/1.6 var(--font-text);
+    -webkit-font-smoothing: antialiased;
+  }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  .num { font-variant-numeric: tabular-nums lining-nums; }
+  .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  :focus-visible { outline: 2px solid var(--oxide); outline-offset: 3px; }
+
+  .garage { overflow-x: clip; padding-bottom: var(--space-9); }
+  .wrap { max-width: calc(var(--max) + 2 * var(--gutter)); margin-inline: auto; padding-inline: var(--gutter); }
+
+  /* ---------- Intro ---------- */
+  .intro { overflow-x: clip; padding-block: var(--space-8) var(--space-7); }
+  .intro .wrap { display: grid; gap: var(--space-4); align-items: end; }
+  h2 {
+    font: 600 var(--step-3)/1.05 var(--font-display);
+    font-stretch: var(--wide);
+    letter-spacing: -.02em;
+    margin: 0 0 var(--space-5);
+    text-wrap: balance;
+  }
+  .lede { margin: 0; max-width: 58ch; }
+
+  /* A stage is a car on its floor line. The left edge is the workshop door: cars roll in from behind it. */
+  .stage { position: relative; aspect-ratio: 8 / 3; clip-path: inset(-30% -300vw -30% 0); }
+  .stage::after { content: ''; position: absolute; left: 0; right: 0; top: 85.333%; height: 1px; background: var(--rule); }
+  .stage > .drive, .stage .arrive { position: absolute; inset: 0; }
+  .car { display: block; width: 100%; height: auto; }
+  .car-img { aspect-ratio: 8 / 3; }
+  .car-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .caption { margin: var(--space-4) 0 var(--space-5); max-width: 46ch; }
+
+  @media (min-width: 768px) {
+    .intro .wrap { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--space-6) var(--space-5); }
+    .intro-text { grid-column: 1 / 7; padding-bottom: var(--space-4); }
+    .intro-car { grid-column: 7 / 13; }
+  }
+
+  /* ---------- Drawing parts ---------- */
+  .car .t { fill: var(--guidecoat); }
+  .car .tw { fill: none; stroke: var(--art-wall); stroke-linecap: round; }
+  .car .ch { fill: var(--art-chrome); stroke: var(--art-edge); stroke-width: .6; }
+  .car .sp { fill: none; stroke: var(--art-spoke); stroke-width: .55; }
+  .car .dk { fill: var(--guidecoat); }
+  .car .fx { fill: var(--art-fuchs); }
+  .car .rim { stroke: var(--art-edge); stroke-width: .6; }
+  .car .ring { fill: none; stroke: var(--art-spoke); stroke-width: .8; }
+  .car .bar { fill: none; stroke: var(--guidecoat); stroke-linecap: round; }
+  .car .sh { fill: url(#sheen); }
+  .car .ash { fill: none; stroke: var(--art-ash); stroke-width: 3.4; stroke-linejoin: round; stroke-linecap: square; }
+  .car .gl { fill: var(--art-glass); }
+  .car .ln { fill: none; stroke: var(--art-line); stroke-width: 1; vector-effect: non-scaling-stroke; }
+  .car .cre { fill: none; stroke: var(--art-edge); stroke-width: 3.2; stroke-linecap: round; }
+  .car .cr { fill: none; stroke: var(--art-chrome); stroke-width: 1.8; stroke-linecap: round; }
+  .car .lp { fill: var(--art-lamp); stroke: var(--art-edge); stroke-width: .8; }
+  .car .ol { fill: none; stroke: var(--guidecoat); stroke-opacity: .55; stroke-width: 1; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+  .car .well { fill: var(--art-glass); }
+
+  /* ---------- Toolbar ---------- */
+  .register { position: relative; }
+  .toolbar { position: relative; z-index: 5; background: var(--primer); }
+  .toolbar::before { content: ''; position: absolute; inset: 0; background: var(--metal); border-bottom: 1px solid var(--rule); opacity: 0; transition: opacity var(--dur-fast) linear; }
+  .tb-in { position: relative; display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2) var(--space-6); padding-block: var(--space-4); }
+  .group { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-1) var(--space-4); }
+  .g-label { font-size: var(--step--1); color: var(--flat); }
+  .filters { position: relative; display: flex; flex-wrap: wrap; gap: 0 var(--space-5); }
+  .f-btn { background: none; border: 0; padding: var(--space-2) 0 var(--space-3); cursor: pointer; transition: transform .4s var(--ease-release); }
+  .f-btn .n { color: var(--flat); margin-left: .3em; }
+  .ind { position: absolute; left: 0; top: 0; width: 100px; height: 3px; border-radius: var(--r-pill); background: var(--oxide); transform-origin: 0 50%; pointer-events: none; }
+  .count { margin: 0 0 0 auto; font-size: var(--step--1); color: var(--flat); }
+  @media (min-width: 1024px) {
+    .toolbar { position: sticky; top: 0; }
+    .toolbar[data-stuck]::before { opacity: 1; }
+  }
+
+  /* HV2 directional underline: enters from the left, leaves to the right */
+  .sweep {
+    background: linear-gradient(currentColor, currentColor) 100% 100% / 0 .07em no-repeat;
+    transition: background-size .4s var(--ease-sweep);
+    padding-bottom: .08em;
+  }
+  .f-btn .sweep { background-image: linear-gradient(var(--flat), var(--flat)); }
+  @media (hover: hover) {
+    :is(.f-btn, .tbtn, .lnk):hover .sweep, .lnk:hover { background-position: 0 100%; background-size: 100% .07em; }
+  }
+  :is(.f-btn, .tbtn):focus-visible .sweep, .lnk:focus-visible { background-position: 0 100%; background-size: 100% .07em; }
+  @media (hover: none) { .f-btn[aria-pressed="true"] .sweep { background-size: 100% .07em; } }
+
+  /* Text buttons and links carry a quiet rule at rest so they read as actions without hover */
+  .tbtn, .lnk { color: var(--guidecoat); }
+  .tbtn { background: none; border: 0; padding: var(--space-2) 0; cursor: pointer; transition: transform .4s var(--ease-release); }
+  .tbtn .sweep, .lnk {
+    background-image: linear-gradient(currentColor, currentColor), linear-gradient(var(--rule), var(--rule));
+    background-size: 0 .07em, 100% .07em;
+    background-position: 100% 100%, 0 100%;
+    background-repeat: no-repeat;
+    text-decoration: none;
+  }
+  @media (hover: hover) {
+    .tbtn:hover .sweep, .lnk:hover { background-size: 100% .07em, 100% .07em; background-position: 0 100%, 0 100%; }
+  }
+  .tbtn:focus-visible .sweep, .lnk:focus-visible { background-size: 100% .07em, 100% .07em; background-position: 0 100%, 0 100%; }
+  @media (hover: none) { .lnk, .tbtn .sweep { background-size: 100% .07em, 100% .07em; } }
+
+  /* Primary buttons: oxide outline at rest, solid oxide on hover, pill like a chrome bezel */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-height: 48px; padding: 0 var(--space-5);
+    border: 1.5px solid var(--oxide); border-radius: var(--r-pill);
+    background: transparent; color: var(--oxide);
+    font-weight: 600; line-height: 1.2; cursor: pointer;
+    transition: background-color var(--dur-fast) linear, color var(--dur-fast) linear, transform .4s var(--ease-release);
+  }
+  @media (hover: hover) { .btn:hover { background: var(--oxide); color: var(--metal); } }
+  .btn:focus-visible { background: var(--oxide); color: var(--metal); outline: 2px solid var(--guidecoat); outline-offset: 3px; }
+  .btn:active { background: var(--oxide); color: var(--metal); }
+  /* MI1 press and release */
+  :is(.btn, .tbtn, .f-btn):active { transform: scale(.97); transition-duration: var(--dur-fast), var(--dur-fast), .12s; }
+
+  /* ---------- Index ---------- */
+  .cols, .row-btn {
+    --cols: 5ch 5ch minmax(0, 1fr) 15rem 6ch 13rem;
+    display: grid; grid-template-columns: var(--cols); column-gap: var(--space-5); align-items: center;
+  }
+  .cols { font-size: var(--step--1); color: var(--flat); padding: var(--space-4) 0 var(--space-2); border-bottom: 1px solid var(--rule); }
+  .cols .r, .c-hrs { text-align: right; }
+  .cols .th { display: none; }
+  .index { list-style: none; margin: 0; padding: 0; }
+  .row { position: relative; transition: opacity var(--dur) linear; }
+  .row[hidden] { display: none; }
+  .row-btn {
+    width: 100%; min-height: 72px; padding: var(--space-3) 0; margin: 0;
+    background: none; border: 0; text-align: left; cursor: pointer;
+    transition: transform .4s var(--ease-release);
+  }
+  .row-btn:focus-visible { outline-offset: -2px; border-radius: var(--r-chip); }
+  .row-btn:active { transform: scale(.985); transition-duration: .12s; }
+  .rule { position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--rule); transform-origin: 0 50%; }
+  .c-job { color: var(--flat); }
+  .c-car { font: 600 var(--step-1)/1.25 var(--font-display); font-stretch: var(--wide); letter-spacing: -.01em; padding-right: var(--space-4); }
+  .c-col { position: relative; padding-left: 26px; }
+  .c-col .tx { display: block; transition: transform var(--dur) var(--ease-out); }
+  .chip {
+    position: absolute; left: 0; top: 50%; width: 40px; height: 22px; margin-top: -11px;
+    border-radius: var(--r-chip); background: var(--c1);
+    box-shadow: inset 0 0 0 1px rgb(29 31 34 / .2);
+    transform: scaleX(.4); transform-origin: 0 50%;
+    transition: transform var(--dur) var(--ease-out);
+  }
+  .chip.two { background: linear-gradient(var(--c2) 0 45%, var(--c1) 45%); }
+  .c-hrs .u { display: none; }
+  .c-st { color: var(--flat); }
+  .c-st.ws { color: var(--guidecoat); font-weight: 600; }
+  .thumb { display: block; width: 96px; position: relative; }
+  .thumb::after { content: ''; position: absolute; left: 0; right: 0; top: 85.333%; height: 1px; background: var(--rule); }
+  html.cu2 .thumb { display: none; }
+
+  /* The paint chip slides out of the book */
+  @media (hover: hover) {
+    .row-btn:hover .chip { transform: scaleX(1); }
+    .row-btn:hover .c-col .tx { transform: translateX(24px); }
+  }
+  .row-btn:focus-visible .chip, .row.is-open .chip { transform: scaleX(1); }
+  .row-btn:focus-visible .c-col .tx, .row.is-open .c-col .tx { transform: translateX(24px); }
+
+  /* HV7 sibling dimming, mirrored for keyboard focus */
+  @media (hover: hover) { .index:has(> .row:hover) > .row:not(:hover) { opacity: .45; } }
+  .index:has(:focus-visible) > .row:not(:has(:focus-visible)) { opacity: .45; }
+
+  @media (min-width: 768px) {
+    html:not(.cu2) :is(.cols, .row-btn) { --cols: 96px 5ch 5ch minmax(0, 1fr) 15rem 6ch 13rem; }
+    html:not(.cu2) .cols .th { display: block; }
+  }
+  @media (min-width: 768px) and (max-width: 1099px) {
+    .cols, .row-btn { --cols: 4.5ch 4.5ch minmax(0, 1fr) 11.5rem 5ch 10rem; }
+    html:not(.cu2) :is(.cols, .row-btn) { --cols: 96px 4.5ch 4.5ch minmax(0, 1fr) 11.5rem 5ch 9rem; }
+    .c-car { font-size: 1.15rem; }
+  }
+  @media (max-width: 767px) {
+    .cols { display: none; }
+    .row-btn {
+      grid-template-columns: 1fr auto;
+      grid-template-areas: "thumb thumb" "job year" "car car" "col hrs" "st st";
+      row-gap: var(--space-1); padding-block: var(--space-4);
+    }
+    .thumb { grid-area: thumb; margin-bottom: var(--space-2); }
+    .c-job { grid-area: job; } .c-year { grid-area: year; text-align: right; }
+    .c-car { grid-area: car; font-size: 1.15rem; padding: 0; }
+    .c-col { grid-area: col; } .c-hrs { grid-area: hrs; } .c-st { grid-area: st; }
+    .c-hrs .u { display: inline; }
+  }
+
+  /* ---------- Record (CD6: opens under its row) ---------- */
+  .rec { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--dur) var(--ease-out); }
+  .rec[hidden] { display: none; }
+  .rec.open { grid-template-rows: 1fr; transition-duration: var(--dur-open); }
+  .rec-in { min-height: 0; overflow: hidden; }
+  .rec-body {
+    display: grid; gap: var(--space-6);
+    background: var(--metal); border-radius: var(--r-panel);
+    padding: var(--space-6) var(--space-5); margin: 0 0 var(--space-5);
+  }
+  .rec-art { align-self: center; }
+  .rec-t { font: 600 var(--step-2)/1.2 var(--font-display); font-stretch: var(--wide); letter-spacing: -.01em; margin: 0; }
+  .rec-job { margin: var(--space-1) 0 var(--space-5); color: var(--flat); }
+  .rec dl { margin: 0; display: grid; gap: var(--space-4); }
+  .rec dt { font-size: var(--step--1); color: var(--flat); }
+  .rec dd { margin: 0; max-width: 62ch; }
+  .rec ul { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--space-1); }
+  .rec-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4) var(--space-6); margin-top: var(--space-6); }
+  @media (min-width: 1024px) {
+    .rec-body { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); padding: var(--space-7) var(--space-6); column-gap: var(--space-7); }
+    .rec-art { position: sticky; top: 96px; align-self: start; padding-top: var(--space-6); }
+  }
+
+  /* ---------- CU2 preview card ---------- */
+  .preview {
+    position: fixed; left: 0; top: 0; z-index: 30; width: 300px;
+    pointer-events: none; visibility: hidden;
+    background: var(--metal); border: 1px solid rgb(29 31 34 / .22); border-radius: var(--r-plate);
+    overflow: hidden;
+  }
+  .pv-frame { position: relative; height: 158px; }
+  .pv-layer { position: absolute; inset: 0; padding: var(--space-3) var(--space-3) 0; }
+  .pv-art { position: relative; }
+  .pv-art::after { content: ''; position: absolute; left: 0; right: 0; top: 85.333%; height: 1px; background: var(--rule); }
+  .pv-name { margin: var(--space-2) 0 0; font-size: var(--step--1); color: var(--flat); }
+
+  /* ---------- Enquiry ---------- */
+  .enquire { margin-top: var(--space-9); scroll-margin-top: var(--space-5); }
+  .enquire .wrap { display: grid; gap: var(--space-6); }
+  .enquire h3 { font: 600 var(--step-2)/1.2 var(--font-display); font-stretch: var(--wide); letter-spacing: -.01em; margin: 0 0 var(--space-4); }
+  .enquire p { margin: 0 0 var(--space-4); max-width: 52ch; }
+  .direct { color: var(--flat); }
+  .direct .lnk { color: var(--guidecoat); }
+  .cell { display: grid; }
+  .cell > * { grid-area: 1 / 1; }
+  .panel { background: var(--metal); border-radius: var(--r-panel); padding: var(--space-6) var(--space-5); }
+  .result { visibility: hidden; }
+  .result h4 { font: 600 var(--step-1)/1.25 var(--font-display); font-stretch: var(--wide); letter-spacing: -.01em; margin: 0 0 var(--space-4); }
+  .result h4:focus { outline: none; }
+  .result .note { color: var(--flat); font-size: var(--step--1); }
+  .fields { display: grid; gap: var(--space-5); }
+  .field { display: grid; gap: var(--space-1); min-width: 0; }
+  .field label { font-size: var(--step--1); font-weight: 600; color: var(--flat); transition: color var(--dur-fast) linear; }
+  .field .hint { font-weight: 400; }
+  .field:focus-within label { color: var(--oxide); }
+  .ctl { position: relative; }
+  .ctl::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--oxide); transform: scaleX(0); transform-origin: 0 50%; transition: transform var(--dur) var(--ease-out); }
+  .ctl:focus-within::after, .ctl:has([aria-invalid="true"])::after { transform: scaleX(1); }
+  .ctl input, .ctl select, .ctl textarea {
+    display: block; width: 100%; padding: var(--space-2) 0; margin: 0;
+    background: transparent; border: 0; border-bottom: 1px solid var(--rule); border-radius: 0;
+    transition: border-color var(--dur-fast) linear;
+  }
+  .ctl :is(input, select, textarea):focus-visible { outline: none; }
+  @media (hover: hover) { .ctl :is(input, select, textarea):hover { border-bottom-color: var(--flat); } }
+  .ctl textarea { resize: vertical; min-height: 5.5em; }
+  .ctl select { appearance: none; padding-right: var(--space-6); cursor: pointer; }
+  .ctl.sel::before { content: ''; position: absolute; right: 6px; top: calc(50% - 6px); width: 8px; height: 8px; border: solid var(--guidecoat); border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); pointer-events: none; }
+  .err { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .25s var(--ease-out); }
+  .err.on { grid-template-rows: 1fr; }
+  .err > span { min-height: 0; overflow: hidden; font-size: var(--step--1); font-weight: 600; }
+  .form-foot { margin-top: var(--space-6); }
+  @media (min-width: 600px) {
+    .fields { grid-template-columns: 1fr 1fr; column-gap: var(--space-6); }
+    .field.full { grid-column: 1 / -1; }
+    .panel { padding: var(--space-7) var(--space-6); }
+  }
+  @media (min-width: 1024px) {
+    .enquire .wrap { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--space-5); }
+    .enquire .say { grid-column: 1 / 6; }
+    .enquire .cell { grid-column: 6 / 13; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0s !important; }
+    :is(.btn, .tbtn, .f-btn, .row-btn):active { transform: none; }
+    .row-btn:hover .c-col .tx, .row-btn:focus-visible .c-col .tx, .row.is-open .c-col .tx { transform: translateX(24px); }
+  }
+  html.js .rule { transform: scaleX(0); }
+  html.js .chip { clip-path: inset(0px 100% 0px 0px); }
+  @media (prefers-reduced-motion: reduce) { html.js .rule { transform: none; } html.js .chip { clip-path: none; } }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity=".26"/>
+      <stop offset=".42" stop-color="#fff" stop-opacity="0"/>
+      <stop offset=".6" stop-color="#000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000" stop-opacity=".2"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<section class="garage" aria-labelledby="garage-t">
+  <div class="intro">
+    <div class="wrap">
+      <div class="intro-text">
+        <h2 id="garage-t">Cars we have restored</h2>
+        <p class="lede" data-rv>We have restored classic cars at Bromfield, near Ludlow, since 2009. These are twelve of them, with the hours we logged on each and the paint they left in. Two are still on the ramps.</p>
+      </div>
+      <div class="intro-car">
+        <div class="stage" id="intro-stage">
+          <div class="drive"><div class="arrive" data-rv></div></div>
+        </div>
+        <p class="caption">Left the workshop on 14 October: 1963 Jaguar E-Type Series 1, Opalescent Gunmetal, <span class="num">2,140</span> hours.</p>
+        <button class="btn" type="button" id="read-it" aria-controls="rec-0141">Read its record</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="register">
+    <div class="sentinel" aria-hidden="true"></div>
+    <div class="toolbar">
+      <div class="wrap tb-in">
+        <div class="group" role="group" aria-labelledby="show-l">
+          <span class="g-label" id="show-l">Show</span>
+          <div class="filters">
+            <button class="f-btn" type="button" data-f="all" aria-pressed="true"><span class="sweep">All<span class="n num">12</span></span></button>
+            <button class="f-btn" type="button" data-f="full" aria-pressed="false"><span class="sweep">Full restorations<span class="n num">6</span></span></button>
+            <button class="f-btn" type="button" data-f="body" aria-pressed="false"><span class="sweep">Body and paint<span class="n num">4</span></span></button>
+            <button class="f-btn" type="button" data-f="mech" aria-pressed="false"><span class="sweep">Engines and gearboxes<span class="n num">2</span></span></button>
+            <button class="f-btn" type="button" data-f="workshop" aria-pressed="false"><span class="sweep">In the workshop now<span class="n num">2</span></span></button>
+            <span class="ind" aria-hidden="true"></span>
+          </div>
+        </div>
+        <p class="count num" id="count" aria-live="polite">Showing 12 of 12 cars</p>
+      </div>
+    </div>
+    <div class="wrap">
+      <div class="cols" aria-hidden="true">
+        <span class="th"></span><span>Job</span><span>Year</span><span>Car</span><span>Colour</span><span class="r">Hours</span><span>Status</span>
+      </div>
+      <ol class="index" id="index" aria-label="Restored cars, newest job first"></ol>
+      <noscript><p>The register needs JavaScript to list the cars. Ring the workshop on 01632 960418 and we will talk you through them.</p></noscript>
+    </div>
+  </div>
+
+  <div class="enquire" id="enquire">
+    <div class="wrap">
+      <div class="say">
+        <h3 id="enquire-t" tabindex="-1">Tell us about your car</h3>
+        <p>We take on four full restorations a year and book about eighteen months ahead. Describe the car and we will reply within three working days with a time to come and see it.</p>
+        <p class="direct">Or ring the workshop on <a class="lnk num" href="tel:+441632960418" target="_blank" rel="noopener">01632 960418</a>, weekdays 8 to 5, or write to <a class="lnk" href="mailto:workshop@temevalley.example" target="_blank" rel="noopener">workshop@temevalley.example</a>.</p>
+      </div>
+      <div class="cell">
+        <form class="panel" id="enq-form" aria-labelledby="enquire-t" novalidate>
+          <div class="fields">
+            <div class="field">
+              <label for="f-name">Your name</label>
+              <div class="ctl"><input id="f-name" name="name" autocomplete="name" aria-describedby="e-name"></div>
+              <div class="err" id="e-name"><span></span></div>
+            </div>
+            <div class="field">
+              <label for="f-email">Email</label>
+              <div class="ctl"><input id="f-email" name="email" type="email" autocomplete="email" aria-describedby="e-email"></div>
+              <div class="err" id="e-email"><span></span></div>
+            </div>
+            <div class="field">
+              <label for="f-car">The car <span class="hint" id="h-car">(for example, 1969 MGB GT)</span></label>
+              <div class="ctl"><input id="f-car" name="car" aria-describedby="h-car e-car"></div>
+              <div class="err" id="e-car"><span></span></div>
+            </div>
+            <div class="field">
+              <label for="f-where">Where it is now</label>
+              <div class="ctl sel"><select id="f-where" name="where" aria-describedby="e-where">
+                <option value="">Choose one</option>
+                <option>Runs and drives</option>
+                <option>Starts but needs work</option>
+                <option>Stored, not running</option>
+                <option>Bare shell or parts</option>
+              </select></div>
+              <div class="err" id="e-where"><span></span></div>
+            </div>
+            <div class="field full">
+              <label for="f-notes">Anything we should know <span class="hint">(optional)</span></label>
+              <div class="ctl"><textarea id="f-notes" name="notes" rows="4"></textarea></div>
+            </div>
+          </div>
+          <div class="form-foot"><button class="btn" type="submit">Send to the workshop</button></div>
+        </form>
+        <div class="panel result" id="enq-result" inert>
+          <h4 id="result-t" tabindex="-1">Sent to the workshop</h4>
+          <p id="result-p"></p>
+          <p class="note">This page is a demo: nothing left your browser.</p>
+          <button class="tbtn" type="button" id="edit"><span class="sweep">Edit what I sent</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="preview" aria-hidden="true"><div class="pv-frame"></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  /* ---------- Data: one entry per car, newest job first ----------
+     Each car is drawn as an inline-SVG side elevation from its shape template, paint and wheels.
+     To use real photographs instead, set img to an image URL cropped to a fixed 8:3 side view; the drawing
+     is used only when img is empty, and roll() then moves and leans the whole image (no wheels to turn). */
+  const CARS = [
+    { job: '0146', year: 1960, make: 'Morris', model: 'Minor Traveller', work: 'body', status: 'workshop', state: 'On the ramps: new ash frame', hours: 430,
+      paint: { name: 'Almond Green', hex: '#A9B79B' }, shape: 'traveller', wheels: 'steel', img: '',
+      arrived: 'Driven in by its second owner. The ash frame had rotted where it meets the rear wings, and the back doors no longer shut true.',
+      done: ['Took the rear body off and made a new ash frame, jointed and glued as the factory did.', 'Let new steel into both rear wheel arches.', 'Rehung the back doors on the new frame.'],
+      paintNote: 'Almond Green, matched to the inside of the glovebox lid, which never saw the sun.', delivered: '' },
+    { job: '0144', year: 1962, make: 'Jaguar', model: 'Mk 2 3.8', work: 'full', status: 'workshop', state: 'On the ramps: in paint', hours: 1020,
+      paint: { name: 'British Racing Green', hex: '#1E3F2D' }, shape: 'four-door-saloon', wheels: 'wire', img: '',
+      arrived: 'Bought at auction as a running car with a fresh MOT and badly filled sills. Under the filler, the inner and outer sills had gone.',
+      done: ['Stripped to bare metal and replaced the inner and outer sills, the jacking points and the rear spring hangers.', 'Rebuilt the front subframe and both axles on new bushes.', 'Rebuilt the 3.8 with new liners and a reground crank.'],
+      paintNote: 'British Racing Green: three coats of base and four of clear, now curing in the booth.', delivered: '' },
+    { job: '0141', year: 1963, make: 'Jaguar', model: 'E-Type Series 1 3.8 fixed-head coupé', work: 'full', status: 'delivered', state: 'Delivered October 2026', hours: 2140,
+      paint: { name: 'Opalescent Gunmetal', hex: '#565E66' }, shape: 'longnose-fhc', wheels: 'wire', img: '',
+      arrived: 'Off the road since 1987 in a Herefordshire barn. Floors and sills rotten through, engine seized.',
+      done: ['Stripped to a bare shell and sent for chemical dipping.', 'Replaced floors, sills and the lower bonnet valance in steel.', 'Rebuilt the 3.8 to standard with a new crank.', 'Retrimmed in dark blue Connolly hide.'],
+      paintNote: 'Opalescent Gunmetal, mixed to a sample cut from behind the original trim.', delivered: '14 October 2026, to an owner in Bath.' },
+    { job: '0137', year: 1973, make: 'Ford', model: 'Escort RS2000', work: 'body', status: 'delivered', state: 'Delivered March 2025', hours: 860,
+      paint: { name: 'Diamond White', hex: '#F1F0EA' }, shape: 'two-door-saloon', wheels: 'steel', img: '',
+      arrived: 'Rallied in the 1980s and stored since. Straight, but with rust in the front valance, both A-posts and the boot floor.',
+      done: ['Replaced the front valance, the bottoms of both A-posts and the boot floor.', 'Took out a later roll cage and repaired its mounting points.', 'Painted the shell inside and out, engine bay included.'],
+      paintNote: 'Diamond White, a plain solid white with no pearl or metallic.', delivered: 'March 2025, back to its owner in Shrewsbury.' },
+    { job: '0133', year: 1971, make: 'Triumph', model: 'TR6', work: 'full', status: 'delivered', state: 'Delivered August 2024', hours: 1380,
+      paint: { name: 'Mimosa yellow', hex: '#E5C239' }, shape: 'roadster', wheels: 'steel', img: '',
+      arrived: 'Brought back from California in 2019. The body was sound, but the chassis had cracked at the rear trailing-arm mounts.',
+      done: ['Lifted the body off and repaired the chassis with new trailing-arm mounts and outriggers.', 'Rebuilt the 2.5 six and its fuel injection, and set it up on our rolling road.', 'Fitted a new black mohair hood and frame.'],
+      paintNote: 'Mimosa yellow, matched to the paint under the dashboard.', delivered: 'August 2024, to an owner in Leominster.' },
+    { job: '0130', year: 1968, make: 'Mercedes-Benz', model: '280 SL', work: 'mech', status: 'delivered', state: 'Delivered June 2024', hours: 720,
+      paint: { name: 'Silver grey metallic', hex: '#A3AAB0' }, shape: 'pagoda-hardtop', wheels: 'disc', img: '',
+      arrived: 'Body and paint already done elsewhere. It ran on five cylinders, and the automatic gearbox slipped on the change from second to third.',
+      done: ['Rebuilt the injection pump and set it up on a test bench.', 'Overhauled the automatic gearbox with new clutch packs and bands.', 'Rebuilt the brakes and renewed every rubber hose in the cooling system.'],
+      paintNote: 'Silver grey metallic, left as we found it: the previous restorer’s paint was good.', delivered: 'June 2024, back to its owner in Ludlow.' },
+    { job: '0126', year: 1970, make: 'Porsche', model: '911 T 2.2 coupé', work: 'body', status: 'delivered', state: 'Delivered October 2023', hours: 940,
+      paint: { name: 'Tangerine', hex: '#E2672B' }, shape: 'rear-engine-fastback', wheels: 'fuchs', img: '',
+      arrived: 'Resprayed dark blue over the old paint at some point, with patches in both the front and rear floors.',
+      done: ['Stripped the paint back to bare metal by hand.', 'Replaced the front floor pan, both battery boxes and the ends of the rear torsion tube.', 'Painted it back to Tangerine and refitted the original brightwork.'],
+      paintNote: 'Tangerine, matched to a sample under the fuel tank, where the blue had never reached.', delivered: 'October 2023, to an owner in Cheltenham.' },
+    { job: '0121', year: 1966, make: 'Austin-Healey', model: '3000 Mk III', work: 'full', status: 'delivered', state: 'Delivered May 2023', hours: 2050,
+      paint: { name: 'Healey Blue over Old English White', hex: '#5B84A6' }, lower: { name: 'Old English White', hex: '#EDE5CC' }, shape: 'roadster', wheels: 'wire', img: '',
+      arrived: 'A rolling shell and eleven boxes of parts, taken apart in 1994 and never put back together.',
+      done: ['Checked every part against the factory parts book and found the 140 that were missing.', 'Rebuilt the chassis frame and fitted new floors, sills and rear shroud bottoms.', 'Rebuilt the 2.9 six with a new timing chain and oil pump.'],
+      paintNote: 'Healey Blue over Old English White, split along the line of the side trim as the factory did.', delivered: 'May 2023, to an owner in Worcester.' },
+    { job: '0117', year: 1965, make: 'Alfa Romeo', model: 'Giulia Sprint GT', work: 'full', status: 'delivered', state: 'Delivered September 2022', hours: 1610,
+      paint: { name: 'Rosso Alfa', hex: '#B1221F' }, shape: 'coupe', wheels: 'steel', img: '',
+      arrived: 'Driven from Turin by its owner, who had used it every day for thirty years and wanted it made new.',
+      done: ['Replaced the floors, the inner wings and the bottoms of both doors.', 'Rebuilt the 1.6 twin-cam with new liners and pistons, and the five-speed gearbox with new synchromesh.', 'Retrimmed the seats in the original black vinyl and cloth.'],
+      paintNote: 'Rosso Alfa, matched to the inside of the boot lid.', delivered: 'September 2022, back to its owner, now living in Monmouth.' },
+    { job: '0112', year: 1967, make: 'Morris', model: 'Mini Cooper S', work: 'body', status: 'delivered', state: 'Delivered April 2022', hours: 780,
+      paint: { name: 'Tartan Red with Old English White roof', hex: '#9C1C24' }, roof: { name: 'Old English White', hex: '#EDE5CC' }, shape: 'mini', wheels: 'steel', img: '',
+      arrived: 'Rust in both subframe mounts, the floor and the A-panels, and a roof painted over in the wrong white.',
+      done: ['Fitted new front and rear subframes and replaced the floor, sills and A-panels.', 'Stripped the roof and painted it Old English White, as the factory did.', 'Fitted new door seals and had the bumpers rechromed.'],
+      paintNote: 'Tartan Red, with an Old English White roof.', delivered: 'April 2022, to an owner in Hereford.' },
+    { job: '0104', year: 1964, make: 'Land Rover', model: 'Series IIA 88', work: 'mech', status: 'delivered', state: 'Delivered July 2021', hours: 610,
+      paint: { name: 'Bronze Green with Limestone roof', hex: '#3D4A33' }, roof: { name: 'Limestone', hex: '#DCD4BE' }, shape: 'utility', wheels: 'steel', img: '',
+      arrived: 'A working farm vehicle from the Clun valley. The body was straight; the chassis, engine and gearbox had done fifty years of hill work.',
+      done: ['Fitted a new galvanised chassis and moved the body across.', 'Rebuilt the 2.25 petrol engine, the gearbox and both axles.', 'Fitted new springs and dampers, and rewired it to the original loom pattern.'],
+      paintNote: 'Bronze Green, with a Limestone roof and wheels, kept in its original paint where the paint was sound.', delivered: 'July 2021, back to the farm.' },
+    { job: '0098', year: 1958, make: 'MGA', model: '1500 roadster', work: 'full', status: 'delivered', state: 'Delivered May 2020', hours: 1240,
+      paint: { name: 'Tyrolite Green', hex: '#8DB4A2' }, shape: 'roadster', wheels: 'steel', img: '',
+      arrived: 'Off the road since 1979, stored dry in a garage near Tenbury Wells, with the original engine seized.',
+      done: ['Replaced the sills, door posts and the bottoms of both front wings.', 'Freed and rebuilt the original 1500 engine with new pistons.', 'Fitted a new black hood and tonneau.'],
+      paintNote: 'Tyrolite Green, mixed to the colour on the inside of the bonnet.', delivered: 'May 2020, to an owner in Ludlow.' },
+  ];
+
+  /* ---------- Shape templates: side elevations in a 400 x 150 viewBox, all at one scale (62 units a metre), facing right.
+     top: the body outline from the rear bottom, over the roof, to the front bottom at the sill. The wheel arches and the sill
+     are added from wheels: [x of the hub, tyre radius, optional arch drop]. Tyres stand on the floor line at y = 128. ---------- */
+  const FLOOR = 128;
+  const circ = (x, y, r) => `M${x - r} ${y}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0Z`;
+  const SHAPES = {
+    'longnose-fhc': { sill: 114, wheels: [[118, 20], [269, 20]],
+      top: 'M66 114C60 110 58 100 62 92C70 84 96 66 132 56C154 50 178 49 196 55L214 69C252 70 296 75 322 85C334 90 340 98 339 106C338 112 333 114 326 114',
+      glass: 'M208 68L193 58C176 54 154 54 138 59C130 62 124 66 120 70C150 68 182 67 208 68Z',
+      lines: 'M206 71V113M151 64L153 113M246 73C247 81 248 87 249 92',
+      chrome: 'M118 72C160 70 200 70 234 72M327 103H340M57 101H70',
+      lamp: 'M318 88C324 84 332 86 336 92C330 94 322 93 318 88Z' },
+    'roadster': { sill: 114, lowY: 95, wheels: [[121, 19], [271, 19]],
+      top: 'M84 114C78 110 77 100 80 92C84 86 96 82 116 81L210 81C246 82 280 85 304 89C317 92 323 98 322 106C322 111 319 114 314 114',
+      dark: 'M116 81C120 75 132 72 146 74L149 81Z',
+      glass: 'M156 81C156 71 160 66 168 66C174 66 178 70 178 81ZM204 81L214 60L224 61L214 81Z',
+      lines: 'M186 83L188 112M142 83V112',
+      chrome: 'M98 94C160 95 240 96 300 97M203 81L214 59M316 104H328M74 104H86',
+      lamp: circ(305, 90, 4.5) },
+    'pagoda-hardtop': { sill: 114, wheels: [[122, 20], [271, 20]],
+      top: 'M70 114C65 108 64 98 68 90C72 83 82 80 98 80L136 80L145 57C166 54 188 55 206 54L222 79L300 81C318 82 331 89 332 99C333 108 330 114 323 114',
+      glass: 'M141 78L149 60L172 58V78ZM176 78V58L203 57L215 78Z',
+      lines: 'M176 81L178 112M222 81L224 112',
+      chrome: 'M72 85H220C250 85 280 86 302 87M326 102H338M62 100H74',
+      lamp: 'M323 86H329L331 98H325Z' },
+    'mini': { sill: 116, roofY: 50, wheels: [[137, 14], [263, 14]],
+      top: 'M112 116C107 113 106 104 107 96L109 80L118 52C119 47 123 45 129 45H222C228 45 232 47 234 51L244 77C262 78 280 79 289 83C294 86 295 96 294 106C294 112 292 116 288 116',
+      glass: 'M120 77L125 53H160V77ZM164 77V53H226L236 77Z',
+      lines: 'M162 52V114M244 79L249 114',
+      chrome: 'M110 80H244M286 106H299M101 106H113',
+      lamp: circ(288, 88, 4.5) },
+    'utility': { sill: 100, roofY: 50, rimRoof: true, wheels: [[136, 22], [275, 22]],
+      top: 'M90 100V12Q90 8 94 8H232Q236 8 237 12L241 50H302Q308 50 309 56L311 96Q311 100 307 100',
+      dark: 'M163 100H248V105H163ZM252 50V43H290V50ZM306 95H321V101H306Z',
+      glass: 'M98 16H150V42H98ZM198 16H232L234 44H198Z',
+      lines: 'M194 12V100M237 52V100M90 50H241',
+      chrome: 'M226 60H231',
+      lamp: circ(301, 68, 5) },
+    'coupe': { sill: 114, wheels: [[130, 19], [276, 19]],
+      top: 'M80 114C75 110 73 101 76 93C79 86 88 83 106 82L126 80C134 70 144 59 154 53C164 48 188 47 206 50L230 76C262 77 296 80 316 86C325 89 328 98 327 106C327 111 324 114 318 114',
+      glass: 'M134 78L152 57C160 52 170 51 180 51V78ZM184 78V51C192 51 200 52 205 53L224 76Z',
+      lines: 'M184 81L186 112M228 79L230 112',
+      chrome: 'M90 85C160 85 240 86 306 88M318 104H331M70 102H82',
+      lamp: circ(318, 90, 4.5) },
+    'rear-engine-fastback': { sill: 114, wheels: [[135, 19], [276, 19]],
+      top: 'M76 114C71 108 70 98 74 90C82 76 112 56 150 48C170 44 194 45 210 54L230 74C254 76 278 80 298 84C304 81 312 81 317 86C325 91 330 98 329 106C329 111 326 114 320 114',
+      glass: 'M138 74C150 62 162 54 180 51V74ZM184 74V51C194 51 202 53 208 57L222 74Z',
+      lines: 'M184 77L186 112M226 75L230 112M96 82C101 78 106 75 113 72',
+      chrome: 'M100 82C180 80 240 82 298 86M322 104H333M66 104H78',
+      lamp: circ(310, 87, 4) },
+    'two-door-saloon': { sill: 115, wheels: [[130, 17], [279, 17]],
+      top: 'M82 115C77 111 76 102 77 94L80 84C82 80 86 79 92 79L124 78L140 55C143 49 148 46 156 46H206C213 46 217 48 221 52L240 76L312 79C319 80 324 85 324 92V108C324 113 321 115 316 115',
+      glass: 'M144 76L154 52H182V76ZM186 76V52H216L232 76Z',
+      lines: 'M184 79L186 113M236 78L238 113',
+      chrome: 'M80 81H316M318 106H330M71 106H83',
+      lamp: circ(318, 90, 4.5) },
+    'four-door-saloon': { sill: 114, wheels: [[117, 20, 4], [286, 20]],
+      top: 'M64 114C58 110 56 100 58 92C62 84 76 79 98 77C114 75 122 68 130 56C138 44 156 39 180 38C204 38 220 42 230 50L246 72C276 72 310 76 330 82C340 86 343 96 342 106C342 111 338 114 332 114',
+      glass: 'M136 72C144 56 154 46 168 44V72ZM172 72V43H198V72ZM202 72V43C214 43 222 46 228 52L240 72Z',
+      lines: 'M170 76L172 112M200 75V112M242 74L246 112',
+      chrome: 'M64 80C150 78 250 79 330 82M332 102H347M53 100H65',
+      lamp: circ(334, 88, 5) },
+    'traveller': { sill: 115, wheels: [[143, 17], [278, 17]],
+      top: 'M88 115C85 113 84 108 84 100V40C84 36 87 34 92 34H198C210 34 218 40 224 48L236 70C262 70 288 74 302 82C312 88 316 96 316 106C316 112 313 115 308 115',
+      ash: 'M86 36H177M86 64H177M86 87H177M86 36V87M131 36V87M177 36V87',
+      glass: 'M90 40H127V60H90ZM135 40H173V60H135ZM182 64V39H210C216 40 220 44 224 51L231 64Z',
+      lines: 'M180 38V113M232 70L234 113',
+      chrome: 'M180 72C220 72 260 74 300 78M308 104H321M79 104H91',
+      lamp: circ(300, 86, 5) },
+  };
+
+  const f2 = n => Math.round(n * 100) / 100;
+  const archOf = (s, [cx, r, drop = 0]) => {
+    const R = r + 4, cy = FLOOR - r + drop, dy = s.sill - cy;
+    return { cx, R, d: f2(Math.sqrt(R * R - dy * dy)), big: dy > 0 ? 1 : 0 };
+  };
+  function bodyPath(s) {
+    const arch = w => { const { cx, R, d, big } = archOf(s, w); return `L${f2(cx + d)} ${s.sill}A${R} ${R} 0 ${big} 0 ${f2(cx - d)} ${s.sill}`; };
+    const [rear, front] = [...s.wheels].sort((a, b) => a[0] - b[0]);
+    return `${s.top}${arch(front)}${arch(rear)}Z`;
+  }
+  // The dark wheel wells seen through the arches, behind the tyres.
+  const wells = s => s.wheels.map(w => { const { cx, R, d, big } = archOf(s, w); return `M${f2(cx - d)} ${s.sill}A${R} ${R} 0 ${big} 1 ${f2(cx + d)} ${s.sill}Z`; }).join('');
+  function wheel(style, cx, r, rim) {
+    const cy = FLOOR - r;
+    const at = (a, d) => `${f2(cx + d * Math.cos(a * Math.PI / 180))} ${f2(cy + d * Math.sin(a * Math.PI / 180))}`;
+    let s = `<circle class="t" cx="${cx}" cy="${cy}" r="${r}"/>`;
+    // one lettered arc on the sidewall, so the turn reads at any speed
+    s += `<path class="tw" stroke-width="${f2(r * .07)}" d="M${at(-160, r * .83)}A${f2(r * .83)} ${f2(r * .83)} 0 0 1 ${at(-112, r * .83)}"/>`;
+    if (style === 'wire') {
+      let d = '';
+      for (let i = 0; i < 18; i++) d += `M${at(i * 20 + (i % 2 ? 9 : -9), r * .17)}L${at(i * 20, r * .62)}`;
+      s += `<circle class="ch" cx="${cx}" cy="${cy}" r="${f2(r * .66)}"/><path class="sp" d="${d}"/>`;
+      s += `<circle class="ch" cx="${cx}" cy="${cy}" r="${f2(r * .2)}"/>`;
+      s += `<path class="ch" d="M${f2(cx - r * .38)} ${cy}L${f2(cx - r * .12)} ${f2(cy - r * .08)}H${f2(cx + r * .12)}L${f2(cx + r * .38)} ${cy}L${f2(cx + r * .12)} ${f2(cy + r * .08)}H${f2(cx - r * .12)}Z"/>`;
+    } else if (style === 'fuchs') {
+      s += `<circle class="fx" cx="${cx}" cy="${cy}" r="${f2(r * .66)}"/>`;
+      for (let k = 0; k < 5; k++) s += `<ellipse class="ch" cx="${cx}" cy="${f2(cy - r * .37)}" rx="${f2(r * .11)}" ry="${f2(r * .25)}" transform="rotate(${k * 72} ${cx} ${cy})"/>`;
+      s += `<circle cx="${cx}" cy="${cy}" r="${f2(r * .64)}" fill="none" stroke="var(--art-chrome)" stroke-width="${f2(r * .05)}"/><circle class="ch" cx="${cx}" cy="${cy}" r="${f2(r * .12)}"/>`;
+    } else if (style === 'disc') {
+      s += `<circle class="ch" cx="${cx}" cy="${cy}" r="${f2(r * .62)}"/><circle class="ring" cx="${cx}" cy="${cy}" r="${f2(r * .44)}"/>`;
+      s += `<path class="bar" stroke-width="${f2(r * .06)}" d="M${at(-90, r * .1)}L${at(-90, r * .4)}M${at(30, r * .1)}L${at(30, r * .4)}M${at(150, r * .1)}L${at(150, r * .4)}"/>`;
+      s += `<circle class="dk" cx="${cx}" cy="${cy}" r="${f2(r * .09)}"/>`;
+    } else {
+      s += `<circle class="rim" cx="${cx}" cy="${cy}" r="${f2(r * .64)}" fill="${rim}"/>`;
+      for (const a of [45, 135, 225, 315]) s += `<circle class="dk" cx="${at(a, r * .5).split(' ')[0]}" cy="${at(a, r * .5).split(' ')[1]}" r="${f2(r * .075)}"/>`;
+      s += `<circle class="ch" cx="${cx}" cy="${cy}" r="${f2(r * .34)}"/><circle class="dk" cx="${f2(cx + r * .17)}" cy="${cy}" r="${f2(r * .07)}"/>`;
+    }
+    return `<g class="w" data-cx="${cx}" data-cy="${cy}" data-r="${r}">${s}</g>`;
+  }
+
+  const fullName = c => `${c.year} ${c.make} ${c.model}`;
+  let uid = 0;
+  function drawCar(c) {
+    const label = `Side view drawing of the ${fullName(c)} in ${c.paint.name}`;
+    if (c.img) return `<div class="car car-img"><img class="b" src="${c.img}" alt="${fullName(c)} in ${c.paint.name}"></div>`;
+    const s = SHAPES[c.shape], id = `car${++uid}`, body = bodyPath(s);
+    const rim = s.rimRoof && c.roof ? c.roof.hex : 'var(--art-rim)';
+    const tone = (t, y, below) => t ? `<clipPath id="${id}${below ? 'l' : 'r'}"><rect x="0" y="${below ? y : 0}" width="400" height="${below ? 150 - y : y}"/></clipPath>` : '';
+    return `<svg class="car" viewBox="0 0 400 150" role="img" aria-label="${label}">` +
+      `<defs>${tone(c.roof, s.roofY)}${tone(c.lower, s.lowY, true)}</defs>` +
+      `<g><path class="well" d="${wells(s)}"/>${s.wheels.map(([cx, r]) => wheel(c.wheels, cx, r, rim)).join('')}<g class="b">` +
+      `<path d="${body}" fill="${c.paint.hex}"/>` +
+      (c.roof ? `<path d="${body}" fill="${c.roof.hex}" clip-path="url(#${id}r)"/>` : '') +
+      (c.lower ? `<path d="${body}" fill="${c.lower.hex}" clip-path="url(#${id}l)"/>` : '') +
+      `<path class="sh" d="${body}"/>` +
+      (s.ash ? `<path class="ash" d="${s.ash}"/>` : '') +
+      (s.dark ? `<path class="dk" d="${s.dark}"/>` : '') +
+      `<path class="gl" d="${s.glass}"/><path class="ln" d="${s.lines}"/>` +
+      `<path class="cre" d="${s.chrome}"/><path class="cr" d="${s.chrome}"/>` +
+      `<path class="lp" d="${s.lamp}"/><path class="ol" d="${body}"/></g></g></svg>`;
+  }
+
+  /* ---------- Build the register from CARS ---------- */
+  const $ = (s, c = document) => c.querySelector(s);
+  const $$ = (s, c = document) => [...c.querySelectorAll(s)];
+  const root = document.documentElement;
+  const libs = !!(window.gsap && window.ScrollTrigger && window.Lenis);
+  if (libs) root.classList.add('js');   // hidden starting states exist only while the motion layer can play them
+  const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const esc = t => String(t).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch]);
+  const hrs = n => n.toLocaleString('en-GB');
+  const lower1 = t => t[0].toLowerCase() + t.slice(1);
+  const chip = c => {
+    const two = c.roof || c.lower;
+    const [c1, c2] = c.roof ? [c.paint.hex, c.roof.hex] : c.lower ? [c.lower.hex, c.paint.hex] : [c.paint.hex, c.paint.hex];
+    return `<span class="chip${two ? ' two' : ''}" style="--c1:${c1};--c2:${c2}"></span>`;
+  };
+
+  $('#intro-stage .arrive').innerHTML = drawCar(CARS.find(c => c.job === '0141'));
+
+  const list = $('#index');
+  list.innerHTML = CARS.map((c, i) => `
+    <li class="row" data-i="${i}" data-job="${c.job}">
+      <button class="row-btn" type="button" aria-expanded="false" aria-controls="rec-${c.job}"
+        aria-label="Job ${c.job}, ${esc(fullName(c))}, ${esc(c.paint.name)}, ${hrs(c.hours)} hours, ${esc(lower1(c.state))}">
+        <span class="thumb" aria-hidden="true">${drawCar(c)}</span>
+        <span class="c-job num">${c.job}</span>
+        <span class="c-year num">${c.year}</span>
+        <span class="c-car">${esc(c.make)} ${esc(c.model)}</span>
+        <span class="c-col">${chip(c)}<span class="tx">${esc(c.paint.name)}</span></span>
+        <span class="c-hrs num">${hrs(c.hours)}<span class="u"> h</span></span>
+        <span class="c-st${c.status === 'workshop' ? ' ws' : ''}">${esc(c.state)}</span>
+      </button>
+      <div class="rec" id="rec-${c.job}" role="region" aria-labelledby="rt-${c.job}" hidden>
+        <div class="rec-in"><div class="rec-body">
+          <div class="rec-art"><div class="stage"><div class="arrive">${drawCar(c)}</div></div></div>
+          <div class="rec-text">
+            <h3 class="rec-t" id="rt-${c.job}">${esc(fullName(c))}</h3>
+            <p class="rec-job num">Job ${c.job}</p>
+            <dl>
+              <div><dt>When it arrived</dt><dd>${esc(c.arrived)}</dd></div>
+              <div><dt>${c.status === 'workshop' ? 'What we have done so far' : 'What we did'}</dt><dd><ul>${c.done.map(d => `<li>${esc(d)}</li>`).join('')}</ul></dd></div>
+              <div><dt>Paint</dt><dd>${esc(c.paintNote)}</dd></div>
+              <div><dt>Hours logged</dt><dd class="num">${hrs(c.hours)}${c.status === 'workshop' ? ' so far' : ''}</dd></div>
+              <div><dt>${c.status === 'workshop' ? 'Where it is now' : 'Delivered'}</dt><dd>${esc(c.status === 'workshop' ? c.state + '.' : c.delivered)}</dd></div>
+            </dl>
+            <div class="rec-actions">
+              <button class="btn" type="button" data-ask>Ask about a car like this</button>
+              <button class="tbtn" type="button" data-close><span class="sweep">Close record</span></button>
+            </div>
+          </div>
+        </div></div>
+      </div>
+      <span class="rule" aria-hidden="true"></span>
+    </li>`).join('');
+  const rows = $$('.row', list).map(li => ({ li, btn: $('.row-btn', li), rec: $('.rec', li), car: CARS[+li.dataset.i] }));
+
+  let lenis = null;   // live while the motion layer runs
+  let fx = null;      // motion helpers, set only while the motion layer runs
+  const relayout = () => { lenis?.resize(); if (libs) ScrollTrigger.refresh(); };
+  const toolbar = $('.toolbar');
+  const stickyH = () => matchMedia('(min-width: 1024px)').matches ? toolbar.offsetHeight : 0;
+  function goTo(el, offset, done) {
+    const y = Math.max(0, el.getBoundingClientRect().top + scrollY - offset);
+    if (lenis) lenis.scrollTo(y, reduced() ? { immediate: true, force: true, onComplete: done } : { duration: Math.min(1.3, .65 + Math.abs(y - scrollY) / 4000), onComplete: done });
+    else { scrollTo({ top: y, behavior: reduced() ? 'auto' : 'smooth' }); done?.(); }
+  }
+  const jumpBy = dy => { if (!dy) return; if (lenis) lenis.scrollTo(scrollY + dy, { immediate: true, force: true }); else scrollBy(0, dy); };
+
+  /* ---------- Sticky toolbar: background once it sticks ---------- */
+  const sentinel = $('.sentinel');
+  new IntersectionObserver(([e]) => toolbar.toggleAttribute('data-stuck', !e.isIntersecting && e.boundingClientRect.top < 0)).observe(sentinel);
+
+  /* ---------- Filters: instant toggle, one sliding indicator, live count ---------- */
+  const filters = $$('.f-btn'), ind = $('.ind'), count = $('#count');
+  function placeInd(animate) {
+    const b = filters.find(x => x.getAttribute('aria-pressed') === 'true');
+    const v = { x: b.offsetLeft, y: b.offsetTop + b.offsetHeight - 4, scaleX: b.offsetWidth / 100 };
+    if (fx && animate) gsap.to(ind, { ...v, duration: .5, ease: 'power3.inOut', overwrite: true });
+    else if (libs) gsap.set(ind, v);
+    else ind.style.transform = `translate(${v.x}px, ${v.y}px) scaleX(${v.scaleX})`;
+  }
+  function setFilter(f) {
+    filters.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.f === f)));
+    let n = 0;
+    rows.forEach(r => {
+      const show = f === 'all' || r.car.work === f || (f === 'workshop' && r.car.status === 'workshop');
+      if (!show && open === r) closeRecord(r, true);
+      r.li.hidden = !show;
+      n += show;
+    });
+    count.textContent = `Showing ${n} of ${CARS.length} cars`;
+    placeInd(true);
+    relayout();
+  }
+  filters.forEach(b => b.addEventListener('click', () => setFilter(b.dataset.f)));
+  addEventListener('resize', () => placeInd(false));
+  placeInd(false);
+  document.fonts.ready.then(() => placeInd(false));
+
+  /* ---------- Records: one open at a time, directly under its row ---------- */
+  let open = null;
+  function openRecord(r) {
+    if (open === r) return;
+    if (open) {   // close the other one at once and keep this row where the reader left it
+      const before = r.li.getBoundingClientRect().top;
+      closeRecord(open, true);
+      jumpBy(r.li.getBoundingClientRect().top - before);
+    }
+    open = r;
+    r.btn.setAttribute('aria-expanded', 'true');
+    r.li.classList.add('is-open');
+    r.rec.hidden = false;
+    void r.rec.offsetHeight;
+    r.rec.classList.add('open');
+    fx?.recordIn(r);
+    setTimeout(relayout, reduced() ? 0 : 520);
+  }
+  function closeRecord(r, instant) {
+    if (open === r) open = null;
+    r.btn.setAttribute('aria-expanded', 'false');
+    r.li.classList.remove('is-open');
+    r.rec.classList.remove('open');
+    const done = () => { if (!r.rec.classList.contains('open')) r.rec.hidden = true; relayout(); };
+    instant || reduced() ? done() : setTimeout(done, 360);
+  }
+  rows.forEach(r => {
+    r.btn.addEventListener('click', () => open === r ? closeRecord(r) : openRecord(r));
+    $('[data-close]', r.rec).addEventListener('click', () => { closeRecord(r); r.btn.focus(); });
+    $('[data-ask]', r.rec).addEventListener('click', () => ask(r.car));
+    r.rec.addEventListener('keydown', e => { if (e.key === 'Escape') { closeRecord(r); r.btn.focus(); } });
+  });
+
+  // Read its record: show the E-Type's row, glide to it, then open it.
+  $('#read-it').addEventListener('click', () => {
+    let r = rows.find(x => x.car.job === '0141');
+    if (r.li.hidden) setFilter('all');
+    goTo(r.li, stickyH() + 8, () => { openRecord(r); r.btn.focus({ preventScroll: true }); });
+  });
+
+  /* ---------- Enquiry ---------- */
+  const form = $('#enq-form'), result = $('#enq-result'), el = form.elements;
+  const RULES = [
+    [el.name, v => v.trim() !== '', 'Add your name so we know who to reply to.'],
+    [el.email, v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()), 'Check the email address: it needs an @ and a domain.'],
+    [el.car, v => v.trim() !== '', 'Tell us the make and model, even roughly.'],
+    [el.where, v => v !== '', 'Choose where the car is now.'],
+  ];
+  const errOf = f => $('#e-' + f.name);
+  function mark(f, msg) {
+    f.setAttribute('aria-invalid', String(!!msg));
+    if (msg) $('span', errOf(f)).textContent = msg;
+    errOf(f).classList.toggle('on', !!msg);
+  }
+  RULES.forEach(([f, ok]) => f.addEventListener(f.tagName === 'SELECT' ? 'change' : 'input', () => {
+    if (f.getAttribute('aria-invalid') === 'true' && ok(f.value)) mark(f, '');
+  }));
+  function swapView(from, to, focusEl) {
+    from.inert = true; to.inert = false;
+    if (fx) {   // the panel must be visible before it can take focus, so it starts at opacity 0 rather than hidden
+      gsap.set(to, { visibility: 'visible', opacity: 0, y: 4 });
+      gsap.timeline().to(from, { autoAlpha: 0, y: -4, duration: .15 }).to(to, { opacity: 1, y: 0, duration: .25, ease: 'power2.out' });
+    } else { Object.assign(from.style, { visibility: 'hidden', opacity: 0 }); Object.assign(to.style, { visibility: 'visible', opacity: 1, transform: 'none' }); }
+    focusEl.focus({ preventScroll: true });
+  }
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    let first = null;
+    for (const [f, ok, msg] of RULES) { const bad = !ok(f.value); mark(f, bad ? msg : ''); if (bad && !first) first = f; }
+    if (first) return first.focus();
+    const d = new Date();
+    for (let n = 0; n < 3;) { d.setDate(d.getDate() + 1); if (d.getDay() % 6) n++; }
+    const by = new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).format(d);
+    $('#result-p').textContent = `Thanks, ${el.name.value.trim()}. Mark will write to ${el.email.value.trim()} by ${by} about your ${el.car.value.trim()}.`;
+    swapView(form, result, $('#result-t'));
+  });
+  $('#edit').addEventListener('click', () => swapView(result, form, el.name));
+
+  // Ask about a car like this: glide to the form, prefill the notes, focus the first empty field.
+  function ask(c) {
+    if (form.inert) swapView(result, form, el.name);
+    const line = `I would like work like job ${c.job} (${fullName(c)}).`;
+    if (!el.notes.value.trim() || el.notes.value.startsWith('I would like work like job')) el.notes.value = line;
+    const first = [el.name, el.email, el.car, el.where].find(f => !f.value.trim()) || el.notes;
+    goTo($('#enquire'), 24, () => first.focus({ preventScroll: true }));
+  }
+
+  if (!libs) return;   // CDN blocked: everything above works, without motion
+
+  /* ---------- Motion layer ---------- */
+  const clamp = gsap.utils.clamp(-3, 3);
+  let states = new WeakMap();
+  const ro = new ResizeObserver(es => es.forEach(e => { const c = states.get(e.target); if (c) c.k = e.contentRect.width / 400; }));
+
+  // The signature: a car's wheels turn by exactly the distance it travels, and its body leans with weight transfer.
+  function carOf(svg) {
+    let c = states.get(svg);
+    if (c) return c;
+    const body = $('.b', svg);
+    c = { svg, body, dist: 0, v: 0, t: 0, last: 0, k: (svg.clientWidth || svg.getBoundingClientRect().width) / 400,
+      wheels: $$('.w', svg).map(w => ({ w, cx: +w.dataset.cx, cy: +w.dataset.cy, r: +w.dataset.r })) };
+    gsap.set(body, svg.tagName === 'svg' ? { svgOrigin: `200 ${FLOOR}` } : { transformOrigin: '50% 100%' });
+    c.lean = gsap.quickTo(body, 'skewX', { duration: .5, ease: 'power3' });
+    c.rest = gsap.delayedCall(.12, () => { c.v = 0; c.lean(0); }).pause();
+    states.set(svg, c);
+    ro.observe(svg);
+    return c;
+  }
+  function roll(c, dx) {
+    if (!dx) return;
+    const now = performance.now(), dt = Math.min(50, Math.max(8, now - (c.t || now - 16)));
+    c.t = now;
+    c.dist += dx;
+    for (const { w, cx, cy, r } of c.wheels) {   // rotation in degrees = dx / (2 * PI * r) * 360, r as rendered
+      w.setAttribute('transform', `rotate(${f2(c.dist / (2 * Math.PI * r * c.k) * 360)} ${cx} ${cy})`);
+    }
+    const v = dx / dt, a = v - c.v;   // px per ms; a is the change against the smoothed speed
+    c.v += a * .3;
+    c.lean(clamp(a * 18));             // speeding up forward leans the body back, braking tips it forward
+    c.rest.restart(true);
+  }
+  // Wheels follow the summed x of the wrappers that move a car, so stacked tweens never fight.
+  const follow = (c, els) => () => { const x = els.reduce((s, e) => s + gsap.getProperty(e, 'x'), 0); roll(c, x - c.last); c.last = x; };
+  const settle = c => gsap.timeline().to(c.body, { y: 1.5, duration: .1, ease: 'power2.out' }).to(c.body, { y: 0, duration: .45, ease: 'back.out(3)' });
+
+  const mm = gsap.matchMedia();
+  mm.add({
+    motion: '(prefers-reduced-motion: no-preference)',
+    reduce: '(prefers-reduced-motion: reduce)',
+    fine: '(hover: hover) and (pointer: fine)',
+    wide: '(min-width: 768px)',
+  }, ctx => {
+    const { motion, fine, wide } = ctx.conditions;
+    if (!motion) {   // reduced motion: cars parked, final states, native scroll
+      gsap.set('[data-rv]', { opacity: 1 });
+      return;
+    }
+    const C = fn => ctx.add(null, fn);   // tweens made later, inside handlers, still revert with this context
+    const offs = [];
+    const on = (t, type, fn, o) => { t.addEventListener(type, fn, o); offs.push(() => t.removeEventListener(type, fn, o)); };
+
+    const l = lenis = new Lenis({ lerp: .1, smoothWheel: true, autoRaf: false, anchors: true });
+    l.on('scroll', ScrollTrigger.update);
+    const tick = time => l.raf(time * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
+    const t0 = performance.now(), since = s => Math.max(0, s - (performance.now() - t0) / 1000);
+
+    /* Page load: the just-delivered E-Type rolls in and settles; quiet chrome around it */
+    const stage = $('#intro-stage'), drive = $('.drive', stage), arrive = $('.arrive', stage);
+    const ic = carOf($('.car', arrive));
+    const fIntro = follow(ic, [arrive, drive]);
+    gsap.fromTo('.lede', { opacity: 0 }, { opacity: 1, duration: .6, ease: 'power2.out', delay: .1 });
+    gsap.set(arrive, { x: -stage.clientWidth * .85, opacity: 1 });
+    ic.last = gsap.getProperty(arrive, 'x');   // the wheels count travel from here, not from the jump to the start
+    gsap.to(arrive, { x: 0, duration: 1.4, ease: 'power3.out', delay: .25, onUpdate: fIntro, onComplete: () => settle(ic) });
+    gsap.from(['.caption', '#read-it'], { y: 6, opacity: .4, duration: .4, ease: 'expo.out', stagger: .08, delay: .55 });
+    gsap.from(filters, { y: 4, opacity: .5, duration: .3, ease: 'power2.out', stagger: .05, delay: .7 });
+    document.fonts.ready.then(C(() => { placeInd(false); gsap.from(ind, { scaleX: 0, duration: .5, ease: 'expo.out', delay: since(.75) }); }));
+
+    /* SM1: scrolling drives the E-Type off to the right, wheels turning by the distance */
+    gsap.to(drive, {
+      x: () => innerWidth - (stage.getBoundingClientRect().left + stage.clientWidth * .14) + innerWidth * .1,
+      ease: 'none', onUpdate: fIntro,
+      scrollTrigger: { trigger: '.intro', start: 'top top', endTrigger: stage, end: 'bottom top', scrub: true, invalidateOnRefresh: true },
+    });
+
+    /* SM2: row rules draw from the left, then each paint chip wipes in */
+    ScrollTrigger.batch(rows.map(r => r.li), {
+      start: 'top 95%', once: true,
+      onEnter: els => {
+        const delay = since(.85);
+        gsap.to(els.map(li => $('.rule', li)), { scaleX: 1, duration: .9, ease: 'expo.out', stagger: .05, delay });
+        gsap.to(els.map(li => $('.chip', li)), { clipPath: 'inset(0px 0% 0px 0px)', duration: .5, ease: 'expo.out', stagger: .05, delay: delay + .15 });
+      },
+    });
+
+    /* Record: the car rolls in from behind the left edge of its plate and settles */
+    fx = {
+      recordIn: C(r => {
+        const a = $('.arrive', r.rec), c = carOf($('.car', a));
+        gsap.set(a, { x: -a.clientWidth * .4 });
+        c.last = gsap.getProperty(a, 'x');
+        gsap.to(a, { x: 0, duration: 1, ease: 'power3.out', delay: .2, overwrite: true, onUpdate: follow(c, [a]), onComplete: () => settle(c) });
+      }),
+    };
+
+    /* CU2: a paint-chip card with the hovered car follows the pointer; moving sideways rolls it under the hand */
+    if (fine && wide) {
+      root.classList.add('cu2');
+      const card = $('.preview'), frame = $('.pv-frame', card);
+      gsap.set(card, { xPercent: -50, yPercent: -50, scale: .6 });
+      const xTo = gsap.quickTo(card, 'x', { duration: .6, ease: 'power3' });
+      const yTo = gsap.quickTo(card, 'y', { duration: .6, ease: 'power3' });
+      let shown = false, idx = -1, layer = null, lc = null, lastX = 0, px = 0, py = 0;
+      const aim = () => [px + 24 + 300 <= innerWidth - 16 ? px + 24 + 150 : px - 24 - 150, Math.min(Math.max(py, 100), innerHeight - 100)];
+      const turn = () => { const x = gsap.getProperty(card, 'x'); if (lc) roll(lc, x - lastX); lastX = x; };
+      const swap = C(i => {
+        if (i === idx) return;
+        const dir = i > idx, first = idx < 0, el = document.createElement('div');
+        el.className = 'pv-layer';
+        el.innerHTML = `<div class="pv-art">${drawCar(CARS[i])}</div><p class="pv-name">${esc(CARS[i].paint.name)}</p>`;
+        frame.append(el);
+        if (first) $$('.pv-layer', frame).forEach(x => x !== el && x.remove());
+        else {
+          const old = layer;
+          gsap.to(old, { yPercent: dir ? -100 : 100, duration: .5, ease: 'power2.inOut', onComplete: () => old.remove() });
+          gsap.fromTo(el, { yPercent: dir ? 100 : -100 }, { yPercent: 0, duration: .5, ease: 'power2.inOut' });
+        }
+        layer = el; lc = carOf($('.car', el)); idx = i;
+      });
+      const show = C(() => {
+        const [x, y] = aim();
+        xTo(x, x); yTo(y, y); lastX = x;
+        gsap.to(card, { autoAlpha: 1, scale: 1, duration: .35, ease: 'expo.out', overwrite: 'auto' });
+        gsap.ticker.add(turn);
+        shown = true;
+      });
+      const hide = C(() => {
+        if (!shown) return;
+        shown = false; idx = -1;
+        gsap.ticker.remove(turn);
+        gsap.to(card, { autoAlpha: 0, scale: .6, duration: .25, ease: 'power2.in', overwrite: 'auto' });
+      });
+      const probe = t => {
+        const li = t?.closest?.('.row');
+        if (!li || t.closest('.rec') || !list.contains(li)) return hide();
+        if (!shown) { idx = -1; swap(+li.dataset.i); show(); }
+        else { swap(+li.dataset.i); const [x, y] = aim(); xTo(x); yTo(y); }
+      };
+      on(list, 'pointermove', e => { if (e.pointerType !== 'mouse') return; px = e.clientX; py = e.clientY; probe(e.target); });
+      on(list, 'pointerleave', hide);
+      on(root, 'pointerleave', hide);
+      on(window, 'blur', hide);
+      l.on('scroll', () => shown && probe(document.elementFromPoint(px, py)));
+      offs.push(() => { gsap.ticker.remove(turn); root.classList.remove('cu2'); gsap.set(card, { autoAlpha: 0 }); });
+    }
+
+    document.fonts.ready.then(() => ScrollTrigger.refresh());
+
+    return () => {
+      offs.forEach(fn => fn());
+      gsap.ticker.remove(tick);
+      gsap.ticker.lagSmoothing(500, 33);
+      l.destroy();
+      if (lenis === l) lenis = null;
+      fx = null;
+      states = new WeakMap();
+      ro.disconnect();
+    };
+  });
+})();
+</script>
+</body>
+</html>

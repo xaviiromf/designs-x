@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Halden Weir Rowing Club: crews and coaches</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anek+Latin:wdth,wght@75..125,100..800&display=swap">
+<style>
+:root {
+  /* colour */
+  --mist: #E6E1D9;        /* Lune sandstone: the page */
+  --paper: #FAFBF9;       /* hull deck, sticky bar, chips at rest */
+  --ink: #13313B;         /* text, hull outline, riggers, coach discs */
+  --ink-soft: #4A5F66;    /* seat labels, class lines */
+  --weir-green: #1E6A4E;  /* club blade, checked chip, link sweep */
+  --blade-tip: #FFFFFF;   /* the white tip band of Halden Weir's green-and-white blades */
+
+  /* type */
+  --font: 'Anek Latin', system-ui, sans-serif;
+  --step--1: .8rem;
+  --step-0: 1.0625rem;
+  --step-1: 1.33rem;
+  --step-2: 1.66rem;
+  --step-3: clamp(2.1rem, 1.3rem + 2.8vw, 3.4rem);
+  --wdth-display: 112%;
+  --wdth-name: 82%;
+
+  /* spacing */
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px;
+  --s-6: 32px; --s-7: 48px; --s-8: 72px; --s-9: 112px;
+  --gutter: 16px;
+  --container: 1200px;
+
+  /* drawing: one seat pitch for every hull, so boats are to scale */
+  --pitch: 64px;
+  --deck: 40px;          /* tapered bow and stern decks */
+  --hull-h: 34px;        /* hull beam (across the boat) */
+  --bl-along: 52px;      /* blade length along the oar */
+  --bl-across: 24px;     /* blade width */
+  --loom: 14px;          /* visible oar between blade and hull */
+  --rigger: 1.5px;
+  --disc: 40px;
+
+  --ease: cubic-bezier(.16, 1, .3, 1);
+  --ease-release: cubic-bezier(.34, 1.56, .64, 1);
+}
+@media (min-width: 760px) { :root { --gutter: 32px; } }
+@media (min-width: 960px) {
+  :root {
+    --deck: 56px;
+    --hull-h: 26px;
+    --bl-along: 60px;
+    --bl-across: 28px;
+    --loom: 22px;
+    --pitch: clamp(80px, calc((min(100vw, var(--container)) - 2 * var(--gutter) - 2 * var(--deck) - 40px) / 9), 112px);
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--mist);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: var(--step-0);
+  font-stretch: 100%;
+  font-weight: 400;
+  line-height: 1.5;
+  font-variant-numeric: lining-nums;
+}
+
+.team {
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: var(--s-8) var(--gutter);
+}
+@media (min-width: 960px) { .team { padding-block: var(--s-9); } }
+
+h2 {
+  margin: 0;
+  font-size: var(--step-3);
+  font-stretch: var(--wdth-display);
+  font-weight: 700;
+  line-height: 1.02;
+  letter-spacing: -.01em;
+  max-width: 18ch;
+}
+.intro { max-width: 62ch; margin: var(--s-5) 0 var(--s-7); }
+
+/* squad filter: real radios, styled as tags */
+.squads {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  margin: 0 calc(-1 * var(--gutter));
+  padding: var(--s-2) var(--gutter) 2px;
+  border: 0;
+  border-bottom: 1px solid var(--ink-soft);
+  background: var(--paper);
+  min-inline-size: 0;
+}
+.squads legend {
+  float: left;
+  padding: 0;
+  margin: 0 var(--s-3) 0 0;
+  font-weight: 500;
+  line-height: 32px;
+}
+@media (min-width: 760px) {
+  .squads legend { line-height: 36px; }
+  .chip { min-height: 36px; margin: 0 var(--s-2) var(--s-2) 0; padding: 0 var(--s-4); }
+}
+.chips { display: contents; } /* chips wrap inline around the floated legend */
+.chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: .4em;
+  min-height: 32px;
+  margin: 0 6px 6px 0;
+  padding: 0 var(--s-3);
+  vertical-align: middle;
+  border: 1px solid var(--ink-soft);
+  border-radius: 999px;
+  background: var(--paper);
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 160ms var(--ease), background-color 160ms var(--ease), color 160ms var(--ease), transform 350ms var(--ease-release);
+}
+.chip input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+.chip .count { color: var(--ink-soft); transition: color 160ms var(--ease); }
+.chip:active { transform: scale(.96); transition-duration: 160ms, 160ms, 160ms, 120ms; }
+.chip:has(input:checked) { background: var(--weir-green); border-color: var(--weir-green); color: var(--paper); font-weight: 650; }
+.chip:has(input:checked) .count { color: var(--paper); }
+.chip:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 3px; }
+@media (hover: hover) and (pointer: fine) {
+  .chip:hover { border-color: var(--ink); }
+  .chip:has(input:checked):hover { border-color: var(--ink); }
+}
+
+/* status line: one span per squad in one reserved cell, swapped by :has */
+.status { display: grid; margin: var(--s-4) 0 0; color: var(--ink-soft); }
+.status span { grid-area: 1 / 1; display: none; }
+.team:not(:has(.squads input:checked)) .status [data-for=all],
+.team:has(#sq-all:checked) .status [data-for=all],
+.team:has(#sq-men:checked) .status [data-for=men],
+.team:has(#sq-women:checked) .status [data-for=women],
+.team:has(#sq-juniors:checked) .status [data-for=juniors],
+.team:has(#sq-adaptive:checked) .status [data-for=adaptive] { display: block; }
+
+/* filter: pure CSS */
+.team:has(#sq-men:checked) .boat:not([data-squad=men]),
+.team:has(#sq-women:checked) .boat:not([data-squad=women]),
+.team:has(#sq-juniors:checked) .boat:not([data-squad=juniors]),
+.team:has(#sq-adaptive:checked) .boat:not([data-squad=adaptive]) { display: none; }
+
+.rack { margin-top: var(--s-6); }
+.boat + .boat { margin-top: var(--s-8); }
+.boat h3 {
+  margin: 0;
+  font-size: var(--step-1);
+  font-stretch: var(--wdth-display);
+  font-weight: 650;
+  line-height: 1.15;
+}
+.boat .class { margin: var(--s-1) 0 var(--s-5); max-width: 62ch; color: var(--ink-soft); }
+
+/* ---------- the crew drawing ---------- */
+/* phone: hull vertical, bow at the top; bow side (odd seats) on the right */
+.crew {
+  --t: auto;
+  position: relative;
+  list-style: none;
+  margin: 0;
+  padding: var(--deck) 0;
+  display: grid;
+  grid-template-columns:
+    [ns] minmax(0, 1fr) [bs] var(--bl-along) [rs] var(--loom) [hull] var(--hull-h)
+    [rb] var(--loom) [bb] var(--bl-along) [nb] minmax(0, 1fr) [end];
+  grid-auto-rows: var(--pitch);
+  max-width: 460px;
+}
+.crew::before, .crew::after {
+  content: "";
+  position: absolute;
+  grid-column: hull;
+  inset: 0;
+  clip-path: polygon(50% 0, 100% var(--deck), 100% calc(100% - var(--deck)), 50% 100%, 0 calc(100% - var(--deck)), 0 var(--deck));
+}
+.crew::before { background: var(--ink); }
+.crew::after { background: var(--paper); inset: 3px 2px; }
+.crew li {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: center;
+}
+.crew li > * { grid-column: var(--t); grid-row: 1; }
+
+.n {
+  --t: hull;
+  justify-self: center;
+  font-size: var(--step--1);
+  font-weight: 500;
+  color: var(--ink-soft);
+}
+.who { --t: nb; display: flex; flex-direction: column; min-width: 0; line-height: 1.15; }
+.crew [data-side=stroke] .who { --t: ns; text-align: right; align-items: flex-end; }
+.name { font-stretch: var(--wdth-name); font-weight: 560; }
+.seat { font-size: var(--step--1); color: var(--ink-soft); line-height: 1.3; }
+.who { padding-inline: var(--s-2); }
+
+/* blade: the portrait. Shape drawn tip-up, then turned to face out of the boat */
+.blade {
+  --t: bb;
+  --rot: 90deg;
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--bl-along);
+  height: var(--bl-across);
+  font-size: var(--step--1);
+  font-weight: 650;
+  font-stretch: 90%;
+  color: var(--paper);
+  line-height: 1;
+}
+.blade.s { --t: bs; --rot: -90deg; }
+.blade::before {
+  content: "";
+  position: absolute;
+  left: 50%; top: 50%;
+  width: var(--bl-across);
+  height: var(--bl-along);
+  translate: -50% -50%;
+  rotate: var(--rot);
+  background: linear-gradient(var(--blade-tip) 0 22%, var(--ink) 22% calc(22% + 1.5px), var(--weir-green) 0);
+  clip-path: polygon(44% 100%, 56% 100%, 100% 42%, 97% 6%, 72% 0, 4% 9%, 0 44%);
+}
+.blade b { position: relative; font-weight: inherit; translate: -4px 0; }
+.blade.s b { translate: 4px 0; }
+/* the loom: oar shaft from blade to the gate on the hull */
+.blade::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 100%;
+  width: var(--loom);
+  height: var(--rigger);
+  translate: 0 -50%;
+  background: var(--ink);
+  transition: height 300ms var(--ease), width 300ms var(--ease);
+}
+.blade.s::after { right: auto; left: 100%; }
+
+.cox-disc, .disc {
+  display: grid;
+  place-items: center;
+  width: var(--disc);
+  height: var(--disc);
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: var(--step--1);
+  font-weight: 650;
+  line-height: 1;
+  flex: none;
+}
+.cox-disc { --t: hull; justify-self: center; width: 30px; height: 30px; font-size: .7rem; }
+
+@media (hover: hover) and (pointer: fine) {
+  .crew li:hover .blade::after { height: 3px; }
+}
+
+/* desktop: hull horizontal, bow at the left; bow side (odd seats) on top */
+@media (min-width: 960px) {
+  .crew {
+    width: max-content;
+    max-width: none;
+    padding: 0 var(--deck);
+    grid-template-columns: none;
+    grid-template-rows:
+      [nb] minmax(3.2em, auto) [bb] var(--bl-along) [rb] var(--loom) [hull] var(--hull-h)
+      [rs] var(--loom) [bs] var(--bl-along) [ns] minmax(3.2em, auto) [end];
+    grid-auto-flow: column;
+    grid-auto-columns: var(--pitch);
+    row-gap: 0;
+  }
+  .crew::before, .crew::after {
+    grid-column: auto;
+    grid-row: hull;
+    clip-path: polygon(0 50%, var(--deck) 0, calc(100% - var(--deck)) 0, 100% 50%, calc(100% - var(--deck)) 100%, var(--deck) 100%);
+  }
+  .crew::after { inset: 2px 3px; }
+  .crew li {
+    grid-column: auto;
+    grid-row: 1 / -1;
+    grid-template-columns: none;
+    grid-template-rows: subgrid;
+    justify-items: center;
+  }
+  .crew li > * { grid-row: var(--t); grid-column: 1; }
+  .who {
+    justify-self: start;
+    width: calc(2 * var(--pitch) - var(--s-3));
+    margin-left: calc((var(--pitch) - var(--bl-across)) / 2);
+    padding: 0 0 var(--s-2);
+    align-self: end;
+  }
+  .crew [data-side=stroke] .who { text-align: left; align-items: flex-start; align-self: start; padding: var(--s-2) 0 0; }
+  .crew[data-rig=sculling] .who { width: calc(var(--pitch) - var(--s-2)); }
+  .blade { width: var(--bl-across); height: var(--bl-along); --rot: 0deg; }
+  .blade.s { --rot: 180deg; }
+  .blade b, .blade.s b { translate: 0 4px; }
+  .blade.s b { translate: 0 -4px; }
+  .blade::after, .blade.s::after {
+    top: 100%; right: auto; left: 50%;
+    width: var(--rigger); height: var(--loom);
+    translate: -50% 0;
+  }
+  .blade.s::after { top: auto; bottom: 100%; }
+  @media (hover: hover) and (pointer: fine) {
+    .crew li:hover .blade::after { width: 3px; height: var(--loom); }
+  }
+  .boat h3 { font-size: var(--step-2); }
+}
+
+/* the coach in the launch, and the people on the bank */
+.launch {
+  display: flex;
+  gap: var(--s-3);
+  align-items: flex-start;
+  margin: var(--s-5) 0 0;
+  max-width: 62ch;
+}
+.launch .disc { margin-top: 2px; }
+.person-name { font-stretch: var(--wdth-name); font-weight: 560; }
+
+.bank { margin-top: var(--s-9); }
+.bank h3 {
+  margin: 0 0 var(--s-5);
+  font-size: var(--step-2);
+  font-stretch: var(--wdth-display);
+  font-weight: 650;
+  line-height: 1.15;
+}
+.bank ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--s-6) var(--s-6);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+}
+.bank li { display: flex; gap: var(--s-3); align-items: flex-start; }
+.bank li p { margin: 0; }
+.role { color: var(--ink-soft); }
+.closing { margin: var(--s-7) 0 0; max-width: 62ch; }
+
+/* links: always underlined, with a green band sweeping in on hover and focus */
+a {
+  color: var(--ink);
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: .2em;
+  text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+  background: linear-gradient(var(--weir-green), var(--weir-green)) 100% 100% / 0 .12em no-repeat;
+  transition: background-size 400ms var(--ease);
+}
+a:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+a:focus-visible { background-position: 0 100%; background-size: 100% .12em; }
+@media (hover: hover) and (pointer: fine) {
+  a:hover { background-position: 0 100%; background-size: 100% .12em; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; }
+  .chip:active { transform: none; }
+}
+</style>
+</head>
+<body>
+<main>
+<section class="team" aria-labelledby="team-title">
+  <h2 id="team-title">Crews and coaches for the 2026-27 season</h2>
+  <p class="intro">Halden Weir boats four squads from the Skerton boathouse on the River Lune. Each crew is drawn as it sits in the boat, bow first, with every blade on the side it is rigged.</p>
+
+  <fieldset class="squads">
+    <legend>Show squad</legend>
+    <div class="chips">
+      <label class="chip"><input type="radio" name="squad" id="sq-all" value="all" checked>All squads <span class="count">23</span></label>
+      <label class="chip"><input type="radio" name="squad" id="sq-men" value="men">Senior men <span class="count">9</span></label>
+      <label class="chip"><input type="radio" name="squad" id="sq-women" value="women">Senior women <span class="count">4</span></label>
+      <label class="chip"><input type="radio" name="squad" id="sq-juniors" value="juniors">Juniors J16 <span class="count">5</span></label>
+      <label class="chip"><input type="radio" name="squad" id="sq-adaptive" value="adaptive">Adaptive <span class="count">5</span></label>
+    </div>
+  </fieldset>
+
+  <output class="status" aria-live="polite">
+    <span data-for="all">Showing all 4 crews: 23 athletes and their coaches.</span>
+    <span data-for="men">Showing Senior men: Margaret Tyson, 9 athletes, coached by Carol Hallam.</span>
+    <span data-for="women">Showing Senior women: Annie Wilkinson, 4 athletes, coached by Simon Atherton.</span>
+    <span data-for="juniors">Showing Juniors J16: Lily Bank, 5 athletes, coached by Bea Crosthwaite.</span>
+    <span data-for="adaptive">Showing Adaptive: Jim Crossley, 5 athletes, coached by Kieran Shaw.</span>
+  </output>
+
+  <div class="rack">
+    <article class="boat" data-squad="men" aria-labelledby="b-men">
+      <h3 id="b-men">Margaret Tyson</h3>
+      <p class="class">Senior men's eight (8+). Racing next: Head of the River Lune, Saturday 14 November.</p>
+      <ol class="crew" data-rig="sweep" aria-label="Crew, bow to stern">
+        <li data-side="bow"><span class="n" aria-hidden="true">1</span><span class="blade b" aria-hidden="true"><b>CR</b></span><span class="who"><span class="name">Callum Reid</span><span class="seat">Bow</span></span></li>
+        <li data-side="stroke"><span class="n" aria-hidden="true">2</span><span class="blade s" aria-hidden="true"><b>HW</b></span><span class="who"><span class="name">Hamid Wazir</span><span class="seat">2 seat</span></span></li>
+        <li data-side="bow"><span class="n" aria-hidden="true">3</span><span class="blade b" aria-hidden="true"><b>AP</b></span><span class="who"><span class="name">Alfie Pennington</span><span class="seat">3 seat</span></span></li>
+        <li data-side="stroke"><span class="n" aria-hidden="true">4</span><span class="blade s" aria-hidden="true"><b>OM</b></span><span class="who"><span class="name">Ollie Matsuda</span><span class="seat">4 seat</span></span></li>
+        <li data-side="bow"><span class="n" aria-hidden="true">5</span><span class="blade b" aria-hidden="true"><b>KO</b></span><span class="who"><span class="name">Kacper Olszewski</span><span class="seat">5 seat</span></span></li>
+        <li data-side="stroke"><span class="n" aria-hidden="true">6</span><span class="blade s" aria-hidden="true"><b>RB</b></span><span class="who"><span class="name">Rhys Bevan</span><span class="seat">6 seat</span></span></li>
+        <li data-side="bow"><span class="n" aria-hidden="true">7</span><span class="blade b" aria-hidden="true"><b>RW</b></span><span class="who"><span class="name">Rob Whittle</span><span class="seat">7 seat</span></span></li>
+        <li data-side="stroke"><span class="n" aria-hidden="true">8</span><span class="blade s" aria-hidden="true"><b>EM</b></span><span class="who"><span class="name">Ewan McAllister</span><span class="seat">Stroke</span></span></li>
+        <li data-side="cox"><span class="cox-disc" aria-hidden="true">IK</span><span class="who"><span class="name">Ishbel Kerr</span><span class="seat">Cox</span></span></li>
+      </ol>
+      <p class="launch"><span class="disc" aria-hidden="true">CH</span><span>In the launch: <span class="person-name">Carol Hallam</span>, senior men's coach. Rowed at Durham, coaching here since 2017. <a href="mailto:carol@haldenweir-rc.example" target="_blank" rel="noopener">Email Carol</a></span></p>
+    </article>
+
+    <article class="boat" data-squad="women" aria-labelledby="b-women">
+      <h3 id="b-women">Annie Wilkinson</h3>
+      <p class="class">Senior women's coxless four (4-). Racing next: Northern Fours Head, Sunday 22 November.</p>
+      <ol class="crew" data-rig="sweep" aria-label="Crew, bow to stern">
+        <li data-side="bow"><span class="n" aria-hidden="true">1</span><span class="blade b" aria-hidden="true"><b>GL</b></span><span class="who"><span class="name">Grace Lund</span><span class="seat">Bow</span></span></li>
+        <li data-side="stroke"><span class="n" aria-hidden="true">2</span><span class="blade s" aria-hidden="true"><b>AS</b></span><span class="who"><span class="name">Amira Saeed</span><span class="seat">2 seat</span></span></li>
+        <li data-side="bow"><span class="n" aria-hidden="true">3</span><span class="blade b" aria-hidden="true"><b>KS</b></span><span class="who"><span class="name">Kate Sowerby</span><span class="seat">3 seat</span></span></li>
+        <li data-side="stroke"><span class="n" aria-hidden="true">4</span><span class="blade s" aria-hidden="true"><b>FH</b></span><span class="who"><span class="name">Freya Holt</span><span class="seat">Stroke</span></span></li>
+      </ol>
+      <p class="launch"><span class="disc" aria-hidden="true">SA</span><span>In the launch: <span class="person-name">Simon Atherton</span>, senior women's coach. Former club captain who rowed bow in this four until 2022. <a href="mailto:simon@haldenweir-rc.example" target="_blank" rel="noopener">Email Simon</a></span></p>
+    </article>
+
+    <article class="boat" data-squad="juniors" aria-labelledby="b-juniors">
+      <h3 id="b-juniors">Lily Bank</h3>
+      <p class="class">Juniors J16 coxed quad (4x+). Racing next: Junior Sculling Head, Saturday 5 December.</p>
+      <ol class="crew" data-rig="sculling" aria-label="Crew, bow to stern">
+        <li data-side="both"><span class="n" aria-hidden="true">1</span><span class="blade b" aria-hidden="true"><b>MT</b></span><span class="blade s" aria-hidden="true"><b>MT</b></span><span class="who"><span class="name">Mia Thornton</span><span class="seat">Bow</span></span></li>
+        <li data-side="both"><span class="n" aria-hidden="true">2</span><span class="blade b" aria-hidden="true"><b>JA</b></span><span class="blade s" aria-hidden="true"><b>JA</b></span><span class="who"><span class="name">Josh Ali</span><span class="seat">2 seat</span></span></li>
+        <li data-side="both"><span class="n" aria-hidden="true">3</span><span class="blade b" aria-hidden="true"><b>EC</b></span><span class="blade s" aria-hidden="true"><b>EC</b></span><span class="who"><span class="name">Evie Clarke</span><span class="seat">3 seat</span></span></li>
+        <li data-side="both"><span class="n" aria-hidden="true">4</span><span class="blade b" aria-hidden="true"><b>SW</b></span><span class="blade s" aria-hidden="true"><b>SW</b></span><span class="who"><span class="name">Sam Whitehead</span><span class="seat">Stroke</span></span></li>
+        <li data-side="cox"><span class="cox-disc" aria-hidden="true">NB</span><span class="who"><span class="name">Noah Brennan</span><span class="seat">Cox</span></span></li>
+      </ol>
+      <p class="launch"><span class="disc" aria-hidden="true">BC</span><span>In the launch: <span class="person-name">Bea Crosthwaite</span>, junior coach. Runs the Tuesday and Thursday after-school outings. <a href="mailto:bea@haldenweir-rc.example" target="_blank" rel="noopener">Email Bea</a></span></p>
+    </article>
+
+    <article class="boat" data-squad="adaptive" aria-labelledby="b-adaptive">
+      <h3 id="b-adaptive">Jim Crossley</h3>
+      <p class="class">Adaptive PR3 mixed coxed four (PR3 Mix4+). Racing next: Lancaster Head, Saturday 23 January.</p>
+      <ol class="crew" data-rig="sweep" aria-label="Crew, bow to stern">
+        <li data-side="bow"><span class="n" aria-hidden="true">1</span><span class="blade b" aria-hidden="true"><b>SC</b></span><span class="who"><span class="name">Steve Cartwright</span><span class="seat">Bow</span></span></li>
+        <li data-side="stroke"><span class="n" aria-hidden="true">2</span><span class="blade s" aria-hidden="true"><b>BM</b></span><span class="who"><span class="name">Bethan Moss</span><span class="seat">2 seat</span></span></li>
+        <li data-side="bow"><span class="n" aria-hidden="true">3</span><span class="blade b" aria-hidden="true"><b>OL</b></span><span class="who"><span class="name">Owain Leigh</span><span class="seat">3 seat</span></span></li>
+        <li data-side="stroke"><span class="n" aria-hidden="true">4</span><span class="blade s" aria-hidden="true"><b>JE</b></span><span class="who"><span class="name">Jo Ellery</span><span class="seat">Stroke</span></span></li>
+        <li data-side="cox"><span class="cox-disc" aria-hidden="true">AB</span><span class="who"><span class="name">Ade Bello</span><span class="seat">Cox</span></span></li>
+      </ol>
+      <p class="launch"><span class="disc" aria-hidden="true">KS</span><span>In the launch: <span class="person-name">Kieran Shaw</span>, adaptive coach. Holds the British Rowing adaptive coaching award. <a href="mailto:kieran@haldenweir-rc.example" target="_blank" rel="noopener">Email Kieran</a></span></p>
+    </article>
+  </div>
+
+  <div class="bank">
+    <h3>On the bank</h3>
+    <ul>
+      <li><span class="disc" aria-hidden="true">MO</span><p><span class="person-name">Maeve O'Connell</span><br><span class="role">Head coach. Sets the training plan for every squad.</span><br><a href="mailto:maeve@haldenweir-rc.example" target="_blank" rel="noopener">Email Maeve</a></p></li>
+      <li><span class="disc" aria-hidden="true">GP</span><p><span class="person-name">Graham Pye</span><br><span class="role">Boatman. Rigs and repairs the fleet; tell him about damage before you boat.</span><br><a href="mailto:graham@haldenweir-rc.example" target="_blank" rel="noopener">Email Graham</a></p></li>
+      <li><span class="disc" aria-hidden="true">SV</span><p><span class="person-name">Sunita Varma</span><br><span class="role">Club captain. Runs learn-to-row and membership.</span><br><a href="mailto:sunita@haldenweir-rc.example" target="_blank" rel="noopener">Email Sunita</a></p></li>
+    </ul>
+    <p class="closing">New to rowing? Learn-to-row runs on Saturdays from 8:30 at the boathouse. <a href="mailto:sunita@haldenweir-rc.example?subject=Learn-to-row%20place" target="_blank" rel="noopener">Book a place with Sunita</a>.</p>
+  </div>
+</section>
+</main>
+</body>
+</html>

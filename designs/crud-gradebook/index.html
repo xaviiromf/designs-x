@@ -1,0 +1,2059 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mark book, 9X1 Science</title>
+<meta name="description" content="A science teacher's mark book: classes, students and assessments, with weighted averages that update as marks are entered.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inclusive+Sans:ital,wght@0,300..700;1,300..700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* colour: classroom whiteboard, aluminium trim, the green pen and the purple pen of progress */
+    --board: #F7F9F9;                    /* cool melamine ground */
+    --ink: #1E2A4A;                      /* marker navy, all text: 13.6:1 */
+    --ink-2: #4D5866;                    /* secondary text: 6.9:1 */
+    --trim: #7A848B;                     /* aluminium: rules, field borders, the ruler; 3.6:1, never body text */
+    --pen: #0B7A4B;                      /* green pen: marks just entered, primary actions, focus; 5.1:1 */
+    --progress: #6B3FA0;                 /* purple pen: only what just changed; 7.0:1 */
+    --correct: #B42828;                  /* correction red: errors, delete, below target; 6.0:1 */
+    --sheet: #FFFFFF;                    /* fields, menu and dialog paper */
+    --pen-tint: color-mix(in srgb, var(--pen) 8%, transparent);
+    --wash: color-mix(in srgb, var(--progress) 22%, transparent);
+    --chip: color-mix(in srgb, var(--progress) 11%, var(--board));
+    --ruler: color-mix(in srgb, var(--trim) 10%, transparent);
+    --ruler-edge: color-mix(in srgb, var(--trim) 60%, transparent);
+    --scrim: color-mix(in srgb, var(--ink) 42%, transparent);
+
+    /* type: one family, drawn so 1, l and I, and 0 and O, never pass for each other */
+    --font-display: 'Inclusive Sans', system-ui, 'Segoe UI', Roboto, Arial, sans-serif;
+    --font-ui: 'Inclusive Sans', system-ui, 'Segoe UI', Roboto, Arial, sans-serif;
+    --fs-xs: .8rem;
+    --fs-sm: .875rem;
+    --fs-md: 1rem;
+    --fs-lg: 1.25rem;
+    --fs-xl: 1.563rem;
+    --fs-display: clamp(2.25rem, 6.5vw, 5.25rem);
+    --fs-angled: 13px;
+
+    /* space (4px base) */
+    --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px;
+    --s6: 32px; --s7: 48px; --s8: 72px; --s9: 112px;
+    --gutter: 24px;
+    --max: 1240px;
+    --bar-h: 56px;
+    --row: 44px;                         /* grid row and touch target */
+    --col-min: 4rem;                     /* narrowest mark column */
+    --head-h: 12.5rem;                   /* room above the columns for the angled titles */
+    --num-pad: 11px;                     /* right inset shared by every figure in the grid */
+
+    /* radii by hierarchy */
+    --r-chip: 4px; --r-btn: 8px; --r-menu: 10px; --r-sheet: 14px; --r-pill: 999px;
+
+    /* motion */
+    --ease-out: cubic-bezier(.16, 1, .3, 1);      /* expo.out: entrances and responses */
+    --ease-follow: cubic-bezier(.215, .61, .355, 1); /* power3.out: rolls, ruler and indicators */
+    --ease-acc: cubic-bezier(.625, .05, 0, 1);    /* accordion height */
+    --dur-press: .12s;
+    --dur-fast: .2s;
+    --dur: .4s;
+    --dur-slow: .6s;
+    --dur-acc: .55s;
+    --dur-acc-close: .35s;
+    --dur-roll: 1.1s;
+    --step: .03s;                        /* ripple step by distance */
+    --step-wash: .07s;                   /* signature wash, per cell of distance */
+  }
+  @media (max-width: 479.98px) { :root { --gutter: 16px; } }
+
+  /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+  /* First-frame states for the load sequence: only while JS runs and the intro is pending. */
+  html.js.intro [data-rv] { opacity: 0; }
+  html.js.intro .ah__t { clip-path: inset(0 100% 0 0); }
+  html.js.intro .bar__rule { transform: scaleX(0); }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { background: var(--board); color: var(--ink); scroll-padding-top: calc(var(--bar-h) + var(--s4)); -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--board); color: var(--ink); font: 400 var(--fs-md)/1.55 var(--font-ui); overflow-x: clip; }
+  button, input, select { font: inherit; color: inherit; }
+  button { -webkit-tap-highlight-color: transparent; }
+  h1, h2, h3, p { margin: 0; }
+  ::selection { background: color-mix(in srgb, var(--pen) 20%, transparent); }
+  :focus-visible { outline: 2px solid var(--pen); outline-offset: 3px; }
+  .vh { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .num { font-variant-numeric: tabular-nums lining-nums; }
+  svg { display: block; }
+
+  /* ---------- Skip link ---------- */
+  .skip { position: fixed; z-index: 60; left: var(--gutter); top: 0; padding: var(--s3) var(--s4); background: var(--ink); color: var(--board); border-radius: 0 0 var(--r-btn) var(--r-btn); font-weight: 500; text-decoration: none; transform: translateY(-110%); transition: transform .3s var(--ease-out); }
+  .skip:focus { transform: none; }
+
+  /* ---------- Shared controls ---------- */
+  /* HV2: underline enters from the side the pointer came in and leaves by the exit side */
+  .u { background: linear-gradient(currentColor, currentColor) var(--fx, 100%) 100% / 0 .08em no-repeat; transition: background-size .35s var(--ease-out); padding-bottom: .08em; }
+  @media (hover: hover) { :is(a, button):hover > .u, :is(a, button):hover .name__t { background-size: 100% .08em; } }
+  :is(a, button):focus-visible > .u, .name:focus-visible .name__t { background-size: 100% .08em; }
+  :is(a, button):active > .u { background-size: 100% .08em; }
+
+  .btn { position: relative; isolation: isolate; overflow: hidden; display: inline-flex; align-items: center; justify-content: center; gap: var(--s2); min-height: var(--row); padding: 0 var(--s4); border: 1.5px solid var(--pen); border-radius: var(--r-btn); background: transparent; color: var(--pen); font-weight: 500; font-size: var(--fs-sm); line-height: 1.2; text-decoration: none; white-space: nowrap; cursor: pointer; transition: color .3s var(--ease-out), transform var(--dur) var(--ease-out); }
+  /* HV4: the fill slides in from the entry edge (--from) and leaves toward the exit edge */
+  .btn::before { content: ''; position: absolute; inset: 0; z-index: -1; background: var(--pen); transform: scaleX(0); transform-origin: var(--from, left) center; transition: transform .3s var(--ease-out); }
+  @media (hover: hover) { .btn:hover { color: var(--board); } .btn:hover::before { transform: scaleX(1); transition-duration: var(--dur); } }
+  .btn:focus-visible { color: var(--board); }
+  .btn:focus-visible::before { transform: scaleX(1); transform-origin: left center; }
+  .btn--danger { border-color: var(--correct); color: var(--correct); }
+  .btn--danger::before { background: var(--correct); }
+  .btn--sm { min-height: 40px; padding: 0 var(--s3); }
+  .btn svg { width: 16px; height: 16px; flex: none; }
+
+  .btn-t { display: inline-flex; align-items: center; min-height: var(--row); padding: 0 2px; border: 0; background: none; color: var(--ink); font-weight: 500; font-size: var(--fs-sm); text-decoration: none; cursor: pointer; transition: transform var(--dur) var(--ease-out); }
+  .btn-t--danger { color: var(--correct); }
+  /* MI1: press and release */
+  :is(.btn, .btn-t, .btn-class, .ic):active { transform: scale(.97); transition-duration: var(--dur-press); }
+
+  .chev { width: 14px; height: 14px; flex: none; transition: transform var(--dur) var(--ease-out); }
+
+  /* Fields: labels sit above; the green pen rule draws under the field on focus */
+  .f__l { display: block; margin-bottom: 6px; font-size: var(--fs-sm); font-weight: 500; color: var(--ink); }
+  .f__hint { margin: -2px 0 6px; font-size: var(--fs-xs); color: var(--ink-2); }
+  .fld { position: relative; display: block; }
+  .inp { display: block; width: 100%; min-height: var(--row); padding: 0 var(--s3); border: 1px solid var(--trim); border-radius: var(--r-btn); background: var(--sheet); color: var(--ink); transition: border-color var(--dur-fast); appearance: none; }
+  .inp:hover { border-color: var(--ink); }
+  .inp:focus-visible { outline-offset: 2px; }
+  .inp[aria-invalid="true"] { border-color: var(--correct); }
+  .fld__rule { position: absolute; left: var(--s2); right: var(--s2); bottom: 0; height: 2px; background: var(--pen); transform: scaleX(0); transform-origin: left center; transition: transform .3s var(--ease-out); pointer-events: none; }
+  .fld:focus-within .fld__rule { transform: scaleX(1); }
+  input[type="search"]::-webkit-search-cancel-button { display: none; }
+  input[type="date"].inp { padding-right: var(--s2); }
+
+  .sel { position: relative; display: block; }
+  .sel .inp { padding-right: 36px; cursor: pointer; }
+  .sel .chev { position: absolute; right: 12px; top: 50%; margin-top: -7px; pointer-events: none; color: var(--ink); transition: transform var(--dur-fast) var(--ease-out); }
+  @media (hover: hover) { .sel:hover .chev { transform: translateY(2px); } }
+
+  /* MI4 errors: the message reveals inline (grid rows 0fr to 1fr) */
+  .f__err { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .25s var(--ease-out); }
+  .f__err > .err { min-height: 0; overflow: hidden; }
+  .has-err > .f__err, .has-err .f__err { grid-template-rows: 1fr; }
+  .err { color: var(--correct); font-size: var(--fs-sm); line-height: 1.4; }
+  .has-err .err { padding-top: 6px; }
+
+  /* Switch and checkbox: the tick draws (stroke-dashoffset) */
+  .switch, .check { display: inline-flex; align-items: center; gap: var(--s3); min-height: var(--row); cursor: pointer; font-size: var(--fs-sm); font-weight: 500; }
+  .switch input, .check input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .switch__track { position: relative; flex: none; width: 46px; height: 26px; border: 1.5px solid var(--trim); border-radius: var(--r-pill); background: var(--sheet); transition: background-color var(--dur-fast), border-color var(--dur-fast); }
+  .switch__knob { position: absolute; top: 2px; left: 2px; width: 19px; height: 19px; border-radius: 50%; background: var(--ink); display: grid; place-items: center; transition: transform .3s var(--ease-out), background-color var(--dur-fast); }
+  .switch input:checked + .switch__track { background: var(--pen); border-color: var(--pen); }
+  .switch input:checked + .switch__track .switch__knob { transform: translateX(20px); background: var(--sheet); }
+  .tick { width: 12px; height: 12px; fill: none; stroke: var(--pen); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .tick path { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset .3s var(--ease-out); }
+  input:checked + .switch__track .tick path, input:checked + .check__box .tick path { stroke-dashoffset: 0; }
+  .switch input:focus-visible + .switch__track, .check input:focus-visible + .check__box { outline: 2px solid var(--pen); outline-offset: 3px; }
+  .check__box { flex: none; width: 22px; height: 22px; border: 1.5px solid var(--trim); border-radius: 5px; background: var(--sheet); display: grid; place-items: center; transition: background-color var(--dur-fast), border-color var(--dur-fast); }
+  .check__box .tick { stroke: var(--sheet); width: 14px; height: 14px; }
+  .check input:checked + .check__box { background: var(--pen); border-color: var(--pen); }
+  @media (hover: hover) { .check:hover .check__box, .switch:hover .switch__track { border-color: var(--ink); } .check:hover input:checked + .check__box, .switch:hover input:checked + .switch__track { border-color: var(--pen); } }
+
+  /* ---------- App bar ---------- */
+  .bar { position: sticky; top: 0; z-index: 30; background: var(--board); }
+  .bar__in { max-width: var(--max); margin: 0 auto; padding: 0 var(--gutter); height: var(--bar-h); display: flex; align-items: center; gap: var(--s4); }
+  .bar__rule { display: block; height: 1px; background: var(--trim); transform-origin: left center; }
+  .wordmark { flex: none; display: inline-flex; align-items: center; min-height: var(--row); color: var(--ink); text-decoration: none; font-weight: 650; letter-spacing: -.01em; }
+  .bar__label { margin-left: auto; font-size: var(--fs-sm); color: var(--ink-2); white-space: nowrap; }
+  .bar__label b { color: var(--ink); font-weight: 600; }
+  .bar__add { flex: none; }
+
+  .cm { position: relative; flex: none; }
+  .btn-class { position: relative; isolation: isolate; overflow: hidden; display: inline-flex; align-items: center; gap: var(--s2); min-height: 40px; padding: 0 var(--s3); border: 1px solid var(--trim); border-radius: var(--r-btn); background: transparent; font-weight: 500; font-size: var(--fs-sm); cursor: pointer; transition: transform var(--dur) var(--ease-out), border-color var(--dur-fast); }
+  .btn-class::before { content: ''; position: absolute; inset: 0; z-index: -1; background: var(--pen-tint); transform: scaleX(0); transform-origin: var(--from, left) center; transition: transform .3s var(--ease-out); }
+  @media (hover: hover) { .btn-class:hover { border-color: var(--ink); } .btn-class:hover::before { transform: scaleX(1); transition-duration: var(--dur); } }
+  .btn-class[aria-expanded="true"]::before { transform: scaleX(1); }
+  .btn-class[aria-expanded="true"] .chev { transform: rotate(180deg); }
+
+  .menu { position: absolute; z-index: 40; top: calc(100% + var(--s2)); left: 0; width: 17.5rem; max-height: calc(100vh - var(--bar-h) - 24px); overflow: auto; padding: 6px; background: var(--sheet); border: 1px solid var(--trim); border-radius: var(--r-menu); }
+  .menu[hidden] { display: none; }
+  .menu__list { position: relative; }
+  /* NV4: one indicator glides to the hovered or focused item */
+  .menu__ind { position: absolute; left: 0; right: 0; top: 0; height: var(--row); border-radius: 6px; background: var(--pen-tint); box-shadow: inset 3px 0 0 var(--pen); opacity: 0; pointer-events: none; transition: transform .3s var(--ease-follow), height .3s var(--ease-follow), opacity var(--dur-fast); }
+  .menu__ind.is-on { opacity: 1; }
+  .menu__ind.no-tr { transition: opacity var(--dur-fast); }
+  .menu__ind.is-danger { background: color-mix(in srgb, var(--correct) 9%, transparent); box-shadow: inset 3px 0 0 var(--correct); }
+  .mi { position: relative; display: flex; flex-direction: column; justify-content: center; width: 100%; min-height: var(--row); padding: 6px var(--s3) 6px var(--s4); border: 0; background: none; text-align: left; font-size: var(--fs-sm); cursor: pointer; border-radius: 6px; }
+  .mi:focus-visible { outline-offset: -2px; }
+  .mi__sub { font-size: var(--fs-xs); color: var(--ink-2); }
+  .mi[aria-checked="true"] .mi__name { font-weight: 650; }
+  .mi[aria-checked="true"] .mi__name::after { content: ', open'; font-weight: 400; color: var(--ink-2); }
+  .mi--danger { color: var(--correct); }
+  .mi[aria-disabled="true"] { color: var(--ink-2); }
+  .menu__sep { height: 1px; margin: 6px 0; background: var(--trim); }
+
+  /* ---------- Board ---------- */
+  .board { max-width: var(--max); margin: 0 auto; padding: 0 var(--gutter); }
+  .hero { padding: var(--s7) 0 var(--s6); }
+  .title-wrap { transform-origin: left center; }
+  .title { font: 700 var(--fs-display)/.95 var(--font-display); letter-spacing: -.02em; overflow-wrap: anywhere; }
+  .title:focus { outline: none; }
+  .title:focus-visible { outline: 2px solid var(--pen); outline-offset: 6px; }
+  .title > * { padding-bottom: .22em; margin-bottom: -.22em; }
+  .context { margin-top: var(--s5); color: var(--ink-2); max-width: 64ch; }
+  .summary { margin-top: var(--s3); max-width: 31em; font-size: var(--fs-lg); line-height: 1.45; }
+  .summary b, .bar__label b { font-weight: 600; }
+  .fig { display: inline-block; text-align: right; }
+  .hero__acts { display: flex; flex-wrap: wrap; gap: var(--s3); margin-top: var(--s6); }
+
+  .sec { border-top: 1px solid var(--trim); padding-top: var(--s6); scroll-margin-top: var(--bar-h); }
+  .sec:focus { outline: none; }
+  .sec-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s4) var(--s6); margin-bottom: var(--s5); }
+  h2 { font: 650 var(--fs-xl)/1.1 var(--font-display); letter-spacing: -.01em; }
+
+  .tools { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--s4) var(--s5); }
+  .tools__find { width: 15rem; }
+  .tools__sort { width: 14.5rem; }
+  .find .inp { padding-right: 44px; }
+  .clear { position: absolute; right: 4px; top: 50%; width: 36px; height: 36px; margin-top: -18px; border: 0; border-radius: 6px; background: transparent; display: grid; place-items: center; cursor: pointer; color: var(--ink); transform: scale(.6); opacity: 0; visibility: hidden; transition: transform var(--dur-fast) var(--ease-out), opacity var(--dur-fast), visibility 0s var(--dur-fast), background-color var(--dur-fast); }
+  .clear svg { width: 14px; height: 14px; }
+  .find.has-value .clear { transform: none; opacity: 1; visibility: visible; transition-delay: 0s; }
+  @media (hover: hover) { .clear:hover { background: var(--pen-tint); } }
+
+  /* ---------- The mark grid ---------- */
+  .scroller { margin: 0 -4px; padding: 0 4px 4px; overflow-x: auto; }
+  .grid { --cols: minmax(9.5rem, 1fr) 4.5rem var(--marks, ) 7.25rem 6rem; position: relative; isolation: isolate; min-width: min-content; border: 1px solid var(--trim); border-radius: var(--r-sheet); }
+  .grid__head, .st__row, .grid__foot { display: grid; grid-template-columns: var(--cols); column-gap: var(--s2); padding: 0 var(--s3) 0 var(--s4); align-items: center; }
+  .grid__head { position: relative; z-index: 1; padding-top: var(--head-h); border-bottom: 1px solid var(--trim); align-items: end; }
+  .hl { padding-bottom: var(--s3); font-size: var(--fs-xs); font-weight: 500; color: var(--ink-2); white-space: nowrap; }
+  .hl--num { text-align: right; padding-right: var(--num-pad); }
+
+  /* angled assessment titles: the upright cell is the target, the -60deg title is its picture */
+  .ah { position: relative; display: flex; align-items: center; justify-content: flex-end; width: 100%; height: var(--row); padding: 0 var(--num-pad); border: 0; border-radius: 6px 6px 0 0; background: none; color: var(--ink-2); font-size: var(--fs-xs); font-weight: 500; cursor: pointer; }
+  .ah:focus-visible { outline-offset: -2px; }
+  .ah__t { position: absolute; left: 52%; bottom: calc(100% + 4px); max-width: 13rem; padding: 1px 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-angled); font-weight: 500; line-height: 1.3; color: var(--ink); transform: rotate(-60deg); transform-origin: 0 100%; pointer-events: none; isolation: isolate; transition: color var(--dur-fast); }
+  /* HV3: a green-pen highlighter wipes along the title's own axis */
+  .ah__t::before { content: ''; position: absolute; inset: 0; z-index: -1; border-radius: 3px; background: var(--pen-tint); clip-path: inset(0 100% 0 0); transition: clip-path .35s var(--ease-out); }
+  .ah[data-hl="in"] .ah__t::before, .ah:focus-visible .ah__t::before { clip-path: inset(0); }
+  .ah[data-hl="out"] .ah__t::before { clip-path: inset(0 0 0 100%); }
+  .ah[data-hl="reset"] .ah__t::before { transition: none; }
+  .ah.is-hot .ah__t, .ah:focus-visible .ah__t { color: var(--pen); }
+
+  .roster { position: relative; z-index: 1; margin: 0; padding: 0; list-style: none; }
+  .st { display: grid; grid-template-rows: 1fr; transition: grid-template-rows var(--dur-acc-close) var(--ease-acc), opacity .25s; }
+  .st[hidden] { display: none !important; }
+  .st__in { min-height: 0; }
+  .st.is-leaving { grid-template-rows: 0fr; opacity: 0; }
+  .st.is-leaving > .st__in { overflow: hidden; }
+  .st__row { position: relative; min-height: var(--row); }
+  .st__name { min-width: 0; }
+  .name { display: inline-flex; align-items: center; gap: var(--s2); max-width: 100%; min-height: var(--row); padding: 0; border: 0; background: none; color: var(--ink); font-size: var(--fs-sm); font-weight: 500; text-align: left; cursor: pointer; transition: color var(--dur-fast); }
+  .name__t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: linear-gradient(currentColor, currentColor) var(--fx, 100%) 100% / 0 .08em no-repeat; transition: background-size .35s var(--ease-out); padding-bottom: .08em; }
+  .name .chev { color: var(--ink-2); }
+  .name[aria-expanded="true"] .chev { transform: rotate(90deg); }
+  .st.is-hot .name { color: var(--pen); }
+  .lbl { display: none; }
+  .st__target { text-align: right; padding-right: var(--num-pad); font-size: var(--fs-sm); color: var(--ink-2); }
+
+  .marks, .marks__in, .marks__list { display: contents; }
+  .cell { position: relative; display: block; isolation: isolate; }
+  .cell__t, .cell__of { display: none; }
+  .mark { display: block; width: 100%; height: 36px; padding: 0 calc(var(--num-pad) - 1px); border: 1px solid transparent; border-radius: var(--r-btn); background: transparent; color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; transition: border-color var(--dur-fast), color var(--dur-fast); }
+  .mark::placeholder { color: var(--ink-2); opacity: 1; font-weight: 400; }
+  @media (hover: hover) { .mark:hover { border-color: var(--trim); background: var(--sheet); } }
+  .mark:focus { outline: none; border-color: var(--trim); background: var(--sheet); }
+  .mark:focus-visible { outline: 2px solid var(--pen); outline-offset: 2px; }
+  .mark[aria-invalid="true"] { border-color: var(--correct); color: var(--correct); }
+  .cell.is-fresh .mark { color: var(--pen); }
+  .cell::after { content: ''; position: absolute; left: 6px; right: 6px; bottom: 1px; height: 2px; background: var(--pen); transform: scaleX(0); transform-origin: left center; transition: transform .25s var(--ease-out); pointer-events: none; }
+  .cell:focus-within::after { transform: scaleX(1); }
+  .cell.is-bad::after { background: var(--correct); }
+  .wash { position: absolute; inset: 3px -3px; z-index: -1; border-radius: 6px; background: var(--wash); opacity: 0; pointer-events: none; }
+  .wash--row { inset: 0 -8px; border-radius: 8px; z-index: 0; }
+
+  .st__avg, .mean { position: relative; isolation: isolate; display: flex; align-items: center; justify-content: flex-end; gap: 6px; padding-right: var(--num-pad); font-weight: 600; white-space: nowrap; }
+  .delta { padding: 1px 5px; border-radius: var(--r-chip); background: var(--chip); color: var(--progress); font-size: var(--fs-xs); font-weight: 600; }
+  .delta[hidden] { display: none; }
+  .st__at { text-align: right; padding-right: var(--num-pad); font-weight: 600; white-space: nowrap; }
+  .is-below { color: var(--correct); }
+  .below { margin-left: 4px; font-size: var(--fs-xs); font-weight: 500; }
+
+  .st__err { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .25s var(--ease-out); }
+  .st__err > .err { min-height: 0; overflow: hidden; padding: 0 var(--s4); }
+  .st.has-err .st__err { grid-template-rows: 1fr; }
+  .st.has-err .st__err > .err { padding-bottom: var(--s2); }
+
+  /* CD6: details open to their real height */
+  .more { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--dur-acc-close) var(--ease-acc); }
+  .is-open > .more, .st.is-open .more { grid-template-rows: 1fr; transition-duration: var(--dur-acc); }
+  .more__in { min-height: 0; overflow: hidden; }
+  .more__body { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s1) var(--s5); padding: 2px var(--s4) var(--s3) calc(var(--s4) + 22px); font-size: var(--fs-sm); color: var(--ink-2); }
+  .more__body p { max-width: 64ch; }
+  .more__acts { display: flex; flex-wrap: wrap; gap: 0 var(--s5); }
+  .only-narrow { display: none; }
+
+  .grid__foot { position: relative; z-index: 1; min-height: calc(var(--row) + 4px); border-top: 1px solid var(--trim); }
+  .grid__foot[hidden] { display: none; }
+  .foot__lbl { font-size: var(--fs-sm); font-weight: 500; }
+
+  .ruler { position: absolute; z-index: 0; left: 0; right: 0; top: 0; height: var(--row); background: var(--ruler); border-bottom: 1px solid var(--ruler-edge); opacity: 0; pointer-events: none; transition: transform .28s var(--ease-follow), height .28s var(--ease-follow), opacity var(--dur-fast); }
+  .guide { position: absolute; z-index: 0; top: 0; bottom: 0; left: 0; width: var(--col-min); background: color-mix(in srgb, var(--trim) 6%, transparent); border-inline: 1px solid color-mix(in srgb, var(--trim) 35%, transparent); opacity: 0; pointer-events: none; transition: transform .28s var(--ease-follow), opacity var(--dur-fast); }
+  .ruler.is-on, .guide.is-on { opacity: 1; }
+  .ruler.no-tr, .guide.no-tr { transition: opacity var(--dur-fast); }
+
+  .empty { padding: var(--s6) var(--s4); display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s5); }
+  .empty[hidden] { display: none; }
+  .note { margin-top: var(--s3); font-size: var(--fs-xs); color: var(--ink-2); }
+  .note i { font-style: italic; }
+
+  /* ---------- Assessments ---------- */
+  .assess { margin-top: var(--s8); }
+  .alist-wrap { position: relative; isolation: isolate; }
+  .alist { position: relative; z-index: 1; margin: 0; padding: 0; list-style: none; }
+  .ar { position: relative; isolation: isolate; }
+  .ar__h3 { font: inherit; }
+  .ar__h { display: grid; grid-template-columns: 4rem minmax(0, 1fr) 9.5rem 120px 14.5rem 16px; gap: var(--s4); align-items: center; width: 100%; min-height: 60px; padding: var(--s2) var(--s4); border: 0; background: none; text-align: left; cursor: pointer; font-size: var(--fs-sm); }
+  .ar__h:focus-visible { outline-offset: -2px; border-radius: var(--r-btn); }
+  .ar__date { color: var(--ink-2); white-space: nowrap; }
+  .ar__title { display: flex; flex-direction: column; min-width: 0; }
+  .ar__title .u { align-self: flex-start; font-weight: 500; font-size: var(--fs-md); }
+  .ar__kind, .ar__meta, .ar__sum { color: var(--ink-2); }
+  .ar__sum { font-size: var(--fs-xs); }
+  .ar__h[aria-expanded="true"] .chev { transform: rotate(90deg); }
+  .ar.is-hot .ar__title .u { color: var(--pen); }
+  .ar__body { padding: var(--s2) var(--s4) var(--s5) calc(4rem + var(--s4) * 2); gap: var(--s5) var(--s7); align-items: flex-start; }
+  .facts { display: grid; grid-template-columns: auto auto; gap: 2px var(--s4); margin: 0; font-size: var(--fs-sm); }
+  .facts dt { color: var(--ink-2); }
+  .facts dd { margin: 0; color: var(--ink); font-weight: 500; }
+
+  /* strip plots: one dot per mark, a tick at the mean */
+  .strip { position: relative; display: block; width: 120px; height: 24px; border-bottom: 1px solid var(--trim); }
+  .strip__mean { position: absolute; bottom: 0; width: 2px; height: 18px; margin-left: -1px; background: var(--ink-2); }
+  .dot { position: absolute; bottom: calc(3px + var(--k, 0) * 7px); width: 6px; height: 6px; margin-left: -3px; border-radius: 50%; background: var(--ink); }
+  .strip--big { width: min(28rem, 100%); height: 46px; }
+  .strip--big .dot { width: 9px; height: 9px; margin-left: -4.5px; bottom: calc(4px + var(--k, 0) * 10px); }
+  .strip--big .strip__mean { height: 40px; }
+  .bigplot { flex: 1 1 22rem; max-width: 28rem; }
+  .bigplot__ax { display: flex; justify-content: space-between; margin-top: 4px; font-size: var(--fs-xs); color: var(--ink-2); }
+  .bigplot__cap { margin-top: var(--s2); font-size: var(--fs-sm); color: var(--ink-2); }
+
+  /* ---------- Footer ---------- */
+  .foot { margin-top: var(--s8); padding: var(--s6) 0 var(--s8); border-top: 1px solid var(--trim); font-size: var(--fs-sm); color: var(--ink-2); }
+  .foot p { max-width: 64ch; }
+  .foot p + p { margin-top: var(--s2); }
+  .foot__acts { display: flex; flex-wrap: wrap; gap: 0 var(--s5); margin-top: var(--s4); }
+
+  /* ---------- Undo toast ---------- */
+  .toast { position: sticky; z-index: 25; bottom: var(--s4); display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3); width: fit-content; max-width: calc(100% - 2 * var(--gutter)); margin: 0 auto var(--s4); padding: 6px 6px 6px var(--s4); background: var(--sheet); border: 1px solid var(--trim); border-radius: var(--r-menu); font-size: var(--fs-sm); }
+  .toast[hidden] { display: none; }
+  .ic { display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: 6px; background: none; cursor: pointer; transition: transform var(--dur) var(--ease-out), background-color var(--dur-fast); }
+  .ic svg { width: 14px; height: 14px; }
+  @media (hover: hover) { .ic:hover { background: var(--pen-tint); } }
+  .ic:active { transform: scale(.9); }
+
+  /* ---------- Dialogs ---------- */
+  .sheet { width: min(36rem, calc(100% - 2 * var(--gutter))); max-height: min(92dvh, 56rem); padding: 0; border: 0; border-radius: var(--r-sheet); background: var(--sheet); color: var(--ink); box-shadow: 0 30px 60px -28px color-mix(in srgb, var(--ink) 55%, transparent); overflow: auto; }
+  .sheet--sm { width: min(28rem, calc(100% - 2 * var(--gutter))); }
+  .sheet::backdrop { background: var(--scrim); opacity: 0; transition: opacity .3s, overlay .3s allow-discrete, display .3s allow-discrete; }
+  .sheet[open]::backdrop { opacity: 1; }
+  @starting-style { .sheet[open]::backdrop { opacity: 0; } }
+  .dlg { padding: var(--s5) var(--s5) var(--s5); }
+  .dlg__title { font-size: var(--fs-lg); font-weight: 600; line-height: 1.3; margin-bottom: var(--s5); max-width: 32ch; }
+  .dlg__fields { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s4) var(--s4); }
+  .f--full { grid-column: 1 / -1; }
+  .f--bool { align-self: end; }
+  .dlg__acts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s3) var(--s5); margin-top: var(--s6); }
+  .errsum { margin-bottom: var(--s5); padding: var(--s3) var(--s4); border-left: 3px solid var(--correct); background: color-mix(in srgb, var(--correct) 6%, var(--sheet)); font-size: var(--fs-sm); }
+  .errsum[hidden] { display: none; }
+  .errsum p { font-weight: 600; color: var(--correct); }
+  .errsum ul { margin: 4px 0 0; padding-left: 1.1em; }
+  .errsum a { color: var(--correct); }
+  fieldset.f { margin: 0; padding: 0; border: 0; min-width: 0; }
+  /* NV4 again: the grade pill slides to the checked segment */
+  .seg__row { position: relative; display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); border: 1px solid var(--trim); border-radius: var(--r-pill); padding: 3px; background: var(--sheet); }
+  .seg__pill { position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc((100% - 6px) / 9); border-radius: var(--r-pill); background: var(--pen); opacity: 0; transform: translateX(calc(var(--i, 0) * 100%)); transition: transform .3s var(--ease-follow), opacity var(--dur-fast); }
+  .seg__row.is-set .seg__pill { opacity: 1; }
+  .seg__o { position: relative; display: grid; place-items: center; min-height: 38px; border-radius: var(--r-pill); cursor: pointer; font-weight: 600; transition: background-color var(--dur-fast); }
+  .seg__o input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+  .seg__o span { position: relative; transition: color var(--dur-fast); }
+  .seg__o:has(input:checked) span { color: var(--board); }
+  @media (hover: hover) { .seg__o:hover:not(:has(input:checked)) { background: var(--pen-tint); } }
+  .seg__o:has(input:focus-visible) { outline: 2px solid var(--pen); outline-offset: 2px; }
+  .seg.has-err .seg__row { border-color: var(--correct); }
+  .confirm__text { font-size: var(--fs-lg); line-height: 1.4; font-weight: 500; }
+
+  /* MI2: the submit label slides to its done word */
+  .swap { display: inline-grid; overflow: hidden; }
+  .swap > span { grid-area: 1 / 1; transition: transform .35s var(--ease-out); }
+  .swap__b { transform: translateY(110%); }
+  .is-done .swap__a { transform: translateY(-110%); }
+  .is-done .swap__b { transform: none; }
+
+  /* ---------- Narrow: the grid becomes a list with the marks in each student's accordion ---------- */
+  @media (max-width: 899.98px) {
+    .grid { --cols: none; min-width: 0; }
+    .grid__head, .guide, .hl { display: none; }
+    .st__row { grid-template-columns: minmax(0, 1fr) auto auto; grid-template-areas: "name avg target" "marks marks marks"; column-gap: var(--s3); padding: 0 var(--s3); }
+    .st__name { grid-area: name; }
+    .st__avg { grid-area: avg; padding-right: 0; }
+    .st__target { grid-area: target; padding-right: 0; min-width: 4.5rem; }
+    .st__at { display: none; }
+    .lbl { display: inline; font-size: var(--fs-xs); }
+    .st.is-under .st__target { color: var(--correct); }
+    .marks { grid-area: marks; display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--dur-acc-close) var(--ease-acc); }
+    .st.is-open .marks { grid-template-rows: 1fr; transition-duration: var(--dur-acc); }
+    .marks__in { display: block; min-height: 0; overflow: hidden; }
+    .marks__list { display: block; padding: 2px 4px var(--s2) 22px; }
+    .cell { display: grid; grid-template-columns: minmax(0, 1fr) 4.75rem 2.6rem; align-items: center; gap: var(--s3); min-height: 52px; }
+    .cell__t { display: block; min-width: 0; font-size: var(--fs-sm); line-height: 1.3; }
+    .cell__mean { display: block; font-size: var(--fs-xs); color: var(--ink-2); }
+    .cell__of { display: block; font-size: var(--fs-sm); color: var(--ink-2); }
+    .cell::after { left: auto; right: calc(2.6rem + var(--s3) + 6px); width: calc(4.75rem - 12px); }
+    .mark { height: 40px; border-color: var(--trim); background: var(--sheet); }
+    .wash { inset: 2px -6px; }
+    .more__body { padding-left: calc(var(--s3) + 22px); }
+    .only-narrow { display: block; }
+    .grid__foot { grid-template-columns: minmax(0, 1fr) auto; padding: 0 var(--s3); }
+    .grid__foot > :not(.foot__lbl):not(.mean--class) { display: none; }
+    .mean--class { padding-right: 0; }
+    .tools__find, .tools__sort { width: 100%; }
+    .tools { width: 100%; }
+    .sec-head { flex-direction: column; align-items: stretch; }
+    .sec-head > .btn { align-self: flex-start; }
+
+    .ar__h { grid-template-columns: 3.5rem minmax(0, 1fr) 16px; grid-template-areas: "date title chev" ". plot plot"; row-gap: var(--s2); padding: var(--s3); }
+    .ar__date { grid-area: date; align-self: start; padding-top: 2px; }
+    .ar__title { grid-area: title; }
+    .ar__h .chev { grid-area: chev; align-self: start; margin-top: 4px; }
+    .ar__meta { display: none; }
+    .ar__plot { grid-area: plot; display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--s2) var(--s4); }
+    .ar__body { padding: 0 var(--s3) var(--s5) calc(3.5rem + var(--s3) * 2); }
+  }
+  @media (min-width: 900px) { .ar__plot { display: contents; } }
+  @media (max-width: 699.98px) { .bar__label { display: none; } .cm { margin-left: auto; } }
+  @media (max-width: 479.98px) {
+    .bar__in { gap: var(--s2); }
+    .dlg { padding: var(--s4); }
+    .dlg__fields { grid-template-columns: 1fr; }
+    .ar__body { padding-left: var(--s3); }
+    .hero { padding-top: var(--s7); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0s !important; transition-delay: 0s !important; animation-duration: 0s !important; scroll-behavior: auto !important; }
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#marks">Skip to the marks</a>
+
+<div class="app" id="top">
+  <header class="bar">
+    <div class="bar__in">
+      <a class="wordmark" href="#top" data-focus="#title" data-dir data-rv><span class="u">Mark book</span></a>
+      <div class="cm" data-rv>
+        <button class="btn-class" id="class-btn" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="class-menu" data-dir>
+          <span data-class-name>9X1 Science</span>
+          <svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 6l4.5 4.5L12.5 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="menu" id="class-menu" role="menu" aria-labelledby="class-btn" hidden data-lenis-prevent>
+          <div class="menu__list" id="menu-list"></div>
+        </div>
+      </div>
+      <p class="bar__label" id="bar-label" data-rv></p>
+      <button class="btn btn--sm bar__add" type="button" data-add="student" data-dir data-rv>Add student</button>
+    </div>
+    <span class="bar__rule" aria-hidden="true"></span>
+  </header>
+
+  <main class="board">
+    <section class="hero" aria-labelledby="title">
+      <div class="title-wrap"><h1 class="title" id="title" tabindex="-1" data-rv>9X1 Science</h1></div>
+      <p class="context" id="context" data-rv>Year 9, Room S4, autumn term. Ms Okafor, science.</p>
+      <p class="summary" id="summary" data-rv></p>
+      <noscript><p class="context">The mark book needs JavaScript to show and edit marks.</p></noscript>
+    </section>
+
+    <section class="sec marks-sec" id="marks" tabindex="-1" aria-labelledby="marks-h">
+      <div class="sec-head">
+        <h2 id="marks-h">Marks</h2>
+        <form class="tools" id="find-form" role="search" aria-label="Find, sort and filter students" novalidate>
+          <div class="tools__find">
+            <label class="f__l" for="q">Find a student</label>
+            <span class="fld find">
+              <input class="inp" id="q" name="q" type="search" autocomplete="off" spellcheck="false" enterkeyhint="search">
+              <button class="clear" type="button" aria-label="Clear the search" data-clear tabindex="-1"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+              <i class="fld__rule" aria-hidden="true"></i>
+            </span>
+          </div>
+          <div class="tools__sort">
+            <label class="f__l" for="sort">Sort by</label>
+            <span class="sel fld">
+              <select class="inp" id="sort" name="sort">
+                <option value="surname">Surname, A to Z</option>
+                <option value="avg-desc">Average, highest first</option>
+                <option value="avg-asc">Average, lowest first</option>
+                <option value="cand">Candidate number</option>
+              </select>
+              <svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 6l4.5 4.5L12.5 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <i class="fld__rule" aria-hidden="true"></i>
+            </span>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="only-below" name="below">
+            <span class="switch__track" aria-hidden="true"><span class="switch__knob"><svg class="tick" viewBox="0 0 12 12"><path d="M2.5 6.3l2.3 2.3 4.7-5" pathLength="1"/></svg></span></span>
+            <span>Only students below target</span>
+          </label>
+        </form>
+      </div>
+
+      <div class="scroller">
+        <div class="grid" id="grid">
+          <div class="ruler" id="ruler" aria-hidden="true"></div>
+          <div class="guide" id="guide" aria-hidden="true"></div>
+          <div class="grid__head" id="grid-head"></div>
+          <ul class="roster" id="roster" aria-label="Students"></ul>
+          <div class="empty" id="empty" hidden></div>
+          <div class="grid__foot" id="grid-foot"></div>
+        </div>
+      </div>
+      <p class="note" id="note"><i>* Does not count toward the average.</i> A dash means not handed in. Arrow keys and Enter move between marks; Esc puts a mark back.</p>
+    </section>
+
+    <section class="sec assess" id="assessments" aria-labelledby="assess-h">
+      <div class="sec-head">
+        <h2 id="assess-h" tabindex="-1">Assessments</h2>
+        <button class="btn" type="button" data-add="assessment" data-dir>Add assessment</button>
+      </div>
+      <div class="alist-wrap" id="alist-wrap">
+        <div class="ruler" id="aruler" aria-hidden="true"></div>
+        <ul class="alist" id="alist"></ul>
+        <div class="empty" id="aempty" hidden></div>
+      </div>
+    </section>
+
+    <footer class="foot">
+      <p>Saved only in this browser tab; closing it clears your changes.</p>
+      <p>Grade boundaries: 9 from 80%, 8 from 72%, 7 from 64%, 6 from 56%, 5 from 48%, 4 from 40%, 3 from 30%, 2 from 20%, 1 from 10%.</p>
+      <div class="foot__acts">
+        <a class="btn-t" href="#top" data-focus="#title" data-dir><span class="u">Back to the top</span></a>
+        <button class="btn-t" type="button" data-act="reset" data-dir><span class="u">Reset sample data</span></button>
+      </div>
+    </footer>
+  </main>
+
+  <div class="toast" id="toast" hidden>
+    <p id="toast-text"></p>
+    <button class="btn btn--sm" type="button" data-undo data-dir>Undo delete</button>
+    <button class="ic" type="button" data-dismiss aria-label="Dismiss"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+  </div>
+</div>
+
+<div class="vh" id="live" aria-live="polite"></div>
+
+<dialog class="sheet" id="rec" aria-labelledby="rec-title" data-lenis-prevent>
+  <form class="dlg" id="rec-form" novalidate>
+    <h2 class="dlg__title" id="rec-title">Add a student to 9X1</h2>
+    <div class="errsum" id="rec-errs" hidden></div>
+    <div class="dlg__fields" id="rec-fields"></div>
+    <div class="dlg__acts">
+      <button class="btn" type="submit" id="rec-save" data-dir><span class="swap"><span class="swap__a">Add student</span><span class="swap__b" aria-hidden="true">Added</span></span></button>
+      <button class="btn-t" type="button" data-cancel data-dir><span class="u">Cancel</span></button>
+    </div>
+  </form>
+</dialog>
+
+<dialog class="sheet sheet--sm" id="confirm" role="alertdialog" aria-labelledby="confirm-text" data-lenis-prevent>
+  <div class="dlg">
+    <p class="confirm__text dlg__title" id="confirm-text"></p>
+    <div class="dlg__acts">
+      <button class="btn btn--danger" type="button" data-yes data-dir>Delete</button>
+      <button class="btn-t" type="button" data-no data-dir><span class="u">Keep</span></button>
+    </div>
+  </div>
+</dialog>
+
+<script defer src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/SplitText.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/Flip.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  'use strict';
+  const root = document.documentElement;
+  root.classList.add('js');
+  const REDUCE = matchMedia('(prefers-reduced-motion: reduce)');
+  if (!REDUCE.matches) root.classList.add('intro');
+  const NARROW = matchMedia('(max-width: 899.98px)');
+  const FINE = matchMedia('(hover: hover) and (pointer: fine)');
+  const $ = (s, c = document) => c.querySelector(s);
+  const $$ = (s, c = document) => [...c.querySelectorAll(s)];
+  const esc = s => String(s).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+  const tok = n => parseFloat(getComputedStyle(root).getPropertyValue(n)) || 0;
+
+  /* ---------- Numbers, grades, dates, names ---------- */
+  const nf1 = new Intl.NumberFormat('en-GB', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const round1 = v => Math.round(v * 10) / 10;
+  const pct = v => v == null ? '–' : nf1.format(round1(v)) + '%';
+  const signed = d => (d < 0 ? '−' : '+') + nf1.format(Math.abs(d));
+  const BOUNDS = [80, 72, 64, 56, 48, 40, 30, 20, 10];            // grade 9 from 80% ... grade 1 from 10%
+  const grade = p => { if (p == null) return null; const r = round1(p), i = BOUNDS.findIndex(b => r >= b); return i < 0 ? 0 : 9 - i; };
+  const gradeTxt = g => g == null ? '–' : g === 0 ? 'U' : String(g);
+  const fmtW = w => String(+w);
+
+  const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const MONTH = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const parseDay = v => {   // local date from yyyy-mm-dd, never a UTC parse
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v || '');
+    if (!m) return null;
+    const d = new Date(+m[1], m[2] - 1, +m[3]);
+    return d.getMonth() === m[2] - 1 && d.getDate() === +m[3] ? d : null;
+  };
+  const isoDay = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const today = () => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); };
+  const dShort = iso => { const d = parseDay(iso); return d ? `${d.getDate()} ${MON[d.getMonth()]}` : ''; };
+  const dLong = iso => { const d = parseDay(iso); return d ? `${d.getDate()} ${MONTH[d.getMonth()]} ${d.getFullYear()}` : ''; };
+
+  const split = n => { const i = n.lastIndexOf(' '); return i < 0 ? [n, ''] : [n.slice(0, i), n.slice(i + 1)]; };
+  const listName = n => { const [g, s] = split(n); return s ? `${s}, ${g}` : g; };
+  const firstName = n => n.split(' ')[0];
+  const poss = n => `${n}'s`;
+  const sortKey = n => { const [g, s] = split(n); return `${s} ${g}`; };
+  const shortName = c => c.name.split(' ')[0];
+  const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+
+  /* ---------- Sample data: every mark is seeded; every figure on the page is computed ---------- */
+  function seed() {
+    const mk = (id, name, year, room, A, S) => {
+      const assessments = A.map(([title, kind, date, outOf, weight, counts], i) => ({ id: `${id}-a${i + 1}`, title, kind, date, outOf, weight, counts }));
+      const students = S.map(([name, cand, target, attend, extra, joined], i) => ({ id: `${id}-s${i + 1}`, name, cand, target, attend, extra, joined }));
+      const marks = {};
+      S.forEach((row, i) => {
+        const m = marks[students[i].id] = {};
+        row[6].forEach((v, j) => { if (v != null) m[assessments[j].id] = v; });
+      });
+      return { id, name, year, room, students, assessments, marks };
+    };
+    return {
+      v: 1, current: 'c9x1', seq: 100,
+      classes: [
+        mk('c9x1', '9X1 Science', 9, 'Room S4', [
+          ['Cells and microscopy quiz', 'Quiz', '2026-09-12', 12, 1, true],
+          ['Osmosis required practical', 'Practical', '2026-09-26', 20, 1.5, true],
+          ['Atomic structure test', 'Test', '2026-10-09', 30, 2, true],
+          ['Balancing equations homework', 'Homework', '2026-10-14', 10, 0.5, false],
+          ['Half-term assessment', 'Exam', '2026-10-20', 60, 3, true],
+        ], [
+          ['Tolu Adeyemi', 4102, 6, 96.5, false, '2026-09-03', [9, 14, 21, 8, 41]],
+          ['Ciara Byrne', 4107, 5, 91.0, false, '2026-09-03', [7, null, 16, 6, 31]],
+          ['Hamza Chaudhry', 4115, 7, 98.2, true, '2026-09-03', [10, 15, 23, 9, 44]],
+          ['Lily Dawson', 4121, 6, 88.4, false, '2026-09-03', [6, 10, 15, 7, 29]],
+          ['Mateusz Kowalski', 4133, 8, 99.1, false, '2026-09-03', [11, 17, 26, 10, 49]],
+          ['Amara Mensah', 4140, 7, 93.7, false, '2026-09-15', [8, 12, 17, null, 35]],
+          ["Finn O'Sullivan", 4152, 4, 85.0, true, '2026-09-03', [5, 9, 12, 5, 24]],
+          ['Priya Shah', 4166, 8, 97.3, false, '2026-09-03', [10, 15, 20, 9, 40]],
+        ]),
+        mk('c10c', '10C Chemistry', 10, 'Lab C2', [
+          ['Bonding quiz', 'Quiz', '2026-09-15', 15, 1, true],
+          ['Rates of reaction practical', 'Practical', '2026-10-01', 24, 1.5, true],
+          ['Quantitative chemistry test', 'Test', '2026-10-13', 40, 2, true],
+          ['Moles homework', 'Homework', '2026-10-16', 12, 0.5, true],
+        ], [
+          ['Aisha Begum', 4210, 7, 97.8, false, '2026-09-04', [12, 18, 29, 10]],
+          ['Callum Reid', 4214, 5, 90.2, false, '2026-09-04', [8, 13, 19, 7]],
+          ['Zofia Nowak', 4221, 8, 99.5, false, '2026-09-04', [14, 21, 33, 11]],
+          ['Ethan Walsh', 4228, 6, 86.9, true, '2026-09-04', [9, 12, 18, 6]],
+          ['Ruby Patel', 4235, 7, 95.0, false, '2026-09-04', [11, 17, 26, 9]],
+          ['Kwame Boateng', 4242, 6, 94.4, false, '2026-09-04', [10, 16, 24, 8]],
+          ['Isla McLeod', 4250, 4, 89.6, true, '2026-09-04', [7, 11, 15, 6]],
+        ]),
+        mk('c11b', '11B Physics', 11, 'Room P1', [
+          ['Forces quiz', 'Quiz', '2026-09-11', 10, 1, true],
+          ['Specific heat capacity practical', 'Practical', '2026-09-25', 20, 1.5, true],
+          ['Electricity mock paper', 'Exam', '2026-10-15', 70, 3, true],
+          ['Waves homework', 'Homework', '2026-10-19', 15, 0.5, true],
+        ], [
+          ['Yusuf Ali', 4301, 7, 96.1, false, '2026-09-03', [8, 15, 50, 12]],
+          ['Megan Hughes', 4308, 6, 92.7, false, '2026-09-03', [7, 12, 41, 10]],
+          ['Theo Brennan', 4313, 5, 87.3, true, '2026-09-03', [6, 10, 33, 9]],
+          ['Sofia Rossi', 4320, 8, 98.8, false, '2026-09-03', [9, 17, 58, 14]],
+          ['Joel Asante', 4327, 6, 90.0, false, '2026-09-03', [6, 11, 36, 8]],
+          ['Hannah Clarke', 4334, 9, 99.4, false, '2026-09-03', [10, 18, 61, 14]],
+        ]),
+      ],
+    };
+  }
+
+  /* ---------- Storage: sessionStorage when it works, memory when it does not ---------- */
+  const KEY = 'gradebook.v1';
+  const validDb = d => d && d.v === 1 && Array.isArray(d.classes) && d.classes.length > 0 &&
+    d.classes.every(c => c && Array.isArray(c.students) && Array.isArray(c.assessments) && c.marks && typeof c.marks === 'object');
+  function makeStore(getStorage) {
+    let mem = null;
+    return {
+      load() {
+        try { const raw = getStorage().getItem(KEY); if (raw) { const d = JSON.parse(raw); if (validDb(d)) return d; } } catch { /* blocked or corrupt: fall back */ }
+        return mem ? JSON.parse(mem) : null;
+      },
+      save(d) {
+        mem = JSON.stringify(d);
+        try { getStorage().setItem(KEY, mem); return true; } catch { return false; }
+      },
+    };
+  }
+  const store = makeStore(() => window.sessionStorage);
+  let db = store.load() || seed();
+  if (!db.classes.some(c => c.id === db.current)) db.current = db.classes[0].id;
+  const save = () => store.save(db);
+  save();
+  const cls = (d = db) => d.classes.find(c => c.id === d.current);
+
+  /* ---------- One schema drives the forms, the parsers and the validators ---------- */
+  const KINDS = ['Quiz', 'Homework', 'Practical', 'Test', 'Exam'];
+  const SCHEMA = {
+    student: [
+      { k: 'name', type: 'text', label: 'Full name', min: 2, max: 60, full: true, err: "Enter the student's full name." },
+      { k: 'cand', type: 'int', label: 'Candidate number', min: 1000, max: 9999, hint: 'Four digits, from the exams entry list', err: 'Use a 4-digit number from 1000 to 9999.' },
+      { k: 'attend', type: 'dec', label: 'Attendance (%)', min: 0, max: 100, dp: 1, hint: 'From the register, like 96.5', err: 'Enter a percentage from 0 to 100, with up to one decimal place.' },
+      { k: 'target', type: 'choice', ui: 'seg', label: 'Target grade', options: [1, 2, 3, 4, 5, 6, 7, 8, 9], full: true, err: 'Choose a target grade from 1 to 9.' },
+      { k: 'joined', type: 'date', label: 'Joined the class', notAfterToday: true, err: 'Enter a date on or before today.' },
+      { k: 'extra', type: 'bool', label: 'Has extra time in assessments' },
+    ],
+    assessment: [
+      { k: 'title', type: 'text', label: 'Title', min: 2, max: 60, full: true, err: 'Enter the title, like Atomic structure test.' },
+      { k: 'kind', type: 'choice', label: 'Kind', options: KINDS, err: 'Choose quiz, homework, practical, test or exam.' },
+      { k: 'date', type: 'date', label: 'Date set', err: 'Enter the date it was set.' },
+      { k: 'outOf', type: 'int', label: 'Out of', min: 1, max: 200, hint: 'Total marks available', err: 'Use a whole number from 1 to 200.' },
+      { k: 'weight', type: 'dec', label: 'Weight', min: 0.5, max: 5, dp: 2, hint: 'How much it counts, 0.5 to 5', err: 'Use a weight from 0.5 to 5, like 1.5.' },
+      { k: 'counts', type: 'bool', label: 'Counts toward the average', full: true },
+    ],
+    class: [
+      { k: 'name', type: 'text', label: 'Class name', min: 2, max: 40, full: true, err: 'Enter the class name, like 9X1 Science.' },
+      { k: 'year', type: 'choice', label: 'Year group', options: [7, 8, 9, 10, 11], show: y => `Year ${y}`, err: 'Choose a year group from 7 to 11.' },
+      { k: 'room', type: 'text', label: 'Room', min: 1, max: 24, err: 'Enter the room, like Room S4.' },
+    ],
+  };
+  const ok = value => ({ ok: true, value });
+  const bad = error => ({ ok: false, error });
+  function parseField(f, raw) {
+    const s = typeof raw === 'string' ? raw.trim() : raw;
+    switch (f.type) {
+      case 'text': {
+        const v = String(s ?? '').replace(/\s+/g, ' ');
+        if (v.length > f.max) return bad(`Use ${f.max} characters or fewer.`);
+        return v.length >= f.min ? ok(v) : bad(f.err);
+      }
+      case 'int': return /^\d+$/.test(s ?? '') && +s >= f.min && +s <= f.max ? ok(+s) : bad(f.err);
+      case 'dec': {
+        const m = /^(\d+)(?:\.(\d+))?$/.exec(s ?? '');
+        return m && (!m[2] || m[2].length <= f.dp) && +s >= f.min && +s <= f.max ? ok(+s) : bad(f.err);
+      }
+      case 'date': {
+        const d = parseDay(s);
+        return d && !(f.notAfterToday && d > today()) ? ok(s) : bad(f.err);
+      }
+      case 'bool': return ok(raw === true || raw === 'true' || raw === 'on');
+      case 'choice': { const o = f.options.find(x => String(x) === String(s)); return o === undefined ? bad(f.err) : ok(o); }
+    }
+    return bad('Unknown field.');
+  }
+  function validateRecord(kind, raw, { c, id } = {}) {
+    const values = {}, errors = {};
+    for (const f of SCHEMA[kind]) { const r = parseField(f, raw[f.k]); if (r.ok) values[f.k] = r.value; else errors[f.k] = r.error; }
+    if (kind === 'student' && c && !errors.cand) {
+      const other = c.students.find(s => s.cand === values.cand && s.id !== id);
+      if (other) errors.cand = `${values.cand} is already ${poss(other.name)} number.`;
+    }
+    if (kind === 'assessment' && c && id && !errors.outOf) {
+      const top = Math.max(-1, ...c.students.map(s => c.marks[s.id]?.[id] ?? -1));
+      if (top > values.outOf) errors.outOf = `Marks for this assessment go up to ${top}. Use ${top} or more.`;
+    }
+    return { values, errors };
+  }
+  function parseMark(raw, outOf) {
+    const s = String(raw ?? '').trim();
+    if (s === '' || s === '-' || s === '–') return ok(null);
+    return /^\d+$/.test(s) && +s <= outOf ? ok(+s) : bad('range');
+  }
+  const markErr = (st, a) => `${poss(firstName(st.name))} mark must be a whole number from 0 to ${a.outOf}. Leave it blank if not handed in.`;
+
+  /* ---------- Averages ---------- */
+  function studentAvg(c, sid) {   // sum of (mark / out of x weight) over counted, marked assessments, over the sum of their weights
+    let n = 0, w = 0;
+    for (const a of c.assessments) {
+      const m = c.marks[sid]?.[a.id];
+      if (!a.counts || m == null) continue;
+      n += m * 100 / a.outOf * a.weight; w += a.weight;
+    }
+    return w ? n / w : null;
+  }
+  function assessMean(c, aid) {
+    const a = c.assessments.find(x => x.id === aid);
+    let sum = 0, k = 0;
+    for (const s of c.students) { const m = c.marks[s.id]?.[aid]; if (m != null) { sum += m; k++; } }
+    return k ? sum * 100 / (k * a.outOf) : null;
+  }
+  const marksFor = (c, aid) => c.students.map(s => c.marks[s.id]?.[aid]).filter(m => m != null);
+  function figures(c) {
+    const avg = {}, mean = {}, list = [];
+    for (const s of c.students) { avg[s.id] = studentAvg(c, s.id); if (avg[s.id] != null) list.push(avg[s.id]); }
+    for (const a of c.assessments) mean[a.id] = assessMean(c, a.id);
+    const below = c.students.filter(s => avg[s.id] != null && grade(avg[s.id]) < s.target).length;
+    return { avg, mean, below, classAvg: list.length ? list.reduce((x, y) => x + y, 0) / list.length : null, counted: c.assessments.filter(a => a.counts).length };
+  }
+  const isBelow = (st, f) => f.avg[st.id] != null && grade(f.avg[st.id]) < st.target;
+  function stats(ms) {
+    if (!ms.length) return null;
+    const s = [...ms].sort((x, y) => x - y), h = s.length >> 1;
+    const med = s.length % 2 ? s[h] : (s[h - 1] + s[h]) / 2;
+    return { lo: s[0], med: Number.isInteger(med) ? String(med) : nf1.format(med), hi: s.at(-1) };
+  }
+
+  /* ---------- Records ---------- */
+  const newId = (d, p) => `${p}${++d.seq}`;
+  const byDate = c => c.assessments.sort((x, y) => x.date.localeCompare(y.date));
+  const countMarks = (c, sid) => Object.values(c.marks[sid] || {}).filter(v => v != null).length;
+  function addStudent(d, c, v) { const st = { id: newId(d, 's'), ...v }; c.students.push(st); c.marks[st.id] = {}; return st; }
+  function updateStudent(c, id, v) { Object.assign(c.students.find(s => s.id === id), v); }
+  function deleteStudent(c, id) {
+    const i = c.students.findIndex(s => s.id === id), rec = c.students[i], marks = c.marks[id] || {};
+    c.students.splice(i, 1); delete c.marks[id];
+    return { kind: 'student', cid: c.id, i, rec, marks };
+  }
+  function addAssessment(d, c, v) { const a = { id: newId(d, 'a'), ...v }; c.assessments.push(a); byDate(c); return a; }
+  function updateAssessment(c, id, v) { Object.assign(c.assessments.find(a => a.id === id), v); byDate(c); }
+  function deleteAssessment(c, id) {
+    const i = c.assessments.findIndex(a => a.id === id), rec = c.assessments[i], marks = {};
+    for (const s of c.students) if (c.marks[s.id]?.[id] != null) { marks[s.id] = c.marks[s.id][id]; delete c.marks[s.id][id]; }
+    c.assessments.splice(i, 1);
+    return { kind: 'assessment', cid: c.id, i, rec, marks };
+  }
+  function addClass(d, v) { const c = { id: newId(d, 'c'), ...v, students: [], assessments: [], marks: {} }; d.classes.push(c); return c; }
+  function updateClass(c, v) { Object.assign(c, v); }
+  function deleteClass(d, id) {
+    const i = d.classes.findIndex(c => c.id === id), rec = d.classes[i];
+    d.classes.splice(i, 1);
+    if (d.current === id) d.current = d.classes[Math.min(i, d.classes.length - 1)].id;
+    return { kind: 'class', i, rec };
+  }
+  function restore(d, p) {
+    if (p.kind === 'class') { d.classes.splice(p.i, 0, p.rec); d.current = p.rec.id; return p.rec; }
+    const c = d.classes.find(x => x.id === p.cid);
+    if (!c) return null;
+    d.current = c.id;
+    if (p.kind === 'student') { c.students.splice(p.i, 0, p.rec); c.marks[p.rec.id] = p.marks; }
+    else { c.assessments.splice(p.i, 0, p.rec); for (const [sid, m] of Object.entries(p.marks)) if (c.marks[sid]) c.marks[sid][p.rec.id] = m; }
+    return p.rec;
+  }
+  function setMark(c, sid, aid, v) { const m = c.marks[sid] || (c.marks[sid] = {}); if (v == null) delete m[aid]; else m[aid] = v; }
+
+  /* Cell navigation: Up, Down and Enter always move rows; Left and Right only from the caret's edge or a full selection. */
+  function nextCell(pos, key, dims, caret = {}) {
+    const { r, c } = pos;
+    if (key === 'ArrowUp') return r > 0 ? { r: r - 1, c } : null;
+    if (key === 'ArrowDown' || key === 'Enter') return r < dims.rows - 1 ? { r: r + 1, c } : null;
+    if (key === 'ArrowLeft') return (caret.all || caret.start) && c > 0 ? { r, c: c - 1 } : null;
+    if (key === 'ArrowRight') return (caret.all || caret.end) && c < dims.cols - 1 ? { r, c: c + 1 } : null;
+    return null;
+  }
+
+  function markMessage(st, a, v, before, after) {
+    let m = `${st.name}, ${a.title}: ${v == null ? 'not handed in' : `${v} out of ${a.outOf}`}.`;
+    const o = before.avg[st.id], n = after.avg[st.id];
+    if (!a.counts) m += ` ${a.title} does not count toward the average.`;
+    else if (n == null) m += ' No average yet.';
+    else if (o == null) m += ` Average now ${pct(n)}.`;
+    else if (round1(n) === round1(o)) m += ` Average unchanged at ${pct(n)}.`;
+    else { const d = round1(n) - round1(o); m += ` Average now ${pct(n)}, ${d > 0 ? 'up' : 'down'} ${nf1.format(Math.abs(d))}.`; }
+    const go = grade(o), gn = grade(n);
+    if (gn != null && go !== gn) m += ` Now working at grade ${gradeTxt(gn)}.`;
+    if (after.mean[a.id] != null) m += ` ${a.title} mean now ${pct(after.mean[a.id])}.`;
+    return m;
+  }
+
+  /* ---------- Effects: instant defaults; the GSAP layer replaces them when motion is allowed ---------- */
+  const setNum = (el, v) => { if (!el) return; el._v = v; el.textContent = pct(v); };
+  const fx = {
+    roll: setNum,
+    propagate: p => { [p.avg, p.mean, ...p.last].forEach(x => x && setNum(x.el, x.to)); p.grade(); if (p.chip.text) { p.chip.el.textContent = p.chip.text; p.chip.el.hidden = false; } },
+    flip: (els, mutate) => mutate(),
+    collapse: (li, done) => done(),
+    pulse: () => {},
+    details: () => {},
+    dialogIn: () => {},
+    dialogOut: (d, done) => done(),
+    menuIn: () => {},
+    menuOut: (m, done) => done(),
+    toastIn: () => {},
+    saved: (btn, done) => done(),
+    swapClass: mutate => mutate(),
+    replay: () => {},
+    scrollTo: (el, done) => { el.scrollIntoView({ behavior: REDUCE.matches ? 'auto' : 'smooth', block: 'start' }); done?.(); },
+    lock: () => {},
+    relayout: () => {},
+    armed: () => {},
+    stripIn: () => {},
+  };
+  const FX0 = { ...fx };
+
+  /* ---------- DOM ---------- */
+  const grid = $('#grid'), head = $('#grid-head'), roster = $('#roster'), foot = $('#grid-foot'), empty = $('#empty');
+  const alist = $('#alist'), aempty = $('#aempty'), summary = $('#summary'), barLabel = $('#bar-label'), title = $('#title'), context = $('#context');
+  const menuBtn = $('#class-btn'), menu = $('#class-menu'), menuList = $('#menu-list');
+  const live = $('#live'), toast = $('#toast'), toastText = $('#toast-text');
+  const rec = $('#rec'), recForm = $('#rec-form'), recFields = $('#rec-fields'), recErrs = $('#rec-errs'), recTitle = $('#rec-title'), recSave = $('#rec-save');
+  const confirmDlg = $('#confirm'), q = $('#q'), sortSel = $('#sort'), onlyBelow = $('#only-below');
+  const CHEV = '<svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5l4.5 4.5L6 12.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const TICK = '<svg class="tick" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.3l2.3 2.3 4.7-5" pathLength="1"/></svg>';
+  const rowEl = sid => roster.querySelector(`.st[data-id="${CSS.escape(sid)}"]`);
+  const student = (c, id) => c.students.find(s => s.id === id);
+  const assess = (c, id) => c.assessments.find(a => a.id === id);
+
+  const S = { q: '', sort: 'surname', below: false, open: null, openA: null, undo: null };
+
+  let liveT;
+  const announce = (msg, wait = 30) => { clearTimeout(liveT); if (wait < 100) live.textContent = ''; liveT = setTimeout(() => { live.textContent = msg; }, wait); };
+  const announceSoon = msg => announce(msg, 600);   // fast mark entry: only the latest commit is read
+
+  /* ---------- Rendering ---------- */
+  function headHTML(c) {
+    return `<span class="hl">Student</span><span class="hl hl--num">Target</span>` +
+      c.assessments.map((a, j) => `<button class="ah" type="button" data-goto="${a.id}" data-c="${j}" data-dir aria-label="${esc(a.title)}, out of ${a.outOf}${a.counts ? '' : ', does not count toward the average'}. Open it in the assessments list"><span class="ah__t">${esc(a.title)}</span><span class="ah__of num">/${a.outOf}${a.counts ? '' : '*'}</span></button>`).join('') +
+      `<span class="hl hl--num">Average</span><span class="hl hl--num">Working at</span>`;
+  }
+  function atHTML(st, f) {
+    const g = grade(f.avg[st.id]), below = isBelow(st, f);
+    return `<span class="vh">Working at grade </span>${gradeTxt(g)}${below ? '<span class="below">below<span class="vh"> target</span></span>' : ''}`;
+  }
+  function rowHTML(c, st, f) {
+    const sid = st.id, nm = esc(st.name), fn = esc(firstName(st.name)), g = grade(f.avg[sid]);
+    const cells = c.assessments.map((a, j) => {
+      const m = c.marks[sid]?.[a.id];
+      return `<label class="cell" data-c="${j}"><span class="cell__t">${esc(a.title)}<span class="cell__mean">mean <b data-mean-of="${a.id}">${pct(f.mean[a.id])}</b></span></span>` +
+        `<input class="mark" type="text" inputmode="numeric" autocomplete="off" enterkeyhint="next" placeholder="–" value="${m ?? ''}" aria-label="${nm}, ${esc(a.title)}, out of ${a.outOf}" data-s="${sid}" data-a="${a.id}">` +
+        `<span class="cell__of num">/${a.outOf}</span><i class="wash" aria-hidden="true"></i></label>`;
+    }).join('');
+    return `<div class="st__in"><div class="st__row">` +
+      `<i class="wash wash--row" aria-hidden="true"></i>` +
+      `<span class="st__name"><button class="name" type="button" id="n-${sid}" aria-expanded="false" aria-controls="d-${sid}" data-dir>${CHEV}<span class="name__t">${esc(listName(st.name))}</span></button></span>` +
+      `<span class="st__target num"><span class="lbl" aria-hidden="true">${isBelow(st, f) ? 'below target' : 'target'} </span><span class="vh">Target grade </span>${st.target}</span>` +
+      `<div class="marks" id="m-${sid}"><div class="marks__in"><div class="marks__list">${cells}</div></div></div>` +
+      `<span class="st__avg num"><span class="delta" hidden></span><span class="vh">Average </span><b data-avg>${pct(f.avg[sid])}</b><i class="wash" aria-hidden="true"></i></span>` +
+      `<span class="st__at num${isBelow(st, f) ? ' is-below' : ''}">${atHTML(st, f)}</span>` +
+      `</div><div class="st__err"><p class="err" id="err-${sid}"></p></div>` +
+      `<div class="more" id="d-${sid}" inert><div class="more__in"><div class="more__body">` +
+      `<p class="only-narrow" data-grade-line>Working at grade ${gradeTxt(g)}, target ${st.target}.</p>` +
+      `<p>Candidate ${st.cand}. Attendance ${nf1.format(st.attend)}%. Extra time: ${st.extra ? 'yes' : 'no'}. Joined ${dLong(st.joined)}.</p>` +
+      `<div class="more__acts"><button class="btn-t" type="button" data-edit-s="${sid}" data-dir><span class="u">Edit ${poss(fn)} record</span></button>` +
+      `<button class="btn-t btn-t--danger" type="button" data-del-s="${sid}" data-dir><span class="u">Delete ${fn}</span></button></div>` +
+      `</div></div></div></div>`;
+  }
+  function buildRow(c, st, f) {
+    const li = document.createElement('li');
+    li.className = 'st'; li.dataset.id = st.id; li.dataset.flipId = st.id; li.dataset.rv = '';
+    li.innerHTML = rowHTML(c, st, f);
+    li.classList.toggle('is-under', isBelow(st, f));
+    $$('[data-avg], [data-mean-of]', li).forEach(b => { b._v = b.dataset.avg !== undefined ? f.avg[st.id] : f.mean[b.dataset.meanOf]; });
+    return li;
+  }
+  function footHTML(c, f) {
+    return `<span class="foot__lbl">Class mean</span><span></span>` +
+      c.assessments.map((a, j) => `<span class="mean num" data-c="${j}"><span class="vh">${esc(a.title)} mean </span><b data-mean="${a.id}">${pct(f.mean[a.id])}</b><i class="wash" aria-hidden="true"></i></span>`).join('') +
+      `<span class="mean mean--class num"><span class="vh">Class average </span><b data-class-avg>${pct(f.classAvg)}</b><i class="wash" aria-hidden="true"></i></span><span></span>`;
+  }
+  function stripHTML(c, a, f, big) {
+    const mean = f.mean[a.id], seen = {};
+    const dots = marksFor(c, a.id).sort((x, y) => x - y).map(m => {
+      const k = seen[m] = (seen[m] || 0) + 1, x = m * 100 / a.outOf;
+      return `<i class="dot" style="left:${x}%;--k:${k - 1}" data-x="${x}"></i>`;
+    }).join('');
+    return `<span class="strip${big ? ' strip--big' : ''}" aria-hidden="true" data-mx="${mean ?? ''}">${mean != null ? `<i class="strip__mean" style="left:${mean}%"></i>` : ''}${dots}</span>`;
+  }
+  function arHTML(c, a, f) {
+    const s = stats(marksFor(c, a.id)), n = marksFor(c, a.id).length;
+    const sum = s ? `lowest ${s.lo}, median ${s.med}, highest ${s.hi}` : 'No marks yet';
+    return `<h3 class="ar__h3"><button class="ar__h" type="button" id="ah-${a.id}" aria-expanded="false" aria-controls="ad-${a.id}" data-dir>` +
+      `<span class="ar__date">${dShort(a.date)}</span>` +
+      `<span class="ar__title"><span class="u">${esc(a.title)}</span><span class="ar__kind">${a.kind}${a.counts ? '' : ', does not count'}</span></span>` +
+      `<span class="ar__meta">out of ${a.outOf}, weight ${fmtW(a.weight)}</span>` +
+      `<span class="ar__plot">${stripHTML(c, a, f)}<span class="ar__sum">${sum}</span></span>${CHEV}</button></h3>` +
+      `<div class="more" id="ad-${a.id}" inert><div class="more__in"><div class="more__body ar__body">` +
+      `<div class="bigplot">${stripHTML(c, a, f, true)}<span class="bigplot__ax" aria-hidden="true"><span>0</span><span>${a.outOf}</span></span>` +
+      `<p class="bigplot__cap">${n ? `${plural(n, 'mark', 'marks')}: ${sum}. Mean ${pct(f.mean[a.id])}, shown by the tick.` : 'No marks yet.'}</p></div>` +
+      `<dl class="facts"><dt>Date set</dt><dd>${dLong(a.date)}</dd><dt>Kind</dt><dd>${a.kind}</dd><dt>Out of</dt><dd>${a.outOf}</dd>` +
+      `<dt>Weight</dt><dd>${fmtW(a.weight)}</dd><dt>Counts toward the average</dt><dd>${a.counts ? 'Yes' : 'No'}</dd><dt>Handed in</dt><dd>${n} of ${c.students.length}</dd></dl>` +
+      `<div class="more__acts"><button class="btn-t" type="button" data-edit-a="${a.id}" data-dir><span class="u">Edit assessment</span></button>` +
+      `<button class="btn-t btn-t--danger" type="button" data-del-a="${a.id}" data-dir><span class="u">Delete assessment</span></button></div>` +
+      `</div></div></div>`;
+  }
+  function buildAr(c, a, f) {
+    const li = document.createElement('li');
+    li.className = 'ar'; li.id = `as-${a.id}`; li.dataset.a = a.id;
+    li.innerHTML = `<i class="wash wash--row" aria-hidden="true"></i>${arHTML(c, a, f)}`;
+    if (S.openA === a.id) setOpenA(li, true, true);
+    return li;
+  }
+  function renderAssessments(c = cls(), f = figures(c)) {
+    alist.replaceChildren(...c.assessments.map(a => buildAr(c, a, f)));
+    aempty.hidden = c.assessments.length > 0;
+    aempty.innerHTML = `<p>${esc(shortName(c))} has no assessments yet.</p><button class="btn" type="button" data-add="assessment" data-dir>Add the first assessment</button>`;
+  }
+  function renderSummary(c, f, from) {
+    const n = c.students.length;
+    let html;
+    if (!n) html = 'No students yet. Add students and assessments to see the class average.';
+    else if (f.classAvg == null) html = `No counted marks yet for ${plural(n, 'student', 'students')}.`;
+    else html = `Class average <b class="fig num" data-fig>${pct(from ?? f.classAvg)}</b> across ${plural(f.counted, 'counted assessment', 'counted assessments')}. ` +
+      (f.below === 0 ? 'No student is working below their target grade.' : `${f.below} of\u00a0${plural(n, 'student', 'students')} ${f.below === 1 ? 'is' : 'are'} working below their target grade.`);
+    summary.innerHTML = html;
+    barLabel.innerHTML = f.classAvg == null ? esc(c.name) : `${esc(shortName(c))} average <b class="fig num" data-fig>${pct(from ?? f.classAvg)}</b>`;
+    $$('[data-fig]').forEach(b => { b._v = from ?? f.classAvg; });
+  }
+  function renderHero(c, f) {
+    title.textContent = c.name;
+    document.title = `Mark book, ${c.name}`;
+    $('[data-class-name]').textContent = c.name;
+    context.textContent = `Year ${c.year}, ${c.room}, autumn term. Ms Okafor, science.`;
+    renderSummary(c, f);
+  }
+  function renderGrid(c = cls(), f = figures(c)) {
+    grid.style.setProperty('--marks', c.assessments.length ? `repeat(${c.assessments.length}, minmax(var(--col-min), 6rem))` : ' ');
+    head.innerHTML = headHTML(c);
+    roster.replaceChildren(...c.students.map(st => buildRow(c, st, f)));
+    foot.innerHTML = footHTML(c, f);
+    $('[data-class-avg]', foot)._v = f.classAvg;
+    $$('[data-mean]', foot).forEach(b => { b._v = f.mean[b.dataset.mean]; });
+    if (S.open && rowEl(S.open)) setOpen(S.open, true, true); else S.open = null;
+    applyView(false);
+  }
+  function renderClass() {
+    const c = cls(), f = figures(c);
+    renderHero(c, f);
+    renderGrid(c, f);
+    renderAssessments(c, f);
+    fx.armed();
+  }
+
+  /* Values that change after a commit, a delete or an edit; rolled where the GSAP layer is active */
+  function refreshFigures(f = figures(cls())) {
+    const c = cls();
+    for (const st of c.students) {
+      const li = rowEl(st.id);
+      if (!li) continue;
+      fx.roll($('[data-avg]', li), f.avg[st.id]);
+      paintGrade(li, st, f);
+      $$('[data-mean-of]', li).forEach(b => fx.roll(b, f.mean[b.dataset.meanOf]));
+    }
+    $$('[data-mean]', foot).forEach(b => fx.roll(b, f.mean[b.dataset.mean]));
+    fx.roll($('[data-class-avg]', foot), f.classAvg);
+    const old = $('[data-fig]')?._v;
+    renderSummary(c, f, old ?? undefined);
+    $$('[data-fig]').forEach(b => fx.roll(b, f.classAvg));
+    foot.hidden = !c.students.length;
+  }
+  function paintGrade(li, st, f) {
+    const at = $('.st__at', li);
+    li.classList.toggle('is-under', isBelow(st, f));
+    $('.st__target .lbl', li).textContent = isBelow(st, f) ? 'below target ' : 'target ';
+    at.classList.toggle('is-below', isBelow(st, f));
+    at.innerHTML = atHTML(st, f);
+    $('[data-grade-line]', li).textContent = `Working at grade ${gradeTxt(grade(f.avg[st.id]))}, target ${st.target}.`;
+  }
+  function refreshAr(aid) {
+    const c = cls(), a = assess(c, aid), old = $(`#as-${CSS.escape(aid)}`);
+    if (!a || !old) return;
+    old.replaceWith(buildAr(c, a, figures(c)));
+  }
+
+  /* ---------- Find, sort, filter ---------- */
+  function visibleRows() { return $$('.st:not([hidden])', roster); }
+  function compare(f) {
+    const byName = (x, y) => sortKey(x.name).localeCompare(sortKey(y.name), 'en-GB');
+    const byAvg = dir => (x, y) => {
+      const a = f.avg[x.id], b = f.avg[y.id];
+      if (a == null || b == null) return (a == null) - (b == null) || byName(x, y);
+      return dir * (a - b) || byName(x, y);
+    };
+    return { surname: byName, 'avg-desc': byAvg(-1), 'avg-asc': byAvg(1), cand: (x, y) => x.cand - y.cand }[S.sort];
+  }
+  function matches(st, f) {
+    const t = S.q.trim().toLowerCase();
+    return (!t || st.name.toLowerCase().includes(t) || listName(st.name).toLowerCase().includes(t) || String(st.cand).includes(t)) && (!S.below || isBelow(st, f));
+  }
+  function applyView(animate, opts) {
+    const c = cls(), f = figures(c), list = [...c.students].sort(compare(f));
+    const mutate = () => {
+      for (const st of list) { const li = rowEl(st.id); if (!li) continue; roster.append(li); li.hidden = !matches(st, f); }
+      if (S.open && rowEl(S.open)?.hidden) { setOpen(S.open, false, true); S.open = null; }
+      const shown = list.filter(st => matches(st, f)).length, sn = esc(shortName(c));
+      empty.hidden = shown > 0;
+      if (!c.students.length) empty.innerHTML = `<p>${sn} has no students yet.</p><button class="btn" type="button" data-add="student" data-dir>Add the first student</button>`;
+      else if (!shown && S.q.trim()) empty.innerHTML = `<p>No student in ${sn} matches “${esc(S.q.trim())}”.</p><button class="btn-t" type="button" data-clear data-dir><span class="u">Clear the search</span></button>`;
+      else if (!shown) empty.innerHTML = `<p>No student in ${sn} is working below their target grade.</p><button class="btn-t" type="button" data-all data-dir><span class="u">Show every student</span></button>`;
+      foot.hidden = !c.students.length;
+    };
+    hideRuler(gridScope);
+    if (animate) fx.flip($$('.st', roster), mutate, opts); else mutate();
+    return list.filter(st => matches(st, f)).length;
+  }
+  function viewMessage() {
+    const c = cls(), n = applyView(true), sn = shortName(c), t = S.q.trim();
+    if (t) return n ? `${plural(n, 'student', 'students')} in ${sn} ${n === 1 ? 'matches' : 'match'} “${t}”${S.below ? ' and below target' : ''}.` : `No student in ${sn} matches “${t}”.`;
+    if (S.below) return n ? `${plural(n, 'student', 'students')} in ${sn} ${n === 1 ? 'is' : 'are'} working below their target grade.` : `No student in ${sn} is working below their target grade.`;
+    return `Showing all ${plural(c.students.length, 'student', 'students')} in ${sn}.`;
+  }
+  let qT;
+  q.addEventListener('input', () => {
+    q.closest('.find').classList.toggle('has-value', q.value !== '');
+    clearTimeout(qT);
+    qT = setTimeout(() => { S.q = q.value; announce(viewMessage()); }, 120);
+  });
+  $('#find-form').addEventListener('submit', e => { e.preventDefault(); clearTimeout(qT); S.q = q.value; announce(viewMessage()); });
+  sortSel.addEventListener('change', () => {
+    S.sort = sortSel.value;
+    applyView(true, { duration: 0.6, stagger: 0.02 });
+    announce({ surname: 'Sorted by surname, A to Z.', 'avg-desc': 'Sorted by average, highest first.', 'avg-asc': 'Sorted by average, lowest first.', cand: 'Sorted by candidate number.' }[S.sort]);
+  });
+  onlyBelow.addEventListener('change', () => { S.below = onlyBelow.checked; announce(viewMessage()); });
+  function clearFind(focus) {
+    q.value = ''; S.q = ''; q.closest('.find').classList.remove('has-value');
+    announce(viewMessage());
+    if (focus) q.focus();
+  }
+
+  /* ---------- Accordions ---------- */
+  let settleT;
+  function settled() {
+    clearTimeout(settleT);
+    settleT = setTimeout(() => { fx.relayout(); reparkAll(); }, REDUCE.matches ? 0 : tok('--dur-acc') * 1000 + 60);
+  }
+  function syncInert(li) {
+    const m = $('.marks', li);
+    if (NARROW.matches && !li.classList.contains('is-open')) m.setAttribute('inert', ''); else m.removeAttribute('inert');
+  }
+  function setOpen(sid, on, quiet) {
+    const li = rowEl(sid);
+    if (!li) return;
+    li.classList.toggle('is-open', on);
+    $('.name', li).setAttribute('aria-expanded', String(on));
+    $('.more', li).inert = !on;
+    syncInert(li);
+    if (on && !quiet) fx.details($('.more__body', li), NARROW.matches ? $('.marks__list', li) : null);
+    if (!quiet) settled();
+  }
+  function toggleStudent(sid) {
+    const on = S.open !== sid;
+    if (S.open && S.open !== sid) setOpen(S.open, false);
+    setOpen(sid, on);
+    S.open = on ? sid : null;
+  }
+  function setOpenA(li, on, quiet) {
+    li.classList.toggle('is-open', on);
+    $('.ar__h', li).setAttribute('aria-expanded', String(on));
+    $('.more', li).inert = !on;
+    if (on && !quiet) { fx.details($('.facts', li).parentElement); fx.stripIn(li, true); }
+    if (!quiet) settled();
+  }
+  function toggleAssessment(aid, force) {
+    const li = $(`#as-${CSS.escape(aid)}`);
+    if (!li) return;
+    const on = force ?? S.openA !== aid;
+    if (S.openA && S.openA !== aid) { const o = $(`#as-${CSS.escape(S.openA)}`); if (o) setOpenA(o, false); }
+    if (on !== li.classList.contains('is-open')) setOpenA(li, on);
+    S.openA = on ? aid : null;
+  }
+  NARROW.addEventListener('change', () => { $$('.st', roster).forEach(syncInert); hideRuler(gridScope); });
+
+  /* ---------- P1 reading ruler: follows the hovered row on fine pointers, follows focus, parks on tap ---------- */
+  const gridScope = { box: grid, bar: $('#ruler'), guide: $('#guide'), row: null, col: null };
+  const listScope = { box: $('#alist-wrap'), bar: $('#aruler'), row: null };
+  function place(el, prop, value, size) {
+    const was = el.classList.contains('is-on');
+    if (!was) el.classList.add('no-tr');
+    el.style[size[0]] = size[1];
+    el.style.transform = prop === 'y' ? `translate3d(0, ${value}px, 0)` : `translate3d(${value}px, 0, 0)`;
+    if (!was) { void el.offsetWidth; el.classList.remove('no-tr'); }
+    el.classList.add('is-on');
+  }
+  function bandOf(scope, t) {
+    if (!t || !t.closest) return null;
+    if (scope === listScope) return t.closest('.ar__h');
+    return NARROW.matches ? (t.closest('.cell') || t.closest('.st__name')) : t.closest('.st__row');
+  }
+  function setHot(scope, band, col) {
+    if (band !== scope.row) {
+      scope.row?.closest('.st, .ar')?.classList.remove('is-hot');
+      scope.row = band;
+      if (band) { const b = scope.box.getBoundingClientRect(), r = band.getBoundingClientRect(); place(scope.bar, 'y', r.top - b.top, ['height', `${r.height}px`]); band.closest('.st, .ar')?.classList.add('is-hot'); }
+      else scope.bar.classList.remove('is-on');
+    }
+    if (scope.guide && col !== scope.col) {
+      $$('.ah.is-hot', head).forEach(h => h.classList.remove('is-hot'));
+      scope.col = col;
+      const h = col == null ? null : $(`.ah[data-c="${col}"]`, head);
+      if (h) { const b = scope.box.getBoundingClientRect(), r = h.getBoundingClientRect(); place(scope.guide, 'x', r.left - b.left, ['width', `${r.width}px`]); h.classList.add('is-hot'); }
+      else scope.guide.classList.remove('is-on');
+    }
+  }
+  function hideRuler(scope) { setHot(scope, null, null); }
+  const colOf = t => { const el = t.closest?.('[data-c]'); return el && !NARROW.matches ? +el.dataset.c : null; };
+  function repark(scope) {
+    const a = document.activeElement, row = scope.row;
+    scope.row = null; scope.col = null;
+    if (scope.ptr?.isConnected) setHot(scope, bandOf(scope, scope.ptr), colOf(scope.ptr));
+    else if (scope.box.contains(a)) setHot(scope, bandOf(scope, a), colOf(a));
+    else if (row?.isConnected && !row.closest('[hidden]')) setHot(scope, row, null);
+    else hideRuler(scope);
+  }
+  const reparkAll = () => { repark(gridScope); repark(listScope); };
+  for (const scope of [gridScope, listScope]) {
+    const box = scope.box;
+    box.addEventListener('pointermove', e => { if (e.pointerType === 'mouse' && FINE.matches) { scope.ptr = e.target; setHot(scope, bandOf(scope, e.target), colOf(e.target)); } });
+    box.addEventListener('pointerleave', e => { if (e.pointerType !== 'mouse') return; scope.ptr = null; scope.box.contains(document.activeElement) ? repark(scope) : hideRuler(scope); });
+    box.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') setHot(scope, bandOf(scope, e.target), colOf(e.target)); });
+    box.addEventListener('focusin', e => setHot(scope, bandOf(scope, e.target), colOf(e.target)));
+    box.addEventListener('focusout', e => { if (!box.contains(e.relatedTarget)) hideRuler(scope); });
+  }
+  addEventListener('resize', () => { hideRuler(gridScope); hideRuler(listScope); });
+
+  /* ---------- HV2, HV3, HV4: record the side the pointer entered and left ---------- */
+  const side = (el, e) => { const r = el.getBoundingClientRect(); return e.clientX < r.left + r.width / 2 ? 'left' : 'right'; };
+  document.addEventListener('pointerover', e => {
+    if (e.pointerType !== 'mouse') return;
+    const el = e.target.closest?.('[data-dir]');
+    if (!el || el.contains(e.relatedTarget)) return;
+    const s = side(el, e);
+    el.style.setProperty('--from', s); el.style.setProperty('--fx', s === 'left' ? '0%' : '100%');
+    if (el.classList.contains('ah')) el.dataset.hl = 'in';
+  });
+  document.addEventListener('pointerout', e => {
+    if (e.pointerType !== 'mouse') return;
+    const el = e.target.closest?.('[data-dir]');
+    if (!el || el.contains(e.relatedTarget)) return;
+    const s = side(el, e);
+    el.style.setProperty('--from', s); el.style.setProperty('--fx', s === 'left' ? '0%' : '100%');
+    if (el.classList.contains('ah')) {
+      el.dataset.hl = 'out';
+      setTimeout(() => { if (el.dataset.hl === 'out') { el.dataset.hl = 'reset'; requestAnimationFrame(() => requestAnimationFrame(() => { if (el.dataset.hl === 'reset') delete el.dataset.hl; })); } }, 380);
+    }
+  });
+
+  /* ---------- Mark entry and the signature: mark propagation ---------- */
+  let focusedAt = null;
+  roster.addEventListener('focusin', e => {
+    const inp = e.target.closest('.mark');
+    if (!inp) return;
+    focusedAt = inp;
+    inp.select();
+    requestAnimationFrame(() => { if (document.activeElement === inp && focusedAt === inp) inp.select(); });   // after a click has placed its caret
+  });
+  roster.addEventListener('mouseup', e => { if (e.target === focusedAt) { e.preventDefault(); focusedAt = null; } });
+  roster.addEventListener('focusout', e => { const inp = e.target.closest('.mark'); if (inp) commitMark(inp); });
+  roster.addEventListener('input', e => {
+    const inp = e.target.closest('.mark');
+    if (!inp || inp.getAttribute('aria-invalid') !== 'true') return;
+    const a = assess(cls(), inp.dataset.a);
+    if (a && parseMark(inp.value, a.outOf).ok) clearMarkError(inp);
+  });
+  roster.addEventListener('keydown', e => {
+    const inp = e.target.closest('.mark');
+    if (!inp) return;
+    focusedAt = null;
+    if (e.key === 'Escape') {
+      const c = cls(), v = c.marks[inp.dataset.s]?.[inp.dataset.a];
+      inp.value = v ?? ''; clearMarkError(inp); inp.select(); e.preventDefault();
+      announce('Mark put back.');
+      return;
+    }
+    if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'].includes(e.key) || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    const caret = { start: inp.selectionStart === 0 && inp.selectionEnd === 0, end: inp.selectionStart === inp.value.length, all: inp.value.length > 0 && inp.selectionStart === 0 && inp.selectionEnd === inp.value.length };
+    const rows = visibleRows(), li = inp.closest('.st'), r = rows.indexOf(li), cIdx = +inp.closest('.cell').dataset.c, cols = cls().assessments.length;
+    let target = null;
+    if (NARROW.matches) {   // one student's marks run down the screen: Up, Down and Enter move between them
+      const k = { ArrowUp: 'ArrowUp', ArrowDown: 'ArrowDown', Enter: 'ArrowDown' }[e.key];
+      const n = k && nextCell({ r: cIdx, c: 0 }, k, { rows: cols, cols: 1 });
+      if (n) target = $(`.cell[data-c="${n.r}"] .mark`, li);
+    } else {
+      const n = nextCell({ r, c: cIdx }, e.key, { rows: rows.length, cols }, caret);
+      if (n) target = $(`.cell[data-c="${n.c}"] .mark`, rows[n.r]);
+    }
+    if (!target && e.key !== 'Enter') return;
+    e.preventDefault();
+    if (!commitMark(inp)) return;
+    if (target) { target.focus({ preventScroll: false }); target.select(); } else inp.select();
+  });
+  function showMarkError(inp, st, a) {
+    const li = inp.closest('.st'), p = $('.err', li);
+    p.textContent = markErr(st, a);
+    inp.setAttribute('aria-invalid', 'true');
+    inp.setAttribute('aria-describedby', p.id);
+    inp.closest('.cell').classList.add('is-bad');
+    li.classList.add('has-err');
+    settled();
+  }
+  function clearMarkError(inp) {
+    const li = inp.closest('.st');
+    inp.removeAttribute('aria-invalid'); inp.removeAttribute('aria-describedby');
+    inp.closest('.cell').classList.remove('is-bad');
+    if (!$('.mark[aria-invalid="true"]', li) && li.classList.contains('has-err')) { li.classList.remove('has-err'); settled(); }
+  }
+  function commitMark(inp) {
+    const c = cls(), st = student(c, inp.dataset.s), a = assess(c, inp.dataset.a);
+    if (!st || !a) return false;
+    const p = parseMark(inp.value, a.outOf);
+    if (!p.ok) { showMarkError(inp, st, a); announce(markErr(st, a)); return false; }
+    clearMarkError(inp);
+    const old = c.marks[st.id]?.[a.id] ?? null;
+    inp.value = p.value ?? '';
+    if (old === p.value) return true;
+    const before = figures(c);
+    setMark(c, st.id, a.id, p.value);
+    save();
+    propagate(inp, st, a, before, figures(c));
+    announceSoon(markMessage(st, a, p.value, before, figures(c)));
+    return true;
+  }
+  function propagate(inp, st, a, before, after) {
+    const c = cls(), li = inp.closest('.st'), cell = inp.closest('.cell'), c0 = +cell.dataset.c, narrow = NARROW.matches;
+    $$('.cell.is-fresh').forEach(x => x.classList.remove('is-fresh'));
+    cell.classList.add('is-fresh');
+    $$('.delta', roster).forEach(d => { d.hidden = true; });
+    const washes = [{ el: $('.wash', cell), d: 0 }];
+    $$('.cell', li).forEach(x => { if (x !== cell) washes.push({ el: $('.wash', x), d: Math.abs(+x.dataset.c - c0) }); });
+    let avgD, meanEl, meanD;
+    if (narrow) { avgD = c0 + 1; meanEl = $('[data-mean-of]', cell); meanD = 1; }
+    else {
+      const rows = visibleRows(), r0 = rows.indexOf(li);
+      rows.forEach((row, r) => { if (row !== li) washes.push({ el: $(`.cell[data-c="${c0}"] .wash`, row), d: Math.abs(r - r0) }); });
+      avgD = c.assessments.length - c0;
+      meanEl = $(`[data-mean="${a.id}"]`, foot); meanD = rows.length - r0;
+      washes.push({ el: $('.wash', meanEl.parentElement), d: meanD });
+    }
+    const avgEl = $('[data-avg]', li);
+    washes.push({ el: $('.wash', avgEl.parentElement), d: avgD });
+    const o = before.avg[st.id], n = after.avg[st.id];
+    const delta = o == null || n == null ? null : round1(n) - round1(o);
+    // other rows showing this assessment's mean (narrow lists) take the new value quietly
+    $$(`[data-mean-of="${CSS.escape(a.id)}"]`, roster).forEach(b => { if (b !== meanEl) setNum(b, after.mean[a.id]); });
+    if (narrow) setNum($(`[data-mean="${CSS.escape(a.id)}"]`, foot), after.mean[a.id]);
+    else $$(`[data-mean-of="${CSS.escape(a.id)}"]`, li).forEach(b => setNum(b, after.mean[a.id]));
+    renderSummary(c, after, before.classAvg);
+    fx.propagate({
+      input: inp, washes,
+      avg: { el: avgEl, to: n, d: avgD },
+      mean: { el: meanEl, to: after.mean[a.id], d: meanD },
+      chip: { el: $('.delta', li), text: delta == null || !a.counts ? '' : signed(delta), d: avgD },
+      grade: () => paintGrade(li, st, after),
+      last: [...$$('[data-fig]'), $('[data-class-avg]', foot)].map(el => ({ el, to: after.classAvg })),
+    });
+    refreshAr(a.id);
+  }
+
+  /* ---------- Class menu ---------- */
+  function renderMenu() {
+    const items = db.classes.map(c => `<button class="mi" type="button" role="menuitemradio" aria-checked="${c.id === db.current}" data-class="${c.id}" tabindex="-1"><span class="mi__name">${esc(c.name)}</span><span class="mi__sub">Year ${c.year}, ${esc(c.room)}, ${plural(c.students.length, 'student', 'students')}</span></button>`).join('');
+    const only = db.classes.length < 2;
+    menuList.innerHTML = `<i class="menu__ind" aria-hidden="true"></i>${items}<div class="menu__sep" role="separator"></div>` +
+      `<button class="mi" type="button" role="menuitem" data-act="add-class" tabindex="-1">Add a class</button>` +
+      `<button class="mi" type="button" role="menuitem" data-act="rename-class" tabindex="-1">Rename this class</button>` +
+      `<button class="mi mi--danger" type="button" role="menuitem" data-act="delete-class" tabindex="-1"${only ? ' aria-disabled="true"' : ''}>Delete this class</button>` +
+      `<button class="mi" type="button" role="menuitem" data-act="reset" tabindex="-1">Reset sample data</button>`;
+  }
+  const menuItems = () => $$('.mi', menuList);
+  function indicate(mi) {
+    const ind = $('.menu__ind', menuList);
+    if (!ind) return;
+    if (!mi) { ind.classList.remove('is-on'); return; }
+    place(ind, 'y', mi.offsetTop, ['height', `${mi.offsetHeight}px`]);
+    ind.classList.toggle('is-danger', mi.classList.contains('mi--danger'));
+  }
+  let menuOpen = false;
+  function openMenu() {
+    renderMenu();
+    menu.hidden = false; menuOpen = true;
+    menuBtn.setAttribute('aria-expanded', 'true');
+    fx.lock(true);
+    const cur = $('.mi[aria-checked="true"]', menuList) || menuItems()[0];
+    fx.menuIn(menu, menuItems(), menuItems().indexOf(cur));
+    cur.focus();
+  }
+  function closeMenu(focusBtn = true) {
+    if (!menuOpen) return;
+    menuOpen = false;
+    menuBtn.setAttribute('aria-expanded', 'false');
+    fx.lock(false);
+    fx.menuOut(menu, () => { if (!menuOpen) menu.hidden = true; });
+    if (focusBtn) menuBtn.focus();
+  }
+  menuBtn.addEventListener('click', () => (menuOpen ? closeMenu() : openMenu()));
+  menuBtn.addEventListener('keydown', e => { if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && !menuOpen) { e.preventDefault(); openMenu(); } });
+  menu.addEventListener('focusin', e => indicate(e.target.closest('.mi')));
+  menu.addEventListener('pointerover', e => { const mi = e.target.closest('.mi'); if (mi) indicate(mi); });
+  menu.addEventListener('pointerdown', e => { const mi = e.target.closest('.mi'); if (mi) indicate(mi); });
+  menu.addEventListener('pointerleave', () => indicate(menu.contains(document.activeElement) ? document.activeElement.closest('.mi') : null));
+  menu.addEventListener('keydown', e => {
+    const items = menuItems(), i = items.indexOf(document.activeElement);
+    const to = { ArrowDown: (i + 1) % items.length, ArrowUp: (i - 1 + items.length) % items.length, Home: 0, End: items.length - 1 }[e.key];
+    if (to !== undefined) { e.preventDefault(); items[to].focus(); }
+    else if (e.key === 'Escape') { e.preventDefault(); closeMenu(); }
+    else if (e.key === 'Tab') { e.preventDefault(); closeMenu(); }
+  });
+  document.addEventListener('pointerdown', e => { if (menuOpen && !menu.contains(e.target) && !menuBtn.contains(e.target)) closeMenu(false); });
+  menu.addEventListener('click', e => {
+    const mi = e.target.closest('.mi');
+    if (!mi) return;
+    if (mi.dataset.class) {
+      const id = mi.dataset.class;
+      closeMenu();
+      if (id !== db.current) switchClass(id);
+      return;
+    }
+    const act = mi.dataset.act;
+    if (act === 'delete-class' && mi.getAttribute('aria-disabled') === 'true') { announce('Keep at least one class. Add another class before deleting this one.'); return; }
+    closeMenu(act !== 'add-class' && act !== 'rename-class' && act !== 'reset' && act !== 'delete-class');
+    if (act === 'add-class') openRecord('class', null, menuBtn);
+    if (act === 'rename-class') openRecord('class', db.current, menuBtn);
+    if (act === 'delete-class') askDeleteClass(menuBtn);
+    if (act === 'reset') askReset(menuBtn);
+  });
+  function switchClass(id) {
+    fx.swapClass(() => {
+      db.current = id; save();
+      S.open = null; S.openA = null;
+      renderClass();
+    });
+    const c = cls();
+    announce(`Showing ${c.name}: ${plural(c.students.length, 'student', 'students')}, ${plural(c.assessments.length, 'assessment', 'assessments')}.`);
+  }
+
+  /* ---------- Record dialog (add and edit students, assessments and classes) ---------- */
+  let recState = { kind: 'student', id: null, trigger: null };
+  const DEFAULTS = {
+    student: () => ({ name: '', cand: '', attend: '', target: '', joined: isoDay(today()), extra: false }),
+    assessment: () => ({ title: '', kind: 'Test', date: isoDay(today()), outOf: '', weight: '1', counts: true }),
+    class: () => ({ name: '', year: 7, room: '' }),
+  };
+  function fieldHTML(f, v) {
+    const id = `f-${f.k}`, eid = `e-${f.k}`, full = f.full ? ' f--full' : '';
+    const err = `<div class="f__err"><p class="err" id="${eid}"></p></div>`;
+    if (f.type === 'bool') return `<div class="f f--bool${full}" data-k="${f.k}"><label class="check"><input type="checkbox" id="${id}" name="${f.k}"${v ? ' checked' : ''}><span class="check__box" aria-hidden="true">${TICK}</span><span>${f.label}</span></label></div>`;
+    if (f.type === 'choice' && f.ui === 'seg') {
+      const idx = f.options.findIndex(o => String(o) === String(v));
+      return `<fieldset class="f seg${full}" data-k="${f.k}" aria-describedby="${eid}"><legend class="f__l">${f.label}</legend>` +
+        `<div class="seg__row${idx >= 0 ? ' is-set' : ''}" style="--i:${Math.max(idx, 0)}"><i class="seg__pill" aria-hidden="true"></i>` +
+        f.options.map((o, i) => `<label class="seg__o"><input type="radio" name="${f.k}" value="${o}"${i === 0 ? ` id="${id}"` : ''}${String(o) === String(v) ? ' checked' : ''}><span>${o}</span></label>`).join('') +
+        `</div>${err}</fieldset>`;
+    }
+    if (f.type === 'choice') {
+      return `<div class="f${full}" data-k="${f.k}"><label class="f__l" for="${id}">${f.label}</label><span class="sel fld"><select class="inp" id="${id}" name="${f.k}" aria-describedby="${eid}">` +
+        f.options.map(o => `<option value="${o}"${String(o) === String(v) ? ' selected' : ''}>${f.show ? f.show(o) : o}</option>`).join('') +
+        `</select><svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 6l4.5 4.5L12.5 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><i class="fld__rule" aria-hidden="true"></i></span>${err}</div>`;
+    }
+    const attrs = { text: 'type="text" autocomplete="off"', int: 'type="text" inputmode="numeric" autocomplete="off"', dec: 'type="text" inputmode="decimal" autocomplete="off"', date: `type="date"${f.notAfterToday ? ` max="${isoDay(today())}"` : ''}` }[f.type];
+    const desc = [f.hint && `h-${f.k}`, eid].filter(Boolean).join(' ');
+    return `<div class="f${full}" data-k="${f.k}"><label class="f__l" for="${id}">${f.label}</label>${f.hint ? `<p class="f__hint" id="h-${f.k}">${f.hint}</p>` : ''}` +
+      `<span class="fld"><input class="inp" id="${id}" name="${f.k}" ${attrs} value="${esc(v ?? '')}" aria-describedby="${desc}"><i class="fld__rule" aria-hidden="true"></i></span>${err}</div>`;
+  }
+  function buildRecord(kind, id) {
+    const c = cls();
+    const r = kind === 'student' ? student(c, id) : kind === 'assessment' ? assess(c, id) : id ? c : null;
+    const v = r ? Object.fromEntries(SCHEMA[kind].map(f => [f.k, f.type === 'dec' ? String(r[f.k]) : r[f.k]])) : DEFAULTS[kind]();
+    const sn = shortName(c);
+    recTitle.textContent = { student: r ? `Edit ${r.name}` : `Add a student to ${sn}`, assessment: r ? `Edit ${r.title}` : `Add an assessment to ${sn}`, class: r ? `Rename ${c.name}` : 'Add a class' }[kind];
+    const verb = r ? 'Save changes' : { student: 'Add student', assessment: 'Add assessment', class: 'Add class' }[kind];
+    $('.swap__a', recSave).textContent = verb;
+    $('.swap__b', recSave).textContent = r ? 'Saved' : 'Added';
+    recSave.classList.remove('is-done');
+    recFields.innerHTML = SCHEMA[kind].map(f => fieldHTML(f, v[f.k])).join('');
+    recErrs.hidden = true; recErrs.innerHTML = '';
+    recState = { kind, id: r ? (kind === 'class' ? c.id : id) : null, trigger: recState.trigger };
+  }
+  recFields.addEventListener('input', e => {
+    const box = e.target.closest('.f.has-err');
+    if (!box) return;
+    const f = SCHEMA[recState.kind].find(x => x.k === box.dataset.k), raw = readForm();
+    if (f && parseField(f, raw[f.k]).ok) {
+      box.classList.remove('has-err');
+      $$('input, select', box).forEach(el => el.removeAttribute('aria-invalid'));
+      $(`[data-field="f-${f.k}"]`, recErrs)?.closest('li')?.remove();
+      if (!$('li', recErrs)) recErrs.hidden = true;
+    }
+  });
+  recFields.addEventListener('change', e => {
+    const radio = e.target.closest('.seg input');
+    if (!radio) return;
+    const row = radio.closest('.seg__row');
+    row.style.setProperty('--i', $$('input', row).indexOf(radio));
+    row.classList.add('is-set');
+  });
+  function openRecord(kind, id, trigger) {
+    recState.trigger = trigger || document.activeElement;
+    buildRecord(kind, id);
+    if (!rec.open) rec.showModal();
+    fx.lock(true);
+    fx.dialogIn(rec);
+    $('input, select', recFields)?.focus();
+  }
+  function closeDialog(d, after) {
+    fx.dialogOut(d, () => { if (d.open) d.close(); fx.lock(false); after?.(); });
+  }
+  function focusBack(trigger, fallback) {
+    const t = trigger?.isConnected && !trigger.closest('[hidden], [inert]') ? trigger : fallback;
+    t?.focus({ preventScroll: true });
+  }
+  function cancelRecord() {
+    const { kind, id, trigger } = recState;
+    closeDialog(rec);
+    focusBack(trigger, title);
+    announce(id ? 'Edit cancelled. Nothing changed.' : `Nothing added. ${kind === 'class' ? 'The class list' : 'The class'} is as it was.`);
+  }
+  rec.addEventListener('cancel', e => { e.preventDefault(); cancelRecord(); });
+  $('[data-cancel]', rec).addEventListener('click', cancelRecord);
+  function readForm() {
+    const raw = {};
+    for (const f of SCHEMA[recState.kind]) {
+      if (f.type === 'bool') raw[f.k] = !!recForm.elements[f.k]?.checked;
+      else if (f.ui === 'seg') raw[f.k] = $(`input[name="${f.k}"]:checked`, recFields)?.value ?? '';
+      else raw[f.k] = recForm.elements[f.k]?.value ?? '';
+    }
+    return raw;
+  }
+  function showErrors(errors) {
+    const keys = Object.keys(errors);
+    for (const f of SCHEMA[recState.kind]) {
+      const box = $(`.f[data-k="${f.k}"]`, recFields);
+      if (!box) continue;
+      const msg = errors[f.k];
+      box.classList.toggle('has-err', !!msg);
+      const p = $('.err', box);
+      if (p) p.textContent = msg || '';
+      $$('input, select', box).forEach(el => (msg ? el.setAttribute('aria-invalid', 'true') : el.removeAttribute('aria-invalid')));
+    }
+    recErrs.hidden = !keys.length;
+    recErrs.innerHTML = keys.length ? `<p>Check ${plural(keys.length, 'field', 'fields')}:</p><ul>${keys.map(k => `<li><a href="#f-${k}" data-field="f-${k}">${esc(errors[k])}</a></li>`).join('')}</ul>` : '';
+    return keys;
+  }
+  recForm.addEventListener('submit', e => { e.preventDefault(); saveRecord(); });
+  recErrs.addEventListener('click', e => { const a = e.target.closest('[data-field]'); if (a) { e.preventDefault(); const el = document.getElementById(a.dataset.field); (el?.closest('.seg') ? $('input:checked', el.closest('.seg')) || el : el)?.focus(); } });
+  function saveRecord() {
+    const { kind, id } = recState, c = cls();
+    const { values, errors } = validateRecord(kind, readForm(), { c, id });
+    const bad = showErrors(errors);
+    if (bad.length) {
+      const first = $(`.f[data-k="${bad[0]}"]`, recFields);
+      ($('input:checked', first) || $('input, select', first))?.focus();
+      announce(`Check ${plural(bad.length, 'field', 'fields')}. ${errors[bad[0]]}`);
+      return;
+    }
+    let done;
+    if (kind === 'student') {
+      if (id) {
+        updateStudent(c, id, values);
+        done = () => {
+          const f = figures(c), li = rowEl(id);
+          li.innerHTML = rowHTML(c, student(c, id), f);
+          $$('[data-avg], [data-mean-of]', li).forEach(b => { b._v = b.dataset.avg !== undefined ? f.avg[id] : f.mean[b.dataset.meanOf]; });
+          if (S.open === id) setOpen(id, true, true);
+          refreshFigures(f); renderAssessments(); applyView(true);
+          $(`[data-edit-s="${CSS.escape(id)}"]`, li)?.focus({ preventScroll: true });
+          announce(`Saved changes to ${values.name}.`);
+        };
+      } else {
+        const st = addStudent(db, c, values);
+        done = () => {
+          if (S.q || S.below) { q.value = ''; S.q = ''; q.closest('.find').classList.remove('has-value'); onlyBelow.checked = false; S.below = false; }
+          const f = figures(c), li = buildRow(c, st, f);
+          li.hidden = true; roster.append(li); syncInert(li);
+          applyView(true);
+          refreshFigures(f); renderAssessments();
+          fx.pulse(li);
+          $('.name', li).focus({ preventScroll: true });
+          li.scrollIntoView?.({ block: 'nearest' });
+          announce(`Added ${st.name} to ${shortName(c)}.`);
+        };
+      }
+    } else if (kind === 'assessment') {
+      const a = id ? (updateAssessment(c, id, values), assess(c, id)) : addAssessment(db, c, values);
+      done = () => {
+        renderGrid(); renderAssessments(); refreshFigures();
+        const h = $(`#ah-${CSS.escape(a.id)}`);
+        if (id) { toggleAssessment(a.id, true); $(`[data-edit-a="${CSS.escape(a.id)}"]`)?.focus({ preventScroll: true }); }
+        else { fx.scrollTo($(`#as-${CSS.escape(a.id)}`), () => h?.focus({ preventScroll: true })); fx.pulse($(`#as-${CSS.escape(a.id)}`)); }
+        announce(id ? `Saved changes to ${a.title}.` : `Added ${a.title} to ${shortName(c)}. Enter its marks in the grid.`);
+      };
+    } else {
+      if (id) updateClass(c, values); else { const n = addClass(db, values); db.current = n.id; S.open = null; S.openA = null; }
+      done = () => {
+        if (id) { renderHero(cls(), figures(cls())); renderGrid(); }
+        else { S.q = ''; q.value = ''; q.closest('.find').classList.remove('has-value'); renderClass(); fx.replay(); }
+        title.focus({ preventScroll: true });
+        fx.scrollTo(title);
+        announce(id ? `Renamed to ${values.name}.` : `Added ${values.name}. It has no students yet.`);
+      };
+    }
+    save();
+    if (rec.open) fx.saved(recSave, () => closeDialog(rec, done));
+    else done();   // the form was submitted without its dialog (scripted use): apply straight away
+  }
+
+  /* ---------- Confirm dialog, delete, undo, reset ---------- */
+  let confirmCb = null, confirmTrigger = null, confirmNo = '';
+  function ask(text, yes, no, trigger, cb, noMsg) {
+    $('#confirm-text').textContent = text;
+    $('[data-yes]', confirmDlg).textContent = yes;
+    $('[data-no] .u', confirmDlg).textContent = no;
+    confirmCb = cb; confirmTrigger = trigger; confirmNo = noMsg;
+    confirmDlg.showModal();
+    fx.lock(true);
+    fx.dialogIn(confirmDlg);
+    $('[data-no]', confirmDlg).focus();
+  }
+  function confirmClose(yes) {
+    const cb = confirmCb;
+    confirmCb = null;
+    closeDialog(confirmDlg);
+    if (yes && cb) cb();
+    else { focusBack(confirmTrigger, title); if (confirmNo) announce(confirmNo); }
+  }
+  $('[data-yes]', confirmDlg).addEventListener('click', () => confirmClose(true));
+  $('[data-no]', confirmDlg).addEventListener('click', () => confirmClose(false));
+  confirmDlg.addEventListener('cancel', e => { e.preventDefault(); confirmClose(false); });
+
+  function showToast(text, payload) {
+    S.undo = payload;
+    toastText.textContent = text;
+    toast.hidden = false;
+    fx.toastIn(toast);
+  }
+  function hideToast() { toast.hidden = true; S.undo = null; }
+  function askDeleteStudent(sid, trigger) {
+    const c = cls(), st = student(c, sid), n = countMarks(c, sid), fn = firstName(st.name);
+    ask(`Delete ${st.name}? ${n ? `Their ${plural(n, 'mark goes', 'marks go')} too. ` : ''}You can undo straight after.`, 'Delete student', 'Keep student', trigger, () => {
+      const li = rowEl(sid), rows = visibleRows(), next = rows[rows.indexOf(li) + 1] || rows[rows.indexOf(li) - 1];
+      const p = deleteStudent(c, sid);
+      save();
+      if (S.open === sid) S.open = null;
+      fx.collapse(li, () => { li.remove(); refreshFigures(); renderAssessments(); applyView(false); fx.relayout(); });
+      const msg = `Deleted ${st.name}${n ? ` and ${plural(n, 'mark', 'marks')}` : ''}.`;
+      showToast(msg, p);
+      announce(`${msg} Undo is at the bottom of the page.`);
+      (next ? $('.name', next) : $('#marks'))?.focus({ preventScroll: true });
+    }, `Kept ${fn}. Nothing deleted.`);
+  }
+  function askDeleteAssessment(aid, trigger) {
+    const c = cls(), a = assess(c, aid), n = marksFor(c, aid).length;
+    ask(`Delete ${a.title}? ${n ? `Its ${plural(n, 'mark goes', 'marks go')} too. ` : ''}You can undo straight after.`, 'Delete assessment', 'Keep assessment', trigger, () => {
+      const p = deleteAssessment(c, aid);
+      save();
+      if (S.openA === aid) S.openA = null;
+      renderGrid(); renderAssessments(); refreshFigures();
+      const msg = `Deleted ${a.title}${n ? ` and ${plural(n, 'mark', 'marks')}` : ''}.`;
+      showToast(msg, p);
+      announce(`${msg} Undo is at the bottom of the page.`);
+      $('#assess-h').focus({ preventScroll: true });
+    }, 'Nothing deleted.');
+  }
+  function askDeleteClass(trigger) {
+    const c = cls(), n = c.students.length, k = c.assessments.length;
+    ask(`Delete ${c.name}? Its ${plural(n, 'student', 'students')}, ${plural(k, 'assessment', 'assessments')} and their marks go too. You can undo straight after.`, 'Delete class', 'Keep class', trigger, () => {
+      const p = deleteClass(db, c.id);
+      save();
+      fx.swapClass(() => { S.open = null; S.openA = null; renderClass(); });
+      const msg = `Deleted ${c.name} with ${plural(n, 'student', 'students')}.`;
+      showToast(msg, p);
+      announce(`${msg} Now showing ${cls().name}.`);
+      title.focus({ preventScroll: true });
+    }, 'Nothing deleted.');
+  }
+  function askReset(trigger) {
+    ask('Reset sample data? Every change made in this tab is replaced by the three sample classes.', 'Reset sample data', 'Keep my changes', trigger, () => {
+      const cur = db.current;
+      db = seed();
+      if (db.classes.some(c => c.id === cur)) db.current = cur;
+      save();
+      hideToast();
+      S.open = null; S.openA = null;
+      renderClass();
+      fx.replay();
+      title.focus({ preventScroll: true });
+      fx.scrollTo(title);
+      announce('Sample data restored: three classes and 21 students.');
+    }, 'Kept your changes.');
+  }
+  function undo() {
+    const p = S.undo;
+    if (!p) return;
+    const was = db.current;
+    const r = restore(db, p);
+    hideToast();
+    save();
+    if (!r) { announce('That class no longer exists, so nothing was restored.'); return; }
+    const c = cls();
+    if (p.kind === 'class' || was !== db.current) { renderClass(); fx.replay(); title.focus({ preventScroll: true }); }
+    else if (p.kind === 'assessment') { renderGrid(); renderAssessments(); refreshFigures(); }
+    else {
+      const f = figures(c), li = buildRow(c, r, f);
+      li.hidden = true; roster.append(li); syncInert(li);
+      applyView(true); refreshFigures(f); renderAssessments();
+      fx.pulse(li);
+      $('.name', li).focus({ preventScroll: true });
+    }
+    const n = p.kind === 'student' ? countMarks(c, r.id) : p.kind === 'assessment' ? Object.keys(p.marks).length : r.students.length;
+    const name = p.kind === 'assessment' ? r.title : r.name;
+    announce(p.kind === 'class' ? `${name} is back with ${plural(n, 'student', 'students')}.` : `${name} is back with ${plural(n, 'mark', 'marks')}.`);
+    if (p.kind === 'assessment') { const h = $(`#ah-${CSS.escape(r.id)}`); fx.pulse($(`#as-${CSS.escape(r.id)}`)); h?.focus({ preventScroll: true }); }
+  }
+
+  /* ---------- One click handler for the page ---------- */
+  document.addEventListener('click', e => {
+    const t = e.target.closest('a[href^="#"], button');
+    if (!t || t.closest('#class-menu, #rec, #confirm')) return;
+    if (t.matches('a[href^="#"]')) {
+      const id = decodeURIComponent(t.getAttribute('href').slice(1)), target = document.getElementById(id);
+      if (!target) return;
+      e.preventDefault();
+      const focusEl = t.dataset.focus ? $(t.dataset.focus) : target;
+      fx.scrollTo(target, () => focusEl.focus({ preventScroll: true }));
+      if (!t.dataset.focus || REDUCE.matches) focusEl.focus({ preventScroll: true });
+      return;
+    }
+    const d = t.dataset;
+    if (d.add) openRecord(d.add, null, t);
+    else if (d.editS) openRecord('student', d.editS, t);
+    else if (d.delS) askDeleteStudent(d.delS, t);
+    else if (d.editA) openRecord('assessment', d.editA, t);
+    else if (d.delA) askDeleteAssessment(d.delA, t);
+    else if (d.goto) {
+      const li = $(`#as-${CSS.escape(d.goto)}`), h = $(`#ah-${CSS.escape(d.goto)}`);
+      toggleAssessment(d.goto, true);
+      fx.scrollTo(li, () => h.focus({ preventScroll: true }));
+      announce(`Opened ${assess(cls(), d.goto).title} in the assessments list.`);
+    }
+    else if (t.classList.contains('name')) toggleStudent(t.closest('.st').dataset.id);
+    else if (t.classList.contains('ar__h')) toggleAssessment(t.closest('.ar').dataset.a);
+    else if (d.clear !== undefined) clearFind(true);
+    else if (d.all !== undefined) { onlyBelow.checked = false; S.below = false; announce(viewMessage()); onlyBelow.focus(); }
+    else if (d.act === 'reset') askReset(t);
+    else if (d.undo !== undefined) undo();
+    else if (d.dismiss !== undefined) { hideToast(); announce('Undo dismissed.'); $('#marks').focus({ preventScroll: true }); }
+  });
+
+  /* ---------- Self-test (#selftest): parsers, maths, records, storage and navigation ---------- */
+  function runSelfTest() {
+    const assert = (cond, msg) => { if (!cond) throw new Error(msg); };
+    const F = (kind, k) => SCHEMA[kind].find(f => f.k === k);
+    try {
+      // parsers, one per type
+      assert(parseField(F('student', 'name'), '  Kemi   Oduya ').value === 'Kemi Oduya', 'text trims and collapses spaces');
+      assert(!parseField(F('student', 'name'), 'K').ok && !parseField(F('student', 'name'), 'x'.repeat(61)).ok, 'text length');
+      assert(parseField(F('student', 'cand'), '4102').value === 4102, 'integer parses');
+      assert(!parseField(F('student', 'cand'), '999').ok && !parseField(F('student', 'cand'), '41.5').ok && !parseField(F('student', 'cand'), '4l02').ok, 'integer range and digits');
+      assert(parseField(F('student', 'attend'), '96.5').value === 96.5 && !parseField(F('student', 'attend'), '96.55').ok && !parseField(F('student', 'attend'), '100.1').ok, 'decimal places and range');
+      assert(parseField(F('assessment', 'weight'), '1.5').value === 1.5 && !parseField(F('assessment', 'weight'), '0.4').ok && !parseField(F('assessment', 'weight'), '5.01').ok, 'weight');
+      assert(parseField(F('student', 'joined'), '2026-09-03').ok && !parseField(F('student', 'joined'), '2026-02-30').ok && !parseField(F('student', 'joined'), isoDay(new Date(today().getTime() + 864e5))).ok, 'date');
+      assert(parseField(F('student', 'extra'), true).value === true && parseField(F('student', 'extra'), false).value === false, 'boolean');
+      assert(parseField(F('student', 'target'), '6').value === 6 && !parseField(F('student', 'target'), '10').ok && !parseField(F('student', 'target'), '').ok, 'choice');
+      assert(parseMark('24', 30).value === 24 && parseMark(' ', 30).value === null && !parseMark('31', 30).ok && !parseMark('2.5', 30).ok && !parseMark('-1', 30).ok, 'marks');
+      // the maths on the sample data, and the demo edit: Tolu Adeyemi, Atomic structure test 21 to 24
+      const t = seed(), c = t.classes[0], f0 = figures(c);
+      assert(pct(f0.avg['c9x1-s1']) === '70.0%' && grade(f0.avg['c9x1-s1']) === 7, 'Tolu before');
+      assert(pct(f0.mean['c9x1-a3']) === '62.5%' && pct(f0.classAvg) === '63.1%' && f0.below === 3 && f0.counted === 4, 'class before');
+      assert(pct(f0.avg['c9x1-s2']) === '53.3%', 'a blank mark is left out, not counted as 0');
+      const tolu = student(c, 'c9x1-s1'), atomic = assess(c, 'c9x1-a3');
+      setMark(c, 'c9x1-s1', 'c9x1-a3', 24);
+      const f1 = figures(c);
+      assert(pct(f1.avg['c9x1-s1']) === '72.7%' && grade(f1.avg['c9x1-s1']) === 8, 'Tolu after');
+      assert(pct(f1.mean['c9x1-a3']) === '63.8%' && pct(f1.classAvg) === '63.4%', 'class after');
+      assert(signed(round1(f1.avg['c9x1-s1']) - round1(f0.avg['c9x1-s1'])) === '+2.7', 'delta chip');
+      assert(markMessage(tolu, atomic, 24, f0, f1) === 'Tolu Adeyemi, Atomic structure test: 24 out of 30. Average now 72.7%, up 2.7. Now working at grade 8. Atomic structure test mean now 63.8%.', 'announcement');
+      setMark(c, 'c9x1-s1', 'c9x1-a4', 2);
+      assert(pct(figures(c).avg['c9x1-s1']) === '72.7%', 'an assessment that does not count leaves the average alone');
+      const c10 = t.classes[1], f10 = figures(c10);
+      assert(pct(f10.avg['c10c-s6']) === '64.0%' && grade(f10.avg['c10c-s6']) === 7, 'grade boundary uses the shown figure');
+      // unique candidate numbers
+      const dup = validateRecord('student', { name: 'Kemi Oduya', cand: '4102', target: '6', attend: '90', joined: '2026-09-03', extra: false }, { c });
+      assert(dup.errors.cand === "4102 is already Tolu Adeyemi's number.", 'unique candidate number');
+      assert(!validateRecord('student', { name: 'Tolu Adeyemi', cand: '4102', target: '6', attend: '96.5', joined: '2026-09-03', extra: false }, { c, id: 'c9x1-s1' }).errors.cand, 'own number is fine');
+      assert(validateRecord('assessment', { title: 'Atomic structure test', kind: 'Test', date: '2026-10-09', outOf: '20', weight: '2', counts: true }, { c, id: 'c9x1-a3' }).errors.outOf === 'Marks for this assessment go up to 26. Use 26 or more.', 'out of cannot drop below a mark');
+      // create, edit, delete and undo
+      const v = validateRecord('student', { name: 'Kemi Oduya', cand: '4170', target: '6', attend: '94', joined: '2026-09-03', extra: true }, { c });
+      assert(!Object.keys(v.errors).length, 'valid student');
+      const kemi = addStudent(t, c, v.values);
+      assert(c.students.length === 9 && student(c, kemi.id).cand === 4170, 'create');
+      updateStudent(c, kemi.id, { target: 7 });
+      assert(student(c, kemi.id).target === 7 && student(c, kemi.id).name === 'Kemi Oduya', 'edit');
+      const pS = deleteStudent(c, 'c9x1-s1');
+      assert(!student(c, 'c9x1-s1') && !c.marks['c9x1-s1'] && countMarks({ marks: { x: pS.marks } }, 'x') === 5, 'delete student and marks');
+      restore(t, pS);
+      assert(c.students[0].id === 'c9x1-s1' && countMarks(c, 'c9x1-s1') === 5, 'undo student');
+      const atomicMarks = JSON.stringify(c.students.map(st => c.marks[st.id]['c9x1-a3'] ?? null)), order = c.assessments.map(x => x.id).join();
+      const pA = deleteAssessment(c, 'c9x1-a3');
+      assert(!assess(c, 'c9x1-a3') && c.students.every(s => c.marks[s.id]['c9x1-a3'] === undefined) && Object.keys(pA.marks).length === 8, 'delete assessment and its marks');
+      restore(t, pA);
+      assert(JSON.stringify(c.students.map(st => c.marks[st.id]['c9x1-a3'] ?? null)) === atomicMarks && c.assessments.map(x => x.id).join() === order, 'undo assessment');
+      const pC = deleteClass(t, 'c9x1');
+      assert(t.classes.length === 2 && t.current === 'c10c', 'delete class');
+      restore(t, pC);
+      assert(t.classes[0].id === 'c9x1' && t.current === 'c9x1', 'undo class');
+      // reset is the seed, and the seed is stable
+      assert(JSON.stringify(seed()) === JSON.stringify(seed()), 'reset data');
+      // storage falls back to memory when sessionStorage throws
+      const blocked = makeStore(() => { throw new Error('blocked'); });
+      assert(blocked.save({ v: 1, classes: [{ students: [], assessments: [], marks: {} }] }) === false && blocked.load().v === 1, 'storage fallback');
+      // cell navigation
+      const D = { rows: 8, cols: 5 };
+      assert(nextCell({ r: 0, c: 2 }, 'ArrowDown', D).r === 1 && nextCell({ r: 0, c: 2 }, 'Enter', D).r === 1, 'down and enter move a row');
+      assert(nextCell({ r: 0, c: 2 }, 'ArrowUp', D) === null && nextCell({ r: 7, c: 2 }, 'Enter', D) === null, 'edges');
+      assert(nextCell({ r: 3, c: 2 }, 'ArrowRight', D, { start: true }) === null && nextCell({ r: 3, c: 2 }, 'ArrowRight', D, { end: true }).c === 3, 'right only from the end');
+      assert(nextCell({ r: 3, c: 2 }, 'ArrowLeft', D, { end: true }) === null && nextCell({ r: 3, c: 2 }, 'ArrowLeft', D, { all: true }).c === 1, 'left from the start or a full selection');
+      // cancel leaves the live book untouched
+      const live0 = JSON.stringify(db), sid = cls().students[0].id;
+      openRecord('student', sid, null);
+      recForm.elements.name.value = 'Someone Else';
+      cancelRecord();
+      assert(JSON.stringify(db) === live0 && !rec.open, 'cancel changes nothing');
+      console.log('SELFTEST PASS');
+    } catch (err) {
+      console.log(`SELFTEST FAIL: ${err.message}`);
+    }
+  }
+
+  /* ---------- Start ---------- */
+  renderClass();
+  buildRecord('student', null);
+  if (location.hash === '#selftest') runSelfTest();
+
+  /* ---------- Motion layer: GSAP + Lenis, inside gsap.matchMedia ---------- */
+  let released = false;
+  const release = () => { if (released) return; released = true; root.classList.remove('intro'); };
+  const hard = setTimeout(release, 2500);   // libraries slow or blocked: show the finished page
+  let introDone = false;
+
+  addEventListener('DOMContentLoaded', () => {
+    clearTimeout(hard);
+    const libs = window.gsap && window.ScrollTrigger && window.SplitText && window.Flip && window.Lenis;
+    if (!libs) { release(); root.classList.remove('js'); return; }
+    try { motion(); } catch (err) { release(); Object.assign(fx, FX0); console.warn('Motion layer off:', err); }
+  });
+
+  function motion() {
+    gsap.registerPlugin(ScrollTrigger, SplitText, Flip);
+    const T = { step: tok('--step'), wash: tok('--step-wash'), roll: tok('--dur-roll'), acc: tok('--dur-acc') };
+    const EXPO = 'expo.out', P3 = 'power3.out';
+
+    gsap.matchMedia().add({
+      motion: '(prefers-reduced-motion: no-preference)',
+      reduce: '(prefers-reduced-motion: reduce)',
+      fine: '(hover: hover) and (pointer: fine)',
+      wide: '(min-width: 900px)',
+    }, ctx => {
+      const { motion: moving, wide } = ctx.conditions;
+      if (!moving) { Object.assign(fx, FX0); release(); return; }
+      const first = !introDone;
+      introDone = true;
+
+      // One clock: Lenis runs from GSAP's ticker. Touch keeps native scrolling.
+      const lenis = new Lenis({ lerp: 0.1, smoothWheel: true, autoRaf: false, anchors: false });
+      lenis.on('scroll', ScrollTrigger.update);
+      const tick = time => lenis.raf(time * 1000);
+      gsap.ticker.add(tick);
+      gsap.ticker.lagSmoothing(0);
+      const triggers = [];
+      let chain = null, flipTl = null, s2 = null, split = null, alive = true;
+      const barH = () => $('.bar').offsetHeight + 16;
+
+      fx.lock = stop => (stop ? lenis.stop() : lenis.start());
+      fx.relayout = () => { lenis.resize(); ScrollTrigger.refresh(); };
+      fx.scrollTo = (el, done) => {
+        if (!el) return done?.();
+        const y = el === title ? 0 : el.getBoundingClientRect().top + scrollY - barH();
+        lenis.scrollTo(Math.max(0, y), { duration: Math.min(1.3, 0.6 + Math.abs(y - scrollY) / 4000), onComplete: () => done?.() });
+      };
+
+      // SC13 roll on a proxy; the cell always ends on the exact formatted value
+      const rollTw = (el, to, { from, dur = 0.6, ease = P3 } = {}) => {
+        if (!el) return gsap.timeline();
+        el._tw?.kill();
+        const start = from ?? el._v;
+        if (to == null || start == null || start === to) { setNum(el, to); return gsap.timeline(); }
+        if (el.classList.contains('fig')) {   // keep the sentence still while proportional figures roll
+          el.style.minWidth = ''; el.textContent = pct(to); const w1 = el.offsetWidth; el.textContent = pct(start);
+          el.style.minWidth = `${Math.max(w1, el.offsetWidth)}px`;
+        }
+        const o = { v: start };
+        el._v = start;
+        return (el._tw = gsap.to(o, { v: to, duration: dur, ease, overwrite: 'auto', onUpdate: () => { el._v = o.v; el.textContent = pct(o.v); }, onComplete: () => setNum(el, to) }));
+      };
+      fx.roll = (el, to) => { if (el && el._v != null && to != null && round1(el._v) !== round1(to)) rollTw(el, to, { dur: 0.8 }); else setNum(el, to); };
+
+      // SIGNATURE: the mark settles in green pen, the purple wash spreads along its row and column,
+      // the average and the column mean roll as it reaches them, the delta chip appears, the hero rolls last.
+      fx.propagate = p => {
+        chain?.progress(1);   // fast entry: finish the chain in flight before starting this one
+        const tl = gsap.timeline();
+        tl.fromTo(p.input, { y: -4, opacity: 0.4 }, { y: 0, opacity: 1, duration: 0.35, ease: P3 }, 0);
+        p.washes.forEach(w => {
+          if (!w.el) return;
+          const at = w.d * T.wash;
+          tl.fromTo(w.el, { opacity: 0 }, { opacity: 1, duration: 0.14, ease: 'none', immediateRender: false }, at)
+            .to(w.el, { opacity: 0, duration: 0.5, ease: 'power2.out' }, at + 0.14);
+        });
+        const tA = p.avg.d * T.wash, tM = p.mean.d * T.wash;
+        tl.add(rollTw(p.avg.el, p.avg.to), tA).call(p.grade, null, tA + 0.3);
+        if (p.mean.el) tl.add(rollTw(p.mean.el, p.mean.to), tM);
+        if (p.chip.text) {
+          p.chip.el.textContent = p.chip.text;
+          tl.call(() => { p.chip.el.hidden = false; }, null, tA)
+            .fromTo(p.chip.el, { clipPath: 'inset(0 100% 0 0)', x: 6 }, { clipPath: 'inset(0 0% 0 0)', x: 0, duration: 0.4, ease: EXPO, immediateRender: false }, tA);
+        }
+        const tL = Math.max(tA, tM) + 0.15;
+        p.last.forEach(x => tl.add(rollTw(x.el, x.to, { dur: 0.6 }), tL));
+        chain = tl;
+      };
+
+      // CD5 Flip on search, sort and filter
+      fx.flip = (els, mutate, { duration = 0.45, stagger = 0 } = {}) => {
+        flipTl?.progress(1);
+        const extra = [foot, empty].filter(el => !el.hidden);
+        const state = Flip.getState([...els, ...extra], { props: 'opacity' });
+        mutate();
+        flipTl = Flip.from(state, {
+          targets: [...els, foot, empty],
+          duration, ease: EXPO, stagger, absoluteOnLeave: true, prune: true,
+          onEnter: e => gsap.fromTo(e, { opacity: 0 }, { opacity: 1, duration: 0.3, delay: 0.1 }),
+          onLeave: e => gsap.to(e, { opacity: 0, duration: 0.2 }),
+          onComplete: () => { fx.relayout(); reparkAll(); },
+        });
+      };
+      fx.collapse = (li, done) => {
+        li.classList.add('is-leaving');
+        gsap.delayedCall(tok('--dur-acc-close') + 0.05, done);
+      };
+      fx.pulse = el => {
+        const w = el && $('.wash--row', el);
+        if (w) gsap.fromTo(w, { opacity: 0 }, { opacity: 1, duration: 0.18, delay: 0.35, yoyo: true, repeat: 1, repeatDelay: 0.25, ease: 'power2.out' });
+      };
+      fx.details = (body, list) => {
+        const kids = [...(list ? list.children : []), ...body.children];
+        gsap.fromTo(kids, { opacity: 0 }, { opacity: 1, duration: 0.4, ease: 'none', stagger: T.step, delay: 0.08, overwrite: 'auto' });
+      };
+
+      // CD7 dialogs: backdrop fades in CSS, the sheet clip-reveals from the top, fields ripple in
+      const OPEN = 'inset(0% 0% 0% 0% round 14px)', SHUT = 'inset(0% 0% 100% 0% round 14px)';
+      fx.dialogIn = d => {
+        gsap.fromTo(d, { clipPath: SHUT }, { clipPath: OPEN, duration: 0.5, ease: EXPO, overwrite: 'auto', clearProps: 'clipPath' });
+        const kids = $$('.dlg__title, .errsum:not([hidden]), .f, .dlg__acts', d);
+        gsap.fromTo(kids, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: 0.5, ease: EXPO, stagger: T.step, delay: 0.06, clearProps: 'opacity,transform' });
+      };
+      fx.dialogOut = (d, done) => gsap.to(d, { clipPath: SHUT, duration: 0.25, ease: 'power2.in', overwrite: 'auto', onComplete: () => { done(); gsap.set(d, { clearProps: 'clipPath' }); } });
+      fx.saved = (btn, done) => { btn.classList.add('is-done'); gsap.delayedCall(0.45, done); };
+
+      // Class menu: panel clip-reveal, items ripple by distance from the open class
+      fx.menuIn = (m, items, from) => {
+        gsap.fromTo(m, { clipPath: 'inset(0 0 100% 0 round 10px)' }, { clipPath: 'inset(0 0 0% 0 round 10px)', duration: 0.45, ease: EXPO, overwrite: 'auto', clearProps: 'clipPath' });
+        items.forEach((el, i) => gsap.fromTo(el, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: 0.45, ease: EXPO, delay: Math.abs(i - from) * T.step, clearProps: 'opacity,transform' }));
+      };
+      fx.menuOut = (m, done) => gsap.to(m, { clipPath: 'inset(0 0 100% 0 round 10px)', duration: 0.25, ease: 'power2.in', overwrite: 'auto', onComplete: () => { done(); gsap.set(m, { clearProps: 'clipPath' }); } });
+      fx.toastIn = el => gsap.fromTo(el, { yPercent: 100, clipPath: 'inset(0 0 100% 0)' }, { yPercent: 0, clipPath: 'inset(0 0 0% 0)', duration: 0.45, ease: EXPO, overwrite: 'auto', clearProps: 'clipPath,transform' });
+
+      // TX1 masked line rise on the class name
+      const titleIn = () => {
+        split?.revert();
+        gsap.set(title, { opacity: 1 });
+        split = SplitText.create(title, { type: 'lines', mask: 'lines', linesClass: 'tl' });
+        return gsap.from(split.lines, { yPercent: 110, duration: 0.9, ease: EXPO, stagger: 0.08, onComplete: () => { split?.revert(); split = null; } });
+      };
+      const inView = el => { const r = el.getBoundingClientRect(); return r.bottom > 0 && r.top < innerHeight; };
+      // L4: visible rows and the angled titles ripple in by distance from the top-left
+      const gridIn = (tl, rows = visibleRows().filter(inView)) => {
+        const heads = wide ? $$('.ah__t', head).filter(inView) : [];
+        heads.forEach((h, j) => tl.fromTo(h, { clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0% 0 0)', duration: 0.5, ease: EXPO }, 0.45 + j * T.step));
+        rows.forEach((r, i) => tl.fromTo(r, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: 0.5, ease: EXPO, clearProps: 'transform' }, 0.45 + (i + 1) * T.step));
+        tl.set($$('.ah__t', head), { clearProps: 'clipPath' }, 1.4);
+      };
+      // S2 averages roll once per class load when the Class mean row arrives; S3 strip dots travel from the mean
+      const rollAll = () => {
+        const els = [...$$('.st:not([hidden]) [data-avg]', roster), ...$$('[data-mean], [data-class-avg]', foot)].filter(el => el._v != null);
+        els.forEach((el, i) => { const to = el._v; rollTw(el, to, { from: Math.max(0, to - 4), dur: T.roll }).delay(i * 0.04); });
+      };
+      fx.armed = () => {
+        s2?.kill();
+        s2 = ScrollTrigger.create({ trigger: foot, start: 'top 85%', once: true, onEnter: rollAll });
+      };
+      const dotsIn = s => {
+        const dots = $$('.dot', s), mx = parseFloat(s.dataset.mx), w = s.clientWidth;
+        if (!dots.length || Number.isNaN(mx)) return;
+        dots.map(d => ({ d, x: +d.dataset.x })).sort((a, b) => Math.abs(a.x - mx) - Math.abs(b.x - mx))
+          .forEach(({ d, x }, i) => gsap.fromTo(d, { x: (mx - x) / 100 * w }, { x: 0, duration: 0.6, ease: EXPO, delay: i * T.step, overwrite: 'auto' }));
+      };
+      fx.stripIn = (scope, now) => {
+        if (now) { const big = $('.strip--big', scope); if (big) gsap.delayedCall(0.12, () => dotsIn(big)); return; }
+        triggers.splice(0).forEach(t => t.kill());
+        $$('.strip:not(.strip--big)', scope).forEach(s => triggers.push(ScrollTrigger.create({ trigger: s, start: 'top 90%', once: true, onEnter: () => dotsIn(s) })));
+      };
+
+      // L3 + L5 helpers
+      const heroFigures = (tl, at) => $$('[data-fig]').forEach(el => { if (el._v != null) tl.add(rollTw(el, el._v, { from: el._v - 4, dur: 1, ease: P3 }), at); });
+
+      // Class change, reset and new class: outgoing rows fade, then the load beats replay
+      const replay = () => {
+        const tl = gsap.timeline();
+        tl.add(titleIn(), 0.05);
+        tl.fromTo([context, summary], { opacity: 0 }, { opacity: 1, duration: 0.5, ease: 'none' }, 0.2);
+        heroFigures(tl, 0.2);
+        gridIn(tl);
+        tl.call(() => fx.armed(), null, 0.9);
+        fx.stripIn(alist);
+      };
+      fx.replay = replay;
+      fx.swapClass = mutate => {
+        chain?.progress(1);
+        const out = visibleRows().filter(inView);
+        gsap.to(out, { opacity: 0, duration: 0.2, ease: 'none', onComplete: () => { mutate(); replay(); } });
+      };
+
+      // S1 title hand-off: the class name steps back as the app bar's label clips in
+      gsap.timeline({ scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom 120px', scrub: true } })
+        .fromTo('.title-wrap', { scale: 1, opacity: 1 }, { scale: 0.94, opacity: 0, ease: 'none' }, 0)
+        .fromTo(barLabel, { clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0% 0 0)', ease: 'none' }, 0);
+
+      // PAGE LOAD
+      const intro = () => {
+        const bar = $$('.bar [data-rv]'), rows = visibleRows().filter(inView);
+        gsap.set([...bar, title, context, summary, ...rows], { opacity: 0 });
+        gsap.set('.bar__rule', { scaleX: 0 });
+        if (wide) gsap.set($$('.ah__t', head).filter(inView), { clipPath: 'inset(0 100% 0 0)' });
+        release();   // GSAP now holds every first-frame state inline
+        const go = () => {
+          if (!alive) return;
+          const tl = gsap.timeline();
+          tl.to('.bar__rule', { scaleX: 1, duration: 0.6, ease: EXPO }, 0)
+            .fromTo(bar, { opacity: 0, y: -8 }, { opacity: 1, y: 0, duration: 0.5, ease: EXPO, stagger: 0.04, clearProps: 'transform' }, 0)
+            .add(titleIn(), 0.15)
+            .fromTo([context, summary], { opacity: 0 }, { opacity: 1, duration: 0.5, ease: 'none' }, 0.35);
+          heroFigures(tl, 0.35);
+          gridIn(tl, rows);   // the same rows that were hidden for the first frame
+          tl.call(() => fx.armed(), null, 0.9);   // L5: averages roll now if the foot is in view, otherwise on scroll (S2)
+          fx.stripIn(alist);
+        };
+        Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 700))]).then(go);
+      };
+      if (first) intro(); else { release(); fx.armed(); fx.stripIn(alist); }
+
+      return () => {
+        alive = false;
+        chain?.progress(1); flipTl?.progress(1);
+        s2?.kill(); triggers.forEach(t => t.kill());
+        split?.revert();
+        gsap.ticker.remove(tick);
+        gsap.ticker.lagSmoothing(500, 33);
+        lenis.destroy();
+        Object.assign(fx, FX0);
+      };
+    });
+  }
+})();
+</script>
+</body>
+</html>

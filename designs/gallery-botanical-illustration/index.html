@@ -1,0 +1,1441 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plates for a coastal flora</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cardo:ital,wght@0,400;1,400&family=Karla:wght@400..700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* colour: a herbarium cabinet, its mounting sheets, Prussian ink */
+    --ground: #9CC2C8;     /* cabinet enamel, page ground (ink 7.6:1, graphite 5.0:1) */
+    --sheet: #FAFBF7;      /* mounting sheet: plates, drawer sheets, label, dialog */
+    --ink: #1E2A35;        /* Prussian ink: text, line work, filled buttons (14.1:1 on sheet) */
+    --graphite: #3F4749;   /* secondary text, underdrawing (5.0:1 on ground, 9.2:1 on sheet) */
+    --accent: #A3223C;     /* copihue crimson: focus and active states only (3.8:1 on ground as a 2px ring, 7.1:1 on sheet) */
+    --edge: rgb(63 71 73 / .28);   /* a sheet's edge where it lies on the enamel */
+    --rule: rgb(30 42 53 / .3);    /* label rules, colophon rule */
+    --field: rgb(63 71 73 / .62);  /* field and radio-card borders at rest (3.3:1 on sheet) */
+    --scrim: rgb(30 42 53 / .55);  /* dialog backdrop */
+    /* watercolour pans: plate art only, named in the PLATES data */
+    --pan-copihue: #B8324A;
+    --pan-sap: #6E8A4E;
+    --pan-olive: #8C9A5B;
+    --pan-gamboge: #E0B33A;
+    --pan-violet: #8A79B8;
+    --pan-ochre: #B98A4A;
+    --pan-rose: #D97A93;
+    --pan-magenta: #9E2F6E;
+    --pan-white: #E4E8DA;
+
+    /* type: Cardo for the flora's lettering, Karla for the archive's working text */
+    --font-serif: "Cardo", "Iowan Old Style", Georgia, serif;
+    --font-sans: "Karla", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --fs-label: .8125rem;   /* specimen-label data, tabular */
+    --fs-small: .9375rem;   /* buttons, tabs, hints */
+    --fs-body: 1.0625rem;   /* 17px body */
+    --fs-caption: 1.375rem; /* binomial in the caption */
+    --fs-h3: clamp(1.75rem, 1.3rem + 1.6vw, 2.5rem);
+    --fs-h2: clamp(2.5rem, 1.5rem + 3.9vw, 4.75rem);
+
+    /* spacing */
+    --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px;
+    --sp-6: 32px; --sp-7: 48px; --sp-8: 72px; --sp-9: 112px;
+    --gutter: clamp(16px, 4vw, 48px);
+    --max: 1440px;
+    --measure: 62ch;
+
+    /* shape: radius by role */
+    --radius-sheet: 0;
+    --radius-control: 3px;
+    --radius-tab: 6px 6px 0 0;
+    --sheet-ratio: 29 / 42;
+    --plate-w: min(72vw, 25rem, calc(60svh * 29 / 42));
+
+    /* motion (CSS side; the script keeps its own timings in MOTION) */
+    --ease-out: cubic-bezier(.16, 1, .3, 1);      /* expo.out */
+    --ease-follow: cubic-bezier(.33, 1, .68, 1);  /* power3.out */
+    --ease-sweep: cubic-bezier(.35, 0, 0, 1);     /* HV2 underline */
+    --ease-pop: cubic-bezier(.34, 1.56, .64, 1);  /* MI3 badge */
+    --dur-fast: .2s;
+    --dur-mid: .35s;
+    --dur-slow: 1s;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  body { margin: 0; background: var(--ground); color: var(--ink); font: 400 var(--fs-body)/1.6 var(--font-sans); -webkit-font-smoothing: antialiased; }
+  [hidden] { display: none !important; }
+  html:has(dialog[open]) { overflow: hidden; }
+  button, input { font: inherit; color: inherit; }
+  i, em { font-style: italic; }
+  .vh { position: absolute !important; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+
+  /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+
+  /* ---------- section ---------- */
+  .archive { position: relative; padding: var(--sp-8) var(--gutter) var(--sp-7); overflow-x: clip; }
+  .wrap { max-width: var(--max); margin: 0 auto; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--sp-5); }
+
+  .skip { position: absolute; z-index: 20; top: 0; left: var(--gutter); padding: 10px var(--sp-4); background: var(--sheet); color: var(--ink); font: 500 var(--fs-small)/1.2 var(--font-sans); text-decoration: none; transform: translateY(-110%); transition: transform .3s var(--ease-out); }
+  .skip:focus-visible { transform: none; outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .intro { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; align-items: end; row-gap: var(--sp-4); margin-bottom: var(--sp-7); }
+  .intro h2 { grid-column: 1 / 8; margin: 0; font: 400 var(--fs-h2)/1.02 var(--font-serif); letter-spacing: -.01em; max-width: 11em; text-wrap: balance; }
+  .lede { grid-column: 8 / 13; margin: 0; max-width: 46ch; }
+
+  /* ---------- the easel ---------- */
+  .easel { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; row-gap: var(--sp-6); scroll-margin-top: var(--sp-5); outline: none; }
+  .stage-col { grid-column: 1 / 9; min-width: 0; }
+  .stage { position: relative; height: calc(var(--plate-w) * 42 / 29); overflow-x: clip; touch-action: pan-y; cursor: grab; outline: none; -webkit-user-select: none; user-select: none; }
+  .stage:active { cursor: grabbing; }
+  .stage:focus-visible { outline: 2px solid var(--accent); outline-offset: 8px; }
+  .plate { position: absolute; top: 0; left: 50%; width: var(--plate-w); margin-left: calc(var(--plate-w) / -2); aspect-ratio: var(--sheet-ratio); border-radius: var(--radius-sheet); background: var(--sheet); box-shadow: 0 0 0 1px var(--edge); transform-origin: 50% 50%; will-change: transform, opacity; }
+  .plate:not(.is-c) { pointer-events: none; }
+  .art { position: absolute; inset: 0; }
+  .lyr { position: absolute; inset: 0; display: block; width: 100%; height: 100%; overflow: visible; }
+  .lyr.wash { transform-origin: 50% 100%; }
+  .art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .plate:not(.is-c) img { filter: grayscale(1) contrast(.9); }
+  .ink .v { stroke-width: .55; }
+  .under .v { stroke-width: .35; }
+  svg text { font-family: var(--font-serif); font-style: italic; }
+  svg text.pencil { font-family: var(--font-sans); font-style: normal; font-variant-numeric: tabular-nums; }
+
+  .controls { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-3); margin-top: var(--sp-5); }
+  .hint { margin: 0 0 0 var(--sp-2); font-size: var(--fs-small); color: var(--graphite); transition: color var(--dur-fast); }
+  .stage-col:has(.stage:focus-visible) .hint { color: var(--ink); }
+
+  /* buttons: square-ish controls, a 2px ink stroke drawn like a pen under the label */
+  .btn { position: relative; display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 var(--sp-4); border: 1px solid var(--ink); border-radius: var(--radius-control); background: transparent; color: var(--ink); font: 500 var(--fs-small)/1 var(--font-sans); cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform .4s var(--ease-follow); }
+  .btn--ink { background: var(--ink); color: var(--sheet); }
+  .t { position: relative; display: inline-grid; padding-block: 5px; }
+  .t::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; border-radius: 1px; background: currentColor; transform: scaleX(0); transform-origin: 100% 50%; transition: transform var(--dur-mid) var(--ease-out); }
+  @media (hover: hover) { .btn:not([aria-disabled="true"]):hover .t::after { transform: scaleX(1); transform-origin: 0 50%; } }
+  .btn:focus-visible .t::after { transform: scaleX(1); transform-origin: 0 50%; }
+  .btn:focus-visible, .tab:focus-visible, .sheet:focus-visible, .textbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .btn:active:not([aria-disabled="true"]) { transform: scale(.96); transition-duration: .12s; }
+  .btn[aria-disabled="true"] { opacity: .45; cursor: default; }
+  /* MI2: the toggle's two labels share one cell, so the button never changes width */
+  .swap2 { overflow: hidden; }
+  .swap2 > span { grid-area: 1 / 1; transition: transform var(--dur-mid) var(--ease-out); }
+  .swap2 > .b { transform: translateY(calc(100% + 8px)); }
+  .is-on .swap2 > .a { transform: translateY(calc(-100% - 8px)); }
+  .is-on .swap2 > .b { transform: none; }
+
+  /* the caption: plate, name, and a printed specimen label */
+  .caption { grid-column: 9 / 13; align-self: start; min-width: 0; }
+  .cap-no { margin: 0 0 var(--sp-2); font: 600 var(--fs-small)/1.4 var(--font-sans); font-variant-numeric: tabular-nums; }
+  .cap-name { margin: 0; font: 400 var(--fs-caption)/1.2 var(--font-serif); }
+  .cap-common { margin: var(--sp-1) 0 0; }
+  .cap-family { margin: 0; color: var(--graphite); }
+  .label { position: relative; margin: var(--sp-5) 0; padding: var(--sp-2) var(--sp-4); background: var(--sheet); box-shadow: 0 0 0 1px var(--edge); font-size: var(--fs-label); line-height: 1.4; font-variant-numeric: tabular-nums; }
+  .label > div { position: relative; display: grid; grid-template-columns: 6.5em minmax(0, 1fr); gap: var(--sp-3); padding: 7px 0; }
+  .label dt { color: var(--graphite); }
+  .label dd { margin: 0; }
+  .rule { position: absolute; left: 0; right: 0; top: 0; height: 1px; background: var(--rule); transform-origin: 0 50%; }
+  .cap-note { margin: 0 0 var(--sp-5); max-width: 42ch; }
+  .cap-actions { display: flex; flex-wrap: wrap; gap: var(--sp-3); }
+
+  /* ---------- the drawer ---------- */
+  .drawer { grid-column: 1 / -1; margin-top: var(--sp-9); scroll-margin-top: var(--sp-5); outline: none; }
+  .drawer h3 { margin: 0 0 var(--sp-3); font: 400 var(--fs-h3)/1.08 var(--font-serif); }
+  .drawer-intro { margin: 0 0 var(--sp-6); max-width: 52ch; }
+  .railbar { position: relative; display: flex; align-items: flex-end; justify-content: space-between; gap: var(--sp-4); }
+  .rail { position: relative; display: flex; }
+  .tab-ind { position: absolute; inset: 0; border-top: 2px solid var(--accent); background: var(--sheet); clip-path: inset(0 100% 0 0 round 6px 6px 0 0); transition: clip-path .4s var(--ease-follow); pointer-events: none; }
+  .tab { position: relative; padding: 11px var(--sp-4) 12px; border: 0; border-radius: var(--radius-tab); background: none; color: var(--graphite); font: 500 var(--fs-small)/1.2 var(--font-sans); white-space: nowrap; cursor: pointer; transition: color var(--dur-fast); }
+  .tab[aria-pressed="true"] { color: var(--ink); }
+  .tab > span { background: linear-gradient(currentColor, currentColor) 100% 100% / 0 1px no-repeat; transition: background-size .45s var(--ease-sweep); }
+  @media (hover: hover) { .tab:hover { color: var(--ink); } .tab:hover > span { background-position: 0 100%; background-size: 100% 1px; } }
+  .tab:focus-visible { outline-offset: -2px; }
+  .rail-rule { position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--ink); transform-origin: 0 50%; }
+  .count { margin: 0 0 12px; font-size: var(--fs-small); color: var(--graphite); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .sheets { list-style: none; margin: var(--sp-6) 0 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--sp-6) var(--sp-5); }
+  .sheet { position: relative; display: block; width: 100%; aspect-ratio: var(--sheet-ratio); padding: 0; border: 0; border-radius: var(--radius-sheet); background: var(--sheet); box-shadow: 0 0 0 1px var(--edge); color: var(--ink); text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform .4s var(--ease-follow); }
+  .sheet:active { transform: scale(.97); transition-duration: .12s; }
+  .s-art { position: absolute; top: 3%; left: 5%; width: 90%; aspect-ratio: 290 / 360; overflow: hidden; }
+  .s-art svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .s-art .s-in { position: absolute; inset: 0; transform-origin: 50% 100%; }
+  .slabel { position: absolute; right: 5%; bottom: 4%; width: min(80%, 15rem); padding: 6px 8px 5px; background: var(--sheet); box-shadow: 0 0 0 1px var(--rule); font: 400 var(--fs-label)/1.35 var(--font-sans); font-variant-numeric: tabular-nums; }
+  .slabel > span { display: block; }
+  .s-no, .s-name { font-family: var(--font-serif); }
+  .s-name { font-style: italic; font-size: .9375rem; line-height: 1.2; }
+  /* HV1: the habitat line rolls to the action on hover and keyboard focus */
+  .s-roll { display: grid !important; overflow: hidden; color: var(--graphite); }
+  .s-roll > span { grid-area: 1 / 1; transition: transform .45s var(--ease-out); }
+  .s-roll > .s-go { color: var(--ink); font-weight: 500; transform: translateY(105%); }
+  .sheet:focus-visible .s-hab { transform: translateY(-105%); }
+  .sheet:focus-visible .s-go { transform: none; }
+  @media (hover: hover) and (pointer: fine) {
+    .sheet:hover .s-hab { transform: translateY(-105%); }
+    .sheet:hover .s-go { transform: none; }
+  }
+
+  /* ---------- colophon ---------- */
+  .colophon { grid-column: 1 / -1; margin-top: var(--sp-8); padding-top: var(--sp-5); border-top: 1px solid var(--rule); }
+  .colophon p { margin: 0; max-width: var(--measure); }
+  .drawn { position: relative; display: inline-block; margin-left: .3em; color: var(--ink); font-weight: 500; text-decoration: underline 1px; text-underline-offset: .22em; }
+  .drawn svg { position: absolute; left: -12%; top: -32%; width: 124%; height: 164%; overflow: visible; pointer-events: none; }
+  .drawn path { fill: none; stroke: var(--ink); stroke-width: 1.4; stroke-linecap: round; vector-effect: non-scaling-stroke; stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset .2s ease-in; }
+  .drawn:hover path, .drawn:focus-visible path { stroke-dashoffset: 0; transition: stroke-dashoffset .45s cubic-bezier(.4, 0, .2, 1); }
+  .drawn:focus-visible { outline: 2px solid var(--accent); outline-offset: 10px; }
+  @media (hover: none) { .drawn path { stroke-dashoffset: 0; } }
+
+  /* ---------- the plate dialog ---------- */
+  .dlg { width: min(1120px, 100% - 2 * var(--gutter)); max-width: none; max-height: min(92svh, 880px); padding: 0; border: 0; border-radius: var(--radius-sheet); background: var(--sheet); color: var(--ink); overflow: hidden; }
+  .dlg::backdrop { background: var(--scrim); backdrop-filter: blur(3px); }
+  .dlg[open]::backdrop { animation: fade .45s var(--ease-out); }
+  @keyframes fade { from { opacity: 0; } }
+  .dlg-panel { display: grid; grid-template-columns: auto minmax(0, 1fr); max-height: inherit; }
+  .dlg-art { position: relative; width: min(calc((92svh - 2 * var(--sp-5)) * 29 / 42), 46vw, 566px); aspect-ratio: var(--sheet-ratio); margin: var(--sp-5); box-shadow: 0 0 0 1px var(--edge); }
+  .dlg-body { position: relative; max-height: min(92svh, 880px); overflow-y: auto; padding: var(--sp-7) var(--sp-6) var(--sp-6) var(--sp-3); }
+  .dlg-no { margin: 0 0 var(--sp-2); font: 600 var(--fs-small)/1.4 var(--font-sans); font-variant-numeric: tabular-nums; }
+  .dlg-body h3 { margin: 0; font: 400 clamp(1.625rem, 1.3rem + 1vw, 2.125rem)/1.15 var(--font-serif); }
+  .dlg-common { margin: var(--sp-1) 0 var(--sp-4); color: var(--graphite); }
+  .dlg-body p { max-width: 52ch; }
+  .measures { color: var(--graphite); }
+  .close { position: absolute; z-index: 2; top: var(--sp-3); right: var(--sp-3); display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 1px solid transparent; border-radius: var(--radius-control); background: var(--sheet); color: var(--ink); cursor: pointer; transition: transform .4s var(--ease-follow), border-color var(--dur-fast); }
+  .close svg { width: 18px; height: 18px; transition: transform var(--dur-mid) var(--ease-follow); }
+  .close path { stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
+  @media (hover: hover) { .close:hover { border-color: var(--ink); } .close:hover svg { transform: rotate(90deg); } }
+  .close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .close:focus-visible svg { transform: rotate(90deg); }
+  .close:active { transform: scale(.94); transition-duration: .12s; }
+
+  .swap { display: grid; margin-top: var(--sp-6); padding-top: var(--sp-5); border-top: 1px solid var(--rule); }
+  .swap > * { grid-area: 1 / 1; min-width: 0; }
+  .swap > .off { visibility: hidden; }
+  .print h4, .done h4 { margin: 0 0 var(--sp-4); font: 400 1.375rem/1.2 var(--font-serif); }
+  .sizes { margin: 0; padding: 0; border: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-3); }
+  .sizes legend { padding: 0; margin-bottom: var(--sp-2); font: 500 var(--fs-small)/1.3 var(--font-sans); }
+  .size { position: relative; display: grid; gap: 2px; padding: var(--sp-3) var(--sp-3) var(--sp-3); border: 1px solid var(--field); border-radius: var(--radius-control); cursor: pointer; transition: border-color var(--dur-fast), box-shadow var(--dur-fast), transform .4s var(--ease-follow); }
+  .size input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
+  .s-size { font-weight: 500; }
+  .s-dim { justify-self: start; font-size: var(--fs-label); color: var(--graphite); font-variant-numeric: tabular-nums; background: linear-gradient(currentColor, currentColor) 100% 100% / 0 1px no-repeat; transition: background-size .45s var(--ease-sweep); }
+  @media (hover: hover) { .size:hover { border-color: var(--ink); } .size:hover .s-dim { background-position: 0 100%; background-size: 100% 1px; } }
+  .size:has(:checked) { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+  .size:has(:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .size:active { transform: scale(.97); transition-duration: .12s; }
+  .badge { position: absolute; top: 8px; right: 8px; width: 18px; height: 18px; border-radius: 50%; background: var(--ink); opacity: 0; transform: scale(.6); transition: transform .25s var(--ease-pop), opacity var(--dur-fast); }
+  .badge path { fill: none; stroke: var(--sheet); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset .3s .06s var(--ease-out); }
+  .size:has(:checked) .badge { opacity: 1; transform: none; }
+  .size:has(:checked) .badge path { stroke-dashoffset: 0; }
+  .field { margin-top: var(--sp-4); }
+  .field label { display: block; margin-bottom: 2px; font: 500 var(--fs-small)/1.3 var(--font-sans); }
+  .inp { position: relative; border-radius: var(--radius-control) var(--radius-control) 0 0; }
+  .inp input { display: block; width: 100%; padding: 9px 2px 8px; border: 0; border-bottom: 1px solid var(--field); border-radius: inherit; background: transparent; outline: none; transition: border-color var(--dur-fast); }
+  .inp::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--ink); transform: scaleX(0); transform-origin: 0 50%; transition: transform var(--dur-mid) var(--ease-out); }
+  .inp:focus-within::after { transform: scaleX(1); }
+  .inp:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 3px; }
+  @media (hover: hover) { .inp:hover input { border-bottom-color: var(--ink); } }
+  .inp input[aria-invalid="true"] { border-bottom: 2px solid var(--ink); }
+  .err { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .25s var(--ease-out); }
+  .err > span { overflow: hidden; font-size: var(--fs-small); font-weight: 500; }
+  .err > span > span { display: block; padding-top: 6px; }
+  .err.on { grid-template-rows: 1fr; }
+  .submit { margin-top: var(--sp-5); }
+  .done p { margin: 0 0 var(--sp-4); outline: none; }
+  .done-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-4); }
+  .textbtn { padding: 10px 0; border: 0; background: none; font: 500 var(--fs-small)/1.2 var(--font-sans); cursor: pointer; text-decoration: none; background-image: linear-gradient(currentColor, currentColor); background-repeat: no-repeat; background-position: 100% calc(100% - 8px); background-size: 0 1px; transition: background-size .45s var(--ease-sweep); }
+  .textbtn { text-decoration: underline 1px; text-underline-offset: .25em; }
+  @media (hover: hover) { .textbtn:hover { text-decoration-color: transparent; background-position: 0 calc(100% - 8px); background-size: 100% 1px; } }
+
+  /* ---------- breakpoints ---------- */
+  @media (max-width: 1199px) { .sheets { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  @media (max-width: 991px) {
+    .intro h2, .lede, .stage-col, .caption { grid-column: 1 / -1; }
+    .sheets { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .caption { max-width: 40rem; }
+  }
+  @media (max-width: 599px) {
+    :root { --plate-w: min(72vw, calc(56svh * 29 / 42)); }
+    .archive { padding-top: var(--sp-7); }
+    .intro { margin-bottom: var(--sp-6); }
+    .easel { row-gap: var(--sp-5); }
+    .controls { margin-top: var(--sp-4); }
+    .hint { flex-basis: 100%; margin: 0; }
+    .railbar { flex-direction: column; align-items: stretch; gap: var(--sp-2); }
+    .count { order: -1; margin: 0; }
+    .tab { padding-inline: var(--sp-3); }
+    .sheets { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-5) var(--sp-4); }
+    .slabel { right: 4%; left: 4%; width: auto; padding: 5px 6px 4px; font-size: .75rem; }
+    .s-name { font-size: .8125rem; }
+    .drawer { margin-top: var(--sp-8); }
+    .dlg { width: 100%; height: 100%; max-height: none; margin: 0; }
+    .dlg-panel { grid-template-columns: minmax(0, 1fr); height: 100%; overflow-y: auto; }
+    .dlg-art { height: auto; width: min(100% - 2 * var(--sp-4), calc(52svh * 29 / 42)); max-width: none; margin: calc(var(--sp-7) + var(--sp-3)) auto 0; }
+    .dlg-body { max-height: none; overflow: visible; padding: var(--sp-5) var(--sp-4) var(--sp-7); }
+    .close { position: fixed; }
+    .sizes { grid-template-columns: minmax(0, 1fr); }
+  }
+
+  /* Hidden starting states exist only when the motion libraries loaded (html.js) and motion is allowed. */
+  @media (prefers-reduced-motion: no-preference) {
+    html.js .caption:not(.is-in) [data-f] { visibility: hidden; }
+    html.js .rule-draw:not(.is-in) { transform: scaleX(0); }
+    html.js .sheet:not(.is-in) { clip-path: inset(100% 0 0 0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: .01ms !important; transition-delay: 0s !important; animation-duration: .01ms !important; }
+    .drawn:hover path, .drawn:focus-visible path { transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<section class="archive" aria-labelledby="archive-title">
+  <a class="skip" href="#drawer">Skip to the drawer</a>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <!-- One shared filter gives every wash its ragged watercolour edge. -->
+    <filter id="wc" x="-4%" y="-4%" width="108%" height="108%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency=".045" numOctaves="2" seed="7" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="4.5" xChannelSelector="R" yChannelSelector="G" result="d"/>
+      <feTurbulence type="fractalNoise" baseFrequency=".022" numOctaves="3" seed="11" result="m"/>
+      <feColorMatrix in="m" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1.3 0 0 0 .22" result="ma"/>
+      <feComposite in="d" in2="ma" operator="in"/>
+    </filter>
+  </svg>
+
+  <div class="wrap">
+    <header class="intro">
+      <h2 id="archive-title">Plates for a flora of the coastal range</h2>
+      <p class="lede">Nine plates by Amalia Ferrán, drawn from living specimens along the Chilean coastal range, from Fray Jorge to Oncol, 2017 to 2025. Watercolour and graphite on hot-pressed cotton paper, life size unless the scale bar says otherwise.</p>
+    </header>
+
+    <div class="easel" id="easel" tabindex="-1">
+      <div class="stage-col">
+        <div class="stage" id="stage" role="region" aria-roledescription="carousel" aria-label="Plates on the easel" tabindex="0"></div>
+        <div class="controls">
+          <button class="btn" type="button" id="prev" aria-disabled="true"><span class="t">Previous</span></button>
+          <button class="btn" type="button" id="next"><span class="t">Next</span></button>
+          <p class="hint">Swipe, drag or use the arrow keys.</p>
+        </div>
+        <p class="vh" id="live" aria-live="polite"></p>
+        <noscript><p>The plates are drawn by this page's script. Turn on JavaScript to see them.</p></noscript>
+      </div>
+
+      <div class="caption" id="caption">
+        <p class="cap-no" data-f="no">Plate 1 of 9</p>
+        <p class="cap-name" data-f="name"><i>Lapageria rosea</i> Ruiz &amp; Pav.</p>
+        <p class="cap-common" data-f="common">copihue</p>
+        <p class="cap-family" data-f="family">Philesiaceae</p>
+        <dl class="label">
+          <div><dt>Collected</dt><dd data-f="collected">March 2017</dd></div>
+          <div><span class="rule rule-draw" aria-hidden="true"></span><dt>Locality</dt><dd data-f="locality">Nahuelbuta, Araucanía</dd></div>
+          <div><span class="rule rule-draw" aria-hidden="true"></span><dt>Size</dt><dd data-f="size">38 × 56 cm</dd></div>
+          <div><span class="rule rule-draw" aria-hidden="true"></span><dt>Scale</dt><dd data-f="scale">Life size</dd></div>
+        </dl>
+        <p class="cap-note" data-f="note">Drawn over three visits while the second flower opened. The waxy tepals took seven glazes to keep their pale flecks.</p>
+        <div class="cap-actions">
+          <button class="btn" type="button" id="under"><span class="t swap2"><span class="a">Show underdrawing</span><span class="b" aria-hidden="true">Hide underdrawing</span></span></button>
+          <button class="btn btn--ink" type="button" id="open"><span class="t">Open plate</span></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="drawer" id="drawer" tabindex="-1" role="region" aria-labelledby="drawer-title">
+      <h3 id="drawer-title">The drawer</h3>
+      <p class="drawer-intro">Every plate in the archive, filed by where the plant was collected. Choose a sheet to put it on the easel.</p>
+      <div class="railbar">
+        <div class="rail" id="rail" role="group" aria-label="Filter plates by habitat">
+          <span class="tab-ind" id="tab-ind" aria-hidden="true"></span>
+          <button class="tab" type="button" data-h="all" aria-pressed="true"><span>All</span></button>
+          <button class="tab" type="button" data-h="forest" aria-pressed="false"><span>Forest</span></button>
+          <button class="tab" type="button" data-h="coastal" aria-pressed="false"><span>Coastal scrub</span></button>
+          <button class="tab" type="button" data-h="ravine" aria-pressed="false"><span>Ravine</span></button>
+        </div>
+        <p class="count" id="count" aria-live="polite">9 plates</p>
+        <span class="rail-rule rule-draw" id="rail-rule" aria-hidden="true"></span>
+      </div>
+      <ul class="sheets" id="sheets"></ul>
+    </div>
+
+    <footer class="colophon" id="colophon">
+      <p>Prints are made to order on the same cotton paper as the originals.
+        <a class="drawn" href="mailto:studio@amaliaferran.example" target="_blank" rel="noopener">Write to Amalia<svg viewBox="0 0 200 50" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path pathLength="1" d="M18 30C6 20 34 7 92 5c58-2 101 7 100 21-1 13-48 20-96 19C46 44 6 38 8 25 10 14 40 8 70 7"/></svg></a></p>
+    </footer>
+  </div>
+
+  <dialog class="dlg" id="dlg" aria-labelledby="dlg-title">
+    <button class="close" type="button" id="close" aria-label="Close plate"><svg viewBox="0 0 18 18" aria-hidden="true" focusable="false"><path d="M3 3l12 12M15 3L3 15"/></svg></button>
+    <div class="dlg-panel" data-lenis-prevent>
+      <div class="dlg-art" id="dlg-art" role="img"></div>
+      <div class="dlg-body" data-lenis-prevent>
+        <p class="dlg-no" id="dlg-no"></p>
+        <h3 id="dlg-title"></h3>
+        <p class="dlg-common" id="dlg-common"></p>
+        <p id="dlg-note"></p>
+        <p class="measures" id="dlg-measures"></p>
+        <div class="swap" id="swap">
+          <form class="print" id="print" novalidate aria-labelledby="print-title">
+            <h4 id="print-title">Ask for a print</h4>
+            <fieldset class="sizes" id="sizes" aria-describedby="err-size">
+              <legend>Print size</legend>
+              <label class="size"><input type="radio" name="size" value="A3" required><span class="s-size">A3</span><span class="s-dim">29.7 × 42 cm</span><span class="badge" aria-hidden="true"><svg viewBox="0 0 18 18"><path pathLength="1" d="M5 9.4l2.7 2.6L13 6.4"/></svg></span></label>
+              <label class="size"><input type="radio" name="size" value="A2" required><span class="s-size">A2</span><span class="s-dim">42 × 59.4 cm</span><span class="badge" aria-hidden="true"><svg viewBox="0 0 18 18"><path pathLength="1" d="M5 9.4l2.7 2.6L13 6.4"/></svg></span></label>
+              <label class="size"><input type="radio" name="size" value="original" required><span class="s-size">Original size</span><span class="s-dim" id="orig-dim">38 × 56 cm</span><span class="badge" aria-hidden="true"><svg viewBox="0 0 18 18"><path pathLength="1" d="M5 9.4l2.7 2.6L13 6.4"/></svg></span></label>
+            </fieldset>
+            <p class="err" id="err-size"><span><span></span></span></p>
+            <div class="field">
+              <label for="f-name">Your name</label>
+              <div class="inp"><input id="f-name" name="name" type="text" autocomplete="name" required aria-describedby="err-name"></div>
+              <p class="err" id="err-name"><span><span></span></span></p>
+            </div>
+            <div class="field">
+              <label for="f-email">Email</label>
+              <div class="inp"><input id="f-email" name="email" type="email" autocomplete="email" required aria-describedby="err-email"></div>
+              <p class="err" id="err-email"><span><span></span></span></p>
+            </div>
+            <button class="btn btn--ink submit" type="submit"><span class="t">Ask for a price</span></button>
+          </form>
+          <div class="done off" id="done" inert>
+            <h4>Request sent</h4>
+            <p id="done-text" tabindex="-1"></p>
+            <div class="done-actions">
+              <button class="textbtn" type="button" id="again">Ask about another size</button>
+              <button class="btn" type="button" id="done-close"><span class="t">Close plate</span></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </dialog>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/SplitText.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/Observer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/DrawSVGPlugin.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  /* ======================================================================
+     PLATES: the one data array. Everything on the easel, in the drawer and
+     in the dialog is drawn from it.
+     To use real scans, set img to an image URL and write alt. The generated
+     drawing is then skipped, and the arrival animation becomes an MD1 clip
+     reveal of the image instead of the line draw. Keep scans at a 29:42 ratio.
+     w and h are the original sheet in cm; scale is the drawing's reduction
+     (1 = life size, 4 = 1:4). Authorities checked against WCVP (POWO) and IPNI.
+     art drives the generator: habit picks the composition, leaf / flower /
+     detail set shapes, sizes (in plate units, 290 x 420) and watercolour pans.
+     ====================================================================== */
+  const PLATES = [
+    { no: 1, binomial: 'Lapageria rosea', authority: 'Ruiz & Pav.', common: 'copihue', family: 'Philesiaceae',
+      habitat: 'forest', place: 'Nahuelbuta', locality: 'Nahuelbuta, Araucanía', collected: 'March 2017', year: 2017, w: 38, h: 56, scale: 1,
+      note: 'Drawn over three visits while the second flower opened. The waxy tepals took seven glazes to keep their pale flecks.',
+      measures: [['tepal 72 mm', 'flower'], ['leaf 9 cm', 'leaf'], ['3 locules', 'detail']],
+      img: null, alt: 'watercolour of a twining stem with two hanging crimson flowers, and a cross-section of the ovary',
+      art: { habit: 'vine', stem: 'olive', leaf: { shape: 'lanceolate', count: 7, len: 66, w: 15, pan: ['sap'] },
+        flower: { form: 'bell', count: 2, len: 70, pan: 'copihue' }, detail: { kind: 'ovary', at: [230, 346], mag: '×3' } } },
+    { no: 2, binomial: 'Alstroemeria pelegrina', authority: 'L.', common: 'lirio del campo', family: 'Alstroemeriaceae',
+      habitat: 'coastal', place: 'Los Molles', locality: 'Los Molles, Valparaíso', collected: 'November 2017', year: 2017, w: 30, h: 42, scale: 1,
+      note: 'Painted on the clifftop in one morning, before the wind closed the flowers. The purple streaks on the upper tepals are dry-brushed over the rose.',
+      measures: [['tepal 45 mm', 'flower'], ['leaf 6 cm', 'leaf'], ['streaks 9 mm', 'detail']],
+      img: null, alt: 'watercolour of an upright stem with twisted leaves and three rose flowers, and one streaked inner tepal',
+      art: { habit: 'erect', stem: 'olive', leaf: { shape: 'lanceolate', count: 9, len: 54, w: 6.5, pan: ['olive', 'sap'] },
+        flower: { form: 'lily', count: 3, len: 42, pan: 'rose' }, detail: { kind: 'tepal', at: [230, 346], mag: '×1' } } },
+    { no: 3, binomial: 'Puya chilensis', authority: 'Molina', common: 'chagual', family: 'Bromeliaceae',
+      habitat: 'coastal', place: 'Zapallar', locality: 'Zapallar, Valparaíso', collected: 'October 2018', year: 2018, w: 56, h: 76, scale: 4,
+      note: 'The spike stood over two metres, so the plant is drawn at a quarter of its size. The bare tips of the side branches are sterile; birds perch on them to reach the nectar.',
+      measures: [['spike 2.1 m', 'axis'], ['leaf 85 cm', 'leaf'], ['flower 5 cm', 'detail']],
+      img: null, alt: 'watercolour of a spiny rosette with a branched flowering spike of yellow-green flowers, and a single flower opened',
+      art: { habit: 'rosette', stem: 'olive', leaf: { shape: 'strap', count: 11, len: 112, w: 5.5, pan: ['olive', 'sap'] },
+        flower: { form: 'tube', count: 6, len: 11, pan: 'gamboge' }, detail: { kind: 'flower', at: [54, 72], mag: '×2' } } },
+    { no: 4, binomial: 'Calceolaria integrifolia', authority: 'L.', common: 'capachito', family: 'Calceolariaceae',
+      habitat: 'ravine', place: 'El Tabo', locality: 'Quebrada de Córdova, El Tabo', collected: 'December 2018', year: 2018, w: 30, h: 42, scale: 1,
+      note: 'Drawn at the stream edge, where the shrubs reach a metre. The roundel shows the pouch cut open, with its two stamens.',
+      measures: [['lower lip 18 mm', 'flower'], ['calyx 6 mm', 'flower2'], ['2 stamens', 'detail']],
+      img: null, alt: 'watercolour of a branching shrub with toothed leaves and clusters of yellow pouched flowers, and a pouch cut open',
+      art: { habit: 'shrub', stem: 'ochre', leaf: { shape: 'lanceolate', count: 4, len: 46, w: 11, teeth: 9, veins: 5, pan: ['sap'] },
+        flower: { form: 'slipper', count: 8, len: 17, pan: 'gamboge' }, detail: { kind: 'pouch', at: [230, 346], mag: '×2' } } },
+    { no: 5, binomial: 'Nothofagus obliqua', authority: '(Mirb.) Oerst.', common: 'roble', family: 'Nothofagaceae',
+      habitat: 'forest', place: 'Cantillana', locality: 'Altos de Cantillana, Metropolitana', collected: 'April 2019', year: 2019, w: 38, h: 56, scale: 1,
+      note: 'An autumn branch with the cupules split open. The northern stands at Cantillana are sometimes treated as <i>Nothofagus macrocarpa</i>; this flora keeps them in <i>N. obliqua</i>.',
+      measures: [['leaf 7 cm', 'leaf'], ['cupule 9 mm', 'flower'], ['3 nuts', 'detail']],
+      img: null, alt: 'watercolour of a zigzag branch with toothed autumn leaves and small cupules, and three nuts in an opened cupule',
+      art: { habit: 'branch', stem: 'ochre', leaf: { shape: 'ovate', count: 8, len: 50, w: 17, teeth: 13, veins: 9, pan: ['sap', 'olive', 'ochre'] },
+        flower: { form: 'cupule', count: 3, len: 10, pan: 'ochre' }, detail: { kind: 'nut', at: [230, 346], mag: '×3' } } },
+    { no: 6, binomial: 'Leucocoryne ixioides', authority: '(Sims) Lindl.', common: 'huilli', family: 'Amaryllidaceae',
+      habitat: 'coastal', place: 'Fray Jorge', locality: 'Fray Jorge, Coquimbo', collected: 'September 2020', year: 2020, w: 30, h: 42, scale: 1,
+      note: 'Drawn in a wet September, when the coastal terraces at Fray Jorge flowered. The roundel enlarges the throat to show the three yellow staminodes.',
+      measures: [['tepal 22 mm', 'flower'], ['scape 27 cm', 'axis'], ['3 staminodes', 'detail']],
+      img: null, alt: 'watercolour of a bulb with grass-like leaves and an umbel of violet star flowers, and an enlarged flower throat',
+      art: { habit: 'scape', stem: 'olive', leaf: { shape: 'linear', count: 3, len: 150, w: 3.2, pan: ['olive'] },
+        flower: { form: 'star', count: 5, len: 22, pan: 'violet' }, detail: { kind: 'star', at: [230, 346], mag: '×2' } } },
+    { no: 7, binomial: 'Jubaea chilensis', authority: '(Molina) Baill.', common: 'palma chilena', family: 'Arecaceae',
+      habitat: 'ravine', place: 'Ocoa', locality: 'Ocoa, La Campana', collected: 'January 2022', year: 2022, w: 56, h: 76, scale: 2,
+      note: 'Drawn at half size from a fallen branch of the infructescence. The roundel shows a coquito, the nut, with the three pores of its shell.',
+      measures: [['fruit 4 cm', 'flower'], ['rachilla 26 cm', 'leaf'], ['nut 25 mm', 'detail']],
+      img: null, alt: 'watercolour of a branched fruiting stalk hung with round ochre fruits, and a nut showing three pores',
+      art: { habit: 'infructescence', stem: 'ochre', leaf: { shape: 'none', count: 8, len: 78, w: 0, pan: [] },
+        flower: { form: 'drupe', count: 6, len: 5.2, pan: 'ochre' }, detail: { kind: 'coquito', at: [230, 346], mag: '×3' } } },
+    { no: 8, binomial: 'Fuchsia magellanica', authority: 'Lam.', common: 'chilco', family: 'Onagraceae',
+      habitat: 'forest', place: 'Oncol', locality: 'Oncol, Valdivia', collected: 'February 2023', year: 2023, w: 30, h: 42, scale: 1,
+      note: 'The sepals were laid in one glaze of magenta and lifted at the tips while still wet. Hummingbirds worked the bush all afternoon.',
+      measures: [['sepal 20 mm', 'flower'], ['tube 9 mm', 'flower2'], ['8 stamens', 'detail']],
+      img: null, alt: 'watercolour of an arching branch with hanging magenta and violet flowers, and a flower seen from below',
+      art: { habit: 'arching', stem: 'rose', leaf: { shape: 'ovate', count: 5, len: 32, w: 10, teeth: 7, veins: 5, pan: ['sap'] },
+        flower: { form: 'fuchsia', count: 4, len: 60, pan: 'magenta' }, detail: { kind: 'below', at: [230, 340], mag: '×2' } } },
+    { no: 9, binomial: 'Eucryphia cordifolia', authority: 'Cav.', common: 'ulmo', family: 'Cunoniaceae',
+      habitat: 'forest', place: 'Oncol', locality: 'Oncol, Valdivia', collected: 'February 2025', year: 2025, w: 38, h: 56, scale: 1,
+      note: 'Ulmo petals are white, so they are painted only in their shadows and the paper is left bare for the light.',
+      measures: [['petal 30 mm', 'flower'], ['leaf 8 cm', 'leaf'], ['capsule 14 mm', 'detail']],
+      img: null, alt: 'watercolour of an upright shoot with wavy heart-based leaves and three white four-petalled flowers, and a woody capsule',
+      art: { habit: 'upright', stem: 'ochre', leaf: { shape: 'cordate', count: 3, len: 58, w: 18, wave: .06, veins: 7, pan: ['olive', 'sap'] },
+        flower: { form: 'cup4', count: 3, len: 24, pan: 'white' }, detail: { kind: 'capsule', at: [230, 346], mag: '×2' } } }
+  ];
+  const HABITAT = { forest: 'Forest', coastal: 'Coastal scrub', ravine: 'Ravine' };
+  const COUNT = { all: 'plates', forest: 'plates from the forest', coastal: 'plates from coastal scrub', ravine: 'plates from ravines' };
+  // Motion timings in seconds (the CSS side has --dur-* and --ease-*).
+  const MOTION = { step: .8, drawerStep: .9, lock: 600, ink: .9, layer: .22, washAt: .95, wash: 1.1, deal: 1.4 };
+
+  /* ======================================================================
+     The generator. One geometry pass per plate, three layers out of it:
+     ink (line work grouped stem, leaf, flower, detail for the draw order),
+     wash (pan fills under the shared ragged-edge filter) and under (graphite
+     construction and pencilled measurements).
+     ====================================================================== */
+  const f1 = n => Math.round(n * 10) / 10;
+  const pt = p => f1(p[0]) + ' ' + f1(p[1]);
+  const TAU = Math.PI * 2;
+  const rng = a => () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  // Uniform Catmull-Rom through the points, written as cubic Beziers.
+  function spline(ps, closed) {
+    const n = ps.length;
+    if (n < 2) return '';
+    const P = i => closed ? ps[(i + n) % n] : ps[Math.max(0, Math.min(n - 1, i))];
+    let d = 'M' + pt(ps[0]);
+    for (let i = 0; i < (closed ? n : n - 1); i++) {
+      const p0 = P(i - 1), p1 = P(i), p2 = P(i + 1), p3 = P(i + 2);
+      d += 'C' + pt([p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6]) + ' ' + pt([p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6]) + ' ' + pt(p2);
+    }
+    return closed ? d + 'Z' : d;
+  }
+  function dense(ps, per = 10) {
+    const out = [], n = ps.length, P = i => ps[Math.max(0, Math.min(n - 1, i))];
+    for (let i = 0; i < n - 1; i++) {
+      const p0 = P(i - 1), p1 = P(i), p2 = P(i + 1), p3 = P(i + 2);
+      for (let s = 0; s < per; s++) {
+        const t = s / per, t2 = t * t, t3 = t2 * t;
+        out.push([0, 1].map(k => .5 * (2 * p1[k] + (p2[k] - p0[k]) * t + (2 * p0[k] - 5 * p1[k] + 4 * p2[k] - p3[k]) * t2 + (3 * p1[k] - p0[k] - 3 * p2[k] + p3[k]) * t3)));
+      }
+    }
+    out.push(ps[n - 1]);
+    return out;
+  }
+  function along(poly, t) {
+    const L = [0];
+    for (let i = 1; i < poly.length; i++) L.push(L[i - 1] + Math.hypot(poly[i][0] - poly[i - 1][0], poly[i][1] - poly[i - 1][1]));
+    const want = t * L[L.length - 1];
+    let i = L.findIndex(v => v >= want);
+    if (i < 1) i = 1;
+    const u = (want - L[i - 1]) / ((L[i] - L[i - 1]) || 1), a = poly[i - 1], b = poly[i];
+    return { x: a[0] + (b[0] - a[0]) * u, y: a[1] + (b[1] - a[1]) * u, ang: Math.atan2(b[1] - a[1], b[0] - a[0]) };
+  }
+  const circ = (x, y, r) => `M${f1(x - r)} ${f1(y)}a${f1(r)} ${f1(r)} 0 1 0 ${f1(2 * r)} 0a${f1(r)} ${f1(r)} 0 1 0 ${f1(-2 * r)} 0`;
+  const ell = (x, y, rx, ry, a = 0) => spline(Array.from({ length: 12 }, (_, k) => { const t = k / 12 * TAU, c = Math.cos(a), s = Math.sin(a); return [x + rx * Math.cos(t) * c - ry * Math.sin(t) * s, y + rx * Math.cos(t) * s + ry * Math.sin(t) * c]; }), true);
+  const line = (a, b) => `M${pt(a)}L${pt(b)}`;
+  const polar = (x, y, a, r) => [x + Math.cos(a) * r, y + Math.sin(a) * r];
+  // Squash around a centre along direction a: a flower seen at an angle.
+  const squash = (cx, cy, a, k) => p => { const dx = p[0] - cx, dy = p[1] - cy, c = Math.cos(a), s = Math.sin(a), u = (dx * c + dy * s) * k, v = -dx * s + dy * c; return [cx + u * c - v * s, cy + u * s + v * c]; };
+
+  function draw(p) {
+    const G = { stem: [], leaf: [], flower: [], detail: [], wash: [], cons: [], notes: [], text: [], fl: [], axis: null, dim: null };
+    const r = rng(p.no * 7919);
+    const a = p.art;
+    const ink = (layer, d, thin) => G[layer].push({ d, thin });
+    let det = false;   // washes painted inside the roundel are left out of the drawer crops
+    const paint = (d, pan, op = .8, sw = 0) => G.wash.push({ d, pan, op, sw, det });
+    const lift = (d, op = .7) => G.wash.push({ d, pan: 'lift', op, det });
+
+    // A leaf, petal or tepal along angle ang from its base (x, y). Shapes are width profiles along the midrib.
+    function leaf(x, y, ang, len, w, shape, o = {}) {
+      const teeth = o.teeth || 0, N = Math.max(18, teeth * 4 + 6), c = Math.cos(ang), s = Math.sin(ang), map = o.map || (q => q);
+      const P = (u, v) => map([x + u * c - v * s, y + u * s + v * c]);
+      const M = t => (o.bend || 0) * len * t * t;
+      const W = t => {
+        let k;
+        if (shape === 'ovate') k = Math.sin(Math.PI * Math.pow(t, .72));
+        else if (shape === 'lanceolate') k = Math.pow(Math.sin(Math.PI * Math.pow(t, .55)), 1.3);
+        else if (shape === 'linear') k = Math.min(1, t * 9) * (1 - Math.pow(t, 3));
+        else if (shape === 'strap') k = Math.min(1, t * 12) * (1 - Math.pow(t, 1.7));
+        else if (shape === 'obovate') k = Math.sin(Math.PI * Math.pow(t, 1.45));
+        else if (shape === 'cordate') k = Math.sin(Math.PI * (.2 + .8 * Math.pow(t, .9)));
+        else k = Math.pow(t, .6) * (1 - Math.pow(t, 5)) * 1.18;    // tepal: narrow base, flared, pointed
+        if (teeth && t > .08 && t < .94) { const g = (t * teeth) % 1; k *= .97 + .07 * (g < .75 ? g / .75 : (1 - g) / .25); }
+        if (o.wave) k *= 1 + o.wave * Math.sin(t * Math.PI * 7);
+        return w * k;
+      };
+      const up = [], lo = [], mid = [];
+      for (let i = 0; i <= N; i++) { const t = i / N, u = t * len, m = M(t), hw = W(t); mid.push(P(u, m)); up.push(P(u, m - hw)); lo.push(P(u, m + hw)); }
+      const base = P(0, 0), tip = P(len, M(1));
+      const lobes = shape === 'cordate' ? [[P(-len * .06, -w * .5)], [P(-len * .06, w * .5)]] : [[], []];
+      const d = spline([base, ...lobes[0], ...up.slice(1, N), tip, ...lo.slice(1, N).reverse(), ...lobes[1]], true);
+      const veins = [];
+      if (o.midrib !== false) veins.push(spline(mid.slice(0, Math.round(N * .93))));
+      if (o.veins === 'parallel') for (const k of [-.55, .55]) veins.push(spline(Array.from({ length: 9 }, (_, i) => { const t = .05 + i * .11; return P(t * len, M(t) + k * W(t)); })));
+      else if (o.veins > 0) for (let i = 1; i <= o.veins; i++) {
+        const t0 = .06 + .82 * i / (o.veins + 1), t1 = Math.min(.97, t0 + .13), tm = (t0 + t1) / 2;
+        for (const g of [-1, 1]) veins.push(spline([P(t0 * len, M(t0)), P(tm * len, M(tm) + g * .5 * W(tm)), P(t1 * len, M(t1) + g * .86 * W(t1))]));
+      }
+      if (o.spines) for (let i = 1; i < o.spines; i++) {
+        const t = .08 + .86 * i / o.spines, u = t * len, m = M(t), hw = W(t);
+        for (const g of [-1, 1]) veins.push(line(P(u, m + g * hw), P(u + 3.2, m + g * (hw + 2.6))));
+      }
+      return { d, veins, base, tip, P };
+    }
+    function addLeaf(x, y, ang, len, w, shape, o, pan, layer = 'leaf') {
+      const L = leaf(x, y, ang, len, w, shape, o);
+      ink(layer, L.d);
+      L.veins.forEach(v => ink(layer, v, true));
+      if (pan) paint(L.d, pan, o.op ?? .74);
+      return L;
+    }
+    function stem(pts, w, pan, layer = 'stem') {
+      const poly = dense(pts, 10);
+      if (w > 1.5) {
+        const sides = [[], []];
+        poly.forEach((q, k) => {
+          const A = poly[Math.max(0, k - 1)], B = poly[Math.min(poly.length - 1, k + 1)], ang = Math.atan2(B[1] - A[1], B[0] - A[0]);
+          const hw = w / 2 * (1 - .45 * k / (poly.length - 1));
+          sides[0].push([q[0] - Math.sin(ang) * hw, q[1] + Math.cos(ang) * hw]);
+          sides[1].push([q[0] + Math.sin(ang) * hw, q[1] - Math.cos(ang) * hw]);
+        });
+        sides.forEach(sd => ink(layer, spline(sd.filter((_, k) => k % 3 === 0 || k === sd.length - 1))));
+      } else ink(layer, spline(pts));
+      if (pan) paint(spline(pts), pan, .62, w + 1.6);
+      return poly;
+    }
+    const twig = (pts, pan, w = 1.2, layer = 'stem') => { ink(layer, spline(pts)); if (pan) paint(spline(pts), pan, .6, w + 1); };
+    const mark = (x, y, R, ang = 0) => G.fl.push({ x, y, R, ang });
+    const pans = a.leaf.pan, leafPan = i => pans.length ? pans[i % pans.length] : null;
+
+    /* ---- flowers and fruits ---- */
+    function bell(x, y, ang, L, pan) {   // Lapageria: three visible tepals, pale flecks lifted out of the wash
+      [[-.17, .2, .9], [.17, .2, .9], [0, .25, 1]].forEach(([da, wf, lf]) => addLeaf(x, y, ang + da, L * lf, L * wf, 'tepal', { veins: 'parallel', midrib: da === 0, op: da ? .78 : .86 }, pan, 'flower'));
+      for (let k = 0; k < 9; k++) { const q = polar(x, y, ang + (r() - .5) * .38, L * (.35 + r() * .5)); lift(ell(q[0], q[1], .8 + r() * .7, .6 + r() * .4, ang), .55); }
+      ink('flower', spline([polar(x, y, ang - .5, 3), polar(x, y, ang, -2), polar(x, y, ang + .5, 3)]), true);
+      mark(...polar(x, y, ang, L * .55), L * .58, ang);
+    }
+    function lily(x, y, ang, L, pan) {   // Alstroemeria seen at an angle: three broad outer tepals, three streaked inner ones
+      const map = squash(x, y, ang, .66);
+      for (let k = 0; k < 6; k++) {
+        const ta = ang + k * Math.PI / 3 + Math.PI / 6, outer = k % 2 === 0;
+        const T = addLeaf(x, y, ta, L * (outer ? 1 : .88), L * (outer ? .3 : .19), outer ? 'obovate' : 'lanceolate', { map, midrib: outer, op: outer ? .72 : .5 }, pan, 'flower');
+        if (!outer) {
+          paint(leaf(...polar(x, y, ta, L * .2), ta, L * .34, L * .07, 'lanceolate', { map }).d, 'gamboge', .7);
+          for (let j = 0; j < 4; j++) ink('flower', line(T.P(L * (.42 + j * .07), (j - 1.5) * 1.6), T.P(L * (.5 + j * .07), (j - 1.5) * 1.9)), true);
+        }
+      }
+      for (let k = 0; k < 6; k++) { const e = map(polar(x, y, ang - .5 + k * .2, L * .62)); ink('flower', spline([[x, y], map(polar(x, y, ang - .4 + k * .16, L * .32)), e]), true); ink('flower', circ(e[0], e[1], 1.1), true); }
+      mark(x, y, L * .8, ang);
+    }
+    function slipper(x, y, ang, s, pan) {   // Calceolaria: a small hood over an inflated pouch
+      const c = Math.cos(ang), sn = Math.sin(ang), P = (u, v) => [x + u * c - v * sn, y + u * sn + v * c];
+      const pouch = spline([[0, 0], [.35, -.42], [.95, -.46], [1.38, -.08], [1.28, .5], [.82, .74], [.32, .56], [.05, .26]].map(([u, v]) => P(u * s, v * s)), true);
+      const hood = spline([[0, -.02], [.12, -.32], [.42, -.5], [.58, -.3], [.32, -.08]].map(([u, v]) => P(u * s, v * s)), true);
+      ink('flower', pouch); ink('flower', hood);
+      ink('flower', spline([[.42, .18], [.8, .3], [1.12, .2]].map(([u, v]) => P(u * s, v * s))), true);
+      paint(pouch, pan, .85); paint(hood, pan, .7);
+      paint(spline([[.5, .3], [1.05, .22], [1.12, .5], [.72, .62]].map(([u, v]) => P(u * s, v * s)), true), 'ochre', .28);
+      for (const g of [-1, 1]) addLeaf(x, y, ang + Math.PI + g * .5, s * .32, s * .12, 'ovate', { midrib: false }, 'sap', 'flower');
+      mark(...P(s * .7, .1 * s), s * .95, ang);
+    }
+    function star(x, y, rot, L, pan, map, layer = 'flower') {   // Leucocoryne: six tepals, a pale throat, three staminodes
+      for (let k = 0; k < 6; k++) addLeaf(x, y, rot + k * Math.PI / 3, L, L * .26, 'tepal', { map, op: .7 }, pan, layer);
+      const m = map || (q => q);
+      lift(spline(Array.from({ length: 10 }, (_, k) => m(polar(x, y, k / 10 * TAU, L * .36))), true), .75);
+      ink(layer, spline(Array.from({ length: 8 }, (_, k) => m(polar(x, y, k / 8 * TAU, L * .12))), true), true);
+      for (let k = 0; k < 3; k++) { const e = m(polar(x, y, rot + .5 + k * TAU / 3, L * .4)); ink(layer, line(m([x, y]), e), true); const cl = ell(e[0], e[1], L * .07, L * .04, rot + .5 + k * TAU / 3); ink(layer, cl, true); paint(cl, 'gamboge', .9); }
+    }
+    function fuchsia(x, y, ang, L) {   // hanging: ovary, tube, two flared sepals, a violet corolla, stamens and style
+      const c = Math.cos(ang), s = Math.sin(ang), P = (u, v) => [x + u * c - v * s, y + u * s + v * c];
+      addLeaf(x, y, ang, L * .1, L * .045, 'ovate', { midrib: false }, 'sap', 'flower');
+      addLeaf(...P(L * .1, 0), ang, L * .2, L * .045, 'strap', { midrib: false, op: .82 }, 'magenta', 'flower');
+      const e = P(L * .3, 0);
+      for (const g of [-1, 1]) addLeaf(e[0], e[1], ang + g * 1.0, L * .38, L * .075, 'lanceolate', { bend: -g * .18, op: .84 }, 'magenta', 'flower');
+      for (const g of [-.2, .2, 0]) addLeaf(e[0], e[1], ang + g, L * .3, L * .1, 'obovate', { midrib: false, op: .78 }, 'violet', 'flower');
+      for (let k = 0; k < 4; k++) { const da = (k - 1.5) * .08, q = polar(e[0], e[1], ang + da, L * (.52 + k * .03)); ink('flower', line(e, q), true); ink('flower', ell(q[0], q[1], 1.3, .8, ang + da), true); }
+      const st = polar(e[0], e[1], ang, L * .72); ink('flower', line(e, st), true); ink('flower', circ(st[0], st[1], 1.4), true);
+      mark(...P(L * .4, 0), L * .55, ang);
+    }
+    function cup4(x, y, rot, L, map) {   // Eucryphia: four white petals painted only in their shadows, a boss of stamens
+      const m = map || (q => q);
+      for (let k = 0; k < 4; k++) {
+        const pa = rot + k * Math.PI / 2 + (r() - .5) * .12;
+        addLeaf(x, y, pa, L, L * .5, 'obovate', { map, midrib: false, op: .9 }, 'white', 'flower');
+        paint(leaf(x + Math.cos(pa) * L * .22 - Math.sin(pa) * L * .14, y + Math.sin(pa) * L * .22 + Math.cos(pa) * L * .14, pa + .12, L * .72, L * .2, 'lanceolate', { map }).d, 'olive', .2);
+      }
+      for (let k = 0; k < 26; k++) { const ka = k / 26 * TAU, q = m(polar(x, y, ka, L * (.34 + r() * .1))); ink('flower', line(m(polar(x, y, ka, L * .14)), q), true); ink('flower', circ(q[0], q[1], .8), true); paint(circ(q[0], q[1], 1), 'rose', .55); }
+      ink('flower', spline(Array.from({ length: 8 }, (_, k) => m(polar(x, y, k / 8 * TAU, L * .12))), true));
+      mark(x, y, L * 1.05, rot);
+    }
+    function tube(x, y, ang, s, pan) {   // Puya: a tubular flower over an ochre bract
+      addLeaf(x, y, ang + .55, s * .55, s * .2, 'ovate', { midrib: false }, 'ochre', 'flower');
+      addLeaf(x, y, ang, s, s * .3, 'lanceolate', { midrib: false, op: .85 }, pan, 'flower');
+      const t = polar(x, y, ang, s); ink('flower', line(t, polar(t[0], t[1], ang - .2, 3)), true); ink('flower', line(t, polar(t[0], t[1], ang + .2, 3)), true);
+    }
+    function drupe(x, y, R, pan, stalkAng) {   // Jubaea fruit with its perianth cap and a lifted highlight
+      ink('flower', circ(x, y, R));
+      const cap = polar(x, y, stalkAng, R);
+      ink('flower', spline([polar(cap[0], cap[1], stalkAng + 1.4, 2.2), polar(x, y, stalkAng, R + 1.6), polar(cap[0], cap[1], stalkAng - 1.4, 2.2)]), true);
+      paint(circ(x, y, R), pan, .85); lift(circ(x - R * .32, y - R * .34, R * .28), .6);
+    }
+    function cupule(x, y, ang, s) {   // Nothofagus: a lamellate cupule, split at the top
+      const L = addLeaf(x, y, ang, s, s * .42, 'ovate', { midrib: false, op: .85 }, 'ochre', 'flower');
+      for (let k = 1; k <= 3; k++) ink('flower', spline([L.P(s * k * .24, -s * .36), L.P(s * (k * .24 + .05), 0), L.P(s * k * .24, s * .36)]), true);
+      ink('flower', line(L.P(s * .7, 0), L.P(s * 1.08, 0)), true);
+      mark(...L.P(s * .5, 0), s * .9, ang);
+    }
+
+    /* ---- compositions, one per habit ---- */
+    const H = {
+      vine() {
+        const pts = [[66, 338], [72, 292], [98, 246], [86, 196], [114, 148], [152, 110], [192, 90], [228, 62], [248, 30]];
+        const S = stem(pts, 2.2, a.stem); G.axis = [pts[0], pts.at(-1)];
+        [.14, .28, .44, .58, .71, .83, .93].slice(0, a.leaf.count).forEach((t, k) => {
+          const n = along(S, t), side = k % 2 ? 1 : -1, len = a.leaf.len * (t > .9 ? .5 : 1 - t * .3);
+          const L = addLeaf(n.x, n.y, n.ang + side * (1 + r() * .25), len, a.leaf.w * len / a.leaf.len, a.leaf.shape, { veins: 'parallel', bend: side * .1 }, leafPan(k));
+          if (k === 1) G.dim = [L.base, L.tip];
+        });
+        [[.4, 1, 0], [.66, .9, 1]].slice(0, a.flower.count).forEach(([t, sc, k]) => {
+          const n = along(S, t), end = [n.x + 26 + k * 6, n.y + 16];
+          twig([[n.x, n.y], [n.x + 15, n.y + 1], end], a.stem, 1.2, 'flower');
+          bell(end[0], end[1], Math.PI / 2 + .1 - k * .2, a.flower.len * sc, a.flower.pan);
+        });
+        const n = along(S, .88), b = [n.x + 14, n.y + 8];
+        twig([[n.x, n.y], [n.x + 9, n.y], b], a.stem, 1, 'flower');
+        addLeaf(b[0], b[1], Math.PI / 2 - .3, 20, 4.5, 'tepal', { midrib: false }, a.flower.pan, 'flower');
+      },
+      erect() {
+        const pts = [[136, 338], [139, 290], [141, 240], [145, 190], [148, 150], [150, 124]];
+        const S = stem(pts, 1.8, a.stem); G.axis = [pts[0], pts.at(-1)];
+        for (let k = 0; k < a.leaf.count; k++) {
+          const t = .05 + k * .085, n = along(S, t), side = k % 2 ? 1 : -1, len = a.leaf.len * (1 - t * .45);
+          const L = addLeaf(n.x, n.y, n.ang + side * (1.05 - t * .5), len, a.leaf.w, a.leaf.shape, { bend: side * .22 }, leafPan(k));
+          if (k === 2) G.dim = [L.base, L.tip];
+        }
+        const top = [150, 124];
+        [[-2.48, 62], [-1.62, 68], [-.76, 60]].slice(0, a.flower.count).forEach(([ra, len], k) => {
+          const e = polar(top[0], top[1], ra, len), m = polar(top[0], top[1], ra + (k - 1) * .12, len * .5);
+          twig([top, m, e], a.stem, 1.1, 'flower');
+          lily(e[0], e[1], ra, a.flower.len * (1 - k * .06), a.flower.pan);
+        });
+        const e = polar(top[0], top[1], -.35, 40); twig([top, polar(top[0], top[1], -.5, 20), e], a.stem, 1, 'flower');
+        addLeaf(e[0], e[1], -.2, 16, 4, 'tepal', { midrib: false }, a.flower.pan, 'flower');
+      },
+      rosette() {
+        const base = [140, 336], pts = [[140, 334], [141, 270], [143, 200], [145, 130], [147, 64], [148, 26]];
+        for (let k = 0; k < a.leaf.count; k++) {
+          const ang = -2.92 + k * (2.68 / (a.leaf.count - 1)) + (r() - .5) * .08, len = a.leaf.len * (.72 + .28 * Math.sin(Math.PI * k / (a.leaf.count - 1)));
+          const L = addLeaf(base[0] + (k - 5) * 1.6, base[1], ang, len, a.leaf.w, a.leaf.shape, { bend: Math.sign(Math.cos(ang)) * .24, spines: 9, midrib: false }, leafPan(k));
+          if (k === 8) G.dim = [L.base, L.tip];
+        }
+        const S = stem(pts, 3.4, a.stem); G.axis = [pts[0], pts.at(-1)];
+        [.48, .56, .64, .72, .8, .88].forEach((t, k) => {
+          const n = along(S, t), side = k % 2 ? 1 : -1, ba = -Math.PI / 2 + side * .82, len = 46 - k * 3.6;
+          const e = polar(n.x, n.y, ba, len), m = polar(n.x, n.y, ba - side * .14, len * .5);
+          addLeaf(n.x, n.y, ba + side * .35, 9, 3.4, 'ovate', { midrib: false }, 'ochre', 'flower');
+          twig([[n.x, n.y], m, e], a.stem, 1.3, 'flower');
+          const B = dense([[n.x, n.y], m, e], 8);
+          for (let j = 0; j < a.flower.count; j++) {
+            const q = along(B, .22 + j * .1), g = j % 2 ? 1 : -1;
+            tube(q.x, q.y, q.ang + g * .9, a.flower.len, a.flower.pan);
+            if (k === 1 && j === 2) mark(q.x, q.y, 12, q.ang);
+          }
+        });
+      },
+      shrub() {
+        const main = [[122, 338], [125, 290], [129, 240], [133, 196]];
+        const S = stem(main, 2.4, a.stem); G.axis = [main[0], [134, 92]];
+        const branches = [[[133, 196], [116, 158], [100, 124], [92, 104]], [[133, 196], [152, 160], [170, 128], [180, 106]], [[133, 196], [135, 150], [138, 112], [140, 90]]];
+        const Bs = branches.map(b => stem(b, 1.6, a.stem));
+        [.2, .48, .76].forEach((t, k) => {
+          const n = along(S, t), len = a.leaf.len * (1 - k * .14);
+          for (const g of [-1, 1]) {
+            const L = addLeaf(n.x, n.y, n.ang + g * (1.15 + k * .08), len, a.leaf.w * (1 - k * .1), a.leaf.shape, { teeth: a.leaf.teeth, veins: a.leaf.veins, bend: g * .08 }, leafPan(k));
+            if (k === 0 && g === 1) G.dim = [L.base, L.tip];
+          }
+        });
+        Bs.forEach((B, k) => {
+          const n = along(B, .42);
+          for (const g of [-1, 1]) addLeaf(n.x, n.y, n.ang + g * 1.2, a.leaf.len * .58, a.leaf.w * .62, a.leaf.shape, { teeth: 6, veins: 3 }, leafPan(k));
+        });
+        let made = 0;
+        [[-2.5, -2.0, -1.5], [-1.4, -.95, -.5], [-1.85, -1.3]].forEach((rays, k) => {
+          const tip = branches[k].at(-1);
+          rays.forEach(ra => {
+            if (made++ >= a.flower.count) return;
+            const len = 16 + r() * 6, e = polar(tip[0], tip[1], ra, len);
+            twig([tip, polar(tip[0], tip[1], ra + .2, len * .5), e], a.stem, 1, 'flower');
+            slipper(e[0], e[1], ra + .25, a.flower.len * (.9 + r() * .2), a.flower.pan);
+          });
+        });
+      },
+      branch() {
+        const pts = [[36, 336], [70, 296], [96, 264], [128, 228], [150, 192], [182, 156], [204, 120], [236, 82], [252, 46]];
+        const S = stem(pts, 2.6, a.stem); G.axis = [pts[0], pts.at(-1)];
+        for (let k = 0; k < a.leaf.count; k++) {
+          const t = .1 + k * .115, n = along(S, t), side = k % 2 ? 1 : -1, la = n.ang + side * (1.05 + r() * .2), len = a.leaf.len * (1 - t * .3);
+          const b = polar(n.x, n.y, la, 4); ink('leaf', line([n.x, n.y], b));
+          const L = addLeaf(b[0], b[1], la, len, a.leaf.w * (1 - t * .25), a.leaf.shape, { teeth: a.leaf.teeth, veins: a.leaf.veins, bend: side * .06 }, leafPan(k));
+          if (k === 3) G.dim = [L.base, L.tip];
+        }
+        [.27, .5, .74].slice(0, a.flower.count).forEach((t, k) => {
+          const n = along(S, t), side = k % 2 ? -1 : 1, ca = n.ang + side * .55, s0 = polar(n.x, n.y, ca, 5);
+          ink('flower', line([n.x, n.y], s0), true);
+          cupule(s0[0], s0[1], ca, a.flower.len);
+        });
+      },
+      scape() {
+        const base = [128, 340];
+        ink('stem', ell(128, 350, 6, 9)); paint(ell(128, 350, 6, 9), 'ochre', .45);
+        for (let k = 0; k < 6; k++) ink('stem', spline([[124 + k * 1.6, 358], [120 + k * 3, 366], [116 + k * 4, 372 + r() * 6]]), true);
+        [[-1.92, 1, -.2], [-1.34, .82, .24], [-2.3, .9, -.26]].slice(0, a.leaf.count).forEach(([la, sc, bend], k) => {
+          const L = addLeaf(base[0], base[1], la, a.leaf.len * sc, a.leaf.w, a.leaf.shape, { bend, veins: 'parallel', midrib: false }, leafPan(k));
+          if (k === 1) G.dim = [L.base, L.tip];
+        });
+        const pts = [[128, 340], [131, 270], [135, 200], [139, 140], [142, 100]];
+        stem(pts, 1.8, a.stem); G.axis = [pts[0], pts.at(-1)];
+        const top = pts.at(-1);
+        for (const g of [-1, 1]) addLeaf(top[0], top[1], -Math.PI / 2 + g * .35, 15, 3, 'lanceolate', { midrib: false }, 'ochre', 'flower');
+        [[-2.55, 40], [-2.05, 44], [-1.57, 47], [-1.08, 44], [-.6, 40]].slice(0, a.flower.count).forEach(([ra, len], k) => {
+          const e = polar(top[0], top[1], ra, len);
+          twig([top, polar(top[0], top[1], ra + .08, len * .5), e], a.stem, .9, 'flower');
+          star(e[0], e[1], ra + r(), a.flower.len * (k === 2 ? 1 : .92), a.flower.pan, k === 2 ? null : squash(e[0], e[1], ra, .55));
+          mark(e[0], e[1], a.flower.len * 1.05, ra);
+        });
+        G.fl.unshift(G.fl.splice(2, 1)[0]);
+      },
+      infructescence() {
+        const ped = [[70, 340], [86, 300], [104, 262], [122, 226], [136, 196]], rach = [[136, 196], [146, 160], [154, 120], [160, 84], [164, 56]];
+        stem(ped, 5, a.stem); const R = stem(rach, 3, a.stem); G.axis = [ped[0], rach.at(-1)];
+        for (let k = 0; k < a.leaf.count; k++) {
+          const n = along(R, .04 + k / (a.leaf.count - 1) * .9), side = k % 2 ? 1 : -1, ba = n.ang + side * (1 + r() * .3), len = a.leaf.len * (1 - k * .05);
+          const e = polar(n.x, n.y, ba, len), m = polar(n.x, n.y, ba + side * .22, len * .5);
+          const B = dense([[n.x, n.y], m, e], 8);
+          twig([[n.x, n.y], m, e], a.stem, 1.2);
+          if (k === 1) G.dim = [[n.x, n.y], e];
+          for (let j = 0; j < a.flower.count; j++) {
+            const q = along(B, .3 + j * .13), g = j % 2 ? 1 : -1, Rr = a.flower.len * (.88 + r() * .2), c = polar(q.x, q.y, q.ang + g * Math.PI / 2, Rr + 1.4);
+            ink('flower', line([q.x, q.y], polar(q.x, q.y, q.ang + g * Math.PI / 2, 1.6)), true);
+            drupe(c[0], c[1], Rr, a.flower.pan, q.ang - g * Math.PI / 2);
+            if (k === 2 && j === 3) mark(c[0], c[1], Rr * 1.5);
+          }
+        }
+      },
+      arching() {
+        const pts = [[30, 300], [58, 244], [96, 198], [144, 166], [194, 154], [238, 162], [264, 188]];
+        const S = stem(pts, 1.8, a.stem); G.axis = [pts[0], pts.at(-1)];
+        for (let k = 0; k < a.leaf.count; k++) {
+          const t = .12 + k * .18, n = along(S, t);
+          for (const g of [-1, 1]) {
+            const L = addLeaf(n.x, n.y, n.ang + g * (1 + r() * .2), a.leaf.len * (1 - t * .2), a.leaf.w, a.leaf.shape, { teeth: a.leaf.teeth, veins: a.leaf.veins, bend: g * .08 }, leafPan(k));
+            if (k === 1 && g === -1) G.dim = [L.base, L.tip];
+          }
+        }
+        [.38, .55, .72, .89].slice(0, a.flower.count).forEach((t, k) => {
+          const n = along(S, t), sway = (r() - .5) * .3, len = 26 + k * 3;
+          const e = [n.x + Math.cos(Math.PI / 2 + sway) * len, n.y + len];
+          twig([[n.x, n.y], [n.x + 5, n.y + len * .45], e], a.stem, .9, 'flower');
+          fuchsia(e[0], e[1], Math.PI / 2 + sway * .6, a.flower.len * (1 - k * .05));
+        });
+      },
+      upright() {
+        const pts = [[150, 338], [148, 290], [146, 240], [148, 190], [152, 146], [156, 108]];
+        const S = stem(pts, 2.6, a.stem); G.axis = [pts[0], [158, 70]];
+        [.1, .32, .54].slice(0, a.leaf.count).forEach((t, k) => {
+          const n = along(S, t);
+          for (const g of [-1, 1]) {
+            const la = n.ang + g * (1.2 - k * .08), b = polar(n.x, n.y, la, 5);
+            ink('leaf', line([n.x, n.y], b));
+            const L = addLeaf(b[0], b[1], la, a.leaf.len * (1 - k * .14), a.leaf.w * (1 - k * .1), a.leaf.shape, { wave: a.leaf.wave, veins: a.leaf.veins, bend: g * .05 }, leafPan(k + (g > 0)));
+            if (k === 0 && g === 1) G.dim = [L.base, L.tip];
+          }
+        });
+        const n = along(S, .74), tip = pts.at(-1);
+        const fl = [[[n.x, n.y], -2.55, 34, .78], [tip, -1.5, 32, 1], [[n.x, n.y], -.55, 36, .74]];
+        fl.slice(0, a.flower.count).forEach(([o, fa, len, k]) => {
+          const e = polar(o[0], o[1], fa, len);
+          twig([o, polar(o[0], o[1], fa + .15, len * .5), e], a.stem, 1, 'flower');
+          cup4(e[0], e[1], fa + .4, a.flower.len, k < 1 ? squash(e[0], e[1], fa, k) : null);
+        });
+        G.fl.unshift(G.fl.splice(1, 1)[0]);
+        const bud = polar(tip[0], tip[1], -1.1, 14); twig([tip, bud], a.stem, .8, 'flower');
+        addLeaf(bud[0], bud[1], -1.1, 8, 3.6, 'ovate', { midrib: false }, 'white', 'flower');
+      }
+    };
+    H[a.habit]();
+
+    /* ---- the dissection roundel, magnification and scale bar ---- */
+    const [cx, cy] = a.detail.at, RR = 31;
+    ink('detail', circ(cx, cy, RR));
+    const D = {
+      ovary() {
+        ink('detail', circ(cx, cy, 19)); paint(circ(cx, cy, 19), a.flower.pan, .42);
+        for (let k = 0; k < 3; k++) {
+          const la = -Math.PI / 2 + k * TAU / 3, b = polar(cx, cy, la, 3.5);
+          const L = leaf(b[0], b[1], la, 13, 5.2, 'ovate', { midrib: false });
+          ink('detail', L.d); lift(L.d, .85);
+          for (const j of [0, 1]) { const q = polar(cx, cy, la + (j ? .18 : -.18), 8 + j * 3.5); ink('detail', circ(q[0], q[1], 1.5), true); }
+          ink('detail', line(polar(cx, cy, la + Math.PI / 3, 3), polar(cx, cy, la + Math.PI / 3, 18.5)), true);
+        }
+      },
+      tepal() {
+        const L = leaf(cx, cy + 25, -Math.PI / 2, 50, 11, 'obovate', {});
+        ink('detail', L.d); L.veins.forEach(v => ink('detail', v, true)); paint(L.d, a.flower.pan, .55);
+        paint(leaf(cx, cy + 8, -Math.PI / 2, 18, 5, 'lanceolate', {}).d, 'gamboge', .7);
+        for (let j = 0; j < 7; j++) ink('detail', line(L.P(30 + (j % 3) * 4, (j - 3) * 2.2), L.P(36 + (j % 3) * 4, (j - 3) * 2.4)), true);
+      },
+      flower() {
+        const L = leaf(cx - 2, cy + 24, -Math.PI / 2 + .1, 46, 9, 'lanceolate', { midrib: false });
+        ink('detail', L.d); paint(L.d, a.flower.pan, .75);
+        const B = leaf(cx - 2, cy + 24, -Math.PI / 2 - .7, 18, 6, 'ovate', {}); ink('detail', B.d); paint(B.d, 'ochre', .7);
+        for (let k = 0; k < 3; k++) { const e = L.P(50 + k, (k - 1) * 3); ink('detail', line(L.P(6, (k - 1) * 1.5), e), true); ink('detail', ell(e[0], e[1], 1.4, 2.4), true); }
+      },
+      pouch() {
+        const n0 = G.flower.length;
+        slipper(cx - 22, cy - 2, .06, 32, a.flower.pan); G.fl.pop();
+        G.detail.push(...G.flower.splice(n0));
+        for (let k = 0; k < 2; k++) { const s = [cx - 14 + k * 4, cy - 6], e = [cx - 2 + k * 9, cy - 18 - k * 2]; ink('detail', spline([s, [s[0] + 3, e[1] + 6], e]), true); ink('detail', ell(e[0], e[1], 3, 1.8, .4), true); paint(ell(e[0], e[1], 3, 1.8, .4), 'ochre', .7); }
+      },
+      nut() {
+        for (let k = 0; k < 4; k++) { const L = leaf(cx, cy + 16, -Math.PI / 2 + (k - 1.5) * .62, 22, 7, 'ovate', { midrib: false }); ink('detail', L.d); paint(L.d, 'ochre', .5); for (let j = 1; j < 4; j++) ink('detail', line(L.P(j * 5.5, -4), L.P(j * 5.5 + 1.5, 4)), true); }
+        [[-9, -6], [0, -12], [9, -6]].forEach(([dx, dy]) => { const c = [cx + dx, cy + dy], tri = spline([polar(c[0], c[1], -Math.PI / 2, 7), polar(c[0], c[1], Math.PI / 6, 6), polar(c[0], c[1], 5 * Math.PI / 6, 6)], true); ink('detail', tri); paint(tri, 'ochre', .85); });
+      },
+      star() { star(cx, cy, -Math.PI / 2, 26, a.flower.pan, null, 'detail'); },
+      coquito() {
+        ink('detail', circ(cx, cy, 18)); paint(circ(cx, cy, 18), 'ochre', .8);
+        ink('detail', circ(cx, cy, 11)); lift(circ(cx, cy, 11), .85);
+        for (let k = 0; k < 14; k++) ink('detail', line(polar(cx, cy, k / 14 * TAU, 12.5), polar(cx, cy, k / 14 * TAU + .1, 17)), true);
+        for (const da of [-.6, 0, .6]) { const q = polar(cx, cy, -Math.PI / 2 + da, 14.5); ink('detail', circ(q[0], q[1], 1.9)); }
+      },
+      below() {
+        for (let k = 0; k < 4; k++) { const L = leaf(cx, cy, Math.PI / 4 + k * Math.PI / 2, 24, 6.5, 'lanceolate', {}); ink('detail', L.d); paint(L.d, 'magenta', .8); }
+        for (let k = 0; k < 4; k++) { const L = leaf(cx, cy, k * Math.PI / 2, 13, 7, 'obovate', { midrib: false }); ink('detail', L.d); paint(L.d, 'violet', .78); }
+        for (let k = 0; k < 8; k++) { const q = polar(cx, cy, k / 8 * TAU, 5.5); ink('detail', circ(q[0], q[1], 1.1), true); }
+        ink('detail', circ(cx, cy, 1.8));
+      },
+      capsule() {
+        const L = leaf(cx, cy + 21, -Math.PI / 2, 40, 10, 'ovate', { midrib: false }); ink('detail', L.d); paint(L.d, 'ochre', .62);
+        for (const k of [-.5, 0, .5]) ink('detail', spline([L.P(2, k * 2), L.P(20, k * 15), L.P(39, k * 2)]), true);
+        for (const k of [-1, 0, 1]) { const e = L.P(46, k * 4); ink('detail', line(L.P(40, 0), e), true); ink('detail', circ(e[0], e[1], .9), true); }
+      }
+    };
+    det = true; D[a.detail.kind](); det = false;
+    G.text.push({ x: cx + RR * .7, y: cy - RR * .78, t: a.detail.mag, size: 8.5 });
+    const perCm = 290 / p.w / p.scale, barCm = [1, 2, 5, 10, 20, 50, 100].find(c => c * perCm >= 34), bar = barCm * perCm, by = 388;
+    let sb = `M22 ${by}h${f1(bar)}`;
+    for (let k = 0; k <= 5; k++) sb += `M${f1(22 + bar * k / 5)} ${by - (k % 5 ? 2 : 3.5)}v${k % 5 ? 4 : 7}`;
+    ink('detail', sb, true);
+    G.text.push({ x: 22 + bar + 5, y: by + 3, t: `${barCm} cm`, size: 8.5 });
+    G.text.push({ x: 268, y: 408, t: `Plate ${p.no}`, size: 11, anchor: 'end' });
+    G.text.push({ x: 22, y: 408, t: 'A. Ferrán del.', size: 8.5 });
+
+    /* ---- construction and pencilled measurements for the underdrawing ---- */
+    if (G.axis) { const [b, t] = G.axis, ang = Math.atan2(t[1] - b[1], t[0] - b[0]); G.cons.push(line(polar(b[0], b[1], ang, -10), polar(t[0], t[1], ang, 14))); }
+    G.fl.forEach(m => G.cons.push(ell(m.x, m.y, m.R, m.R * .7, m.ang)));
+    G.cons.push(line([cx - RR - 6, cy], [cx + RR + 6, cy]), line([cx, cy - RR - 6], [cx, cy + RR + 6]));
+    let dimMid = null;
+    if (G.dim) {
+      const [A, B] = G.dim, ang = Math.atan2(B[1] - A[1], B[0] - A[0]), o = ang - Math.PI / 2;
+      const a1 = polar(A[0], A[1], o, 8), b1 = polar(B[0], B[1], o, 8);
+      G.cons.push(line(a1, b1), line(polar(a1[0], a1[1], o, -3), polar(a1[0], a1[1], o, 3)), line(polar(b1[0], b1[1], o, -3), polar(b1[0], b1[1], o, 3)));
+      dimMid = polar((a1[0] + b1[0]) / 2, (a1[1] + b1[1]) / 2, o, 7);
+    }
+    const anchor = {
+      flower: G.fl[0] && [G.fl[0].x + G.fl[0].R * .75 + 3, G.fl[0].y - G.fl[0].R * .55],
+      flower2: G.fl[1] && [G.fl[1].x + G.fl[1].R * .75 + 3, G.fl[1].y + G.fl[1].R * .2],
+      leaf: dimMid, axis: G.axis && [G.axis[1][0] + 9, G.axis[1][1] + 16], detail: [cx - RR, cy - RR - 7]
+    };
+    p.measures.forEach(([t, k]) => {
+      const q = anchor[k]; if (!q) return;
+      const wEst = t.length * 4.4;
+      const n = { x: Math.max(6, Math.min(284 - wEst, q[0])), y: Math.max(12, Math.min(372, q[1])), w: wEst, t };
+      for (const m of G.notes) if (Math.abs(n.y - m.y) < 11 && n.x < m.x + m.w && m.x < n.x + n.w) n.y = m.y + 12;
+      G.notes.push(n);
+    });
+    return G;
+  }
+
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  const pathsOf = (list, cls = '') => list.map(x => `<path d="${x.d}"${x.thin ? ' class="v"' : ''}${cls}/>`).join('');
+  function inkSVG(G, p, sheet) {
+    const vb = sheet ? '0 0 290 360' : '0 0 290 420', keep = sheet ? ['stem', 'leaf', 'flower'] : ['stem', 'leaf', 'flower', 'detail'];
+    return `<svg class="lyr ink" viewBox="${vb}" aria-hidden="true" focusable="false"><g fill="none" stroke="var(--ink)" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">` +
+      keep.map(k => `<g class="g-${k}">${pathsOf(G[k])}</g>`).join('') + '</g>' +
+      (sheet ? '' : `<g class="g-text" fill="var(--ink)">${G.text.map(x => `<text x="${f1(x.x)}" y="${f1(x.y)}" font-size="${x.size}"${x.anchor ? ` text-anchor="${x.anchor}"` : ''}>${esc(x.t)}</text>`).join('')}</g>`) +
+      '</svg>';
+  }
+  function washSVG(G, sheet) {
+    const vb = sheet ? '0 0 290 360' : '0 0 290 420';
+    return `<svg class="lyr wash" viewBox="${vb}" aria-hidden="true" focusable="false"><g filter="url(#wc)" transform="translate(1.1 .9)">` +
+      G.wash.filter(x => !(sheet && x.det)).map(x => x.pan === 'lift' ? `<path d="${x.d}" fill="var(--sheet)" fill-opacity="${x.op}"/>`
+        : x.sw ? `<path d="${x.d}" fill="none" stroke="var(--pan-${x.pan})" stroke-opacity="${x.op}" stroke-width="${x.sw}" stroke-linecap="round"/>`
+        : `<path d="${x.d}" fill="var(--pan-${x.pan})" fill-opacity="${x.op}" stroke="var(--pan-${x.pan})" stroke-opacity=".5" stroke-width="1.1"/>`).join('') +
+      '</g></svg>';
+  }
+  function underSVG(G) {
+    return `<svg class="lyr under" viewBox="0 0 290 420" aria-hidden="true" focusable="false"><g fill="none" stroke="var(--graphite)" stroke-linecap="round">` +
+      `<g stroke-width=".5" opacity=".8" transform="translate(.9 -.7)">${pathsOf([...G.stem, ...G.leaf, ...G.flower, ...G.detail])}</g>` +
+      `<g stroke-width=".4" opacity=".55">${G.cons.map(d => `<path d="${d}"/>`).join('')}</g></g>` +
+      `<g fill="var(--graphite)">${G.notes.map(x => `<text class="pencil" x="${f1(x.x)}" y="${f1(x.y)}" font-size="8.5">${esc(x.t)}</text>`).join('')}</g></svg>`;
+  }
+
+  /* ======================================================================
+     Build the easel, the drawer and the caption
+     ====================================================================== */
+  const root = document.documentElement;
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const N = PLATES.length;
+  const GEO = PLATES.map(p => p.img ? null : draw(p));
+  const nameHTML = p => `<i>${esc(p.binomial)}</i> ${esc(p.authority)}`;
+  const label = p => `Plate ${p.no}, ${p.binomial}, ${p.alt}`;
+  const scaleText = p => p.scale === 1 ? 'Life size' : `1:${p.scale}`;
+  const sizeText = p => `${p.w} × ${p.h} cm`;
+
+  const stage = $('#stage');
+  stage.innerHTML = PLATES.map((p, i) => `<div class="plate" data-i="${i}" role="group" aria-roledescription="slide" aria-label="Plate ${p.no} of ${N}">` +
+    `<div class="art" role="img" aria-label="${esc(label(p))}">` +
+    (p.img ? `<img src="${esc(p.img)}" alt="" draggable="false">` : underSVG(GEO[i]) + washSVG(GEO[i]) + inkSVG(GEO[i], p)) + '</div></div>').join('');
+  const plates = $$('.plate', stage);
+  const parts = plates.map(el => ({
+    el, img: $('img', el), ink: $('.ink', el), wash: $('.wash', el), under: $('.under', el), lvl: 100,
+    layers: ['stem', 'leaf', 'flower', 'detail'].map(k => $$(`.g-${k} > *`, el)), text: $$('.g-text text', el)
+  }));
+
+  const sheetsEl = $('#sheets');
+  sheetsEl.innerHTML = PLATES.map((p, i) => `<li data-h="${p.habitat}"><button class="sheet" type="button" data-i="${i}" aria-label="Put Plate ${p.no} on the easel" aria-describedby="sl-${i}">` +
+    `<span class="s-art"><span class="s-in">${p.img ? `<img src="${esc(p.img)}" alt="">` : washSVG(GEO[i], true) + inkSVG(GEO[i], p, true)}</span></span>` +
+    `<span class="slabel" id="sl-${i}"><span class="s-no">Plate ${p.no}</span><span class="s-name">${esc(p.binomial)}</span>` +
+    `<span class="s-roll"><span class="s-hab">${HABITAT[p.habitat]}, ${esc(p.place)}, ${p.year}</span><span class="s-go" aria-hidden="true">Show on the easel</span></span></span></button></li>`).join('');
+  const sheets = $$('.sheet', sheetsEl);
+
+  /* ======================================================================
+     State and the plain behaviour (works without the libraries)
+     ====================================================================== */
+  const st = { i: 0, pos: 0, under: false, filter: 'all' };
+  const prevBtn = $('#prev'), nextBtn = $('#next'), underBtn = $('#under'), openBtn = $('#open'), live = $('#live'), cap = $('#caption');
+  const capEls = $$('[data-f]', cap);
+  const reduceMQ = matchMedia('(prefers-reduced-motion: reduce)');
+  let fx = null;   // motion layer, set inside gsap.matchMedia; null means instant changes
+
+  function layout() {
+    const pw = plates[0].offsetWidth || 1, sp = pw * (stage.clientWidth < 600 ? .66 : .62);
+    plates.forEach((el, i) => {
+      const d = i - st.pos, ad = Math.abs(d);
+      // One graphite sheet either side; anything further fades out before it reaches the stage edge.
+      const s = 1 - Math.min(ad, 2) * .18, o = ad <= 1 ? 1 - ad * .45 : Math.max(0, .55 - (ad - 1) * 1.1);
+      const rot = Math.max(-2, Math.min(2, d)) * 1.1;
+      el.style.transform = `translate3d(${(d * sp).toFixed(1)}px,0,0) rotate(${rot.toFixed(2)}deg) scale(${s.toFixed(3)})`;
+      el.style.opacity = o.toFixed(3);
+      el.style.zIndex = String(100 - Math.round(ad * 10));
+      el.style.visibility = o < .01 ? 'hidden' : '';
+    });
+  }
+  // Paint level: the wash shows below v% of the sheet, the underdrawing above it, along a slightly ragged edge.
+  function setLvl(k, v) {
+    const P = parts[k];
+    P.lvl = v;
+    if (P.img) return;
+    const amp = Math.min(.8, Math.min(v, 100 - v) / 10), e = [];
+    for (let j = 0; j <= 10; j++) e.push(`${j * 10}% ${(v + Math.sin(j * 1.9 + k * 2.3) * amp).toFixed(2)}%`);
+    P.wash.style.clipPath = `polygon(${e.join(',')},100% 100%,0% 100%)`;
+    P.under.style.clipPath = `polygon(0% 0%,100% 0%,${e.reverse().join(',')})`;
+  }
+  const restOf = k => k === st.i ? [1, st.under ? 100 : 0] : reduceMQ.matches ? [1, 0] : [0, 100];
+  function rest(k) {
+    const [ink, lvl] = restOf(k), P = parts[k];
+    if (P.ink) { P.ink.style.opacity = ink; P.ink.style.visibility = ink ? '' : 'hidden'; }
+    setLvl(k, lvl);
+  }
+  const restAll = () => parts.forEach((_, k) => rest(k));
+
+  function fillCaption(i) {
+    const p = PLATES[i], v = { no: `Plate ${p.no} of ${N}`, name: nameHTML(p), common: esc(p.common), family: esc(p.family), collected: esc(p.collected), locality: esc(p.locality), size: sizeText(p), scale: scaleText(p), note: p.note };
+    capEls.forEach(el => { el.innerHTML = v[el.dataset.f]; });
+  }
+  function setCurrent(i) {
+    plates.forEach((el, k) => { const c = k === i; el.classList.toggle('is-c', c); el.toggleAttribute('inert', !c); el.setAttribute('aria-hidden', String(!c)); });
+    prevBtn.setAttribute('aria-disabled', String(i === 0));
+    nextBtn.setAttribute('aria-disabled', String(i === N - 1));
+  }
+  function go(i, from) {
+    i = Math.max(0, Math.min(N - 1, i));
+    if (i === st.i && from !== 'drawer') return;
+    const prev = st.i;
+    st.i = i;
+    setCurrent(i);
+    const p = PLATES[i];
+    live.textContent = `Plate ${p.no} of ${N}, ${p.binomial}, ${p.common}`;
+    if (fx) return fx.step(prev, i, from);
+    st.pos = i; layout(); restAll(); fillCaption(i);
+  }
+
+  // Inputs that need no library: buttons, keys, horizontal wheel, and a click on a neighbour.
+  prevBtn.addEventListener('click', () => go(st.i - 1));
+  nextBtn.addEventListener('click', () => go(st.i + 1));
+  stage.addEventListener('keydown', e => {
+    const k = { ArrowLeft: st.i - 1, ArrowRight: st.i + 1, Home: 0, End: N - 1 }[e.key];
+    if (k === undefined) return;
+    e.preventDefault(); go(k);
+  });
+  let lockUntil = 0;
+  const gesture = dir => { const t = performance.now(); if (t < lockUntil) return; lockUntil = t + MOTION.lock; go(st.i + dir, 'gesture'); };
+  // Only horizontal wheel steps the easel; vertical wheel always scrolls the page.
+  stage.addEventListener('wheel', e => {
+    if (Math.abs(e.deltaX) <= Math.abs(e.deltaY) || Math.abs(e.deltaX) <= 10) return;
+    e.preventDefault(); gesture(Math.sign(e.deltaX));
+  }, { passive: false });
+  let downX = null;
+  stage.addEventListener('pointerdown', e => { downX = e.clientX; });
+  stage.addEventListener('click', e => {
+    if (downX !== null && Math.abs(e.clientX - downX) > 6) return;
+    const r = plates[st.i].getBoundingClientRect();
+    if (e.clientX < r.left) go(st.i - 1); else if (e.clientX > r.right) go(st.i + 1);
+  });
+
+  function setUnder(on) {
+    st.under = on;
+    underBtn.classList.toggle('is-on', on);
+    $('.a', underBtn).setAttribute('aria-hidden', String(on));
+    $('.b', underBtn).setAttribute('aria-hidden', String(!on));
+    if (fx) fx.drain(on); else rest(st.i);
+  }
+  underBtn.addEventListener('click', () => setUnder(!st.under));
+
+  /* ---- drawer: filters and sheets ---- */
+  const rail = $('#rail'), ind = $('#tab-ind'), tabs = $$('.tab', rail), countEl = $('#count');
+  function moveInd(btn) {
+    const W = rail.clientWidth, x = btn.offsetLeft, w = btn.offsetWidth;
+    ind.style.clipPath = `inset(0 ${W - x - w}px 0 ${x}px round 6px 6px 0 0)`;
+  }
+  const activeTab = () => tabs.find(t => t.getAttribute('aria-pressed') === 'true');
+  tabs.forEach(t => t.addEventListener('click', () => {
+    const h = t.dataset.h;
+    st.filter = h;
+    tabs.forEach(b => b.setAttribute('aria-pressed', String(b === t)));
+    let n = 0;
+    $$('li', sheetsEl).forEach(li => { const on = h === 'all' || li.dataset.h === h; li.hidden = !on; n += on; });
+    countEl.textContent = `${n} ${COUNT[h]}`;
+    moveInd(t);
+    fx && fx.filtered();
+  }));
+  rail.addEventListener('focusin', e => { if (e.target.matches('.tab')) moveInd(e.target); });
+  rail.addEventListener('focusout', e => { if (!rail.contains(e.relatedTarget)) moveInd(activeTab()); });
+  sheets.forEach(b => b.addEventListener('click', () => {
+    const i = +b.dataset.i, land = () => { go(i, 'drawer'); stage.focus({ preventScroll: true }); };
+    if (fx) fx.scrollTo($('#easel'), land);
+    else { $('#easel').scrollIntoView({ block: 'start' }); land(); }
+  }));
+  $('.skip').addEventListener('click', e => {
+    const d = $('#drawer');
+    if (fx) { e.preventDefault(); fx.scrollTo(d, () => d.focus({ preventScroll: true })); }
+  });
+
+  /* ---- the plate dialog and its print form ---- */
+  const dlg = $('#dlg'), form = $('#print'), done = $('#done');
+  function fillDialog(i) {
+    const p = PLATES[i], art = $('#dlg-art');
+    art.setAttribute('aria-label', label(p));
+    art.innerHTML = p.img ? `<img src="${esc(p.img)}" alt="">` : washSVG(GEO[i]) + inkSVG(GEO[i], p);
+    $('#dlg-no').textContent = `Plate ${p.no} of ${N}`;
+    $('#dlg-title').innerHTML = nameHTML(p);
+    $('#dlg-common').textContent = `${p.common}, ${p.family}. ${p.collected}, ${p.locality}. ${sizeText(p)}, ${scaleText(p).toLowerCase()}.`;
+    $('#dlg-note').innerHTML = p.note;
+    $('#dlg-measures').textContent = `Underdrawing measurements: ${p.measures.map(m => m[0]).join(', ')}.`;
+    $('#orig-dim').textContent = sizeText(p);
+  }
+  openBtn.addEventListener('click', () => {
+    fillDialog(st.i);
+    done.classList.add('off'); done.inert = true; form.classList.remove('off'); form.inert = false;
+    ['size', 'name', 'email'].forEach(k => showErr(k, '', k === 'size' ? null : form.elements[k]));
+    dlg.showModal();
+    fx && fx.dlgIn();
+  });
+  let closing = false;
+  function closeDlg() {
+    if (!dlg.open || closing) return;
+    if (!fx) return dlg.close();
+    closing = true;
+    fx.dlgOut(() => { closing = false; dlg.close(); });
+  }
+  $('#close').addEventListener('click', closeDlg);
+  $('#done-close').addEventListener('click', closeDlg);
+  dlg.addEventListener('cancel', e => { e.preventDefault(); closeDlg(); });
+  dlg.addEventListener('click', e => { if (e.target === dlg) closeDlg(); });
+  // Focus goes back to Open plate even where a click does not focus buttons (Safari).
+  dlg.addEventListener('close', () => { closing = false; fx && fx.dlgClosed(); openBtn.focus({ preventScroll: true }); });
+
+  const ERR = {
+    size: 'Choose a size.',
+    name: 'Add your name so Amalia knows who is asking.',
+    email: 'Add your email so Amalia can reply.',
+    emailBad: 'Check the email address; it needs an @ and a domain, like ana@example.cl.'
+  };
+  function showErr(key, msg, field) {
+    const box = $('#err-' + key);
+    $('span > span', box).textContent = msg || '';
+    box.classList.toggle('on', !!msg);
+    if (field) field.setAttribute('aria-invalid', String(!!msg));
+  }
+  function validate() {
+    const bad = [], size = form.elements.size.value, name = form.elements.name.value.trim(), email = form.elements.email.value.trim();
+    showErr('size', size ? '' : ERR.size); if (!size) bad.push($('input[name=size]', form));
+    showErr('name', name ? '' : ERR.name, form.elements.name); if (!name) bad.push(form.elements.name);
+    const okMail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    showErr('email', email ? (okMail ? '' : ERR.emailBad) : ERR.email, form.elements.email); if (!okMail) bad.push(form.elements.email);
+    return { bad, size, name, email };
+  }
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const v = validate();
+    if (v.bad.length) return v.bad[0].focus();
+    const p = PLATES[st.i], at = v.size === 'original' ? `the original size, ${sizeText(p)}` : v.size;
+    $('#done-text').textContent = `Thanks, ${v.name}. Amalia will email ${v.email} a price for Plate ${p.no} at ${at} within a week.`;
+    swapPanels(form, done, () => $('#done-text').focus());
+  });
+  form.addEventListener('input', e => {
+    const el = e.target;
+    if (el.name === 'size') showErr('size', '');
+    else if (el.getAttribute('aria-invalid') === 'true') showErr(el.name, '', el);
+  });
+  $('#again').addEventListener('click', () => {
+    $$('input[name=size]', form).forEach(x => { x.checked = false; });
+    swapPanels(done, form, () => $('input[name=size]', form).focus());
+  });
+  function swapPanels(from, to, then) {
+    to.classList.remove('off'); to.inert = false; from.inert = true;
+    const end = () => { from.classList.add('off'); then && then(); };
+    if (fx) fx.crossfade(from, to, end); else end();
+  }
+
+  /* ---- self-test (#selftest): data, drawings and the form ---- */
+  function runSelfTest() {
+    const fail = [];
+    const ok = (c, m) => { if (!c) fail.push(m); };
+    const cnt = h => PLATES.filter(p => p.habitat === h).length;
+    ok(cnt('forest') === 4 && cnt('coastal') === 3 && cnt('ravine') === 2, 'habitat counts are 4, 3, 2');
+    PLATES.forEach((p, i) => {
+      ok(p.img || ['stem', 'flower', 'detail'].every(k => GEO[i][k].length) && (p.art.leaf.shape === 'none' || GEO[i].leaf.length), `plate ${p.no} has its ink groups`);
+      ok(p.img || GEO[i].notes.length === p.measures.length, `plate ${p.no} pencils every measurement`);
+      ok(/^[A-Z][a-z]+ [a-z]+$/.test(p.binomial) && p.authority, `plate ${p.no} has a binomial and an authority`);
+    });
+    form.elements.name.value = 'Ana'; form.elements.email.value = 'ana@example.cl';
+    $$('input[name=size]', form)[1].checked = true;
+    form.requestSubmit();
+    ok(/Thanks, Ana\. Amalia will email ana@example\.cl a price for Plate 1 at A2 within a week\./.test($('#done-text').textContent), 'confirmation names the person, email, plate and size');
+    console.log(fail.length ? 'SELFTEST FAIL: ' + fail.join('; ') : 'SELFTEST PASS');
+  }
+
+  /* ---- first state, before any motion ---- */
+  setCurrent(0); fillCaption(0); layout(); restAll(); moveInd(tabs[0]);
+  document.fonts.ready.then(() => { layout(); moveInd(activeTab()); });
+  addEventListener('resize', () => { layout(); moveInd(activeTab()); fx && fx.resized(); });
+  if (location.hash === '#selftest') runSelfTest();
+
+  /* ======================================================================
+     Motion: GSAP + Lenis. Everything below is inside gsap.matchMedia.
+     ====================================================================== */
+  const libs = window.gsap && window.ScrollTrigger && window.SplitText && window.Observer && window.DrawSVGPlugin && window.Lenis;
+  if (!libs) return;   // CDN blocked: the page above already works with instant changes
+  root.classList.add('js');
+  gsap.registerPlugin(ScrollTrigger, SplitText, Observer, DrawSVGPlugin);
+  let introDone = false;
+
+  gsap.matchMedia().add({
+    motion: '(prefers-reduced-motion: no-preference)',
+    reduce: '(prefers-reduced-motion: reduce)',
+    fine: '(hover: hover) and (pointer: fine)',
+    wide: '(min-width: 992px)'
+  }, ctx => {
+    const { motion, fine, wide } = ctx.conditions;
+    if (!motion) {
+      // Reduced motion: final states, native scroll, no Lenis.
+      fx = null; st.pos = st.i; layout(); restAll(); fillCaption(st.i);
+      [cap, ...sheets, ...$$('.rule-draw')].forEach(el => el.classList.add('is-in'));
+      return;
+    }
+
+    const lenis = new Lenis({ lerp: .1, smoothWheel: true, autoRaf: false, anchors: false });
+    lenis.on('scroll', ScrollTrigger.update);
+    const tick = time => lenis.raf(time * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
+
+    /* ---- signature: the plate inks itself, then the wash rises from the stem base ---- */
+    const LV = { v: 0 };
+    const applyLV = () => setLvl(st.i, LV.v);
+    let sig = null, stepping = false;
+    function sign(k, delay = 0) {
+      sig && sig.kill();
+      gsap.killTweensOf(LV);
+      const P = parts[k];
+      P.leave && P.leave.kill();
+      if (P.img) {
+        sig = gsap.timeline({ delay, onComplete: () => { sig = null; } })
+          .fromTo(P.img, { clipPath: 'inset(100% 0% 0% 0%)', scale: 1.04 }, { clipPath: 'inset(0% 0% 0% 0%)', scale: 1, duration: 1.2, ease: 'expo.out', clearProps: 'clipPath,transform' });
+        return;
+      }
+      gsap.set(P.ink, { autoAlpha: 1 });
+      P.layers.forEach(els => gsap.set(els, { drawSVG: '0%' }));
+      gsap.set(P.text, { autoAlpha: 0 });
+      LV.v = 100; setLvl(k, 100);
+      sig = gsap.timeline({ delay, onComplete: () => { sig = null; cacheRect(); } });
+      P.layers.forEach((els, j) => sig.to(els, { drawSVG: '100%', duration: MOTION.ink, ease: 'power3.inOut', stagger: { amount: .3 } }, j * MOTION.layer));
+      sig.to(P.text, { autoAlpha: 1, duration: .5, ease: 'power1.out' }, MOTION.layer * 3 + .3);
+      if (!st.under) {
+        sig.fromTo(LV, { v: 100 }, { v: 0, duration: MOTION.wash, ease: 'expo.out', onUpdate: applyLV }, MOTION.washAt)
+          .fromTo(P.wash, { scale: 1.04 }, { scale: 1, duration: MOTION.wash, ease: 'expo.out' }, MOTION.washAt);
+      }
+    }
+    // The plate that leaves the centre goes back to graphite: paint drains, ink fades.
+    function leave(k) {
+      const P = parts[k], o = { v: P.lvl };
+      P.leave && P.leave.kill();
+      if (P.img) return;
+      P.leave = gsap.timeline()
+        .to(o, { v: 100, duration: .35, ease: 'power2.in', onUpdate: () => setLvl(k, o.v) }, 0)
+        .to(P.ink, { autoAlpha: 0, duration: .35, ease: 'power2.in' }, 0)
+        .set(P.wash, { scale: 1 });
+    }
+
+    /* ---- TR1: the caption drops out of its masks and the next one rises ---- */
+    let splits = null, capOut = null, capIn = null;
+    const split = () => capEls.map(el => SplitText.create(el, { type: 'lines', mask: 'lines' }));
+    const lines = () => splits ? splits.flatMap(s => s.lines) : [];
+    const unsplit = () => { splits && splits.forEach(s => s.revert()); splits = null; };
+    function riseIn() {
+      splits = split();
+      gsap.set(capEls, { autoAlpha: 1 });
+      cap.classList.add('is-in');
+      capIn = gsap.fromTo(lines(), { yPercent: 100, autoAlpha: 0 }, { yPercent: 0, autoAlpha: 1, duration: .6, ease: 'expo.out', stagger: .07, onComplete: unsplit });
+    }
+    function swapCaption(i) {
+      capOut && capOut.kill(); capIn && capIn.kill();
+      if (!cap.classList.contains('is-in')) { fillCaption(i); return; }   // the intro will raise it
+      if (!splits) splits = split();
+      capOut = gsap.to(lines(), { yPercent: 100, autoAlpha: 0, duration: .25, ease: 'power2.in', stagger: .03,
+        onComplete: () => { unsplit(); fillCaption(i); riseIn(); } });
+    }
+
+    /* ---- stepping ---- */
+    function step(prev, i, from) {
+      if (prev !== i) leave(prev);
+      stepping = true;
+      gsap.to(st, { pos: i, duration: from === 'drawer' ? MOTION.drawerStep : MOTION.step, ease: 'power3.out', overwrite: true, onUpdate: layout,
+        onComplete: () => { stepping = false; cacheRect(); } });
+      sign(i, prev === i ? 0 : .3);
+      swapCaption(i);
+    }
+
+    /* ---- pointer: the paint line follows the pointer's height over the easel plate ---- */
+    let rect = null, over = false;
+    const cacheRect = () => { rect = plates[st.i].getBoundingClientRect(); };
+    const toLvl = gsap.quickTo(LV, 'v', { duration: .5, ease: 'expo.out', onUpdate: applyLV });
+    const refill = () => { over = false; if (!st.under && !sig) gsap.to(LV, { v: 0, duration: .6, ease: 'expo.out', overwrite: true, onUpdate: applyLV }); };
+    function onMove(e) {
+      if (st.under || sig || stepping || parts[st.i].img || e.pointerType !== 'mouse') return;
+      if (!rect) cacheRect();
+      const inside = e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom;
+      if (inside) { over = true; LV.v = parts[st.i].lvl; toLvl(Math.max(0, Math.min(100, (e.clientY - rect.top) / rect.height * 100)), LV.v); }
+      else if (over) refill();
+    }
+    const onLeave = () => { if (over) refill(); };
+    if (fine) {
+      stage.addEventListener('pointerenter', cacheRect);
+      stage.addEventListener('pointermove', onMove);
+      stage.addEventListener('pointerleave', onLeave);
+    }
+
+    /* ---- swipe and drag: one gesture, one plate ---- */
+    const obs = Observer.create({ target: stage, type: 'touch,pointer', tolerance: 10, dragMinimum: 6, lockAxis: true,
+      onLeft: () => gesture(1), onRight: () => gesture(-1) });
+
+    /* ---- the load: rules draw, the easel deals in from the right, Plate 1 inks itself ---- */
+    function intro() {
+      if (introDone) return;
+      introDone = true;
+      gsap.timeline()
+        .fromTo($$('.caption .rule-draw'), { scaleX: 0 }, { scaleX: 1, duration: 1, ease: 'expo.out', stagger: .06, onComplete() { this.targets().forEach(el => el.classList.add('is-in')); } }, .1)
+        .fromTo(st, { pos: -3 }, { pos: st.i, duration: MOTION.deal, ease: 'expo.out', onUpdate: layout }, .2)
+        .fromTo([prevBtn, nextBtn, underBtn, openBtn].filter(b => b.getAttribute('aria-disabled') !== 'true'), { y: 4, autoAlpha: .6 }, { y: 0, autoAlpha: 1, duration: .2, ease: 'power2.out', stagger: .08, clearProps: 'transform,opacity,visibility' }, .3)
+        .call(() => sign(st.i), null, 1.1)
+        .call(() => document.fonts.ready.then(() => { if (!cap.classList.contains('is-in')) riseIn(); }), null, 1.3);
+    }
+    if (introDone) { st.pos = st.i; layout(); restAll(); unsplit(); gsap.set(capEls, { autoAlpha: 1 }); [cap, ...$$('.caption .rule-draw')].forEach(el => el.classList.add('is-in')); }
+    else {
+      st.pos = -3; layout(); parts.forEach((_, k) => { if (parts[k].ink) { parts[k].ink.style.opacity = 0; parts[k].ink.style.visibility = 'hidden'; } setLvl(k, 100); });
+      ScrollTrigger.create({ trigger: stage, start: 'top 85%', once: true, onEnter: intro });
+    }
+
+    /* ---- scroll: drawer sheets open from the bottom edge, the way the wash rises; the rail rule draws ---- */
+    const reveal = els => {
+      els = els.filter(el => !el.classList.contains('is-in'));
+      if (!els.length) return;
+      gsap.fromTo(els, { clipPath: 'inset(100% 0% 0% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: 1.2, ease: 'expo.out', stagger: .08,
+        onComplete: () => els.forEach(el => { el.classList.add('is-in'); gsap.set(el, { clearProps: 'clipPath' }); }) });
+      gsap.fromTo(els.map(el => $('.s-in', el)), { scale: 1.15 }, { scale: 1, duration: 1.2, ease: 'expo.out', stagger: .08, clearProps: 'transform' });
+    };
+    ScrollTrigger.batch(sheets, { start: 'top 90%', once: true, onEnter: reveal });
+    const railRule = $('#rail-rule');
+    if (!railRule.classList.contains('is-in')) gsap.fromTo(railRule, { scaleX: 0 }, { scaleX: 1, duration: .9, ease: 'expo.out', onComplete: () => railRule.classList.add('is-in'),
+      scrollTrigger: { trigger: rail, start: 'clamp(top 90%)', once: true } });
+
+    /* ---- the motion layer the plain code calls ---- */
+    fx = {
+      step,
+      drain(on) {
+        sig && sig.progress(1);
+        gsap.to(LV, { v: on ? 100 : 0, duration: on ? .8 : .6, ease: 'expo.out', overwrite: true, onUpdate: applyLV });
+      },
+      filtered() { ScrollTrigger.refresh(); reveal(sheets.filter(el => el.offsetParent)); },
+      scrollTo(el, done) {
+        const y = el.getBoundingClientRect().top - (wide ? 24 : 12);
+        if (Math.abs(y) < 4) return done();
+        lenis.scrollTo(el, { offset: -(wide ? 24 : 12), duration: Math.min(1.3, .65 + Math.abs(y) / 4000), easing: t => 1 - Math.pow(2, -10 * t), onComplete: done });
+      },
+      dlgIn() {
+        lenis.stop();
+        gsap.fromTo([$('.dlg-panel'), $('#close')], { autoAlpha: 0, y: 12 }, { autoAlpha: 1, y: 0, duration: .45, ease: 'expo.out', clearProps: 'transform' });
+      },
+      dlgOut(then) { gsap.to([$('.dlg-panel'), $('#close')], { autoAlpha: 0, y: 8, duration: .3, ease: 'power2.in', onComplete: then }); },
+      dlgClosed() { gsap.set([$('.dlg-panel'), $('#close')], { clearProps: 'all' }); lenis.start(); },
+      crossfade(from, to, end) {
+        gsap.timeline({ onComplete: end })
+          .to(from, { autoAlpha: 0, y: -4, duration: .15, ease: 'power2.in' })
+          .fromTo(to, { autoAlpha: 0, y: 4 }, { autoAlpha: 1, y: 0, duration: .25, ease: 'power2.out', clearProps: 'all' })
+          .set(from, { clearProps: 'all' });
+      },
+      resized() { cacheRect(); }
+    };
+
+    // Cleanup runs when a query flips (reduced motion turned on, pointer or width change).
+    return () => {
+      fx = null;
+      obs.kill();
+      stage.removeEventListener('pointerenter', cacheRect);
+      stage.removeEventListener('pointermove', onMove);
+      stage.removeEventListener('pointerleave', onLeave);
+      sig && sig.kill(); capOut && capOut.kill(); capIn && capIn.kill(); unsplit();
+      gsap.ticker.remove(tick);
+      gsap.ticker.lagSmoothing(500, 33);
+      lenis.destroy();
+      st.pos = st.i; layout();
+      parts.forEach(P => { P.leave && P.leave.kill(); if (P.ink) gsap.set([...P.layers.flat(), ...P.text, P.wash], { clearProps: 'all' }); });
+      restAll(); fillCaption(st.i);
+    };
+  });
+})();
+</script>
+</body>
+</html>

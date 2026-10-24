@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wharf Lane Pharmacy questions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inclusive+Sans:wght@300..700&display=swap">
+<style>
+:root {
+  /* colour: a dispensary bench, a printed label, amber bottle glass */
+  --bench: #DCE5F0;
+  --bench-deep: #CBD7E6;
+  --rule: #B0BCCB;
+  --label: #FFFFFF;
+  --thermal: #2A292D;
+  --amber: #7F4209;
+
+  --font: 'Inclusive Sans', system-ui, sans-serif;
+
+  /* type: 1.25 from a 17px base */
+  --step--1: .8125rem;
+  --step-0: 1.0625rem;
+  --step-1: 1.3125rem;
+  --step-2: 1.625rem;
+  --step-4: clamp(2.25rem, 1.6rem + 2.6vw, 3.25rem);
+
+  /* spacing: 4px base */
+  --s1: .25rem; --s2: .5rem; --s3: .75rem; --s4: 1rem; --s5: 1.5rem;
+  --s6: 2rem; --s7: 3rem; --s8: 4.5rem; --s9: 6.5rem;
+
+  --radius-label: 6px;
+  --radius-ring: 50%;
+  --rule-w: 1px;
+  --apply: .36s;
+  --ease-out: cubic-bezier(.2, .7, .2, 1);
+  --ease-back: cubic-bezier(.34, 1.56, .64, 1);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bench);
+  color: var(--thermal);
+  font: 400 var(--step-0)/1.55 var(--font);
+}
+h2, h3, p, dl, dd, ul { margin: 0; }
+ul { padding: 0; }
+.vh {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--amber); outline-offset: 3px; border-radius: 4px; }
+[tabindex="-1"]:focus { outline: none; }
+
+/* ---------- layout ---------- */
+.faq {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--s9) clamp(16px, 4vw, 48px);
+  display: grid;
+  gap: var(--s7);
+}
+.faq-head h2 {
+  font-size: var(--step-4);
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -.01em;
+  max-width: 14ch;
+}
+.intro { margin-top: var(--s5); max-width: 34ch; }
+
+/* topic index: one wrapping row */
+.topics { margin-top: var(--s6); scroll-margin-top: 24px; }
+.topics ul { list-style: none; display: flex; flex-wrap: wrap; gap: var(--s2) var(--s6); }
+.topics a {
+  display: inline-flex; gap: var(--s2); align-items: baseline;
+  padding-block: var(--s2);
+  font-size: var(--step-1); font-weight: 500;
+  text-decoration: none;
+  background: linear-gradient(currentColor, currentColor) 0 100% / 0 .08em no-repeat;
+}
+.count { font-size: var(--step--1); font-weight: 600; }
+
+/* counter block: the dispensary hatch */
+.counter h3 { font-size: var(--step-1); font-weight: 500; line-height: 1.35; }
+.phone {
+  display: inline-block;
+  margin-top: var(--s3);
+  font-size: var(--step-2); font-weight: 600; line-height: 1.2;
+  white-space: nowrap;
+}
+.mail { display: inline-block; margin-top: var(--s2); }
+.hours {
+  margin-top: var(--s5);
+  display: grid; grid-template-columns: auto 1fr; gap: var(--s1) var(--s5);
+  padding-top: var(--s4);
+  border-top: var(--rule-w) solid var(--rule);
+}
+.hours dt { font-weight: 600; }
+/* Inclusive Sans has no tnum, so times sit in fixed, right-aligned cells */
+.t { display: inline-block; min-width: 2.7em; text-align: right; }
+.t:first-child { text-align: left; }
+.address { margin-top: var(--s4); }
+
+/* links in running text keep a non-colour cue */
+.phone, .mail, .label a, .back {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: .2em;
+}
+
+/* ---------- question list ---------- */
+.group + .group { margin-top: var(--s8); }
+.group h3 {
+  position: relative;
+  font-size: var(--step-2); font-weight: 600; line-height: 1.2;
+  margin-bottom: var(--s4);
+  scroll-margin-top: 24px;
+}
+/* :target bar shows where an index jump landed */
+.group h3::before {
+  content: ""; position: absolute;
+  left: calc(-1 * var(--s3)); top: .1em; bottom: .1em; width: 4px;
+  background: var(--amber);
+  transform: scaleY(0); transform-origin: top;
+}
+.group h3:target::before { transform: scaleY(1); }
+
+details {
+  margin-inline: calc(-1 * var(--s3));
+  border-top: var(--rule-w) solid var(--rule);
+}
+details:last-of-type { border-bottom: var(--rule-w) solid var(--rule); }
+summary {
+  display: grid; grid-template-columns: 1fr 28px; gap: var(--s4); align-items: center;
+  min-height: 48px;
+  padding: var(--s4) var(--s3);
+  font-size: var(--step-1); font-weight: 500; line-height: 1.35;
+  cursor: pointer;
+  list-style: none;
+  -webkit-tap-highlight-color: transparent;
+}
+summary::-webkit-details-marker { display: none; }
+summary:focus-visible { outline-offset: -3px; }
+
+/* indicator: plus that becomes minus, drawn in CSS */
+.ind {
+  position: relative; width: 28px; height: 28px;
+  border: 1.5px solid var(--thermal); border-radius: var(--radius-ring);
+  color: var(--thermal);
+}
+.ind::before, .ind::after {
+  content: ""; position: absolute; left: 50%; top: 50%;
+  width: 12px; height: 1.5px; margin: -.75px 0 0 -6px;
+  background: currentColor;
+}
+.ind::after { transform: rotate(90deg) scaleX(1); }
+details[open] .ind { border-color: var(--amber); color: var(--amber); }
+details[open] .ind::after { transform: rotate(90deg) scaleX(0); }
+summary:active .ind { border-color: var(--amber); }
+
+@media (hover: hover) {
+  summary:hover { background: var(--bench-deep); }
+  summary:hover .ind { background: var(--thermal); color: var(--label); }
+  details[open] > summary:hover .ind { background: var(--amber); color: var(--label); }
+  .topics a:hover, .phone:hover, .mail:hover, .label a:hover, .back:hover { color: var(--amber); }
+  .topics a:hover { background-size: 100% .08em; }
+  .phone:hover, .mail:hover, .label a:hover, .back:hover { text-decoration-thickness: 2px; }
+}
+.topics a:focus-visible { color: var(--amber); background-size: 100% .08em; }
+.phone:focus-visible, .mail:focus-visible, .label a:focus-visible, .back:focus-visible {
+  color: var(--amber); text-decoration-thickness: 2px;
+}
+@media (hover: none) {
+  .topics a { background-size: 100% 1px; }
+}
+
+/* ---------- the dispensing label ---------- */
+.label {
+  margin: 0 var(--s3) var(--s4);
+  padding: var(--s4) var(--s5) var(--s4);
+  background: var(--label);
+  border-radius: var(--radius-label);
+}
+.for {
+  font-size: var(--step--1); font-weight: 600; line-height: 1.4;
+  padding-bottom: var(--s3);
+  border-bottom: var(--rule-w) solid var(--rule);
+}
+.answer { padding-block: var(--s4); max-width: 62ch; }
+.answer p + p, .answer p + ul, .answer ul + p { margin-top: var(--s3); }
+.answer ul { list-style: none; display: grid; gap: var(--s1); }
+.answer li { padding-left: var(--s4); position: relative; }
+.answer li::before {
+  content: ""; position: absolute; left: 0; top: .7em;
+  width: 6px; height: 1.5px; background: var(--thermal);
+}
+.facts {
+  display: grid; grid-template-columns: auto 1fr; gap: var(--s1) var(--s5);
+  align-items: baseline;
+  padding-top: var(--s3);
+  border-top: var(--rule-w) solid var(--rule);
+}
+.facts dt { font-size: var(--step--1); font-weight: 600; }
+.back { display: inline-block; margin-top: var(--s4); padding-block: var(--s2); }
+
+/* ---------- desktop: questions left, hatch on the right ---------- */
+@media (min-width: 1000px) {
+  .faq {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: 32px;
+    row-gap: var(--s8);
+  }
+  .faq-head, .questions { grid-column: 1 / 8; }
+  .counter { grid-column: 9 / 13; grid-row: 1 / span 2; align-self: start; }
+  .label { margin-inline: calc(var(--s3) + var(--s4)); }
+}
+@media (min-width: 1000px) and (min-height: 760px) {
+  .counter { position: sticky; top: 32px; }
+}
+
+/* ---------- motion, only when wanted ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+  summary { transition: background-color .2s ease-out; }
+  .ind {
+    transition: transform .35s var(--ease-back), background-color .2s ease-out,
+                color .2s ease-out, border-color .2s ease-out;
+  }
+  .ind::after { transition: transform .2s var(--ease-out); }
+  summary:active .ind { transform: scale(.9); transition-duration: .12s, .2s, .2s, .2s; transition-timing-function: ease-out; }
+
+  /* the label is smoothed on left to right, like a thumb pressing it onto the box */
+  details[open] > .label { animation: apply var(--apply) var(--ease-out) backwards; }
+
+  .topics a {
+    transition: background-size .4s cubic-bezier(.35, 0, 0, 1), color .2s ease-out;
+    background-position: 100% 100%;
+  }
+  .topics a:hover, .topics a:focus-visible { background-position: 0 100%; }
+  .phone, .mail, .label a, .back {
+    transition: color .2s ease-out, text-decoration-thickness .2s ease-out;
+  }
+
+  .group h3::before { transition: transform .35s var(--ease-out); }
+}
+@keyframes apply {
+  from { clip-path: inset(0 100% 0 0 round var(--radius-label)); }
+  to { clip-path: inset(0 0 0 0 round var(--radius-label)); }
+}
+</style>
+</head>
+<body>
+
+<section class="faq" aria-labelledby="faq-title">
+
+  <header class="faq-head">
+    <h2 id="faq-title">What people ask at the counter</h2>
+    <p class="intro">Straight answers from the pharmacists at Wharf Lane. If yours is not here, ring us and ask for the duty pharmacist.</p>
+    <nav class="topics" id="topics" aria-label="Topics" tabindex="-1">
+      <ul>
+        <li><a href="#prescriptions">Prescriptions <span class="count">5<span class="vh"> questions</span></span></a></li>
+        <li><a href="#vaccines">Vaccines <span class="count">4<span class="vh"> questions</span></span></a></li>
+        <li><a href="#delivery">Delivery <span class="count">4<span class="vh"> questions</span></span></a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <aside class="counter" aria-labelledby="counter-title">
+    <h3 id="counter-title">Not answered here?</h3>
+    <a class="phone" href="tel:+441632960418" target="_blank" rel="noopener">01632 960 418</a><br>
+    <a class="mail" href="mailto:dispensary@wharflanepharmacy.example" target="_blank" rel="noopener">Email the dispensary</a>
+    <dl class="hours">
+      <dt>Mon to Fri</dt><dd><span class="t">8:30</span> to <span class="t">18:30</span></dd>
+      <dt>Saturday</dt><dd><span class="t">9:00</span> to <span class="t">17:00</span></dd>
+      <dt>Sunday</dt><dd>Closed</dd>
+    </dl>
+    <p class="address">14 Wharf Lane, Ashwell Bridge</p>
+  </aside>
+
+  <div class="questions">
+
+    <div class="group">
+      <h3 id="prescriptions" tabindex="-1">Prescriptions</h3>
+
+      <details name="faq">
+        <summary>How long does a repeat prescription take?<span class="ind" aria-hidden="true"></span></summary>
+        <div class="label">
+          <p class="for">For: anyone on repeat medication</p>
+          <div class="answer">
+            <p>Order through the NHS App or your GP surgery a week before you run out. The surgery can take up to 2 working days to sign it. Once it reaches us electronically, we have it bagged by the next working day and text you when it is ready.</p>
+          </div>
+          <dl class="facts">
+            <dt>Takes</dt><dd>3 to 4 working days in total</dd>
+          </dl>
+        </div>
+      </details>
+
+      <details name="faq" open>
+        <summary>Do I have to pay for my prescription?<span class="ind" aria-hidden="true"></span></summary>
+        <div class="label">
+          <p class="for">For: adults paying in England</p>
+          <div class="answer">
+            <p>Most adults pay the NHS charge per item. You do not pay if you are 60 or over, under 16, or 16 to 18 in full-time education. You also do not pay if you hold a valid maternity or medical exemption certificate, or receive certain benefits.</p>
+            <p>A prescription prepayment certificate (3 or 12 months) saves money if you need more than 3 items in 3 months, or more than 11 in 12 months.</p>
+            <p><a href="https://www.nhs.uk/nhs-services/prescriptions-and-pharmacies/who-can-get-free-prescriptions/" target="_blank" rel="noopener">Check if you can get free prescriptions on the NHS website</a></p>
+          </div>
+          <dl class="facts">
+            <dt>Costs</dt><dd>NHS charge per item, or free if exempt</dd>
+            <dt>Bring</dt><dd>Your exemption certificate</dd>
+          </dl>
+        </div>
+      </details>
+
+      <details name="faq">
+        <summary>Can someone else collect it for me?<span class="ind" aria-hidden="true"></span></summary>
+        <div class="label">
+          <p class="for">For: anyone collecting for someone else</p>
+          <div class="answer">
+            <p>Yes. They give us your name and address. For controlled drugs, such as some strong painkillers, they show their own photo ID and sign for them.</p>
+          </div>
+          <dl class="facts">
+            <dt>Bring</dt><dd>Their photo ID, for controlled drugs</dd>
+          </dl>
+        </div>
+      </details>
+
+      <details name="faq">
+        <summary>What happens if my medicine is out of stock?<span class="ind" aria-hidden="true"></span></summary>
+        <div class="label">
+          <p class="for">For: anyone waiting on an item</p>
+          <div class="answer">
+            <p>We try our other wholesalers the same day. If there is a national shortage, the pharmacist agrees an alternative with your GP before anything changes, and we never switch strength or brand without telling you. You get a text when it is in.</p>
+          </div>
+        </div>
+      </details>
+
+      <details name="faq">
+        <summary>Can I get treatment without seeing a GP?<span class="ind" aria-hidden="true"></span></summary>
+        <div class="label">
+          <p class="for">For: anyone aged 1 or over with one of seven conditions</p>
+          <div class="answer">
+            <p>Under Pharmacy First, our pharmacists can assess you in the consultation room and, if you need it, supply prescription-only treatment for:</p>
+            <ul>
+              <li>sinusitis, aged 12 and over</li>
+              <li>sore throat, aged 5 and over</li>
+              <li>earache, aged 1 to 17</li>
+              <li>infected insect bites, aged 1 and over</li>
+              <li>impetigo, aged 1 and over</li>
+              <li>shingles, aged 18 and over</li>
+              <li>uncomplicated urinary tract infections in women aged 16 to 64</li>
+            </ul>
+            <p>You can walk in, or your GP or 111 can refer you.</p>
+          </div>
+          <dl class="facts">
+            <dt>Takes</dt><dd>About 15 minutes</dd>
+            <dt>Costs</dt><dd>Free consultation; the usual charge applies to any medicine supplied</dd>
+          </dl>
+        </div>
+      </details>
+
+      <a class="back" href="#topics">Back to topics</a>
+    </div>
+
+    <div class="group">
+      <h3 id="vaccines" tabindex="-1">Vaccines</h3>
+
+      <details name="faq">
+        <summary>Can I get my NHS flu jab here?<span class="ind" aria-hidden="true"></span></summary>
+        <div class="label">
+          <p class="for">For: people the NHS offers it to</p>
+          <div class="answer">
+            <p>Yes, from early October while stock lasts. It is free if you are 65 or over, pregnant, have certain long-term conditions, are a carer, or live in a care home. Otherwise it is private. Book by phone, or walk in on Tuesday and Thursday mornings.</p>
+          </div>
+          <dl class="facts">
+            <dt>Takes</dt><dd>About 10 minutes</dd>
+            <dt>Costs</dt><dd>Free if eligible, £18 privately</dd>
+          </dl>
+        </div>
+      </details>
+
+      <details name="faq">
+        <summary>Do you give COVID-19 vaccines?<span class="ind" aria-hidden="true"></span></summary>
+        <div class="label">
+          <p class="for">For: people the NHS invites</p>
+          <div class="answer">
+            <p>During the NHS autumn and spring campaigns. Eligibility changes each campaign and the NHS contacts people who qualify. Book online or by calling 119, and choose Wharf Lane as your site.</p>
+            <p><a href="https://www.nhs.uk/nhs-services/vaccination-and-booking-services/book-covid-19-vaccination/" target="_blank" rel="noopener">Book a COVID-19 vaccination on the NHS website</a></p>
+          </div>
+          <dl class="facts">
+            <dt>Costs</dt><dd>Free</dd>
+          </dl>
+        </div>
+      </details>
+
+      <details name="faq">
+        <summary>Can I have flu and COVID-19 jabs at the same visit?<span class="ind" aria-hidden="true"></span></summary>
+        <div class="label">
+          <p class="for">For: anyone eligible for both</p>
+          <div class="answer">
+            <p>Yes. We give one in each arm. A sore arm for a day or two is normal. Paracetamol helps, and if you feel very unwell, call 111.</p>
+          </div>
+        </div>
+      </details>
+
+      <details name="faq">
+        <summary>Do you do travel vaccinations?<span class="ind" aria-hidden="true"></span></summary>
+        <div class="label">
+          <p class="for">For: travellers, by appointment</p>
+          <div class="answer">
+            <p>Our private travel clinic gives hepatitis A and B, typhoid, rabies and oral cholera, and can supply antimalarials after a consultation. Book at least 6 weeks before you go, because some courses need 2 or 3 doses.</p>
+          </div>
+          <dl class="facts">
+            <dt>Costs</dt><dd>£15 consultation, taken off your first vaccine</dd>
+            <dt>Bring</dt><dd>Your itinerary and any vaccination record</dd>
+          </dl>
+        </div>
+      </details>
+
+      <a class="back" href="#topics">Back to topics</a>
+    </div>
+
+    <div class="group">
+      <h3 id="delivery" tabindex="-1">Delivery</h3>
+
+      <details name="faq">
+        <summary>Who can get medicines delivered?<span class="ind" aria-hidden="true"></span></summary>
+        <div class="label">
+          <p class="for">For: patients within 3 miles of Wharf Lane</p>
+          <div class="answer">
+            <p>Anyone with a prescription with us. It is free within 3 miles; tell us once and we deliver every repeat. Further out, it is £3.50 per delivery.</p>
+          </div>
+          <dl class="facts">
+            <dt>Costs</dt><dd>Free within 3 miles, £3.50 beyond</dd>
+          </dl>
+        </div>
+      </details>
+
+      <details name="faq">
+        <summary>When will my delivery arrive?<span class="ind" aria-hidden="true"></span></summary>
+        <div class="label">
+          <p class="for">For: addresses within our weekday rounds</p>
+          <div class="answer">
+            <p>Our driver goes out Monday to Friday, 11:00 to 13:00 and 16:00 to 19:00. On the morning of your delivery you get a text with a 2-hour window.</p>
+          </div>
+        </div>
+      </details>
+
+      <details name="faq">
+        <summary>What if I am not in?<span class="ind" aria-hidden="true"></span></summary>
+        <div class="label">
+          <p class="for">For: anyone not home when the driver calls</p>
+          <div class="answer">
+            <p>We never leave medicines in a porch or with a neighbour unless you have named that person to us in writing. The driver puts a card through the door. We redeliver the next working day, or you can collect from the counter.</p>
+          </div>
+        </div>
+      </details>
+
+      <details name="faq">
+        <summary>Can you deliver fridge items and controlled drugs?<span class="ind" aria-hidden="true"></span></summary>
+        <div class="label">
+          <p class="for">For: patients on fridge lines or controlled drugs</p>
+          <div class="answer">
+            <p>Yes. Fridge items travel in a cool bag and are handed to you, not left. Controlled drugs need a signature at the door.</p>
+          </div>
+          <dl class="facts">
+            <dt>Bring</dt><dd>Someone to sign</dd>
+          </dl>
+        </div>
+      </details>
+
+      <a class="back" href="#topics">Back to topics</a>
+    </div>
+
+  </div>
+</section>
+
+</body>
+</html>

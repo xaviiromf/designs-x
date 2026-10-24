@@ -1,0 +1,1147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Petrel Orbital: from booked slot to first contact</title>
+<meta name="description" content="The seven stages between booking a rideshare slot for a CubeSat and its first beacon, with open launches and a form to hold a slot.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=B612:ital,wght@0,400;0,700;1,400&family=B612+Mono:wght@700&display=swap">
+<style>
+  :root {
+    /* Colour: the integration room. Dispenser rails, Kapton tape, then the deployed array. */
+    --anodize: #2A2923;          /* hard-anodised dispenser rail: ground for the intro and stages */
+    --anodize-raised: #38362E;   /* instrument column, strip, inputs, sheet */
+    --silver: #E6E2D6;           /* bead-blasted aluminium: text (11.3:1 on anodize) */
+    --graphite: #A9A496;         /* secondary text, inactive rail items (5.9:1 anodize, 4.9:1 raised, 6.0:1 cell) */
+    --kapton: #E9A23B;           /* state only: active stage, gate ticks, focus, primary fill, your slot */
+    --cell: #1C2257;             /* triple-junction solar-cell indigo: ground for the closing block */
+    --rbf: #F0645A;              /* remove-before-flight red: form errors only, always with text (4.6:1 anodize) */
+    --busbar: color-mix(in srgb, var(--silver) 15%, transparent);
+    --rule: color-mix(in srgb, var(--graphite) 32%, transparent);
+    --tint: color-mix(in srgb, var(--silver) 6%, transparent);
+    --scrim: rgb(16 15 12 / .6);
+
+    /* Type */
+    --font-sans: "B612", system-ui, sans-serif;
+    --font-readout: "B612 Mono", ui-monospace, monospace;
+    --t-xs: .8rem;
+    --t-sm: .9rem;
+    --t-base: 1.0625rem;
+    --t-md: 1.33rem;
+    --t-lg: 1.66rem;
+    --t-xl: clamp(2.25rem, 4.8vw, 4.25rem);
+    --t-readout: clamp(3.25rem, 10.5vw, 10rem);
+    --t-readout-s: 1.75rem;
+    --measure: 62ch;
+
+    /* Space */
+    --s-1: .25rem; --s-2: .5rem; --s-3: .75rem; --s-4: 1rem; --s-5: 1.5rem;
+    --s-6: 2rem; --s-7: 3rem; --s-8: 4.5rem; --s-9: 7rem;
+    --gutter: 16px;
+
+    /* Shape */
+    --radius: 3px;
+    --chamfer: polygon(12% 0, 88% 0, 100% 12%, 100% 88%, 88% 100%, 12% 100%, 0 88%, 0 12%);
+    --cols-wide: 12;
+    --cols-narrow: 6;
+    --cell-size: calc(100vw / var(--cols-narrow)); /* the script sets the exact px */
+    --strip-h: 4.5rem;
+    /* One solar cell: four cropped corners, 1px grout, two busbars. Shared by the cover cells and #launches. */
+    --array:
+      linear-gradient(135deg, var(--anodize) 6%, transparent 6%),
+      linear-gradient(225deg, var(--anodize) 6%, transparent 6%),
+      linear-gradient(315deg, var(--anodize) 6%, transparent 6%),
+      linear-gradient(45deg, var(--anodize) 6%, transparent 6%),
+      linear-gradient(90deg, var(--anodize) 1px, transparent 1px),
+      linear-gradient(180deg, var(--anodize) 1px, transparent 1px),
+      linear-gradient(90deg, transparent 33%, var(--busbar) 33% calc(33% + 1px), transparent calc(33% + 1px) 66%, var(--busbar) 66% calc(66% + 1px), transparent calc(66% + 1px));
+
+    /* Motion: CSS durations and curves (the script reads the --d-* values) */
+    --d-chrome: .5s; --d-rise: 1s; --d-rule: .8s; --d-decode: .9s; --d-redecode: .6s; --d-label: .35s;
+    --d-ind: .5s; --d-gate: .7s; --d-tick: .3s; --d-glide: 1s; --d-hover: .2s; --d-sweep: .45s;
+    --d-fill: .4s; --d-fill-out: .3s; --d-press: .12s; --d-release: .4s; --d-swap: .4s; --d-focus: .3s;
+    --d-sheet: .45s; --d-sheet-out: .3s; --d-backdrop: .3s; --d-clip: .4s; --d-err: .25s; --d-pop: .25s;
+    --d-pulse: .5s; --d-ref: .8s;
+    --ease-sweep: cubic-bezier(.35, 0, 0, 1);
+    --ease-fill: cubic-bezier(.65, 0, .35, 1);
+    --ease-release: cubic-bezier(.34, 1.56, .64, 1);
+    --ease-swap: cubic-bezier(.65, 0, 0, 1);
+    --ease-settle: cubic-bezier(.16, 1, .3, 1);
+    --ease-clip: cubic-bezier(.4, 0, .2, 1);
+  }
+  @media (min-width: 600px) { :root { --gutter: clamp(16px, 4vw, 56px); } }
+  @media (min-width: 992px) { :root { --cell-size: calc(100vw / var(--cols-wide)); } }
+
+  /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--anodize); color: var(--silver);
+    font: 400 var(--t-base)/1.55 var(--font-sans);
+    overflow-x: clip;
+  }
+  h2, h3, h4, p, ul, ol, fieldset, legend { margin: 0; padding: 0; }
+  ul, ol { list-style: none; }
+  button, input, select { font: inherit; color: inherit; }
+  a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--kapton); outline-offset: 3px; }
+  [tabindex="-1"]:focus { outline: none; }
+  .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  /* Hidden starting states exist only when the motion stack loaded (html.js) */
+  html.js [data-rv], html.js .readout, html.js .rail a, html.js .ind { opacity: 0; }
+  html.js .rail .rule { transform: scaleX(0); }
+  @media (prefers-reduced-motion: reduce) {
+    html.js [data-rv], html.js .readout, html.js .rail a, html.js .ind { opacity: 1; }
+    html.js .rail .rule { transform: none; }
+  }
+
+  /* ---------- Links and buttons ---------- */
+  .u { /* HV2: in from the left, out to the right */
+    text-decoration: none;
+    background: linear-gradient(currentColor, currentColor) 100% 100% / 0 .07em no-repeat;
+    transition: background-size var(--d-sweep) var(--ease-sweep), color var(--d-hover);
+    padding-bottom: .1em;
+  }
+  .u:hover, .u:focus-visible { background-position: 0 100%; background-size: 100% .07em; }
+  .u.ext { /* inline links keep a thin underline at rest, then thicken */
+    background:
+      linear-gradient(currentColor, currentColor) 100% 100% / 0 .09em no-repeat,
+      linear-gradient(var(--graphite), var(--graphite)) 0 100% / 100% .05em no-repeat;
+  }
+  .u.ext:hover, .u.ext:focus-visible { background-position: 0 100%, 0 100%; background-size: 100% .09em, 100% .05em; }
+  @media (hover: none) { .u { background-size: 100% .07em; } .u:active { color: var(--kapton); } }
+
+  .btn { /* HV4 fill from the entry edge, MI1 press */
+    --from: left;
+    position: relative; isolation: isolate; overflow: hidden;
+    display: inline-flex; align-items: center; justify-content: center;
+    min-height: 2.75rem; padding: 0 var(--s-5);
+    border: 1px solid var(--silver); border-radius: var(--radius);
+    background: transparent; color: var(--silver);
+    font: 700 var(--t-sm)/1.2 var(--font-sans); text-decoration: none; text-align: center;
+    cursor: pointer; -webkit-tap-highlight-color: transparent;
+    transition: color var(--d-fill-out) var(--ease-fill), border-color var(--d-fill-out), transform var(--d-release) var(--ease-release);
+  }
+  .btn::before {
+    content: ""; position: absolute; inset: 0; z-index: -1;
+    background: var(--kapton); transform: scaleX(0); transform-origin: var(--from) center;
+    transition: transform var(--d-fill-out) var(--ease-fill);
+  }
+  .btn--fill { background: var(--kapton); border-color: var(--kapton); color: var(--anodize); }
+  .btn--fill::before { background: var(--silver); }
+  .btn:focus-visible { color: var(--anodize); border-color: var(--kapton); }
+  .btn:focus-visible::before { transform: scaleX(1); }
+  @media (hover: hover) {
+    .btn:hover { color: var(--anodize); border-color: var(--kapton); transition-duration: var(--d-fill), var(--d-fill), var(--d-release); }
+    .btn--fill:hover { border-color: var(--silver); }
+    .btn:hover::before { transform: scaleX(1); transition-duration: var(--d-fill); }
+  }
+  .btn:active { transform: scale(.97); transition: transform var(--d-press) ease-out; }
+  @media (hover: none) {
+    .btn:active { color: var(--anodize); border-color: var(--kapton); }
+    .btn:active::before { transform: scaleX(1); transition-duration: .1s; }
+  }
+
+  /* ---------- Top bar and intro ---------- */
+  .bar {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+    gap: var(--s-3) var(--s-5); padding: var(--s-5) var(--gutter) 0;
+  }
+  .mark { font-weight: 700; font-size: var(--t-base); letter-spacing: .01em; }
+  .bar nav { display: flex; align-items: center; gap: var(--s-5); font-size: var(--t-sm); }
+  .intro {
+    display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--s-5); row-gap: var(--s-5);
+    padding: var(--s-7) var(--gutter) var(--s-7);
+  }
+  .h2 { grid-column: 1 / -1; font-size: var(--t-xl); font-weight: 700; line-height: 1.02; letter-spacing: -.015em; max-width: 12ch; }
+  .h2 .ln-mask { padding-bottom: .12em; margin-bottom: -.12em; }
+  .lede { grid-column: 1 / -1; max-width: var(--measure); color: var(--silver); }
+  @media (min-width: 992px) {
+    .intro { padding-block: var(--s-8) var(--s-8); align-items: end; }
+    .h2 { grid-column: 1 / 8; max-width: 9.5em; }
+    .lede { grid-column: 8 / 13; }
+  }
+
+  /* ---------- Track: instrument column + stages ---------- */
+  .instr { /* mobile: the sticky strip */
+    position: sticky; top: 0; z-index: 1;
+    display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--s-3);
+    height: var(--strip-h); padding: 0 var(--gutter);
+    background: var(--anodize-raised);
+  }
+  .instr-col { display: contents; }
+  .readout {
+    display: flex; align-items: baseline;
+    font: 700 var(--t-readout-s)/.9 var(--font-readout); letter-spacing: -.02em; white-space: nowrap;
+  }
+  .ro-l { letter-spacing: -.14em; margin-right: .06em; }
+  .ro-u { font: 700 var(--t-sm)/1 var(--font-sans); letter-spacing: 0; margin-left: .3em; color: var(--graphite); }
+  .rail { display: none; }
+  .strip-t { font-size: var(--t-sm); line-height: 1.3; min-width: 0; }
+  .strip-b { min-height: 2.5rem; padding: 0 var(--s-4); }
+  .sw { display: grid; overflow: hidden; } /* TR1 caption swap: two lines in one cell */
+  .sw > span { grid-area: 1 / 1; transition: transform var(--d-swap) var(--ease-swap); }
+  .sw > span + span { transform: translateY(100%); }
+
+  .stage { scroll-margin-top: var(--strip-h); min-height: 80svh; }
+  .stage-in { padding: var(--s-7) var(--gutter) var(--s-7); max-width: calc(var(--measure) + 2 * var(--gutter)); }
+  #stage-7 { min-height: 100svh; padding-bottom: 45svh; } /* runway: the cover wave rises below stage 7's text */
+  @media (hover: none) {
+    html { scroll-snap-type: y proximity; }
+    .stage { scroll-snap-align: start; }
+  }
+
+  @media (min-width: 992px) {
+    .track { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
+    .instr-col { display: block; background: var(--anodize-raised); }
+    .instr {
+      display: flex; flex-direction: column; align-items: stretch; gap: 0;
+      height: 100svh; padding: var(--s-8) var(--gutter) var(--s-6);
+    }
+    .readout { font-size: var(--t-readout); }
+    .ro-u { font-size: var(--t-lg); }
+    .strip-t, .strip-b { display: none; }
+    .rail { display: block; position: relative; margin-top: var(--s-7); padding-left: var(--s-4); max-width: 30rem; }
+    .stage { scroll-margin-top: 0; min-height: 100svh; }
+    .stage-in { padding: var(--s-8) var(--gutter) var(--s-6) clamp(var(--s-6), 5vw, var(--s-9)); max-width: none; }
+    .stage-in > * { max-width: var(--measure); }
+  }
+
+  /* Rail */
+  .rail li { position: relative; }
+  .rail .rule { position: absolute; left: 0; right: 0; top: 0; height: 1px; background: var(--rule); transform-origin: left center; }
+  .rail a {
+    display: grid; grid-template-columns: 6.5ch minmax(0, 1fr); column-gap: var(--s-4); align-items: center;
+    min-height: 2.75rem; padding: var(--s-2) var(--s-2) var(--s-2) 0;
+    color: var(--graphite); text-decoration: none; font-size: var(--t-sm);
+    transition: color var(--d-hover);
+  }
+  .rl { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .rl b { font-weight: 400; }
+  .rail a[aria-current] { color: var(--silver); }
+  .rail a:hover, .rail a:focus-visible { color: var(--silver); }
+  .rail a:focus-visible { outline-offset: 0; }
+  .ind, .ghost { position: absolute; left: 0; top: 0; width: 3px; height: 2.75rem; pointer-events: none; }
+  .ind { background: var(--kapton); }
+  .ghost { background: var(--graphite); opacity: 0; left: -6px; }
+
+  /* Stage content */
+  .stage h3 { font-size: var(--t-md); font-weight: 700; line-height: 1.2; display: flex; gap: var(--s-3); }
+  .st-n { color: var(--graphite); font-variant-numeric: tabular-nums; min-width: 1ch; }
+  .when { font-style: italic; color: var(--graphite); margin-top: var(--s-1); }
+  .stage .body { margin-top: var(--s-5); }
+  .io { display: grid; gap: var(--s-5); margin-top: var(--s-6); }
+  .io h4 { font-size: var(--t-sm); font-weight: 700; }
+  .io ul { margin-top: var(--s-2); color: var(--silver); }
+  .io li { position: relative; padding-left: 1.1em; }
+  .io li::before { content: ""; position: absolute; left: 0; top: .78em; width: .5em; height: 1px; background: var(--graphite); }
+  @media (min-width: 600px) { .io { grid-template-columns: 1fr 1fr; } }
+  .gate { margin-top: var(--s-6); }
+  .gate-line { display: flex; align-items: center; gap: var(--s-3); }
+  .gate-track { position: relative; flex: 1; height: 2px; background: var(--rule); }
+  .gate-rule { position: absolute; inset: 0; background: var(--kapton); transform-origin: left center; }
+  .gate-tick { width: 1.25rem; height: 1.25rem; flex: none; overflow: visible; }
+  .gate-tick polygon { fill: none; stroke: var(--graphite); stroke-width: 1; }
+  .gate-tick path { fill: none; stroke: var(--kapton); stroke-width: 2; stroke-linecap: square; stroke-dasharray: 1; stroke-dashoffset: 0; }
+  .gate p { margin-top: var(--s-2); }
+  .gate-k { font-weight: 700; color: var(--silver); }
+
+  /* ---------- Closing block: the deployed array ---------- */
+  .launches {
+    position: relative; overflow: clip; min-height: 100svh;
+    background-color: var(--cell); background-image: var(--array);
+    background-size: var(--cell-size) var(--cell-size); background-position: 0 0;
+  }
+  .launches.is-bare { background: var(--anodize); } /* while the cover wave runs over it */
+  .l-grid { position: relative; z-index: 3; display: grid; row-gap: var(--cell-size); padding: var(--cell-size) 0; }
+  @media (max-width: 991.98px) { .l-grid { padding-top: max(45svh, calc(4 * var(--cell-size))); } } /* room for the array to read before the panels */
+  @media (min-width: 992px) {
+    .l-grid { grid-template-columns: repeat(var(--cols-wide), var(--cell-size)); align-items: start; }
+    .panel--copy, .panel--book { grid-column: 2 / 12; }
+  }
+  @media (min-width: 1200px) {
+    .panel--copy { grid-column: 2 / 6; }
+    .panel--book { grid-column: 7 / 12; }
+  }
+  .panel { background: var(--anodize); padding: var(--s-6) var(--gutter); }
+  @media (min-width: 600px) { .panel { padding: var(--s-6); } }
+  .panel h3 { font-size: var(--t-lg); line-height: 1.15; font-weight: 700; }
+  .panel--copy p { margin-top: var(--s-4); max-width: 40ch; }
+  .panel--book { container-type: inline-size; }
+
+  /* Launch rows: real radios */
+  legend { width: 100%; }
+  legend h4, .fields h4 { font-size: var(--t-md); font-weight: 700; line-height: 1.2; }
+  .lset { border: 0; min-width: 0; }
+  .lrows { margin-top: var(--s-4); border-top: 1px solid var(--rule); }
+  .lrow {
+    position: relative; display: grid; grid-template-columns: 1.25rem minmax(0, 1fr); column-gap: var(--s-4); row-gap: var(--s-1);
+    padding: var(--s-4) var(--s-3); border-bottom: 1px solid var(--rule); cursor: pointer;
+    transition: background-color var(--d-hover), box-shadow var(--d-hover);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .lrow:hover { background-color: var(--tint); }
+  .lrow:active { background-color: var(--tint); }
+  .lrow:has(input:focus-visible) { background-color: var(--tint); outline: 2px solid var(--kapton); outline-offset: 2px; }
+  .lrow.is-on { box-shadow: inset 0 0 0 2px var(--kapton); }
+  .lset:disabled .lrow { cursor: default; }
+  .lset:disabled .lrow:not(.is-on) { opacity: .55; }
+  .lrow input {
+    grid-area: 1 / 1; appearance: none; margin: .15em 0 0; width: 1.25rem; height: 1.25rem;
+    border: 1.5px solid var(--graphite); border-radius: 50%; background: transparent; cursor: inherit;
+  }
+  .lrow input:focus-visible { outline: none; }
+  .badge {
+    grid-area: 1 / 1; margin-top: .15em; width: 1.25rem; height: 1.25rem; display: grid; place-items: center;
+    background: var(--kapton); clip-path: var(--chamfer); opacity: 0; transform: scale(.6);
+    transition: opacity var(--d-pop), transform var(--d-pop) var(--ease-release);
+  }
+  .badge svg { width: 70%; height: 70%; fill: none; stroke: var(--anodize); stroke-width: 2.6; }
+  .lrow.is-on .badge { opacity: 1; transform: none; }
+  .l-head { grid-column: 2; display: flex; flex-wrap: wrap; gap: 0 var(--s-3); align-items: baseline; }
+  .l-id { font-weight: 700; }
+  .l-orbit, .l-note { grid-column: 2; color: var(--graphite); font-size: var(--t-sm); }
+  .l-slots { grid-column: 2; display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-3); margin-top: var(--s-1); }
+  .l-count { display: grid; font-size: var(--t-sm); }
+  .l-count > span { grid-area: 1 / 1; }
+  .lrow .l-yours { visibility: hidden; color: var(--silver); font-weight: 700; }
+  .lrow.is-on .l-yours { visibility: visible; }
+  .lrow.is-on .l-open { visibility: hidden; }
+  .cells { display: grid; grid-template-columns: repeat(12, .7rem); gap: 3px; }
+  .cells i { position: relative; aspect-ratio: 1; clip-path: var(--chamfer); }
+  .cells .t { background: var(--graphite); }
+  .cells .o { box-shadow: inset 0 0 0 1.5px var(--graphite); }
+  .cells .y { background: var(--kapton); box-shadow: none; }
+  .cells b { position: absolute; inset: 0; background: var(--kapton); opacity: 0; }
+  @container (min-width: 520px) {
+    .lrow { grid-template-columns: 1.25rem minmax(0, 1fr) auto; }
+    .l-slots { grid-column: 3; grid-row: 1 / span 2; flex-direction: column; align-items: flex-end; margin-top: .2em; }
+    .l-count { justify-items: end; }
+    .l-note { grid-column: 2 / 4; }
+  }
+  .foot { margin-top: var(--s-3); font-size: var(--t-sm); color: var(--graphite); }
+
+  /* Form */
+  .swap { display: grid; margin-top: var(--s-7); }
+  .swap > * { grid-area: 1 / 1; min-width: 0; }
+  .fgrid { display: grid; gap: var(--s-2) var(--s-5); margin-top: var(--s-5); }
+  @container (min-width: 520px) { .fgrid { grid-template-columns: 1fr 1fr; } }
+  .f label { display: block; font-size: var(--t-sm); font-weight: 700; color: var(--graphite); transition: color var(--d-hover); }
+  .f:focus-within label { color: var(--silver); }
+  .ctl { position: relative; display: flex; align-items: center; margin-top: var(--s-2); background: var(--anodize-raised); border-radius: var(--radius) var(--radius) 0 0; }
+  .ctl::before, .ctl::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; pointer-events: none; }
+  .ctl::before { height: 1px; background: var(--graphite); transition: background-color var(--d-hover); }
+  .ctl::after { height: 2px; background: var(--kapton); transform: scaleX(0); transform-origin: left center; transition: transform var(--d-focus) var(--ease-settle); }
+  .ctl:hover::before { background: var(--silver); }
+  .ctl:focus-within::after { transform: scaleX(1); }
+  .ctl input, .ctl select {
+    width: 100%; min-height: 2.75rem; padding: 0 var(--s-3); border: 0; border-radius: var(--radius) var(--radius) 0 0;
+    background: transparent; color: var(--silver); color-scheme: dark;
+  }
+  .ctl select { appearance: none; padding-right: 2.25rem; cursor: pointer; }
+  .ctl select option { background: var(--anodize-raised); color: var(--silver); }
+  .chev { position: absolute; right: var(--s-3); width: .7rem; height: .7rem; pointer-events: none; fill: none; stroke: var(--graphite); stroke-width: 1.6; }
+  .unit { padding-right: var(--s-3); color: var(--graphite); font-size: var(--t-sm); }
+  .ctl input[type="number"] { -moz-appearance: textfield; }
+  .ctl input::-webkit-inner-spin-button { opacity: .5; }
+  .help { margin-top: var(--s-1); font-size: var(--t-sm); color: var(--graphite); }
+  .err {
+    min-height: 1.4em; margin-top: var(--s-1); font-size: var(--t-sm); line-height: 1.35; color: var(--rbf);
+    opacity: 0; transform: translateY(4px); transition: opacity var(--d-err), transform var(--d-err);
+  }
+  .err.is-on { opacity: 1; transform: none; }
+  .ctl [aria-invalid="true"] { box-shadow: inset 3px 0 0 var(--rbf); }
+  .lrow input[aria-invalid="true"] { border-color: var(--rbf); }
+  .lset .err { margin-top: var(--s-2); }
+  #hold { scroll-margin-top: var(--s-6); }
+  .submit { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3) var(--s-5); margin-top: var(--s-4); }
+  .note { font-size: var(--t-sm); color: var(--graphite); }
+  @media (max-width: 599px) { .submit .btn { width: 100%; } }
+
+  /* Result */
+  .result h4 { font-size: var(--t-md); font-weight: 700; line-height: 1.2; }
+  .result p { margin-top: var(--s-4); max-width: 46ch; }
+  .ref { display: inline-grid; font-weight: 700; }
+  .ref > span { grid-area: 1 / 1; }
+  .ref .sz { visibility: hidden; }
+  .acts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-4) var(--s-5); margin-top: var(--s-6); font-size: var(--t-sm); }
+
+  /* Cover: one fixed layer of cells, built by the script */
+  .cover { position: fixed; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; visibility: hidden; }
+  .cover i {
+    position: absolute; width: var(--cell-size); height: var(--cell-size);
+    background-color: var(--cell); background-image: var(--array); background-size: 100% 100%;
+  }
+
+  /* Stage sheet (narrow screens) */
+  .sheet {
+    margin: auto 0 0; width: 100%; max-width: none; max-height: 88svh;
+    padding: 0; border: 0; background: transparent; color: var(--silver);
+  }
+  .sheet::backdrop { background: var(--scrim); opacity: 0; transition: opacity var(--d-backdrop); }
+  .sheet.is-in::backdrop { opacity: 1; }
+  .sheet-in { background: var(--anodize-raised); padding: var(--s-5) var(--gutter) var(--s-6); }
+  .sheet-top { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); }
+  .sheet-top h2 { font-size: var(--t-md); font-weight: 700; }
+  .sheet-list { margin-top: var(--s-4); }
+  .sheet-list a {
+    position: relative; display: grid; grid-template-columns: 6.5ch minmax(0, 1fr); column-gap: var(--s-4); align-items: center;
+    min-height: 3rem; padding: var(--s-2) var(--s-3); border-top: 1px solid var(--rule);
+    color: var(--graphite); text-decoration: none; transition: color var(--d-hover), background-color var(--d-hover);
+  }
+  .sheet-list a::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--kapton);
+    transform: scaleY(0); transform-origin: center top; transition: transform .25s var(--ease-settle);
+  }
+  .sheet-list a:hover, .sheet-list a:focus-visible, .sheet-list a[aria-current] { color: var(--silver); }
+  .sheet-list a:hover::before, .sheet-list a:focus-visible::before, .sheet-list a[aria-current]::before { transform: none; }
+  .sheet-list a:active { background: var(--anodize); }
+  .sheet-list a:focus-visible { outline-offset: -2px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0s !important; }
+    .btn:active { transform: none; }
+  }
+</style>
+</head>
+<body>
+<main>
+<section id="process" class="proc" aria-labelledby="proc-h">
+  <header class="bar">
+    <p class="mark" data-rv>Petrel Orbital</p>
+    <nav aria-label="Shortcuts">
+      <a class="u" href="#launches" data-rv>Skip to open launches</a>
+      <a class="btn" href="#hold" data-rv>Hold a slot</a>
+    </nav>
+  </header>
+
+  <div class="intro">
+    <h2 id="proc-h" class="h2" data-rv>From booked slot to first contact</h2>
+    <p class="lede" data-rv>We fly 1U to 12U CubeSats on shared launches from our integration room in Glasgow. Here is what happens between your deposit and your satellite’s first beacon, and what we need from you at each stage. Plan on twelve months. If your satellite is already tested, we can start at stage 5.</p>
+  </div>
+
+  <div class="track">
+    <div class="instr-col">
+      <div class="instr">
+        <p class="readout" aria-hidden="true"><span class="ro-l">L-</span><span class="ro-n">12</span><span class="ro-u">mo</span></p>
+        <nav class="rail" aria-label="Stages">
+          <ol>
+            <li><span class="rule"></span><a href="#stage-1" aria-label="Stage 1, 12 months before launch: Book a slot" aria-current="step"><span class="rl" aria-hidden="true">L-<b>12</b> mo</span><span aria-hidden="true">Book a slot</span></a></li>
+            <li><span class="rule"></span><a href="#stage-2" aria-label="Stage 2, 10 months before launch: Agree the interface"><span class="rl" aria-hidden="true">L-<b>10</b> mo</span><span aria-hidden="true">Agree the interface</span></a></li>
+            <li><span class="rule"></span><a href="#stage-3" aria-label="Stage 3, 9 months before launch: File the frequencies"><span class="rl" aria-hidden="true">L-<b>9</b> mo</span><span aria-hidden="true">File the frequencies</span></a></li>
+            <li><span class="rule"></span><a href="#stage-4" aria-label="Stage 4, 4 months before launch: Prove it survives"><span class="rl" aria-hidden="true">L-<b>4</b> mo</span><span aria-hidden="true">Prove it survives</span></a></li>
+            <li><span class="rule"></span><a href="#stage-5" aria-label="Stage 5, 6 weeks before launch: Ship and fit-check"><span class="rl" aria-hidden="true">L-<b>6</b> wk</span><span aria-hidden="true">Ship and fit-check</span></a></li>
+            <li><span class="rule"></span><a href="#stage-6" aria-label="Stage 6, 4 weeks before launch: Load the dispenser"><span class="rl" aria-hidden="true">L-<b>4</b> wk</span><span aria-hidden="true">Load the dispenser</span></a></li>
+            <li><span class="rule"></span><a href="#stage-7" aria-label="Stage 7, launch day: Launch and deploy"><span class="rl" aria-hidden="true">L-<b>0</b></span><span aria-hidden="true">Launch and deploy</span></a></li>
+          </ol>
+          <span class="ind" aria-hidden="true"></span>
+          <span class="ghost" aria-hidden="true"></span>
+        </nav>
+        <p class="strip-t"><span class="sw"><span>1 of 7: Book a slot</span><span aria-hidden="true"></span></span></p>
+        <button class="btn strip-b" type="button" aria-haspopup="dialog" aria-controls="stages-dlg">All stages</button>
+      </div>
+    </div>
+
+    <ol class="stages">
+      <li><article class="stage" id="stage-1" data-l="12" data-u="mo" data-name="Book a slot" aria-labelledby="st-1"><div class="stage-in">
+        <h3 id="st-1" tabindex="-1"><span class="st-n">1</span> Book a slot</h3>
+        <p class="when">12 months before launch</p>
+        <p class="body">Pick a shared launch with an orbit that suits your mission. We hold one slot for 14 days while you check dates; a 20% deposit turns the hold into a booking.</p>
+        <div class="io">
+          <div><h4>You send</h4><ul><li>Form factor and mass</li><li>Target orbit</li><li>Earliest ready date</li></ul></div>
+          <div><h4>We send</h4><ul><li>Launch window and price</li><li>Draft contract</li></ul></div>
+        </div>
+        <div class="gate"><div class="gate-line" aria-hidden="true"><span class="gate-track"><span class="gate-rule"></span></span><svg class="gate-tick" viewBox="0 0 20 20"><polygon points="2.9 .5 17.1 .5 19.5 2.9 19.5 17.1 17.1 19.5 2.9 19.5 .5 17.1 .5 2.9"/><path d="M5.5 10.4 8.6 13.5 14.6 7" pathLength="1"/></svg></div>
+          <p><span class="gate-k">Passes when:</span> deposit received.</p></div>
+      </div></article></li>
+
+      <li><article class="stage" id="stage-2" data-l="10" data-u="mo" data-name="Agree the interface" aria-labelledby="st-2"><div class="stage-in">
+        <h3 id="st-2" tabindex="-1"><span class="st-n">2</span> Agree the interface</h3>
+        <p class="when">10 months before launch</p>
+        <p class="body">The interface control document fixes the satellite we will load: envelope, mass, centre of mass, rail finish, deployment switches and the remove-before-flight pin. It follows the <a class="u ext" href="https://www.cubesat.org/" target="_blank" rel="noopener">CubeSat Design Specification<span class="vh"> (opens in a new tab)</span></a> within our dispenser’s limits.</p>
+        <div class="io">
+          <div><h4>You send</h4><ul><li>CAD envelope and mass budget</li><li>Switch drawing</li></ul></div>
+          <div><h4>We send</h4><ul><li>ICD rev A</li><li>Dispenser drawing and load levels</li></ul></div>
+        </div>
+        <div class="gate"><div class="gate-line" aria-hidden="true"><span class="gate-track"><span class="gate-rule"></span></span><svg class="gate-tick" viewBox="0 0 20 20"><polygon points="2.9 .5 17.1 .5 19.5 2.9 19.5 17.1 17.1 19.5 2.9 19.5 .5 17.1 .5 2.9"/><path d="M5.5 10.4 8.6 13.5 14.6 7" pathLength="1"/></svg></div>
+          <p><span class="gate-k">Passes when:</span> ICD signed at rev B or later.</p></div>
+      </div></article></li>
+
+      <li><article class="stage" id="stage-3" data-l="9" data-u="mo" data-name="File the frequencies" aria-labelledby="st-3"><div class="stage-in">
+        <h3 id="st-3" tabindex="-1"><span class="st-n">3</span> File the frequencies</h3>
+        <p class="when">9 months before launch</p>
+        <p class="body">Your satellite may not transmit without a licence from your national regulator, which files your frequencies with the <a class="u ext" href="https://www.itu.int/" target="_blank" rel="noopener">ITU<span class="vh"> (opens in a new tab)</span></a>. We give you the orbit and launch date they ask for. Start now: coordination takes months.</p>
+        <div class="io">
+          <div><h4>You send</h4><ul><li>Licence application reference</li><li>Frequency plan</li></ul></div>
+          <div><h4>We send</h4><ul><li>Orbit parameters letter</li><li>Launch date confirmation</li></ul></div>
+        </div>
+        <div class="gate"><div class="gate-line" aria-hidden="true"><span class="gate-track"><span class="gate-rule"></span></span><svg class="gate-tick" viewBox="0 0 20 20"><polygon points="2.9 .5 17.1 .5 19.5 2.9 19.5 17.1 17.1 19.5 2.9 19.5 .5 17.1 .5 2.9"/><path d="M5.5 10.4 8.6 13.5 14.6 7" pathLength="1"/></svg></div>
+          <p><span class="gate-k">Passes when:</span> copy of your licence received, 3 months before launch at the latest.</p></div>
+      </div></article></li>
+
+      <li><article class="stage" id="stage-4" data-l="4" data-u="mo" data-name="Prove it survives" aria-labelledby="st-4"><div class="stage-in">
+        <h3 id="st-4" tabindex="-1"><span class="st-n">4</span> Prove it survives</h3>
+        <p class="when">4 months before launch</p>
+        <p class="body">Your flight unit is shaken on three axes at the levels in the ICD and cycled in thermal vacuum. Run the tests yourself, or book our shaker in Glasgow.</p>
+        <div class="io">
+          <div><h4>You send</h4><ul><li>Vibration and thermal-vacuum reports</li><li>Post-test functional check</li></ul></div>
+          <div><h4>We send</h4><ul><li>Test level sheet</li><li>Shaker booking if you need it</li></ul></div>
+        </div>
+        <div class="gate"><div class="gate-line" aria-hidden="true"><span class="gate-track"><span class="gate-rule"></span></span><svg class="gate-tick" viewBox="0 0 20 20"><polygon points="2.9 .5 17.1 .5 19.5 2.9 19.5 17.1 17.1 19.5 2.9 19.5 .5 17.1 .5 2.9"/><path d="M5.5 10.4 8.6 13.5 14.6 7" pathLength="1"/></svg></div>
+          <p><span class="gate-k">Passes when:</span> reports accepted with no open non-conformances.</p></div>
+      </div></article></li>
+
+      <li><article class="stage" id="stage-5" data-l="6" data-u="wk" data-name="Ship and fit-check" aria-labelledby="st-5"><div class="stage-in">
+        <h3 id="st-5" tabindex="-1"><span class="st-n">5</span> Ship and fit-check</h3>
+        <p class="when">6 weeks before launch</p>
+        <p class="body">Ship the flight unit sealed, with a humidity indicator and the pin fitted. We unpack it in our ISO 8 cleanroom, weigh it, measure the rails and test the deployment switches with you on a call.</p>
+        <div class="io">
+          <div><h4>You send</h4><ul><li>The flight unit</li><li>Battery charge procedure</li></ul></div>
+          <div><h4>We send</h4><ul><li>Fit-check report with photos</li></ul></div>
+        </div>
+        <div class="gate"><div class="gate-line" aria-hidden="true"><span class="gate-track"><span class="gate-rule"></span></span><svg class="gate-tick" viewBox="0 0 20 20"><polygon points="2.9 .5 17.1 .5 19.5 2.9 19.5 17.1 17.1 19.5 2.9 19.5 .5 17.1 .5 2.9"/><path d="M5.5 10.4 8.6 13.5 14.6 7" pathLength="1"/></svg></div>
+          <p><span class="gate-k">Passes when:</span> mass and rails within ICD limits.</p></div>
+      </div></article></li>
+
+      <li><article class="stage" id="stage-6" data-l="4" data-u="wk" data-name="Load the dispenser" aria-labelledby="st-6"><div class="stage-in">
+        <h3 id="st-6" tabindex="-1"><span class="st-n">6</span> Load the dispenser</h3>
+        <p class="when">4 weeks before launch</p>
+        <p class="body">We charge the batteries to the agreed level, pull the pin, load your satellite and close the door. Nobody touches it after that. The dispenser travels to the launch site and is mounted on the vehicle.</p>
+        <div class="io">
+          <div><h4>You send</h4><ul><li>Sign-off on the door-closed photos</li></ul></div>
+          <div><h4>We send</h4><ul><li>Door-closed photos</li><li>Shipping confirmation</li></ul></div>
+        </div>
+        <div class="gate"><div class="gate-line" aria-hidden="true"><span class="gate-track"><span class="gate-rule"></span></span><svg class="gate-tick" viewBox="0 0 20 20"><polygon points="2.9 .5 17.1 .5 19.5 2.9 19.5 17.1 17.1 19.5 2.9 19.5 .5 17.1 .5 2.9"/><path d="M5.5 10.4 8.6 13.5 14.6 7" pathLength="1"/></svg></div>
+          <p><span class="gate-k">Passes when:</span> dispenser mounted on the vehicle.</p></div>
+      </div></article></li>
+
+      <li><article class="stage" id="stage-7" data-l="0" data-u="" data-name="Launch and deploy" aria-labelledby="st-7"><div class="stage-in">
+        <h3 id="st-7" tabindex="-1"><span class="st-n">7</span> Launch and deploy</h3>
+        <p class="when">Launch day</p>
+        <p class="body">The dispenser door opens 60 to 90 minutes after lift-off, on the launch provider’s timer. Your satellite switches on and waits the 45 minutes the specification requires before its first transmission.</p>
+        <div class="io">
+          <div><h4>You send</h4><ul><li>Your ground station’s pass schedule</li></ul></div>
+          <div><h4>We send</h4><ul><li>Deployment time within six hours</li><li>First orbital elements</li></ul></div>
+        </div>
+        <div class="gate"><div class="gate-line" aria-hidden="true"><span class="gate-track"><span class="gate-rule"></span></span><svg class="gate-tick" viewBox="0 0 20 20"><polygon points="2.9 .5 17.1 .5 19.5 2.9 19.5 17.1 17.1 19.5 2.9 19.5 .5 17.1 .5 2.9"/><path d="M5.5 10.4 8.6 13.5 14.6 7" pathLength="1"/></svg></div>
+          <p><span class="gate-k">Passes when:</span> dispenser door opens.</p></div>
+      </div></article></li>
+    </ol>
+  </div>
+
+  <section id="launches" class="launches" aria-labelledby="launches-h">
+    <div class="l-grid">
+      <div class="panel panel--copy">
+        <h3 id="launches-h" tabindex="-1">Panels out, beacon on</h3>
+        <p>Once the door opens, the satellite is yours to fly. Book the next one and we start again at stage 1.</p>
+        <p><a class="u ext" href="mailto:integration@petrel-orbital.example" target="_blank" rel="noopener">Email the integration team<span class="vh"> (opens your email app)</span></a></p>
+      </div>
+
+      <div class="panel panel--book">
+        <form id="hold" novalidate aria-labelledby="lt">
+          <fieldset class="lset">
+            <legend><h4 id="lt">Shared launches with open slots</h4></legend>
+            <div class="lrows">
+              <label class="lrow" data-id="27-2">
+                <input type="radio" name="launch" value="27-2" required aria-describedby="err-launch">
+                <span class="badge" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M5 10.4 8.4 13.8 15 7"/></svg></span>
+                <span class="l-head"><span class="l-id"><span class="vh">Shared launch </span>27-2</span><span>June 2027</span></span>
+                <span class="l-orbit">Sun-synchronous, 550 km</span>
+                <span class="l-slots"><span class="cells" aria-hidden="true"></span><span class="l-count"><span class="l-open">2 of 12 slots open</span><span class="l-yours"></span></span></span>
+                <span class="l-note">Tested satellites only. Book by 15 December 2026.</span>
+              </label>
+              <label class="lrow" data-id="27-3">
+                <input type="radio" name="launch" value="27-3" required aria-describedby="err-launch">
+                <span class="badge" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M5 10.4 8.4 13.8 15 7"/></svg></span>
+                <span class="l-head"><span class="l-id"><span class="vh">Shared launch </span>27-3</span><span>November 2027</span></span>
+                <span class="l-orbit">Sun-synchronous, 525 km</span>
+                <span class="l-slots"><span class="cells" aria-hidden="true"></span><span class="l-count"><span class="l-open">5 of 12 slots open</span><span class="l-yours"></span></span></span>
+                <span class="l-note">Book by 30 November 2026.</span>
+              </label>
+              <label class="lrow" data-id="28-1">
+                <input type="radio" name="launch" value="28-1" required aria-describedby="err-launch">
+                <span class="badge" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M5 10.4 8.4 13.8 15 7"/></svg></span>
+                <span class="l-head"><span class="l-id"><span class="vh">Shared launch </span>28-1</span><span>March 2028</span></span>
+                <span class="l-orbit">45° inclination, 500 km</span>
+                <span class="l-slots"><span class="cells" aria-hidden="true"></span><span class="l-count"><span class="l-open">9 of 12 slots open</span><span class="l-yours"></span></span></span>
+                <span class="l-note">Book by 31 March 2027.</span>
+              </label>
+            </div>
+            <p class="err" id="err-launch"></p>
+          </fieldset>
+          <p class="foot">One slot fits a 3U. A 6U takes two, a 12U four.</p>
+
+          <div class="swap">
+            <div class="fields">
+              <h4 id="hold-h">Hold a slot</h4>
+              <div class="fgrid">
+                <div class="f">
+                  <label for="ff">Form factor</label>
+                  <div class="ctl"><select id="ff" name="ff" aria-describedby="ff-help err-ff">
+                    <option>1U</option><option>2U</option><option selected>3U</option><option>6U</option><option>12U</option>
+                  </select><svg class="chev" viewBox="0 0 10 10" aria-hidden="true"><path d="M1 3.5 5 7.5 9 3.5"/></svg></div>
+                  <p class="help" id="ff-help"><span class="sw"><span>3U: up to 6.0 kg, one slot</span><span aria-hidden="true"></span></span></p>
+                  <p class="err" id="err-ff"></p>
+                </div>
+                <div class="f">
+                  <label for="mass">Mass</label>
+                  <div class="ctl"><input id="mass" name="mass" type="number" inputmode="decimal" step="0.1" min="0.1" aria-describedby="err-mass"><span class="unit" aria-hidden="true">kg</span></div>
+                  <p class="err" id="err-mass"></p>
+                </div>
+                <div class="f">
+                  <label for="ready">Ready to ship by</label>
+                  <div class="ctl"><input id="ready" name="ready" type="date" aria-describedby="err-ready"></div>
+                  <p class="err" id="err-ready"></p>
+                </div>
+                <div class="f">
+                  <label for="email">Email</label>
+                  <div class="ctl"><input id="email" name="email" type="email" autocomplete="email" spellcheck="false" aria-describedby="err-email"></div>
+                  <p class="err" id="err-email"></p>
+                </div>
+              </div>
+              <div class="submit">
+                <button class="btn btn--fill" type="submit">Hold this slot</button>
+                <p class="note">We hold it for 14 days. No payment now.</p>
+              </div>
+            </div>
+
+            <div class="result" role="status" hidden>
+              <h4 id="res-h" tabindex="-1">Slot held on shared launch 27-3</h4>
+              <p id="res-p">One 3U slot is yours until 6 November 2026. Reference <span class="ref"><span class="vh" id="ref-real">PO-273-0418</span><span class="sz" aria-hidden="true">PO-273-0418</span><span class="sc" aria-hidden="true">PO-273-0418</span></span>. A 20% deposit turns it into a booking.</p>
+              <div class="acts">
+                <button class="btn" type="button" id="change">Change details</button>
+                <a class="u" href="#stage-1">Read the stages again</a>
+                <a class="u" id="mail-hold" href="mailto:integration@petrel-orbital.example?subject=Slot%20hold" target="_blank" rel="noopener">Email this hold to the integration team<span class="vh"> (opens your email app)</span></a>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+</section>
+</main>
+
+<dialog id="stages-dlg" class="sheet" aria-labelledby="dlg-h">
+  <div class="sheet-in">
+    <div class="sheet-top"><h2 id="dlg-h">All stages</h2><button class="btn" type="button" data-close>Close</button></div>
+    <ol class="sheet-list">
+      <li><a href="#stage-1"><span class="rl">L-12 mo</span><span>Book a slot</span></a></li>
+      <li><a href="#stage-2"><span class="rl">L-10 mo</span><span>Agree the interface</span></a></li>
+      <li><a href="#stage-3"><span class="rl">L-9 mo</span><span>File the frequencies</span></a></li>
+      <li><a href="#stage-4"><span class="rl">L-4 mo</span><span>Prove it survives</span></a></li>
+      <li><a href="#stage-5"><span class="rl">L-6 wk</span><span>Ship and fit-check</span></a></li>
+      <li><a href="#stage-6"><span class="rl">L-4 wk</span><span>Load the dispenser</span></a></li>
+      <li><a href="#stage-7"><span class="rl">L-0</span><span>Launch and deploy</span></a></li>
+    </ol>
+  </div>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/SplitText.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrambleTextPlugin.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  'use strict';
+  const root = document.documentElement;
+  const $ = (s, c = document) => c.querySelector(s);
+  const $$ = (s, c = document) => [...c.querySelectorAll(s)];
+  const libs = !!(window.gsap && window.ScrollTrigger && window.SplitText && window.ScrambleTextPlugin && window.Lenis);
+  if (libs) root.classList.add('js'); // hidden start states only exist when the motion stack loaded
+
+  /* ---------- Data and rules (pure, asserted at #selftest) ---------- */
+  const LAUNCHES = {
+    '27-2': { opens: '2027-06-03', open: 2, total: 12 },
+    '27-3': { opens: '2027-11-11', open: 5, total: 12 },
+    '28-1': { opens: '2028-03-09', open: 9, total: 12 },
+  };
+  const UNITS = { '1U': 1, '2U': 2, '3U': 3, '6U': 6, '12U': 12 };
+  const KG_PER_U = 2, U_PER_SLOT = 3, HOLD_DAYS = 14, SHIP_WEEKS = 6;
+  const WORDS = ['no', 'one', 'two', 'three', 'four'];
+  const DAY = 864e5;
+  const utc = (iso) => new Date(iso + 'T00:00:00Z');
+  const addDays = (d, n) => new Date(d.getTime() + n * DAY);
+  const fmtDate = (d) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+  const todayUTC = () => { const n = new Date(); return new Date(Date.UTC(n.getFullYear(), n.getMonth(), n.getDate())); };
+  const maxMass = (ff) => UNITS[ff] * KG_PER_U;
+  const slotsNeeded = (ff) => Math.ceil(UNITS[ff] / U_PER_SLOT);
+  const latestShipDate = (id) => addDays(utc(LAUNCHES[id].opens), -7 * SHIP_WEEKS);
+  const holdUntil = (today) => addDays(today, HOLD_DAYS);
+  const helpFor = (ff) => { const n = slotsNeeded(ff); return `${ff}: up to ${maxMass(ff).toFixed(1)} kg, ${WORDS[n]} slot${n > 1 ? 's' : ''}`; };
+  const orList = (a) => (a.length < 2 ? a.join('') : `${a.slice(0, -1).join(', ')} or ${a.at(-1)}`);
+  const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  function validate(v) {
+    const e = {}, L = LAUNCHES[v.launch], m = Number(v.mass);
+    if (!L) e.launch = 'Pick a shared launch above.';
+    if (L && slotsNeeded(v.ff) > L.open) {
+      const need = slotsNeeded(v.ff), alt = Object.keys(LAUNCHES).filter((k) => LAUNCHES[k].open >= need);
+      e.ff = `Shared launch ${v.launch} has ${L.open} open slots and a ${v.ff} needs ${need}. ${alt.length ? `Pick ${orList(alt)}.` : 'Pick a smaller form factor.'}`;
+    }
+    if (!v.mass || !(m > 0)) e.mass = 'Enter the mass in kilograms, like 4.8.';
+    else if (m > maxMass(v.ff)) e.mass = `A ${v.ff} can weigh at most ${maxMass(v.ff).toFixed(1)} kg. Check the mass or pick a larger form factor.`;
+    if (!v.ready) e.ready = 'Enter the date your satellite can ship.';
+    else if (L && utc(v.ready) > latestShipDate(v.launch)) e.ready = `Shared launch ${v.launch} needs your satellite in Glasgow by ${fmtDate(latestShipDate(v.launch))}, six weeks before the window.`;
+    if (!EMAIL.test(v.email.trim())) e.email = 'Enter an email address like name@example.org.';
+    return e;
+  }
+
+  function runSelfTest() {
+    const f = [], ok = (c, m) => { if (!c) f.push(m); };
+    ok(maxMass('3U') === 6 && maxMass('12U') === 24, 'maxMass is 2 kg per U');
+    ok(slotsNeeded('1U') === 1 && slotsNeeded('3U') === 1 && slotsNeeded('6U') === 2 && slotsNeeded('12U') === 4, 'slotsNeeded');
+    ok(fmtDate(latestShipDate('27-2')) === '22 April 2027', '27-2 ships by 22 April 2027');
+    ok(fmtDate(holdUntil(utc('2026-10-22'))) === '5 November 2026', 'hold lasts 14 days');
+    ok(helpFor('3U') === '3U: up to 6.0 kg, one slot' && helpFor('12U') === '12U: up to 24.0 kg, four slots', 'helper text');
+    const base = { launch: '27-3', ff: '3U', mass: '4.8', ready: '2027-03-01', email: 'sam@example.org' };
+    ok(Object.keys(validate(base)).length === 0, 'a valid hold has no errors');
+    ok(validate({ ...base, launch: '' }).launch === 'Pick a shared launch above.', 'no launch');
+    ok(validate({ ...base, mass: '6.1' }).mass === 'A 3U can weigh at most 6.0 kg. Check the mass or pick a larger form factor.', 'mass limit');
+    ok(validate({ ...base, launch: '27-2', ff: '12U', mass: '20' }).ff === 'Shared launch 27-2 has 2 open slots and a 12U needs 4. Pick 27-3 or 28-1.', 'slot count');
+    ok(validate({ ...base, launch: '27-2', ready: '2027-04-23' }).ready === 'Shared launch 27-2 needs your satellite in Glasgow by 22 April 2027, six weeks before the window.', 'late ship date');
+    ok(!validate({ ...base, launch: '27-2', ready: '2027-04-22' }).ready, 'ship date on the limit passes');
+    ok(validate({ ...base, email: 'name@' }).email === 'Enter an email address like name@example.org.', 'email');
+    console.log(f.length ? `SELFTEST FAIL ${f.join('; ')}` : 'SELFTEST PASS');
+  }
+  if (location.hash === '#selftest') runSelfTest();
+
+  /* ---------- Shared state ---------- */
+  const css = (n) => getComputedStyle(root).getPropertyValue(n).trim();
+  const D = (k) => parseFloat(css(`--d-${k}`)) || 0;
+  const DIGITS = '0123456789';
+  const expoOut = (t) => (t === 1 ? 1 : 1 - 2 ** (-10 * t));
+  const inOutQuart = (t) => (t < 0.5 ? 8 * t ** 4 : 1 - (-2 * t + 2) ** 4 / 2);
+  const M = { on: false, fine: false, lenis: null, run: (fn) => fn() }; // run() records tweens in the live matchMedia context
+  const setY = (el, y) => { if (libs) gsap.set(el, { y }); else el.style.transform = `translateY(${y}px)`; };
+
+  const stages = $$('.stage');
+  const railLinks = $$('.rail a');
+  const ind = $('.ind');
+  const roN = $('.ro-n'), roU = $('.ro-u');
+  const stripBox = $('.strip-t .sw');
+  const gates = stages.map((s) => ({ rule: $('.gate-rule', s), tick: $('.gate-tick path', s), key: $('.gate-k', s) }));
+  const drawn = new Set();
+  let cur = 0;
+
+  /* TR1 caption swap: the old line leaves upward, the new one rises in its mask. */
+  function swapText(box, text, anim) {
+    const i = +(box.dataset.i || 0), a = box.children[i], b = box.children[1 - i];
+    if (a.textContent === text) return;
+    if (!anim) { a.textContent = text; return; }
+    b.textContent = text;
+    b.style.transition = 'none'; b.style.transform = 'translateY(100%)';
+    void b.offsetWidth;
+    b.style.transition = ''; b.style.transform = 'translateY(0)'; a.style.transform = 'translateY(-100%)';
+    a.setAttribute('aria-hidden', 'true'); b.removeAttribute('aria-hidden');
+    box.dataset.i = 1 - i;
+  }
+
+  const stripTitle = (n) => `${n} of ${stages.length}: ${stages[n - 1].dataset.name}`;
+
+  function drawGates(n, instant) {
+    for (let k = 1; k <= n; k++) {
+      if (drawn.has(k)) continue;
+      drawn.add(k);
+      const g = gates[k - 1];
+      if (instant || k < n) M.run(() => gsap.set([g.rule, g.tick, g.key], { clearProps: 'transform,strokeDashoffset,color' }));
+      else M.run(() => gsap.timeline()
+        .to(g.rule, { scaleX: 1, duration: D('gate'), ease: 'expo.out', clearProps: 'transform' })
+        .to(g.tick, { strokeDashoffset: 0, duration: D('tick'), ease: 'power2.out' })
+        .to(g.key, { color: css('--silver'), duration: D('tick'), ease: 'none', clearProps: 'color' }, '<'));
+    }
+  }
+
+  /* One source of truth for the active stage: readout, rail, strip, gates. */
+  function activate(n, instant) {
+    if (n < 1) return;
+    const s = stages[n - 1], anim = M.on && !instant;
+    if (n !== cur) {
+      cur = n;
+      railLinks.forEach((a, i) => (i === n - 1 ? a.setAttribute('aria-current', 'step') : a.removeAttribute('aria-current')));
+      $$('.sheet-list a').forEach((a, i) => (i === n - 1 ? a.setAttribute('aria-current', 'step') : a.removeAttribute('aria-current')));
+      roU.textContent = s.dataset.u;
+      const y = railLinks[n - 1].parentElement.offsetTop;
+      if (anim) {
+        M.run(() => {
+          gsap.to(roN, { duration: D('redecode'), ease: 'none', overwrite: true, scrambleText: { text: s.dataset.l, chars: DIGITS, speed: 0.85 } });
+          gsap.to(ind, { y, duration: D('ind'), ease: 'expo.out', overwrite: 'auto' }); // auto: keep the load fade on opacity
+        });
+      } else {
+        if (libs) gsap.killTweensOf([roN, ind]);
+        roN.textContent = s.dataset.l;
+        setY(ind, y);
+      }
+      swapText(stripBox, stripTitle(n), anim);
+    }
+    if (M.on) drawGates(n, instant);
+  }
+  function resetState() { // instant re-sync after a media query flips
+    const n = cur || 1, s = stages[n - 1];
+    if (libs) gsap.killTweensOf([roN, ind]);
+    roN.textContent = s.dataset.l; roU.textContent = s.dataset.u;
+    setY(ind, railLinks[n - 1].parentElement.offsetTop);
+    swapText(stripBox, stripTitle(n), false);
+  }
+
+  // NV6 section spy: the stage crossing 40 to 45% of the viewport is the active one.
+  const spy = new IntersectionObserver((ents) => ents.forEach((e) => { if (e.isIntersecting) activate(stages.indexOf(e.target) + 1); }), { rootMargin: '-40% 0px -55% 0px' });
+  stages.forEach((s) => spy.observe(s));
+
+  // Cell size for the array background (and the cover): whole pixels, so tiles and cells line up exactly.
+  const sizeCells = () => {
+    const cols = matchMedia('(min-width: 992px)').matches ? +css('--cols-wide') : +css('--cols-narrow');
+    const cs = Math.ceil(root.clientWidth / cols);
+    root.style.setProperty('--cell-size', `${cs}px`);
+    return { cols, cs };
+  };
+  sizeCells();
+  addEventListener('resize', sizeCells);
+
+  /* ---------- Anchors: eased glide, then focus the target ---------- */
+  const form = $('#hold');
+  const firstField = () => $('input[name="launch"]:checked', form) || $('input[name="launch"]', form);
+  const focusFor = (el) => (el === form ? firstField() : el.matches('[tabindex]') ? el : $('[tabindex="-1"]', el));
+  function goTo(el) {
+    const f = focusFor(el), done = () => f?.focus({ preventScroll: true });
+    if (M.lenis) {
+      const dist = Math.abs(el.getBoundingClientRect().top);
+      M.lenis.scrollTo(el, { duration: Math.min(1.3, 0.65 + dist / 4000), easing: expoOut, force: true, onComplete: done });
+    } else { el.scrollIntoView({ block: 'start' }); done(); }
+  }
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('a[href^="#"]');
+    if (!a || e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const el = document.getElementById(a.getAttribute('href').slice(1));
+    if (!el) return;
+    e.preventDefault();
+    if (a.closest('dialog')) closeDlg(() => goTo(el)); else goTo(el);
+  });
+
+  // HV4: the fill enters from the side the pointer came in, and leaves toward the side it left.
+  $$('.btn').forEach((b) => ['pointerenter', 'pointerleave'].forEach((t) => b.addEventListener(t, (e) => {
+    const r = b.getBoundingClientRect();
+    b.style.setProperty('--from', e.clientX < r.left + r.width / 2 ? 'left' : 'right');
+  })));
+
+  /* ---------- Stage sheet (narrow screens) ---------- */
+  const dlg = $('#stages-dlg'), sheet = $('.sheet-in', dlg), opener = $('.strip-b');
+  let closing = false, after = null;
+  opener.addEventListener('click', () => {
+    dlg.showModal();
+    M.lenis?.stop();
+    requestAnimationFrame(() => dlg.classList.add('is-in'));
+    if (!libs) return;
+    if (M.on) M.run(() => {
+      gsap.fromTo(sheet, { yPercent: 100 }, { yPercent: 0, duration: D('sheet'), ease: 'expo.out' });
+      gsap.fromTo($$('li', dlg), { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.35, ease: 'power2.out', stagger: 0.04, delay: 0.12, clearProps: 'opacity,transform' });
+    });
+    else gsap.fromTo(sheet, { opacity: 0 }, { opacity: 1, duration: 0.2 });
+  });
+  function closeDlg(then) {
+    if (!dlg.open || closing) return;
+    after = then || null; closing = true;
+    dlg.classList.remove('is-in');
+    if (!libs) return dlg.close();
+    gsap.to(sheet, M.on ? { yPercent: 100, duration: D('sheet-out'), ease: 'power2.in', onComplete: () => dlg.close() }
+      : { opacity: 0, duration: 0.15, onComplete: () => dlg.close() });
+  }
+  dlg.addEventListener('close', () => {
+    closing = false;
+    if (libs) gsap.set(sheet, { clearProps: 'all' });
+    dlg.classList.remove('is-in');
+    M.lenis?.start();
+    const f = after; after = null;
+    if (f) f(); else opener.focus();
+  });
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); closeDlg(); });
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) closeDlg(); });
+  $('[data-close]', dlg).addEventListener('click', () => closeDlg());
+
+  /* ---------- Launch rows and the hold form ---------- */
+  const rows = $$('.lrow', form);
+  const lset = $('.lset', form), fields = $('.fields', form), result = $('.result', form);
+  const helpBox = $('#ff-help .sw');
+  rows.forEach((row) => {
+    const L = LAUNCHES[row.dataset.id];
+    $('.cells', row).innerHTML = Array.from({ length: L.total }, (_, i) => `<i class="${i < L.total - L.open ? 't' : 'o'}"><b></b></i>`).join('');
+  });
+
+  function renderYours() {
+    const ff = form.ff.value, need = slotsNeeded(ff);
+    rows.forEach((row) => {
+      const on = $('input', row).checked, L = LAUNCHES[row.dataset.id], fits = need <= L.open;
+      $$('.o', row).forEach((c, i) => c.classList.toggle('y', on && fits && i < need));
+      $('.l-yours', row).textContent = !on ? '' : fits ? `Your slot${need > 1 ? 's' : ''}: ${need} of ${L.open} open` : `A ${ff} needs ${need} slots`;
+      row.classList.toggle('is-on', on);
+    });
+  }
+  const pulse = (row) => {
+    if (!M.on || lset.disabled) return;
+    M.run(() => gsap.fromTo($$('.o:not(.y) b', row), { opacity: 0 }, { opacity: 0.9, duration: D('pulse') / 2, ease: 'power1.inOut', yoyo: true, repeat: 1, stagger: 0.03, overwrite: true }));
+  };
+  rows.forEach((row) => {
+    row.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') pulse(row); });
+    $('input', row).addEventListener('focus', (e) => { if (e.target.matches(':focus-visible')) pulse(row); });
+  });
+
+  const ERR_KEYS = ['launch', 'ff', 'mass', 'ready', 'email'];
+  const controls = { launch: $$('input[name="launch"]', form), ff: [form.ff], mass: [form.mass], ready: [form.ready], email: [form.email] };
+  function setError(k, msg) {
+    const el = $(`#err-${k}`);
+    if (msg) el.textContent = msg;
+    el.classList.toggle('is-on', !!msg);
+    controls[k].forEach((c) => (msg ? c.setAttribute('aria-invalid', 'true') : c.removeAttribute('aria-invalid')));
+  }
+
+  form.addEventListener('change', (e) => {
+    const t = e.target;
+    if (t.name === 'launch') {
+      renderYours(); setError('launch', '');
+      if (M.on) {
+        const row = t.closest('.lrow');
+        M.run(() => gsap.fromTo([$('.badge', row), ...$$('.y', row)], { scale: 0.6 }, { scale: 1, duration: D('pop'), ease: 'back.out(2)', clearProps: 'transform' }));
+        if (!M.fine) pulse(row);
+      }
+    }
+    if (t.name === 'ff') { swapText(helpBox, helpFor(t.value), M.on); renderYours(); setError('ff', ''); }
+  });
+  form.addEventListener('input', (e) => { if (ERR_KEYS.includes(e.target.name) && e.target.name !== 'launch') setError(e.target.name, ''); });
+
+  let serial = 418;
+  const resH = $('#res-h'), resP = $('#res-p'), mailHold = $('#mail-hold');
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const v = { launch: form.launch.value, ff: form.ff.value, mass: form.mass.value.trim(), ready: form.ready.value, email: form.email.value };
+    const errs = validate(v);
+    ERR_KEYS.forEach((k) => setError(k, errs[k]));
+    const first = ERR_KEYS.find((k) => errs[k]);
+    if (first) { (first === 'launch' ? firstField() : form[first]).focus(); return; }
+    showResult(v);
+  });
+
+  function showResult(v) {
+    const need = slotsNeeded(v.ff), ref = `PO-${v.launch.replace('-', '')}-${String(serial++).padStart(4, '0')}`;
+    const until = fmtDate(holdUntil(todayUTC()));
+    resH.textContent = `Slot${need > 1 ? 's' : ''} held on shared launch ${v.launch}`;
+    const who = need > 1 ? `${WORDS[need][0].toUpperCase()}${WORDS[need].slice(1)} slots for your ${v.ff} are` : `One ${v.ff} slot is`;
+    resP.innerHTML = `${who} yours until ${until}. Reference <span class="ref"><span class="vh">${ref}</span><span class="sz" aria-hidden="true">${ref}</span><span class="sc" aria-hidden="true">${ref}</span></span>. A 20% deposit turns it into a booking.`;
+    const body = `Shared launch ${v.launch}, ${v.ff}, ${v.mass} kg, ready to ship by ${fmtDate(utc(v.ready))}.\nReference ${ref}, held until ${until}.\nContact: ${v.email.trim()}`;
+    mailHold.href = `mailto:integration@petrel-orbital.example?subject=${encodeURIComponent(`Hold ${ref} on shared launch ${v.launch}`)}&body=${encodeURIComponent(body)}`;
+    lset.disabled = true;
+    result.hidden = false;
+    const hideFields = () => { fields.style.visibility = 'hidden'; fields.inert = true; };
+    if (M.on) {
+      M.run(() => gsap.timeline()
+        .fromTo(fields, { clipPath: 'inset(0% 0% 0% 0%)' }, { clipPath: 'inset(0% 0% 0% 100%)', duration: D('clip'), ease: 'power2.inOut', onComplete: hideFields })
+        .fromTo(result, { clipPath: 'inset(0% 100% 0% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: D('clip'), ease: 'power2.inOut', clearProps: 'clipPath' }, 0.15)
+        .to($('.sc', resP), { duration: D('ref'), ease: 'none', scrambleText: { text: ref, chars: 'ABCDEFGHJKLMNPRSTUVWXYZ0123456789', speed: 0.85 } }, 0.3));
+    } else hideFields();
+    resH.focus({ preventScroll: true });
+  }
+
+  $('#change').addEventListener('click', () => {
+    if (result.hidden) return;
+    lset.disabled = false;
+    fields.inert = false; fields.style.visibility = '';
+    const done = () => { result.hidden = true; };
+    if (M.on) {
+      M.run(() => gsap.timeline()
+        .to(result, { clipPath: 'inset(0% 0% 0% 100%)', duration: D('clip') * 0.75, ease: 'power2.inOut', onComplete: done, clearProps: 'clipPath' })
+        .fromTo(fields, { clipPath: 'inset(0% 100% 0% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: D('clip'), ease: 'power2.inOut', clearProps: 'clipPath' }, 0.1));
+    } else { if (libs) gsap.set(fields, { clearProps: 'clipPath' }); done(); }
+    firstField().focus({ preventScroll: true });
+  });
+
+  if (!libs) { resetState(); return; } // CDN blocked: everything above works, instantly
+
+  /* ---------- Motion (GSAP + Lenis) ---------- */
+  gsap.registerPlugin(ScrollTrigger, SplitText, ScrambleTextPlugin);
+  const launches = $('#launches'), h2 = $('#proc-h');
+  let played = false;
+
+  const mm = gsap.matchMedia();
+  mm.add({
+    motion: '(prefers-reduced-motion: no-preference)',
+    reduce: '(prefers-reduced-motion: reduce)',
+    fine: '(hover: hover) and (pointer: fine)',
+    wide: '(min-width: 992px)',
+    tall: '(min-height: 720px)',
+  }, (ctx) => {
+    const { motion, fine, wide, tall } = ctx.conditions;
+    if (!motion) { // reduced: final states, native scroll, no Lenis, no cover, gates drawn by CSS
+      M.on = false; M.lenis = null; M.run = (fn) => fn();
+      resetState();
+      return;
+    }
+    let alive = true;
+    M.on = true; M.fine = fine; M.run = (fn) => (alive ? ctx.add(fn) : fn());
+
+    /* Lenis on GSAP's clock. Wheel steps between stages go through its virtualScroll hook (SC15). */
+    let stepOn = false, busy = false, needQuiet = false, lastWheel = 0, safety = 0, tops = [];
+    const release = () => { busy = false; needQuiet = true; clearTimeout(safety); };
+    const wheel = ({ event, deltaY }) => {
+      if (!stepOn || event.type !== 'wheel' || event.ctrlKey || !deltaY) return true;
+      const y = lenis.animatedScroll, H = innerHeight, last = tops.length - 1;
+      let j;
+      if (deltaY > 0) {
+        if (y < tops[0] - H * 0.5 || y >= tops[last] - 2) return true; // released below stage 7 and above the intro
+        j = tops.findIndex((t) => t > y + 2);
+      } else {
+        if (y <= tops[0] + 2 || y > tops[last] + H * 0.5) return true; // released above stage 1
+        j = tops.findLastIndex((t) => t < y - 2);
+      }
+      if (j < 0) return true;
+      if (event.cancelable) event.preventDefault(); // returning false skips Lenis's own preventDefault, so do it here
+      const now = performance.now(), quiet = now - lastWheel;
+      lastWheel = now;
+      if (busy || (needQuiet && quiet < 140)) return false; // input held for the glide, then 140 ms of quiet against trackpad tails
+      needQuiet = false; busy = true;
+      clearTimeout(safety); safety = setTimeout(release, D('glide') * 1000 + 300);
+      lenis.scrollTo(tops[j], { duration: D('glide'), easing: inOutQuart, lock: true, force: true, onComplete: release });
+      return false;
+    };
+    const lenis = new Lenis({ autoRaf: false, anchors: false, smoothWheel: true, lerp: 0.1, virtualScroll: (d) => wheel(d) });
+    M.lenis = lenis;
+    if (dlg.open) lenis.stop();
+    lenis.on('scroll', ScrollTrigger.update);
+    const tick = (time) => lenis.raf(time * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
+
+    const fits = () => stages.every((s) => $('.stage-in', s).offsetHeight <= innerHeight);
+    const measure = () => {
+      tops = stages.map((s) => Math.round(s.getBoundingClientRect().top + scrollY));
+      stepOn = wide && fine && tall && fits(); // off on touch, narrow, short or zoomed-text viewports
+    };
+    ScrollTrigger.addEventListener('refresh', measure);
+    measure();
+
+    /* Gates hide until their stage becomes active (motion only; CSS shows them drawn). */
+    gsap.set(gates.map((g) => g.rule), { scaleX: 0 });
+    gsap.set(gates.map((g) => g.tick), { strokeDashoffset: 1 });
+    gsap.set(gates.map((g) => g.key), { color: css('--graphite') });
+    drawn.clear();
+    resetState();
+    drawGates(cur, true);
+
+    /* Page load: LD8 chrome, TX1 heading, SC16 rail, TX4 readout. Nothing gates input. */
+    const chrome = $$('.bar [data-rv]'), lede = $('.lede'), readout = $('.readout');
+    const rules = $$('.rail .rule'), rlinks = railLinks;
+    if (played) {
+      gsap.set([...chrome, lede, readout, h2, ind, ...rlinks], { opacity: 1 });
+      gsap.set(rules, { scaleX: 1 });
+    } else {
+      played = true;
+      const t0 = performance.now();
+      gsap.timeline()
+        .to(chrome, { opacity: 1, duration: D('chrome'), ease: 'power2.out' }, 0)
+        .fromTo(rules, { scaleX: 0 }, { scaleX: 1, duration: D('rule'), ease: 'expo.out', stagger: 0.05 }, 0.45)
+        .to([ind, ...rlinks], { opacity: 1, duration: 0.06, ease: 'steps(1)', stagger: 0.05 }, 0.5)
+        .set(readout, { opacity: 1 }, 0.6)
+        .add(() => { if (alive) ctx.add(() => gsap.to(roN, { duration: D('decode'), ease: 'none', overwrite: true, scrambleText: { text: stages[(cur || 1) - 1].dataset.l, chars: DIGITS, speed: 0.85 } })); }, 0.6)
+        .to(lede, { opacity: 1, duration: 0.5, ease: 'power2.out' }, 0.9);
+      Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 900))]).then(() => {
+        if (!alive) return;
+        const wait = Math.max(0, 0.1 - (performance.now() - t0) / 1000);
+        ctx.add(() => SplitText.create(h2, {
+          type: 'lines', mask: 'lines', linesClass: 'ln', autoSplit: true,
+          onSplit: (self) => {
+            gsap.set(h2, { opacity: 1 });
+            return gsap.from(self.lines, { yPercent: 110, duration: D('rise'), ease: 'expo.out', stagger: 0.08, delay: wait });
+          },
+        }));
+      });
+    }
+    document.fonts.ready.then(() => { if (alive) ScrollTrigger.refresh(); });
+
+    /* SC17 signature: solar cells switch on bottom rows first, scrubbed, until the screen is the array. */
+    let cover = null, coverTl = null, key = '';
+    const buildCover = () => {
+      const { cols, cs } = sizeCells();
+      const rowsN = Math.ceil((innerHeight + (fine ? 0 : 120)) / cs); // a spare row under touch address bars
+      if (`${cols}x${cs}x${rowsN}` === key) return;
+      key = `${cols}x${cs}x${rowsN}`;
+      coverTl?.scrollTrigger?.kill(); coverTl?.kill(); cover?.remove();
+      cover = document.createElement('div');
+      cover.className = 'cover'; cover.setAttribute('aria-hidden', 'true');
+      const cells = [];
+      for (let r = 0; r < rowsN; r++) for (let c = 0; c < cols; c++) {
+        const d = document.createElement('i');
+        d.style.left = `${c * cs}px`; d.style.top = `${r * cs}px`;
+        cells.push([50 * (rowsN - 1 - r) + 140 * Math.random(), d]); // row bias plus noise: a ragged front rising from the hinge
+        cover.append(d);
+      }
+      document.body.append(cover);
+      const sorted = cells.sort((a, b) => a[0] - b[0]).map((x) => x[1]);
+      const sync = (s) => {
+        cover.style.visibility = s.isActive ? 'visible' : 'hidden';
+        launches.classList.toggle('is-bare', s.progress < 1); // the section's own array shows only once the cover is complete
+      };
+      ctx.add(() => {
+        gsap.set(sorted, { autoAlpha: 0 });
+        coverTl = gsap.timeline({
+          scrollTrigger: { trigger: '#stage-7', start: 'clamp(bottom bottom)', end: 'clamp(bottom top)', scrub: true, onUpdate: sync, onToggle: sync, onRefresh: sync },
+        }).to(sorted, { autoAlpha: 1, duration: 0.1, stagger: { amount: 1.5 }, ease: 'none' });
+      });
+    };
+    buildCover();
+    let rt = 0;
+    const onResize = () => { clearTimeout(rt); rt = setTimeout(() => { if (!alive) return; buildCover(); ScrollTrigger.refresh(); }, 200); };
+    addEventListener('resize', onResize);
+
+    /* Rail: TX4 re-scramble of the L-label on hover and keyboard focus; a graphite cursor tracks the pointer. */
+    const scramble = (a) => {
+      const b = $('.rl b', a);
+      ctx.add(() => gsap.to(b, { duration: D('label'), ease: 'none', overwrite: true, scrambleText: { text: b.dataset.v, chars: DIGITS, speed: 0.85 } }));
+    };
+    railLinks.forEach((a) => { const b = $('.rl b', a); b.dataset.v ??= b.textContent; });
+    const onRailEnter = (e) => scramble(e.currentTarget);
+    const onRailFocus = (e) => { if (e.currentTarget.matches(':focus-visible')) scramble(e.currentTarget); };
+    railLinks.forEach((a) => { if (fine) a.addEventListener('pointerenter', onRailEnter); a.addEventListener('focus', onRailFocus); });
+
+    const railOl = $('.rail ol'), ghost = $('.ghost');
+    let rr = null, gy = null;
+    const gTarget = (e) => gsap.utils.clamp(0, rr.height - ghost.offsetHeight, e.clientY - rr.top - ghost.offsetHeight / 2);
+    const gEnter = (e) => { rr = railOl.getBoundingClientRect(); const y = gTarget(e); gy(y, y); gsap.to(ghost, { opacity: 1, duration: D('hover'), overwrite: 'auto' }); };
+    const gMove = (e) => { if (!rr) gEnter(e); else gy(gTarget(e)); };
+    const gLeave = () => { rr = null; gsap.to(ghost, { opacity: 0, duration: 0.3, overwrite: 'auto' }); };
+    const gDrop = () => { rr = null; };
+    if (fine && wide) {
+      gy = gsap.quickTo(ghost, 'y', { duration: 0.35, ease: 'power3.out' });
+      railOl.addEventListener('pointerenter', gEnter);
+      railOl.addEventListener('pointermove', gMove);
+      railOl.addEventListener('pointerleave', gLeave);
+      lenis.on('scroll', gDrop);
+    }
+
+    return () => {
+      alive = false;
+      M.on = false; M.lenis = null; M.run = (fn) => fn();
+      clearTimeout(rt); clearTimeout(safety);
+      removeEventListener('resize', onResize);
+      ScrollTrigger.removeEventListener('refresh', measure);
+      railLinks.forEach((a) => { a.removeEventListener('pointerenter', onRailEnter); a.removeEventListener('focus', onRailFocus); });
+      railOl.removeEventListener('pointerenter', gEnter);
+      railOl.removeEventListener('pointermove', gMove);
+      railOl.removeEventListener('pointerleave', gLeave);
+      gsap.ticker.remove(tick);
+      gsap.ticker.lagSmoothing(500, 33);
+      lenis.destroy();
+      cover?.remove(); cover = null;
+      launches.classList.remove('is-bare');
+    };
+  });
+})();
+</script>
+</body>
+</html>

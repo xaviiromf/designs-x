@@ -1,0 +1,1303 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kerb Tapes parts index</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,400;0,500;0,700;1,900&display=swap">
+<style>
+  :root {
+    color-scheme: dark;
+
+    /* Colour: a Leeds street at kerb level, and the VCR that plays it back */
+    --asphalt: #23262B;      /* page ground: blue-grey tarmac */
+    --grip: #30343B;         /* raised surfaces: controls, dialog panel */
+    --wax: #ECE6D6;          /* text, drawn lines, focus rings, fills */
+    --concrete: #A3A096;     /* secondary text, about 5.9:1 on asphalt */
+    --kerb: #F2C318;         /* only the double yellow lines under hovered or focused links and rows */
+    --bluescreen: #2340E8;   /* machine state: title shadow, tracking band, no-signal empty state */
+    --seam: rgb(236 230 214 / .14);         /* row separators */
+    --seam-strong: rgb(236 230 214 / .32);  /* control and chip borders at rest */
+    --veil: rgb(35 38 43 / .8);             /* dialog backdrop */
+
+    /* Footage sub-palette: read by the canvas art only */
+    --art-day: #9FB4C2;
+    --art-dusk: #C98A5B;
+    --art-overcast: #8E959B;
+    --art-night: #1A1D2A;
+    --art-sodium: #E39A3B;
+    --art-ground: #5E6166;
+    --art-black: #000000;    /* fisheye corners, letterbox bars */
+
+    /* Type: Kanit is the only family */
+    --font: 'Kanit', system-ui, sans-serif;
+    --step--1: .8125rem;
+    --step-0: 1rem;
+    --step-body: 1.0625rem;
+    --step-1: 1.25rem;
+    --step-2: 1.5625rem;
+    --step-3: clamp(1.75rem, 3vw, 2.44rem);
+    --step-display: clamp(3rem, 9vw, 7.5rem);
+    --lh-body: 1.55;
+    --lh-display: .88;
+
+    /* Space (4px base) */
+    --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 24px;
+    --space-6: 32px; --space-7: 48px; --space-8: 64px; --space-9: 96px; --space-10: 128px;
+    --gutter: clamp(16px, 4vw, 48px);
+    --max: 1440px;
+
+    /* Shape: each radius belongs to one kind of object */
+    --r-frame: 14px;     /* camcorder LCD */
+    --r-thumb: 4px;      /* the same LCD at 72px */
+    --r-control: 6px;
+    --r-chip: 999px;
+    --r-dialog: 18px;
+    --frame-w: clamp(220px, 22vw, 340px);
+    --frame-gap: var(--space-5);
+    --thumb-w: 72px;
+    --dy-w: max(1.5px, .06em);   /* double yellow: line thickness */
+    --dy-gap: .12em;             /* double yellow: gap between the lines */
+    --ring: 2px solid var(--wax);
+
+    /* Motion: the expo family only (GSAP uses expo.out / expo.inOut with the same timings) */
+    --ease-out: cubic-bezier(.16, 1, .3, 1);
+    --ease-in-out: cubic-bezier(.87, 0, .13, 1);
+    --d-press: .12s;
+    --d-release: .45s;
+    --d-sweep: .45s;
+    --d-fill: .35s;
+    --d-leave: .25s;
+    --d-hover: .2s;
+    --d-swap: .35s;
+    --d-pill: .5s;
+    --d-band: .7s;       /* load: tracking band over the head */
+    --d-rise: 1s;        /* load: title lines rise */
+    --d-window: 1s;      /* load: frames open */
+    --d-flip: .7s;       /* index reflow */
+    --d-open: .45s;      /* dialog in */
+    --d-close: .3s;      /* dialog out */
+    --d-blue: .3s;       /* blue screen held before the footage cuts in */
+    --d-wipe: .35s;      /* tracking-band wipe between parts */
+    --d-caption: .4s;
+    --shot: 4;           /* seconds per trick shot */
+  }
+
+  /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+  /* Hidden start states only when the motion stack loaded */
+  html.js [data-rv] { opacity: 0; }
+  @media (prefers-reduced-motion: reduce) { html.js [data-rv] { opacity: 1; } }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  [hidden]:not(.rows > li) { display: none !important; }   /* index rows keep the UA rule so Flip can show them while they leave */
+  body {
+    margin: 0;
+    background: var(--asphalt);
+    color: var(--wax);
+    font: 400 var(--step-body) / var(--lh-body) var(--font);
+    -webkit-font-smoothing: antialiased;
+  }
+  h2, h3, p, ul, ol { margin: 0; }
+  button, input, select { font: inherit; color: inherit; }
+  .vh { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .wrap { max-width: calc(var(--max) + 2 * var(--gutter)); margin-inline: auto; padding-inline: var(--gutter); }
+
+  /* Fixed figure cells: Kanit has no tabular figures, so runtimes and timecodes sit in 1ch cells */
+  .fig { white-space: nowrap; }
+  .fig i { font-style: normal; display: inline-block; width: 1ch; text-align: center; }
+  .fig i.c { width: .28em; }
+
+  /* ---------- Double yellow underline (HV2) ---------- */
+  .ln {
+    display: inline-block;
+    color: var(--wax);
+    text-decoration: none;
+    padding: 0 0 .3em;
+    border: 0;
+    background:
+      linear-gradient(var(--kerb) 0 0) 100% calc(100% - var(--dy-gap) - var(--dy-w)) / 0 var(--dy-w) no-repeat,
+      linear-gradient(var(--kerb) 0 0) 100% 100% / 0 var(--dy-w) no-repeat;
+    transition: background-size var(--d-sweep) var(--ease-out);
+    cursor: pointer;
+  }
+  .ln:hover, .ln:focus-visible {
+    background-position: 0 calc(100% - var(--dy-gap) - var(--dy-w)), 0 100%;
+    background-size: 100% var(--dy-w), 100% var(--dy-w);
+  }
+  .ln:focus-visible { outline: var(--ring); outline-offset: 3px; border-radius: 2px; }
+  .ln:active { transform: scale(.97); transition: background-size var(--d-sweep) var(--ease-out), transform var(--d-press); }
+  button.ln { font-weight: 500; transition: background-size var(--d-sweep) var(--ease-out), transform var(--d-release) var(--ease-out); }
+  @media (hover: none) {
+    .ln { background-position: 0 calc(100% - var(--dy-gap) - var(--dy-w)), 0 100%; background-size: 100% var(--dy-w), 100% var(--dy-w); }
+  }
+
+  /* ---------- Buttons: fill from the entry edge (HV4) and press (MI1) ---------- */
+  .btn {
+    position: relative;
+    isolation: isolate;
+    overflow: clip;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    min-height: 44px;
+    padding: 0 var(--space-4);
+    border: 1px solid var(--seam-strong);
+    border-radius: var(--r-control);
+    background: var(--grip);
+    color: var(--wax);
+    font-weight: 500;
+    line-height: 1;
+    cursor: pointer;
+    transition: color var(--d-leave) var(--ease-out), transform var(--d-release) var(--ease-out);
+  }
+  .btn::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--wax);
+    transform: scaleX(0);
+    transform-origin: var(--from, left);
+    transition: transform var(--d-leave) var(--ease-out);
+  }
+  @media (hover: hover) {
+    .btn:hover:not([aria-disabled="true"]) { color: var(--asphalt); transition-duration: var(--d-fill), var(--d-release); }
+    .btn:hover:not([aria-disabled="true"])::before { transform: scaleX(1); transition-duration: var(--d-fill); }
+  }
+  .btn:focus-visible { outline: var(--ring); outline-offset: 3px; color: var(--asphalt); }
+  .btn:focus-visible::before { transform: scaleX(1); transform-origin: left; }
+  .btn:active:not([aria-disabled="true"]) { transform: scale(.97); transition-duration: var(--d-leave), var(--d-press); }
+  .btn[aria-disabled="true"] { opacity: .38; cursor: default; }
+  .btn.icon { width: 44px; padding: 0; }
+  .btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* Masked label swap (MI2): both labels share one cell, so the width never jumps */
+  .swap-cell { display: grid; overflow: clip; }
+  .swap-cell > span { grid-area: 1 / 1; text-align: center; transition: transform var(--d-swap) var(--ease-out); }
+  .swap-cell > span + span { transform: translateY(100%); }
+  .is-alt .swap-cell > span:first-child { transform: translateY(-100%); }
+  .is-alt .swap-cell > span + span { transform: none; }
+
+  /* ---------- Section head ---------- */
+  .parts { padding-bottom: var(--space-9); }
+  .head-wrap { position: relative; overflow: clip; }
+  .head { padding-block: var(--space-6) var(--space-8); }
+  .bar { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-4); margin-bottom: clamp(var(--space-7), 9vw, var(--space-10)); }
+  .wordmark { font-weight: 700; font-size: var(--step-1); line-height: 1.2; }
+  .title { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--space-5); align-items: end; }
+  .title h2 {
+    grid-column: 1 / 9;
+    font-style: italic;
+    font-weight: 900;
+    font-size: var(--step-display);
+    line-height: var(--lh-display);
+    letter-spacing: -.01em;
+    text-shadow: .06em .06em 0 var(--bluescreen);
+    text-wrap: balance;
+    padding-bottom: .06em;
+  }
+  .title h2 .tl-mask { padding: 0 .12em .16em .04em; margin: 0 -.12em -.16em -.04em; }
+  .lede { grid-column: 9 / 13; max-width: 46ch; color: var(--wax); margin-bottom: .2em; }
+  .osd, .band { position: absolute; pointer-events: none; visibility: hidden; opacity: 0; }
+  .osd { top: var(--space-6); left: max(var(--gutter), (100% - var(--max)) / 2); width: 96px; height: 28px; fill: var(--wax); font: 500 22px/1 var(--font); }
+  .band {
+    left: 0; right: 0; top: 0;
+    background:
+      repeating-linear-gradient(180deg, transparent 0 5px, rgb(236 230 214 / .28) 5px 6px, transparent 6px 13px),
+      repeating-linear-gradient(180deg, transparent 0 9px, rgb(0 0 0 / .22) 9px 11px, transparent 11px 17px),
+      var(--bluescreen);
+  }
+
+  /* ---------- The tape shelf ---------- */
+  .strip {
+    --edge: max(var(--gutter), (100% - var(--max)) / 2);
+    list-style: none;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: var(--frame-w);
+    gap: var(--frame-gap);
+    padding: var(--space-2) var(--edge) var(--space-4);
+    scroll-padding-inline: var(--edge);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: thin;
+    scrollbar-color: var(--seam-strong) transparent;
+  }
+  .frame {
+    display: grid;
+    gap: var(--space-3);
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+    scroll-snap-align: start;
+  }
+  .screen {
+    position: relative;
+    display: block;
+    aspect-ratio: 4 / 3;
+    border-radius: var(--r-frame);
+    overflow: clip;
+    background: var(--grip);
+    transition: transform var(--d-release) var(--ease-out);
+  }
+  .screen canvas { display: block; width: 100%; height: 100%; }
+  .frame:focus-visible { outline: none; }
+  .frame:focus-visible .screen { outline: var(--ring); outline-offset: 3px; }
+  .frame:active .screen { transform: scale(.97); transition-duration: var(--d-press); }
+  .cap { display: grid; gap: 2px; }
+  .cap-name { font-weight: 700; font-size: var(--step-1); line-height: 1.2; }
+  .cap-tape { color: var(--concrete); font-size: var(--step-0); }
+  .shelf-ctl { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-3); }
+
+  /* Film grain (MD4): only on footage that is playing */
+  .grain {
+    position: absolute;
+    inset: -50%;
+    pointer-events: none;
+    opacity: 0;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1.4 -.2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    transition: opacity .3s var(--ease-out);
+  }
+  .is-playing .grain { opacity: .09; animation: grain .8s steps(4) infinite; }
+  @keyframes grain { to { transform: translate(-.9em, .6em); } }
+
+  /* ---------- Index ---------- */
+  .index { padding-top: var(--space-9); }
+  .index h3 { font-weight: 700; font-size: var(--step-3); line-height: 1.1; margin-bottom: var(--space-5); }
+  .index h3:focus { outline: none; }
+  .index h3:focus-visible { outline: var(--ring); outline-offset: 4px; }
+  .controls { display: grid; grid-template-columns: minmax(0, 36rem) auto; justify-content: space-between; align-items: end; gap: var(--space-4) var(--space-6); }
+  .field-label { display: block; color: var(--concrete); font-size: var(--step-0); margin-bottom: var(--space-2); transition: color var(--d-hover); }
+  .find:focus-within .field-label, .sort:focus-within .field-label { color: var(--wax); }
+  .find-row { display: flex; gap: var(--space-2); }
+  .input, .select {
+    min-height: 44px;
+    border: 1px solid var(--seam-strong);
+    border-radius: var(--r-control);
+    background-color: var(--grip);
+    color: var(--wax);
+    padding: 0 var(--space-3);
+    caret-color: var(--wax);
+    transition: border-color var(--d-hover);
+  }
+  .input { flex: 1; min-width: 0; }
+  .input:hover, .select:hover { border-color: var(--wax); }
+  .input:focus-visible, .select:focus-visible { outline: var(--ring); outline-offset: 2px; border-color: var(--wax); }
+  .select {
+    appearance: none;
+    padding-right: var(--space-7);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 6l5 5 5-5' fill='none' stroke='%23ECE6D6' stroke-width='1.6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 16px;
+    cursor: pointer;
+  }
+  .chips { position: relative; grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: var(--space-2); margin: var(--space-2) 0 0; padding: 0; border: 0; min-width: 0; }
+  .pill { position: absolute; left: 0; top: 0; border-radius: var(--r-chip); background: var(--wax); pointer-events: none; transform-origin: 0 50%; }
+  .chip { position: relative; z-index: 1; display: inline-flex; align-items: center; min-height: 40px; padding: 0 var(--space-4); border: 1px solid var(--seam-strong); border-radius: var(--r-chip); color: var(--concrete); cursor: pointer; transition: border-color var(--d-hover), color var(--d-hover); }
+  .chip input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+  .chip:hover { border-color: var(--wax); color: var(--wax); }
+  .chip:has(input:checked) { border-color: var(--wax); color: var(--asphalt); font-weight: 500; transition: border-color var(--d-hover), color .2s .12s; }
+  .chip:has(input:focus-visible) { outline: var(--ring); outline-offset: 3px; }
+  .results { margin-top: var(--space-6); color: var(--concrete); display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2) var(--space-4); min-height: 2.2em; }
+
+  .rows { list-style: none; padding: 0; margin-top: var(--space-4); border-top: 1px solid var(--seam); }
+  .rows > li { border-bottom: 1px solid var(--seam); }
+  .row {
+    --lw: 2px;
+    display: grid;
+    grid-template-columns: var(--thumb-w) minmax(0, 1.25fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-5);
+    width: 100%;
+    padding: var(--space-3) var(--space-2) var(--space-4) 0;
+    border: 0;
+    text-align: left;
+    cursor: pointer;
+    background:
+      linear-gradient(var(--kerb) 0 0) 100% calc(100% - 4px - var(--lw)) / 0 var(--lw) no-repeat,
+      linear-gradient(var(--kerb) 0 0) 100% 100% / 0 var(--lw) no-repeat;
+    transition: background-size var(--d-sweep) var(--ease-out), transform var(--d-release) var(--ease-out);
+  }
+  .row:hover, .row:focus-visible {
+    background-position: 0 calc(100% - 4px - var(--lw)), 0 100%;
+    background-size: 100% var(--lw), 100% var(--lw);
+  }
+  .row:focus-visible { outline: var(--ring); outline-offset: 2px; position: relative; z-index: 1; }
+  .row:active { transform: scale(.99); transition-duration: var(--d-sweep), var(--d-press); }
+  .thumb { display: block; aspect-ratio: 4 / 3; border-radius: var(--r-thumb); overflow: clip; background: var(--grip); }
+  .thumb canvas { display: block; width: 100%; height: 100%; }
+  .r-name { font-weight: 700; font-size: var(--step-1); line-height: 1.2; }
+  .r-tape, .r-spot { color: var(--concrete); }
+  .r-time { justify-self: end; color: var(--wax); }
+
+  .empty {
+    margin-top: var(--space-4);
+    padding: var(--space-7) var(--space-6);
+    border-radius: var(--r-frame);
+    background: var(--bluescreen);
+    color: var(--wax);
+    display: grid;
+    justify-items: start;
+    gap: var(--space-4);
+  }
+  .empty p { max-width: 46ch; font-size: var(--step-1); line-height: 1.4; }
+  .lend { margin-top: var(--space-8); color: var(--concrete); max-width: 70ch; }
+
+  /* ---------- Tape sheet dialog ---------- */
+  .sheet {
+    width: min(960px, calc(100% - 2 * var(--gutter)));
+    max-width: none;
+    max-height: calc(100dvh - 2 * var(--space-5));
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--wax);
+    overflow: visible;
+  }
+  .sheet::backdrop { background: var(--veil); backdrop-filter: blur(4px); opacity: 0; transition: opacity var(--d-close) var(--ease-out); }
+  .sheet.is-in::backdrop { opacity: 1; }
+  html:not(.motion) .sheet-panel { opacity: 0; transition: opacity .2s; }
+  html:not(.motion) .sheet.is-in .sheet-panel { opacity: 1; }
+  .sheet-panel {
+    max-height: inherit;
+    overflow: auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+    align-items: start;
+    gap: var(--space-5) var(--space-6);
+    padding: var(--space-5) var(--space-6) var(--space-6);
+    border-radius: var(--r-dialog);
+    background: var(--grip);
+  }
+  .sheet-top { grid-column: 1 / -1; display: flex; justify-content: flex-end; margin-bottom: calc(-1 * var(--space-2)); }
+  .sheet .btn { background: var(--asphalt); }
+  .stage-screen { background: var(--bluescreen); }
+  .wipe {
+    position: absolute;
+    inset: 0;
+    clip-path: inset(0 0 100% 0);
+    pointer-events: none;
+    background:
+      repeating-linear-gradient(180deg, transparent 0 5px, rgb(236 230 214 / .28) 5px 6px, transparent 6px 13px),
+      var(--bluescreen);
+  }
+  .stage-bar { display: flex; align-items: center; gap: var(--space-4); margin-top: var(--space-4); }
+  .now { overflow: clip; min-width: 0; color: var(--wax); }
+  .now span { display: block; line-height: 1.3; }
+  .sheet-info h2 { font-weight: 700; font-size: var(--step-3); line-height: 1.05; }
+  .sheet-tape { font-size: var(--step-1); margin-top: var(--space-1); }
+  .sheet-meta { color: var(--concrete); margin-top: var(--space-4); }
+  .sheet-info h3 { font-weight: 500; font-size: var(--step-0); color: var(--concrete); margin-top: var(--space-6); }
+  .tricks { list-style: none; padding: 0; margin-top: var(--space-2); display: grid; gap: 2px; }
+  .trick {
+    display: grid;
+    grid-template-columns: 4ch 1fr;
+    gap: var(--space-3);
+    width: 100%;
+    padding: var(--space-2) 0 var(--space-3) var(--space-3);
+    border: 0;
+    border-left: 2px solid transparent;
+    text-align: left;
+    color: var(--concrete);
+    cursor: pointer;
+    background:
+      linear-gradient(var(--kerb) 0 0) 100% calc(100% - 3px - var(--dy-gap) - var(--dy-w)) / 0 var(--dy-w) no-repeat,
+      linear-gradient(var(--kerb) 0 0) 100% calc(100% - 3px) / 0 var(--dy-w) no-repeat;
+    transition: background-size var(--d-sweep) var(--ease-out), color var(--d-hover), transform var(--d-release) var(--ease-out);
+  }
+  .trick:hover, .trick:focus-visible {
+    color: var(--wax);
+    background-position: 0 calc(100% - 3px - var(--dy-gap) - var(--dy-w)), 0 calc(100% - 3px);
+    background-size: 100% var(--dy-w), 100% var(--dy-w);
+  }
+  .trick:focus-visible { outline: var(--ring); outline-offset: 2px; }
+  .trick:active { transform: scale(.98); transition-duration: var(--d-sweep), var(--d-hover), var(--d-press); }
+  .trick[aria-current="true"] { color: var(--wax); border-left-color: var(--wax); font-weight: 500; }
+  .sheet-nav { display: flex; justify-content: space-between; gap: var(--space-3); margin-top: var(--space-6); }
+
+  /* ---------- Narrow screens ---------- */
+  @media (max-width: 991px) {
+    .title h2, .lede { grid-column: 1 / -1; }
+    .lede { margin-top: var(--space-5); }
+  }
+  @media (max-width: 767px) {
+    :root { --frame-w: 78vw; --step-display: clamp(3rem, 16.5vw, 4.5rem); }
+    .head { padding-bottom: var(--space-7); }
+    .strip { padding-inline: calc((100% - var(--frame-w)) / 2); scroll-padding-inline: 0; }
+    .frame { scroll-snap-align: center; }
+    .shelf-ctl { justify-content: flex-start; }
+    .index { padding-top: var(--space-8); }
+    .controls { grid-template-columns: minmax(0, 1fr); }
+    .select { width: 100%; }
+    .row {
+      grid-template-columns: var(--thumb-w) minmax(0, 1fr) auto;
+      grid-template-areas: "thumb name time" "thumb tape time" "thumb spot time";
+      gap: 0 var(--space-4);
+      align-items: start;
+    }
+    .thumb { grid-area: thumb; align-self: center; }
+    .r-name { grid-area: name; font-size: var(--step-0); }
+    .r-tape { grid-area: tape; font-size: var(--step-0); }
+    .r-spot { grid-area: spot; font-size: var(--step-0); }
+    .r-time { grid-area: time; }
+    .empty { padding: var(--space-6) var(--space-5); }
+    .sheet { width: 100%; height: 100dvh; max-height: 100dvh; margin: 0; }
+    .sheet-panel { height: 100%; max-height: none; border-radius: 0; grid-template-columns: minmax(0, 1fr); align-content: start; padding: var(--space-4) var(--gutter) var(--space-7); gap: var(--space-5); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0s !important; animation: none !important; }
+    .btn:active, .row:active, .trick:active, .ln:active, .frame:active .screen { transform: none !important; }
+  }
+</style>
+</head>
+<body>
+<main>
+<section class="parts" id="parts" aria-labelledby="parts-title">
+  <div class="head-wrap">
+    <header class="wrap head">
+      <div class="bar" data-rv>
+        <p class="wordmark">Kerb Tapes</p>
+        <a class="ln" href="#index" id="skip">Skip to the index</a>
+      </div>
+      <div class="title">
+        <h2 id="parts-title" data-rv>Parts, 1994 to 2008</h2>
+        <p class="lede" data-rv>Twelve video parts from five Leeds skate videos, captured from the original VHS-C, Hi8 and MiniDV tapes. Point at or tab to a frame to roll its opening trick (on a phone, the middle frame plays), or open it for the whole part.</p>
+      </div>
+    </header>
+    <svg class="osd" aria-hidden="true" viewBox="0 0 96 28"><path d="M1 3 L17 14 L1 25 Z"/><text x="25" y="23">PLAY</text></svg>
+    <div class="band" aria-hidden="true"></div>
+  </div>
+
+  <ul class="strip" id="strip" aria-label="Tape shelf" data-lenis-prevent-horizontal></ul>
+  <div class="wrap shelf-ctl">
+    <button class="btn icon" type="button" id="back" aria-label="Back one part"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M12.5 4 6.5 10l6 6"/></svg></button>
+    <button class="btn icon" type="button" id="fwd" aria-label="Forward one part"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7.5 4l6 6-6 6"/></svg></button>
+  </div>
+
+  <div class="wrap index" id="index">
+    <h3 id="index-title" tabindex="-1">Index of parts</h3>
+    <div class="controls">
+      <form class="find" id="find" role="search" aria-label="Index of parts">
+        <label class="field-label" for="q">Find a skater, video or spot</label>
+        <div class="find-row">
+          <input class="input" id="q" name="q" type="search" autocomplete="off" spellcheck="false">
+          <button class="btn" type="submit">Search</button>
+        </div>
+      </form>
+      <div class="sort">
+        <label class="field-label" for="sort">Sort by</label>
+        <select class="select" id="sort" name="sort">
+          <option value="old">Year, oldest first</option>
+          <option value="new">Year, newest first</option>
+          <option value="long">Longest part first</option>
+        </select>
+      </div>
+      <fieldset class="chips" id="terrain">
+        <legend class="vh">Terrain</legend>
+        <span class="pill" aria-hidden="true"></span>
+        <label class="chip"><input type="radio" name="terrain" value="all" checked><span>All terrain</span></label>
+        <label class="chip"><input type="radio" name="terrain" value="ledge"><span>Ledges</span></label>
+        <label class="chip"><input type="radio" name="terrain" value="rail"><span>Rails</span></label>
+        <label class="chip"><input type="radio" name="terrain" value="stairs"><span>Stairs and gaps</span></label>
+        <label class="chip"><input type="radio" name="terrain" value="bank"><span>Banks and ditches</span></label>
+        <label class="chip"><input type="radio" name="terrain" value="bowl"><span>Bowls</span></label>
+      </fieldset>
+    </div>
+    <p class="results"><span id="count" aria-live="polite">12 parts, 42:11 of footage</span> <button class="ln" type="button" id="clear" hidden>Clear search</button></p>
+    <ul class="rows" id="rows"></ul>
+    <div class="empty" id="empty" hidden>
+      <p id="empty-msg"></p>
+      <button class="ln" type="button" id="clear-empty">Clear search</button>
+    </div>
+    <noscript><p class="lend">The tape shelf and the index of parts need JavaScript to draw the footage and list the parts.</p></noscript>
+    <p class="lend" id="lend">Have a Leeds session on tape from before 2010? We digitise it for free and post the tape back. <a class="ln" href="mailto:tapes@kerbtapes.example?subject=Tape%20to%20lend" target="_blank" rel="noopener">Email the archive</a></p>
+  </div>
+</section>
+</main>
+
+<dialog class="sheet" id="sheet" aria-labelledby="sheet-name" data-lenis-prevent>
+  <div class="sheet-panel">
+    <div class="sheet-top"><button class="btn" type="button" id="sheet-close">Close</button></div>
+    <div class="sheet-stage">
+      <div class="screen stage-screen">
+        <canvas id="stage" role="img" aria-label=""></canvas>
+        <span class="grain" aria-hidden="true"></span>
+        <span class="wipe" aria-hidden="true"></span>
+      </div>
+      <div class="stage-bar">
+        <button class="btn" type="button" id="play"><span class="swap-cell"><span>Pause</span><span aria-hidden="true">Play</span></span></button>
+        <p class="now"><span id="now"></span></p>
+      </div>
+    </div>
+    <div class="sheet-info">
+      <h2 id="sheet-name"></h2>
+      <p class="sheet-tape" id="sheet-tape"></p>
+      <p class="sheet-meta" id="sheet-meta"></p>
+      <h3>Tricks in this part</h3>
+      <ol class="tricks" id="tricks"></ol>
+      <div class="sheet-nav">
+        <button class="btn" type="button" id="prev">Previous part</button>
+        <button class="btn" type="button" id="next">Next part</button>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/SplitText.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/Flip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  'use strict';
+  const root = document.documentElement;
+  root.classList.add('js');
+  const libs = !!(window.gsap && window.ScrollTrigger && window.SplitText && window.Flip && window.Lenis);
+  if (!libs) root.classList.remove('js');   // CDN blocked: show everything, stay usable
+
+  // ================= Data =================
+  // Every frame is generated canvas footage drawn from these rows by drawFrame().
+  // To use real media: give a part `poster` (image URL) and `clip` (muted mp4 URL), render
+  // <img> and <video muted loop playsinline preload="none"> in frameHTML() in place of the canvas,
+  // and call video.play() / video.pause() where playFrame() and halt() start and stop the canvas.
+  const TAPES = {
+    'Wet Kerbs':   { year: 1994, tape: 'VHS-C', camera: 'a VHS-C camcorder', date: true },
+    'Second Gear': { year: 1997, tape: 'Hi8', camera: 'a Hi8 camcorder', date: true },
+    'Dust Off':    { year: 2000, tape: 'MiniDV', camera: 'a Sony VX1000 with a fisheye', fisheye: true },
+    'Nightbus':    { year: 2003, tape: 'MiniDV', camera: 'a Sony VX1000 with a fisheye', fisheye: true },
+    'Last Tape':   { year: 2008, tape: 'MiniDV', camera: 'a Panasonic HVX200 in 16:9', letterbox: true },
+  };
+  const FILMERS = { 'Wet Kerbs': 'Sam Pryce', 'Second Gear': 'Nadia Kerr', 'Dust Off': 'Sam Pryce', 'Nightbus': 'Leon Achebe', 'Last Tape': 'Leon Achebe' };
+  // obstacle: ledge | rail | stairs | gap | bank | bowl.  sky: day | dusk | overcast | night | sodium.  in: tape in-point.
+  const PARTS = [
+    { id: 1, skater: 'Dee Okafor', tape: 'Wet Kerbs', spot: 'Courthouse ledges', obstacle: 'ledge', sky: 'overcast', runtime: '2:58', in: '00:03:10', date: 'MAR 14 1994',
+      tricks: ['0:12 Backside 50-50 the full ledge', '1:05 Frontside crooked grind', '2:31 Kickflip out of a 5-0'] },
+    { id: 2, skater: 'Marcus Fell', tape: 'Wet Kerbs', spot: 'Kirkgate bank', obstacle: 'bank', sky: 'dusk', runtime: '3:12', in: '00:06:22', date: 'APR 30 1994',
+      tricks: ['0:20 Wallride off the bank top', '1:44 Frontside ollie over the drain', '2:58 Boneless to fakie'] },
+    { id: 3, skater: 'Priya Lane', tape: 'Second Gear', spot: 'Civic eight', obstacle: 'stairs', sky: 'day', runtime: '2:44', in: '00:02:05', date: 'JUN 8 1997',
+      tricks: ['0:09 Ollie the Civic eight', '1:16 Frontside 180 the eight', '2:30 Kickflip the eight, last try'] },
+    { id: 4, skater: 'Tom Haigh', tape: 'Second Gear', spot: 'Roundhay bowl', obstacle: 'bowl', sky: 'day', runtime: '4:05', in: '00:11:40', date: 'AUG 21 1996',
+      tricks: ['0:31 Frontside grind round the deep end', '2:02 Backside air over the light', '3:49 Rock to fakie on the hip'] },
+    { id: 5, skater: 'Jas Whitlock', tape: 'Dust Off', spot: 'The Leopard rail', obstacle: 'rail', sky: 'overcast', runtime: '3:30', in: '00:04:48',
+      tricks: ['0:18 Boardslide the Leopard rail', '1:37 Frontside lipslide', '3:11 50-50 the full eleven'] },
+    { id: 6, skater: 'Ollie Nwosu', tape: 'Dust Off', spot: 'Car park 4 gap', obstacle: 'gap', sky: 'dusk', runtime: '2:51', in: '00:09:02',
+      tricks: ['0:14 Ollie the top-floor gap', '1:22 Pop shove-it over the gap', '2:40 Kickflip the gap, first go'] },
+    { id: 7, skater: 'Sian Bray', tape: 'Dust Off', spot: 'Courthouse ledges', obstacle: 'ledge', sky: 'day', runtime: '3:05', in: '00:15:27',
+      tricks: ['0:11 Switch nosegrind', '1:48 Backside tailslide to fakie', '2:52 Nollie heelflip over the end'] },
+    { id: 8, skater: 'Kev Armitage', tape: 'Nightbus', spot: 'Station handrail', obstacle: 'rail', sky: 'sodium', runtime: '4:20', in: '00:01:30',
+      tricks: ['0:25 Frontside boardslide under the lamps', '2:10 Feeble grind down the twelve', '4:02 50-50, kickflip out'] },
+    { id: 9, skater: 'Lou Ferris', tape: 'Nightbus', spot: 'Holbeck ditch', obstacle: 'bank', sky: 'night', runtime: '3:47', in: '00:08:15',
+      tricks: ['0:16 Carve the full ditch', '1:59 Frontside wallride over the grate', '3:30 Ollie out of the ditch onto the path'] },
+    { id: 10, skater: 'Ade Mensah', tape: 'Nightbus', spot: 'Civic eight', obstacle: 'stairs', sky: 'night', runtime: '2:39', in: '00:14:41',
+      tricks: ['0:08 Heelflip the eight', '1:12 Backside 180 the eight', '2:24 Hardflip the eight'] },
+    { id: 11, skater: 'Rosa Quint', tape: 'Last Tape', spot: 'Granary Wharf ledge', obstacle: 'ledge', sky: 'dusk', runtime: '3:58', in: '00:00:45',
+      tricks: ['0:19 Frontside smith grind', '2:01 Backside overcrook along the water', '3:41 Switch backside 5-0'] },
+    { id: 12, skater: 'Fin Doyle', tape: 'Last Tape', spot: 'Roundhay bowl', obstacle: 'bowl', sky: 'overcast', runtime: '5:02', in: '00:06:10',
+      tricks: ['0:40 Frontside air over the death box', '2:55 Backside smith round the shallow end', '4:44 Invert on the deep end'] },
+  ];
+
+  const secs = s => s.split(':').reduce((a, n) => a * 60 + +n, 0);                 // '2:58' -> 178, '00:03:10' -> 190
+  const mss = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  const pal = f => [f / 90000 | 0, (f / 1500 | 0) % 60, (f / 25 | 0) % 60, f % 25]    // PAL frames -> HH:MM:SS:FF at 25 fps
+    .map(n => String(n).padStart(2, '0')).join(':');
+  const kindOf = n => /boardslide|lipslide|tailslide/i.test(n) ? 'slide' : /flip/i.test(n) ? 'flip'
+    : /shove|180/i.test(n) ? 'spin' : /grind|50-50|5-0|smith|crook|feeble/i.test(n) ? 'grind' : 'air';
+  PARTS.forEach(p => {
+    Object.assign(p, { year: TAPES[p.tape].year, len: secs(p.runtime), inS: secs(p.in) });
+    p.shots = p.tricks.map(s => { const [, time, name] = s.match(/^(\d+:\d\d) (.+)$/); return { time, at: secs(time), name, kind: kindOf(name) }; });
+  });
+  const byId = id => PARTS.find(p => p.id === +id);
+  const tapeLine = p => `${p.tape}, ${p.year}`;
+  const lower1 = s => s[0].toLowerCase() + s.slice(1);
+  const shotAlt = p => `${p.skater} at ${p.spot}, opening with ${lower1(p.shots[0].name)}`;
+  const fig = s => `<span class="fig">${[...s].map(c => c === ':' ? '<i class="c">:</i>' : `<i>${c}</i>`).join('')}</span>`;
+
+  // ================= Index logic =================
+  const TERRAIN = { all: null, ledge: ['ledge'], rail: ['rail'], stairs: ['stairs', 'gap'], bank: ['bank'], bowl: ['bowl'] };
+  const SORTS = { old: (a, b) => a.year - b.year || a.inS - b.inS, new: (a, b) => b.year - a.year || a.inS - b.inS, long: (a, b) => b.len - a.len };
+  const view = ({ q, terrain, sort }) => {
+    const qq = q.trim().toLowerCase(), t = TERRAIN[terrain];
+    return PARTS.filter(p => (!t || t.includes(p.obstacle)) && (!qq || `${p.skater} ${p.tape} ${p.year} ${p.spot}`.toLowerCase().includes(qq))).sort(SORTS[sort]);
+  };
+  const results = (list, q) => {
+    const n = list.length;
+    return q.trim() ? `${n} ${n === 1 ? 'part matches' : 'parts match'} “${q.trim()}”`
+      : `${n} ${n === 1 ? 'part' : 'parts'}, ${mss(list.reduce((s, p) => s + p.len, 0))} of footage`;
+  };
+
+  // ================= Generated footage =================
+  const SW = 400, SH = 300, G = 232, HZ = 176, SHOT = parseFloat(getComputedStyle(root).getPropertyValue('--shot')) || 4;
+  const A = {};
+  const readArt = () => {
+    const cs = getComputedStyle(root), v = n => cs.getPropertyValue(n).trim();
+    ['day', 'dusk', 'overcast', 'night', 'sodium', 'ground', 'black'].forEach(k => A[k] = v('--art-' + k));
+    ['wax', 'asphalt', 'bluescreen', 'font'].forEach(k => A[k] = v('--' + k));
+  };
+  const rgba = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgb(${n >> 16} ${n >> 8 & 255} ${n & 255} / ${a})`; };
+  const hash = n => { n = Math.sin(n * 127.1 + 311.7) * 43758.5453; return n - Math.floor(n); };
+
+  // A rider's line through each spot: [x, y] start, then [x, y, share of the shot, {air: pop height, c: curve control, trick}]
+  const ROUTES = {};
+  const railY = x => G - 76 + (x - 140) / 150 * 50;
+  function route(ob, kind) {
+    const key = ob + kind;
+    if (ROUTES[key]) return ROUTES[key];
+    const along = kind === 'grind' || kind === 'slide';
+    let r;
+    if (ob === 'ledge') r = along
+      ? [[30, G], [128, G, .3], [160, G - 30, .08, { air: 12 }], [290, G - 30, .32, { trick: 1 }], [322, G, .08, { air: 8 }], [470, G, .22]]
+      : [[30, G], [128, G, .32], [304, G, .4, { air: 74, trick: 1 }], [470, G, .28]];
+    else if (ob === 'rail' && along) r = [[20, G - 50], [120, G - 50, .3], [152, railY(152), .08, { air: 10 }], [282, railY(282), .32, { trick: 1 }], [316, G, .08, { air: 6 }], [470, G, .22]];
+    else if (ob === 'rail' || ob === 'stairs') r = [[20, G - 50], [134, G - 50, .32], [318, G, .4, { air: 64, trick: 1 }], [470, G, .28]];
+    else if (ob === 'gap') r = [[20, G], [162, G, .32], [264, G, .38, { air: 52, trick: 1 }], [470, G, .3]];
+    else if (ob === 'bank') r = [[20, G], [112, G, .24], [188, G - 46, .16], [246, G - 46, .26, { air: 44, trick: 1 }], [320, G, .14], [470, G, .2]];
+    else r = [[-10, G - 70], [70, G - 70, .12], [140, G, .12, { c: [70, G] }], [260, G, .14], [330, G - 70, .12, { c: [330, G] }],
+      along ? [336, G - 72, .26, { air: 6, trick: 1 }] : [324, G - 70, .26, { air: 52, trick: 1 }], [260, G, .12, { c: [330, G] }], [170, G, .12]];
+    const sum = r.slice(1).reduce((s, q) => s + q[2], 0);
+    r.slice(1).forEach(q => q[2] /= sum);
+    return ROUTES[key] = r;
+  }
+  function seg(r, i, k) {   // point, tangent and facing on segment i at k
+    const [x0, y0] = r[i - 1], [x1, y1, , o = {}] = r[i], f = Math.sign(x1 - x0) || 1;
+    if (o.c) {
+      const [cx, cy] = o.c, m = 1 - k;
+      return [m * m * x0 + 2 * m * k * cx + k * k * x1, m * m * y0 + 2 * m * k * cy + k * k * y1, 2 * m * (cx - x0) + 2 * k * (x1 - cx), 2 * m * (cy - y0) + 2 * k * (y1 - cy), f];
+    }
+    return [x0 + (x1 - x0) * k, y0 + (y1 - y0) * k, x1 - x0, y1 - y0, f];
+  }
+  const lean = s => Math.atan2(s[4] * s[3], s[4] * s[2]);   // board angle; the rider's up stays off the surface
+  function rider(r, u) {
+    let acc = 0;
+    for (let i = 1; i < r.length; i++) {
+      const d = r[i][2], o = r[i][3] || {};
+      if (u < acc + d || i === r.length - 1) {
+        const k = Math.min(1, Math.max(0, (u - acc) / d)), s = seg(r, i, k);
+        let th = lean(s), lift = 0;
+        if (o.air) {   // in the air the board levels out at the top, then meets the landing
+          const a = lean(i > 1 ? seg(r, i - 1, 1) : seg(r, i, 0)), b = lean(i < r.length - 1 ? seg(r, i + 1, 0) : seg(r, i, 1));
+          th = (1 - Math.sin(Math.PI * k)) * (a + (b - a) * k);
+          lift = o.air * 4 * k * (1 - k);
+        }
+        return { x: s[0], y: s[1] - lift, th, f: s[4], air: !!o.air, k: o.trick ? k : -1 };
+      }
+      acc += d;
+    }
+  }
+
+  const SKY = {};
+  function skyline(p) {   // a few blocks of distant city, fixed per part
+    if (SKY[p.id]) return SKY[p.id];
+    const out = [];
+    for (let x = -110, n = p.id * 31; x < 520; n++) {
+      const w = 16 + hash(n) * 34, h = 10 + hash(n + 99) ** 2 * 64;
+      out.push([x, w, h]);
+      x += w + (hash(n + 3) < .3 ? 6 + hash(n + 5) * 22 : 0);
+    }
+    return SKY[p.id] = out;
+  }
+
+  function drawSpot(ctx, ob) {
+    ctx.lineWidth = 1.6; ctx.lineJoin = 'round'; ctx.strokeStyle = A.wax;
+    const shape = (pts, a = .18) => {
+      ctx.beginPath(); pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.closePath();
+      ctx.fillStyle = A.wax; ctx.globalAlpha = a; ctx.fill(); ctx.globalAlpha = .85; ctx.stroke(); ctx.globalAlpha = 1;
+    };
+    const line = (pts, w = 1.6, a = .85) => {
+      ctx.beginPath(); pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y));
+      ctx.lineWidth = w; ctx.globalAlpha = a; ctx.stroke(); ctx.globalAlpha = 1; ctx.lineWidth = 1.6;
+    };
+    if (ob === 'ledge') {
+      shape([[162, G - 40], [312, G - 40], [300, G - 30], [150, G - 30]], .34);
+      shape([[150, G - 30], [300, G - 30], [300, G], [150, G]], .2);
+      line([[300, G], [312, G - 10], [312, G - 40]]);
+    } else if (ob === 'rail' || ob === 'stairs') {
+      const n = ob === 'rail' ? 6 : 8, w = 150 / n, h = 50 / n, pts = [[-100, G - 50], [140, G - 50]];
+      for (let i = 0; i < n; i++) pts.push([140 + w * i, G - 50 + h * (i + 1)], [140 + w * (i + 1), G - 50 + h * (i + 1)]);
+      pts.push([-100, G]);
+      shape(pts, .16);
+      if (ob === 'rail') {
+        line([[140, railY(140)], [292, railY(292)]], 2.6, .95);
+        [146, 215, 284].forEach(x => line([[x, railY(x)], [x, G - 50 + Math.ceil((x - 140) / w) * h]], 1.4, .8));
+      }
+    } else if (ob === 'gap') {
+      ctx.fillStyle = A.black; ctx.globalAlpha = .55; ctx.fillRect(170, G, 80, SH - G); ctx.globalAlpha = 1;
+      line([[-100, G], [170, G], [170, SH]]); line([[250, SH], [250, G], [500, G]]);
+      line([[170, G + 46], [250, G + 46]], 1.2, .4);
+      line([[-100, G - 22], [150, G - 22]], 1.2, .5); line([[270, G - 22], [500, G - 22]], 1.2, .5);   // car park barriers
+    } else if (ob === 'bank') {
+      shape([[112, G], [188, G - 46], [246, G - 46], [320, G]], .2);
+      line([[204, G - 47], [230, G - 47]], 3, .7);   // the drain grate
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(-100, G - 70); ctx.lineTo(70, G - 70); ctx.quadraticCurveTo(70, G, 140, G); ctx.lineTo(260, G);
+      ctx.quadraticCurveTo(330, G, 330, G - 70); ctx.lineTo(500, G - 70);
+      ctx.globalAlpha = .85; ctx.stroke();
+      ctx.lineTo(500, SH); ctx.lineTo(-100, SH); ctx.closePath();
+      ctx.fillStyle = A.wax; ctx.globalAlpha = .16; ctx.fill(); ctx.globalAlpha = 1;
+      ctx.fillStyle = A.wax; [70, 330].forEach(x => { ctx.beginPath(); ctx.arc(x, G - 70, 2.6, 0, 7); ctx.fill(); });
+    }
+  }
+
+  function drawRider(ctx, s, kind, col, t) {
+    const trick = s.k >= 0, k = s.k, popped = trick && s.air;
+    const c = s.air ? .35 + .55 * Math.sin(Math.PI * Math.max(0, Math.min(1, k < 0 ? .5 : k))) : .3 + .06 * Math.sin(t * 7);
+    const lift = popped && (kind === 'flip' || kind === 'spin') ? 9 * Math.sin(Math.PI * k) : 0;
+    ctx.save();
+    ctx.translate(s.x, s.y); ctx.rotate(s.th); ctx.scale(s.f * 1.15, 1.15);
+    ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    // the board
+    ctx.save(); ctx.translate(0, -4);
+    if (popped && kind === 'flip') ctx.scale(1, Math.cos(2 * Math.PI * k));
+    if (popped && kind === 'spin') ctx.scale(Math.cos(2 * Math.PI * k), 1);
+    if (trick && kind === 'slide') ctx.scale(.34, 1);
+    ctx.lineWidth = 2.4;
+    ctx.beginPath(); ctx.moveTo(-17, -4); ctx.quadraticCurveTo(-15, -1, -12, -1); ctx.lineTo(12, -1); ctx.quadraticCurveTo(15, -1, 17, -4); ctx.stroke();
+    ctx.beginPath(); ctx.arc(-9, 2, 1.9, 0, 7); ctx.arc(9, 2, 1.9, 0, 7); ctx.fill();
+    ctx.restore();
+    if (trick && kind === 'grind') {   // three sparks off the back truck
+      const fr = Math.floor(t * 25);
+      ctx.fillStyle = A.sodium;
+      for (let j = 0; j < 3; j++) { ctx.globalAlpha = .55 + .45 * hash(fr * 3 + j); ctx.fillRect(-14 - j * 5 - hash(fr + j) * 5, -3 - hash(fr * 7 + j) * 6, 2.2, 2.2); }
+      ctx.globalAlpha = 1; ctx.fillStyle = col;
+    }
+    // the rider: head, beanie, torso, two legs, two arms
+    const fy = -7 - lift, hip = [0, -31 + c * 10 - lift], sh = [3 + c * 4, hip[1] - 17 + c * 2], hd = [sh[0] + 2.5, sh[1] - 7.5];
+    const arm = s.air ? 6 : 1 + Math.sin(t * 3);
+    const poly = pts => { ctx.beginPath(); pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke(); };
+    ctx.lineWidth = 3.2;
+    ctx.beginPath(); ctx.arc(hd[0], hd[1], 4.4, 0, 7); ctx.fill();
+    ctx.lineWidth = 3.6; ctx.beginPath(); ctx.arc(hd[0], hd[1] - .5, 4.6, Math.PI * 1.08, Math.PI * 1.95); ctx.stroke();
+    ctx.lineWidth = 3.2;
+    poly([sh, hip]);
+    poly([hip, [6 + c * 4, (hip[1] + fy) / 2 - 1], [8, fy]]);
+    poly([hip, [-4 - c * 3, (hip[1] + fy) / 2 + c], [-8, fy]]);
+    poly([sh, [sh[0] + 7, sh[1] + 7], [sh[0] + 14, sh[1] + 4 - arm]]);
+    poly([sh, [sh[0] - 6, sh[1] + 8], [sh[0] - 13, sh[1] + 6 - arm]]);
+    ctx.restore();
+  }
+
+  // Camera burn-in. Kanit has no tabular figures, so every character sits in a fixed cell.
+  function mono(ctx, str, x, y) {
+    const adv = ctx.measureText('0').width;
+    for (const ch of str) {
+      const w = ctx.measureText(ch).width, cx = x + (adv - w) / 2;
+      ctx.fillStyle = A.black; ctx.globalAlpha *= .6; ctx.fillText(ch, cx + 1, y + 1); ctx.globalAlpha /= .6;
+      ctx.fillStyle = A.wax; ctx.fillText(ch, cx, y);
+      x += adv;
+    }
+    return adv;
+  }
+  function playMark(ctx, a, y = 30) {
+    if (a <= 0) return;
+    ctx.globalAlpha = a; ctx.font = `500 15px ${A.font}`;
+    ctx.fillStyle = A.wax; ctx.beginPath(); ctx.moveTo(16, y - 12); ctx.lineTo(27, y - 6); ctx.lineTo(16, y); ctx.fill();
+    mono(ctx, 'PLAY', 32, y);
+    ctx.globalAlpha = 1;
+  }
+
+  // One function draws every picture: posters (t = 0), strip clips, row thumbnails and the tape sheet stage.
+  function drawFrame(ctx, p, t, pan = 0, osd = 0) {
+    const cv = ctx.canvas, k = cv.width / SW, css = cv.clientWidth || cv.width;
+    ctx.setTransform(k, 0, 0, k, 0, 0);
+    ctx.globalAlpha = 1;
+    const tape = TAPES[p.tape], i = Math.min(p.shots.length - 1, Math.floor(t / SHOT)), shot = p.shots[i], lt = t - i * SHOT;
+    const s = rider(route(p.obstacle, shot.kind), lt / SHOT);
+    const cam = Math.max(-44, Math.min(44, (s.x - 200) * .45)) + pan * SW * .06;
+    const night = p.sky === 'night' || p.sky === 'sodium';
+    // sky and distant city (half the camera's travel, so it reads as far away)
+    ctx.fillStyle = A[night ? 'night' : p.sky]; ctx.fillRect(0, 0, SW, SH);
+    ctx.save(); ctx.translate(-cam * .45, 0);
+    ctx.fillStyle = night || p.sky === 'dusk' ? A.asphalt : A.ground; ctx.globalAlpha = night ? .9 : p.sky === 'dusk' ? .5 : .38;
+    for (const [x, w, h] of skyline(p)) ctx.fillRect(x, HZ - h, w, h + 2);
+    ctx.restore(); ctx.globalAlpha = 1;
+    // ground and horizon; the VX1000 fisheye bows the horizon
+    const bow = tape.fisheye ? 16 : 0;
+    ctx.beginPath(); ctx.moveTo(0, HZ - bow); ctx.quadraticCurveTo(SW / 2, HZ + bow, SW, HZ - bow);
+    ctx.strokeStyle = A.wax; ctx.globalAlpha = .35; ctx.lineWidth = 1; ctx.stroke(); ctx.globalAlpha = 1;
+    ctx.lineTo(SW, SH); ctx.lineTo(0, SH); ctx.closePath(); ctx.fillStyle = A.ground; ctx.globalAlpha = .96; ctx.fill(); ctx.globalAlpha = 1;
+    ctx.save(); ctx.translate(-cam, 0);
+    drawSpot(ctx, p.obstacle);
+    if (p.sky === 'sodium') [96, 372].forEach(x => {
+      ctx.strokeStyle = A.wax; ctx.globalAlpha = .5; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, G); ctx.lineTo(x, G - 118); ctx.lineTo(x + 12, G - 120); ctx.stroke();
+    });
+    ctx.restore(); ctx.globalAlpha = 1;
+    if (night) {   // night: everything drops back, the filmer's light picks out the rider
+      ctx.fillStyle = A.night; ctx.globalAlpha = .55; ctx.fillRect(0, 0, SW, SH); ctx.globalAlpha = 1;
+      const lx = s.x - cam, g = ctx.createRadialGradient(lx, s.y - 18, 4, lx, s.y - 18, 120);
+      g.addColorStop(0, rgba(A.wax, .22)); g.addColorStop(1, rgba(A.wax, 0));
+      ctx.fillStyle = g; ctx.fillRect(0, 0, SW, SH);
+      if (p.sky === 'sodium') [96, 372].forEach(x => {
+        const lx2 = x + 12 - cam, g2 = ctx.createRadialGradient(lx2, G - 118, 2, lx2, G - 118, 110);
+        g2.addColorStop(0, A.sodium); g2.addColorStop(1, rgba(A.sodium, 0));
+        ctx.globalAlpha = .45; ctx.fillStyle = g2; ctx.fillRect(0, 0, SW, SH); ctx.globalAlpha = 1;
+      });
+    }
+    ctx.save(); ctx.translate(-cam, 0);
+    drawRider(ctx, s, shot.kind, night ? A.wax : A.asphalt, lt);
+    ctx.restore();
+    // the camera
+    if (tape.fisheye) {
+      ctx.beginPath(); ctx.rect(0, 0, SW, SH); ctx.ellipse(SW / 2, SH / 2, 236, 204, 0, 0, Math.PI * 2);
+      ctx.fillStyle = A.black; ctx.fill('evenodd');
+    }
+    if (tape.letterbox) { ctx.fillStyle = A.black; ctx.fillRect(0, 0, SW, 37.5); ctx.fillRect(0, SH - 37.5, SW, 37.5); }
+    if (css < 160) return;   // thumbnails: no scanlines or burn-in at 72px
+    ctx.fillStyle = A.black; ctx.globalAlpha = .05;
+    for (let y = 0, step = 3 * SW / css; y < SH; y += step) ctx.fillRect(0, y, SW, SW / css);
+    ctx.globalAlpha = 1;
+    ctx.font = `500 15px ${A.font}`;
+    const yB = tape.letterbox ? SH - 13 : SH - 16;
+    mono(ctx, pal(Math.floor((p.inS + shot.at + lt) * 25 + 1e-6)), 16, yB);
+    if (tape.date) { const adv = ctx.measureText('0').width; mono(ctx, p.date, SW - 16 - p.date.length * adv, yB); }
+    playMark(ctx, osd, tape.letterbox ? 26 : 30);
+  }
+  function drawBlue(ctx) {
+    const k = ctx.canvas.width / SW;
+    ctx.setTransform(k, 0, 0, k, 0, 0);
+    ctx.fillStyle = A.bluescreen; ctx.fillRect(0, 0, SW, SH);
+    playMark(ctx, 1);
+  }
+
+  // ================= Canvases and the one player =================
+  const $ = (s, el = document) => el.querySelector(s), $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const strip = $('#strip'), rowsEl = $('#rows'), dlg = $('#sheet'), stage = $('#stage'), playBtn = $('#play'), nowEl = $('#now');
+  let fx = {}, lenis = null;   // fx: motion hooks set by the motion branch; absent means instant
+
+  strip.innerHTML = PARTS.map(p => `<li data-rv><button class="frame" type="button" aria-haspopup="dialog" data-id="${p.id}"
+    aria-label="${p.skater}, ${tapeLine(p)}. ${shotAlt(p).replace(p.skater + ' at', 'At')}. Open part">
+    <span class="screen"><canvas data-id="${p.id}" aria-hidden="true"></canvas><span class="grain"></span></span>
+    <span class="cap"><span class="cap-name">${p.skater}</span><span class="cap-tape">${tapeLine(p)}</span></span></button></li>`).join('');
+  rowsEl.innerHTML = PARTS.map(p => `<li data-id="${p.id}"><button class="row" type="button" aria-haspopup="dialog" data-id="${p.id}"
+    aria-label="${p.skater}, ${tapeLine(p)}, ${p.spot}, ${p.runtime}, open part">
+    <span class="thumb"><canvas data-id="${p.id}" aria-hidden="true"></canvas></span>
+    <span class="r-name">${p.skater}</span><span class="r-tape">${tapeLine(p)}</span><span class="r-spot">${p.spot}</span>
+    <span class="r-time">${fig(p.runtime)}</span></button></li>`).join('');
+  const frames = $$('.frame', strip), rowOf = Object.fromEntries($$('li', rowsEl).map(li => [li.dataset.id, li]));
+  $$('canvas[data-id]').forEach(cv => { cv._part = byId(cv.dataset.id); cv._t = 0; });
+
+  const panS = { v: 0 };
+  const player = { cv: null, end: SHOT, once: false, last: 0, osd: 0 };
+  function size(cv) {
+    const w = cv.clientWidth;
+    if (!w) return false;
+    const d = Math.min(2, devicePixelRatio || 1), W = Math.round(w * d), H = Math.round(w * .75 * d);
+    if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+    return true;
+  }
+  function draw(cv) {
+    if (!cv._part || !size(cv)) return;
+    const ctx = cv.getContext('2d'), on = cv === player.cv;
+    cv._blue ? drawBlue(ctx) : drawFrame(ctx, cv._part, cv._t, on ? panS.v : 0, on ? player.osd : 0);
+  }
+  const clock = window.gsap
+    ? { add: f => gsap.ticker.add(f), remove: f => gsap.ticker.remove(f) }
+    : { add(f) { const loop = () => { f(); this.id = requestAnimationFrame(loop); }; this.id = requestAnimationFrame(loop); }, remove() { cancelAnimationFrame(this.id); } };
+  function play(cv, { from = cv._t, end = SHOT, once = false } = {}) {
+    if (player.cv && player.cv !== cv) halt();
+    const fresh = player.cv !== cv;
+    Object.assign(player, { cv, end, once, last: performance.now() });
+    if (fresh) player.osd = 0;
+    cv._t = from; cv._blue = false;
+    cv.parentElement.classList.add('is-playing');
+    if (fresh) clock.add(tick);   // last: a sleeping ticker runs tick() as soon as it is woken
+  }
+  function halt(reset = true) {
+    const cv = player.cv;
+    if (!cv) return;
+    clock.remove(tick);
+    player.cv = null;
+    cv.parentElement.classList.remove('is-playing');
+    if (reset) cv._t = 0;
+    draw(cv);
+  }
+  function tick() {
+    const cv = player.cv, now = performance.now(), dt = Math.min(.1, (now - player.last) / 1000);
+    if (!cv) return;
+    player.last = now;
+    let t = cv._t + dt;
+    if (t >= player.end) {
+      if (player.once) return halt();
+      t %= player.end;
+    }
+    cv._t = t;
+    player.osd = Math.min(1, player.osd + dt / .3);
+    draw(cv);
+    if (cv === stage) syncNow();
+  }
+  const ro = new ResizeObserver(es => es.forEach(e => draw(e.target)));
+  $$('canvas').forEach(cv => ro.observe(cv));
+  readArt();
+  document.fonts.load(`500 15px ${A.font}`).catch(() => {}).then(() => $$('canvas').forEach(draw));
+
+  // ================= Strip buttons =================
+  const back = $('#back'), fwd = $('#fwd');
+  const edges = () => {
+    back.setAttribute('aria-disabled', strip.scrollLeft <= 2);
+    fwd.setAttribute('aria-disabled', strip.scrollLeft >= strip.scrollWidth - strip.clientWidth - 2);
+  };
+  strip.addEventListener('scroll', edges, { passive: true });
+  addEventListener('resize', edges);
+  edges();
+  const nudge = dir => {
+    const li = strip.firstElementChild, gap = parseFloat(getComputedStyle(strip).columnGap) || 0;
+    strip.scrollBy({ left: dir * (li.offsetWidth + gap), behavior: reduced() ? 'auto' : 'smooth' });
+    fx.nudged?.();
+  };
+  back.addEventListener('click', () => back.getAttribute('aria-disabled') !== 'true' && nudge(-1));
+  fwd.addEventListener('click', () => fwd.getAttribute('aria-disabled') !== 'true' && nudge(1));
+
+  // HV4: the fill grows from, and leaves toward, the edge the pointer crossed
+  const fromEdge = e => {
+    const b = e.target.closest?.('.btn');
+    if (!b || b.contains(e.relatedTarget)) return;
+    const r = b.getBoundingClientRect();
+    b.style.setProperty('--from', e.clientX < r.left + r.width / 2 ? 'left' : 'right');
+  };
+  document.addEventListener('pointerover', fromEdge);
+  document.addEventListener('pointerout', fromEdge);
+
+  // ================= Skip link =================
+  const indexEl = $('#index'), indexTitle = $('#index-title');
+  $('#skip').addEventListener('click', e => {
+    e.preventDefault();
+    const land = () => indexTitle.focus({ preventScroll: true });
+    if (lenis) lenis.scrollTo(indexEl, { duration: 1.2, easing: gsap.parseEase('expo.inOut'), onComplete: land });
+    else { indexEl.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth' }); land(); }
+  });
+
+  // ================= Search, terrain and sort =================
+  const state = { q: '', terrain: 'all', sort: 'old' };
+  const form = $('#find'), q = $('#q'), sortEl = $('#sort'), chips = $('#terrain'), pill = $('.pill', chips);
+  const countEl = $('#count'), clearBtn = $('#clear'), emptyEl = $('#empty'), emptyMsg = $('#empty-msg');
+  let shown = view(state);
+  function update() {
+    const list = view(state);
+    shown = list;
+    countEl.textContent = results(list, state.q);
+    clearBtn.hidden = !state.q.trim();
+    emptyMsg.textContent = `No parts match “${state.q.trim()}”. Try a skater’s surname, a tape title or a spot.`;
+    const wasEmpty = emptyEl.hidden === false;
+    const apply = () => {
+      list.forEach(p => rowsEl.append(rowOf[p.id]));
+      PARTS.forEach(p => rowOf[p.id].hidden = !list.includes(p));
+      emptyEl.hidden = list.length > 0;
+    };
+    fx.flip ? fx.flip(apply) : apply();
+    if (!list.length && !wasEmpty) fx.empty?.(emptyEl);
+  }
+  let debounce;
+  q.addEventListener('input', () => { clearTimeout(debounce); debounce = setTimeout(() => { state.q = q.value; update(); }, 150); });
+  form.addEventListener('submit', e => { e.preventDefault(); clearTimeout(debounce); state.q = q.value; update(); });
+  const clear = () => { q.value = ''; state.q = ''; update(); q.focus(); };
+  clearBtn.addEventListener('click', clear);
+  $('#clear-empty').addEventListener('click', clear);
+  sortEl.addEventListener('change', () => { state.sort = sortEl.value; update(); });
+  function placePill(animate) {
+    const lab = $('input:checked', chips).parentElement, to = { x: lab.offsetLeft, y: lab.offsetTop, w: lab.offsetWidth, h: lab.offsetHeight };
+    if (animate && fx.pill) return fx.pill(to);
+    Object.assign(pill.style, { width: to.w + 'px', height: to.h + 'px' });
+    if (window.gsap) gsap.set(pill, { x: to.x, y: to.y, scaleX: 1 }); else pill.style.transform = `translate(${to.x}px, ${to.y}px)`;
+  }
+  chips.addEventListener('change', e => { state.terrain = e.target.value; placePill(true); update(); });
+  new ResizeObserver(() => placePill(false)).observe(chips);
+  document.fonts.ready.then(() => placePill(false));
+
+  // ================= Tape sheet =================
+  let cur = null, shownShot = -1, busy = false;
+  const playLabel = on => {   // MI2: the visible label is the action
+    playBtn.classList.toggle('is-alt', !on);
+    const [a, b] = playBtn.querySelectorAll('.swap-cell > span');
+    a.setAttribute('aria-hidden', !on); b.setAttribute('aria-hidden', on);
+  };
+  const playing = () => player.cv === stage;
+  function setPlaying(on) {
+    fx.hold?.kill?.();
+    if (on) play(stage, { from: stage._t, end: cur.shots.length * SHOT }); else if (playing()) halt(false); else { stage._blue = false; draw(stage); }
+    playLabel(on);
+  }
+  function syncNow(force) {
+    const i = Math.min(cur.shots.length - 1, Math.floor(stage._t / SHOT));
+    if (i === shownShot && !force) return;
+    shownShot = i;
+    $$('.trick', dlg).forEach((b, j) => b.setAttribute('aria-current', j === i));
+    const text = `Now: ${cur.shots[i].name}`;
+    fx.caption && !force ? fx.caption(nowEl, text) : nowEl.textContent = text;
+  }
+  function fill(p) {
+    cur = p;
+    const t = TAPES[p.tape];
+    $('#sheet-name').textContent = p.skater;
+    $('#sheet-tape').textContent = tapeLine(p);
+    $('#sheet-meta').innerHTML = `Filmed by ${FILMERS[p.tape]} on ${t.camera}<br>${t.tape} tape, ${p.runtime}<br>${p.spot}`;
+    $('#tricks').innerHTML = p.shots.map((s, i) => `<li><button class="trick" type="button" data-i="${i}" aria-label="${s.time} ${s.name}">${fig(s.time)}<span>${s.name}</span></button></li>`).join('');
+    stage.setAttribute('aria-label', `${shotAlt(p)}; the part runs ${p.runtime}`);
+    stage._part = p; stage._t = 0;
+    syncNow(true);
+  }
+  function openSheet(p) {
+    halt();
+    fill(p);
+    dlg.showModal();
+    lenis?.stop();
+    if (fx.open) fx.open(dlg);
+    else { stage._blue = false; setPlaying(false); }
+    requestAnimationFrame(() => dlg.classList.add('is-in'));
+  }
+  function closeSheet() {
+    if (!dlg.open || dlg.dataset.closing) return;
+    dlg.dataset.closing = '1';
+    dlg.classList.remove('is-in');
+    const done = () => { delete dlg.dataset.closing; dlg.close(); };
+    fx.close ? fx.close(dlg, done) : setTimeout(done, reduced() || !libs ? 200 : 0);
+  }
+  dlg.addEventListener('close', () => { fx.hold?.kill?.(); halt(); stage._blue = false; lenis?.start(); });
+  dlg.addEventListener('cancel', e => { e.preventDefault(); closeSheet(); });
+  dlg.addEventListener('click', e => { if (e.target === dlg) closeSheet(); });
+  $('#sheet-close').addEventListener('click', closeSheet);
+  playBtn.addEventListener('click', () => setPlaying(!(playing() || fx.hold?.isActive?.())));
+  $('#tricks').addEventListener('click', e => {
+    const b = e.target.closest('.trick');
+    if (!b) return;
+    stage._t = +b.dataset.i * SHOT;
+    if (!playing()) { stage._blue = false; draw(stage); }
+    syncNow();
+  });
+  function partStep(dir) {
+    if (busy) return;
+    const ids = (shown.includes(cur) ? shown : PARTS).map(p => p.id), i = ids.indexOf(cur.id);
+    const next = byId(ids[(i + dir + ids.length) % ids.length]), was = playing();
+    const swap = () => { halt(); fill(next); was ? setPlaying(true) : setPlaying(false); };
+    if (!fx.wipe) return swap();
+    busy = true;
+    fx.wipe(swap, () => busy = false);
+  }
+  $('#prev').addEventListener('click', () => partStep(-1));
+  $('#next').addEventListener('click', () => partStep(1));
+  strip.addEventListener('click', e => { const f = e.target.closest('.frame'); if (f) openSheet(byId(f.dataset.id)); });
+  rowsEl.addEventListener('click', e => { const r = e.target.closest('.row'); if (r) openSheet(byId(r.dataset.id)); });
+
+  // ================= Self-test (#selftest) =================
+  function runSelfTest() {
+    const ok = (c, m) => { if (!c) throw new Error('SELFTEST FAIL: ' + m); };
+    const ids = o => view({ q: '', terrain: 'all', sort: 'old', ...o }).map(p => p.id).join(',');
+    ok(ids({}) === '1,2,3,4,5,6,7,8,9,10,11,12', 'oldest first keeps tape order');
+    ok(ids({ terrain: 'ledge' }) === '1,7,11' && ids({ terrain: 'rail' }) === '5,8' && ids({ terrain: 'stairs' }) === '3,6,10'
+      && ids({ terrain: 'bank' }) === '2,9' && ids({ terrain: 'bowl' }) === '4,12', 'terrain filters');
+    ok(ids({ sort: 'new' }) === '11,12,8,9,10,5,6,7,3,4,1,2', 'newest first');
+    ok(ids({ sort: 'long' }) === '12,8,4,11,9,5,2,7,1,6,3,10', 'longest first');
+    ok(ids({ q: 'courthouse' }) === '1,7' && ids({ q: 'NIGHTBUS' }) === '8,9,10' && ids({ q: '2008' }) === '11,12' && ids({ q: 'heelflp' }) === '', 'search');
+    ok(ids({ q: 'lane', terrain: 'bowl' }) === '', 'search and terrain combine');
+    ok(PARTS.reduce((s, p) => s + p.len, 0) === 2531, 'total 2531 s');
+    ok(mss(2531) === '42:11' && mss(178) === '2:58' && mss(302) === '5:02' && mss(59) === '0:59', 'm:ss');
+    ok(results(view(state), '') === '12 parts, 42:11 of footage', 'results line');
+    ok(results(view({ ...state, q: 'courthouse' }), 'courthouse') === '2 parts match “courthouse”', 'results line with a query');
+    ok(results(view({ ...state, terrain: 'rail' }), '') === '2 parts, 7:50 of footage', 'results line for a terrain');
+    ok(pal(59 * 25 + 24) === '00:00:59:24' && pal(59 * 25 + 25) === '00:01:00:00', 'PAL wraps a minute');
+    ok(pal(3600 * 25 - 1) === '00:59:59:24' && pal(3600 * 25) === '01:00:00:00', 'PAL wraps an hour');
+    ok(kindOf('Boardslide the Leopard rail') === 'slide' && kindOf('Kickflip out of a 5-0') === 'flip' && kindOf('Backside 180 the eight') === 'spin'
+      && kindOf('Feeble grind down the twelve') === 'grind' && kindOf('Carve the full ditch') === 'air', 'trick kinds');
+    PARTS.forEach(p => p.shots.forEach(s => { const r = route(p.obstacle, s.kind), a = rider(r, 0), b = rider(r, 1);
+      ok(isFinite(a.x + a.y + a.th + b.x + b.y + b.th), `route ${p.obstacle} ${s.kind}`); }));
+    console.log('SELFTEST PASS');
+  }
+  if (location.hash === '#selftest') runSelfTest();
+
+  if (!libs) return;
+
+  // ================= Motion =================
+  gsap.registerPlugin(ScrollTrigger, SplitText, Flip);
+  const css = n => parseFloat(getComputedStyle(root).getPropertyValue(n));
+  const D = Object.fromEntries(['band', 'rise', 'window', 'flip', 'open', 'close', 'blue', 'wipe', 'caption', 'pill'].map(n => [n, css('--d-' + n)]));
+  let introPlayed = false, introOver = false, seen = false, inView = false, introResolve;
+  try { seen = sessionStorage.getItem('kerbtapes-intro') === '1'; } catch {}
+  const introDone = new Promise(r => introResolve = r);
+  introDone.then(() => { introOver = true; });
+
+  const mm = gsap.matchMedia();
+  mm.add({
+    motion: '(prefers-reduced-motion: no-preference)',
+    reduce: '(prefers-reduced-motion: reduce)',
+    fine: '(hover: hover) and (pointer: fine)',
+  }, (ctx) => {
+    const { motion, fine } = ctx.conditions;
+    if (!motion) {   // reduced: final states, native scroll, posters only
+      gsap.set('[data-rv]', { opacity: 1 });
+      introResolve();
+      return;
+    }
+    root.classList.add('motion');
+    lenis = new Lenis({ lerp: .1, smoothWheel: true, autoRaf: false });
+    lenis.on('scroll', ScrollTrigger.update);
+    const raf = time => lenis.raf(time * 1000);
+    gsap.ticker.add(raf);
+    gsap.ticker.lagSmoothing(0);
+    const ac = new AbortController(), on = (el, type, fn, opt = {}) => el.addEventListener(type, fn, { ...opt, signal: ac.signal });
+
+    // ---- hooks used by the plain code above
+    let flipTl, capTl;
+    fx.flip = apply => {
+      flipTl?.progress(1).kill();
+      const rows = [...$$('li', rowsEl), $('#lend')], st = Flip.getState(rows);   // the lending note rides along so nothing overlaps
+      apply();
+      flipTl = Flip.from(st, {
+        targets: rows, duration: D.flip, ease: 'expo.inOut', stagger: .015, absoluteOnLeave: true,
+        // leavers clear out first, newcomers arrive once the movers have passed, so no two names ever overlap
+        onEnter: els => gsap.fromTo(els, { opacity: 0 }, { opacity: 1, duration: .4, delay: D.flip * .6, ease: 'expo.out' }),
+        onLeave: els => gsap.to(els, { opacity: 0, duration: .2, ease: 'expo.out' }),
+        onComplete: () => { lenis?.resize(); ScrollTrigger.refresh(); },
+      });
+    };
+    fx.empty = el => gsap.fromTo(el, { opacity: 0 }, { opacity: 1, duration: .25, ease: 'none' });
+    fx.pill = to => {
+      const from = { x: gsap.getProperty(pill, 'x'), y: gsap.getProperty(pill, 'y'), w: pill.offsetWidth || to.w };
+      Object.assign(pill.style, { width: to.w + 'px', height: to.h + 'px' });
+      gsap.fromTo(pill, { x: from.x, y: from.y, scaleX: from.w / to.w }, { x: to.x, y: to.y, scaleX: 1, duration: D.pill, ease: 'expo.out', overwrite: true });
+    };
+    fx.caption = (el, text) => {
+      capTl?.progress(1).kill();
+      capTl = gsap.timeline()
+        .to(el, { yPercent: -100, duration: .2, ease: 'expo.in' })
+        .add(() => { el.textContent = text; })
+        .fromTo(el, { yPercent: 100 }, { yPercent: 0, duration: D.caption, ease: 'expo.out' });
+    };
+    fx.open = d => {
+      gsap.fromTo($('.sheet-panel', d), { autoAlpha: 0, y: 12, scale: .98 }, { autoAlpha: 1, y: 0, scale: 1, duration: D.open, ease: 'expo.out' });
+      stage._blue = true; draw(stage); playLabel(true);
+      fx.hold = gsap.delayedCall(D.blue, () => { if (dlg.open) setPlaying(true); });   // blue screen, then one cut to the footage
+    };
+    fx.close = (d, done) => gsap.to($('.sheet-panel', d), { autoAlpha: 0, y: 8, scale: .98, duration: D.close, ease: 'expo.inOut', onComplete: done });
+    fx.wipe = (swap, done) => {   // the load's tracking band, reused as the only cut between parts
+      const w = $('.wipe', dlg);
+      gsap.timeline({ onComplete: done })
+        .fromTo(w, { clipPath: 'inset(0% 0% 100% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: D.wipe / 2, ease: 'expo.in' })
+        .add(swap)
+        .to(w, { clipPath: 'inset(100% 0% 0% 0%)', duration: D.wipe / 2, ease: 'expo.out' });
+    };
+
+    // ---- the signature: frames roll their opening shot
+    const canvasOf = f => $('canvas', f);
+    const stripPlaying = () => player.cv && strip.contains(player.cv);
+    const playFrame = (f, once = false) => {
+      if (dlg.open) return;
+      const cv = canvasOf(f);
+      if (player.cv === cv) { player.once = player.once && once; return; }
+      play(cv, { from: 0, end: SHOT, once });
+    };
+    const stopFrame = f => { if (player.cv === canvasOf(f)) { panS.v = 0; halt(); } };
+    const leadFrame = () => {
+      const sr = strip.getBoundingClientRect();
+      let best = null, bw = 0;
+      for (const f of frames) {
+        const r = f.getBoundingClientRect(), w = Math.min(r.right, sr.right, innerWidth) - Math.max(r.left, sr.left, 0);
+        if (w > bw + 1) { bw = w; best = f; }
+      }
+      return best;
+    };
+    let taught = false;
+    const teach = () => {
+      if (taught || dlg.open || stripPlaying() || !inView) return;
+      taught = true;
+      const f = leadFrame();
+      if (f) playFrame(f, true);
+    };
+    on(strip, 'focusin', e => { const f = e.target.closest('.frame'); if (f?.matches(':focus-visible')) playFrame(f); });
+    on(strip, 'focusout', e => { const f = e.target.closest('.frame'); if (f && !(fine && f.matches(':hover'))) stopFrame(f); });
+    let io = null;
+    if (fine) {
+      // after Back or Forward settles, the part now first on the shelf rolls its opening shot once
+      fx.nudged = () => gsap.delayedCall(.6, () => { if (inView && !strip.matches(':hover')) { const f = leadFrame(); if (f) playFrame(f, true); } });
+      const pan = gsap.quickTo(panS, 'v', { duration: .6, ease: 'expo.out' });
+      on(strip, 'pointerover', e => { const f = e.target.closest('.frame'); if (f && !f.contains(e.relatedTarget)) { taught = true; playFrame(f); } });
+      on(strip, 'pointerout', e => { const f = e.target.closest('.frame'); if (f && !f.contains(e.relatedTarget) && !f.matches(':focus-visible')) stopFrame(f); });
+      on(strip, 'pointermove', e => {   // CU3: the follow-cam pans with the pointer
+        const f = e.target.closest('.frame');
+        if (!f || player.cv !== canvasOf(f)) return;
+        const r = f.getBoundingClientRect();
+        pan(((e.clientX - r.left) / r.width) * 2 - 1);
+      });
+    } else {   // touch: the frame in the middle plays its opening shot once
+      io = new IntersectionObserver(es => es.forEach(e => {
+        if (e.intersectionRatio >= .75) { if (inView && introOver) playFrame(e.target, true); }
+        else stopFrame(e.target);
+      }), { root: strip, threshold: .75 });
+      frames.forEach(f => io.observe(f));
+    }
+    ScrollTrigger.create({   // sleep: nothing plays off screen
+      trigger: strip, start: 'top bottom', end: 'bottom top',
+      onToggle: self => { inView = self.isActive; if (!inView && stripPlaying()) halt(); },
+    });
+    ScrollTrigger.create({   // S1: the first time the shelf comes into view, the leading frame shows that frames play
+      trigger: strip, start: 'top 80%', once: true,
+      onEnter: () => introDone.then(() => gsap.delayedCall(.1, teach)),
+    });
+
+    // ---- page load
+    const h2 = $('#parts-title');
+    const reveal = () => { gsap.set('[data-rv]', { opacity: 1 }); introPlayed = true; introResolve(); };
+    if (introPlayed || seen) reveal();
+    else Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 1200))]).then(() => ctx.add(() => {   // ctx.add: reverted with the media query
+      if (introPlayed) return;
+      introPlayed = true;
+      try { sessionStorage.setItem('kerbtapes-intro', '1'); } catch {}
+      const head = $('.head'), band = $('.band'), osd = $('.osd'), H = head.offsetHeight, bh = Math.round(H * .18);
+      const lis = $$('li', strip), vis = lis.filter(li => li.getBoundingClientRect().left < innerWidth);
+      gsap.set(band, { height: bh, y: -bh, autoAlpha: 1 });
+      gsap.set(osd, { autoAlpha: 1 });
+      gsap.set(head, { clipPath: 'inset(0% 0% 100% 0%)' });
+      gsap.set([h2, ...lis], { opacity: 1 });
+      // L2 TX1: title lines rise out of their own masks (from 125%, past the mask's padding for the hard shadow).
+      // Split now, with the h2 visible, so a later autoSplit never restores a hidden state.
+      SplitText.create(h2, {
+        type: 'lines', mask: 'lines', linesClass: 'tl', autoSplit: true,
+        onSplit: self => gsap.from(self.lines, { yPercent: 125, duration: D.rise, ease: 'expo.out', stagger: .08, delay: .35 }),
+      });
+      const p = { v: 0 };
+      const tl = gsap.timeline({ onComplete: () => { gsap.set(head, { clearProps: 'clipPath' }); gsap.set([band, osd], { autoAlpha: 0 }); introResolve(); } });
+      tl.to(p, {   // L1 LD3: a VCR tracking band rolls down the head and reveals it
+        v: 1, duration: D.band, ease: 'expo.inOut',
+        onUpdate: () => { const y = p.v * (H + bh + 2) - bh; band.style.transform = `translateY(${y}px)`; head.style.clipPath = `inset(0% 0% ${Math.max(0, 100 - (y + bh / 2) / H * 100)}% 0%)`; },
+      }, 0)
+        .to(osd, { autoAlpha: 0, duration: .25, ease: 'none' }, .35)
+        .fromTo(['.bar', '.lede'], { opacity: 0 }, { opacity: 1, duration: .5, ease: 'expo.out' }, .75)   // L3
+        .fromTo(vis.map(li => $('.screen', li)),   // L4 LD7: frames open from an inset window
+          { clipPath: 'inset(8% 6% round 14px)', scale: .94, opacity: 0 },
+          { clipPath: 'inset(0% 0% round 14px)', scale: 1, opacity: 1, duration: D.window, ease: 'expo.out', stagger: .06, clearProps: 'clipPath,transform,opacity' }, .9)
+        .fromTo(vis.map(li => $('.cap', li)), { opacity: 0 }, { opacity: 1, duration: .6, ease: 'expo.out', stagger: .06 }, 1.1);
+    }));
+
+    return () => {
+      ac.abort();
+      io?.disconnect();
+      flipTl?.progress(1).kill();
+      capTl?.progress(1).kill();
+      fx.hold?.kill?.();
+      fx = {};
+      halt();
+      panS.v = 0;
+      $$('canvas').forEach(draw);
+      gsap.ticker.remove(raf);
+      gsap.ticker.lagSmoothing(500, 33);
+      lenis.destroy();
+      lenis = null;
+      root.classList.remove('motion');
+      if (!introPlayed) reveal();
+    };
+  });
+})();
+</script>
+</body>
+</html>
