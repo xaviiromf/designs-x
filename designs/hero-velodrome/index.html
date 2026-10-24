@@ -1,0 +1,1304 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hebble Six: book a night at the velodrome</title>
+<meta name="description" content="Hebble Six, the six-day track race at Hebble Bridge Velodrome, 10 to 15 November 2026. Pick a night, choose where you watch and hold your seats.">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@100..900&family=Unbounded:wght@200..900&display=swap">
+<noscript><style>.loader { display: none; }</style></noscript>
+<style>
+:root {
+  /* Arena colours. Pine belongs to the track drawing and the lap-board housing only. */
+  --navy: #101830;      /* ground, infield, the black measurement line on the boards */
+  --navy-2: #172347;    /* infield floor, a step up from the ground */
+  --azur: #1E3A78;      /* cote d'azur band, row wipe, dialog surface, loader curtain */
+  --pine: #D9B47A;      /* track boards, lap-board housing, button lap stroke */
+  --pine-seam: color-mix(in oklab, #D9B47A, #101830 18%);
+  --lamp: #EEF1F7;      /* text, digits, primary button fill: 15.6:1 on navy */
+  --lamp-2: #B7BED0;    /* secondary text: 9.4:1 on navy, 5.8:1 on azur */
+  --red: #EE4436;       /* sprinter's line, current-section underline, errors: 4.6:1 on navy */
+  --stayer: #5AA9F0;    /* stayer's line and the focus ring: 6.9:1 on navy */
+  --veil: rgb(8 12 26 / .74);
+
+  --font-display: "Unbounded", "Arial Black", system-ui, sans-serif;
+  --font-text: "Onest", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --t-cap: 13px;
+  --t-sm: 15px;
+  --t-body: 17px;
+  --t-lg: 20px;
+  --t-h3: 21px;
+  --t-btn: 16px;
+  --t-h2: clamp(24px, 2.4vw, 32px);
+  --t-h1: clamp(34px, calc(3.2vw + 18px), 64px);
+  --t-sheet: clamp(28px, 8vw, 40px);
+  --t-board: clamp(28px, 8.5cqi, 64px); /* relative to the stage width */
+  --t-loader: clamp(104px, 24vw, 320px);
+
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px;
+  --s-6: 32px; --s-7: 48px; --s-8: 72px; --s-9: 112px;
+  --gutter: 16px;
+  --max: 1440px;
+  --header: 56px;
+  --stick: 96px;
+  --measure: 60ch;
+
+  --ease-out: cubic-bezier(.16, 1, .3, 1);     /* expo.out: entrances and state changes */
+  --ease-inout: cubic-bezier(.87, 0, .13, 1);  /* expo.inOut: wipes */
+  --ease-swap: cubic-bezier(.65, 0, 0, 1);     /* masked label swaps */
+  --ease-press: cubic-bezier(.215, .61, .355, 1); /* power3.out: press release */
+  --d-press: .12s;
+  --d-release: .45s;
+  --d-quick: .25s;
+  --d-roll: .45s;
+  --d-swap: .35s;
+  --d-lapline: .7s;
+  --lap-time: 8.4;      /* seconds per lap for the racing rider at rest: 2x a 54 km/h Madison lap */
+}
+@media (min-width: 768px) { :root { --gutter: 32px; } }
+@media (min-width: 992px) { :root { --header: 72px; } }
+
+/* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+html.lenis, html.lenis body { height: auto; }
+.lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+.lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+.lenis.lenis-smooth iframe { pointer-events: none; }
+
+*, *::before, *::after { box-sizing: border-box; }
+html { background: var(--navy); scroll-padding-top: calc(var(--header) + var(--s-4)); }
+body {
+  margin: 0; background: var(--navy); color: var(--lamp);
+  font: 400 var(--t-body)/1.55 var(--font-text);
+  -webkit-font-smoothing: antialiased; overflow-x: clip;
+}
+h1, h2, p { margin: 0; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--stayer); outline-offset: 3px; }
+.vh { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* Skip link */
+.skip {
+  position: fixed; left: var(--gutter); top: var(--s-2); z-index: 120;
+  padding: var(--s-2) var(--s-4); background: var(--lamp); color: var(--navy);
+  font-weight: 650; text-decoration: none; border-radius: 999px;
+  transform: translateY(-160%); transition: transform .3s var(--ease-out);
+}
+.skip:focus { transform: none; }
+
+/* ---------- Loader (LD1): visible at first paint, released by the script or after 8s ---------- */
+.loader { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; animation: release 0s 8s forwards; }
+.loader.is-owned { animation: none; }
+@keyframes release { to { visibility: hidden; } }
+.loader-bg { position: absolute; inset: 0; background: var(--azur); }
+.loader-in { position: relative; display: grid; gap: var(--s-4); justify-items: stretch; }
+.hair { display: block; height: 2px; background: var(--pine); transform: scaleX(var(--p, 0)); transform-origin: left; }
+
+/* ---------- Lap board and odometer ---------- */
+.board {
+  width: max-content; display: grid; justify-items: start; gap: .1em;
+  padding: .14em .22em .18em; background: var(--navy); border: .05em solid var(--pine);
+  font: 800 var(--t-board)/1 var(--font-display); color: var(--lamp);
+}
+.board--load { font-size: var(--t-loader); }
+.board-cap { display: flex; gap: .3em; font: 500 .19em/1.1 var(--font-text); color: var(--lamp-2); white-space: nowrap; }
+.stage .board-cap { font-size: max(var(--t-cap), .19em); }
+.to-go-mask { display: inline-block; overflow: clip; padding-bottom: .12em; margin-bottom: -.12em; }
+.to-go { display: inline-block; }
+.odo { display: inline-flex; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.odo-col { display: block; height: 1.1em; overflow: clip; }
+.odo-strip { display: flex; flex-direction: column; }
+.odo-strip > span { display: block; height: 1.1em; text-align: center; }
+
+/* ---------- Header ---------- */
+.top { position: sticky; top: 0; z-index: 40; height: var(--header); }
+.top::before { content: ""; position: absolute; inset: 0; background: var(--navy); opacity: 0; transition: opacity .3s; }
+.top.is-scrolled::before { opacity: 1; }
+.menu-open .top::before { opacity: 1; }
+/* scroll lock that does not depend on Lenis (reduced motion, after teardown) */
+html.menu-open, html:has(dialog[open]) { overflow: clip; }
+.top-in {
+  position: relative; height: 100%; max-width: var(--max); margin-inline: auto; padding-inline: var(--gutter);
+  display: flex; align-items: center; gap: var(--s-6);
+}
+.top .mark { font: 700 17px/1 var(--font-display); color: var(--lamp-2); text-decoration: none; letter-spacing: -.01em; padding-block: .25em; }
+.nav ul { display: flex; gap: var(--s-6); list-style: none; margin: 0 0 0 var(--s-6); padding: 0; }
+.nl { font: 500 var(--t-body)/1.2 var(--font-text); color: var(--lamp-2); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: none; }
+.top-book { margin-left: auto; }
+.top .menu-btn { display: none; }
+@media (max-width: 991px) {
+  .js .nav, .js .top-book { display: none; }
+  .js .menu-btn { display: inline-flex; margin-left: auto; }
+  html:not(.js) .top-in { flex-wrap: wrap; height: auto; padding-block: var(--s-3); gap: var(--s-3) var(--s-5); }
+  html:not(.js) .top { height: auto; position: relative; }
+  html:not(.js) .nav ul { margin: 0; gap: var(--s-5); }
+}
+
+/* HV1 roller-board roll: one lap-board column per label */
+.roll { display: inline-grid; overflow: clip; vertical-align: top; padding-block: .18em; position: relative; }
+.roll > span, .roll::after { grid-area: 1 / 1; transition: translate var(--d-roll) var(--ease-out); }
+.roll::after { content: attr(data-text); content: attr(data-text) / ""; translate: 0 135%; color: var(--lamp); }
+.roll:active { opacity: .7; transition: opacity var(--d-press); }
+@media (hover: hover) and (pointer: fine) {
+  .roll:hover > span, .roll:focus-visible > span { translate: 0 -135%; }
+  .roll:hover::after, .roll:focus-visible::after { translate: 0 0; }
+}
+/* Current section: the sprinter's line under the link */
+/* Current section: the sprinter's line under the link. Hover previews it: in from the left, out to the right. */
+.nl::before, .sheet .roll::before {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: .12em; background: var(--red);
+  transform: scaleX(0); transform-origin: right; transition: transform var(--d-roll) var(--ease-out);
+}
+.nl[aria-current]::before, .sheet .roll[aria-current]::before { transform: none; transform-origin: left; }
+@media (hover: hover) and (pointer: fine) {
+  .nl:is(:hover, :focus-visible)::before { transform: none; transform-origin: left; }
+}
+.nl[aria-current] { color: var(--lamp); }
+
+/* ---------- Buttons: stadium pills with a pine lap stroke ---------- */
+.btn {
+  --h: 52px;
+  position: relative; display: inline-flex; align-items: center; justify-content: center;
+  min-height: var(--h); padding: 0 var(--s-6); border: 0; border-radius: 999px;
+  background: var(--lamp); color: var(--navy); font: 650 var(--t-btn)/1 var(--font-text);
+  text-decoration: none; cursor: pointer; white-space: nowrap; -webkit-tap-highlight-color: transparent;
+  transition: color .3s var(--ease-out), scale var(--d-release) var(--ease-press);
+}
+.btn:active { scale: .965; transition-duration: var(--d-press); }
+.btn--sm { --h: 40px; padding: 0 var(--s-5); font-size: 15px; }
+.btn--ghost { background: transparent; color: var(--lamp); box-shadow: inset 0 0 0 1.5px var(--lamp-2); }
+@media (hover: hover) {
+  .btn:hover, .btn:focus-visible { color: var(--azur); }
+  .btn--ghost:hover, .btn--ghost:focus-visible { color: var(--lamp); box-shadow: inset 0 0 0 1.5px var(--lamp); }
+}
+.lap { position: absolute; left: -8px; top: -8px; overflow: visible; pointer-events: none; } /* outside the 3px focus ring */
+.lap path { fill: none; stroke: var(--pine); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 1 1; stroke-dashoffset: 1; }
+.btn[aria-disabled="true"] { opacity: .45; cursor: not-allowed; }
+
+/* MI2 masked label swap */
+.swap { display: inline-grid; overflow: clip; padding-block: .2em; }
+.swap > * { grid-area: 1 / 1; text-align: center; }
+.sw-size { visibility: hidden; }
+.sw-b { transform: translateY(115%); }
+.menu-btn .swap > * { transition: transform var(--d-swap) var(--ease-swap); }
+.menu-btn .swap > :nth-child(2) { transform: translateY(115%); }
+.menu-open .menu-btn .swap > :first-child { transform: translateY(-115%); }
+.menu-open .menu-btn .swap > :nth-child(2) { transform: none; }
+
+/* Inline links: the underline laps through, out to the right and in from the left */
+.tl {
+  position: relative; display: inline-block; padding: 0 0 .14em; border: 0; background: none;
+  color: var(--lamp); font: inherit; text-decoration: none; cursor: pointer;
+}
+.tl::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: .08em; min-height: 1.5px;
+  background: currentColor; transform-origin: right;
+}
+.tl:active { opacity: .7; }
+@media (hover: hover) {
+  .tl:hover::after, .tl:focus-visible::after { animation: lapline var(--d-lapline) var(--ease-inout); }
+}
+@keyframes lapline {
+  0% { transform: scaleX(1); transform-origin: right; }
+  45% { transform: scaleX(0); transform-origin: right; }
+  55% { transform: scaleX(0); transform-origin: left; }
+  100% { transform: scaleX(1); transform-origin: left; }
+}
+
+/* ---------- Menu sheet (NV1) ---------- */
+.sheet {
+  position: fixed; inset: 0; z-index: 30; background: var(--navy); visibility: hidden;
+  padding: calc(var(--header) + var(--s-7)) var(--gutter) var(--s-7); overflow-y: auto;
+}
+.sheet ul { list-style: none; margin: 0 0 var(--s-7); padding: 0; display: grid; gap: var(--s-4); }
+.sheet li { overflow: clip; }
+.sheet .roll { font: 600 var(--t-sheet)/1.1 var(--font-display); color: var(--lamp); background: none; border: 0; padding: .1em 0; cursor: pointer; text-decoration: none; }
+
+/* ---------- Layout ---------- */
+.hero {
+  display: grid; grid-template-columns: minmax(0, 1fr); column-gap: var(--s-5);
+  max-width: var(--max); margin-inline: auto; padding: 0 var(--gutter) var(--s-9);
+}
+.intro { padding-top: var(--s-7); }
+@media (max-width: 991px) {
+  /* the track and board sit in the first viewport: H1, stage, then the lede */
+  .intro { display: contents; }
+  .intro h1 { order: 1; padding-top: var(--s-6); }
+  .hero > .stage { order: 2; margin: var(--s-2) 0 var(--s-6); }
+  .tilt { max-width: calc(40svh * 1.42); }
+  .lede { order: 3; }
+  .ctas { order: 4; }
+  .rail { order: 5; }
+}
+@media (min-width: 992px) {
+  .hero { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+  .intro, .rail { grid-column: 1 / 6; }
+  .intro { padding-top: var(--s-8); }
+}
+
+h1 {
+  font: 700 var(--t-h1)/1.02 var(--font-display); letter-spacing: -.02em;
+  margin-bottom: var(--s-5); text-wrap: balance;
+}
+.line-mask { padding-bottom: .1em; margin-bottom: -.1em; }
+.lede { font-size: var(--t-lg); line-height: 1.45; max-width: 34em; margin-bottom: var(--s-6); }
+.ctas { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-4) var(--s-6); }
+@media (max-width: 599px) { .ctas .btn { width: 100%; } }
+
+.h2 { font: 600 var(--t-h2)/1.08 var(--font-display); letter-spacing: -.01em; margin-bottom: var(--s-5); }
+.h2:focus { outline: none; }
+.h2:focus-visible { outline: 2px solid var(--stayer); outline-offset: 3px; }
+.block { padding-top: var(--s-8); }
+.block > p { max-width: var(--measure); color: var(--lamp-2); }
+.block > p + p { margin-top: var(--s-4); }
+fieldset { border: 0; margin: 0; padding: 0; min-inline-size: 0; }
+legend { padding: 0; display: block; width: 100%; }
+
+/* ---------- Stage ---------- */
+.stage { position: relative; margin: var(--s-7) 0 0; }
+@media (min-width: 992px) {
+  .stage { grid-column: 6 / 13; grid-row: 1 / span 2; align-self: start; position: sticky; top: var(--stick); margin-top: 0; padding-left: var(--s-6); }
+}
+.tilt { position: relative; transform-origin: 50% 60%; container-type: inline-size; transform-style: preserve-3d; }
+.riders { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.track { display: block; width: 100%; height: auto; overflow: visible; }
+.tier { fill: color-mix(in srgb, var(--lamp) 4%, transparent); fill-rule: evenodd; }
+.rail-ring { fill: none; stroke: var(--lamp); stroke-opacity: .18; stroke-width: .2; }
+.barrier { fill: none; stroke: var(--lamp-2); stroke-width: .35; }
+.boards { fill: none; stroke: var(--pine); stroke-width: 7.5; }
+.seams { fill: none; stroke: var(--pine-seam); stroke-width: .07; }
+.cote { fill: none; stroke: var(--azur); stroke-width: 1; }
+.infield { fill: var(--navy-2); }
+.trk { fill: none; stroke-width: .42; stroke-dasharray: 1 1; }
+.trk.meas { stroke: var(--navy); }
+.trk.sprint { stroke: var(--red); }
+.trk.stay { stroke: var(--stayer); }
+.trk.fin-band { stroke: var(--lamp); stroke-width: 1.3; stroke-linecap: butt; }
+.trk.fin { stroke: var(--navy); stroke-width: .4; stroke-linecap: butt; }
+.zone { opacity: 0; }
+.z-fill { fill: var(--azur); fill-opacity: .85; fill-rule: evenodd; }
+.z-line { fill: none; stroke: var(--lamp); stroke-width: .7; stroke-dasharray: 1 1; }
+.stage { --rider: 3.2; }
+@media (max-width: 599px) { .stage { --rider: 3.5; } }
+@media (min-width: 992px) { .stage { --rider: 2.8; } }
+.rider .bike { stroke: var(--navy); stroke-width: .45; stroke-linecap: round; }
+.rider .body { fill: var(--navy); stroke: var(--lamp); stroke-width: .12; }
+.rider .head { fill: var(--lamp); }
+.rider.is-racing .body { fill: var(--lamp); stroke: var(--navy); }
+.rider.is-racing .head { fill: var(--navy); stroke: var(--lamp); stroke-width: .12; }
+.trail { fill: none; stroke: var(--red); stroke-width: 1.1; stroke-linecap: round; stroke-linejoin: round; opacity: .9; }
+.sling { fill: none; stroke: var(--pine); stroke-width: .6; stroke-linecap: round; stroke-dasharray: 1 1; opacity: 0; }
+.stage .board { position: absolute; inset: 0; margin: auto; height: max-content; }
+.tag {
+  position: absolute; left: 0; top: 0; z-index: 2; pointer-events: none; opacity: 0; visibility: hidden;
+  display: grid; justify-items: center;
+}
+.tag-t {
+  padding: 3px 8px; background: var(--pine); color: var(--navy);
+  font: 600 var(--t-cap)/1.3 var(--font-text); font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.tag::after { content: ""; width: 1px; height: 10px; background: var(--pine); }
+.stage figcaption { margin-top: var(--s-4); max-width: var(--measure); color: var(--lamp-2); font-size: var(--t-sm); line-height: 1.45; }
+
+/* ---------- Rows (nights and areas) ---------- */
+.rows { display: grid; gap: var(--s-2); }
+.row {
+  position: relative; isolation: isolate; display: grid; grid-template-columns: 22px minmax(0, 1fr);
+  align-items: start; column-gap: var(--s-4); padding: var(--s-4); cursor: pointer;
+  -webkit-tap-highlight-color: transparent; transition: background-color .2s, box-shadow .2s;
+}
+.area { grid-template-columns: 22px minmax(0, 1fr) auto auto; }
+.row input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; pointer-events: none; }
+.wipe { position: absolute; inset: 0; z-index: -1; background: var(--azur); clip-path: inset(0 100% 0 0); }
+.row:active { background: color-mix(in srgb, var(--azur) 60%, transparent); }
+.row:has(:checked) { background: var(--azur); box-shadow: inset 0 0 0 2px var(--lamp); }
+.row:has(:focus-visible) { outline: 2px solid var(--stayer); outline-offset: 3px; }
+html:not(.js) .row:hover .wipe { clip-path: inset(0); }
+.dot {
+  width: 22px; height: 22px; margin-top: 2px; border-radius: 50%; border: 2px solid var(--lamp-2);
+  display: grid; place-items: center; transition: background-color .2s, border-color .2s;
+}
+.dot::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--navy); transform: scale(0); transition: transform .2s var(--ease-out); }
+.row:has(:checked) .dot { border-color: var(--lamp); background: var(--lamp); }
+.row:has(:checked) .dot::after { transform: scale(1); }
+.row-main { min-width: 0; }
+.row-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-3); }
+.date { font: 650 var(--t-h3)/1.2 var(--font-text); }
+.name { font: 500 var(--t-sm)/1.45 var(--font-text); color: var(--lamp); }
+.night .row-head { padding-right: 128px; }
+.badge {
+  position: absolute; top: var(--s-4); right: var(--s-4); padding: 5px 8px 6px; background: var(--navy); color: var(--lamp);
+  border: 1px solid var(--pine); font: 600 var(--t-cap)/1 var(--font-display); white-space: nowrap;
+  opacity: 0; transform-origin: right center;
+}
+.row:has(:checked) .badge { opacity: 1; }
+.desc { display: block; margin-top: var(--s-1); max-width: 52ch; color: var(--lamp-2); font-size: var(--t-sm); line-height: 1.45; }
+.row:has(:checked) .desc { color: var(--lamp); }
+.left { display: flex; align-items: center; gap: var(--s-3); margin-top: var(--s-3); }
+.bar { position: relative; flex: 1; height: 6px; overflow: clip; background: color-mix(in srgb, var(--lamp) 12%, transparent); }
+.bar i { position: absolute; inset: 0; background: var(--lamp-2); transform: scaleX(var(--v)); transform-origin: left; transition: background-color .3s; }
+.row:is(:hover, :has(:focus-visible), :has(:checked)) .bar i { background: var(--lamp); }
+.n { min-width: 10ch; text-align: right; font: 500 var(--t-cap)/1.4 var(--font-text); font-variant-numeric: tabular-nums; color: var(--lamp-2); }
+.row:has(:checked) .n { color: var(--lamp); }
+.mini { width: 60px; height: auto; align-self: center; }
+.mini-z { fill: var(--lamp-2); fill-opacity: .6; fill-rule: evenodd; }
+.mini-l { fill: none; stroke: var(--lamp); stroke-width: 3; stroke-dasharray: 1 1; stroke-dashoffset: 1; opacity: 0; }
+.area:has(:checked) .mini-l { stroke-dashoffset: 0; opacity: 1; }
+.area:has(:checked) .mini-z { fill: var(--lamp); fill-opacity: 1; }
+.mb-tier { fill: none; stroke: var(--lamp-2); stroke-width: 2.5; }
+.mb-track { fill: none; stroke: var(--pine); stroke-width: 7.5; }
+.price { min-width: 7ch; text-align: right; font: 650 var(--t-body)/1.25 var(--font-text); font-variant-numeric: tabular-nums; }
+.price small { display: block; font: 500 var(--t-cap)/1.4 var(--font-text); color: var(--lamp-2); }
+@media (max-width: 599px) {
+  .area { grid-template-columns: 22px minmax(0, 1fr) auto; }
+  .area .mini { grid-column: 2; grid-row: 2; justify-self: start; margin-top: var(--s-3); }
+  .area .price { grid-column: 3; grid-row: 1; }
+}
+
+/* ---------- Seats, email, summary ---------- */
+.book-more { display: grid; gap: var(--s-6); margin-top: var(--s-6); }
+.qty { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3) var(--s-4); }
+.qty-l { font-weight: 650; min-width: 4.5em; }
+.step { --h: 44px; width: 44px; padding: 0; font-size: 22px; }
+.qty-out { min-width: 1.2em; text-align: center; font: 700 28px/1 var(--font-display); }
+.qty-note { color: var(--lamp-2); font-size: var(--t-sm); }
+.field { position: relative; padding-top: 30px; max-width: 30rem; }
+.field input {
+  width: 100%; padding: var(--s-2) 0; border: 0; border-bottom: 1px solid var(--lamp-2); border-radius: 0;
+  background: transparent; color: var(--lamp); font: 400 var(--t-body)/1.4 var(--font-text);
+}
+.field input:focus-visible { outline-offset: 3px; }
+.field label {
+  position: absolute; left: 0; top: calc(30px + var(--s-2)); color: var(--lamp-2);
+  transform-origin: left top; transition: transform var(--d-quick) var(--ease-out), color var(--d-quick); pointer-events: none;
+}
+.field:focus-within label, .field input:not(:placeholder-shown) + label { transform: translateY(-1.6em) scale(.82); color: var(--lamp); }
+.rule { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--lamp); transform: scaleX(0); transform-origin: left; transition: transform .45s var(--ease-out); }
+.field:focus-within .rule { transform: scaleX(1); }
+.field input[aria-invalid="true"] { border-bottom-color: var(--red); }
+.err > span { opacity: 0; translate: 0 -6px; clip-path: inset(0 0 100% 0); transition: opacity var(--d-quick) var(--ease-out), translate var(--d-quick) var(--ease-out), clip-path var(--d-quick) var(--ease-out); }
+.err.is-on > span { opacity: 1; translate: none; clip-path: inset(0 0 -4px 0); }
+.err > span { display: flex; align-items: center; gap: var(--s-2); color: var(--red); font-size: var(--t-sm); font-weight: 500; }
+.err.is-on > span { padding-top: var(--s-2); }
+.err svg { flex: none; width: 16px; height: 16px; }
+.sum { color: var(--lamp-2); font-size: var(--t-body); }
+.sum b { color: var(--lamp); font-weight: 650; }
+.submit-row { display: grid; gap: var(--s-4); justify-items: start; }
+@media (max-width: 599px) { .submit-row .btn { width: 100%; } }
+.contact { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-5); align-items: baseline; }
+
+/* ---------- Dialogs ---------- */
+dialog {
+  width: min(560px, calc(100vw - 2 * var(--gutter))); max-height: calc(100dvh - 2 * var(--gutter));
+  padding: var(--s-7) var(--s-6) var(--s-6); border: 0; border-radius: 0;
+  background: var(--azur); color: var(--lamp); overscroll-behavior: contain;
+}
+dialog::backdrop { background: transparent; transition: background-color .3s; }
+dialog.is-in::backdrop { background: var(--veil); }
+@media (max-width: 599px) {
+  dialog { width: 100%; max-width: none; margin: auto 0 0; padding: var(--s-6) var(--gutter) var(--s-6); }
+}
+dialog .h2 { padding-right: var(--s-7); }
+dialog p { color: var(--lamp); max-width: var(--measure); }
+dialog p + p { margin-top: var(--s-3); }
+.x {
+  position: absolute; top: var(--s-4); right: var(--s-4); width: 44px; height: 44px; display: grid; place-items: center;
+  background: none; border: 0; color: var(--lamp); cursor: pointer; transition: rotate .35s var(--ease-out);
+}
+.x:hover, .x:focus-visible { rotate: 90deg; }
+.x svg { width: 20px; height: 20px; }
+.ref-cap { margin-top: var(--s-2); color: var(--lamp-2); font-size: var(--t-sm); }
+.ref { display: flex; align-items: center; margin: var(--s-1) 0 var(--s-5); font: 700 clamp(24px, 6vw, 36px)/1 var(--font-display); }
+.actions { display: flex; flex-wrap: wrap; gap: var(--s-4); margin-top: var(--s-6); }
+@media (max-width: 599px) { .actions .btn { width: 100%; } }
+
+@media (prefers-reduced-motion: reduce) {
+  /* none, not .01ms: a near-zero duration would still turn every element into a transition target, and a visibility
+     transition keeps a just-opened sheet hidden for the frame in which focus moves into it */
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+  .loader { display: none; }
+  .row:is(:hover, :has(:focus-visible)) .wipe { clip-path: inset(0); }
+  .btn:is(:hover, :focus-visible) .lap path { stroke-dashoffset: 0; }
+  .roll:hover, .roll:focus-visible { color: var(--lamp); }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#nights">Skip to booking</a>
+
+<div class="loader" aria-hidden="true">
+  <div class="loader-bg"></div>
+  <div class="loader-in">
+    <div class="board board--load"><span class="odo">000</span><span class="board-cap">laps</span></div>
+    <i class="hair"></i>
+  </div>
+</div>
+
+<header class="top">
+  <div class="top-in">
+    <a class="mark roll" href="#top" data-text="Hebble Six"><span>Hebble Six</span></a>
+    <nav class="nav" aria-label="Sections">
+      <ul>
+        <li><a class="nl roll" href="#nights" data-text="Nights"><span>Nights</span></a></li>
+        <li><button class="nl roll" type="button" data-open="scoring" aria-haspopup="dialog" data-text="Scoring"><span>Scoring</span></button></li>
+        <li><a class="nl roll" href="#getting-here" data-text="Getting here"><span>Getting here</span></a></li>
+      </ul>
+    </nav>
+    <a class="btn btn--sm top-book" href="#book">Book a night</a>
+    <button class="btn btn--sm btn--ghost menu-btn" type="button" aria-expanded="false" aria-controls="sheet">
+      <span class="swap"><span>Menu</span><span aria-hidden="true">Close</span></span>
+    </button>
+  </div>
+</header>
+
+<div class="sheet" id="sheet" inert>
+  <nav aria-label="Menu">
+    <ul>
+      <li><a class="roll" href="#nights" data-text="Nights"><span>Nights</span></a></li>
+      <li><button class="roll" type="button" data-open="scoring" aria-haspopup="dialog" data-text="Scoring"><span>Scoring</span></button></li>
+      <li><a class="roll" href="#getting-here" data-text="Getting here"><span>Getting here</span></a></li>
+      <li><a class="btn" href="#book">Book a night</a></li>
+    </ul>
+  </nav>
+</div>
+
+<main id="top">
+  <div class="hero">
+    <div class="intro">
+      <h1 tabindex="-1">Watch the Six from the middle of the track.</h1>
+      <p class="lede">Sixteen teams of two ride the Madison over six days on a 250&nbsp;m pine track at Hebble Bridge Velodrome, 10 to 15 November. Stand in the track centre, sit at the rail, or see it all from the tier.</p>
+      <div class="ctas">
+        <a class="btn" href="#nights">Choose your night</a>
+        <button class="tl" type="button" data-open="scoring" aria-haspopup="dialog">How the racing is scored</button>
+      </div>
+    </div>
+
+    <figure class="stage" id="stage">
+      <div class="tilt">
+        <svg class="track" viewBox="-71 -50 142 100" aria-hidden="true">
+          <path class="tier" d="M12 48H21A48 48 0 0 0 21 -48H-21A48 48 0 0 0 -21 48ZM12 40H21A40 40 0 0 0 21 -40H-21A40 40 0 0 0 -21 40Z"/>
+          <path class="rail-ring" d="M12 38.4H21A38.4 38.4 0 0 0 21 -38.4H-21A38.4 38.4 0 0 0 -21 38.4Z"/>
+          <g class="zone" id="z-tier"><path class="z-fill" d="M12 48H21A48 48 0 0 0 21 -48H-21A48 48 0 0 0 -21 48ZM12 40H21A40 40 0 0 0 21 -40H-21A40 40 0 0 0 -21 40Z"/><path class="z-line" pathLength="1" d="M12 48H21A48 48 0 0 0 21 -48H-21A48 48 0 0 0 -21 48ZM12 40H21A40 40 0 0 0 21 -40H-21A40 40 0 0 0 -21 40Z"/></g>
+          <g class="zone" id="z-rail"><path class="z-fill" d="M12 38.4H21A38.4 38.4 0 0 0 21 -38.4H-21A38.4 38.4 0 0 0 -21 38.4ZM12 34.6H21A34.6 34.6 0 0 0 21 -34.6H-21A34.6 34.6 0 0 0 -21 34.6Z"/><path class="z-line" pathLength="1" d="M12 38.4H21A38.4 38.4 0 0 0 21 -38.4H-21A38.4 38.4 0 0 0 -21 38.4ZM12 34.6H21A34.6 34.6 0 0 0 21 -34.6H-21A34.6 34.6 0 0 0 -21 34.6Z"/></g>
+          <path class="barrier" d="M12 34.1H21A34.1 34.1 0 0 0 21 -34.1H-21A34.1 34.1 0 0 0 -21 34.1Z"/>
+          <path class="boards" d="M12 29.97H21A29.97 29.97 0 0 0 21 -29.97H-21A29.97 29.97 0 0 0 -21 29.97Z"/>
+          <path class="seams" d="M12 26.97H21A26.97 26.97 0 0 0 21 -26.97H-21A26.97 26.97 0 0 0 -21 26.97ZM12 27.72H21A27.72 27.72 0 0 0 21 -27.72H-21A27.72 27.72 0 0 0 -21 27.72ZM12 28.47H21A28.47 28.47 0 0 0 21 -28.47H-21A28.47 28.47 0 0 0 -21 28.47ZM12 29.22H21A29.22 29.22 0 0 0 21 -29.22H-21A29.22 29.22 0 0 0 -21 29.22ZM12 29.97H21A29.97 29.97 0 0 0 21 -29.97H-21A29.97 29.97 0 0 0 -21 29.97ZM12 30.72H21A30.72 30.72 0 0 0 21 -30.72H-21A30.72 30.72 0 0 0 -21 30.72ZM12 31.47H21A31.47 31.47 0 0 0 21 -31.47H-21A31.47 31.47 0 0 0 -21 31.47ZM12 32.22H21A32.22 32.22 0 0 0 21 -32.22H-21A32.22 32.22 0 0 0 -21 32.22ZM12 32.97H21A32.97 32.97 0 0 0 21 -32.97H-21A32.97 32.97 0 0 0 -21 32.97Z"/>
+          <path class="cote" d="M12 25.72H21A25.72 25.72 0 0 0 21 -25.72H-21A25.72 25.72 0 0 0 -21 25.72Z"/>
+          <path class="infield" d="M12 25.22H21A25.22 25.22 0 0 0 21 -25.22H-21A25.22 25.22 0 0 0 -21 25.22Z"/>
+          <g class="zone" id="z-centre"><path class="z-fill" d="M12 23.6H21A23.6 23.6 0 0 0 21 -23.6H-21A23.6 23.6 0 0 0 -21 23.6Z"/><path class="z-line" pathLength="1" d="M12 23.6H21A23.6 23.6 0 0 0 21 -23.6H-21A23.6 23.6 0 0 0 -21 23.6Z"/></g>
+          <path class="trk meas" pathLength="1" d="M12 26.42H21A26.42 26.42 0 0 0 21 -26.42H-21A26.42 26.42 0 0 0 -21 26.42Z"/>
+          <path class="trk sprint" pathLength="1" d="M12 27.27H21A27.27 27.27 0 0 0 21 -27.27H-21A27.27 27.27 0 0 0 -21 27.27Z"/>
+          <path class="trk stay" pathLength="1" d="M12 28.87H21A28.87 28.87 0 0 0 21 -28.87H-21A28.87 28.87 0 0 0 -21 28.87Z"/>
+          <path class="trk fin-band" pathLength="1" d="M12 26.22V33.72"/>
+          <path class="trk fin" pathLength="1" d="M12 26.22V33.72"/>
+        </svg>
+        <svg class="riders" viewBox="-71 -50 142 100" aria-hidden="true">
+          <path class="trail" id="trail" d=""/>
+          <path class="sling" id="sling" pathLength="1" d=""/>
+          <g class="rider is-racing" id="rider-a" transform="translate(12.5 27.27) rotate(0) scale(2.8)"><path class="bike" d="M-1.7 0H1.7"/><ellipse class="body" cx="-.2" rx="1.05" ry=".55"/><circle class="head" cx=".72" r=".4"/></g>
+          <g class="rider" id="rider-b" transform="translate(-30.24 31.08) rotate(16.55) scale(2.8)"><path class="bike" d="M-1.7 0H1.7"/><ellipse class="body" cx="-.2" rx="1.05" ry=".55"/><circle class="head" cx=".72" r=".4"/></g>
+        </svg>
+        <div class="board" id="board" aria-hidden="true">
+          <span class="odo">200</span>
+          <span class="board-cap">laps <span class="to-go-mask"><span class="to-go">to go</span></span></span>
+        </div>
+      </div>
+      <span class="tag" aria-hidden="true"><span class="tag-t">0 m to the line</span></span>
+      <figcaption>The 250&nbsp;m Siberian-pine track from above. From the inside: the blue c&ocirc;te d'azur, the black line every lap is measured on, the red sprinter's line and the blue stayer's line. The lap board counts down each time the racing rider crosses the finish line.</figcaption>
+    </figure>
+
+    <div class="rail">
+      <form id="booking" novalidate>
+        <section class="block" id="nights" aria-labelledby="nights-h">
+          <fieldset aria-describedby="night-err">
+            <legend><h2 class="h2" id="nights-h" tabindex="-1">Pick a night</h2></legend>
+            <div class="rows">
+              <label class="row night" data-date="Tue 10 Nov" data-collect="19:00">
+                <input type="radio" name="night" value="1011" required>
+                <span class="wipe" aria-hidden="true"></span><span class="dot" aria-hidden="true"></span>
+                <span class="row-main">
+                  <span class="row-head"><span class="date">Tue 10 Nov</span><span class="name">Opening night</span><span class="badge" aria-hidden="true">Your night</span></span>
+                  <span class="desc">Team presentation lap, 60-minute Madison chase, derny race. Doors 18:30, racing 19:15 to 23:30.</span>
+                  <span class="left"><span class="bar" aria-hidden="true"><i style="--v:.356"></i></span><span class="n">1,140 left</span></span>
+                </span>
+              </label>
+              <label class="row night" data-date="Wed 11 Nov" data-collect="19:00">
+                <input type="radio" name="night" value="1111" required>
+                <span class="wipe" aria-hidden="true"></span><span class="dot" aria-hidden="true"></span>
+                <span class="row-main">
+                  <span class="row-head"><span class="date">Wed 11 Nov</span><span class="name">Women's night</span><span class="badge" aria-hidden="true">Your night</span></span>
+                  <span class="desc">The women's 40&nbsp;km Madison and the elimination, where the last rider over the line every second lap is out. Racing 19:15 to 23:30.</span>
+                  <span class="left"><span class="bar" aria-hidden="true"><i style="--v:.269"></i></span><span class="n">860 left</span></span>
+                </span>
+              </label>
+              <label class="row night" data-date="Thu 12 Nov" data-collect="19:00">
+                <input type="radio" name="night" value="1211" required>
+                <span class="wipe" aria-hidden="true"></span><span class="dot" aria-hidden="true"></span>
+                <span class="row-main">
+                  <span class="row-head"><span class="date">Thu 12 Nov</span><span class="name">Derny night</span><span class="badge" aria-hidden="true">Your night</span></span>
+                  <span class="desc">Three motor-paced heats behind the dernies and the 1&nbsp;km time trial. Racing 19:15 to 23:30.</span>
+                  <span class="left"><span class="bar" aria-hidden="true"><i style="--v:.163"></i></span><span class="n">520 left</span></span>
+                </span>
+              </label>
+              <label class="row night" data-date="Fri 13 Nov" data-collect="19:00">
+                <input type="radio" name="night" value="1311" required>
+                <span class="wipe" aria-hidden="true"></span><span class="dot" aria-hidden="true"></span>
+                <span class="row-main">
+                  <span class="row-head"><span class="date">Fri 13 Nov</span><span class="name">Late night</span><span class="badge" aria-hidden="true">Your night</span></span>
+                  <span class="desc">The 200-lap Madison chase, with a DJ in the track centre. Racing 19:15 to 00:30.</span>
+                  <span class="left"><span class="bar" aria-hidden="true"><i style="--v:.012"></i></span><span class="n">38 left</span></span>
+                </span>
+              </label>
+              <label class="row night" data-date="Sat 14 Nov" data-collect="19:00" data-full>
+                <input type="radio" name="night" value="1411" required>
+                <span class="wipe" aria-hidden="true"></span><span class="dot" aria-hidden="true"></span>
+                <span class="row-main">
+                  <span class="row-head"><span class="date">Sat 14 Nov</span><span class="name">Late night</span><span class="badge" aria-hidden="true">Your night</span></span>
+                  <span class="desc">The second 200-lap chase and the sprint final. Sold out: choose it to join the waiting list.</span>
+                  <span class="left"><span class="bar" aria-hidden="true"><i style="--v:0"></i></span><span class="n">Sold out</span></span>
+                </span>
+              </label>
+              <label class="row night" data-date="Sun 15 Nov" data-collect="13:30">
+                <input type="radio" name="night" value="1511" required>
+                <span class="wipe" aria-hidden="true"></span><span class="dot" aria-hidden="true"></span>
+                <span class="row-main">
+                  <span class="row-head"><span class="date">Sun 15 Nov</span><span class="name">Final afternoon</span><span class="badge" aria-hidden="true">Your night</span></span>
+                  <span class="desc">The last Madison decides the Six. Under-16s sit free in the tier. Doors 13:00, racing 14:00 to 18:30.</span>
+                  <span class="left"><span class="bar" aria-hidden="true"><i style="--v:.094"></i></span><span class="n">300 left</span></span>
+                </span>
+              </label>
+            </div>
+            <p class="err" id="night-err" role="alert"><span></span></p>
+          </fieldset>
+        </section>
+
+        <section class="block" id="book" aria-labelledby="book-h">
+          <fieldset aria-describedby="area-err">
+            <legend><h2 class="h2" id="book-h" tabindex="-1">Choose where you watch</h2></legend>
+            <div class="rows">
+              <label class="row area" data-noun="track centre ticket">
+                <input type="radio" name="area" value="centre" required>
+                <span class="wipe" aria-hidden="true"></span><span class="dot" aria-hidden="true"></span>
+                <span class="row-main">
+                  <span class="row-head"><span class="date">Track centre</span></span>
+                  <span class="desc">Standing, with the bar and the DJ, inside the blue band.</span>
+                </span>
+                <svg class="mini" viewBox="-71 -50 142 100" aria-hidden="true"><use href="#mini-base" x="-71" y="-50" width="142" height="100"/><path class="mini-z" d="M12 23.6H21A23.6 23.6 0 0 0 21 -23.6H-21A23.6 23.6 0 0 0 -21 23.6Z"/></svg>
+                <span class="price">&pound;34<small>&pound;40 Fri and Sat</small></span>
+              </label>
+              <label class="row area" data-noun="banking rail seat">
+                <input type="radio" name="area" value="rail" required>
+                <span class="wipe" aria-hidden="true"></span><span class="dot" aria-hidden="true"></span>
+                <span class="row-main">
+                  <span class="row-head"><span class="date">Banking rail</span></span>
+                  <span class="desc">Rows A to C, an arm's length from the riders.</span>
+                </span>
+                <svg class="mini" viewBox="-71 -50 142 100" aria-hidden="true"><use href="#mini-base" x="-71" y="-50" width="142" height="100"/><path class="mini-z" d="M12 38.4H21A38.4 38.4 0 0 0 21 -38.4H-21A38.4 38.4 0 0 0 -21 38.4ZM12 34.6H21A34.6 34.6 0 0 0 21 -34.6H-21A34.6 34.6 0 0 0 -21 34.6Z"/></svg>
+                <span class="price">&pound;48<small>Every night</small></span>
+              </label>
+              <label class="row area" data-noun="upper tier seat">
+                <input type="radio" name="area" value="tier" required>
+                <span class="wipe" aria-hidden="true"></span><span class="dot" aria-hidden="true"></span>
+                <span class="row-main">
+                  <span class="row-head"><span class="date">Upper tier</span></span>
+                  <span class="desc">A seat with the whole track below you. Under-16s pay &pound;11 at the box office.</span>
+                </span>
+                <svg class="mini" viewBox="-71 -50 142 100" aria-hidden="true"><use href="#mini-base" x="-71" y="-50" width="142" height="100"/><path class="mini-z" d="M12 48H21A48 48 0 0 0 21 -48H-21A48 48 0 0 0 -21 48ZM12 40H21A40 40 0 0 0 21 -40H-21A40 40 0 0 0 -21 40Z"/></svg>
+                <span class="price">&pound;22<small>Under-16s &pound;11</small></span>
+              </label>
+            </div>
+            <p class="err" id="area-err" role="alert"><span></span></p>
+          </fieldset>
+
+          <div class="book-more">
+            <div class="qty" role="group" aria-labelledby="qty-l">
+              <span class="qty-l" id="qty-l">Seats</span>
+              <button class="btn btn--ghost step" type="button" data-step="-1" aria-label="One seat fewer">&minus;</button>
+              <output class="qty-out" id="qty" aria-live="polite"><span class="vh" id="qty-t">2 seats</span><span class="odo" aria-hidden="true">2</span></output>
+              <button class="btn btn--ghost step" type="button" data-step="1" aria-label="One seat more">+</button>
+              <span class="qty-note" id="qty-note" aria-live="polite"></span>
+              <input type="hidden" name="seats" value="2">
+            </div>
+            <div>
+              <div class="field">
+                <input id="email" name="email" type="email" autocomplete="email" spellcheck="false" placeholder=" " aria-describedby="email-err">
+                <label for="email">Email to hold them under</label>
+                <span class="rule" aria-hidden="true"></span>
+              </div>
+              <p class="err" id="email-err"><span></span></p>
+            </div>
+            <div class="submit-row">
+              <p class="sum" id="sum" aria-live="polite">Pick a night and where you watch to see the price.</p>
+              <button class="btn" type="submit" id="submit"><span class="swap"><span class="sw-a">Hold 2 seats</span><span class="sw-b" aria-hidden="true"></span><span class="sw-size" aria-hidden="true">Join the waiting list</span></span></button>
+            </div>
+          </div>
+        </section>
+      </form>
+
+      <section class="block" id="getting-here" aria-labelledby="gh-h">
+        <h2 class="h2" id="gh-h" tabindex="-1">Getting here</h2>
+        <p>Tenter Lane, Hebble Bridge HX9 4TL. A 9-minute walk from Hebble Bridge station. On Friday and Saturday the last train to Leeds leaves at 00:52, 22 minutes after the last race.</p>
+        <p class="contact">Box office <a class="tl" href="tel:+441632960418" target="_blank" rel="noopener">01632 960 418</a> <a class="tl" href="mailto:boxoffice@hebblesix.example" target="_blank" rel="noopener">boxoffice@hebblesix.example</a></p>
+      </section>
+    </div>
+  </div>
+</main>
+
+<dialog id="confirm" aria-labelledby="confirm-h">
+  <button class="x" type="button" data-close aria-label="Close"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 4l12 12M16 4L4 16" stroke="currentColor" stroke-width="2" fill="none"/></svg></button>
+  <h2 class="h2" id="confirm-h">Seats held</h2>
+  <p class="ref-cap" id="ref-cap"></p>
+  <p class="ref"><span class="vh" id="ref-t"></span><span id="ref-odo" aria-hidden="true"></span></p>
+  <p id="confirm-a"></p>
+  <p id="confirm-b"></p>
+  <div class="actions">
+    <button class="btn" type="button" data-act="nights">Back to the nights</button>
+    <button class="btn btn--ghost" type="button" data-act="again">Hold another night</button>
+  </div>
+</dialog>
+
+<dialog id="scoring" aria-labelledby="scoring-h">
+  <button class="x" type="button" data-close aria-label="Close"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 4l12 12M16 4L4 16" stroke="currentColor" stroke-width="2" fill="none"/></svg></button>
+  <h2 class="h2" id="scoring-h">How the racing is scored</h2>
+  <p>Each team rides as a relay. One rider races while the other rolls high on the banking, then a hand-sling swaps them.</p>
+  <p>Gaining a lap on the field beats any number of points. Sprints every 10 laps score 5, 3, 2 and 1, doubled on the last. Teams are ranked by laps, then points.</p>
+  <div class="actions">
+    <button class="btn btn--ghost" type="button" data-close>Close</button>
+    <button class="btn" type="button" data-act="nights">Choose your night</button>
+  </div>
+</dialog>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="mini-base" viewBox="-71 -50 142 100">
+    <path class="mb-tier" d="M12 48H21A48 48 0 0 0 21 -48H-21A48 48 0 0 0 -21 48Z"/>
+    <path class="mb-track" d="M12 29.97H21A29.97 29.97 0 0 0 21 -29.97H-21A29.97 29.97 0 0 0 -21 29.97Z"/>
+  </symbol>
+</svg>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/SplitText.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/Flip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  const root = document.documentElement;
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const loader = $('.loader');
+  root.classList.add('js');
+  if (!window.gsap || !window.ScrollTrigger || !window.SplitText || !window.Flip || !window.Lenis) {
+    root.classList.remove('js'); // CDN blocked: everything stays visible and native
+    loader.remove();
+    return;
+  }
+  gsap.registerPlugin(ScrollTrigger, SplitText, Flip);
+  loader.classList.add('is-owned'); // the script owns the release now, so the CSS 8s failsafe stands down
+
+  const env = { lenis: null, motion: false };
+  const dur = (d) => (env.motion ? d : 0);
+  const expoOut = (t) => (t === 1 ? 1 : 1 - Math.pow(2, -10 * t));
+
+  /* ---------- Track geometry, in metres. s: metres past the finish line; d: metres above the measurement line ---------- */
+  const A = 21, R = (250 - 4 * A) / (2 * Math.PI), FINISH = 12, PR = Math.PI * R;
+  function at(s, d = 0) {
+    const u = (((s + FINISH) % 250) + 250) % 250;
+    let x, y, nx, ny, tx, ty, t;
+    if (u < A) { x = u; y = R; nx = 0; ny = 1; tx = 1; ty = 0; }
+    else if (u < A + PR) { t = (u - A) / R; x = A + R * Math.sin(t); y = R * Math.cos(t); nx = Math.sin(t); ny = Math.cos(t); tx = Math.cos(t); ty = -Math.sin(t); }
+    else if (u < 3 * A + PR) { x = A - (u - A - PR); y = -R; nx = 0; ny = -1; tx = -1; ty = 0; }
+    else if (u < 3 * A + 2 * PR) { t = (u - 3 * A - PR) / R; x = -A - R * Math.sin(t); y = -R * Math.cos(t); nx = -Math.sin(t); ny = -Math.cos(t); tx = -Math.cos(t); ty = Math.sin(t); }
+    else { x = u - 4 * A - 2 * PR; y = R; nx = 0; ny = 1; tx = 1; ty = 0; }
+    return { x: x + nx * d, y: y + ny * d, a: Math.atan2(ty, tx) * 180 / Math.PI };
+  }
+  const metres = Array.from({ length: 250 }, (_, s) => at(s)); // one point per metre of the lap
+
+  /* The Madison pair. One cycle (c 0..1) is two laps for the racer and one for the partner rolling high.
+     They meet at the sling mark on the back straight at matched speed, then swap roles. */
+  const SLING = 113, K = 125 / (2 * Math.PI), SP = 0.85, HAND = 2.1, HIGH = 6;
+  const C0 = 0.3118; // racer 0.5 m past the finish line: the rolling start
+  const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+  const racer = (c) => ({ s: SLING + 500 * c - K * Math.sin(2 * Math.PI * c), d: SP + (HAND - SP) * (1 - smooth(0, 0.12, c)) });
+  const rester = (c) => ({ s: SLING + 250 * c + K * Math.sin(2 * Math.PI * c), d: SP + (HIGH - SP) * smooth(0, 0.22, c) - (HIGH - HAND) * smooth(0.78, 1, c) });
+  function pair(c) { // c runs 0..2: rider A races the first cycle, rider B the second
+    c = ((c % 2) + 2) % 2;
+    const f = c % 1, r = racer(f), p = rester(f);
+    return c < 1 ? [r, p, r, 0, f] : [p, r, r, 1, f]; // [rider A, rider B, the racer, which one races, cycle fraction]
+  }
+  const riderEls = [$('#rider-a'), $('#rider-b')], trail = $('#trail'), sling = $('#sling');
+  let riderScale = 2.8; // drawn larger than the track's scale so the pair reads; set per width by --rider
+  const readScale = () => (riderScale = parseFloat(getComputedStyle($('#stage')).getPropertyValue('--rider')) || 2.8);
+  readScale(); addEventListener('resize', readScale);
+  function place(el, { s, d }) { const p = at(s, d); el.setAttribute('transform', `translate(${p.x.toFixed(2)} ${p.y.toFixed(2)}) rotate(${p.a.toFixed(1)}) scale(${riderScale})`); }
+  const pt = (p) => `${p.x.toFixed(2)} ${p.y.toFixed(2)}`;
+  // speed 0 means parked: no trail, no sling
+  function drawPair(c, speed = 0) {
+    const [a, b, r, who, f] = pair(c);
+    place(riderEls[0], a); place(riderEls[1], b);
+    riderEls.forEach((el, i) => el.classList.toggle('is-racing', i === who));
+    if (!speed) { trail.setAttribute('d', ''); sling.style.opacity = 0; return r; }
+    // the sprinter-red trail: 3 m at rest, 12 m at full speed
+    const k = 3 + 9 * Math.min(1, (speed - 1) / 4), back = r.s - 1.4 * riderScale;
+    trail.setAttribute('d', 'M' + Array.from({ length: 9 }, (_, i) => pt(at(back - k * i / 8, r.d))).join('L'));
+    // the hand-sling: a pine arc from the outgoing racer to the incoming one, drawn in as they meet and faded after
+    const df = f > 0.5 ? f - 1 : f, IN = 0.012, OUT = 0.03;
+    if (df > -IN && df < OUT) {
+      const [give, take] = who === 0 ? [b, a] : [a, b], m = at((give.s + take.s) / 2, (give.d + take.d) / 2 + 2.2);
+      sling.setAttribute('d', `M${pt(at(give.s, give.d))}Q${pt(m)} ${pt(at(take.s, take.d))}`);
+      const tin = df < 0 ? expoOut((df + IN) / IN) : 1;
+      sling.style.strokeDashoffset = 1 - tin;
+      sling.style.opacity = df < 0 ? tin : 1 - df / OUT;
+    } else sling.style.opacity = 0;
+    return r;
+  }
+
+  /* ---------- Odometer: digit columns of [9,0..9,0] so a roll can wrap one notch in either direction ---------- */
+  function odometer(el, digits, start = 0) {
+    el.textContent = '';
+    const row = (i) => -100 * i / 12;
+    const cols = Array.from({ length: digits }, () => {
+      const col = document.createElement('span'), strip = document.createElement('span');
+      col.className = 'odo-col'; strip.className = 'odo-strip';
+      strip.innerHTML = [9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map((n) => `<span>${n}</span>`).join('');
+      col.append(strip); el.append(col);
+      return { strip, v: 0 };
+    });
+    const api = {
+      set(value, { d = 0.5, dir = 0, stagger = 0 } = {}) {
+        String(value).padStart(digits, '0').split('').forEach((ch, i) => {
+          const c = cols[i], to = +ch;
+          if (to === c.v && d) return;
+          let target = to + 1;
+          if (dir < 0 && c.v === 0 && to === 9) target = 0;
+          if (dir > 0 && c.v === 9 && to === 0) target = 11;
+          c.v = to;
+          gsap.to(c.strip, { yPercent: row(target), duration: d, delay: d ? i * stagger : 0, ease: 'expo.out', overwrite: true,
+            onComplete: () => gsap.set(c.strip, { yPercent: row(to + 1) }) });
+        });
+      }
+    };
+    cols.forEach((c) => gsap.set(c.strip, { yPercent: row(1) }));
+    api.set(start, { d: 0 });
+    return api;
+  }
+  const boardOdo = odometer($('#board .odo'), 3, 200);
+  const loadOdo = odometer($('.loader .odo'), 3, 0);
+  const qtyOdo = odometer($('#qty .odo'), 1, 2);
+  let toGo = 200;
+  function lapDone() {
+    toGo = toGo > 0 ? toGo - 1 : 200;
+    boardOdo.set(toGo, { d: 0.5, dir: toGo === 200 ? 1 : -1 });
+    gsap.fromTo('.fin-band', { opacity: 0.4 }, { opacity: 1, duration: 0.3, ease: 'power2.out', overwrite: true });
+  }
+
+  /* ---------- Pill lap stroke: a 2px pine line runs one anticlockwise lap from the bottom-right "finish line" ---------- */
+  const NS = 'http://www.w3.org/2000/svg';
+  const ro = new ResizeObserver((entries) => entries.forEach(({ target: b }) => {
+    const w = b.offsetWidth + 16, h = b.offsetHeight + 16, r = (h - 2) / 2;
+    if (!w || !h) return;
+    b._lap.setAttribute('width', w); b._lap.setAttribute('height', h);
+    b._lap.firstChild.setAttribute('d', `M${w - 1 - r} ${h - 1}A${r} ${r} 0 0 0 ${w - 1 - r} 1H${1 + r}A${r} ${r} 0 0 0 ${1 + r} ${h - 1}Z`);
+  }));
+  $$('.btn').forEach((b) => {
+    const svg = document.createElementNS(NS, 'svg'), path = document.createElementNS(NS, 'path');
+    svg.setAttribute('class', 'lap'); svg.setAttribute('aria-hidden', 'true'); path.setAttribute('pathLength', '1');
+    svg.append(path); b.append(svg); b._lap = svg; ro.observe(b);
+    const lapIn = () => env.motion && gsap.fromTo(path, { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.6, ease: 'power2.out', overwrite: true, autoRound: false });
+    const lapOut = () => env.motion && gsap.to(path, { strokeDashoffset: -1, duration: 0.45, ease: 'power2.in', overwrite: true, autoRound: false });
+    b.addEventListener('pointerenter', (e) => e.pointerType === 'mouse' && lapIn());
+    b.addEventListener('pointerleave', (e) => e.pointerType === 'mouse' && b !== document.activeElement && lapOut());
+    b.addEventListener('focus', () => b.matches(':focus-visible') && !b.matches(':hover') && lapIn());
+    b.addEventListener('blur', () => !b.matches(':hover') && lapOut());
+  });
+
+  /* ---------- Row wipes: cote d'azur in from the left, out to the right ---------- */
+  $$('.row').forEach((row) => {
+    const wipe = $('.wipe', row), input = $('input', row);
+    const wIn = () => env.motion && gsap.fromTo(wipe, { clipPath: 'inset(0% 100% 0% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: 0.45, ease: 'expo.out', overwrite: true });
+    const wOut = () => env.motion && gsap.to(wipe, { clipPath: 'inset(0% 0% 0% 100%)', duration: 0.45, ease: 'expo.out', overwrite: true });
+    row.addEventListener('pointerenter', (e) => e.pointerType === 'mouse' && wIn());
+    row.addEventListener('pointerleave', (e) => e.pointerType === 'mouse' && !input.matches(':focus-visible') && wOut());
+    input.addEventListener('focus', () => input.matches(':focus-visible') && !row.matches(':hover') && wIn());
+    input.addEventListener('blur', () => !row.matches(':hover') && wOut());
+  });
+
+  /* ---------- Scrolling to anchors (through Lenis when it runs) and moving focus ---------- */
+  const header = $('.top');
+  function go(id) {
+    const target = document.getElementById(id);
+    if (!target) return;
+    const focusEl = target.matches('h1, h2') ? target : $('h1, h2', target) || target;
+    const y = id === 'top' ? 0 : target.getBoundingClientRect().top + scrollY - header.offsetHeight - 16;
+    if (env.lenis) { env.lenis.start(); env.lenis.scrollTo(y, { duration: 1.2, easing: expoOut }); }
+    else scrollTo({ top: y, behavior: 'auto' });
+    focusEl.setAttribute('tabindex', '-1');
+    focusEl.focus({ preventScroll: true });
+  }
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('a[href^="#"]');
+    if (!a) return;
+    e.preventDefault();
+    const id = a.getAttribute('href').slice(1);
+    if (sheetOpen) closeSheet(() => go(id)); else go(id);
+  });
+
+  /* ---------- Menu sheet (NV1) ---------- */
+  const sheet = $('#sheet'), menuBtn = $('.menu-btn'), main = $('main');
+  let sheetOpen = false, sheetTl = null, afterClose = null;
+  function buildSheet() {
+    sheetTl?.kill();
+    sheetTl = gsap.timeline({ paused: true, onReverseComplete: sheetClosed }).set(sheet, { visibility: 'visible' });
+    if (env.motion) {
+      sheetTl.fromTo(sheet, { clipPath: 'inset(0% 0% 100% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: 0.6, ease: 'expo.inOut' })
+        .fromTo($$('li > *', sheet), { yPercent: 110 }, { yPercent: 0, duration: 0.7, ease: 'expo.out', stagger: 0.06 }, '-=.25');
+    } else {
+      sheetTl.fromTo(sheet, { opacity: 0 }, { opacity: 1, duration: 0.2 }); // opacity only: autoAlpha would hide it again under the focus
+    }
+  }
+  const behindSheet = () => [main, $('.skip'), $('.mark'), $('.nav'), $('.top-book')];
+  function openSheet() {
+    sheetOpen = true; root.classList.add('menu-open');
+    menuBtn.setAttribute('aria-expanded', 'true');
+    sheet.inert = false; behindSheet().forEach((el) => (el.inert = true));
+    env.lenis?.stop();
+    sheetTl.timeScale(1).play();
+    gsap.set(sheet, { visibility: 'visible' }); // focusable now; the clip-path still hides it until the wipe runs
+    requestAnimationFrame(() => sheetOpen && $('a, button', sheet).focus({ preventScroll: true })); // after the sheet has rendered visible
+  }
+  function closeSheet(then) {
+    if (!sheetOpen) return;
+    sheetOpen = false; afterClose = then || null;
+    root.classList.remove('menu-open');
+    menuBtn.setAttribute('aria-expanded', 'false');
+    sheetTl.timeScale(1.4).reverse();
+    if (!sheetTl.progress()) sheetClosed();
+  }
+  function sheetClosed() {
+    gsap.set(sheet, { visibility: 'hidden' });
+    sheet.inert = true; behindSheet().forEach((el) => (el.inert = false));
+    env.lenis?.start();
+    const then = afterClose; afterClose = null;
+    if (then) then(); else menuBtn.focus({ preventScroll: true });
+  }
+  menuBtn.addEventListener('click', () => (sheetOpen ? closeSheet() : openSheet()));
+  document.addEventListener('keydown', (e) => {
+    if (!sheetOpen) return;
+    if (e.key === 'Escape') closeSheet();
+    if (e.key !== 'Tab') return;
+    const ring = [menuBtn, ...$$('a, button', sheet)], first = ring[0], last = ring[ring.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  });
+
+  /* ---------- Dialogs (CD7, wiped in like the azur band) ---------- */
+  const narrow = () => innerWidth < 600;
+  function openDialog(d, returnTo = null) {
+    if (d.open) return;
+    d._ret = returnTo;
+    d.showModal();
+    env.lenis?.stop();
+    requestAnimationFrame(() => d.classList.add('is-in'));
+    if (env.motion) gsap.fromTo(d, { clipPath: narrow() ? 'inset(100% 0% 0% 0%)' : 'inset(0% 100% 0% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: 0.55, ease: 'expo.out' });
+    else gsap.fromTo(d, { opacity: 0 }, { opacity: 1, duration: 0.2 }); // opacity only, so focus stays in the dialog
+  }
+  function closeDialog(d, then) {
+    if (!d.open || d._closing) return;
+    d._closing = true;
+    d.classList.remove('is-in');
+    const done = () => {
+      d._closing = false; d.close(); gsap.set(d, { clearProps: 'clipPath,opacity,visibility' }); env.lenis?.start();
+      d._ret?.focus({ preventScroll: true }); d._ret = null; // the opener sat in the closed menu sheet
+      then?.();
+    };
+    if (env.motion) gsap.to(d, { clipPath: narrow() ? 'inset(100% 0% 0% 0%)' : 'inset(0% 0% 0% 100%)', duration: 0.3, ease: 'expo.inOut', onComplete: done });
+    else gsap.to(d, { opacity: 0, duration: 0.15, onComplete: done });
+  }
+  $$('dialog').forEach((d) => {
+    d.addEventListener('cancel', (e) => { e.preventDefault(); closeDialog(d); });
+    $$('[data-close]', d).forEach((b) => b.addEventListener('click', () => closeDialog(d)));
+  });
+  $$('[data-open]').forEach((b) => b.addEventListener('click', () => {
+    const d = document.getElementById(b.dataset.open);
+    if (sheetOpen) closeSheet(() => openDialog(d, menuBtn)); else openDialog(d);
+  }));
+  $$('[data-act="nights"]').forEach((b) => b.addEventListener('click', () => closeDialog(b.closest('dialog'), () => go('nights'))));
+  $('[data-act="again"]').addEventListener('click', () => closeDialog($('#confirm'), () => {
+    form.night.forEach((r) => (r.checked = false));
+    update();
+    go('nights');
+    form.night[0].focus({ preventScroll: true });
+  }));
+
+  /* ---------- Booking form ---------- */
+  const form = $('#booking');
+  const NIGHTS = Object.fromEntries($$('.night').map((l) => [$('input', l).value, { date: l.dataset.date, full: l.hasAttribute('data-full'), collect: l.dataset.collect }]));
+  const AREAS = Object.fromEntries($$('.area').map((l) => [$('input', l).value, { noun: l.dataset.noun }]));
+  const priceOf = (area, night) => (area === 'centre' && (night === '1311' || night === '1411') ? 40 : { centre: 34, rail: 48, tier: 22 }[area]);
+  const plural = (n, noun) => `${n} ${noun}${n === 1 ? '' : 's'}`;
+  function describe({ night, area, qty }) {
+    const n = NIGHTS[night], a = AREAS[area];
+    if (!n && !a) return 'Pick a night and where you watch to see the price.';
+    if (!a) return `${n.date}. Now choose where you watch.`;
+    if (!n) return `${plural(qty, a.noun)}. Now pick a night.`;
+    if (n.full) return `${plural(qty, a.noun)} on the ${n.date} waiting list. Nothing to pay unless seats come back.`;
+    return `${plural(qty, a.noun)}, ${n.date}, £${priceOf(area, night) * qty}`;
+  }
+  const label = ({ night, area, qty }) => (NIGHTS[night]?.full ? 'Join the waiting list' : `Hold ${plural(qty, area === 'centre' ? 'place' : 'seat')}`);
+
+  let qty = 2;
+  const read = () => ({ night: form.night.value, area: form.area.value, qty });
+  const sum = $('#sum'), submit = $('#submit'), swA = $('.sw-a', submit), swB = $('.sw-b', submit);
+  function setLabel(text) {
+    if (swA.textContent === text) return;
+    if (!env.motion) { swA.textContent = text; return; }
+    swB.textContent = text;
+    gsap.timeline({ onComplete: () => { swA.textContent = text; gsap.set([swA, swB], { clearProps: 'transform' }); } })
+      .to(swA, { yPercent: -115, duration: 0.4, ease: 'expo.inOut' }, 0)
+      .fromTo(swB, { yPercent: 115 }, { yPercent: 0, duration: 0.4, ease: 'expo.inOut' }, 0);
+  }
+  function update() {
+    const s = read(), text = describe(s);
+    const total = text.match(/£\d+$/);
+    sum.textContent = total ? text.slice(0, total.index) : text;
+    if (total) { const b = document.createElement('b'); b.textContent = total[0]; sum.append(b); }
+    setLabel(label(s));
+  }
+
+  // Seats stepper, 1 to 8
+  const qtyT = $('#qty-t'), qtyNote = $('#qty-note'), seatsInput = form.seats, steps = $$('[data-step]');
+  function setQty(n, dir) {
+    if (n < 1 || n > 8) { qtyNote.textContent = n > 8 ? '8 is the most per booking' : 'A booking needs at least 1 seat'; return; }
+    qty = n; seatsInput.value = n;
+    qtyOdo.set(n, { d: dur(0.5), dir });
+    qtyT.textContent = plural(n, 'seat');
+    steps[0].setAttribute('aria-disabled', String(n === 1));
+    steps[1].setAttribute('aria-disabled', String(n === 8));
+    qtyNote.textContent = n === 8 ? '8 is the most per booking' : '';
+    update();
+  }
+  steps.forEach((b) => b.addEventListener('click', () => { const dir = +b.dataset.step; setQty(qty + dir, dir); }));
+  setQty(2, 0);
+
+  // Seat zones on the stage follow the area radios
+  $$('.mini').forEach((m) => { const l = $('.mini-z', m).cloneNode(); l.setAttribute('class', 'mini-l'); l.setAttribute('pathLength', '1'); m.append(l); });
+  const zones = { centre: $('#z-centre'), rail: $('#z-rail'), tier: $('#z-tier') };
+  let zoneOn = null;
+  function showZone(key) {
+    const z = zones[key];
+    if (!z || z === zoneOn) return;
+    if (zoneOn) gsap.to(zoneOn, { opacity: 0, duration: dur(0.25), overwrite: true });
+    zoneOn = z;
+    gsap.set(z, { opacity: 1, overwrite: true });
+    gsap.fromTo($('.z-line', z), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: dur(0.6), ease: 'expo.out', autoRound: false });
+    gsap.timeline().fromTo($('.z-fill', z), { fillOpacity: 0 }, { fillOpacity: 1, duration: dur(0.4), ease: 'expo.out' })
+      .to($('.z-fill', z), { fillOpacity: 0.85, duration: dur(0.4), ease: 'power2.inOut' });
+  }
+
+  const errors = { night: $('#night-err'), area: $('#area-err'), email: $('#email-err') };
+  const ICON = '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 4.5v4.5M8 11v.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+  function setError(key, msg) {
+    const p = errors[key], span = p.firstElementChild;
+    if (msg) { span.innerHTML = ICON; span.append(msg); } else span.textContent = '';
+    p.classList.toggle('is-on', !!msg);
+    if (key === 'email') form.email.setAttribute('aria-invalid', String(!!msg));
+  }
+
+  form.addEventListener('change', (e) => {
+    const t = e.target;
+    if (t.name === 'night' || t.name === 'area') {
+      setError(t.name, '');
+      const row = t.closest('.row'), badge = $('.badge', row);
+      if (env.motion && badge) gsap.fromTo(badge, { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.25, ease: 'back.out(2)', clearProps: 'all' });
+      if (env.motion && !badge) { // the row's own plan lights the same way as the stage, so phones see it where they are looking
+        gsap.fromTo($('.mini-l', row), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.6, ease: 'expo.out', autoRound: false, clearProps: 'strokeDashoffset' });
+        gsap.fromTo($('.mini-z', row), { fillOpacity: 0 }, { fillOpacity: 1, duration: 0.4, delay: 0.15, ease: 'expo.out', clearProps: 'fillOpacity' });
+      }
+      if (t.name === 'area') showZone(t.value);
+    }
+    update();
+  });
+  form.email.addEventListener('input', () => { if (form.email.getAttribute('aria-invalid') === 'true' && form.email.value.includes('@')) setError('email', ''); });
+
+  const confirmD = $('#confirm');
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const s = read(), email = form.email.value.trim();
+    const bad = [];
+    setError('night', s.night ? '' : (bad.push(form.night[0]), 'Pick a night to book.'));
+    setError('area', s.area ? '' : (bad.push(form.area[0]), 'Choose where you watch.'));
+    const okMail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    setError('email', okMail ? '' : (bad.push(form.email), 'Enter an email with an @, like name@example.com.'));
+    if (bad.length) {
+      const first = bad[0];
+      go(first.closest('section').id);
+      first.focus({ preventScroll: true });
+      return;
+    }
+    const n = NIGHTS[s.night], a = AREAS[s.area], what = plural(s.qty, a.noun);
+    let code, cap;
+    if (n.full) {
+      $('#confirm-h').textContent = "You're on the waiting list";
+      code = '214'; cap = 'Your place on the list';
+      $('#confirm-a').textContent = `You're number 214 on the waiting list for ${n.date}, for ${what}.`;
+      $('#confirm-b').textContent = `Held under ${email}. Returned seats go down the list in order; ask at the box office on Tenter Lane from 18:00 on the night.`;
+    } else {
+      $('#confirm-h').textContent = 'Seats held';
+      code = `HB6-${s.night}-${String(Math.floor(1000 + Math.random() * 9000))}`; cap = 'Booking reference';
+      $('#confirm-a').textContent = `${what[0].toUpperCase() + what.slice(1)} held for ${n.date}. £${priceOf(s.area, s.night) * s.qty} to pay.`;
+      $('#confirm-b').textContent = `Held under ${email}. Show this reference at the box office on Tenter Lane before ${n.collect} to pay and collect.`;
+    }
+    $('#ref-t').textContent = `${cap}: ${code}`;
+    const out = $('#ref-odo'); out.textContent = '';
+    const rolls = [];
+    [...code].forEach((ch, i) => {
+      const span = document.createElement('span');
+      out.append(span);
+      const rolls1 = /\d/.test(ch) && !(code.startsWith('HB6-') && i < 4); // the event prefix stays still
+      if (rolls1) { span.className = 'odo'; rolls.push([odometer(span, 1, 0), +ch]); } else span.textContent = ch;
+    });
+    $('#ref-cap').textContent = cap;
+    openDialog(confirmD);
+    rolls.forEach(([o, v], i) => gsap.delayedCall(dur(0.15 + i * 0.04), () => o.set(v, { d: dur(0.8) })));
+  });
+
+  /* ---------- Everything that depends on motion, pointer and width ---------- */
+  const stage = $('#stage'), tilt = $('.tilt'), board = $('#board'), tag = $('.tag'), tagT = $('.tag-t');
+  const st = { c: C0 }, roll = { v: 0 };
+  let introState = 'idle'; // idle -> running -> done
+
+  const mm = gsap.matchMedia();
+  mm.add({
+    motion: '(prefers-reduced-motion: no-preference)',
+    reduce: '(prefers-reduced-motion: reduce)',
+    fine: '(hover: hover) and (pointer: fine)',
+    wide: '(min-width: 992px)'
+  }, (ctx) => {
+    const { motion, fine, wide } = ctx.conditions;
+    env.motion = motion;
+    const offs = [];
+    const on = (el, type, fn, opts) => { el.addEventListener(type, fn, opts); offs.push(() => el.removeEventListener(type, fn, opts)); };
+    buildSheet();
+
+    // S5 section spy and S6 header backdrop run in every mode
+    const spy = [['nights', $$('[href="#nights"]').filter((a) => !a.classList.contains('btn'))], ['getting-here', $$('[href="#getting-here"]')]];
+    spy.forEach(([id, links]) => ScrollTrigger.create({
+      trigger: '#' + id, start: 'top 50%', end: 'bottom 50%',
+      onToggle: (self) => links.forEach((l) => (self.isActive ? l.setAttribute('aria-current', 'location') : l.removeAttribute('aria-current')))
+    }));
+    const hdr = () => header.classList.toggle('is-scrolled', scrollY > 24);
+    ScrollTrigger.create({ start: 0, end: 'max', onUpdate: hdr, onRefresh: hdr });
+    hdr();
+
+    // P1 metre marker: the nearest metre of the measurement line to the pointer, projected through the tilt
+    function nearest(cx, cy) {
+      const fr = stage.getBoundingClientRect(), cs = getComputedStyle(tilt);
+      const m = cs.transform && cs.transform !== 'none' ? new DOMMatrix(cs.transform) : new DOMMatrix();
+      const [ox, oy] = cs.transformOrigin.split(' ').map(parseFloat);
+      const k = tilt.offsetWidth / 142, bx = fr.left + tilt.offsetLeft, by = fr.top + tilt.offsetTop;
+      let best = { d: Infinity };
+      metres.forEach((p, s) => {
+        const q = m.transformPoint(new DOMPoint((p.x + 71) * k - ox, (p.y + 50) * k - oy, 0, 1));
+        const x = bx + ox + q.x / q.w, y = by + oy + q.y / q.w, d = (x - cx) ** 2 + (y - cy) ** 2;
+        if (d < best.d) best = { d, s, x: x - fr.left, y: y - fr.top };
+      });
+      return best;
+    }
+    const tagX = gsap.quickTo(tag, 'x', { duration: dur(0.35), ease: 'power3.out' });
+    const tagY = gsap.quickTo(tag, 'y', { duration: dur(0.35), ease: 'power3.out' });
+    gsap.set(tag, { xPercent: -50, yPercent: -100 });
+    function showTag(e, jump) {
+      const n = nearest(e.clientX, e.clientY), to = (250 - n.s) % 250;
+      tagT.textContent = to ? `${to} m to the line` : 'On the line';
+      if (jump) { gsap.set(tag, { x: n.x, y: n.y }); tagX(n.x, n.x); tagY(n.y, n.y); } else { tagX(n.x); tagY(n.y); }
+      gsap.to(tag, { autoAlpha: 1, duration: dur(0.2), overwrite: 'auto' });
+    }
+    const hideTag = () => gsap.to(tag, { autoAlpha: 0, duration: dur(0.2), overwrite: 'auto' });
+    if (fine) {
+      let first = true;
+      on(tilt, 'pointerenter', () => (first = true));
+      on(tilt, 'pointermove', (e) => { if (e.pointerType === 'mouse') { showTag(e, first); first = false; } });
+      on(tilt, 'pointerleave', hideTag);
+    } else {
+      let timer;
+      on(tilt, 'pointerup', (e) => { showTag(e, true); timer?.kill(); timer = gsap.delayedCall(2.4, hideTag); });
+    }
+
+    if (!motion) {
+      // Reduced motion: final states, native scroll, parked riders, no loop
+      loader.remove();
+      introState = 'done';
+      gsap.set(board, { autoAlpha: 1 });
+      drawPair(st.c);
+      return () => offs.forEach((f) => f());
+    }
+
+    /* Lenis on GSAP's clock */
+    const lenis = new Lenis({ lerp: 0.1, smoothWheel: true, autoRaf: false });
+    env.lenis = lenis;
+    lenis.on('scroll', ScrollTrigger.update);
+    const raf = (time) => lenis.raf(time * 1000);
+    gsap.ticker.add(raf);
+    gsap.ticker.lagSmoothing(0);
+
+    /* The rider loop (S3): timeScale = rolling start x scroll-velocity coupling */
+    const LAP = parseFloat(getComputedStyle(root).getPropertyValue('--lap-time')) || 8.4;
+    let prevS = null, target = 1, speed = 1, inView = true;
+    const draw = () => {
+      const r = drawPair(st.c, speed);
+      const s = ((r.s % 250) + 250) % 250;
+      if (prevS !== null && s < prevS - 125) lapDone();
+      prevS = s;
+    };
+    const loop = gsap.to(st, { c: '+=2', duration: 4 * LAP, ease: 'none', repeat: -1, paused: true, onUpdate: draw });
+    draw();
+    // 500 px/s of scroll adds one lap speed, up to 5x (a 1.7 s lap)
+    ScrollTrigger.create({ start: 0, end: 'max', onUpdate: (self) => { target = Math.max(target, Math.min(1 + Math.abs(self.getVelocity()) / 500, 5)); } });
+    const couple = (time, dt) => {
+      const f = Math.min(dt, 100) / 16.667;
+      target = 1 + (target - 1) * Math.pow(0.9, f);
+      speed += (target - speed) * (1 - Math.pow(0.9, f));
+      loop.timeScale(Math.max(0.0001, roll.v * speed));
+    };
+    gsap.ticker.add(couple);
+    const sync = () => (inView && !document.hidden ? loop.play() : loop.pause());
+    // the stage is sticky on wide screens, so it stays in view for as long as the hero does
+    ScrollTrigger.create({ trigger: wide ? '.hero' : stage, start: 'top bottom', end: 'bottom top', onToggle: (self) => { inView = self.isActive; sync(); } });
+    on(document, 'visibilitychange', sync);
+
+    /* S1 stage tilt, wide screens only: roof gantry to rail while the nights pass, flat again to choose a seat */
+    if (wide) {
+      gsap.set(tilt, { transformPerspective: 760 });
+      gsap.set(board, { transformOrigin: '50% 100%' });
+      gsap.set('.riders', { z: 3 });
+      gsap.timeline({ scrollTrigger: { trigger: '#nights', start: 'clamp(top 80%)', endTrigger: '#book', end: 'top 35%', scrub: true } })
+        .fromTo(tilt, { rotateX: 0, scale: 1, yPercent: 0 }, { rotateX: 52, scale: 1.08, yPercent: 6, ease: 'none', duration: 1 })
+        .fromTo(board, { rotateX: 0, z: 0 }, { rotateX: -52, z: 2, ease: 'none', duration: 1 }, 0) // the board stands up in the infield
+        .to({}, { duration: 0.9 })
+        .to(tilt, { rotateX: 0, scale: 1, yPercent: 0, ease: 'none', duration: 0.8 })
+        .to(board, { rotateX: 0, z: 0, ease: 'none', duration: 0.8 }, '<');
+    }
+
+    /* S2 seats-left bars draw once to their real value */
+    const bars = $$('.bar i');
+    gsap.set(bars, { scaleX: 0 });
+    ScrollTrigger.batch(bars, {
+      start: 'top 85%', once: true,
+      onEnter: (els) => gsap.to(els, { scaleX: (i, el) => parseFloat(el.style.getPropertyValue('--v')), duration: 1, ease: 'expo.out', stagger: 0.06, delay: introState === 'done' ? 0 : 1.4 })
+    });
+
+    /* S4 TX1 on the section headings */
+    $$('.rail .h2').forEach((h) => SplitText.create(h, {
+      type: 'lines', mask: 'lines', linesClass: 'line', autoSplit: true,
+      onSplit: (self) => gsap.from(self.lines, { yPercent: 110, duration: 1, ease: 'expo.out', stagger: 0.08, scrollTrigger: { trigger: h, start: 'clamp(top 85%)', once: true } })
+    }));
+
+    /* Load sequence (runs once per visit) */
+    if (introState === 'idle') {
+      introState = 'running';
+      lenis.stop();
+      const covered = [main, header, $('.skip')];
+      covered.forEach((el) => (el.inert = true)); // nothing behind the curtain takes focus
+      ctx.add('uncover', () => covered.forEach((el) => (el.inert = false)));
+      const h1 = $('h1'), lede = $('.lede'), ctas = $$('.ctas > *'), chrome = [$('.mark'), ...$$('.nav li'), $('.top-book'), menuBtn].filter((el) => el.offsetParent);
+      const lines = $$('.trk'), toGoEl = $('.to-go');
+      gsap.set(h1, { autoAlpha: 0 });
+      gsap.set(lede, { autoAlpha: 0, y: 12 });
+      gsap.set(ctas, { autoAlpha: 0, scale: 0.96 });
+      gsap.set(chrome, { autoAlpha: 0, y: -8 });
+      gsap.set(lines, { strokeDashoffset: 1 });
+      gsap.set(toGoEl, { yPercent: 115 });
+      gsap.set(board, { autoAlpha: 0 });
+      let h1Lines = [];
+      SplitText.create(h1, {
+        type: 'lines', mask: 'lines', linesClass: 'line', autoSplit: true,
+        // a re-split after the intro has started never hides the headline again
+        onSplit: (self) => { h1Lines = self.lines; gsap.set(h1, { autoAlpha: 1 }); gsap.set(self.lines, { yPercent: introState === 'running' ? 110 : 0 }); }
+      });
+
+      ctx.add('intro', () => {
+        const lb = $('.loader .board'), r = board.getBoundingClientRect();
+        introState = 'go';
+        const tl = gsap.timeline({ onComplete: () => (introState = 'done') });
+        if (r.bottom > 0 && r.top < innerHeight) tl.add(Flip.fit(lb, board, { duration: 0.9, ease: 'expo.inOut', scale: true }), 0);
+        else tl.to(lb, { autoAlpha: 0, duration: 0.3 }, 0);
+        tl.to('.hair', { autoAlpha: 0, duration: 0.3 }, 0)
+          .fromTo('.loader-bg', { clipPath: 'inset(0% 0% 0% 0%)' }, { clipPath: 'inset(0% 0% 100% 0%)', duration: 0.8, ease: 'expo.inOut' }, 0.1)
+          .add(() => { gsap.set(board, { autoAlpha: 1 }); loader.remove(); ctx.uncover(); }, 0.9)
+          .to(lines, { strokeDashoffset: 0, duration: 0.9, ease: 'expo.out', stagger: 0.12, autoRound: false }, 0.3)
+          .fromTo(h1Lines, { yPercent: 110 }, { yPercent: 0, duration: 1, ease: 'expo.out', stagger: 0.08 }, 0.35)
+          .to(lede, { autoAlpha: 1, y: 0, duration: 0.8, ease: 'expo.out' }, 0.6)
+          .to(ctas, { autoAlpha: 1, scale: 1, duration: 0.6, ease: 'expo.out', stagger: 0.06 }, 0.75)
+          .to(chrome, { autoAlpha: 1, y: 0, duration: 0.6, ease: 'expo.out', stagger: 0.05 }, 0.8)
+          .add(() => lenis.start(), 1)
+          .to(toGoEl, { yPercent: 0, duration: 0.6, ease: 'expo.out' }, 1)
+          .to(roll, { v: 1, duration: 1.6, ease: 'power2.in' }, 1);
+      });
+
+      // LD1: the board counts real progress up to 200 laps. Fonts 0.6, the sampled track 0.2, window load 0.2.
+      const t0 = performance.now(), p = { v: 0 }, hair = $('.hair');
+      let got = 0, finished = false;
+      const render = () => { loadOdo.set(Math.round(p.v * 200)); hair.style.setProperty('--p', p.v); };
+      ctx.add('finish', () => {
+        if (finished) return;
+        finished = true; clearTimeout(cap);
+        if (performance.now() - t0 < 300) { // already ready: no count, straight to the hand-off
+          // a reveal, not fake progress: the columns roll 000 to 200 once
+          gsap.killTweensOf(p); hair.style.setProperty('--p', 1); loadOdo.set(200, { d: 0.5, stagger: 0.04 });
+          setTimeout(() => ctx.intro(), (0.5 + 2 * 0.04 + 0.1) * 1000); // a timer, not the ticker: it also fires when frames are throttled
+        } else {
+          gsap.to(p, { v: 1, duration: 0.4, ease: 'power2.out', overwrite: true, onUpdate: render, onComplete: () => setTimeout(() => ctx.intro(), 100) });
+        }
+      });
+      const add = (w) => {
+        got += w;
+        if (got > 0.999) ctx.finish();
+        else gsap.to(p, { v: got, duration: 0.4, ease: 'power2.out', overwrite: true, onUpdate: render });
+      };
+      const cap = setTimeout(() => ctx.finish(), 6000);
+      add(0.2); // the 250 metre points were sampled synchronously above
+      document.fonts.ready.then(() => add(0.6));
+      if (document.readyState === 'complete') add(0.2); else addEventListener('load', () => add(0.2), { once: true });
+    } else {
+      roll.v = 1;
+    }
+    document.fonts.ready.then(() => ScrollTrigger.refresh());
+
+    return () => {
+      offs.forEach((f) => f());
+      gsap.ticker.remove(raf); gsap.ticker.remove(couple);
+      gsap.ticker.lagSmoothing(500, 33);
+      lenis.destroy(); env.lenis = null;
+      if (sheetOpen) { sheetOpen = false; root.classList.remove('menu-open'); menuBtn.setAttribute('aria-expanded', 'false'); sheet.inert = true; behindSheet().forEach((el) => (el.inert = false)); }
+      [main, header, $('.skip')].forEach((el) => (el.inert = false));
+      if (introState !== 'done') { // a media query flipped mid-intro: land on final states
+        introState = 'done'; roll.v = 1; loader.remove();
+        gsap.set([board, '.lede', '.ctas > *', '.mark', '.nav li', '.top-book', '.menu-btn', 'h1', 'h1 .line'], { clearProps: 'all' });
+      }
+    };
+  });
+
+  function runSelfTest() {
+    const ok = (c, m) => { if (!c) throw new Error('SELFTEST FAIL: ' + m); };
+    const near = (a, b, e = 1e-6) => Math.abs(a - b) < e;
+    ok(near(at(0).x, FINISH) && near(at(250).x, FINISH) && near(at(0).y, R), 'the lap starts and ends on the finish line');
+    let len = 0;
+    for (let s = 1; s <= 250; s++) len += Math.hypot(at(s).x - at(s - 1).x, at(s).y - at(s - 1).y);
+    ok(near(len, 250, 0.2), 'the measurement line is 250 m');
+    const [a0, b0] = pair(1 - 1e-9), [a1, b1] = pair(1);
+    ok(near(a0.s % 250, a1.s % 250, 1e-3) && near(b0.s % 250, b1.s % 250, 1e-3) && near(a0.d, a1.d, 1e-3) && near(b0.d, b1.d, 1e-3), 'riders are continuous through the sling');
+    ok(near(racer(1).s % 250, rester(1).s % 250) && near(racer(1).s % 250, SLING), 'the pair meets at the sling mark');
+    ok(near(racer(C0).s % 250, 0.5, 0.05), 'the rolling start is at the finish line');
+    ok(priceOf('centre', '1311') === 40 && priceOf('centre', '1011') === 34 && priceOf('tier', '1511') === 22, 'prices');
+    ok(describe({ night: '1311', area: 'rail', qty: 2 }) === '2 banking rail seats, Fri 13 Nov, £96', 'summary line');
+    ok(label({ night: '1411', area: 'rail', qty: 2 }) === 'Join the waiting list' && label({ night: '1011', area: 'tier', qty: 1 }) === 'Hold 1 seat', 'submit label');
+    console.log('SELFTEST PASS');
+  }
+  if (location.hash === '#selftest') runSelfTest();
+})();
+</script>
+</body>
+</html>
