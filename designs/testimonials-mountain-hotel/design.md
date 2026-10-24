@@ -7,7 +7,7 @@ mode: light
 fonts:
   - Ubuntu Sans (Google Fonts, variable wdth 75-100 and wght 400-700)
   - Playwrite NL, Playwrite GB S, Playwrite US Trad, Playwrite CL, Playwrite DE Grund (Google Fonts, variable wght 100-400, used at 350)
-js: Smooth-scrolls the page, stacks the guest-book pages with depth as you scroll, sweeps Marta's highlighter under each question and its answer, follows the pointer across the panorama board, and adds your own handwritten page from the form.
+js: Smooth-scrolls the page, stacks the guest-book pages with depth as you scroll, sweeps Marta's highlighter under each question and its answer, names the nearest peak when you click or tap the panorama board, and adds your own handwritten page from the form.
 libraries: [GSAP 3.15 (ScrollTrigger, SplitText), Lenis 1.3.26]
 tags: [testimonials, hotel, guest-book, handwriting, highlighter, sticky-stack, form, scroll-scrub, detailed]
 use_when:
@@ -22,15 +22,15 @@ avoid_when:
 
 ## Why it works
 
-**The bold idea: the pink mark finds the answer.** Before people book, they phone with the same five questions. The rail lists those questions; the stack holds five guest-book pages in date order. As each page is laid onto the stack (the first one as part of the page load), Marta's highlighter sweeps under the question in the sticky rail and, 0.15 s later, sweeps in the same direction, on the same `power2.inOut` curve, under the guest's handwritten line that answers it. One stroke in two places links a question the reader has to the guest who answered it. The answer mark stays (it is ink); the rail mark wipes out to the right when the next page lands. Below 1024 px, where the rail has scrolled away, the first half of the stroke lands on the page's own printed note "Marked for: ...", set at the top of the page so the question comes before the answer. The marker pink is used for nothing else on the page.
+**The bold idea: the pink mark finds the answer.** Before people book, they phone with the same five questions. The rail lists those questions; the stack holds five guest-book pages in date order. As each page is laid onto the stack (the first one as part of the page load), Marta's highlighter sweeps under the question in the sticky rail and, 0.15 s later, sweeps in the same direction, on the same `power2.inOut` curve, under the guest's handwritten line that answers it. One stroke in two places links a question the reader has to the guest who answered it. The answer mark stays (it is ink); the rail mark wipes out to the right when the next page lands. Both halves move at one pen speed (about 700 px/s, duration clamped to 0.45-1.1 s from the phrase's width), so a long answer simply takes longer than its short question, as one highlighter would. Below 1024 px, where the rail has scrolled away, the rail's half of the stroke moves onto the page's own printed note "Marked for: ...", set at the top of the page, so the order stays question then answer, as on desktop. This deliberately differs from the brief's wording ("the second half lands on the note"); keep the order. The marker pink is used for nothing else on the page.
 
 - **TX5 is justified here, not decoration.** Default 7 warns against accenting a word. The mark never touches the heading: it sits on the one phrase in a guest's entry that answers a question the reader is asking, and on that question in the rail, which is what a hotel owner's highlighter in a real guest book does.
 - **Five hands, one family.** Each page is set in the Playwrite school-handwriting model of the country the guest wrote "From": the Dutch family in Playwrite NL, the Kendal couple in GB S, the Minnesotans in US Trad, the translator from Valparaíso in CL, the guest from Freiburg in DE Grund. Guest books are many hands; that is content truth, not mood. The guests also write the date their own way (14-2-2026, 3rd July 2026, Aug 22, 2026, 9/9/2026, 11.10.2026); the house stamp gives every page the same printed date. Playwrite CH does not exist, so the hotel is in Tyrol rather than Graubünden, and no unused variant is loaded.
 - **One printed voice.** Everything printed (hotel line, H2, intro, rail, column heads, peak labels, form labels, button, status) is Ubuntu Sans: condensed (wdth 78, 600) for the H2 and the book's column heads, normal width (400 to 500) for reading text.
 - **The book's own structure.** Every page carries the same printed column heads (Date, Name, From, Room, Remarks) in a `dl`, the handwriting sits on ruled lines drawn at the baseline (every Playwrite hand puts its baseline at 0.75 of a 1.8 line box, so one ruling fits all five), and the blank last page is the form, with the column heads as its labels.
 - **Stacked, not pinned.** Pages are `position: sticky`, offset 1.5 rem (0.75 rem on phones) so covered pages leave edges like a closed book. A covered page scales to 0.955 and falls into the same blue snow shade as the ground, only while the next page is actually over it, so the page being read stays white.
-- **A quiet panorama board.** The hotel line sits over a Panoramatafel of the view from the terrace: snow-white land under the blue sky, five fictional peaks, and each name and altitude printed above its summit on a slanted leader line, at every width (on phones "Hinterer Ferner" takes two lines). On a fine pointer a 1 px sighting line follows the pointer; on a peak a small label at its foot names it. On touch, a tap snaps the line to the nearest peak and the label fades after 3 s. Nothing is hover-only (all names are printed and in the drawing's `aria-label`).
-- **Your page answers your action.** A valid submit writes a new page dated today (the visitor's clock, `en-GB`, d MMMM yyyy) in the hand of the chosen country, inserts it before the blank page, glides to it, and the green-black house stamp lands on it: the only stamp that moves. It carries no pink mark, because Marta marks a line when she reads it.
+- **A quiet panorama board.** The hotel line sits over a Panoramatafel of the view from the terrace: snow-white land under the blue sky, five fictional peaks, and each name and altitude printed above its summit on a slanted leader line, at every width (on phones "Hinterer Ferner" takes two lines). The board is quiet scenery (150 px tall from 1024 px, so the whole rail fits above the fold at 1440x1000): nothing follows the pointer. A click or tap snaps a 1 px sighting line to the nearest peak, drawn from under the printed labels down to the summit, and a small label at its foot names it; it fades after 3 s. Nothing is hover-only (all names are printed and in the drawing's `aria-label`).
+- **Your page answers your action.** A valid submit writes a new page dated today (the visitor's clock) in the hand of the chosen country, with the date written the way that country's guests write it (NL 24-10-2026, DE 24.10.2026, CL 24/10/2026, US Oct 24, 2026, GB 24 Oct 2026; the Date field on the blank page follows the From select), so it never wraps in the head row. The status line gives the date in full, `en-GB` d MMMM yyyy. The page is inserted before the blank page; the script glides to it, and the green-black house stamp lands on it: the only stamp that moves. It carries no pink mark, because Marta marks a line when she reads it.
 
 **Palette (six core colours, one meaning each).** `--ground` #CBD7EE is snow in the larches' shade at 4 pm: blue, not grey (delta-E 12.8 to 15.3 against the collection's pale cool greys #E3E8E5, #E3E9EB, #EEF3F4). `--paper` #FBFBF9 neutral white. `--slate` #22303A everything printed (13.1:1 on paper, 9.3:1 on ground). `--ink` #3438B8 Pelikan-style violet-leaning school blue for handwriting, focus and the submit fill (8.4:1 on paper). `--stamp` #2E4B3C green-black stamp-pad ink, the house stamp only (9.3:1), kept off the pink and violet families so pink has one meaning. `--marker` #F7B2CF cool Alpenrose pink, the Tyrolean flower, Marta's highlighter only (ink on it 5.1:1, slate 7.9:1).
 
@@ -44,13 +44,15 @@ avoid_when:
 
 ## Do not touch
 
-- **The two places of one stroke.** Rail question first, answer 0.15 s later, same direction and curve; the answer mark stays, the rail mark wipes out right; the "Marked for" note takes the question's half below 1024 px. Pink is used for nothing else, including hover (rail hover is a slate underline).
+- **The two places of one stroke.** Rail question first, answer 0.15 s later, same direction, curve and pen speed (duration from width, never passed by the callers); the answer mark stays, the rail mark wipes out right; the "Marked for" note takes the question's half below 1024 px, first, so the question still comes before the answer. Pink is used for nothing else, including hover (rail hover is a slate underline).
 - **Mark geometry.** `--mk-up` and `--mk-down` (the band's reach above and below the baseline) drive both the static mark (a thick `text-decoration` underline, used without JavaScript and under reduced motion) and the animated per-word bands, so both look the same. The script measures each phrase's baseline, so the bands fit every hand.
 - **The ruling.** Handwriting uses line-height 1.8 and the ruling is drawn at 0.75lh. Change one and the lines miss the baselines.
 - **Sentinels.** Every page is preceded by a zero-height `.sent` in flow. All ScrollTriggers and anchor targets use the sentinel, never the sticky page, because ScrollTrigger mis-measures stuck elements after a refresh. Inserted pages get one too.
+- **Stamp at the foot.** Pages are flex columns and `.foot` takes `margin-top: auto`, so the stamp always sits at the bottom of a page. Your own page, stretched to cover the stack, grows its Remarks cell so the ruling runs on to the foot: unused lines in the book, not blank paper.
+- **Head-row grid.** From a 560 px page: `max-content fit-content(45%) minmax(0, 1fr) 3.5rem` (Date, Name, From, Room), so dates and names keep their written width and only an unusually long place wraps.
 - **Covered pages show only edges.** Each page's `min-height` is the running maximum of the pages before it (`--min`, set by `fitPages`), so a short page, such as the visitor's own, covers a longer one and no ghost bottom or stamp shows below it.
 - **Sticky tops that fit.** A page's top is `min(stack offset, 100svh - its height - 1rem)`, with the height in `--h` from a ResizeObserver, so no page is covered before its bottom has been on screen; the rail uses the same rule. Below 640 px of viewport height the pages do not stick at all. An anchor to a page taller than the screen arrives with its head row at the top, not at its (negative) sticky top. Without the script `--h` falls back to 0 and the plain stack offsets apply.
-- **Accessibility.** The section is labelled by the H2; the rail is a `nav`; each page is an `article` labelled by its handwritten name (`h3`) with `tabindex="-1"` so anchors move focus to it (ring: 2 px ink, 3 px offset). Marked phrases are split with `aria: 'none'` into plain spans, so each phrase still reads as one string; bands are `aria-hidden`. The stamp and the sighting line are `aria-hidden`; peak names are printed and in the drawing's `aria-label`. Form labels are the printed column heads; errors use `aria-invalid` and `aria-describedby`, appear without apology, and focus moves to the first invalid field. The character counter only speaks at 40 and 0 left.
+- **Accessibility.** The section is labelled by the H2; the rail is a `nav`; each page is an `article` labelled by its handwritten name (`h3`) with `tabindex="-1"` so anchors move focus to it (ring: 2 px ink, 3 px offset, the same on every focusable element). Marked phrases are split with `aria: 'none'` into plain spans, so each phrase still reads as one string; bands are `aria-hidden`. The stamp and the sighting line are `aria-hidden`; peak names are printed and in the drawing's `aria-label`. Form labels are the printed column heads; errors use `aria-invalid` and `aria-describedby`, appear without apology, and focus moves to the first invalid field. The character counter only speaks at 40 and 0 left.
 - **No dead ends.** Rail links and "Read your page" go to existing page ids and move focus (the form link focuses the Name field); the mailto opens with `target="_blank" rel="noopener"`; the form handles `submit` in script and answers with a new page and a status line linking to it. `#selftest` runs `runSelfTest` (validation, insertion, hand, status link).
 
 ## Adapting
@@ -61,28 +63,29 @@ Replace the five pages with real reviews that each answer one phone question, an
 
 If the product has no physical book, keep the structure (questions rail, stacked answers, one linking mark) and change the page furniture (column heads, ruling, stamp).
 
-**Retiming or removing motion.** CSS durations and easings are tokens (`--dur-*`, `--ease-*`); GSAP timings sit inline in the script: `expo.out` for every entrance and state change, `power2.inOut` for the two wipes, `none` for the scrub. To drop a moment, delete its block: the load timeline (`loadSequence`), the depth scrub (the `motion && tall` loop in `buildStack`), the answer marks (the `motion` loop), the rail spy (the `wide` loop), or the sighting line (`sighting`). The page stays complete without any of them: marks fall back to static, anchors still move focus. Never remove the reduced-motion branch or the `html.motion` guard (the only class the CSS keys motion states on).
+**Retiming or removing motion.** CSS durations and easings are tokens (`--dur-*`, `--ease-*`); GSAP timings sit inline in the script: `expo.out` for every entrance and state change, `power2.inOut` for the two wipes, `none` for the scrub. To drop a moment, delete its block: the load timeline (`loadSequence`), the depth scrub (the `motion && tall` loop in `buildStack`), the answer marks (the `motion` loop), the rail spy (the `wide` loop), or the board's click-to-sight (`sighting`). The page stays complete without any of them: marks fall back to static, anchors still move focus. Never remove the reduced-motion branch or the `html.motion` guard (the only class the CSS keys motion states on).
 
 | Token | Role |
 |---|---|
 | `--ground` | Section field; also the shade a covered page falls into |
 | `--paper` | Guest-book page |
 | `--slate` | All printed text and the panorama line |
-| `--ink` | Handwriting, focus ring, field focus rule, submit fill, the rail's "Write your own page" action |
+| `--ink` | Handwriting, focus ring, field focus rule, submit fill, the rail's "Add your page" action (and its resting rule) |
 | `--stamp` | The house stamp only |
 | `--marker` | Marta's highlighter only |
-| `--slate-soft` | Printed column heads, field rules, peak leader lines (6.5:1 on paper, 4.6:1 on ground) |
+| `--slate-soft` | Printed column heads, field rules, peak leader lines, the 1 px resting rule under rail and mail links (6.5:1 on paper, 4.6:1 on ground) |
 | `--rule` | Ruling under handwriting (decorative, never a control boundary) |
 | `--shade` / `--shade-max` | Tint and strength of a covered page |
 | `--font-print` | Ubuntu Sans with system fallbacks |
 | `--hand-nl` `--hand-gb` `--hand-us` `--hand-cl` `--hand-de` | The five Playwrite hands; each page sets `--hand` to one |
 | `--wdth-cond` | Condensed width (78%) for the H2, column heads and labels |
+| `--t-2xs` | 13 px: peak labels below 380 px only, so five names fit at 320 px |
 | `--t-xs` to `--t-xl` | Printed scale on a 17 px root: 15, 17, 18, 22 px, H2 clamp(47-77 px) |
 | `--t-hand` / `--t-hand-sm` / `--lh-hand` / `--hand-wght` | Remarks size clamp(20-24 px), head-row values 18 px, line-height 1.8, weight 350 |
 | `--s-1` to `--s-9` | Spacing 4 to 119 px on a 17 px root |
 | `--gutter` / `--max` / `--page-pad` | Side padding (16 px to 2.5 rem), max width 76 rem, page padding |
 | `--stack-top` / `--stack-step` / `--stack-gap` | Where pages stick, the visible edge per page, space between pages in flow |
-| `--stamp-size` / `--board-h` | Stamp diameter (80/104 px), panorama board height, labels included (150/180/210 px at 0/600/1024 px) |
+| `--stamp-size` / `--board-h` | Stamp diameter (80/104 px), panorama board height, labels included (150/180/150 px at 0/600/1024 px) |
 | `--mk-up` / `--mk-down` | Highlighter reach above and below the baseline |
 | `--ease-out` / `--ease-under` | expo.out; the underline curve cubic-bezier(.35,0,0,1) |
 | `--dur-under` `--dur-hover` `--dur-rule` `--dur-fill-in` `--dur-fill-out` `--dur-press` `--dur-release` `--dur-err` | .45, .2, .3, .35, .25, .12, .4, .25 s |
@@ -95,18 +98,16 @@ Everything runs inside one `gsap.matchMedia` (motion, fine, wide at 1024 px, tal
 |---|---|---|---|---|
 | Hotel line rises 6 px | LD8 | Load, t 0 | 0.4 s expo.out | Static |
 | Panorama opens from the left while the drawing settles from 1.12 | MD1 | Load, t 0.1 | 1.6 s expo.out, shared; clip cleared | Visible |
-| Peak labels appear | LD8 | Load, t 0.9 | 0.4 s, stagger 0.06 | Visible |
+| Peak labels and their leader lines appear together | LD8 | Load, t 0.9 | 0.4 s, stagger 0.06 | Visible |
 | H2 lines rise from their masks | TX1 | Fonts ready (1.5 s cap), t 0.35 | 1.0 s expo.out, stagger 0.08, autoSplit | Not split |
-| Intro fades in | LD8 | Load, t 0.6 | 0.6 s | Visible |
-| Rail questions, "Write your own page" and the mail line rise from masks (links stay focusable) | TX1 (per item) | Load, t 0.75 | 0.7 s expo.out, from yPercent 140 (clear of the mask's padding), stagger 0.06 | Static |
-| The first page is laid onto the book (if it is on screen) | Page landing | Load, t 0.45 | y 56 and rotation 1.5 deg to rest, 0.9 s expo.out, transform only; the first stroke waits for it (1.35 s) | Static |
-| **Signature**: green sweeps under the rail question, then under the guest's answer | TX5 (per-word bands driven by one progress tween) with NV6 spy | As the page lands: its sentinel 120 px above where it sticks (answer `once`); the first page at 60% of the viewport, waiting for its landing | Rail 0.65 s, answer 0.8 s at +0.15 s, power2.inOut | Static marks; current question marked instantly |
-| Below 1024 px: "Marked for" question, then the answer | TX5 | Sentinel at 45%, once (note at the page top and the answer both on screen) | 0.65 s, answer at +0.15 s | Static marks |
+| The first page is laid onto the book (if it is on screen) | Page landing | Load, t 0.25 | y 56 and rotation 1.5 deg to rest, 0.8 s expo.out, transform only; the first stroke waits for it (1.05 s) and is the last thing that moves | Static |
+| **Signature**: pink sweeps under the rail question, then under the guest's answer | TX5 (per-word bands driven by one progress tween) with NV6 spy | As the page lands: its sentinel 120 px above where it sticks (answer `once`); the first page at 60% of the viewport, waiting for its landing | One pen speed: width / 700 px/s, clamped 0.45-1.1 s; answer at +0.15 s; power2.inOut | Static marks; current question marked instantly |
+| Below 1024 px: "Marked for" question, then the answer | TX5 | Sentinel at 45%, once (note at the page top and the answer both on screen) | Same pen speed, answer at +0.15 s | Static marks |
 | Rail mark leaves to the right, resets invisibly | HV3 reset | Next page becomes current | 0.4 s power2.inOut | Instant |
 | Covered page scales to 0.955 and falls into the snow shade | SC6 | Scrub from the next page's first overlap to where it sticks | ease none | Pages stack, no scale or shade |
-| Rail and mail underline enters left, leaves right | HV2 | Hover, focus-visible; persistent on the current item and the mail link on touch | 0.45 s cubic-bezier(.35,0,0,1) | Instant; mail underline always shown |
+| Rail and mail underline enters left, leaves right, over a 1 px resting rule | HV2 | Hover (fine pointer), focus-visible | 0.45 s cubic-bezier(.35,0,0,1) | Instant; mail underline always shown |
 | Anchors glide, then focus moves to the page (or the Name field) | NV6 | Click on any in-page link | min(1.3, 0.65 + distance/4000) s | Jump plus focus |
-| Sighting line follows the pointer; on a peak its name rises in a masked label | CU1 (state follower, native cursor kept) | Pointer over the board (fine); a tap snaps to the nearest peak (touch) | quickTo 0.35 s power3.out; label 0.25 s expo.out; fade 0.2 s | Off |
+| Sighting line snaps to the nearest peak; its name rises in a masked label | CU1, reduced to a click response (native cursor kept) | Click or tap on the board; fades after 3 s | quickTo 0.35 s power3.out; label 0.25 s expo.out; fade 0.2 s | Off |
 | Field rule darkens; an ink rule draws from the left on focus | SC16 as a focus response | Hover (fine pointer), focus | 0.2 s; 0.3 s expo.out | Instant |
 | Name, Remarks and Date cross-fade into the chosen country's hand | State change | From select change | 0.1 s out, 0.1 s in | Instant swap |
 | Error rows open under the fields | MI4 | Invalid submit | 0.25 s grid-template-rows | Instant |
@@ -114,4 +115,4 @@ Everything runs inside one `gsap.matchMedia` (motion, fine, wide at 1024 px, tal
 | Button press and release | MI1 | `:active` | 0.12 s press to 0.97, 0.4 s expo.out release | No scale |
 | Your page is inserted, the stack rebuilds, the page glides into place and the house stamp lands | I7 (motion answers an action) | Valid submit | Scroll 1.0 s; stamp 1.18 to 1, -14 deg to its angle, 0.35 s expo.out | Inserted, instant jump, static stamp |
 
-Hover effects apply only on `(hover: hover) and (pointer: fine)`; on touch, `:active`, focus and the persistent underlines carry the response: the mail link fully, the questions as a quiet resting underline (35% opacity) that the current question drops, so it carries only its pink mark.
+Hover effects apply only on `(hover: hover) and (pointer: fine)`. On every pointer, rail and mail links carry a 1 px resting rule (`--slate-soft`, 4.6:1 on the ground; ink under "Add your page") so they read as links at rest; the current question drops it, so it carries only its pink mark. On touch, `:active`, focus and those resting rules carry the response. The page load no longer animates the intro or the rail: only the hotel line, the board, the H2 and the first page move before the first stroke.

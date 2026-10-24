@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ibarra+Real+Nova:ital,wght@0,400..700;1,400..700&display=swap">
 <style>
   :root {
+    color-scheme: dark;
     /* Colour: one concert night in Kestrel Hill School hall */
     --velvet: #3D1F24;      /* house lights at half: seat velvet; intro and interval */
     --pit: #22201E;         /* stage blacks, a warm charcoal serge; the stage at lights-down */
@@ -17,10 +18,10 @@
     --ledge: #4A453E;       /* the stand's lip along the bottom of each desk */
     --part: #ECEAE3;        /* printed-part white; all primary text */
     --horsehair: #BDB5A9;   /* bow-hair grey; secondary text, rules, idle borders */
-    --pencil: #82A6F2;      /* the conductor's blue pencil: active letter, timer, focus, primary fill */
+    --pencil: #82A6F2;      /* the conductor's blue pencil: active letter, timer, focus, button hover fills */
     --lamp: 242 178 92;     /* stand-lamp amber as RGB channels; used only inside the lamp glow */
     --rule-rest: rgb(189 181 169 / .6);   /* field rules and idle borders (3.5:1 on velvet) */
-    --rule-faint: rgb(189 181 169 / .28); /* desk edges and bracket hairlines (decorative) */
+    --rule-faint: rgb(189 181 169 / .28); /* desk edges (decorative) */
 
     /* Type: Ibarra Real Nova only; roles carried by weight, italic and size */
     --font: "Ibarra Real Nova", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
@@ -33,25 +34,32 @@
     --t-s: 1.125rem;        /* body and inputs, 400 */
     --t-xs: 1rem;           /* roles, labels, buttons */
     --t-xxs: .9375rem;      /* bracket labels, hint, errors */
+    --t-step: 1.375rem;     /* the stepper's minus and plus glyphs */
 
     /* Space */
     --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px;
-    --sp-6: 32px; --sp-7: 48px; --sp-8: 72px; --sp-9: 112px; --sp-10: 168px;
+    --sp-6: 32px; --sp-7: 48px; --sp-8: 72px; --sp-9: 112px;
     --gutter: clamp(16px, 4vw, 64px);
     --measure: 60ch;
 
     /* The arc (read by the script on resize) */
-    --arc-r: 820px;         /* distance from the podium (pivot) to the desk ledges */
-    --arc-step: 15deg;      /* angle between neighbouring desks; phones show the neighbours' stands, not their words */
-    --desk-w: min(34rem, 100% - 56px);
+    --arc-r: 700px;         /* distance from the podium (pivot) to the desk ledges */
+    --arc-step: 15deg;      /* angle between neighbouring desks; phones show the neighbours' stands and letters, not their words */
+    --desk-w: min(34rem, 100% - 96px);
     --lamp-room: 104px;     /* headroom above the desks for the lamp hood and glow */
-    --bloom: 60px;          /* how far the lamp's light spills up above the hood */
+    --bloom: 16px;          /* how far the lamp's light spills up above the hood */
+    --peek: 210px;          /* how much of the stage (stacked hoods and the top desk) shows under the intro */
 
     /* Shape */
     --r-desk: 3px;
     --ledge-h: 6px;
     --box: 44px;            /* buttons and every touch target */
     --mark-box: 44px;       /* rehearsal-letter boxes; 40px below 380px so seven fit inside the gutters */
+    --mark-sm: 30px;        /* the letter printed on each desk */
+    --hood-w: 72px; --hood-h: 13px;   /* stand-lamp hood */
+    --check: 22px;          /* checkbox */
+    --fol-dx: 18px; --fol-dy: 16px;   /* follower chip offset from the cursor */
+    --chip-pad: 6px 12px 7px;
 
     /* Motion: one family, expo */
     --ease-out: cubic-bezier(.16, 1, .3, 1);       /* expo.out */
@@ -72,6 +80,7 @@
     --d-tick: .3s;
   }
   @media (max-width: 379px) { :root { --mark-box: 40px; } }
+  @media (min-width: 600px) { :root { --desk-w: min(34rem, 100% - 56px); } }
   @media (min-width: 768px) { :root { --arc-r: 1250px; --arc-step: 15deg; } }
   @media (min-width: 992px) { :root { --arc-r: 1500px; --arc-step: 14deg; } }
 
@@ -100,12 +109,14 @@
   .band { position: relative; }
   .house, .concert { background: var(--velvet); }
   .stage-band { background: var(--pit); }
-  .backdrop { display: none; }
+  .backdrop, .houselights { display: none; }
   html.js .band { background: none; }
-  html.js .backdrop { display: block; position: fixed; inset: 0; z-index: -1; background: var(--pit); opacity: 0; pointer-events: none; }
+  html.js .backdrop, html.js .houselights { display: block; position: fixed; inset: 0; z-index: -1; background: var(--pit); opacity: 0; pointer-events: none; }
+  /* House lights still up as the page opens; they settle to half on load */
+  html.js .houselights { background: var(--part); opacity: .14; }
 
   /* ---------- House: intro ---------- */
-  .house { min-height: 82svh; display: flex; padding-block: var(--sp-8) var(--sp-8); }
+  .house { min-height: calc(100svh - var(--peek)); display: flex; padding-block: var(--sp-8) var(--sp-7); }
   .house__grid { display: flex; flex-direction: column; justify-content: space-between; gap: var(--sp-8); }
   .house__main { display: grid; gap: var(--sp-6); }
   .org { font-weight: 600; font-size: var(--t-xs); letter-spacing: .01em; }
@@ -113,7 +124,6 @@
     font-weight: 600; font-size: var(--t-xl); line-height: .98; letter-spacing: -.01em;
     max-width: 13ch; text-wrap: balance;
   }
-  .title .ln-mask { padding-bottom: .1em; margin-bottom: -.1em; }
   .lede { max-width: 34ch; margin-bottom: var(--sp-5); }
   @media (min-width: 992px) {
     .house__main { grid-template-columns: repeat(12, 1fr); column-gap: var(--sp-6); }
@@ -122,22 +132,19 @@
   }
 
   /* ---------- Links: HV2 sweep over a quiet rest rule ---------- */
-  .link {
-    position: relative; color: var(--part); text-decoration: none; font-weight: 600;
-    padding-bottom: .14em;
-    background: linear-gradient(currentColor, currentColor) 100% 100% / 0 .07em no-repeat;
-    transition: background-size var(--d-sweep) var(--ease-sweep);
+  .link { position: relative; color: var(--part); text-decoration: none; font-weight: 600; padding-bottom: .14em; }
+  .link::before, .link::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; }
+  /* HV2: the sweep enters from the left and leaves to the right */
+  .link::before {
+    z-index: 1; height: .07em; background: currentColor;
+    transform: scaleX(0); transform-origin: right; transition: transform var(--d-sweep) var(--ease-sweep);
   }
-  .link::after {
-    content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px;
-    background: var(--horsehair); transform: scaleX(var(--u, 1)); transform-origin: left;
-  }
-  @media (hover: hover) {
-    .link:hover { background-position: 0 100%; background-size: 100% .07em; }
-  }
-  .link:focus-visible { background-position: 0 100%; background-size: 100% .07em; outline-offset: 4px; }
+  .link::after { height: 1px; background: var(--horsehair); transform: scaleX(var(--u, 1)); transform-origin: left; }
+  @media (hover: hover) { .link:hover::before { transform: none; transform-origin: left; } }
+  .link:focus-visible::before { transform: none; transform-origin: left; }
+  .link:focus-visible { outline-offset: 4px; }
   html.js .org, html.js .lede, html.js .title { opacity: 0; }
-  html.js #skip { opacity: .35; }
+  html.js #skip { --u: 0; }
 
   /* ---------- The stage ---------- */
   .stage-band { padding-block: var(--sp-8) var(--sp-9); overflow-x: clip; }
@@ -145,7 +152,7 @@
   html.js .stage-band { clip-path: inset(-120px 0 0 0); }
   /* The stage front: a lip at the clip line, so anything cut there ends on a real edge */
   html.js .stage-band::after { content: ""; position: absolute; z-index: 45; left: 0; right: 0; bottom: 0; height: var(--ledge-h); background: var(--ledge); }
-  .stage { position: relative; }
+  .stage { position: relative; padding-bottom: var(--sp-3); }
   .stage:focus-visible { outline: none; }
   /* Inset focus ring drawn above the desks, which would otherwise cover an outline */
   .stage::after { content: ""; position: absolute; inset: 0; z-index: 40; pointer-events: none; border: 2px solid var(--pencil); opacity: 0; transition: opacity var(--d-hint) var(--ease-out); }
@@ -161,12 +168,11 @@
   .desk {
     container-type: inline-size; position: relative;
     background: var(--stand); color: var(--part);
-    border: 1px solid var(--rule-faint); border-bottom: var(--ledge-h) solid var(--ledge);
-    border-radius: var(--r-desk);
+    border: 1px solid var(--rule-faint); border-radius: var(--r-desk);
   }
   /* The stand lamp: a hood clipped to the top edge, and its glow (the only warm light on stage) */
   .desk::after {
-    content: ""; position: absolute; z-index: 3; top: -13px; left: 50%; width: 72px; height: 13px; translate: -50% 0;
+    content: ""; position: absolute; z-index: 3; top: calc(-1 * var(--hood-h)); left: 50%; width: var(--hood-w); height: var(--hood-h); translate: -50% 0;
     background:
       linear-gradient(var(--horsehair), var(--horsehair)) top / 100% 4px no-repeat,
       linear-gradient(var(--rule-rest), var(--rule-rest)) bottom / 2px 9px no-repeat;
@@ -179,20 +185,30 @@
       linear-gradient(var(--horsehair), var(--horsehair)) top / 100% 4px no-repeat,
       linear-gradient(var(--rule-rest), var(--rule-rest)) bottom / 2px 9px no-repeat;
   }
-  /* The light falls down onto the music and fades toward the name; a small bloom spills above the hood */
+  /* The hooded lamp throws a cone down onto the music that falls off before the name; a little spill rises above the hood.
+     Warming on, the light drops from the hood (scaleY from the top) as it fades in. */
   .desk::before {
-    content: ""; position: absolute; z-index: 1; top: calc(-1 * var(--bloom)); left: 8%; right: 8%; height: calc(70% + var(--bloom)); pointer-events: none;
+    content: ""; position: absolute; z-index: 1; top: calc(-1 * var(--bloom)); left: 0; right: 0; height: calc(45% + var(--bloom)); pointer-events: none;
+    clip-path: polygon(40% 0, 60% 0, 95% 100%, 5% 100%);
     background:
-      radial-gradient(ellipse 30% var(--bloom) at 50% var(--bloom), rgb(var(--lamp) / .2), rgb(var(--lamp) / 0)) 0 0 / 100% calc(2 * var(--bloom)) no-repeat,
-      radial-gradient(ellipse 60% 100% at 50% 0, rgb(var(--lamp) / .30), rgb(var(--lamp) / .10) 45%, rgb(var(--lamp) / 0) 75%) 0 var(--bloom) / 100% calc(100% - var(--bloom)) no-repeat;
-    opacity: 0; transition: opacity var(--d-lamp-off) var(--ease-out);
+      radial-gradient(ellipse 50% 100% at 50% 100%, rgb(var(--lamp) / .22), rgb(var(--lamp) / 0)) 0 0 / 100% var(--bloom) no-repeat,
+      linear-gradient(rgb(var(--lamp) / .28), rgb(var(--lamp) / 0)) 0 var(--bloom) / 100% calc(100% - var(--bloom)) no-repeat;
+    transform-origin: 50% 0; transform: scaleY(.6);
+    opacity: 0; transition: opacity var(--d-lamp-off) var(--ease-out), transform var(--d-lamp-off) var(--ease-out);
   }
-  .desk.is-pre::before { opacity: .35; transition-duration: var(--d-ring); }
-  .desk.is-lit::before { opacity: 1; transition-duration: var(--d-lamp-on); }
-  .desk__body { position: relative; z-index: 2; display: flex; flex-direction: column; gap: var(--sp-5); height: 100%; padding: var(--sp-5); }
-  @container (min-width: 28rem) { .desk__body { padding: var(--sp-6); } }
+  .desk.is-pre::before { opacity: .35; transform: none; transition-duration: var(--d-ring); }
+  .desk.is-lit::before { opacity: 1; transform: none; transition-duration: var(--d-lamp-on); }
+  .desk__body {
+    position: relative; z-index: 2; display: flex; flex-direction: column; gap: var(--sp-5); height: 100%;
+    padding: var(--sp-5) var(--sp-5) calc(var(--sp-5) + var(--ledge-h));
+  }
+  @container (min-width: 28rem) { .desk__body { padding: var(--sp-6) var(--sp-6) calc(var(--sp-6) + var(--ledge-h)); } }
+  /* The stand's lip along the bottom edge */
+  .desk__body::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: var(--ledge-h); background: var(--ledge); border-radius: 0 0 2px 2px; opacity: var(--lg, 1); }
+  html.js .desk__quote, html.js .desk__who { opacity: var(--c, 1); }
+  html.js .desk__mark { opacity: var(--m, 1); }
   .desk__mark {
-    display: grid; place-items: center; width: 30px; height: 30px;
+    display: grid; place-items: center; width: var(--mark-sm); height: var(--mark-sm);
     border: 1px solid var(--horsehair); font-weight: 700; font-size: var(--t-xxs); line-height: 1;
   }
   .desk__quote { font-style: italic; font-weight: 450; font-size: var(--t-quote); line-height: 1.32; max-width: 34ch; text-wrap: pretty; }
@@ -208,9 +224,11 @@
   html.js .arc {
     width: auto; gap: 0; grid-template-columns: var(--desk-w); justify-content: center;
     padding-top: var(--lamp-room); padding-bottom: var(--sp-8);
-    touch-action: pan-y; user-select: none; -webkit-user-select: none; cursor: grab;
+    touch-action: pan-y; cursor: grab;
   }
   html.js .arc:active { cursor: grabbing; }
+  /* Only the lit desk's words can be selected, and not while a drag is under way */
+  html.js .desk:not(.is-active), html.js .arc.is-drag { user-select: none; -webkit-user-select: none; }
   html.js .desk { grid-area: 1 / 1; transform-origin: 50% 100%; will-change: transform; pointer-events: none; }
   html.js .desk.is-active, html.js .desk.is-prev, html.js .desk.is-next { pointer-events: auto; }
   html.js .desk.is-prev, html.js .desk.is-next { cursor: pointer; }
@@ -246,18 +264,20 @@
   @media (hover: hover) { .letter:hover::after { transform: scale(1); opacity: 1; } }
   .letter:focus-visible::after { transform: scale(1); opacity: 1; }
   .letter:active { transform: scale(.94); transition-duration: var(--d-press); }
-  /* TR2 rule: rosin replacing the box's bottom edge, counting down to the next lamp (the one place amber touches a control) */
-  .letter__t {
-    position: absolute; left: -1.5px; right: -1.5px; bottom: -1.5px; height: 3px;
-    background: rgb(var(--lamp)); transform: scaleX(0); transform-origin: left;
-  }
   .bracket {
-    grid-row: 2; position: relative; padding-top: 12px; text-align: center;
+    grid-row: 2; position: relative; padding-top: var(--sp-3); text-align: center;
     font-size: var(--t-xxs); line-height: 1.2; color: var(--horsehair); transition: color var(--d-ring) var(--ease-out);
   }
   .bracket.is-tint { color: var(--part); }
   .bracket::before { content: ""; position: absolute; top: 0; left: 3px; right: 3px; height: 6px; border: 1px solid var(--rule-rest); border-top: 0; }
   .b-players { grid-column: 1 / 4; } .b-parents { grid-column: 5 / 7; } .b-patrons { grid-column: 8 / 10; }
+  /* TR2: the active voice's group bracket fills in pencil, one bar of rest at a time (--bars set per voice) */
+  .timer {
+    grid-row: 2; grid-column: 1 / 4; align-self: start; position: relative; margin: 4px 3px 0; height: 2px;
+    background: var(--pencil); clip-path: inset(0 100% 0 0);
+    -webkit-mask-image: repeating-linear-gradient(90deg, #000 0 calc(100% / var(--bars, 6) - 2px), transparent 0 calc(100% / var(--bars, 6)));
+    mask-image: repeating-linear-gradient(90deg, #000 0 calc(100% / var(--bars, 6) - 2px), transparent 0 calc(100% / var(--bars, 6)));
+  }
 
   /* ---------- Buttons: HV4 fill from the entry edge, MI1 press ---------- */
   .btn {
@@ -282,8 +302,8 @@
   .btn:active { transform: scale(.97); transition-duration: var(--d-press); }
   .btn:active::before { transform: scaleX(1); transition: none; }
   .btn--desk { --fill: var(--stand); --on-fill: var(--part); }
-  .btn--fill { --fill: var(--part); --on-fill: var(--pit); background: var(--pencil); border-color: var(--pencil); color: var(--pit); }
-  .btn--step { --fill: var(--stand); --on-fill: var(--part); width: var(--box); padding: 0; font-size: 1.375rem; font-weight: 500; }
+  .btn--fill { background: var(--part); border-color: var(--part); color: var(--pit); }
+  .btn--step { --fill: var(--stand); --on-fill: var(--part); width: var(--box); padding: 0; font-size: var(--t-step); font-weight: 500; }
   .btn[aria-disabled="true"] { opacity: .4; cursor: default; transition: opacity var(--d-tint); }
   .btn[aria-disabled="true"]::before { display: none; }
   .btn[aria-disabled="true"]:hover { color: var(--part); border-color: var(--rule-rest); }
@@ -298,11 +318,11 @@
   /* CU1: names the neighbour a click will bring in */
   .follower { position: fixed; top: 0; left: 0; z-index: 50; pointer-events: none; visibility: hidden; opacity: 0; }
   .follower span {
-    display: block; white-space: nowrap; padding: 6px 12px 7px; border-radius: 999px;
+    display: block; white-space: nowrap; padding: var(--chip-pad); border-radius: 999px;
     background: var(--part); color: var(--pit); font-weight: 600; font-size: var(--t-xxs); line-height: 1.2;
-    translate: 18px 16px;
+    translate: var(--fol-dx) var(--fol-dy);
   }
-  .follower[data-side="left"] span { translate: calc(-100% - 18px) 16px; }
+  .follower[data-side="left"] span { translate: calc(-100% - var(--fol-dx)) var(--fol-dy); }
 
   /* ---------- Concert: lights up for the interval ---------- */
   .concert { padding-block: var(--sp-9); }
@@ -355,11 +375,11 @@
 
   .check { position: relative; display: flex; align-items: center; gap: var(--sp-3); min-height: var(--box); cursor: pointer; margin-bottom: var(--sp-5); }
   .check input {
-    appearance: none; -webkit-appearance: none; flex: none; margin: 0; width: 22px; height: 22px;
+    appearance: none; -webkit-appearance: none; flex: none; margin: 0; width: var(--check); height: var(--check);
     border: 1.5px solid var(--horsehair); border-radius: 0; background: none; cursor: pointer; transition: border-color var(--d-tint);
   }
   @media (hover: hover) { .check:hover input { border-color: var(--part); } }
-  .check svg { position: absolute; left: 0; top: 50%; width: 22px; height: 22px; translate: 0 -50%; pointer-events: none; }
+  .check svg { position: absolute; left: 0; top: 50%; width: var(--check); height: var(--check); translate: 0 -50%; pointer-events: none; }
   .check path { fill: none; stroke: var(--pencil); stroke-width: 2.4; stroke-linecap: square; stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset var(--d-tick) var(--ease-out); }
   .check input:checked + svg path { stroke-dashoffset: 0; }
   .hold .btn--fill { justify-self: start; padding-inline: var(--sp-6); }
@@ -372,18 +392,28 @@
 
   /* ---------- Reduced motion: final states, instant changes ---------- */
   @media (prefers-reduced-motion: reduce) {
-    html.js .org, html.js .lede, html.js .title, html.js #skip { opacity: 1; }
-    .btn, .btn::before, .letter, .letter::after, .swap > span, .ctl::after, .err, .check path, .desk::before, .hint, .link, .stage::after, .bracket { transition: none !important; }
+    html.js .org, html.js .lede, html.js .title { opacity: 1; }
+    html.js #skip { --u: 1; }
+    html.js .houselights { opacity: 0; }
+    .btn, .btn::before, .letter, .letter::after, .swap > span, .ctl::after, .err, .check path, .desk::before, .hint, .link::before, .stage::after, .bracket { transition: none !important; }
+    .desk::before { transform: none; }
     .btn:active, .letter:active { transform: none; }
     .letter:hover::after, .letter:focus-visible::after { transform: none; }
   }
-  @media (hover: none) {
-    .link { background-size: 100% .07em; background-position: 0 100%; }
+  @media (hover: none) { .link::before { transform: none; } }
+  /* Short phones: the lit desk and the controls fit one screen */
+  @media (max-width: 600px) and (max-height: 760px) {
+    :root { --lamp-room: 40px; --t-quote: 1.1875rem; }
+    .desk__body { gap: var(--sp-4); padding: var(--sp-4) var(--sp-4) calc(var(--sp-4) + var(--ledge-h)); }
+    html.js .arc { padding-bottom: var(--sp-7); }
+    .controls { margin-top: var(--sp-4); row-gap: var(--sp-4); }
+    .stage-band { padding-block: var(--sp-5) var(--sp-7); }
   }
 </style>
 </head>
 <body>
 <div class="backdrop" aria-hidden="true"></div>
+<div class="houselights" aria-hidden="true"></div>
 <main>
 <section class="yo" aria-labelledby="yo-title">
 
@@ -407,7 +437,7 @@
         <li class="desk" data-name="Mira Okafor" data-short="second violin" data-group="player">
           <figure class="desk__body">
             <span class="desk__mark" aria-hidden="true">A</span>
-            <blockquote class="desk__quote"><p>“I joined on a borrowed violin that buzzed on the G string. Nobody minded. Now I lead the seconds, and in the Dvořák finale we count fourteen bars of rest, then the whole section comes in on my breath.”</p></blockquote>
+            <blockquote class="desk__quote"><p>“I joined on a borrowed violin that buzzed on the G string. Now I lead the seconds, and in the Dvořák finale we count fourteen bars of rest, then the section comes in on my breath.”</p></blockquote>
             <figcaption class="desk__who">
               <span><span class="desk__name">Mira Okafor</span><span class="desk__role">16, second violin, fourth season</span></span>
               <dl class="desk__facts">
@@ -446,7 +476,7 @@
         <li class="desk" data-name="Grace Mensah" data-short="parent of a cellist" data-group="parent">
           <figure class="desk__body">
             <span class="desk__mark" aria-hidden="true">D</span>
-            <blockquote class="desk__quote"><p>“Saturday used to be the day Kofi stayed in his room. Now he is out of the door at 8:40 with a cello on his back, and the car home is full of other people’s children arguing about bowings.”</p></blockquote>
+            <blockquote class="desk__quote"><p>“Saturday used to be the day Kofi stayed in his room. Now he leaves at 8:40 with a cello on his back, and the car home is full of other people’s children arguing about bowings.”</p></blockquote>
             <figcaption class="desk__who">
               <span><span class="desk__name">Grace Mensah</span><span class="desk__role">Parent of a cellist</span></span>
               <dl class="desk__facts">
@@ -458,7 +488,7 @@
         <li class="desk" data-name="David Hartley" data-short="parent of two violinists" data-group="parent">
           <figure class="desk__body">
             <span class="desk__mark" aria-hidden="true">E</span>
-            <blockquote class="desk__quote"><p>“We could not have bought two full-size violins. The orchestra lent them, and the loan library re-haired both bows before the spring concert without being asked.”</p></blockquote>
+            <blockquote class="desk__quote"><p>“We could not have bought two full-size violins. The orchestra lent them, and the loan library re-haired both bows before the spring concert without being asked, then sent them home in new cases.”</p></blockquote>
             <figcaption class="desk__who">
               <span><span class="desk__name">David Hartley</span><span class="desk__role">Parent of two violinists</span></span>
               <dl class="desk__facts">
@@ -482,7 +512,7 @@
         <li class="desk" data-name="Sam Patel" data-short="patron" data-group="patron">
           <figure class="desk__body">
             <span class="desk__mark" aria-hidden="true">G</span>
-            <blockquote class="desk__quote"><p>“We pay for the minibus. Last March it came back from the regional festival with a trophy on the dashboard and thirty-one teenagers singing the Shostakovich.”</p></blockquote>
+            <blockquote class="desk__quote"><p>“We pay for the minibus. Last March it came back from the regional festival with a trophy on the dashboard and thirty-one teenagers humming the Shostakovich, badly, all the way up the M6.”</p></blockquote>
             <figcaption class="desk__who">
               <span><span class="desk__name">Sam Patel</span><span class="desk__role">Patel and Daughters Pharmacy, patron since 2019</span></span>
               <dl class="desk__facts">
@@ -496,16 +526,17 @@
       <div class="controls" hidden>
         <button type="button" class="btn" id="prev">Previous</button>
         <div class="letters" role="group" aria-label="Voices">
-          <button type="button" class="letter" aria-label="Voice A: Mira Okafor, player">A<span class="letter__t" aria-hidden="true"></span></button>
-          <button type="button" class="letter" aria-label="Voice B: Tomas Reyes, player">B<span class="letter__t" aria-hidden="true"></span></button>
-          <button type="button" class="letter" aria-label="Voice C: Hana Lindqvist, player">C<span class="letter__t" aria-hidden="true"></span></button>
-          <button type="button" class="letter" aria-label="Voice D: Grace Mensah, parent">D<span class="letter__t" aria-hidden="true"></span></button>
-          <button type="button" class="letter" aria-label="Voice E: David Hartley, parent">E<span class="letter__t" aria-hidden="true"></span></button>
-          <button type="button" class="letter" aria-label="Voice F: Ruth Abernethy, patron">F<span class="letter__t" aria-hidden="true"></span></button>
-          <button type="button" class="letter" aria-label="Voice G: Sam Patel, patron">G<span class="letter__t" aria-hidden="true"></span></button>
+          <button type="button" class="letter" aria-label="Voice A: Mira Okafor, player">A</button>
+          <button type="button" class="letter" aria-label="Voice B: Tomas Reyes, player">B</button>
+          <button type="button" class="letter" aria-label="Voice C: Hana Lindqvist, player">C</button>
+          <button type="button" class="letter" aria-label="Voice D: Grace Mensah, parent">D</button>
+          <button type="button" class="letter" aria-label="Voice E: David Hartley, parent">E</button>
+          <button type="button" class="letter" aria-label="Voice F: Ruth Abernethy, patron">F</button>
+          <button type="button" class="letter" aria-label="Voice G: Sam Patel, patron">G</button>
           <span class="bracket b-players" aria-hidden="true">Players</span>
           <span class="bracket b-parents" aria-hidden="true">Parents</span>
           <span class="bracket b-patrons" aria-hidden="true">Patrons</span>
+          <span class="timer" aria-hidden="true"></span>
         </div>
         <button type="button" class="btn btn--desk" id="auto" data-state="pause" aria-label="Pause the voices"><span class="swap" aria-hidden="true"><span>Pause</span><span>Play</span></span></button>
         <button type="button" class="btn" id="next">Next</button>
@@ -531,12 +562,12 @@
           <div class="field">
             <label for="f-name">Your name</label>
             <span class="ctl"><input id="f-name" name="name" type="text" autocomplete="name" required aria-describedby="name-err"></span>
-            <p class="err" id="name-err"></p>
+            <p class="err" id="name-err" aria-live="polite"></p>
           </div>
           <div class="field">
             <label for="f-email">Email</label>
             <span class="ctl"><input id="f-email" name="email" type="email" autocomplete="email" required aria-describedby="email-err"></span>
-            <p class="err" id="email-err"></p>
+            <p class="err" id="email-err" aria-live="polite"></p>
           </div>
           <div class="field seats-field">
             <label for="f-seats">Seats</label>
@@ -545,6 +576,7 @@
               <span class="ctl ctl--seats"><input id="f-seats" name="seats" type="number" min="1" max="6" value="2" inputmode="numeric"></span>
               <button type="button" class="btn btn--step" id="more" aria-label="More seats">+</button>
             </div>
+            <p class="vh" id="seats-now" aria-live="polite"></p>
           </div>
           <label class="check">
             <input type="checkbox" name="sponsor">
@@ -578,14 +610,13 @@
 
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/SplitText.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/Observer.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
 <script>
 (() => {
   'use strict';
   const root = document.documentElement;
-  const libs = !!(window.gsap && window.ScrollTrigger && window.SplitText && window.Observer && window.Lenis);
+  const libs = !!(window.gsap && window.ScrollTrigger && window.Observer && window.Lenis);
   if (libs) root.classList.add('js');   // hidden start states and the arc exist only when the motion stack loaded
 
   const $ = (s, el = document) => el.querySelector(s);
@@ -597,10 +628,12 @@
   const wrap = v => v - N * Math.floor((v + N / 2) / N);   // same as gsap.utils.wrap(-3.5, 3.5, v)
   const mod = v => ((v % N) + N) % N;
   const timerFor = words => Math.max(9, words * .35);       // seconds a voice holds the stage
+  const barsFor = sec => Math.max(2, Math.round(sec / 1.5));  // the timer counts those seconds in bars of rest
   // A desk at signed distance d from the centre, on a circle of radius R around a pivot below the stage.
   // Below spread 1 the desks sit in a stack whose hood tips peek over the top desk.
   function place(d, spread, R, step, k = 1) {
     const a = Math.abs(d), th = d * step * spread;
+    const face = Math.min(1, Math.max(0, (1.75 - a) * 4));   // past 1.5 places only the stand silhouette and hood remain
     return {
       x: R * Math.sin(th),
       y: R * (1 - Math.cos(th)) + (1 - spread) * -a * 7,
@@ -608,7 +641,8 @@
       scale: 1 - .16 * Math.min(a, 3),
       opacity: Math.min(1, Math.max(0, (2.2 - a) * 1.5)),                // about 30% at |d| 2, gone by 2.2, before the stage floor
       zIndex: Math.round(20 - a * 4),
-      content: 1 - .72 * Math.min(a, 1),
+      content: (1 - .72 * Math.min(a, 1)) * face,
+      ledge: face,
       bright: 1 - .3 * Math.min(a, 1.5),
     };
   }
@@ -621,9 +655,14 @@
     ok(place(1, 1, 1500, .24).x > 0 && place(-1, 1, 1500, .24).rotation < 0, 'neighbours fall either side');
     ok(place(1, 1, 1500, .24).bright < 1 && place(1, 1, 1500, .24).scale < .9, 'neighbours shrink and dim');
     ok(place(2.2, 1, 1500, .24).opacity === 0 && Math.abs(place(2, 1, 1500, .24).opacity - .3) < 1e-9, 'far desks fade before the floor');
+    ok(place(2, 1, 1500, .24).content === 0 && place(2, 1, 1500, .24).ledge === 0 && place(1, 1, 1500, .24).ledge === 1, 'two places out shows no words and no ledge');
     ok(place(1, 0, 1500, .24).y < 0 && place(1, 0, 1500, .24).x === 0, 'stacked desks peek above the top one');
     ok(mod(Math.round(6 + 1)) === 0, 'Next from G reaches A');
     ok(timerFor(10) === 9 && Math.abs(timerFor(40) - 14) < 1e-9, 'timer floor of 9s, .35s a word');
+    ok(barsFor(9) === 6 && barsFor(12.6) === 8, 'timer bars of 1.5s');
+    const words = [...document.querySelectorAll('.desk__quote')].map(q => q.textContent.trim().split(/\s+/).length);
+    const ratio = Math.max(...words) / Math.min(...words);
+    if (ratio > 1.25) console.warn(`SELFTEST WARN: quote lengths ${Math.min(...words)} to ${Math.max(...words)} words (ratio ${ratio.toFixed(2)} > 1.25) leave a hole above the shorter names`);
     console.log('SELFTEST PASS');
   }
   if (location.hash === '#selftest') runSelfTest();
@@ -645,7 +684,8 @@
     else { target.scrollIntoView({ block: 'start' }); land(); }
   };
   $('#skip').addEventListener('click', e => { e.preventDefault(); goTo($('#concert'), $('#concert-title')); });
-  $('#back').addEventListener('click', e => { e.preventDefault(); goTo($('#voices'), $('#stage')); });
+  // With the pinned stage, 'the voices' means the point where the arc is fully open
+  $('#back').addEventListener('click', e => { e.preventDefault(); goTo(fx.stageY ? fx.stageY() : $('#voices'), $('#stage')); });
 
   // ---- Hold seats (works without the libraries)
   const form = $('#hold'), F = form.elements, held = $('#held'), submit = $('#submit');
@@ -655,20 +695,22 @@
   const check = k => {
     const ok = VALID[k](F[k].value);
     $('#' + k + '-err').textContent = ok ? '' : ERR[k];
-    F[k].toggleAttribute('aria-invalid', !ok);
+    ok ? F[k].removeAttribute('aria-invalid') : F[k].setAttribute('aria-invalid', 'true');
     F[k].closest('.field').toggleAttribute('data-invalid', !ok);
     return ok;
   };
   const seats = (n = +F.seats.value) => {
-    n = Math.min(6, Math.max(1, Math.round(n) || 2));
+    n = Math.round(n);
+    n = Math.min(6, Math.max(1, Number.isNaN(n) ? 2 : n));
     F.seats.value = n;
     less.setAttribute('aria-disabled', String(n <= 1));
     more.setAttribute('aria-disabled', String(n >= 6));
     return n;
   };
   seats();
-  less.addEventListener('click', () => seats(+F.seats.value - 1));
-  more.addEventListener('click', () => seats(+F.seats.value + 1));
+  const say = n => { $('#seats-now').textContent = `${n} ${n === 1 ? 'seat' : 'seats'}`; };
+  less.addEventListener('click', () => say(seats(+F.seats.value - 1)));
+  more.addEventListener('click', () => say(seats(+F.seats.value + 1)));
   F.seats.addEventListener('change', () => seats());
   ['name', 'email'].forEach(k => F[k].addEventListener('input', () => form.dataset.tried && check(k)));
 
@@ -705,17 +747,17 @@
   if (!libs) return;   // CDN blocked: the voices stay a readable list and the form still works
 
   // ================= Motion =================
-  gsap.registerPlugin(ScrollTrigger, SplitText, Observer);
-  const stage = $('#stage'), arc = $('#arc'), desks = $$('.desk', arc), bodies = desks.map(d => d.firstElementChild);
-  const letters = $$('.letter'), rules = letters.map(b => $('.letter__t', b)), brackets = $$('.bracket');
+  gsap.registerPlugin(ScrollTrigger, Observer);
+  const stage = $('#stage'), arc = $('#arc'), desks = $$('.desk', arc);
+  const letters = $$('.letter'), brackets = $$('.bracket'), timerRule = $('.timer');
+  const groupOf = i => i < 3 ? 0 : i < 5 ? 1 : 2, GROUP_COLS = ['1 / 4', '5 / 7', '8 / 10'];
   const prev = $('#prev'), next = $('#next'), toggle = $('#auto'), live = $('#now');
   const fol = $('#follower'), folText = $('span', fol), backdrop = $('.backdrop'), title = $('#yo-title');
+  const parts = desks.map(d => [$('.desk__quote', d), $('.desk__who', d)]);
   const V = desks.map(d => ({ name: d.dataset.name, short: d.dataset.short, words: $('blockquote', d).textContent.trim().split(/\s+/).length }));
   // State that survives a matchMedia rebuild
   const S = { target: 0, index: 0, stopped: false, done: false, auto: 0, hover: false, inView: false, dark: false };
   const pos = { v: 0 }, fan = { v: 0 }, K = desks.map(() => ({ v: 1 }));
-  const fonts = Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 1200))]);
-  const t0 = performance.now();
   let played = false;
 
   Object.entries({ role: 'region', 'aria-roledescription': 'carousel', 'aria-label': 'Seven voices', tabindex: '0', 'aria-describedby': 'stage-hint' })
@@ -750,7 +792,7 @@
   }, ctx => {
     const { motion, fine } = ctx.conditions;
     const ac = new AbortController(), sig = { signal: ac.signal };
-    let R, STEP, tween, timer, lockUntil = 0, hovered = null, folOn = false, tick = null;
+    let R, STEP, tween, timer, lampCall, pinST, lockUntil = 0, hovered = null, folOn = false, tick = null;
 
     // Lenis on GSAP's clock; reduced motion keeps native scroll
     if (motion) {
@@ -769,12 +811,19 @@
     };
     const layout = () => {
       for (let i = 0; i < N; i++) {
-        const d = wrap(i - pos.v), h = (1 - K[i].v) / .45;   // h: how far a hovered neighbour has leaned in (0 to 1)
-        let { content, bright, ...t } = place(d, fan.v, R, STEP, K[i].v);
-        if (R < 1000) content = Math.max(0, 1 - 2 * Math.abs(d));       // phones: neighbours show the stand, not the words
-        content += (.6 - content) * h;
+        const d = wrap(i - pos.v), a = Math.abs(d), h = (1 - K[i].v) / .45;   // h: how far a hovered neighbour has leaned in (0 to 1)
+        let { content, ledge, bright, ...t } = place(d, fan.v, R, STEP, K[i].v);
+        let text = content;
+        if (R < 1000) {   // phones: neighbours show their stand and rehearsal letter, not their words, and no ledge
+          text = Math.max(0, 1 - 2 * a);
+          ledge = Math.max(0, 1 - a);
+        }
+        text += (.75 - text) * h;
+        content += (.75 - content) * h;
         bright += (.9 - bright) * h;
-        bodies[i].style.opacity = content;
+        parts[i][0].style.opacity = parts[i][1].style.opacity = text;
+        desks[i].style.setProperty('--m', content);
+        desks[i].style.setProperty('--lg', ledge);
         t.filter = `brightness(${bright})`;
         gsap.set(desks[i], t);
       }
@@ -783,7 +832,8 @@
     window.addEventListener('resize', () => { measure(); layout(); }, sig);
 
     const lampsOff = () => desks.forEach(d => d.classList.remove('is-lit'));
-    const lampOn = () => (S.dark || !motion) && desks[S.index].classList.add('is-lit');   // lamps light only once the house is dark
+    // Lamps light only once the house is dark, the arc is fully open and the desk is still
+    const lampOn = () => (!motion || (S.dark && fan.v >= .999 && !tween?.isActive())) && desks[S.index].classList.add('is-lit');
 
     // CU1 follower and the neighbour's lean back toward upright (fine pointers)
     const folX = motion ? gsap.quickTo(fol, 'x', { duration: .35, ease: 'expo.out' }) : x => gsap.set(fol, { x });
@@ -801,17 +851,19 @@
 
     // ---- TR2: the active letter's rule counts the voice out, then the next one comes in
     const run = () => timer && (S.inView && !S.hover && !S.stopped && !S.done ? timer.play() : timer.pause());
+    const EMPTY = 'inset(0% 100% 0% 0%)';
     const stop = () => {   // a stopped timer clears its rule rather than leaving a stale stub
       S.stopped = true; syncToggle();
       timer?.kill(); timer = null;
-      gsap.to(rules, { scaleX: 0, duration: motion ? .3 : 0, ease: 'expo.out', overwrite: true });
+      gsap.to(timerRule, { clipPath: EMPTY, duration: motion ? .3 : 0, ease: 'expo.out', overwrite: true });
     };
     function buildTimer() {
       timer?.kill();
-      gsap.set(rules, { scaleX: 0, overwrite: true });
+      const sec = timerFor(V[S.index].words);
+      gsap.set(timerRule, { clipPath: EMPTY, gridColumn: GROUP_COLS[groupOf(S.index)], '--bars': barsFor(sec), overwrite: true });
       if (!motion) return;
-      timer = gsap.to(rules[S.index], {
-        scaleX: 1, duration: timerFor(V[S.index].words), ease: 'none', paused: true,
+      timer = gsap.to(timerRule, {
+        clipPath: 'inset(0% 0% 0% 0%)', duration: sec, ease: 'none', paused: true,
         onComplete: () => { if (++S.auto >= N) S.done = true; syncToggle(); step(1, 'auto'); },
       });
       run();
@@ -824,13 +876,21 @@
       if (how !== 'auto') live.textContent = `Voice ${LETTERS[S.index]} of ${N}: ${V[S.index].name}, ${V[S.index].short}`;
       lampsOff();
       unhover();
-      tween?.kill();
-      let lit = false;   // light the lamp as the desk lands, not when expo.out's long tail ends
-      if (motion) tween = gsap.to(pos, { v: target, duration: .8, ease: 'expo.out', onComplete: lampOn, onUpdate: () => {
-        layout();
-        if (!lit && Math.abs(pos.v - target) < .03) { lit = true; lampOn(); }
-      } });
-      else { pos.v = target; layout(); lampOn(); }
+      brackets.forEach(b => b.classList.remove('is-tint'));
+      lampCall?.kill();
+      if (motion) {
+        const swinging = tween?.isActive();
+        tween?.kill();
+        const settle = () => { lampCall = gsap.delayedCall(.06, lampOn); };   // a breath after the desk is still
+        if (swinging) {   // retarget mid-swing: no second upbeat
+          tween = gsap.to(pos, { v: target, duration: .5, ease: 'power3.out', onUpdate: layout, onComplete: settle });
+        } else {          // the conductor's upbeat: a small counter-swing, then the swing through
+          const dir = Math.sign(target - pos.v) || 1;
+          tween = gsap.timeline({ onUpdate: layout, onComplete: settle })
+            .to(pos, { v: pos.v - .05 * dir, duration: .12, ease: 'power2.out' })
+            .to(pos, { v: target, duration: .7, ease: 'power3.inOut' });
+        }
+      } else { pos.v = target; layout(); lampOn(); }
       buildTimer();
     }
     const step = (dir, how) => go(S.target + dir, how);
@@ -903,6 +963,8 @@
     }, { passive: false, signal: ac.signal });
 
     Observer.create({ target: arc, type: 'touch,pointer', dragMinimum: 10, tolerance: 40, lockAxis: true,
+      onDragStart: () => { arc.classList.add('is-drag'); getSelection()?.removeAllRanges(); },
+      onDragEnd: () => arc.classList.remove('is-drag'),
       onLeft: () => gated(1), onRight: () => gated(-1) });
 
     // A click or tap on a neighbour, or anywhere on the stage beside the centre desk, steps toward that side
@@ -938,44 +1000,46 @@
       document.addEventListener('mouseout', e => { if (!e.relatedTarget) unhover(); }, sig);
     }
 
-    // ---- Scroll: lights down over the stage, up again for the interval (SC9 as one opacity layer)
-    // The first lamp is the cue that the house is dark: it warms on past the midpoint of the lights-down.
+    // ---- Scroll: one lighting cue. The stage holds (pinned), the lights go down, the stack opens in the dark,
+    // and the first lamp warms on as the arc reaches full spread.
+    if (motion) {
+      const tl = gsap.timeline({ scrollTrigger: { trigger: '#voices', start: 'center center', end: '+=55%', pin: true, scrub: true, anticipatePin: 1 } })
+        .fromTo(fan, { v: 0 }, { v: 1, duration: .7, ease: 'none', onUpdate: () => { layout(); fan.v >= .999 ? lampOn() : lampsOff(); } }, .15)
+        .to({}, { duration: .15 });
+      pinST = tl.scrollTrigger;
+    }
+    // Lights down at the pin (top 60% without motion), up again as the concert comes in (SC9 as one opacity layer)
     ScrollTrigger.create({
-      trigger: '#voices', start: 'top 60%', end: 'bottom 75%',
+      trigger: '#voices', start: motion ? 'center center' : 'top 60%', endTrigger: '#concert', end: 'top 75%',
       onToggle: s => {
         S.dark = s.isActive;
+        if (s.isActive) lampOn(); else lampsOff();
         if (!motion) return gsap.set(backdrop, { opacity: s.isActive ? 1 : 0 });
         gsap.to(backdrop, { opacity: s.isActive ? 1 : 0, duration: .7, ease: 'expo.inOut', overwrite: 'auto' });
-        if (s.isActive) gsap.delayedCall(.5, lampOn); else lampsOff();
       },
     });
-    // The arc fans out from a stack as the stage comes in
-    if (motion) gsap.fromTo(fan, { v: 0 }, { v: 1, ease: 'none', onUpdate: layout,
-      scrollTrigger: { trigger: '#voices', start: 'top 85%', end: 'top 30%', scrub: true } });
     // The timer only runs while the stage is on screen
     ScrollTrigger.create({ trigger: stage, start: 'top 40%', end: 'bottom 60%', onToggle: s => { S.inView = s.isActive; run(); } });
 
-    // ---- Page load: house lights at half
+    // ---- Page load: the house lights settle to half as the words come up
     if (motion && !played) {
       gsap.timeline()
+        .fromTo('.houselights', { opacity: .14 }, { opacity: 0, duration: 1.2, ease: 'expo.inOut' }, 0)
         .fromTo('.org', { autoAlpha: 0, y: 6 }, { autoAlpha: 1, y: 0, duration: .5, ease: 'expo.out' }, 0)
+        .fromTo(title, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 1, ease: 'expo.out' }, .1)
         .fromTo('.lede', { opacity: 0 }, { opacity: 1, duration: .8, ease: 'expo.out' }, .45)
-        .fromTo('#skip', { opacity: .35, '--u': 0 }, { opacity: 1, '--u': 1, duration: .5, ease: 'expo.out' }, .7);
-      fonts.then(() => ctx.add(() => SplitText.create(title, {
-        type: 'lines', mask: 'lines', linesClass: 'ln', autoSplit: true,
-        onSplit: self => {
-          gsap.set(title, { opacity: 1 });
-          return gsap.from(self.lines, { yPercent: 110, duration: 1, ease: 'expo.out', stagger: .09, delay: Math.max(0, .1 - (performance.now() - t0) / 1000) });
-        },
-      })));
+        .fromTo('#skip', { '--u': 0 }, { '--u': 1, duration: .5, ease: 'expo.out' }, .7);
     } else {
-      gsap.set('.org, .lede, .title, #skip', { opacity: 1, '--u': 1 });
+      gsap.set('.org, .lede, .title', { opacity: 1 });
+      gsap.set('#skip', { '--u': 1 });
+      gsap.set('.houselights', { opacity: 0 });
       lampOn();
     }
     played = true;
 
     // ---- Form motion: label swap, form out, confirmation wiped in; and back
     fx = motion ? {
+      stageY: () => pinST.end,
       held: (show, done) => gsap.timeline({ onComplete: done })
         .to(form, { opacity: 0, duration: .3, ease: 'expo.inOut' }, .3)
         .add(() => { show(); gsap.set(form, { opacity: 1 }); })
@@ -990,6 +1054,7 @@
       ac.abort();
       tween?.kill();
       timer?.kill();
+      lampCall?.kill();
       gsap.set(fol, { autoAlpha: 0 });
       if (lenis) { gsap.ticker.remove(tick); gsap.ticker.lagSmoothing(500, 33); lenis.destroy(); lenis = null; }
       fx = {};

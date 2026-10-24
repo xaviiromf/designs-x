@@ -887,7 +887,7 @@ legend { font-weight: 600; font-size: var(--step--1); padding: 0; margin-bottom:
   };
   // Track offsets (0 to max) at which each panel sits centred in a view w wide, kept strictly ascending.
   const rests = (w, max) => {
-    const xs = panels.map((p) => clamp(p.offsetLeft + p.offsetWidth / 2 - w / 2, 0, max));
+    const xs = panels.map((p) => Math.round(clamp(p.offsetLeft + p.offsetWidth / 2 - w / 2, 0, max)));
     xs[0] = 0; xs[xs.length - 1] = Math.max(max, xs.length);
     for (let i = xs.length - 2; i > 0; i--) xs[i] = Math.min(xs[i], xs[i + 1] - 1);
     return xs;
@@ -1150,6 +1150,8 @@ legend { font-weight: 600; font-size: var(--step--1); padding: 0; margin-bottom:
       return;
     }
     let alive = true, raf = 0, free = false, peek = null, xs = [];
+    // Track offset to roast time; within 2px of a rest it reads the rest exactly (scroll snap rounds to whole pixels).
+    const clockAt = (x) => pw(xs.find((r) => Math.abs(r - x) < 2) ?? x, xs, ROUTE);
     const offs = [];
     const on = (el, type, fn, opts) => { el.addEventListener(type, fn, opts); offs.push(() => el.removeEventListener(type, fn, opts)); };
 
@@ -1173,20 +1175,29 @@ legend { font-weight: 600; font-size: var(--step--1); padding: 0; margin-bottom:
       // mapped piecewise so each item settles centred exactly as its roast event pops.
       // The pin is exactly as long as the track overflows, so it lets go at Drop 10:40 on the last item.
       const dist = () => track.scrollWidth - doc.clientWidth;
-      const nearest = (v) => xs.map((x) => x / dist()).reduce((a, b) => Math.abs(b - v) < Math.abs(a - v) ? b : a);
       const tween = gsap.to(track, {
         x: () => -dist(), ease: 'none', onUpdate: () => sync(),
         scrollTrigger: {
           trigger: stage, pin: true, start: 'top top', end: () => '+=' + dist(), scrub: true, invalidateOnRefresh: true,
           onRefresh: () => { xs = rests(doc.clientWidth, dist()); },
-          snap: { snapTo: (v) => free ? v : nearest(v), duration: { min: .2, max: .6 }, ease: 'expo.out', delay: .08 },
         },
       });
       const st = tween.scrollTrigger;
       xs = rests(doc.clientWidth, dist());
-      sync = () => { const x = -gsap.getProperty(track, 'x'); render(pw(x, xs, ROUTE)); place(-x); };
+      sync = () => { const x = -gsap.getProperty(track, 'x'); render(clockAt(x)); place(-x); };
+      // Snap, through Lenis so the two never fight: once the scroll rests inside the pin, the track glides on (in the
+      // direction it was going) to the next item, which lands centred exactly as its roast event pops.
       // A slider seek stays where it was put; the next wheel, touch or key outside the slider hands the clock back to snapping.
       ['wheel', 'touchstart', 'keydown'].forEach((type) => on(window, type, (e) => { if (!thumb.contains(e.target)) free = false; }, { passive: true }));
+      let rest = 0;
+      const settle = () => {
+        const x = lenis.scroll - st.start;
+        if (free || lenis.isStopped || x <= 0 || x >= dist() || xs.some((r) => Math.abs(r - x) < 1)) return;
+        const to = lenis.direction < 0 ? xs.findLast((r) => r < x) : xs.find((r) => r > x);
+        lenis.scrollTo(st.start + to, { duration: .6, easing: (k) => 1 - Math.pow(2, -10 * k) }); // expo.out
+      };
+      lenis.on('scroll', () => { clearTimeout(rest); rest = setTimeout(settle, 120); });
+      offs.push(() => clearTimeout(rest));
       seek = (next, now) => {
         goal = clamp(next, 0, END); seekUntil = performance.now() + 800; free = true;
         // A press before the stage has pinned eases there instead of jumping the page under the cursor.
@@ -1207,7 +1218,7 @@ legend { font-weight: 600; font-size: var(--step--1); padding: 0; margin-bottom:
       const remeasure = () => { xs = rests(track.clientWidth, max()); };
       remeasure();
       on(window, 'resize', remeasure);
-      const fromRow = () => { raf = 0; render(max() > 0 ? pw(track.scrollLeft, xs, ROUTE) : END); place(-track.scrollLeft); };
+      const fromRow = () => { raf = 0; render(max() > 0 ? clockAt(track.scrollLeft) : END); place(-track.scrollLeft); };
       on(track, 'scroll', () => { raf ||= requestAnimationFrame(fromRow); }, { passive: true });
       // While the slider drives the row, snapping is off; touching the row hands it back.
       const unseek = () => track.classList.remove('is-seeking');
