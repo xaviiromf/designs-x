@@ -28,6 +28,14 @@
   --twill: repeating-linear-gradient(45deg, rgb(248 246 239 / .03) 0 1px, transparent 1px 4px),
            repeating-linear-gradient(-45deg, rgb(35 35 38 / .05) 0 1px, transparent 1px 5px);
   --focus: var(--tape);
+  --needle: #8FB4D9;       /* blue tailor's chalk: the needle line only, never text (3.7:1 on flannel, edged in black on the tape) */
+  --shadow-card: rgb(35 35 38 / .35);      /* the offset edge under hanging pattern pieces */
+  --hole: rgb(35 35 38 / .6);              /* punched hanging holes */
+  --tape-edge: rgb(35 35 38 / .28);
+  --weave: rgb(35 35 38 / .5);             /* woven-label borders */
+  --stripe: rgb(248 246 239 / .11);        /* chalk stripe in the finished cloth */
+  --backdrop: rgb(35 35 38 / .6);
+  --field-tint: rgb(35 35 38 / .07);       /* focused field on card */
 
   --font-text: 'Petrona', Georgia, 'Times New Roman', serif;
   --font-tape: 'Mohave', 'Arial Narrow', sans-serif;
@@ -53,13 +61,17 @@
   --needle-at: 45vh;
   --tape-w: 4.25rem;
   --pin-len: clamp(2.5rem, 6vw, 6rem);
+  /* wide + motion: the tape runs along the bottom and slides under a fixed needle */
+  --W: 56vw;               /* one week along the horizontal tape */
+  --x0: 34vw;              /* the needle's x */
+  --tape-h: 5rem; --tape-b: 1.5rem;
+  --band: calc(var(--tape-h) + var(--tape-b) + 4.75rem);
 
   --t-in: .45s; --t-out: .3s; --t-press: .12s; --t-release: .45s;
   --t-draw-in: .4s; --t-draw-out: .2s; --t-chalk: .5s; --t-ring: .45s;
   --t-field: .2s; --t-rule: .35s; --t-err: .25s; --t-mark: .25s;
   --ease-out: cubic-bezier(.16, 1, .3, 1);       /* expo.out */
   --ease-draw: cubic-bezier(.4, 0, .2, 1);
-  --ease-sweep: cubic-bezier(.35, 0, 0, 1);
   --ease-p3: cubic-bezier(.215, .61, .355, 1);   /* power3.out */
 }
 @supports (height: 1svh) { :root { --week: max(44svh, 19rem); --needle-at: 45svh; } }
@@ -160,27 +172,30 @@ dialog :focus-visible, .book :focus-visible { outline-color: var(--black); }
 .bundle { display: block; width: 100%; height: auto; }
 .rail { stroke: var(--thread-faint); stroke-width: 3; stroke-linecap: round; }
 .hook { fill: none; stroke: var(--thread); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
-.pc-shadow { fill: rgb(35 35 38 / .35); }
+.pc-shadow { fill: var(--shadow-card); }
 .pc { fill: var(--card); }
 .pc-line { fill: none; stroke: var(--black); stroke-width: 1.1; stroke-linecap: round; stroke-linejoin: round; }
 .pc-thin { fill: none; stroke: var(--ink-rule); stroke-width: 1; }
-.pc-hole { fill: rgb(35 35 38 / .6); }
+.pc-hole { fill: var(--hole); }
+.btn-hole { fill: var(--thread-faint); }
 .pc-red { fill: none; stroke: var(--red-pencil); stroke-width: 1.6; stroke-linecap: round; }
 .pc-text { fill: var(--black); font-family: var(--font-text); }
-.pc-red-text { fill: var(--red-pencil); font: 600 15px var(--font-text); }
 @media (min-width: 992px) {
   .hero { min-height: min(100svh, 62rem); display: grid; align-items: center; padding-block: var(--s-8); }
   .hero-text { grid-column: 1 / 8; }
   .bundle-wrap { grid-column: 8 / 13; width: min(100%, 30rem); }
 }
 @media (max-width: 991px) {
-  .bundle-wrap { width: 62%; max-width: 20rem; }
+  .hero { padding-bottom: var(--s-4); }
+  .bundle-wrap { width: 80%; max-width: 22rem; }
   .actions .btn { width: 100%; }
 }
 
 /* ---------- the first measure ---------- */
 .measure { padding-block: var(--s-9); }
-.measure h2, .fit-head h2, .book-sec h2 { font-size: var(--step-2); line-height: 1.15; }
+@media (max-width: 991px) { .measure { padding-top: var(--s-8); } }
+.measure h2, .fit-head h2 { font-size: var(--step-3); line-height: 1.08; }
+.book-sec h2 { font-size: var(--step-2); line-height: 1.15; }
 .measure .intro p { margin-top: var(--s-4); max-width: var(--measure); color: var(--thread-muted); }
 .form-fig { display: grid; justify-items: start; gap: var(--s-4); }
 .dress { width: auto; height: 240px; max-width: 100%; touch-action: manipulation; }
@@ -229,6 +244,14 @@ figcaption { max-width: 26em; color: var(--thread-muted); min-height: 3.2em; }
   .dress { height: min(30rem, 58svh); }
   .book { grid-column: 7 / 13; grid-row: 1 / 3; }
 }
+@media (max-width: 991px) {   /* the figure and its caption stay on screen while you choose rows below */
+  .form-fig {
+    position: sticky; top: 0; z-index: 2; grid-template-columns: 6.5rem minmax(0, 1fr); align-items: center; column-gap: var(--s-4);
+    margin-inline: calc(-1 * var(--gutter)); padding: var(--s-3) var(--gutter); background: var(--twill), var(--flannel);
+  }
+  .dress { height: 11rem; }
+  figcaption { min-height: 0; font-size: var(--step--1); line-height: 1.45; }
+}
 
 /* ---------- the fittings: a tape measure graduated in weeks ---------- */
 .fittings { padding-top: var(--s-9); padding-bottom: var(--s-8); }
@@ -256,7 +279,7 @@ figcaption { max-width: 26em; color: var(--thread-muted); min-height: 3.2em; }
     repeating-linear-gradient(to bottom, transparent 0 calc(var(--week) / 2 - 1px), var(--black) calc(var(--week) / 2 - 1px) calc(var(--week) / 2), transparent calc(var(--week) / 2) var(--week)) 0 0 / 28% 100% no-repeat,
     repeating-linear-gradient(to bottom, transparent 0 calc(var(--week) / 2 - 1px), var(--black) calc(var(--week) / 2 - 1px) calc(var(--week) / 2), transparent calc(var(--week) / 2) var(--week)) 100% 0 / 16% 100% no-repeat,
     var(--tape);
-  border-inline: 1px solid rgb(35 35 38 / .28);
+  border-inline: 1px solid var(--tape-edge);
 }
 @media (min-width: 992px) { .tape { grid-column: 2; justify-self: end; } }
 .mark { position: absolute; left: 0; right: 0; top: calc(var(--w) * var(--week)); height: 0; }
@@ -366,7 +389,7 @@ html.run .needle { display: block; }
 .cloth {
   position: absolute; inset: 0;
   background:
-    linear-gradient(90deg, transparent 0 45%, rgb(248 246 239 / .11) 49% 51%, transparent 55%) 0 0 / 3.2rem 100%,
+    linear-gradient(90deg, transparent 0 45%, var(--stripe) 49% 51%, transparent 55%) 0 0 / 3.2rem 100%,
     var(--twill),
     linear-gradient(var(--cloth-shade), var(--cloth-shade)),
     var(--flannel);
@@ -377,8 +400,8 @@ html.run .needle { display: block; }
 .woven {
   justify-self: start; width: min(17rem, 100%); padding: var(--s-5) var(--s-5) var(--s-4);
   background:
-    repeating-linear-gradient(90deg, rgb(35 35 38 / .5) 0 2px, transparent 2px 5px) 0 .5rem / 100% 3px no-repeat,
-    repeating-linear-gradient(90deg, rgb(35 35 38 / .5) 0 2px, transparent 2px 5px) 0 calc(100% - .5rem) / 100% 3px no-repeat,
+    repeating-linear-gradient(90deg, var(--weave) 0 2px, transparent 2px 5px) 0 .5rem / 100% 3px no-repeat,
+    repeating-linear-gradient(90deg, var(--weave) 0 2px, transparent 2px 5px) 0 calc(100% - .5rem) / 100% 3px no-repeat,
     var(--thread);
   color: var(--black); text-align: center; line-height: 1.3;
   clip-path: polygon(0 0, 100% 0, 97% 50%, 100% 100%, 0 100%, 3% 50%);
@@ -410,7 +433,7 @@ dialog {
   width: min(36rem, calc(100% - 2rem)); max-height: calc(100svh - 2rem); padding: var(--s-6) var(--s-6) var(--s-6);
   border: 0; border-radius: var(--r-card); background: var(--card); color: var(--black); overflow: auto;
 }
-dialog::backdrop { background: rgb(35 35 38 / .6); }
+dialog::backdrop { background: var(--backdrop); }
 dialog[open]::backdrop { animation: dim .3s var(--ease-out); }
 @keyframes dim { from { opacity: 0; } }
 @media (max-width: 599px) {
@@ -467,8 +490,6 @@ legend { padding: 0; margin-bottom: var(--s-2); }
 .done .msg { font-size: var(--step-1); line-height: 1.3; font-weight: 500; }
 .done p:not(.msg) { color: var(--ink-muted); max-width: 30em; }
 
-.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-
 /* ---------- motion: hidden first states exist only with JS and motion allowed ---------- */
 @media (prefers-reduced-motion: no-preference) {
   html.js .hero h1 { visibility: hidden; }
@@ -524,35 +545,37 @@ legend { padding: 0; margin-bottom: var(--s-2); }
       </div>
 
       <div class="bundle-wrap">
-        <svg class="bundle" viewBox="0 0 380 430" role="img" aria-labelledby="bundle-t">
+        <svg class="bundle" viewBox="0 0 420 440" role="img" aria-labelledby="bundle-t">
           <title id="bundle-t">Mr R. Ahmadi's paper pattern, three manila pieces hanging on a hook</title>
+          <g transform="translate(20 0)">
           <path class="rail" d="M60 12 H320"/>
           <!-- back -->
-          <g transform="translate(190 86) rotate(-21)"><g class="drop">
+          <g transform="translate(190 86) rotate(-26)"><g class="drop">
             <path class="pc-shadow" transform="translate(2 2.5)" d="M-66 -10 Q-48 -8 -34 -18 L62 -2 Q52 38 58 70 Q62 84 72 88 L64 196 L70 318 L-58 322 L-62 196 L-70 88 Z"/>
             <path class="pc" d="M-66 -10 Q-48 -8 -34 -18 L62 -2 Q52 38 58 70 Q62 84 72 88 L64 196 L70 318 L-58 322 L-62 196 L-70 88 Z"/>
             <path class="pc-thin" d="M-62 196 H64 M-66 120 H66"/>
             <path class="pc-line" d="M-14 70 V290 M-18 78 L-14 70 L-10 78 M-18 282 L-14 290 L-10 282 M60 196 h8 M-64 196 h8"/>
-            <text class="pc-text" x="-50" y="160" font-size="14">Back</text>
-            <text class="pc-text" x="-50" y="176" font-size="11">Cut 2</text>
+            <text class="pc-text" x="12" y="262" font-size="14">Back</text>
+            <text class="pc-text" x="12" y="277" font-size="11">Cut 2</text>
             <circle class="pc-hole" r="5"/>
           </g></g>
           <!-- top sleeve -->
-          <g transform="translate(190 86) rotate(19)"><g class="drop">
+          <g transform="translate(190 86) rotate(24)"><g class="drop">
             <path class="pc-shadow" transform="translate(2 2.5)" d="M-64 30 C-56 -10 -22 -26 6 -24 C40 -22 64 -4 68 34 L56 300 L-42 306 Z"/>
             <path class="pc" d="M-64 30 C-56 -10 -22 -26 6 -24 C40 -22 64 -4 68 34 L56 300 L-42 306 Z"/>
             <path class="pc-line" d="M10 60 V270 M6 68 L10 60 L14 68 M6 262 L10 270 L14 262 M6 -24 v8 M-60 150 h8"/>
-            <text class="pc-text" x="22" y="150" font-size="13">Top sleeve</text>
+            <text class="pc-text" x="-36" y="232" font-size="13">Top</text>
+            <text class="pc-text" x="-36" y="247" font-size="13">sleeve</text>
             <circle class="pc-hole" r="5"/>
           </g></g>
           <!-- forepart, on top -->
-          <g transform="translate(190 86) rotate(-3)"><g class="drop">
+          <g transform="translate(190 86) rotate(-2)"><g class="drop">
             <path class="pc-shadow" transform="translate(2 2.5)" d="M-34 -22 L62 -6 Q54 40 62 72 Q66 86 78 90 L70 196 L74 318 Q10 330 -50 322 Q-70 300 -72 270 L-78 128 L-66 30 Q-52 -2 -34 -22 Z"/>
             <path class="pc" d="M-34 -22 L62 -6 Q54 40 62 72 Q66 86 78 90 L70 196 L74 318 Q10 330 -50 322 Q-70 300 -72 270 L-78 128 L-66 30 Q-52 -2 -34 -22 Z"/>
             <path class="pc-thin" d="M-78 128 H78 M-74 196 H70"/>
             <path class="pc-line" d="M18 134 L22 236 L26 134 M-28 252 H42 M-72 200 h14 M-72 232 h14 M30 170 V300 M26 178 L30 170 L34 178 M26 292 L30 300 L34 292 M66 196 h8 M58 72 h8"/>
             <path class="pc-red" d="M16 -4 L58 4"/>
-            <text class="pc-red-text" x="36" y="22">&#8722;&#189;</text>
+            <text class="pc-text" x="36" y="22" font-size="15" font-weight="600">&#8722;&#189;</text>
             <text class="pc-text" x="-56" y="44" font-size="15">Forepart</text>
             <text class="pc-text" x="-56" y="61" font-size="11">Cut 2. Page 211</text>
             <g class="card-name">
@@ -562,6 +585,7 @@ legend { padding: 0; margin-bottom: var(--s-2); }
             <circle class="pc-hole" r="5"/>
           </g></g>
           <path class="hook" d="M162 14 C162 2 178 2 178 14 L178 72 C178 94 202 94 202 76"/>
+          </g>
         </svg>
       </div>
     </div>
@@ -717,8 +741,8 @@ legend { padding: 0; margin-bottom: var(--s-2); }
             <use href="#sleeve-r" class="coat" width="200" height="240"/>
             <use href="#lapels" class="coat" width="200" height="240"/>
             <use href="#pockets" class="coat" width="200" height="240"/>
-            <circle cx="100" cy="142" r="3.4" fill="var(--thread-faint)"/>
-            <circle cx="100" cy="168" r="3.4" fill="var(--thread-faint)"/>
+            <circle class="btn-hole" cx="100" cy="142" r="3.4"/>
+            <circle class="btn-hole" cx="100" cy="168" r="3.4"/>
             <path class="chalk-mark dr" d="M101 142 H113 M101 168 H113 M80 62 L72 66 M23 186 L45 188 M177 186 L155 188"/>
           </svg>
             <h3 tabindex="-1">Final fitting</h3>

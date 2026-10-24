@@ -52,6 +52,11 @@
     --stack-gap: var(--s-7);
     --stamp-size: 80px;
     --board-h: 150px;
+    --col-room: 3.5rem;          /* Room column on a written page */
+    --col-from-form: 7rem;       /* the blank page's selects need their own widths */
+    --col-room-form: 7.5rem;
+    --btn-pad: .65em 1.35em;
+    --focus-margin: 1.5rem;      /* scroll-margin, so a focus ring is never clipped at the viewport edge */
 
     /* The highlighter band, measured from the baseline */
     --mk-up: .62em;
@@ -69,6 +74,9 @@
     --dur-release: .4s;
     --dur-err: .25s;
   }
+  /* Registered so the script reads the unclamped stack offset in px (the rail spy must not move when a page grows) */
+  @property --stack-top { syntax: '<length>'; inherits: true; initial-value: 0px; }
+  @property --stack-step { syntax: '<length>'; inherits: true; initial-value: 0px; }
   @media (min-width: 600px) { :root { --gutter: 1.5rem; --board-h: 180px; } }
   @media (min-width: 1024px) {
     :root {
@@ -90,6 +98,7 @@
     font: 400 var(--t-base)/1.55 var(--font-print);
   }
   :focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+  a, button, input, select, textarea { scroll-margin-block: var(--focus-margin); }
   mark { background: none; color: inherit; }
   .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
@@ -101,6 +110,7 @@
   .board { margin: var(--s-4) 0 0; }
   /* A panorama board (Panoramatafel): snow-white land under the sky, names above the summits on leader lines */
   .board-frame { position: relative; height: var(--board-h); touch-action: pan-y; }
+  @media (hover: hover) and (pointer: fine) { .board-frame { cursor: crosshair; } } /* says the board can be aimed at */
   .ridge { display: block; width: 100%; height: 100%; overflow: visible; }
   .ridge .land { fill: var(--paper); }
   .ridge .far { fill: none; stroke: var(--slate); stroke-width: 1.5; stroke-linejoin: round; }
@@ -217,15 +227,19 @@
 
   .entry {
     display: grid; margin: 0; gap: var(--s-4) var(--s-4);
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    /* Narrow: two even columns, but the first widens when a written date needs it, so dates keep one line */
+    grid-template-columns: fit-content(50%) minmax(0, 1fr);
   }
   .entry > div { min-width: 0; }
   .c-date { order: 1; } .c-room { order: 2; } .c-name { order: 3; } .c-from { order: 4; }
+  .c-date dd, .c-date .hand { white-space: nowrap; }
   .c-rem, .c-errs { order: 5; grid-column: 1 / -1; }
   @container (min-width: 560px) {
     /* Date and Name take their written width (Name capped), so a hand rarely wraps in the head row */
-    .entry { grid-template-columns: max-content fit-content(45%) minmax(0, 1fr) 3.5rem; }
+    .entry { grid-template-columns: max-content fit-content(45%) minmax(0, 1fr) var(--col-room); }
     .c-name { order: 2; } .c-from { order: 3; } .c-room { order: 4; }
+    /* The blank page: its selects need room for "Somewhere else" and "Day visit" */
+    .page--form .entry { grid-template-columns: max-content minmax(0, 1fr) minmax(var(--col-from-form), auto) minmax(var(--col-room-form), auto); }
   }
   dt, .colhead, label.colhead {
     display: block; margin: 0 0 var(--s-1);
@@ -291,7 +305,6 @@
     background-size: 5px 5px; background-repeat: no-repeat;
   }
   #f-date { display: block; padding-bottom: 2px; background: none; border-bottom: 1px solid var(--rule); }
-  [aria-invalid="true"] { --bad: 1; }
   .ctl:has([aria-invalid="true"])::before { height: 2px; background: var(--slate); }
 
   .err { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--dur-err) var(--ease-out); }
@@ -299,11 +312,11 @@
   .err > p { overflow: hidden; min-height: 0; margin: 0; font-size: var(--t-sm); font-weight: 500; }
   .err.open > p { padding: var(--s-1) 0 var(--s-1) var(--s-3); border-left: 2px solid var(--slate); margin-top: var(--s-2); }
   .help { margin: var(--s-3) 0 0; font-size: var(--t-sm); line-height: 1.45; max-width: 36em; }
-  .count { display: block; font-size: var(--t-xs); font-weight: 500; font-stretch: var(--wdth-cond); color: var(--slate-soft); }
+  .count { margin: var(--s-3) 0 0; display: block; font-size: var(--t-xs); font-weight: 500; font-stretch: var(--wdth-cond); color: var(--slate-soft); }
 
   .btn {
     position: relative; isolation: isolate; overflow: hidden; margin-top: var(--s-5);
-    display: inline-block; padding: .65em 1.35em; border: 2px solid var(--ink); border-radius: 2px;
+    display: inline-block; padding: var(--btn-pad); border: 2px solid var(--ink); border-radius: 2px;
     background: transparent; color: var(--ink); cursor: pointer;
     font: 600 var(--t-base)/1.2 var(--font-print);
     transition: transform var(--dur-release) var(--ease-out), color var(--dur-fill-out) var(--ease-out);
@@ -500,9 +513,9 @@
                 <div class="err"><p id="e-room" data-msg="Choose your room, or Day visit."></p></div>
                 <p class="help" id="h-from">Your page is written in the school handwriting taught where you're from. Somewhere else uses the English hand.</p>
               </div>
-              <div class="c-rem"><label class="colhead" for="f-rem">Remarks</label><span class="ctl"><textarea class="hand-field" id="f-rem" name="remarks" rows="4" required minlength="10" maxlength="280" aria-describedby="h-rem e-rem"></textarea></span>
+              <div class="c-rem"><label class="colhead" for="f-rem">Remarks</label><span class="ctl"><textarea class="hand-field" id="f-rem" name="remarks" rows="4" required minlength="10" maxlength="280" aria-describedby="count e-rem"></textarea></span>
                 <div class="err"><p id="e-rem" data-msg="Write at least a few words, up to 280 characters."></p></div>
-                <p class="help" id="h-rem">Up to 280 characters. <span class="count" id="count" aria-hidden="true">280 characters left</span></p>
+                <p class="count" id="count">280 characters left</p>
               </div>
             </div>
             <button class="btn" type="submit">Add my page</button>
@@ -595,11 +608,12 @@
     else { scrollTo({ top: y, behavior: 'instant' }); done(); }
   }
   document.addEventListener('click', (e) => {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; // new tab/window stays native
     const a = e.target.closest('a[href^="#"]');
     const t = a && document.getElementById(a.hash.slice(1));
     if (!t || !stack.contains(t)) return;
     e.preventDefault();
-    go(t, { focus: t === formPage ? F.name : t });
+    go(t, { focus: t === formPage ? F.name : t, then: () => history.replaceState(null, '', a.hash) });
   });
 
   // ---- The blank page: the From select chooses the hand ----
@@ -689,19 +703,6 @@
   });
   updateCount();
 
-  window.runSelfTest = () => {
-    const ok = [];
-    form.reset(); ok.push(validate().length === 4);
-    F.name.value = 'Sam Test'; F.from.value = 'Chile'; F.room.value = 'Day visit'; F.remarks.value = 'Short but enough.';
-    const before = pages().length;
-    form.requestSubmit();
-    const ps = pages(), mine = ps.at(-2);
-    ok.push(ps.length === before + 1, ps.at(-1) === formPage, mine.id === `page-yours-${st.n}`,
-      mine.style.getPropertyValue('--hand').includes('cl'), $('.v-room', mine).textContent === 'Day visit',
-      $('a', status).getAttribute('href') === `#${mine.id}`, !mine.querySelector('mark'), HANDS['Somewhere else'] === 'gb');
-    console.log(ok.every(Boolean) ? 'SELFTEST PASS' : `SELFTEST FAIL ${ok.join(',')}`);
-  };
-  if (location.hash === '#selftest') window.runSelfTest();
 
   if (!libs) return;
   gsap.registerPlugin(ScrollTrigger, SplitText);
@@ -816,10 +817,16 @@
           },
         }));
       });
+      // The spy uses the unclamped stack offset, so a page that grows (the form's error rows) does not move the current question
+      const spyAt = (p, i) => () => {
+        if (!tall || !i) return 'top 60%';
+        const cs = getComputedStyle(p);
+        return `top top+=${parseFloat(cs.getPropertyValue('--stack-top')) + i * parseFloat(cs.getPropertyValue('--stack-step')) + 120}`;
+      };
       if (wide) ps.forEach((p, i) => {
         const next = ps[i + 1];
         keep(ScrollTrigger.create({
-          trigger: sentOf(p), start: at(p, i), endTrigger: next ? sentOf(next) : stack, end: next ? at(next, i + 1) : 'bottom top',
+          trigger: sentOf(p), start: spyAt(p, i), endTrigger: next ? sentOf(next) : stack, end: next ? spyAt(next, i + 1) : 'bottom top',
           onToggle: (self) => (self.isActive ? setCurrent(p, motion) : st.cur === p && setCurrent(null, motion)),
         }));
       });
@@ -849,19 +856,30 @@
   // ---- Page load: one timeline, nothing gated, links focusable throughout ----
   function loadSequence(ctx) {
     const h2 = $('#gb-title'), first = pages()[0], t0 = performance.now();
-    loadEnd = t0 + 1050; // the first page settles: the first stroke starts then and is the last thing that moves
+    loadEnd = t0 + 1050;
+    // The stroke is non-scaling, so its dashes are in screen px: measure the drawn length, not the path's
+    const far = $('.ridge .far'), m = far.getScreenCTM(), L = far.getTotalLength();
+    let len = 0, prev;
+    for (let k = 0; k <= 300; k++) {
+      const pt = far.getPointAtLength((L * k) / 300), x = pt.x * m.a, y = pt.y * m.d;
+      if (prev) len += Math.hypot(x - prev[0], y - prev[1]);
+      prev = [x, y];
+    }
+    len = Math.ceil(len) + 8; // the first page settles: the first stroke starts then and is the last thing that moves
     gsap.set(h2, { autoAlpha: 0 });
     const tl = gsap.timeline({ defaults: { ease: 'expo.out' } })
       .from('.hotel', { y: 6, autoAlpha: 0, duration: .4 }, 0)
-      .fromTo('.board-frame', { clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0% 0 0%)', duration: 1.6, clearProps: 'clipPath' }, .1)
-      .from('.ridge', { scale: 1.12, transformOrigin: '50% 100%', duration: 1.6, clearProps: 'transform' }, .1)
+      // The ridge is drawn as one pen line, then the snow fills in under it
+      .fromTo(far, { strokeDasharray: len, strokeDashoffset: len }, { strokeDashoffset: 0, duration: 1.2, clearProps: 'strokeDasharray,strokeDashoffset' }, .1)
+      .from('.ridge .land', { autoAlpha: 0, duration: .8 }, .4)
       .from('.ridge .lead', { autoAlpha: 0, duration: .4 }, .9) // leader lines appear with their names
       .from('.peaks li', { autoAlpha: 0, duration: .4, stagger: .06 }, .9);
     // The first page is laid down onto the book: transform only, no fade, no shadow
     if (first.getBoundingClientRect().top < innerHeight) tl.from(first, { y: 56, rotation: 1.5, duration: .8 }, .25);
+    const cached = document.fonts.status === 'loaded';
     fontsReady.then(() => ctx.add(() => {
       gsap.set(h2, { autoAlpha: 1 });
-      const delay = Math.max(0, .35 - (performance.now() - t0) / 1000);
+      const delay = cached ? 0 : Math.max(0, .15 - (performance.now() - t0) / 1000);
       SplitText.create(h2, {
         type: 'lines', mask: 'lines', autoSplit: true,
         onSplit: (self) => gsap.from(self.lines, { yPercent: 110, duration: 1, ease: 'expo.out', stagger: .08, delay }),

@@ -32,7 +32,7 @@
     --t-result: clamp(26px, 2.6vw, 34px);
     --t-note: clamp(30px, 3vw, 40px);
     --t-h3: clamp(34px, 4.2vw, 52px);
-    --t-display: clamp(52px, 7.4vw, 108px);
+    --t-display: clamp(52px, 6.25vw, 92px);
     --t-num: clamp(56px, 5vw, 72px);
 
     /* Space (4px base) */
@@ -44,7 +44,7 @@
 
     /* The line-up and its swell (read by the script) */
     --card-w: clamp(272px, 24vw, 340px);
-    --card-gap: var(--s-5);
+    --card-gap: var(--s-7);   /* wide enough that two cards tilted 3deg toward each other never touch */
     --row-pt: var(--s-7);     /* headroom for cards riding a crest */
     --row-pb: 40px;
     --ride: 20px;             /* cards ride this far above the swell line */
@@ -102,7 +102,7 @@
   :focus-visible { outline: 2px solid var(--neoprene); outline-offset: 3px; }
   .vh { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
-  .surf { position: relative; overflow-x: clip; padding: var(--s-7) 0 var(--s-9); }
+  .surf { position: relative; overflow-x: clip; padding: var(--s-6) 0 var(--s-9); }
 
   /* Skip link */
   .skip {
@@ -118,7 +118,12 @@
 
   /* Heading and intro */
   .head { display: grid; gap: var(--s-5) var(--s-7); padding: 0 var(--gutter); }
-  @media (min-width: 1024px) { .head { grid-template-columns: 5fr 7fr; align-items: end; } }   /* the same 5/7 split as the form below */
+  .head__side { display: grid; gap: var(--s-4); justify-items: start; }
+  /* Wide: the heading breaks after "told us"; the intro and the controls share its last line, so the swell is in the first view */
+  @media (min-width: 1024px) {
+    .head { grid-template-columns: auto 1fr; gap: var(--s-5) var(--s-6); align-items: end; }
+    .head .display { max-width: 7.8em; text-wrap: wrap; }
+  }
   .display {
     margin: 0;
     font: 700 var(--t-display)/.88 var(--f-display);
@@ -172,8 +177,8 @@
   [data-group="yellow"] { --band: var(--lycra-yellow); }
   [data-group="pink"] { --band: var(--lycra-pink); }
   [data-group="blue"] { --band: var(--lycra-blue); }
-  .card:focus-within { outline: 2px solid var(--neoprene); outline-offset: 3px; }
-  @media (hover: hover) { .card:hover { outline: 2px solid var(--neoprene); outline-offset: 3px; } }
+  /* Keyboard focus shows one ring, the Read button's; the card answers by going level. The hover frame waits until the card is level. */
+  @media (hover: hover) { .card:hover { outline: 2px solid var(--neoprene); outline-offset: 3px; transition: outline-color .15s .3s; } }
   @media (hover: none) { .card:active { outline: 2px solid var(--neoprene); outline-offset: 3px; } }
 
   .band {
@@ -192,6 +197,7 @@
   .card__body { display: flex; flex-direction: column; flex: 1; padding: var(--s-5) var(--s-5) var(--s-4); }
   .quote { margin: 0 0 var(--s-5); }
   .quote p { margin: 0; font: 400 var(--t-quote)/1.5 var(--f-text); text-wrap: pretty; }
+  .card[data-short] .quote p { font: 400 var(--t-name)/1.4 var(--f-text); }   /* a one-line note fills its face */
   .name { margin: auto 0 0; font: 600 var(--t-name)/1.1 var(--f-display); letter-spacing: .01em; }
   .meta { margin: var(--s-1) 0 var(--s-4); font: italic 400 var(--t-sm)/1.4 var(--f-text); }
 
@@ -264,7 +270,7 @@
   [data-state="stopped"] .swap > span:first-child, [data-state="busy"] .swap > span:first-child { transform: translateY(-120%); }
   [data-state="stopped"] .swap > span + span, [data-state="busy"] .swap > span + span { transform: none; }
 
-  .controls { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: var(--s-3); padding: var(--s-6) var(--gutter) 0; }
+  .controls { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: var(--s-3); }
 
   /* Add your words */
   .add { display: grid; gap: var(--s-6) var(--s-7); padding: var(--s-10) var(--gutter) 0; }
@@ -357,7 +363,7 @@
   .nojs { margin: 0; font: italic 400 var(--t-sm)/1.45 var(--f-text); }
 
   .result { display: grid; gap: var(--s-5); align-content: start; }
-  .result__msg { margin: 0; max-width: 30ch; font: 600 var(--t-result)/1.12 var(--f-display); }
+  .result__msg { margin: 0; max-width: 30ch; font: 600 var(--t-result)/1.12 var(--f-display); text-wrap: balance; }
   .result__msg:focus { outline: none; }
   .result__msg span { display: block; margin-top: var(--s-3); font: italic 400 var(--t-body)/1.5 var(--f-text); }
   .result__actions { display: flex; flex-wrap: wrap; gap: var(--s-5); align-items: center; }
@@ -392,7 +398,8 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { transition-duration: .01ms !important; scroll-behavior: auto !important; }
+    *, *::before, *::after { transition-duration: .01ms !important; transition-delay: 0s !important; scroll-behavior: auto !important; }
+    html.js .note::backdrop { transition: none; }
     html.js [data-rv] { opacity: 1; }
     .read, .ul { background-size: 0 .1em, 100% 1px; }
     .read:hover, .read:focus-visible, .ul:hover, .ul:focus-visible { background-size: 0 .1em, 100% .14em; }
@@ -406,20 +413,21 @@
 
   <header class="head">
     <h2 class="display" id="surf-title" data-rv>What people told us on the sand</h2>
-    <p class="intro" data-rv>Every lesson ends on the sand, wetsuits half off, and we ask one thing: how was it? These are answers people let us keep. Beginners wear yellow lycras, families pink, and surfers coming back after years away wear blue.</p>
+    <div class="head__side">
+      <p class="intro" data-rv>Every lesson ends on the sand, wetsuits half off, and we ask one thing: how was it? These are answers people let us keep. Beginners wear yellow lycras, families pink, and surfers coming back after years away wear blue.</p>
+      <div class="controls" hidden>
+        <button class="btn btn--icon" id="prev" type="button" aria-label="Previous note" aria-controls="row" data-rv>
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M16 10H4M9 4.5 3.5 10 9 15.5"/></svg>
+        </button>
+        <button class="btn btn--icon" id="next" type="button" aria-label="Next note" aria-controls="row" data-rv>
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h12M11 4.5l5.5 5.5-5.5 5.5"/></svg>
+        </button>
+        <button class="btn toggle" id="drift-toggle" type="button" data-state="running" hidden data-rv>
+          <span class="swap"><span><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 4.5v11M13 4.5v11"/></svg>Stop the drift</span><span aria-hidden="true"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 4.5v11l10-5.5z"/></svg>Let the row drift</span></span>
+        </button>
+      </div>
+    </div>
   </header>
-
-  <div class="controls" hidden>
-    <button class="btn btn--icon" id="prev" type="button" aria-label="Previous note" aria-controls="row" data-rv>
-      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M16 10H4M9 4.5 3.5 10 9 15.5"/></svg>
-    </button>
-    <button class="btn btn--icon" id="next" type="button" aria-label="Next note" aria-controls="row" data-rv>
-      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h12M11 4.5l5.5 5.5-5.5 5.5"/></svg>
-    </button>
-    <button class="btn toggle" id="drift-toggle" type="button" data-state="running" hidden data-rv>
-      <span class="swap"><span><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 4.5v11M13 4.5v11"/></svg>Stop the drift</span><span aria-hidden="true"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 4.5v11l10-5.5z"/></svg>Let the row drift</span></span>
-    </button>
-  </div>
 
   <div class="lineup" id="lineup" role="region" aria-label="The line-up, 9 notes">
     <ul class="row" id="row" role="list" data-lenis-prevent-horizontal>
@@ -510,7 +518,7 @@
 
   <div class="add" id="add-words" tabindex="-1">
     <div class="add__intro">
-      <h3 class="add__title" id="add-title" data-rv>Add your words to the line-up</h3>
+      <h3 class="add__title" id="add-title">Add your words to the line-up</h3>
       <p>Had a lesson with us? Tell the next nervous beginner what it was really like. A sentence is plenty.</p>
     </div>
 
@@ -568,6 +576,7 @@
         <p class="nojs" id="nojs">Adding a note needs JavaScript.</p>
       </form>
 
+      <p class="vh" id="form-status" role="status"></p>
       <div class="result" id="result" hidden>
         <p class="result__msg" id="result-msg" tabindex="-1"></p>
         <div class="result__actions">
@@ -803,6 +812,8 @@
   row.addEventListener('scroll', () => { ends(); clearTimeout(pendT); pendT = setTimeout(() => { pend = null; }, 150); }, { passive: true });
   addEventListener('resize', ends);
   ends();
+  // Native row (reduced motion, no CDN): the browser stops once the Read button is in view, so bring in the whole card
+  row.addEventListener('focusin', e => { const c = !fx.rail && e.target.closest('.card'); if (c) c.scrollIntoView({ block: 'nearest', inline: 'nearest' }); });
 
   // ---- Drag: a mouse drags the native row (touch scrolls it natively); any pointer drags the rail
   row.dataset.drag = '';
@@ -892,6 +903,7 @@
     $$('[data-f]', tpl).forEach(el => { el.textContent = val[el.dataset.f]; });
     card.dataset.group = dlg.dataset.group = n.group;
     card.dataset.num = n.num;
+    if (n.text.length < 90) card.dataset.short = '';
     $('.name', card).id = 'name-' + n.num;
     card.setAttribute('aria-labelledby', 'name-' + n.num);
     dlg.id = id;
@@ -914,13 +926,17 @@
     e.preventDefault();
     form.dataset.tried = '1';
     const bad = validate();
+    const status = $('#form-status');
+    status.textContent = '';   // cleared first, so the same message is announced again on a second try
     if (bad.length) {
+      setTimeout(() => { status.textContent = bad.map(k => $('#err-' + k).textContent).join(' '); }, 60);
       const k = bad[0];
       (k === 'lesson' ? ([...F.lesson].find(r => r.checked) || F.lesson[0]) : controls(k)[0]).focus();
       return;
     }
     const n = { name: F['first-name'].value.trim(), from: F.from.value.trim(), group: F.lesson.value, text: F.text.value.trim() };
     n.num = nextNumber(n.group);
+    setTimeout(() => { status.textContent = 'Adding your note.'; }, 60);
     fresh = addCard(n);
     const msg = $('#result-msg');
     msg.textContent = `Thanks, ${n.name}. You’re lycra ${n.num} in the line-up.`;
@@ -938,6 +954,7 @@
   $('#again').addEventListener('click', () => {
     form.reset();
     delete form.dataset.tried;
+    $('#form-status').textContent = '';
     Object.keys(ERR).forEach(k => setError(k, ''));
     count();
     result.hidden = true;
@@ -987,10 +1004,7 @@
   }, ctx => {
     if (!ctx.conditions.motion) {   // final states, native scroll, a straight line, no drift
       shown('[data-rv]');
-      fx = {
-        open: dlg => gsap.fromTo(dlg, { opacity: 0 }, { opacity: 1, duration: .2, clearProps: 'opacity' }),
-        close: (dlg, done) => gsap.to(dlg, { opacity: 0, duration: .15, onComplete: () => { gsap.set(dlg, { clearProps: 'opacity' }); done(); } }),
-      };
+      fx = {};   // dialogs open and close at once
       return () => { fx = {}; };
     }
 
@@ -1010,7 +1024,7 @@
     const S = { load: played ? 1 : 0, scroll: 1, form: 1, go: played ? 1 : 0, flow: 1, run: toggle.dataset.state === 'stopped' ? 0 : 1 };
     const R = { off: 0 };   // the rail's offset in px; every card's x comes from it
     let W, A, lam, gap, P, lo, gutter, tiltMax, leanMax, speed, mid, steps, holdS, items = [];
-    let last = 0, vx = 0, lean = 0, leanV = 0, glide = 0, dragging = false, base = 0, target = null, awake = true, lastA = -1, wait = 3;
+    let last = 0, vx = 0, lean = 0, leanV = 0, glide = 0, dragging = false, base = 0, target = null, awake = true, lastA = -1, wait = 0;
     row.classList.add('rail');
     row.scrollLeft = 0;
     function measure() {   // cached once per resize and after a card is added: no rect reads per frame
@@ -1040,9 +1054,9 @@
       const f = Math.min(dt, 64) / 16.667;   // frames at 60fps
       if (!dragging) {
         if (glide) { R.off += glide * f; glide *= .94 ** f; if (Math.abs(glide) < .05) glide = 0; }
-        const drive = S.go * S.flow * S.run;
-        if (!steps) R.off -= speed / 60 * f * drive;
-        else if (!glide && !gsap.isTweening(R) && (wait += Math.min(dt, 64) / 1000 * drive) >= holdS) { wait = 0; fx.rail.step(1, false); }
+        if (!steps) R.off -= speed / 60 * f * S.go * S.flow * S.run;
+        // phones: the hold counts in plain seconds once the load is done (go 0 to 1), so every card, the first included, gets the full hold
+        else if (!glide && !gsap.isTweening(R) && (wait += Math.min(dt, 64) / 1000 * Math.min(S.go, 1) * S.flow * S.run) >= holdS) fx.rail.step(1, false);
       }
       // the lean follows the row's speed on a damped spring, so cards overshoot a little and settle when it stops
       vx += ((R.off - last) / f - vx) * .2;
@@ -1078,11 +1092,12 @@
     fx.rail = {
       step: (dir, asked = true) => {   // Previous and Next (asked): one card, landing on the gutter, held for reading; repeated clicks add up. Phones step on their own.
         glide = 0; wait = 0;
+        if (steps && landed) { landed = null; settle(); }   // phones: the held card lifts back onto the swell as it leaves
         target = (Math.round((target ?? R.off) / gap) - dir) * gap;
         gsap.to(R, { off: target, duration: asked ? .8 : 1.4, ease: asked ? 'power3.inOut' : 'power2.inOut', overwrite: true,
-          onComplete: () => { target = null; if (asked) pin(2500); } });
+          onComplete: () => { target = null; if (steps) land(); if (asked) pin(2500); } });
       },
-      grab: () => { stopMoves(); dragging = true; base = R.off; hovered = null; settle(); },
+      grab: () => { stopMoves(); dragging = true; base = R.off; hovered = landed = null; settle(); },
       pull: dx => { R.off = base + dx; },
       release: () => { dragging = false; glide = clamp(-60, 60, vx); },   // the throw carries on and decays
     };
@@ -1104,14 +1119,19 @@
     }, act);
 
     // The card you are reading: the row glides to a stop, and that card goes level
-    let hovered = null, focused = null, pinned = false, still = false, pinT = 0, dwellT = 0;
-    function settle() {
+    let hovered = null, focused = null, landed = null, pinned = false, still = false, pinT = 0, dwellT = 0;
+    function settle() {   // landed (phones: the card a step brought to the gutter) goes level without stopping the row's clock
       for (const { el } of items) {
-        const to = el === hovered || el === focused ? 0 : 1;
-        if (el._k.to !== to) { el._k.to = to; gsap.to(el._k, { calm: to, duration: .6, ease: 'power3.out', overwrite: 'auto' }); }
+        const to = el === hovered || el === focused || el === landed ? 0 : 1;
+        if (el._k.to !== to) { el._k.to = to; gsap.to(el._k, { calm: to, duration: to ? .4 : .6, ease: to ? 'power2.inOut' : 'power3.out', overwrite: 'auto' }); }
       }
       const s = !!(hovered || focused || pinned);
       if (s !== still) { still = s; gsap.to(S, { flow: s ? 0 : 1, duration: s ? .5 : .8, ease: s ? 'power2.out' : 'power2.inOut', overwrite: 'auto' }); }
+    }
+    function land() {   // the card nearest the gutter settles level after a step
+      let best = null, d = Infinity;
+      for (const it of items) { const e = Math.abs(wrapTo(it.c + R.off, lo, P) - it.w / 2 - gutter); if (e < d) { d = e; best = it.el; } }
+      landed = best; settle();
     }
     function pin(ms) {   // hold the row (not the calm) for a moment: after Previous/Next and the reprise
       pinned = true; clearTimeout(pinT); settle();
@@ -1179,26 +1199,19 @@
         const head = $('#surf-title');
         shown(head);
         tl.add(tx2(head, { stagger: { amount: .45 } }), .15);   // L2
-        const intro = $('.intro');
-        shown(intro);
-        const lines = SplitText.create(intro, { type: 'lines', mask: 'lines' });
-        tl.fromTo(lines.lines, { yPercent: 100 }, { yPercent: 0, duration: .6, ease: 'power3.out', stagger: .06, onComplete: () => lines.revert() }, .55);   // L3
+        tl.fromTo('.intro, #prev, #next', { opacity: 0 }, { opacity: 1, duration: .5, ease: 'power3.out', stagger: .06, onComplete: () => shown('.intro, #prev, #next') }, .4);   // L3 + L5: quiet chrome
         tl.to(S, { load: 1, duration: 1.2, ease: 'power2.out' }, .8);   // the swell rises under the cards
-        tl.fromTo('#prev, #next', { opacity: 0 }, { opacity: 1, duration: .5, ease: 'power3.out', stagger: .06, onComplete: () => shown('#prev, #next') }, 1.4);   // L5
         tl.fromTo(toggle, { opacity: 1, clipPath: 'inset(0% 100% 0% 0%)' },   // the stop control wipes in with the motion it stops
           { clipPath: 'inset(0% 0% 0% 0%)', duration: .4, ease: 'power3.out', onComplete: () => { shown(toggle); gsap.set(toggle, { clearProps: 'clipPath' }); } }, 1.9);
-        tl.to(S, { go: 4, duration: .6, ease: 'power2.out' }, 1.9)   // L6: the drift surges in, so every card climbs a crest in the first seconds,
+        if (steps) tl.set(S, { go: 1 }, 1.9).call(land, null, 1.9);   // phones: no surge; the first card settles level and gets a full hold
+        else tl.to(S, { go: 4, duration: .6, ease: 'power2.out' }, 1.9)   // L6: the drift surges in, so every card climbs a crest in the first seconds,
           .to(S, { go: 1, duration: 2.4, ease: 'power3.inOut' });    // then settles to the slow drift
       }
-      // S3: the form heading settles, then the field baselines draw
-      const addTitle = $('#add-title');
+      if (played && steps && !landed) land();   // a re-run on a phone: the gutter card is level
+      // S3: the field baselines draw, the form's own gesture
       ScrollTrigger.create({
         trigger: '#add-words', start: 'top 80%', once: true,
-        onEnter: () => {
-          shown(addTitle);
-          tx2(addTitle);
-          gsap.to('.rule', { scaleX: 1, duration: .8, ease: 'expo.out', stagger: .08, delay: .3 });
-        },
+        onEnter: () => gsap.to('.rule', { scaleX: 1, duration: .8, ease: 'expo.out', stagger: .08, delay: .15 }),
       });
     })).catch(fail);
 
@@ -1261,7 +1274,10 @@
         read.focus({ preventScroll: true });
         pin(2500);   // the row holds while the newcomer lands and its words settle
       };
-      lenis.scrollTo(lineup, { offset: -Math.max(24, (innerHeight - lineup.offsetHeight) / 2), duration: 1.2, onComplete: land });
+      // A composed frame: the whole section when it fits, otherwise the controls (phones) or the row at the top, never a sliced heading
+      const surf = $('.surf'), ctl = $('.controls'), fits = lineup.offsetTop + lineup.offsetHeight - $('.head').offsetTop + 48 <= innerHeight;
+      const title = $('#surf-title'), to = fits ? surf : ctl.offsetTop >= title.offsetTop + title.offsetHeight ? ctl : lineup;
+      lenis.scrollTo(to, { offset: to === surf ? 0 : -24, duration: 1.2, onComplete: land });
       gsap.delayedCall(1.4, land);   // in case Lenis had nowhere to go
     };
 

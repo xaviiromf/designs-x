@@ -26,7 +26,7 @@
     --fs-m: 1.0625rem;
     --fs-l: 1.375rem;
     --fs-xl: 1.875rem;
-    --fs-price: clamp(2.25rem, 1.6vw + 1.1rem, 3rem);
+    --fs-price: clamp(1.75rem, 12.5cqi, 2.75rem);   /* follows the tag's width (.tag is a size container) */
     --fs-display: clamp(2.75rem, 5.2vw + 1rem, 4.25rem);
 
     /* space (4px base) */
@@ -85,7 +85,6 @@
   :focus-visible { outline: 2px solid var(--c-ink); outline-offset: 3px; }
   [tabindex="-1"]:focus { outline: none; }
   [hidden] { display: none !important; }
-  .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
   .rw { max-width: calc(var(--max) + 2 * var(--gutter)); margin-inline: auto; padding: 0 var(--gutter) var(--sp-9); }
 
@@ -124,7 +123,7 @@
     letter-spacing: -.02em;
     text-wrap: balance;
   }
-  .rw-title .ln-mask { padding-bottom: .1em; margin-bottom: -.1em; }
+  .rw-title .ln-mask { padding-block: .12em; margin-block: -.12em; }
   @media (prefers-reduced-motion: no-preference) {
     html.js .rw-title:not(.is-ready) { visibility: hidden; }
   }
@@ -133,6 +132,8 @@
   @media (max-width: 599px) {   /* phones: the lede keeps two sentences; what prices include moves under the plan */
     .lede__vat { display: none; }
     .vat-note { display: block; order: 2; font-size: var(--fs-s); color: var(--c-ink-2); }   /* after the plan, so it never parts a tag from the building */
+    .legend { display: grid; grid-template-columns: repeat(3, auto); justify-content: start; gap: var(--sp-1) var(--sp-3); }
+    .legend__more { display: none; }
   }
   /* first frame of the load sequence; the inline script sets html.intro before first paint and
      removes it once GSAP holds the same states (or after 2s if the libraries never arrive) */
@@ -157,6 +158,7 @@
   .seg__opt { position: relative; cursor: pointer; }
   .seg__opt input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
   .seg__opt:has(input:checked) span { text-decoration: underline 2px; text-underline-offset: .3em; }
+  .seg.is-holding .seg__opt span { text-decoration: none; }   /* L4: the opening pill is the only selected cue */
   .seg__opt:has(input:focus-visible) { outline: 2px solid var(--c-ink); outline-offset: 3px; }
   .seg__pill {
     position: absolute; inset: 3px; display: flex;
@@ -226,22 +228,31 @@
   .room__label .cm { display: none; }
   .room--walk { display: flex; align-items: center; padding-left: 1.5rem; }
   .lane { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
-  /* the fob read at the front door: a tar tick flashes at the reader, then a 2px tar edge leads the Walk's own fill east */
+  /* the fob read at the front door: a tar tick flashes at the reader, then a band runs east over the lit Walk,
+     a 2px tar edge leading a trail of green mixed 35% with ground. The Walk itself never goes dark. */
   .lane::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 8px; background: var(--c-ink); opacity: var(--tick, 0); }
-  .wave { position: absolute; top: 0; bottom: 0; left: 0; width: 2px; background: var(--c-ink); opacity: 0; visibility: hidden; }
+  .wave {
+    --band: 48px;
+    position: absolute; top: 0; bottom: 0; left: calc(-.7 * var(--band)); width: var(--band);
+    background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--c-access) 35%, var(--c-ground)) 70%, var(--c-ink) 70% calc(70% + 2px), transparent calc(70% + 2px));
+    opacity: 0; visibility: hidden;
+  }
   .room--walk .room__label { display: flex; gap: var(--sp-6); }
   .room--walk .nm { font-weight: 700; }
 
   /* door symbol: a leaf and its quarter swing; hinge bottom-left, wall along the bottom */
   .door {
-    position: absolute; width: 12px; height: 12px;
-    border: 1px solid var(--c-ink); border-bottom: 0; border-top-right-radius: 100%;
+    --door: 12px;
+    position: absolute; width: var(--door); height: var(--door);
+    border: 1px solid; border-bottom: 0; border-top-right-radius: 100%;
+    /* leaf in tar; the swing arc fades as the leaf closes, so a shut door is a leaf lying in the wall */
+    border-color: color-mix(in srgb, var(--c-ink) calc(100% - var(--swing, 0) * 100% / 90), transparent) color-mix(in srgb, var(--c-ink) calc(100% - var(--swing, 0) * 100% / 90), transparent) transparent var(--c-ink);
     left: .5rem; bottom: 0;
-    /* --swing turns the leaf about its hinge (bottom-left) in the glyph's own frame, whatever its resting rotate */
-    transform: translate(-6px, 6px) rotate(calc(var(--swing, 0) * 1deg)) translate(6px, -6px);
+    /* --swing (0 open, 90 shut) turns the leaf about its hinge (bottom-left) in the glyph's own frame, whatever its resting rotate */
+    transform: translate(calc(var(--door) / -2), calc(var(--door) / 2)) rotate(calc(var(--swing, 0) * 1deg)) translate(calc(var(--door) / 2), calc(var(--door) / -2));
   }
   .room[data-side="s"] .door { bottom: auto; top: 0; left: auto; right: .5rem; rotate: 180deg; }
-  .room[data-side="w"] .door { bottom: auto; top: calc(50% - 6px); left: 0; rotate: 90deg; }
+  .room[data-side="w"] .door { bottom: auto; top: calc(50% - var(--door) / 2); left: 0; rotate: 90deg; }
 
   /* meeting rooms: inset ring and hourly rate shown when the plan switches to rooms (S2) or a row is hovered */
   .ring {
@@ -290,11 +301,11 @@
   /* phones and small tablets: a snap rail; the snapped tag previews on the plan just below */
   .plans {
     position: relative; display: flex; gap: var(--sp-4); align-items: stretch;
-    overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scrollbar-width: thin;
+    overflow-x: auto; overscroll-behavior-x: none; scroll-snap-type: x mandatory; scrollbar-width: thin;
     margin-inline: calc(-1 * var(--gutter)); padding: 0 var(--gutter) var(--sp-3); scroll-padding-inline: var(--gutter);
   }
   .plans > .tag { flex: 0 0 min(82vw, 23rem); scroll-snap-align: start; }
-  .tag { position: relative; z-index: 1; display: flex; flex-direction: column; padding-top: var(--tag-top); transition: opacity var(--d-ring) var(--ease-out); }
+  .tag { position: relative; z-index: 1; container-type: inline-size; display: flex; flex-direction: column; padding-top: var(--tag-top); transition: opacity var(--d-ring) var(--ease-out); }
   .tag.is-small { z-index: 0; }   /* too-small tags pass behind during the reflow */
   .tag__frame {
     position: relative; flex: 1; display: flex; flex-direction: column;
@@ -324,7 +335,7 @@
   .tag__name { font: 700 var(--fs-l)/1.1 var(--ff-display); }
   .tag__desc { font-size: var(--fs-s); line-height: 1.45; color: var(--c-ink-2); }
   .tag__money { display: grid; gap: var(--sp-1); }
-  .tag__price { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: .4rem; font: 700 var(--fs-price)/1 var(--ff-display); letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
+  .tag__price { display: flex; flex-wrap: nowrap; align-items: baseline; column-gap: .4rem; font: 700 var(--fs-price)/1 var(--ff-display); letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
   .tag__per { font: 400 var(--fs-s)/1.35 var(--ff-body); letter-spacing: 0; }
   .tag__bill, .tag__pp { font-size: var(--fs-s); line-height: 1.35; }
   .tag__pp { color: var(--c-ink-2); }
@@ -344,6 +355,10 @@
     transform: scale(0); opacity: 0;
   }
   .tag.is-chosen .badge { transform: none; opacity: 1; }
+  .tag .badge::after {   /* the hand-off pulse as the fob is read at the front door (--pulse 0 to 1) */
+    content: ''; position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--c-access);
+    scale: calc(1 + var(--pulse, 1) * .9); opacity: calc(1 - var(--pulse, 1)); pointer-events: none;
+  }
 
   .divider { flex: 0 0 6.5rem; scroll-snap-align: start; font-size: var(--fs-xs); color: var(--c-ink-2); line-height: 1.35; border-left: 1px solid var(--c-ink); padding: 3.25rem 0 0 var(--sp-3); }
   .divider.is-empty { display: none; }
@@ -529,12 +544,14 @@
     .spine { gap: var(--sp-4); }
     .rooms { margin-top: var(--sp-6); }
     /* sized on the small viewport (svh, browser bars showing) so a snapped tag and the whole building share the screen */
-    .floor { grid-template-columns: minmax(0, 1fr) 2.5rem minmax(0, 1fr); grid-template-rows: repeat(24, minmax(0, 1fr)); height: clamp(15rem, 33svh, 22rem); }
-    .plan__head { display: contents; }   /* title, floor, then the key, so the floor sits right under the rail */
-    .legend, .plan__let { order: 1; }
+    .floor { grid-template-columns: minmax(0, 1fr) 2.5rem minmax(0, 1fr); grid-template-rows: repeat(24, minmax(0, 1fr)); height: clamp(14rem, 30svh, 20rem); }
+    .plan__head { display: contents; }   /* title, floor, chosen line, caption and hours, then the key: what changes sits under the rail */
+    .plan__foot { order: 1; }
+    .legend, .plan__let { order: 3; }
+    .hours { --bar-h: 1.75rem; }
+    .day__more { display: none; }   /* day initials */
     .room[data-side="n"] { padding-right: .9rem; }   /* labels clear the door glyph on the Walk wall */
     .room[data-side="s"] { padding-left: .9rem; }
-    .plan__foot { order: 2; }
     .room { grid-row: var(--at); grid-column: var(--row); padding: .15rem .4rem; }
     .room[data-side="n"] { --t: 0; --l: 1; }  /* north column: door on its east wall, fills from the right */
     .room[data-side="w"] { --r: 0; --b: 1; }  /* the Walk: fills down from the front door at the top */
@@ -548,9 +565,9 @@
     .walk__more { display: none; }
     .room[data-side="n"] .door { left: auto; right: 0; bottom: auto; top: .25rem; rotate: -90deg; }
     .room[data-side="s"] .door { top: auto; right: auto; left: 0; bottom: .25rem; rotate: 90deg; }
-    .room[data-side="w"] .door { top: 0; left: calc(50% - 6px); rotate: 180deg; }
+    .room[data-side="w"] .door { top: 0; left: calc(50% - var(--door) / 2); rotate: 180deg; }
     .rate, .ring { display: none; }
-    .wave { right: 0; bottom: auto; width: auto; height: 2px; }
+    .wave { left: 0; right: 0; top: calc(-.7 * var(--band)); bottom: auto; width: auto; height: var(--band); background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--c-access) 35%, var(--c-ground)) 70%, var(--c-ink) 70% calc(70% + 2px), transparent calc(70% + 2px)); }
     .lane::before { right: 0; bottom: auto; width: auto; height: 8px; }
   }
 
@@ -564,6 +581,7 @@
     .intro { padding-bottom: var(--sp-5); }
     #plans { margin-top: calc(var(--sp-6) - var(--sp-8)); }   /* tags sit close under the plan they change */
     .plan__note { display: none; }
+    .door { --door: 14px; }
     .plan__foot { grid-template-columns: minmax(0, 1fr) minmax(20rem, 27rem); gap: var(--sp-6); align-items: start; }
     .plans {
       display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-6) var(--col-gap); align-items: start;
@@ -584,11 +602,17 @@
       align-items: stretch; column-gap: 20px;
     }
     .divider { grid-column: auto; border-top: 0; border-left: 1px solid var(--c-ink); padding: 3.25rem 0 0 var(--sp-3); }
+    .divider.is-empty { display: block; border-left-color: transparent; }   /* its track is permanent, so tags never change width */
   }
 
   /* wide but not the stage: the plan is not sticky, so tags link to it and it links back */
   @media (min-width: 992px) and (max-width: 1199px), (min-width: 1200px) and (max-height: 719px) {
     .tag__see { display: inline-block; }
+  }
+  @media (min-width: 1200px) and (min-height: 720px) and (hover: none) {   /* touch on the stage: the link is the visible cue that tags show doors */
+    .tag__see { display: inline-block; }
+  }
+  @media (min-width: 992px) and (max-width: 1199px), (min-width: 1200px) and (max-height: 719px) {
     .plan__back { display: block; justify-self: start; }
   }
 
@@ -671,7 +695,7 @@
         <p class="plan__let">Studios 3, 6 and 8 are free and come with a studio plan; the other five are let to members.</p>
         <ul class="legend" aria-label="Key">
           <li class="legend__open">Open with your fob</li>
-          <li class="legend__book">Bookable with your hours</li>
+          <li class="legend__book">Bookable<span class="legend__more"> with your hours</span></li>
           <li class="legend__locked">Locked</li>
         </ul>
       </div>
@@ -706,13 +730,13 @@
         </div>
         <div class="hours" role="img" aria-label="Each day runs midnight to midnight. Hours this fob opens doors: Monday to Friday, 08:00 to 19:00; closed to this fob at weekends.">
           <span class="hours__scale" aria-hidden="true"><span style="--h: 8">08</span><span style="--h: 19">19</span></span>
-          <span class="day"><span>Mon</span><span class="bar7"><span class="bar7__fill" style="--from: 8; --to: 19"></span></span></span>
-          <span class="day"><span>Tue</span><span class="bar7"><span class="bar7__fill" style="--from: 8; --to: 19"></span></span></span>
-          <span class="day"><span>Wed</span><span class="bar7"><span class="bar7__fill" style="--from: 8; --to: 19"></span></span></span>
-          <span class="day"><span>Thu</span><span class="bar7"><span class="bar7__fill" style="--from: 8; --to: 19"></span></span></span>
-          <span class="day"><span>Fri</span><span class="bar7"><span class="bar7__fill" style="--from: 8; --to: 19"></span></span></span>
-          <span class="day"><span>Sat</span><span class="bar7"><span class="bar7__fill" style="--from: 8; --to: 8"></span></span></span>
-          <span class="day"><span>Sun</span><span class="bar7"><span class="bar7__fill" style="--from: 8; --to: 8"></span></span></span>
+          <span class="day"><span>M<span class="day__more">on</span></span><span class="bar7"><span class="bar7__fill" style="--from: 8; --to: 19"></span></span></span>
+          <span class="day"><span>T<span class="day__more">ue</span></span><span class="bar7"><span class="bar7__fill" style="--from: 8; --to: 19"></span></span></span>
+          <span class="day"><span>W<span class="day__more">ed</span></span><span class="bar7"><span class="bar7__fill" style="--from: 8; --to: 19"></span></span></span>
+          <span class="day"><span>T<span class="day__more">hu</span></span><span class="bar7"><span class="bar7__fill" style="--from: 8; --to: 19"></span></span></span>
+          <span class="day"><span>F<span class="day__more">ri</span></span><span class="bar7"><span class="bar7__fill" style="--from: 8; --to: 19"></span></span></span>
+          <span class="day"><span>S<span class="day__more">at</span></span><span class="bar7"><span class="bar7__fill" style="--from: 8; --to: 8"></span></span></span>
+          <span class="day"><span>S<span class="day__more">un</span></span><span class="bar7"><span class="bar7__fill" style="--from: 8; --to: 8"></span></span></span>
         </div>
         <p class="plan__note">The ropewalk is 96 m long. Rope was laid along the Walk until 1961.</p>
         <a class="ul plan__back" href="#plans">Back to plans</a>
@@ -1035,7 +1059,7 @@
   const capIn = $('.caption__in'), hoursEl = $('.hours'), bars = $$('.bar7__fill'), planName = $('[data-plan-name]');
   const title = $('#rw-title'), trialPlan = $('#tr-plan'), chosenName = $('[data-chosen-name]'), modeLines = [...$('.plan__mode').children];
   const ROOMS = Object.fromEntries($$('.room').map(el => [el.dataset.room, {
-    el, fill: $('.fill', el), name: el.dataset.name, seats: +el.dataset.seats || 0, pos: +el.dataset.pos,
+    el, fill: $('.fill', el), door: $('.door', el), name: el.dataset.name, seats: +el.dataset.seats || 0, pos: +el.dataset.pos,
   }]));
   const TAG = Object.fromEntries($$('.tag').map(el => [el.dataset.plan, {
     el, price: $('[data-price]', el), billed: $('[data-billed]', el), each: $('[data-each]', el), pp: $('[data-pp]', el), ppLine: $('.tag__pp', el),
@@ -1094,7 +1118,7 @@
   const FX0 = { ...fx };
 
   function paintPlan(lit, hrs) {
-    for (const [id, r] of Object.entries(ROOMS)) r.fill.style.setProperty('--fill', lit.has(id) ? 1 : 0);
+    for (const [id, r] of Object.entries(ROOMS)) { r.fill.style.setProperty('--fill', lit.has(id) ? 1 : 0); r.door.style.setProperty('--swing', lit.has(id) ? 0 : 90); }
     bars.forEach((b, i) => { const h = hrs[i] || [8, 8]; b.style.setProperty('--from', h[0]); b.style.setProperty('--to', h[1]); });
   }
   const paintFor = id => paintPlan(litOf(id), id ? HOURS[hoursKey(id)] : []);
@@ -1141,7 +1165,8 @@
     const { fit, small } = order(S.n);
     [...fit.map(id => TAG[id].el), divider, ...small.map(id => TAG[id].el)].forEach(el => plansEl.append(el));
     const track = 'minmax(0, 1fr)';
-    plansEl.style.setProperty('--cols', [...fit.map(() => track), ...(small.length ? ['var(--div-w)'] : []), ...small.map(() => track)].join(' '));
+    // the divider track is always there (empty when nothing is too small), so the tags never change width
+    plansEl.style.setProperty('--cols', [...fit.map(() => track), 'var(--div-w)', ...small.map(() => track)].join(' '));
     divider.classList.toggle('is-empty', !small.length);
     divider.textContent = small.length ? `Too small for ${S.n} of you` : '';
   }
@@ -1161,7 +1186,7 @@
     fs.classList.add('is-live');
     const clipAt = (l, r) => { pill.style.clipPath = `inset(0 ${r}px 0 ${l}px round 999px)`; };
     const place = o => { const p = pill.getBoundingClientRect(), b = o.getBoundingClientRect(); if (p.width) clipAt(b.left - p.left, p.right - b.right); };
-    const rest = () => place(opts.find(o => $('input', o).checked));
+    const rest = () => { fs.classList.remove('is-holding'); place(opts.find(o => $('input', o).checked)); };
     fs.addEventListener('pointerover', e => { const o = e.target.closest('.seg__opt'); if (o && e.pointerType === 'mouse') place(o); });
     fs.addEventListener('pointerleave', rest);
     fs.addEventListener('change', rest);
@@ -1172,19 +1197,21 @@
     const collapse = () => {   // L4 first frame: a zero-width pill at the checked option's centre
       const o = opts.find(x => $('input', x).checked), p = pill.getBoundingClientRect(), b = o.getBoundingClientRect();
       const c = (b.left - p.left + b.width / 2) / p.width * 100;   // percent, so a late font swap cannot skew it
+      fs.classList.add('is-holding');
       pill.style.transition = 'none'; pill.style.clipPath = `inset(0 ${100 - c}% 0 ${c}% round 999px)`;
       pill.getBoundingClientRect(); pill.style.transition = '';
     };
     const open = g => {   // L4: from the centre of the checked option out to its edges (GSAP, so captures end settled)
       const o = opts.find(x => $('input', x).checked), p = pill.getBoundingClientRect(), b = o.getBoundingClientRect();
       const l = b.left - p.left, r = p.right - b.right, c = l + b.width / 2;
+      fs.classList.remove('is-holding');
       pill.style.transition = 'none';
       g.fromTo(pill, { clipPath: `inset(0px ${p.width - c}px 0px ${c}px round 999px)` }, {
         clipPath: `inset(0px ${r}px 0px ${l}px round 999px)`, duration: 0.5, ease: 'expo.out',
         onComplete: snap,   // re-measure: fonts may have swapped mid-tween
       });
     };
-    return { fs, rest, collapse, open };
+    return { fs, rest, collapse, open, snap };
   });
 
   /* ---------- Render everything instantly from state ---------- */
@@ -1469,45 +1496,53 @@
         .fromTo(el, { yPercent: 100, opacity: 0 }, { yPercent: 0, opacity: 1, duration: T.swap, ease: 'expo.out' });
     };
 
-    // SIG: the fob flood as a diff. Shared rooms stay lit; old-only rooms drain to their door;
-    // new-only rooms fill from their door, ranked by walking distance from the front door (TR3).
-    // Commit: the fob is read at the front door. A tar tick flashes at the reader, the Walk re-fills from the door
-    // behind a 2px tar edge (0.6s power2.inOut; the only shared room that re-sweeps), and each room the new plan adds
-    // opens, door leaf swinging, as the edge passes its door (data-pos is metres along the 96 m Walk).
-    const wave = $('.wave'), lane = $('.lane'), walk = ROOMS.walk, W = 0.6;
+    // SIG: the fob flood as a diff. Shared rooms stay lit; old-only rooms drain to their door and the door shuts;
+    // new-only rooms open their door and fill from it, ranked by walking distance from the front door (TR3).
+    const open = (id, delay) => {
+      const { fill, door } = ROOMS[id];
+      gsap.to(door, { '--swing': 0, duration: 0.4, ease: 'expo.out', delay: Math.max(0, delay - 0.06), overwrite: true });
+      gsap.to(fill, { '--fill': 1, duration: id === 'walk' ? T.fill * 1.8 : T.fill, ease: 'expo.out', delay, overwrite: true });
+    };
+    const shut = id => {
+      const { fill, door } = ROOMS[id];
+      gsap.to(fill, { '--fill': 0, duration: T.drain, ease: 'expo.inOut', overwrite: true });
+      gsap.to(door, { '--swing': 90, duration: T.drain, ease: 'expo.inOut', overwrite: true });
+    };
+    // Commit, a second beat after the preview: the chosen tag's badge pulses as a tar tick flashes at the front-door
+    // reader, a band (tar edge, green trail) runs east over the lit Walk (0.6s power2.inOut), and each room the new
+    // plan adds opens as the band passes its door (data-pos is metres along the 96 m Walk); rooms the preview already
+    // lit close (0.12s expo.in) and reopen as the band passes. When it reaches the east wall, each day re-pours.
+    const wave = $('.wave'), lane = $('.lane'), W = 0.6;
     const tAt = p => p < 0.5 ? Math.sqrt(p / 2) : 1 - Math.sqrt((1 - p) / 2);   // inverse of power2.inOut
     const pour = (from, to, hrs, prev) => {
-      const ax = wide ? 'x' : 'y', r = walk.el.getBoundingClientRect(), len = wide ? r.width : r.height;
-      gsap.killTweensOf([wave, lane, walk.fill]);
+      const ax = wide ? 'x' : 'y', r = ROOMS.walk.el.getBoundingClientRect(), len = wide ? r.width : r.height;
+      gsap.killTweensOf([wave, lane]);
+      gsap.fromTo(TAG[S.chosen].badge, { '--pulse': 0 }, { '--pulse': 1, duration: 0.6, ease: 'expo.out', overwrite: true });
       gsap.fromTo(lane, { '--tick': 1 }, { '--tick': 0, duration: 0.5, ease: 'expo.out' });
       gsap.timeline().set(wave, { autoAlpha: 1, [ax]: 0 })
         .to(wave, { [ax]: len - 2, duration: W, ease: 'power2.inOut' })
         .to(wave, { autoAlpha: 0, duration: 0.2, ease: 'expo.out' });
-      gsap.fromTo(walk.fill, { '--fill': 0 }, { '--fill': 1, duration: W, ease: 'power2.inOut' });
-      [...from].filter(id => !to.has(id)).forEach(id => gsap.to(ROOMS[id].fill, { '--fill': 0, duration: T.drain, ease: 'expo.inOut', overwrite: true }));
+      [...from].filter(id => !to.has(id)).forEach(shut);
       [...to].filter(id => id !== 'walk' && (!prev.has(id) || !from.has(id))).forEach(id => {
-        const { fill: f, el } = ROOMS[id], at = tAt(Math.min(1, ROOMS[id].pos / 96)) * W, lit = from.has(id), door = $('.door', el);
+        const { fill: f, door } = ROOMS[id], at = tAt(Math.min(1, ROOMS[id].pos / 96)) * W, lit = from.has(id);
         gsap.killTweensOf([f, door]);
-        const tl = gsap.timeline();
-        if (lit) tl.to(f, { '--fill': 0, duration: 0.18, ease: 'expo.inOut' });   // previewed already: close it, then open it as the fob is read
-        const t = Math.max(at, lit ? 0.18 : 0);
-        tl.to(f, { '--fill': 1, duration: 0.55, ease: 'expo.inOut' }, t)
-          .fromTo(door, { '--swing': 60 }, { '--swing': 0, duration: 0.3, ease: 'expo.out' }, t);   // from near shut to open
+        const tl = gsap.timeline(), t = Math.max(at, lit ? 0.12 : 0);
+        if (lit) tl.to(f, { '--fill': 0, duration: 0.12, ease: 'expo.in' }, 0).to(door, { '--swing': 90, duration: 0.12, ease: 'expo.in' }, 0);
+        tl.to(door, { '--swing': 0, duration: 0.4, ease: 'expo.out' }, Math.max(lit ? 0.12 : 0, t - 0.06))
+          .to(f, { '--fill': 1, duration: 0.55, ease: 'expo.inOut' }, t);
       });
-      bars.forEach((b, i) => {
+      bars.forEach((b, i) => {   // re-pour every day from its opening hour, even when the preview already showed it
         const h = hrs[i] || [8, 8];
-        gsap.to(b, { '--from': h[0], '--to': h[1], duration: T.hours, ease: 'expo.out', delay: W + i * 0.03, overwrite: true });
+        gsap.fromTo(b, { '--from': h[0], '--to': h[0] }, { '--to': h[1], duration: T.hours, ease: 'expo.out', delay: W + i * 0.05, immediateRender: false, overwrite: true });
       });
     };
     fx.flood = (from, to, hrs, prev) => {
       if (prev) return pour(from, to, hrs, prev);
       const out = [...from].filter(id => !to.has(id));
       const inn = [...to].filter(id => !from.has(id)).sort((a, b) => ROOMS[a].pos - ROOMS[b].pos);
-      out.forEach(id => gsap.to(ROOMS[id].fill, { '--fill': 0, duration: T.drain, ease: 'expo.inOut', overwrite: true }));
+      out.forEach(shut);
       const lead = out.length ? T.drain * 0.4 : 0;
-      inn.forEach((id, i) => gsap.to(ROOMS[id].fill, {
-        '--fill': 1, duration: id === 'walk' ? T.fill * 1.8 : T.fill, ease: 'expo.out', delay: lead + i * T.step, overwrite: true,
-      }));
+      inn.forEach((id, i) => open(id, lead + i * T.step));
       bars.forEach((b, i) => {
         const h = hrs[i] || [8, 8];
         gsap.to(b, { '--from': h[0], '--to': h[1], duration: T.hours, ease: 'expo.out', delay: lead + i * 0.03, overwrite: true });
@@ -1555,7 +1590,7 @@
       if (!alive) return;
       ctx.add(() => SplitText.create(title, {
         type: 'lines', mask: 'lines', linesClass: 'ln', autoSplit: true,
-        onSplit: self => gsap.from(self.lines, { yPercent: 110, duration: 1, ease: 'expo.out', stagger: 0.08 }),
+        onSplit: self => gsap.from(self.lines, { yPercent: 120, duration: 1, ease: 'expo.out', stagger: 0.08 }),
       }));
       title.classList.add('is-ready');
     });
@@ -1626,6 +1661,13 @@
     };
   });
   root.classList.remove('intro');   // GSAP now holds every first-frame state inline
+  // the ticker never ran (virtual-time capture, a tab opened in the background): jump to the finished page
+  setTimeout(() => {
+    if (gsap.ticker.frame > 10) return;
+    S.ready = true; S.holdPills = false; S.inView = true;
+    gsap.globalTimeline.getChildren(false, true, true).forEach(t => t.progress(1));
+    title.classList.add('is-ready'); renderAll(); segs.forEach(s => s.snap());
+  }, 2500);
   });
 })();
 </script>
