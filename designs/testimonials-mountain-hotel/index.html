@@ -72,7 +72,7 @@
   @media (min-width: 1024px) {
     :root {
       --gutter: 2.5rem; --page-pad: var(--s-6); --stack-top: 6rem; --stack-step: 1.5rem;
-      --stack-gap: var(--s-8); --stamp-size: 104px; --board-h: 210px;
+      --stack-gap: var(--s-8); --stamp-size: 104px; --board-h: 150px;
     }
   }
 
@@ -112,7 +112,6 @@
   .peaks b { display: block; font-weight: 600; }
   .lead-narrow { display: none; }
   @media (max-width: 599px) {
-    .peaks { font-size: .75rem; }
     .peaks li { left: var(--lxn); }
     .peaks b { width: min-content; white-space: normal; } /* "Hinterer Ferner" on two lines, so five names fit at 320px */
     .peaks li.end { left: auto; right: calc(100% - var(--lxn)); padding: 0 .2em 0 0; text-align: right; }
@@ -121,7 +120,7 @@
   }
 
   .sight { position: absolute; inset: 0 auto 0 0; pointer-events: none; visibility: hidden; opacity: 0; }
-  .sight-line { position: absolute; top: 0; bottom: 0; left: 0; width: 1px; background: var(--slate); }
+  .sight-line { position: absolute; top: 30%; bottom: 0; /* starts under the printed labels, never through them */ left: 0; width: 1px; background: var(--slate); }
   .sight-tag {
     position: absolute; bottom: 6px; left: 6px; overflow: clip; white-space: nowrap;
     font-size: var(--t-xs); line-height: 1.5; font-stretch: var(--wdth-cond); font-weight: 500;
@@ -146,16 +145,16 @@
   .qs ul { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-3); }
   .qs a, .mail a {
     position: relative; display: inline-block; color: inherit; text-decoration: none; padding-bottom: .12em;
+    /* Resting cue on every pointer: a 1px rule says "link"; HV2 draws the full line over it */
+    background: linear-gradient(var(--rest, var(--slate-soft)), var(--rest, var(--slate-soft))) 0 100% / 100% 1px no-repeat;
   }
+  .qs li a[aria-current] { background: none; } /* the current question carries only its mark */
   .qs a { font-size: var(--t-md); line-height: 1.3; font-weight: 500; }
-  .qs .add { margin-top: var(--s-6); color: var(--ink); font-weight: 600; } /* the one action: ink says you write here */
-  .m { display: block; padding: .1em .4em .2em; margin: -.1em -.4em -.2em; }
-  .rail.is-rising .m { overflow: clip; }
-  .q { display: block; }
+  .qs .add { margin-top: var(--s-6); color: var(--ink); font-weight: 600; --rest: var(--ink); } /* the one action: ink says you write here */
 
   /* HV2: the underline enters from the left and leaves to the right */
   .qs a::after, .mail a::after {
-    content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: .07em; background: currentColor;
+    content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: max(2px, .07em); background: currentColor;
     transform: scaleX(0); transform-origin: 100% 50%;
     transition: transform var(--dur-under) var(--ease-under);
   }
@@ -164,13 +163,6 @@
   @media (hover: hover) and (pointer: fine) {
     .qs a:hover::after, .mail a:hover::after { transform: scaleX(1); transform-origin: 0 50%; }
   }
-  @media (hover: none) {
-    /* Touch: a quiet resting underline says "link"; the current question keeps only its pink mark */
-    .qs a::after, .mail a::after { transform: scaleX(1); transform-origin: 0 50%; }
-    .qs li a::after { opacity: .35; }
-    .qs li a[aria-current]::after { opacity: 0; }
-  }
-  .rail.is-rising a::after { transform: scaleX(0); transition: none; }
 
   .mail { margin: var(--s-6) 0 0; font-size: var(--t-sm); max-width: 24em; }
   .mail a { font-weight: 500; white-space: nowrap; }
@@ -212,6 +204,7 @@
     min-height: var(--min, 0); /* never shorter than a page under it, so covered pages show only their top edges */
     background: var(--paper); border: 1px solid var(--rule); border-radius: 2px;
     transform-origin: 50% 0; container-type: inline-size;
+    display: flex; flex-direction: column;
   }
   .page::after {
     content: ''; position: absolute; inset: -1px; border-radius: inherit; pointer-events: none;
@@ -228,7 +221,7 @@
   .c-date { order: 1; } .c-room { order: 2; } .c-name { order: 3; } .c-from { order: 4; }
   .c-rem, .c-errs { order: 5; grid-column: 1 / -1; }
   @container (min-width: 560px) {
-    .entry { grid-template-columns: 10rem minmax(0, 1.4fr) minmax(0, 1fr) 6rem; }
+    .entry { grid-template-columns: max-content minmax(0, 1.3fr) minmax(0, 1.2fr) 3.5rem; column-gap: var(--s-5); }
     .c-name { order: 2; } .c-from { order: 3; } .c-room { order: 4; }
   }
   dt, .colhead, label.colhead {
@@ -246,7 +239,12 @@
   .c-rem p { margin: 0; overflow-wrap: anywhere; }
   .page--yours .c-rem p { white-space: pre-line; }
 
-  .foot { display: flex; align-items: flex-end; gap: var(--s-4); margin-top: var(--s-2); }
+  .foot { display: flex; align-items: flex-end; gap: var(--s-4); margin-top: auto; padding-top: var(--s-2); }
+  /* Your page is stretched to cover the stack: its Remarks ruling runs on to the foot, like unused lines in the book */
+  .page--yours .entry { flex: 1; grid-template-rows: auto auto 1fr; }
+  .page--yours .c-rem { display: flex; flex-direction: column; }
+  .page--yours .c-rem dd { flex: 1; }
+  @container (min-width: 560px) { .page--yours .entry { grid-template-rows: auto 1fr; } }
   .marked-for { /* below 1024px the question's half of the stroke, printed at the top so it comes before the answer */
     margin: 0 0 var(--s-4); max-width: 24em;
     font-size: var(--t-xs); line-height: 1.6; font-weight: 500; font-stretch: var(--wdth-cond);
@@ -258,7 +256,6 @@
     color: var(--stamp); opacity: .88; mix-blend-mode: multiply; transform: rotate(var(--rot, 0deg));
     font-family: var(--font-print); font-stretch: var(--wdth-cond); pointer-events: none;
   }
-  .page:focus-visible { outline-offset: 4px; }
 
   /* ---------- The blank page: a form on the book's ruling ---------- */
   .form-title { margin: 0 0 var(--s-5); font-size: var(--t-md); line-height: 1.3; font-weight: 600; font-stretch: var(--wdth-cond); }
@@ -385,15 +382,15 @@
         <p class="intro">Before people book, they ring us with the same five questions. Our guests have usually answered them better than we could, in the book on the stove bench in the Stube. When Marta finds such a line, she marks it in pink.</p>
         <nav class="qs" aria-label="Questions our guests answered">
           <ul>
-            <li><a href="#page-de-vries"><span class="m"><span class="q"><span class="mk">Will the children be bored?</span></span></span></a></li>
-            <li><a href="#page-holloway"><span class="m"><span class="q"><span class="mk">Can we get there without a car?</span></span></span></a></li>
-            <li><a href="#page-ostrowski"><span class="m"><span class="q"><span class="mk">What if it rains all week?</span></span></span></a></li>
-            <li><a href="#page-rojas"><span class="m"><span class="q"><span class="mk">Is it really quiet at night?</span></span></span></a></li>
-            <li><a href="#page-feld"><span class="m"><span class="q"><span class="mk">Is the food worth staying in for?</span></span></span></a></li>
+            <li><a href="#page-de-vries"><span class="mk">Will the children be bored?</span></a></li>
+            <li><a href="#page-holloway"><span class="mk">Can we get there without a car?</span></a></li>
+            <li><a href="#page-ostrowski"><span class="mk">What if it rains all week?</span></a></li>
+            <li><a href="#page-rojas"><span class="mk">Is it really quiet at night?</span></a></li>
+            <li><a href="#page-feld"><span class="mk">Is the food worth staying in for?</span></a></li>
           </ul>
-          <a class="add" href="#your-page"><span class="m"><span class="q">Write your own page</span></span></a>
+          <a class="add" href="#your-page">Add your page</a>
         </nav>
-        <p class="mail"><span class="m"><span class="q">Something else? Write to Marta at <a href="mailto:rooms@zirmegg.example" target="_blank" rel="noopener">rooms@zirmegg.example</a></span></span></p>
+        <p class="mail">Something else? Write to Marta at <a href="mailto:rooms@zirmegg.example" target="_blank" rel="noopener">rooms@zirmegg.example</a></p>
       </div>
 
       <div class="stack" id="stack">
@@ -500,7 +497,7 @@
                 <div class="err"><p id="e-room" data-msg="Choose your room, or Day visit."></p></div>
                 <p class="help" id="h-from">Your page is written in the school handwriting taught where you're from. Somewhere else uses the English hand.</p>
               </div>
-              <div class="c-rem"><label class="colhead" for="f-rem">Remarks</label><span class="ctl"><textarea class="hand-field" id="f-rem" name="remarks" rows="4" required minlength="10" maxlength="280" aria-describedby="h-rem e-rem" data-lenis-prevent></textarea></span>
+              <div class="c-rem"><label class="colhead" for="f-rem">Remarks</label><span class="ctl"><textarea class="hand-field" id="f-rem" name="remarks" rows="4" required minlength="10" maxlength="280" aria-describedby="h-rem e-rem"></textarea></span>
                 <div class="err"><p id="e-rem" data-msg="Write at least a few words, up to 280 characters."></p></div>
                 <p class="help" id="h-rem">Up to 280 characters. <span class="count" id="count" aria-hidden="true">280 characters left</span></p>
               </div>
@@ -577,7 +574,14 @@
   const longDate = (d) => new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(d);
   const isoDate = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   const stampDate = (d) => `${pad(d.getDate())} ${MON[d.getMonth()]} ${d.getFullYear()}`;
-  dateField.textContent = longDate(new Date());
+  // Guests write the date the way they were taught at school, like the seeded pages
+  const handDate = (d, k) => {
+    const D = d.getDate(), M = d.getMonth() + 1, Y = d.getFullYear();
+    return { nl: `${D}-${M}-${Y}`, de: `${pad(D)}.${pad(M)}.${Y}`, cl: `${D}/${M}/${Y}`,
+      us: new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(d),
+      gb: longDate(d) }[k];
+  };
+  dateField.textContent = handDate(new Date(), 'gb');
 
   // ---- NV6: glide (or jump) to a page where it sticks, then move focus ----
   function go(target, { focus = target, duration, then } = {}) {
@@ -601,7 +605,7 @@
   function setHand(k, animate) {
     if (k === hand) return;
     hand = k;
-    const swap = () => formPage.style.setProperty('--hand', `var(--hand-${k})`);
+    const swap = () => { formPage.style.setProperty('--hand', `var(--hand-${k})`); dateField.textContent = handDate(new Date(), k); };
     const handed = [F.name, F.remarks, dateField];
     if (animate && st.motion) {
       gsap.timeline({ defaults: { duration: .1, ease: 'expo.out', overwrite: 'auto' } })
@@ -621,6 +625,8 @@
     const left = MAX - F.remarks.value.length;
     count.textContent = `${left} character${left === 1 ? '' : 's'} left`;
     if (left === 40 || left === 0) live.textContent = count.textContent;
+    // Only a textarea that really overflows keeps the wheel; otherwise it would trap page scroll
+    F.remarks.toggleAttribute('data-lenis-prevent', F.remarks.scrollHeight > F.remarks.clientHeight);
   }
   F.remarks.addEventListener('input', updateCount);
 
@@ -652,7 +658,7 @@
     page.setAttribute('aria-labelledby', `n-yours-${n}`);
     page.style.cssText = `--hand:var(--hand-${k});--rot:${rot}deg`;
     const time = $('time', page);
-    time.dateTime = isoDate(d); time.textContent = longDate(d);
+    time.dateTime = isoDate(d); time.textContent = handDate(d, k);
     Object.assign($('h3', page), { id: `n-yours-${n}`, textContent: F.name.value.trim() });
     $('.v-from', page).textContent = F.from.value;
     $('.v-room', page).textContent = F.room.value.replace('Room ', '');
@@ -716,10 +722,12 @@
       return w.appendChild(b);
     });
     const widths = split.words.map((w) => w.getBoundingClientRect().width || 1);
+    const total = widths.reduce((a, b) => a + b, 0);
     let run;
     return {
       split,
-      sweep(to, dur, delay = 0) {
+      // One pen speed for every mark (~700 px/s): a longer phrase simply takes longer
+      sweep(to, dur = gsap.utils.clamp(.45, 1.1, total / 700), delay = 0) {
         run && run.kill();
         gsap.set(bands, { transformOrigin: to ? '0% 50%' : '100% 50%' });
         const tl = gsap.timeline({ paused: true });
@@ -736,7 +744,7 @@
     const was = linkFor(st.cur), now = linkFor(p);
     st.cur = p;
     if (was) { was.removeAttribute('aria-current'); motion && st.marks.get($('.mk', was))?.sweep(0, .4); }
-    if (now) { now.setAttribute('aria-current', 'true'); motion && st.marks.get($('.mk', now))?.sweep(1, .65, wait()); }
+    if (now) { now.setAttribute('aria-current', 'true'); motion && st.marks.get($('.mk', now))?.sweep(1, undefined, wait()); }
   }
 
   gsap.matchMedia().add({
@@ -800,8 +808,8 @@
           onEnter: () => {
             st.marked.add(p.id);
             const d = wait();
-            if (!wide && note) note.sweep(1, .65, d);
-            ans.sweep(1, .8, d + .15);
+            if (!wide && note) note.sweep(1, undefined, d);
+            ans.sweep(1, undefined, d + .15);
           },
         }));
       });
@@ -830,7 +838,6 @@
       st.marks.clear();
       setCurrent(null, false);
       root.classList.remove('motion');
-      rail.classList.remove('is-rising');
       st.build = null;
       if (lenis) { gsap.ticker.remove(tick); gsap.ticker.lagSmoothing(500, 33); lenis.destroy(); st.lenis = null; }
     };
@@ -839,18 +846,16 @@
   // ---- Page load: one timeline, nothing gated, links focusable throughout ----
   function loadSequence(ctx) {
     const h2 = $('#gb-title'), first = pages()[0], t0 = performance.now();
-    loadEnd = t0 + 1350; // the first page settles: the first stroke starts then
-    rail.classList.add('is-rising');
+    loadEnd = t0 + 1050; // the first page settles: the first stroke starts then and is the last thing that moves
     gsap.set(h2, { autoAlpha: 0 });
-    const tl = gsap.timeline({ defaults: { ease: 'expo.out' }, onComplete: () => rail.classList.remove('is-rising') })
+    const tl = gsap.timeline({ defaults: { ease: 'expo.out' } })
       .from('.hotel', { y: 6, autoAlpha: 0, duration: .4 }, 0)
       .fromTo('.board-frame', { clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0% 0 0%)', duration: 1.6, clearProps: 'clipPath' }, .1)
       .from('.ridge', { scale: 1.12, transformOrigin: '50% 100%', duration: 1.6, clearProps: 'transform' }, .1)
-      .from('.peaks li', { autoAlpha: 0, duration: .4, stagger: .06 }, .9)
-      .from('.intro', { autoAlpha: 0, duration: .6 }, .6)
-      .from('.rail .q', { yPercent: 140, duration: .7, stagger: .06 }, .75); // past the mask's .2em bottom padding
+      .from('.ridge .lead', { autoAlpha: 0, duration: .4 }, .9) // leader lines appear with their names
+      .from('.peaks li', { autoAlpha: 0, duration: .4, stagger: .06 }, .9);
     // The first page is laid down onto the book: transform only, no fade, no shadow
-    if (first.getBoundingClientRect().top < innerHeight) tl.from(first, { y: 56, rotation: 1.5, duration: .9 }, .45);
+    if (first.getBoundingClientRect().top < innerHeight) tl.from(first, { y: 56, rotation: 1.5, duration: .8 }, .25);
     fontsReady.then(() => ctx.add(() => {
       gsap.set(h2, { autoAlpha: 1 });
       const delay = Math.max(0, .35 - (performance.now() - t0) / 1000);
@@ -861,7 +866,7 @@
     }));
   }
 
-  // ---- I4: a sighting line across the panorama board ----
+  // ---- I4: a click or tap on the panorama board sights the nearest peak ----
   function sighting() {
     const frame = $('.board-frame'), sight = $('.sight'), tag = $('.sight-tag'), txt = $('.sight-txt');
     const peaks = $$('.peaks li').map((li) => ({
@@ -876,35 +881,26 @@
       shown = on;
       gsap.to(sight, { autoAlpha: on ? 1 : 0, duration: .2, ease: 'expo.out', overwrite: 'auto' });
     };
-    const aim = (x, w, snap) => {
-      let best = null, bd = snap ? Infinity : 28;
-      peaks.forEach((p) => { const dd = Math.abs(p.f * w - x); if (dd <= bd) { bd = dd; best = p; } });
-      if (snap) x = best.f * w;
+    const aim = (x, w) => {
+      const best = peaks.reduce((a, p) => (Math.abs(p.f * w - x) < Math.abs(a.f * w - x) ? p : a));
+      x = best.f * w;
       xTo(x);
-      if (best !== near) { // the label names a peak only when the line is on one
+      if (best !== near) {
         near = best;
-        if (best) {
-          txt.textContent = best.label;
-          tag.classList.toggle('flip', x > w - tag.offsetWidth - 16);
-          gsap.fromTo(txt, { yPercent: 100 }, { yPercent: 0, duration: .25, ease: 'expo.out', overwrite: true });
-        } else gsap.to(txt, { yPercent: 100, duration: .2, ease: 'expo.out', overwrite: true });
+        txt.textContent = best.label;
+        tag.classList.toggle('flip', x > w - tag.offsetWidth - 16);
+        gsap.fromTo(txt, { yPercent: 100 }, { yPercent: 0, duration: .25, ease: 'expo.out', overwrite: true });
       }
       show(true);
     };
     const at = (e) => { const r = frame.getBoundingClientRect(); return [Math.min(r.width, Math.max(0, e.clientX - r.left)), r.width]; };
-    const move = (e) => { if (e.pointerType === 'mouse') aim(...at(e)); };
     let fade;
     const hide = () => { clearTimeout(fade); show(false); };
-    const tap = (e) => { if (e.pointerType !== 'mouse') { aim(...at(e), true); clearTimeout(fade); fade = setTimeout(hide, 3000); } };
-    const leave = (e) => e.pointerType === 'mouse' && hide();
-    frame.addEventListener('pointermove', move);
+    const tap = (e) => { aim(...at(e)); clearTimeout(fade); fade = setTimeout(hide, 3000); };
     frame.addEventListener('pointerdown', tap);
-    frame.addEventListener('pointerleave', leave);
     window.addEventListener('blur', hide);
     return () => {
-      frame.removeEventListener('pointermove', move);
       frame.removeEventListener('pointerdown', tap);
-      frame.removeEventListener('pointerleave', leave);
       window.removeEventListener('blur', hide);
       clearTimeout(fade);
       gsap.set(sight, { autoAlpha: 0 });

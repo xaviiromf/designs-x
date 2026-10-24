@@ -25,8 +25,8 @@
     --paint-dry: color-mix(in oklab, var(--paint) 87%, var(--lane));
     --reflector: #FFD34D;   /* pedal reflector amber: slab only */
     --sign: #1D55A8;        /* round bicycle-sign blue: the brand mark only */
-    --rule: color-mix(in oklab, var(--ink) 38%, var(--ground));
-    --track: color-mix(in oklab, var(--ink) 50%, var(--ground));
+    --rule: color-mix(in oklab, var(--ink) 38%, var(--ground));    /* decorative rules only; control borders use --ink-soft */
+    --track: color-mix(in oklab, var(--ink) 58%, var(--ground));   /* rail track: 3.8:1 on ground */
     --band: color-mix(in oklab, var(--lane) 11%, var(--ground));
     --sheet: var(--paint);
     --field: color-mix(in oklab, var(--ground) 45%, var(--paint));
@@ -126,11 +126,14 @@
   .brand:active svg { scale: .97; }
   .top nav { margin-left: auto; display: flex; gap: var(--s-6); }
   .top nav a { font-weight: 500; }
+  /* Phones: one row. Skip the drawing leads to Setups, and Specs follows it. */
   @media (max-width: 599px) {
-    .top .wrap { display: grid; grid-template-columns: 1fr auto; row-gap: var(--s-4); }
-    .top nav { grid-row: 2; grid-column: 1 / -1; margin: 0; }
-    .top .btn { min-height: 44px; padding-inline: var(--s-4); font-size: var(--t-sm); }
+    .top nav { display: none; }
+    .top .btn { margin-left: auto; min-height: 44px; padding-inline: var(--s-4); font-size: var(--t-sm); }
   }
+  /* While the stage runs on wide screens, the header lies over the top of the runway, so the stage is centred from the
+     first frame. Phones keep it in flow: their stage uses the full height and the header would cover the rail. */
+  @media (min-width: 960px) { .stage .top { position: absolute; inset: 0 0 auto; z-index: 2; } }
 
   /* ---------- Stage: static by default (no JS, reduced motion, short screens) ---------- */
   .stage-box {
@@ -180,6 +183,7 @@
       grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
       grid-template-areas: "rail slab" "cap slab" "text slab" "skip slab";
       column-gap: var(--s-8); row-gap: var(--s-4);
+      padding-top: max(var(--s-5), 88px - 13svh);   /* keeps the slab's top edge below the header */
     }
     /* The lane runs off the page in the direction of travel; capped so short laptops still fit */
     .stage .slab {
@@ -229,6 +233,9 @@
 
   /* ---------- The lane slab and the drawing ---------- */
   .bike { display: block; width: 100%; height: 100%; --u: 1.4; }
+  /* The lit markings sit in their own layer, so the glow filter is composited instead of re-rasterised on every scrub frame */
+  .bike-lit { position: absolute; inset: 0; pointer-events: none; filter: drop-shadow(0 0 2.5px var(--reflector)) drop-shadow(0 0 9px rgb(255 211 77 / .55)); }
+  .bike .spot { mix-blend-mode: screen; }
   .bike [data-paint], .bike .wet, .bike .glow > g {
     fill: none; stroke: var(--paint-dry); stroke-width: var(--stroke-paint);
     stroke-linecap: round; stroke-linejoin: round;
@@ -243,12 +250,11 @@
     text-anchor: middle; dominant-baseline: central;
   }
   /* The wet head of each stroke: a brighter band at the wipe front */
-  .bike .wet { stroke: #fff; visibility: hidden; filter: drop-shadow(0 0 4px #fff) drop-shadow(0 0 10px rgb(255 255 255 / .5)); }
+  .bike .wet { stroke: #fff; visibility: hidden; filter: drop-shadow(0 0 5px rgb(255 255 255 / .7)); }
   .bike .wet .solid { fill: #fff; }
   .bike .wet.dim { stroke: #FFF2C2; }
   .bike .wet text { fill: #FFF2C2; }
   /* Headlamp: beam, lit lamp, and the glass-bead glow on markings inside the cone */
-  .bike .glow { filter: drop-shadow(0 0 2.5px var(--reflector)) drop-shadow(0 0 9px rgb(255 211 77 / .55)); }
   .bike .glow > g { stroke: #FFF4D2; }
   .bike .glow .solid { fill: #FFF4D2; }
   .bike .lamp-lit { fill: var(--reflector); }
@@ -300,6 +306,7 @@
   .bay:has(.toggle:focus-visible) .loaded, .bay:has([aria-pressed="true"]) .loaded { opacity: 1; transform: none; transition-duration: .5s; }
   .bay:has(.toggle:focus-visible) .empty, .bay:has([aria-pressed="true"]) .empty { transform: scale(.95); transition-duration: .5s; }
 
+  @media (max-width: 999px) { .bay:not(:last-child) .floor { display: none; } }
   @media (max-width: 599px) {
     .bay { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); column-gap: var(--s-4); padding-block: var(--s-5); }
     .bay-fig { grid-row: 1 / span 4; align-self: start; }
@@ -326,8 +333,9 @@
   .specs .wrap { display: grid; gap: var(--s-7) var(--s-8); }
   .specs-side h3 { font-size: var(--t-xl); font-weight: 700; line-height: 1.1; letter-spacing: -.01em; }
   .price-line { margin-top: var(--s-4); font-size: var(--t-md); line-height: 1.3; max-width: 24ch; text-wrap: balance; }
+  .specs-side { display: flex; flex-direction: column; align-items: flex-start; }
   .specs-side .btn { margin-top: var(--s-6); }
-  .specs-side .mail { display: inline-block; margin-top: var(--s-5); font-weight: 500; }
+  .specs-side .mail { margin-top: var(--s-5); font-weight: 500; }
   .spec-list { display: grid; grid-template-columns: minmax(0, 1fr); }
   .spec-list li { position: relative; }
   .spec-list li::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 1.5px; background: var(--rule); transform-origin: left center; transition: transform var(--d-slow) var(--ease-out) calc(var(--i) * .04s); }
@@ -341,7 +349,7 @@
   .row .go { overflow: hidden; color: var(--lane); font-size: var(--t-sm); font-weight: 500; white-space: nowrap; }
   .row .go span { display: block; transform: translateY(105%); transition: transform calc(.35s * .7) var(--ease-out); }
   .row:hover .go span, .row:focus-visible .go span { transform: none; transition-duration: .35s; }
-  @media (hover: none) { .row .go span { transform: none; } }
+  @media (hover: none) { .row .go { color: var(--ink-soft); font-size: var(--t-xs); } .row .go span { transform: none; } }
   @media (min-width: 640px) {
     .spec-list { grid-template-columns: max-content minmax(0, 1fr) max-content; }
     .spec-list li, .row { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; }
@@ -394,7 +402,7 @@
   .chip {
     position: relative; display: inline-flex; align-items: center; gap: var(--s-2);
     min-height: 44px; padding: 0 var(--s-4) 0 var(--s-2);
-    border: 2px solid var(--rule); border-radius: var(--r-pill); cursor: pointer; font-size: var(--t-sm);
+    border: 2px solid var(--ink-soft); border-radius: var(--r-pill); cursor: pointer; font-size: var(--t-sm);
     transition: transform var(--d-mid) var(--ease-out), border-color var(--d-fast), background-color var(--d-fast), color var(--d-fast);
   }
   .chip input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
@@ -408,7 +416,7 @@
   .chip:has(:checked) svg { clip-path: inset(0); }
   .chip:has(:focus-visible), .check:has(:focus-visible) { outline: 3px solid var(--focus); outline-offset: 3px; }
   .select { position: relative; display: block; }
-  .select select { appearance: none; display: block; width: 100%; min-height: 48px; padding: 0 var(--s-7) 0 var(--s-3); border: 2px solid var(--rule); border-radius: 6px; background: var(--field); cursor: pointer; transition: border-color var(--d-fast); }
+  .select select { appearance: none; display: block; width: 100%; min-height: 48px; padding: 0 var(--s-7) 0 var(--s-3); border: 2px solid var(--ink-soft); border-radius: 6px; background: var(--field); cursor: pointer; transition: border-color var(--d-fast); }
   .select::after { content: ''; position: absolute; right: var(--s-4); top: 50%; width: 9px; height: 9px; border: solid var(--ink); border-width: 0 2.5px 2.5px 0; transform: translateY(-70%) rotate(45deg); pointer-events: none; }
   .check { position: relative; display: flex; gap: var(--s-3); align-items: flex-start; cursor: pointer; font-size: var(--t-sm); padding-block: var(--s-1); border-radius: 6px; }
   .check input { position: absolute; opacity: 0; width: 24px; height: 24px; margin: 0; cursor: pointer; }
@@ -492,16 +500,15 @@
               <stop offset=".45" stop-color="#FFF8E0" stop-opacity=".16"/>
               <stop offset="1" stop-color="#FFF8E0" stop-opacity="0"/>
             </radialGradient>
-            <radialGradient id="spot-g">
-              <stop offset="0" stop-color="#FFF4D2" stop-opacity=".22"/>
-              <stop offset=".55" stop-color="#FFF4D2" stop-opacity=".09"/>
-              <stop offset="1" stop-color="#FFF4D2" stop-opacity="0"/>
+            <!-- The beam's pool on the asphalt: warm, hottest just under a flat top, like the horizontal cutoff of a bike lamp -->
+            <radialGradient id="spot-g" cx=".5" cy=".36" r=".62">
+              <stop offset="0" stop-color="#FFC870" stop-opacity=".36"/>
+              <stop offset=".5" stop-color="#FFC870" stop-opacity=".18"/>
+              <stop offset="1" stop-color="#FFC870" stop-opacity="0"/>
             </radialGradient>
-            <!-- Where markings light up: the hand-held beam, and the headlamp cone once it is on -->
-            <clipPath id="lit" clipPathUnits="userSpaceOnUse"><circle id="spot-clip" cx="620" cy="284" r="120"/><path id="cone-path" d="M766 196 L1246 484 A560 560 0 0 1 1054 676 Z"/></clipPath>
           </defs>
 
-          <ellipse class="spot" id="spot" cx="620" cy="284" rx="170" ry="125" fill="url(#spot-g)" opacity=".75" aria-hidden="true"/>
+          <ellipse class="spot" id="spot" cx="620" cy="284" rx="170" ry="102" fill="url(#spot-g)" opacity=".75" aria-hidden="true"/>
 
           <g class="paint">
             <!-- 0: laid down during page load -->
@@ -541,8 +548,18 @@
           </g>
 
           <path class="cone" id="cone" aria-hidden="true" d="M766 196 L1246 484 A560 560 0 0 1 1054 676 Z" fill="url(#beam-g)"/>
-          <g class="glow" clip-path="url(#lit)" aria-hidden="true"></g>
-          <g class="lamp-lit" aria-hidden="true"><circle cx="762" cy="194" r="17" opacity=".3"/><circle cx="762" cy="194" r="8"/></g>
+        </svg>
+        <!-- Glass-bead glow: a copy of the painted markings, shown through a feathered mask (the beam) and the headlamp cone -->
+        <svg class="bike bike-lit" viewBox="0 0 1000 570" aria-hidden="true">
+          <defs>
+            <radialGradient id="lit-g"><stop offset="0" stop-color="#fff"/><stop offset=".45" stop-color="#fff"/><stop offset="1" stop-color="#000"/></radialGradient>
+            <mask id="lit" maskUnits="userSpaceOnUse" x="-200" y="-200" width="1400" height="1000">
+              <circle id="spot-clip" cx="620" cy="284" r="150" fill="url(#lit-g)"/>
+              <path id="cone-path" d="M766 196 L1246 484 A560 560 0 0 1 1054 676 Z" fill="#fff"/>
+            </mask>
+          </defs>
+          <g class="glow" mask="url(#lit)"></g>
+          <g class="lamp-lit"><circle cx="762" cy="194" r="17" opacity=".3"/><circle cx="762" cy="194" r="8"/></g>
         </svg>
       </figure>
 
@@ -599,7 +616,7 @@
     <div class="wrap">
       <div class="sec-head">
         <h3 id="setups-t" tabindex="-1">One frame, four boxes</h3>
-        <p>Boxes swap with four bolts in about ten minutes. Hover or tap a setup to see it loaded.</p>
+        <p>Boxes swap with four bolts in about ten minutes. Choose a setup to see it loaded.</p>
       </div>
       <div class="bays" data-reveal="top 80%">
         <article class="bay" style="--i:0">
@@ -614,7 +631,7 @@
           </div>
           <h4>Kids bench <span class="price">+€290</span></h4>
           <p>Padded bench, two five-point belts, and a rain hood that clips on in one go.</p>
-          <button class="toggle" type="button" aria-pressed="false"><span class="pill"><span class="tickbox" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M2 6.4 4.8 9 10 3"/></svg></span>Show it loaded</span></button>
+          <button class="toggle" type="button" aria-pressed="false"><span class="pill"><span class="tickbox" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M2 6.4 4.8 9 10 3"/></svg></span>Show it loaded<span class="sr"> (Kids bench)</span></span></button>
           <span class="floor" aria-hidden="true"></span>
         </article>
         <article class="bay" style="--i:1">
@@ -630,7 +647,7 @@
           </div>
           <h4>Flat bed <span class="price">+€240</span></h4>
           <p>Open aluminium deck with tie-down rails, sized for a stack of two Euro crates.</p>
-          <button class="toggle" type="button" aria-pressed="false"><span class="pill"><span class="tickbox" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M2 6.4 4.8 9 10 3"/></svg></span>Show it loaded</span></button>
+          <button class="toggle" type="button" aria-pressed="false"><span class="pill"><span class="tickbox" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M2 6.4 4.8 9 10 3"/></svg></span>Show it loaded<span class="sr"> (Flat bed)</span></span></button>
           <span class="floor" aria-hidden="true"></span>
         </article>
         <article class="bay" style="--i:2">
@@ -645,7 +662,7 @@
           </div>
           <h4>Dog box <span class="price">+€340</span></h4>
           <p>Raised sides, a non-slip floor and a mesh door at the front for dogs up to 35&nbsp;kg.</p>
-          <button class="toggle" type="button" aria-pressed="false"><span class="pill"><span class="tickbox" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M2 6.4 4.8 9 10 3"/></svg></span>Show it loaded</span></button>
+          <button class="toggle" type="button" aria-pressed="false"><span class="pill"><span class="tickbox" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M2 6.4 4.8 9 10 3"/></svg></span>Show it loaded<span class="sr"> (Dog box)</span></span></button>
           <span class="floor" aria-hidden="true"></span>
         </article>
         <article class="bay" style="--i:3">
@@ -663,7 +680,7 @@
           </div>
           <h4>Market box <span class="price">+€310</span></h4>
           <p>A 140&nbsp;L box with a lockable lid for the weekly shop.</p>
-          <button class="toggle" type="button" aria-pressed="false"><span class="pill"><span class="tickbox" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M2 6.4 4.8 9 10 3"/></svg></span>Show it loaded</span></button>
+          <button class="toggle" type="button" aria-pressed="false"><span class="pill"><span class="tickbox" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M2 6.4 4.8 9 10 3"/></svg></span>Show it loaded<span class="sr"> (Market box)</span></span></button>
           <span class="floor" aria-hidden="true"></span>
         </article>
       </div>
@@ -675,19 +692,19 @@
       <div class="specs-side">
         <h3 id="specs-t" tabindex="-1">Specifications</h3>
         <p class="price-line">From €5,890 with the kids bench.</p>
-        <button class="btn" type="button" data-ride>Book a test ride</button><br>
+        <button class="btn" type="button" data-ride>Book a test ride</button>
         <a class="mail ul" href="mailto:workshop@kade-cargo.example" target="_blank" rel="noopener">Email the workshop</a>
       </div>
       <ul class="spec-list" data-reveal="top 85%">
-        <li style="--i:0"><a class="row" href="#ch-drive"><span class="k">Motor</span><span class="v">85&nbsp;Nm mid-drive</span><span class="go"><span>Show in drawing</span></span></a></li>
-        <li style="--i:1"><a class="row" href="#ch-drive"><span class="k">Battery</span><span class="v">750&nbsp;Wh, removable, second 545&nbsp;Wh optional</span><span class="go"><span>Show in drawing</span></span></a></li>
-        <li style="--i:2"><a class="row" href="#ch-drive"><span class="k">Range</span><span class="v">70–120&nbsp;km</span><span class="go"><span>Show in drawing</span></span></a></li>
-        <li style="--i:3"><a class="row" href="#ch-drive"><span class="k">Drive</span><span class="v">Carbon belt, stepless hub</span><span class="go"><span>Show in drawing</span></span></a></li>
-        <li style="--i:4"><a class="row" href="#ch-steer"><span class="k">Brakes</span><span class="v">Four-piston hydraulic, 203&nbsp;mm</span><span class="go"><span>Show in drawing</span></span></a></li>
-        <li style="--i:5"><a class="row" href="#ch-steer"><span class="k">Steering</span><span class="v">Rod linkage, 4.6&nbsp;m turning circle</span><span class="go"><span>Show in drawing</span></span></a></li>
-        <li style="--i:6"><a class="row" href="#ch-box"><span class="k">Box load</span><span class="v">100&nbsp;kg</span><span class="go"><span>Show in drawing</span></span></a></li>
-        <li style="--i:7"><a class="row" href="#ch-box"><span class="k">Maximum total weight</span><span class="v">220&nbsp;kg <span class="pn">(bike, rider and load)</span></span><span class="go"><span>Show in drawing</span></span></a></li>
-        <li style="--i:8"><a class="row" href="#ch-size"><span class="k">Length and width</span><span class="v">2.21&nbsp;m × 64&nbsp;cm</span><span class="go"><span>Show in drawing</span></span></a></li>
+        <li style="--i:0"><a class="row" href="#ch-drive"><span class="k">Motor</span><span class="v">85&nbsp;Nm mid-drive</span><span class="go"><span>See the drive</span></span></a></li>
+        <li style="--i:1"><a class="row" href="#ch-drive"><span class="k">Battery</span><span class="v">750&nbsp;Wh, removable, second 545&nbsp;Wh optional</span><span class="go"><span>See the drive</span></span></a></li>
+        <li style="--i:2"><a class="row" href="#ch-drive"><span class="k">Range</span><span class="v">70–120&nbsp;km</span><span class="go"><span>See the drive</span></span></a></li>
+        <li style="--i:3"><a class="row" href="#ch-drive"><span class="k">Drive</span><span class="v">Carbon belt, stepless hub</span><span class="go"><span>See the drive</span></span></a></li>
+        <li style="--i:4"><a class="row" href="#ch-steer"><span class="k">Brakes</span><span class="v">Four-piston hydraulic, 203&nbsp;mm</span><span class="go"><span>See steering and brakes</span></span></a></li>
+        <li style="--i:5"><a class="row" href="#ch-steer"><span class="k">Steering</span><span class="v">Rod linkage, 4.6&nbsp;m turning circle</span><span class="go"><span>See steering and brakes</span></span></a></li>
+        <li style="--i:6"><a class="row" href="#ch-box"><span class="k">Box load</span><span class="v">100&nbsp;kg</span><span class="go"><span>See the box</span></span></a></li>
+        <li style="--i:7"><a class="row" href="#ch-box"><span class="k">Maximum total weight</span><span class="v">220&nbsp;kg <span class="pn">(bike, rider and load)</span></span><span class="go"><span>See the box</span></span></a></li>
+        <li style="--i:8"><a class="row" href="#ch-size"><span class="k">Length and width</span><span class="v">2.21&nbsp;m × 64&nbsp;cm</span><span class="go"><span>See the size</span></span></a></li>
       </ul>
     </div>
   </section>
@@ -711,7 +728,7 @@
           <span class="input"><input id="f-email" name="email" type="email" autocomplete="email" required aria-describedby="e-email"><span class="bar"></span><span class="bar-on"></span></span>
           <p class="err" id="e-email" aria-live="polite"></p>
         </div>
-        <fieldset class="field" aria-describedby="e-shop">
+        <fieldset class="field">
           <legend>Workshop</legend>
           <div class="chips">
             <label class="chip"><input type="radio" name="shop" value="Kop van Zuid" data-city="Rotterdam" required aria-describedby="e-shop"><span class="dot"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6.4 4.8 9 10 3"/></svg></span>Rotterdam, Kop van Zuid</label>
@@ -755,14 +772,14 @@
   let chapterY = null;   // scroll position of a chapter inside the sticky stage, while it runs
 
   /* ---------- The drawing: paint state per stroke group ---------- */
-  const svg = $('#bike'), slab = $('.slab'), glow = $('.glow', svg);
+  const svg = $('#bike'), slab = $('.slab'), glow = $('.slab .glow');
   const SW = 8, BAND = .1;
   const els = $$('[data-paint]', svg);
   const groups = els.map(el => {
     const g = { el, mode: el.dataset.paint, ch: +el.dataset.ch, p: 1 }, b = el.getBBox();
-    g.c = [b.x + b.width / 2, b.y + b.height / 2];   // where the beam parks while this group paints
+    g.b = b;
     if (el.dataset.hub) {
-      const [hx, hy] = el.dataset.hub.split(' ').map(Number);
+      const [hx, hy] = g.hub = el.dataset.hub.split(' ').map(Number);
       g.cx = (hx - b.x + SW / 2) / (b.width + SW) * 100;
       g.cy = (hy - b.y + SW / 2) / (b.height + SW) * 100;
     }
@@ -814,15 +831,21 @@
     conePath.setAttribute('transform', t);
   };
 
-  /* ---------- The hand-held beam: a soft ellipse on the asphalt, and the circle where markings light up ---------- */
+  /* ---------- The hand-held beam: a warm pool on the asphalt, and the feathered circle where markings light up ---------- */
   const BOX = [620, 284], spotEl = $('#spot'), spotClip = $('#spot-clip');
   const spot = { x: BOX[0], y: BOX[1], k: 1, o: .75 };   // k: size (0 to 1), o: brightness
   const setSpot = () => {
     const x = spot.x.toFixed(1), y = spot.y.toFixed(1);
     spotEl.setAttribute('cx', x); spotEl.setAttribute('cy', y);
-    spotEl.setAttribute('rx', (170 * spot.k).toFixed(1)); spotEl.setAttribute('ry', (125 * spot.k).toFixed(1));
+    spotEl.setAttribute('rx', (170 * spot.k).toFixed(1)); spotEl.setAttribute('ry', (102 * spot.k).toFixed(1));
     spotEl.setAttribute('opacity', spot.o.toFixed(3));
-    spotClip.setAttribute('cx', x); spotClip.setAttribute('cy', y); spotClip.setAttribute('r', (120 * spot.k).toFixed(1));
+    spotClip.setAttribute('cx', x); spotClip.setAttribute('cy', y); spotClip.setAttribute('r', (150 * spot.k).toFixed(1));
+  };
+  // Where the marking cart is on a group: the wipe front (never before 15% of it), or the hub for groups painted around one.
+  const head = g => {
+    if (g.hub) return g.hub;
+    const b = g.b, p = Math.max(.15, g.p);
+    return g.mode === 'x' ? [b.x + b.width * p, b.y + b.height / 2] : [b.x + b.width / 2, b.y + b.height * (1 - p)];
   };
 
   /* ---------- In-page anchors: eased through Lenis, focus moves to the target ---------- */
@@ -947,7 +970,7 @@
     groups.forEach(g => { g.p = 0; paint(g); });
     lamp.s = .001; setCone();
     gsap.set(lampEls, { opacity: 0 });
-    Object.assign(spot, { x: BOX[0], y: BOX[1], k: 0, o: .75 }); setSpot();
+    Object.assign(spot, { x: -180, y: 470, k: 1, o: .75 }); setSpot();   // the beam starts off the left edge, on the lane
     const size = (k, d) => gsap.to(spot, { k, duration: d, ease: 'expo.out', onUpdate: setSpot, overwrite: 'auto' });
     const qx = gsap.quickTo(spot, 'x', { duration: .6, ease: 'expo.out', onUpdate: setSpot });
     const qy = gsap.quickTo(spot, 'y', { duration: .6, ease: 'expo.out', onUpdate: setSpot });
@@ -955,16 +978,20 @@
     gsap.set(panels.slice(1), { opacity: 0 });
     panels[0].classList.add('is-current');
 
-    // Page load: the slab opens, the lane edge and both wheels are laid down.
+    // Page load: the slab opens and the lane edge and both wheels are laid down. The beam rides behind the lane-edge
+    // head, so fresh paint lights up amber as it passes, rests on the front wheel while it paints, then lifts to the box.
     const ch0 = groups.filter(g => g.ch === 0);
     const R = getComputedStyle(slab).borderRadius;   // square on the right where the lane bleeds off the page
-    gsap.timeline({ delay: .05 })
+    let loading = true;
+    const beamIn = gsap.to(spot, { x: 828, duration: .8, ease: 'expo.inOut', delay: .45, onUpdate: setSpot });
+    gsap.timeline()
       .fromTo(slab, { clipPath: `inset(100% 0% 0% 0% round ${R})` }, { clipPath: `inset(0% 0% 0% 0% round ${R})`, duration: .9, ease: 'expo.inOut', clearProps: 'clipPath' }, 0)
       .to(ch0[0], { p: 1, duration: .8, ease: 'expo.inOut', onUpdate: () => paint(ch0[0]) }, .45)
       .to(ch0[1], { p: 1, duration: 1, ease: 'expo.out', onUpdate: () => paint(ch0[1]) }, .6)
       .to(ch0[2], { p: 1, duration: 1, ease: 'expo.out', onUpdate: () => paint(ch0[2]) }, .75)
       .fromTo(segs, { scaleX: 0 }, { scaleX: 1, duration: .6, ease: 'expo.out', stagger: .06 }, .6)
-      .add(() => { if (!lampOn) size(1, .9); }, 1.1);   // then the beam comes on, resting on the empty box
+      .add(() => { loading = false; park(); }, 1.75);
+    const endLoad = () => { if (loading) { loading = false; beamIn.kill(); } };
 
     // One paused master timeline, scrubbed by one trigger: each chapter paints its groups over its first 70%, then holds.
     const tl = gsap.timeline({ paused: true });
@@ -975,7 +1002,7 @@
     }
     tl.set({}, {}, TOTAL);
 
-    let cur = 0, lampOn = null, hover = false, parkAt = null;
+    let cur = 0, lampOn = null, hover = false;
     const byCh = [1, 2, 3, 4].map(k => groups.filter(g => g.ch === k));
     function showChapter(i) {
       const prev = panels[cur], next = panels[i];
@@ -989,7 +1016,8 @@
       gsap.to(prev, { opacity: 0, duration: .3, ease: 'expo.out' });
       gsap.fromTo(next, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: .45, ease: 'expo.out', delay: .16 });
       if (i) cap.textContent = `Chapter ${i} of 4: ${names[i - 1]}`;
-      gsap.to(cap, { opacity: i ? 1 : 0, duration: .45, ease: 'expo.out' });
+      // Back on the intro the caption fades, then empties, so it never reads a chapter that is not shown.
+      gsap.to(cap, { opacity: i ? 1 : 0, duration: .45, ease: 'expo.out', onComplete: i ? null : () => { cap.textContent = ''; } });
     }
     function setLamp(on, animate) {
       lampOn = on;
@@ -998,15 +1026,14 @@
       gsap.to(lamp, { s: on ? 1 : .001, duration: d, ease: 'expo.out', onUpdate: setCone, overwrite: 'auto' });
       gsap.to(lampEls, { opacity: on ? 1 : 0, duration: d, ease: 'expo.out' });
       // The beam you have been holding shrinks into the headlamp and becomes the bike's own light.
-      if (on) { moveSpot(LAMP[0], LAMP[1], Math.max(d, .01)); size(0, d); }
+      if (on) { endLoad(); moveSpot(LAMP[0], LAMP[1], Math.max(d, .01)); size(0, d); }
       else if (animate) size(1, .6);
-      parkAt = null;
     }
-    // Without a pointer on the slab, the beam walks with the cart: it parks on the group being painted.
+    // Without a pointer on the slab, the beam rides the marking cart: it follows the wipe front of the group being painted.
     function park() {
-      if (lampOn || hover) return;
-      const gs = byCh[cur - 1], c = gs ? (gs.find(g => g.p < 1) || gs[gs.length - 1]).c : BOX;
-      if (c !== parkAt) { parkAt = c; moveSpot(c[0], c[1], .6); }
+      if (lampOn || hover || loading) return;
+      const gs = byCh[cur - 1], c = gs ? head(gs.find(g => g.p < 1) || gs[gs.length - 1]) : BOX;
+      moveSpot(c[0], c[1], .6);
     }
     function render(t) {
       let idx = 0;
@@ -1035,13 +1062,13 @@
       const aim = gsap.quickTo(lamp, 'a', { duration: .6, ease: 'expo.out', onUpdate: setCone });
       const bright = o => gsap.to(spot, { o, duration: o === 1 ? .3 : .6, ease: 'expo.out', onUpdate: setSpot, overwrite: 'auto' });
       const move = e => {
-        hover = true;
+        hover = true; endLoad();
         const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(svg.getScreenCTM().inverse());
         if (lampOn) aim(gsap.utils.clamp(-10, 10, Math.atan2(p.y - LAMP[1], p.x - LAMP[0]) * 180 / Math.PI - 45));   // the cone's axis points 45 degrees down
         else moveSpot(p.x, p.y, .5);
       };
       const enter = () => { hover = true; bright(1); };
-      const leave = () => { hover = false; parkAt = null; aim(0); bright(.75); park(); };
+      const leave = () => { hover = false; aim(0); bright(.75); park(); };
       slab.addEventListener('pointerenter', enter);
       slab.addEventListener('pointermove', move);
       slab.addEventListener('pointerleave', leave);
@@ -1055,9 +1082,13 @@
       chapterY = null;
       groups.forEach(g => { g.p = 1; paint(g); });
       lamp.a = 0; lamp.s = 1; setCone();
-      gsap.killTweensOf(spot);
+      gsap.killTweensOf([spot, lamp]);
       Object.assign(spot, { x: BOX[0], y: BOX[1], k: 1, o: .75 }); setSpot();
       fills.forEach(f => { f.style.transform = ''; });
+      // Tweens started after build (chapter crossfades, lamp) are outside the matchMedia context, so undo them here.
+      gsap.killTweensOf([...panels, cap, ...lampEls, slab]);
+      gsap.set([...panels, cap, ...lampEls, slab], { clearProps: 'opacity,transform,translate,rotate,scale,clipPath' });
+      cap.textContent = '';
       panels.forEach(p => { p.classList.remove('is-current'); p.inert = false; });
     };
   }

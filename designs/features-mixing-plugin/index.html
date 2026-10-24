@@ -35,6 +35,7 @@
   --knob-lo: #1C252E;
   --skirt: color-mix(in oklab, var(--paint) 45%, var(--black));
   --bloom: color-mix(in oklab, var(--pilot) 38%, transparent);
+  --filament: radial-gradient(ellipse at 50% 40%, color-mix(in oklab, var(--pilot), white 25%), var(--pilot) 60%, color-mix(in oklab, var(--pilot) 80%, var(--paint)));
 
   /* Type */
   --font-legend: "Signika", "Trebuchet MS", system-ui, sans-serif;
@@ -42,7 +43,7 @@
   --step--2: .75rem;
   --step--1: .8125rem;
   --step-0: 1.0625rem;
-  --step-0-5: 1.25rem;      /* wordmark, phone tabs: between body and lede */
+  --step-0-5: 1.25rem;      /* the wordmark: between body and lede */
   --step-1: 1.375rem;
   --step-2: 1.875rem;
   --step-3: clamp(2.25rem, 1.6rem + 3vw, 3.5rem);
@@ -131,7 +132,7 @@ h4 { font: 500 var(--step-1)/1.2 var(--font-legend); }
 /* HV2: directional underline (in from the left, out to the right) */
 .ul { position: relative; text-decoration: none; }
 .ul::after {
-  content: ""; position: absolute; left: 0; right: 0; bottom: -.14em; height: max(1px, .07em);
+  content: ""; position: absolute; left: 0; right: 0; bottom: calc(var(--ul-pad, 0px) - .14em); height: max(1px, .07em);
   background: currentColor; transform: scaleX(0); transform-origin: right center;
   transition: transform var(--m-underline) var(--m-ease-underline);
 }
@@ -172,7 +173,7 @@ h4 { font: 500 var(--step-1)/1.2 var(--font-legend); }
   opacity: var(--lamp); transition: opacity var(--lamp-t) var(--lamp-e);
 }
 /* the filament: hottest just above centre, falling off to the lens edge */
-.cap::before { background: radial-gradient(ellipse at 50% 40%, color-mix(in oklab, var(--pilot), white 25%), var(--pilot) 60%, color-mix(in oklab, var(--pilot) 80%, var(--paint))); }
+.cap::before { background: var(--filament); }
 /* the bloom the lens throws onto the panel around it */
 .cap::after { box-shadow: 0 0 14px 2px var(--bloom); }
 @media (hover: hover) and (pointer: fine) {
@@ -200,7 +201,7 @@ input:focus-visible + .cap { outline: 2px solid var(--pilot); outline-offset: 3p
 /* ---------- Header ---------- */
 .hdr { position: sticky; top: 0; z-index: 30; background: var(--room); border-bottom: 1px solid var(--rule); }
 .hdr__in { display: flex; align-items: center; gap: var(--s6); min-height: var(--hdr-h); }
-.wordmark { margin-right: auto; font: 600 var(--step-0-5)/1 var(--font-legend); padding-block: var(--s1); letter-spacing: -.01em; font-variation-settings: "GRAD" 0; }
+.wordmark { --ul-pad: var(--s1); margin-right: auto; font: 600 var(--step-0-5)/1 var(--font-legend); padding-block: var(--s1); letter-spacing: -.01em; font-variation-settings: "GRAD" 0; }
 .nav { display: flex; gap: var(--s5); }
 .nav a { font: 500 var(--step-0)/1.4 var(--font-legend); letter-spacing: .02em; color: var(--ivory); }
 .menu-btn { display: none; }
@@ -229,9 +230,11 @@ html.menu-open { overflow: hidden; } /* locks scroll without Lenis too (reduced 
 .hero__intro { grid-column: 1 / 8; grid-row: 1; }
 .hero__controls { grid-column: 1 / 8; grid-row: 2; margin-top: var(--s7); }
 .strip { grid-column: 9 / 13; grid-row: 1 / 3; justify-self: center; align-self: start; width: var(--strip-w); }
-@media (min-width: 1200px) { /* the instrument is the hero */
-  :root { --strip-w: clamp(300px, 27vw, 400px); --knob: 60px; }
-  .strip { grid-column: 8 / 13; }
+@media (min-width: 1200px) { /* the instrument is the hero: the meter gets the width, the stages pair up beneath it */
+  :root { --strip-w: min(100%, 560px); }
+  .hero__intro, .hero__controls { grid-column: 1 / 7; }
+  .strip { grid-column: 7 / 13; justify-self: end; }
+  .vu__needle line { stroke-width: 1.2; } /* about 2px on a 520px face */
 }
 @media (min-width: 820px) and (max-width: 991px) {
   :root { --strip-w: 248px; }
@@ -241,25 +244,27 @@ html.menu-open { overflow: hidden; } /* locks scroll without Lenis too (reduced 
   .hero { display: block; padding-block: var(--s6) var(--s8); }
   .lede { font-size: var(--step-0); margin-top: var(--s4); }
   .strip { width: 100%; margin-top: var(--s5); }
-  .hero__controls { margin-top: var(--s6); }
+  .hero__controls { margin-top: var(--s5); }
 }
 
 /* Tabs and panels (CD9) */
 .tabs { display: none; }
 html.js .tabs { display: flex; gap: var(--s2); }
 html.js .tabs .cap { flex: 0 1 auto; min-width: 5.5em; }
-html.js:not(.booted) .tabs:not(.lit) .cap[aria-selected="true"] { color: var(--ivory); font-variation-settings: "GRAD" -30; }
-html.js:not(.booted) .tabs:not(.lit) .cap[aria-selected="true"] { --lamp: 0; }
+html.js:not(.booted) .tabs:not(.lit) .cap[aria-selected="true"] { --lamp: 0; color: var(--ivory); font-variation-settings: "GRAD" -30; }
 .panels { display: grid; gap: var(--s8); }
 html.js .panels { gap: 0; margin-top: var(--s5); }
 html.js .panel { grid-area: 1 / 1; }
 html.js .panel:not(.is-active) { visibility: hidden; opacity: 0; }
 .panel { display: grid; gap: var(--s4); align-content: start; }
 .panel h3 { max-width: 30ch; }
+/* the control sits right under its heading, so it shares the screen with the meter it moves */
+.panel > .body { order: 1; }
+.panel > .spec-line { order: 2; }
 html.js .panel h3 { margin-top: var(--s2); }
 @media (max-width: 819px) {
-  html.js .tabs { gap: 6px; }
-  html.js .tabs .cap { flex: 1 1 0; min-width: 0; padding: 0 var(--s1); font-size: var(--step-0-5); }
+  html.js .tabs { gap: var(--s2); }
+  html.js .tabs .cap { flex: 1 1 0; min-width: 0; padding: 0 var(--s1); }
 }
 
 .control { display: grid; gap: var(--s2); margin-top: var(--s2); }
@@ -272,7 +277,7 @@ html.js .panel h3 { margin-top: var(--s2); }
 .seg .cap { min-width: 4.75em; pointer-events: none; }
 .seg label:has(:checked) { cursor: default; }
 @media (max-width: 819px) { /* after the base rules, so these win */
-  .seg__caps { flex-wrap: nowrap; gap: 6px; }
+  .seg__caps { flex-wrap: nowrap; gap: var(--s2); }
   .seg label { flex: 1 1 0; }
   .seg .cap { min-width: 0; width: 100%; padding: 0 var(--s1); }
 }
@@ -337,7 +342,7 @@ html.js:not(.booted) .plate { transform: translateY(101%); }
 .vu__led { fill: var(--peak); opacity: .28; }
 .vu__unit { font-size: 15px; font-weight: 600; letter-spacing: .04em; }
 .vu__small { font-size: 11px; letter-spacing: .02em; }
-.vu__readout { display: none; font-size: 16px; }
+.vu__readout { display: none; font-size: 15px; font-weight: 600; letter-spacing: .02em; }
 html.js:not(.booted) .vu__lit { opacity: .12; }
 .vu__glare {
   position: absolute; inset: -24px; pointer-events: none;
@@ -346,7 +351,17 @@ html.js:not(.booted) .vu__lit { opacity: .12; }
     linear-gradient(112deg, transparent 40%, rgb(var(--sheen) / .045) 47%, transparent 56%);
 }
 
-.play { width: 100%; justify-content: flex-start; padding-left: var(--s3); }
+/* The transport key: a lamp cap holding the play/stop glyph and the MI6 bars, its legend beside it */
+.play {
+  justify-self: start; display: inline-flex; align-items: center; gap: var(--s3);
+  min-height: 44px; padding: 0 var(--s2) 0 0; border: 0; background: none; cursor: pointer;
+  font: 500 var(--step-0)/1.2 var(--font-legend); letter-spacing: .02em; color: var(--ivory); text-align: left;
+}
+.play .cap { min-width: 64px; padding: 0 var(--s3); gap: var(--s3); pointer-events: none; }
+.play.is-armed:not(.is-on) .cap { --lamp: .18; } /* after the power-on beat: the next thing to press */
+.play.is-armed:not(.is-on):focus-visible .cap { --lamp: .32; }
+@media (hover: hover) and (pointer: fine) { .play.is-armed:not(.is-on):hover .cap { --lamp: .32; --lamp-t: var(--m-lamp-on); } }
+.play__glyph > * { display: block; width: 12px; height: 12px; fill: currentColor; }
 .eq { display: inline-flex; align-items: flex-end; gap: 2px; width: 18px; height: 14px; flex: none; }
 .eq i { flex: 1; height: 100%; background: currentColor; transform-origin: 50% 100%; transform: scaleY(.3); transition: transform .2s var(--m-ease-off); }
 .eq i:nth-child(1) { --h: 1; }
@@ -372,7 +387,7 @@ html.js .play.js-ready { display: inline-flex; }
   transition: opacity var(--m-stage) var(--m-ease-off);
 }
 .mod.is-on .mod__lamp { opacity: 1; }
-.mod__name { position: relative; display: flex; align-items: center; gap: 6px; font: 500 var(--step--1)/1 var(--font-legend); letter-spacing: .02em; color: var(--steel); font-variation-settings: "GRAD" -30; }
+.mod__name { position: relative; display: flex; align-items: center; gap: var(--s2); font: 500 var(--step--1)/1 var(--font-legend); letter-spacing: .02em; color: var(--steel); font-variation-settings: "GRAD" -30; }
 .mod__name::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: color-mix(in oklab, var(--steel) 35%, var(--paint)); transition: background-color var(--m-stage); }
 .mod.is-on .mod__name, .mod.is-on .knob__label { color: var(--ivory); font-variation-settings: "GRAD" 0; } /* steel drops under 4.5:1 on the lit tint */
 .mod.is-on .mod__name::before { background: var(--pilot); box-shadow: 0 0 6px color-mix(in oklab, var(--pilot) 60%, transparent); }
@@ -389,8 +404,17 @@ html.js .play.js-ready { display: inline-flex; }
 .knob__label { font: 500 var(--step--2)/1.2 var(--font-legend); letter-spacing: .02em; color: var(--steel); text-align: center; }
 .lamp-cap { display: grid; justify-items: center; align-content: center; gap: 7px; height: var(--knob); }
 .lamp-cap span { width: 26px; height: 16px; border-radius: var(--r-cap); background: var(--paint); border: 1px solid var(--edge); box-shadow: 0 2px 0 var(--skirt); position: relative; }
-.lamp-cap span::before { content: ""; position: absolute; inset: -1px; border-radius: inherit; background: var(--pilot); opacity: 0; transition: opacity var(--m-lamp-off) var(--m-ease-off); }
+.lamp-cap span::before { content: ""; position: absolute; inset: -1px; border-radius: inherit; background: var(--filament); opacity: 0; transition: opacity var(--m-lamp-off) var(--m-ease-off); }
+.lamp-cap.is-on span { box-shadow: 0 2px 0 var(--skirt), 0 0 10px 1px var(--bloom); }
 .lamp-cap.is-on span::before { opacity: 1; transition: opacity var(--m-lamp-on) var(--m-ease-on); }
+@media (min-width: 1200px) {
+  .modules { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--s5); }
+  .mod__lamp { inset: 0; }
+}
+@media (min-width: 820px) and (max-height: 800px) { /* short laptops: keep the meter and the controls in one screen */
+  .hero { padding-top: var(--s6); }
+  .hero__controls { margin-top: var(--s5); }
+}
 @media (max-width: 819px) { /* phones: only the selected stage, so a changed control turns a knob beside the meter */
   .modules { margin-top: var(--s4); }
   .mod:not(.is-on) { display: none; }
@@ -493,6 +517,10 @@ form .cap--big { justify-self: start; }
 .ftr p { margin-right: auto; color: var(--steel); }
 .ftr a { font: 500 var(--step-0)/1.4 var(--font-legend); letter-spacing: .02em; }
 @media (max-width: 819px) { .ftr__in { flex-direction: column; } }
+@media (pointer: coarse) { /* 44px touch targets; the underline stays under the text */
+  .wordmark, .ftr a { --ul-pad: 10px; padding-block: 10px; }
+  .wordmark { --ul-pad: 11px; padding-block: 11px; }
+}
 
 /* Section anchors land below the sticky header when JS is off */
 [id] { scroll-margin-top: calc(var(--hdr-h) + var(--s5)); }
@@ -576,13 +604,16 @@ form .cap--big { justify-self: start; }
                 <circle class="vu__led" cx="278" cy="18.5" r="4.5"/>
                 <g class="vu__needle" transform="rotate(-48 186 226)"><line x1="186" y1="226" x2="186" y2="50"/></g>
                 <path class="vu__cover" d="M0 170V154Q150 138 300 154V170Z"/>
-                <text class="vu__readout" x="150" y="104">Level below −20 VU</text>
+                <text class="vu__readout" x="150" y="128">Below −20 VU</text>
               </svg>
               <span class="vu__glare" aria-hidden="true"></span>
             </div>
-            <button class="cap play" type="button" aria-label="Play the demo loop">
-              <span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
-              <span class="swap" aria-hidden="true"><span>Play the demo loop</span><span>Stop the loop</span></span>
+            <button class="play" type="button" aria-label="Play the demo loop">
+              <span class="cap" aria-hidden="true">
+                <span class="swap play__glyph"><svg viewBox="0 0 12 12"><path d="M1.5 0.5L11.5 6L1.5 11.5Z"/></svg><svg viewBox="0 0 12 12"><rect x="1" y="1" width="10" height="10" rx="1"/></svg></span>
+                <span class="eq"><i></i><i></i><i></i><i></i></span>
+              </span>
+              <span class="swap play__label" aria-hidden="true"><span>Play the demo loop</span><span>Stop the loop</span></span>
             </button>
             <p class="bridge__note js-only"><span class="bridge__play">Play the loop and switch stages to hear each one. </span>A 92 BPM loop made in your browser. It starts quietly.</p>
           </div>
@@ -658,7 +689,7 @@ form .cap--big { justify-self: start; }
           </div>
           <div class="panel" role="tabpanel" tabindex="0" id="p-eq" aria-labelledby="t-eq">
             <h3>Open up the top without the hiss</h3>
-            <p class="body">Four bands with proportional Q, so boosts stay broad and musical and deep cuts get surgical without touching a Q control. Frequencies click through the same 11 steps as the original's switched pots, so a setting is easy to repeat.</p>
+            <p class="body">The air shelf starts at 8 kHz, above the 2–5 kHz band where the ear picks out hiss and harshness, so it lifts cymbals and breath without the noise floor standing out. The other three bands use proportional Q: small moves stay broad and musical, deep cuts get surgical.</p>
             <div class="range control">
               <label class="legend" for="air">Air shelf at 8 kHz</label>
               <input type="range" id="air" min="0" max="8" step="0.5" value="2" aria-valuetext="+2.0 dB">
@@ -667,8 +698,8 @@ form .cap--big { justify-self: start; }
             <p class="spec-line">Low shelf 35–440 Hz, low mid 120 Hz–2 kHz, high mid 600 Hz–8 kHz, high shelf 4.5–16 kHz.</p>
           </div>
           <div class="panel" role="tabpanel" tabindex="0" id="p-dyn" aria-labelledby="t-dyn">
-            <h3>A compressor and a gate on every channel</h3>
-            <p class="body">Feed-forward VCA compression with four ratios and a sidechain filter at 60, 120 or 240 Hz, so the kick stops pumping the whole bass. The gate has a 40 dB range and a hold you can set by ear.</p>
+            <h3>Hold the level steady without squashing the kick</h3>
+            <p class="body">Feed-forward VCA compression with four ratios and a sidechain filter at 60, 120 or 240 Hz, so the kick stops pumping the whole bass. Watch the needle as you raise the ratio: its swing narrows while the average level stays put.</p>
             <fieldset class="seg control">
               <legend class="legend">Ratio</legend>
               <div class="seg__caps">
@@ -678,14 +709,14 @@ form .cap--big { justify-self: start; }
                 <label><input type="radio" name="ratio" value="10"><span class="cap">10:1</span></label>
               </div>
             </fieldset>
-            <p class="spec-line">Attack 0.1–30 ms, release 50 ms–1.2 s or auto.</p>
+            <p class="spec-line">Attack 0.1–30 ms, release 50 ms–1.2 s or auto. Gate with a 40 dB range and adjustable hold.</p>
           </div>
           <div class="panel" role="tabpanel" tabindex="0" id="p-bus" aria-labelledby="t-bus">
             <h3>Sum the channels the way the desk did</h3>
             <p class="body">Every channel carries the tolerances we measured on the restored desk, with −62 dB of crosstalk between neighbours. Turn drift off and all 24 strips match exactly. Turn it on and the stereo image widens slightly, because no two channels sum quite the same.</p>
             <div class="control js-only">
-              <span class="legend" id="drift-legend">Channel drift</span>
-              <button class="cap drift-switch" type="button" aria-pressed="true" aria-labelledby="drift-legend">
+              <span class="legend" aria-hidden="true">Channel drift</span>
+              <button class="cap drift-switch" type="button" aria-pressed="true" aria-label="Channel drift, on">
                 <span class="swap" aria-hidden="true"><span>On</span><span>Off</span></span>
               </button>
             </div>
@@ -700,8 +731,8 @@ form .cap--big { justify-self: start; }
         <h3 id="drift" tabindex="-1">We measured all 24 channels, one at a time.</h3>
         <p>No two came out the same, so no two strips in Brack 2408 do either. Below, the gain offset of each channel at 1 kHz, in dB, measured on the Lindqvist B-24 in March 2025. Fader heights are drawn 40 times larger than life.</p>
         <div class="control js-only">
-          <span class="legend" id="drift-legend-2">Channel drift</span>
-          <button class="cap drift-switch" type="button" aria-pressed="true" aria-labelledby="drift-legend-2">
+          <span class="legend" aria-hidden="true">Channel drift</span>
+          <button class="cap drift-switch" type="button" aria-pressed="true" aria-label="Channel drift, on">
             <span class="swap" aria-hidden="true"><span>On</span><span>Off</span></span>
           </button>
         </div>
@@ -988,7 +1019,7 @@ form .cap--big { justify-self: start; }
       play.setAttribute('aria-disabled', 'true');
       play.setAttribute('aria-label', label);
       play.classList.remove('is-on');
-      $('.swap', play).replaceChildren(Object.assign(document.createElement('span'), { textContent: label }));
+      $('.play__label', play).replaceChildren(Object.assign(document.createElement('span'), { textContent: label }));
     }
   };
 
@@ -996,7 +1027,6 @@ form .cap--big { justify-self: start; }
   play.classList.add('js-ready');
   function setPlayUI() {
     play.classList.toggle('is-on', audio.playing);
-    play.classList.toggle('is-lit', audio.playing);
     play.setAttribute('aria-label', audio.playing ? 'Stop the loop' : 'Play the demo loop');
   }
   play.addEventListener('click', () => {
@@ -1025,7 +1055,7 @@ form .cap--big { justify-self: start; }
     if (reduce && time - meter.textAt > 0.25) { // numeric readout in place of the needle
       meter.textAt = time;
       const v = Math.round(db);
-      readout.textContent = v < -20 ? 'Level below −20 VU' : `Level ${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v)} VU`;
+      readout.textContent = v < -20 ? 'Below −20 VU' : `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v)} VU`;
     }
   });
 
@@ -1071,7 +1101,7 @@ form .cap--big { justify-self: start; }
   const faderLabel = faders.getAttribute('aria-label');
   driftBtns.forEach(b => b.addEventListener('click', () => {
     state.drift = !state.drift;
-    driftBtns.forEach(d => d.setAttribute('aria-pressed', state.drift));
+    driftBtns.forEach(d => { d.setAttribute('aria-pressed', state.drift); d.setAttribute('aria-label', 'Channel drift, ' + (state.drift ? 'on' : 'off')); });
     $('#strip-drift').classList.toggle('is-on', state.drift);
     faders.classList.toggle('is-flat', !state.drift);
     faderVals.forEach((v, i) => { v.textContent = state.drift ? fmt(DRIFT[i]) : '0.0'; });
@@ -1113,7 +1143,7 @@ form .cap--big { justify-self: start; }
     .fromTo(sheetLinks, { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: T('links'), ease: E('links'), stagger: 0.05 }, '-=0.2');
   function openMenu() {
     menuOpen = true;
-    menuBtn.setAttribute('aria-expanded', 'true');
+    menuBtn.setAttribute('aria-expanded', 'true'); menuBtn.setAttribute('aria-label', 'Close');
     gsap.set(sheet, { visibility: 'visible' });
     sheet.inert = false; behind.forEach(el => { el.inert = true; });
     root.classList.add('menu-open'); lenis?.stop();
@@ -1122,7 +1152,7 @@ form .cap--big { justify-self: start; }
   }
   function closeMenu(then) {
     menuOpen = false; afterClose = then || null;
-    menuBtn.setAttribute('aria-expanded', 'false');
+    menuBtn.setAttribute('aria-expanded', 'false'); menuBtn.setAttribute('aria-label', 'Menu');
     if (reduce || !menuTl.progress()) { menuTl.pause().progress(0, true); closed(); } else menuTl.timeScale(1.4).reverse();
   }
   function closed() {
@@ -1133,8 +1163,14 @@ form .cap--big { justify-self: start; }
     else (menuBtn.offsetParent ? menuBtn : $('.nav a')).focus({ preventScroll: true }); // the Menu button is hidden from 820px
   }
   menuBtn.addEventListener('click', () => (menuOpen ? closeMenu() : openMenu()));
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' && menuOpen) closeMenu(); });
-  matchMedia('(min-width: 820px)').addEventListener('change', e => { if (e.matches && menuOpen) { menuTl.pause().progress(0, true); menuOpen = false; menuBtn.setAttribute('aria-expanded', 'false'); closed(); } });
+  document.addEventListener('keydown', e => {
+    if (!menuOpen) return;
+    if (e.key === 'Escape') return closeMenu();
+    if (e.key !== 'Tab') return;
+    const last = sheetLinks[sheetLinks.length - 1], to = e.shiftKey ? (document.activeElement === menuBtn && last) : (document.activeElement === last && menuBtn);
+    if (to) { e.preventDefault(); to.focus(); } // wrap between the Close button and the last link
+  });
+  matchMedia('(min-width: 820px)').addEventListener('change', e => { if (e.matches && menuOpen) { menuTl.pause().progress(0, true); menuOpen = false; menuBtn.setAttribute('aria-expanded', 'false'); menuBtn.setAttribute('aria-label', 'Menu'); closed(); } });
 
   /* ---------- Trial form: validate, then crossfade to the result ---------- */
   const form = $('#trial-form'), email = $('#email'), result = $('#trial-result');
@@ -1174,7 +1210,7 @@ form .cap--big { justify-self: start; }
     reduce = !motion;
     syncKnobs();
     if (!motion) { // Reduced motion: final states, native scroll, numeric meter readout.
-      booted = true; meter.live = true; root.classList.add('booted'); $('.tabs').classList.add('lit');
+      booted = true; meter.live = true; root.classList.add('booted'); $('.tabs').classList.add('lit'); play.classList.add('is-armed');
       return;
     }
 
@@ -1186,27 +1222,24 @@ form .cap--big { justify-self: start; }
 
     if (!booted) {
       booted = true;
-      gsap.timeline({ onComplete: () => root.classList.add('booted') })
-        .fromTo('.plate', { y: 0, yPercent: 101 }, { y: 0, yPercent: 0, duration: T('rise'), ease: E('rise') }, 0.35)
-        .fromTo(knobCaps, { rotation: (i, el) => knobAngle(el) - 30 }, { rotation: (i, el) => knobAngle(el), duration: T('recall'), ease: E('recall'), stagger: 0.03 }, 0.9)
-        .fromTo('.vu__lit', { opacity: 0.12 }, { opacity: 1, duration: T('lamp'), ease: 'lamp' }, 1.1)
-        .add(() => $('.tabs').classList.add('lit'), 1.2)
+      gsap.timeline({ onComplete: () => { root.classList.add('booted'); play.classList.add('is-armed'); } })
+        .fromTo('.plate', { y: 0, yPercent: 101 }, { y: 0, yPercent: 0, duration: T('rise'), ease: E('rise') }, 0.1)
+        .addLabel('landed', 0.1 + T('rise') * 0.55) // expo.out has covered about 97% of the rise by here
+        .fromTo(knobCaps, { rotation: (i, el) => knobAngle(el) - 30 }, { rotation: (i, el) => knobAngle(el), duration: T('recall'), ease: E('recall'), stagger: 0.03 }, 'landed')
+        .fromTo('.vu__lit', { opacity: 0.12 }, { opacity: 1, duration: T('lamp'), ease: 'lamp' }, 'landed+=0.15')
+        .add(() => $('.tabs').classList.add('lit'), 'landed+=0.25')
         // Signature: the power-on thump. Kick from the stop to +1 VU, fall back with VU overshoot, then hand over to the programme.
-        .to(needle, { rotation: 6, duration: T('kick'), ease: E('kick') }, 1.6)
+        .to(needle, { rotation: 6, duration: T('kick'), ease: E('kick') }, 'landed+=' + (0.15 + T('lamp')))
         .to(needle, { rotation: -48, duration: T('settle'), ease: 'vu-settle', onComplete: () => { meter.live = true; meter.lastA = null; } });
     }
 
     // S2: the 24 fader caps ride up from the bottom of their slots to the mix (outer wrapper only).
-    const rideFrom = (i, el) => el.parentNode.clientHeight - el.offsetTop - el.offsetHeight; // bottom of the slot
+    // From the bottom of the slot, less the deepest drift offset (-0.3 dB), so no inner cap ever covers its printed value.
+    const rideFrom = (i, el) => el.parentNode.clientHeight - el.offsetTop - el.offsetHeight - 0.3 * parseFloat(getComputedStyle(faders).getPropertyValue('--db-px'));
     gsap.set('.fader__ride', { y: rideFrom }); // staggered scrubs only render their first child up front
     gsap.fromTo('.fader__ride', { y: rideFrom }, {
       y: 0, ease: 'none', stagger: { amount: 0.5 },
       scrollTrigger: { trigger: '.faders', start: 'top 85%', end: 'center 55%', scrub: true, invalidateOnRefresh: true }
-    });
-    // S3: spec rules draw in from the left, one per row.
-    gsap.fromTo('.spec-row', { '--rule-x': 0 }, {
-      '--rule-x': 1, duration: T('rule'), ease: E('rule'), stagger: 0.06,
-      scrollTrigger: { trigger: '.specs dl', start: 'top 90%', once: true }
     });
     // MI6 bars rest while the meter bridge is off screen; the loop keeps playing.
     const bridge = $('.bridge');

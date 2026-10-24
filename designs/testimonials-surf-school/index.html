@@ -49,10 +49,12 @@
     --row-pb: 40px;
     --ride: 20px;             /* cards ride this far above the swell line */
     --swell-amp: 28px;        /* crest height */
-    --swell-len: 2.3;         /* wavelength, in card steps (phones: from the viewport, in the script) */
-    --drift-speed: 24;        /* px per second, the row drifting left */
+    --swell-h: 120px;         /* the swell's box: the line sits at half height, room for crest and trough */
+    --swell-len: 1.8;         /* wavelength, in card steps (phones: from the viewport, in the script) */
+    --drift-speed: 36;        /* px per second, the row drifting left */
+    --step-hold: 6;           /* seconds a card holds at the gutter on phones and touch, before the row steps on */
     --tilt-max: 3;            /* degrees, the swell's tilt */
-    --lean-max: 6;            /* degrees, the lean from drag speed */
+    --lean-max: 3;            /* degrees of skew, the lean from drag and throw speed */
 
     /* Shape */
     --line: 1.5px;
@@ -85,7 +87,7 @@
   /* Hidden start states exist only when the motion script loaded */
   html.js [data-rv] { opacity: 0; }
 
-  html { scrollbar-gutter: stable; }
+  html { scrollbar-gutter: stable; scroll-padding-block: var(--s-5); }
   html:has(dialog.note[open]) { overflow: hidden; }   /* the page never scrolls behind a note, with or without Lenis */
 
   *, *::before, *::after { box-sizing: border-box; }
@@ -142,12 +144,13 @@
   .row::-webkit-scrollbar { display: none; }
   .row[data-drag] { cursor: grab; }
   .row.is-dragging { cursor: grabbing; scroll-snap-type: none; user-select: none; }
-  /* The rail: under motion the row is moved by transforms, endlessly, and never scrolls */
-  .row.rail { overflow: clip; scroll-snap-type: none; touch-action: pan-y; }
+  /* The rail: under motion the row is moved by transforms, endlessly. Hidden, not clip, so find-in-page
+     and focus can still scroll it; the script folds any such scroll into the rail offset. */
+  .row.rail { overflow: hidden; scroll-snap-type: none; touch-action: pan-y; }
   .row > li { display: flex; flex: none; scroll-snap-align: start; }
   .swell {
-    position: absolute; left: 0; bottom: calc(var(--row-pb) - var(--ride) - 60px);   /* the line sits 60px from the top and the bottom: room for crest and trough */
-    display: block; width: 100%; height: 120px;
+    position: absolute; left: 0; bottom: calc(var(--row-pb) - var(--ride) - var(--swell-h) / 2);
+    display: block; width: 100%; height: var(--swell-h);
     pointer-events: none;
   }
   @media (max-width: 767px) {
@@ -165,7 +168,6 @@
     overflow: hidden;
     transform-origin: 50% 100%;
   }
-  html.js .card { will-change: transform; }
   [data-group="yellow"] { --band: var(--lycra-yellow); }
   [data-group="pink"] { --band: var(--lycra-pink); }
   [data-group="blue"] { --band: var(--lycra-blue); }
@@ -406,6 +408,18 @@
     <p class="intro" data-rv>Every lesson ends on the sand, wetsuits half off, and we ask one thing: how was it? These are answers people let us keep. Beginners wear yellow lycras, families pink, and surfers coming back after years away wear blue.</p>
   </header>
 
+  <div class="controls" hidden>
+    <button class="btn btn--icon" id="prev" type="button" aria-label="Previous note" aria-controls="row" data-rv>
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M16 10H4M9 4.5 3.5 10 9 15.5"/></svg>
+    </button>
+    <button class="btn btn--icon" id="next" type="button" aria-label="Next note" aria-controls="row" data-rv>
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h12M11 4.5l5.5 5.5-5.5 5.5"/></svg>
+    </button>
+    <button class="btn toggle" id="drift-toggle" type="button" data-state="running" hidden data-rv>
+      <span class="swap"><span><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 4.5v11M13 4.5v11"/></svg>Stop the drift</span><span aria-hidden="true"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 4.5v11l10-5.5z"/></svg>Let the row drift</span></span>
+    </button>
+  </div>
+
   <div class="lineup" id="lineup" role="region" aria-label="The line-up, 9 notes">
     <ul class="row" id="row" role="list" data-lenis-prevent-horizontal>
       <li><article class="card" data-group="yellow" data-num="7" aria-labelledby="name-7">
@@ -491,18 +505,6 @@
       </article></li>
     </ul>
     <svg class="swell" aria-hidden="true" focusable="false"><g><path d="M0 60H9999"/></g></svg>
-  </div>
-
-  <div class="controls" hidden>
-    <button class="btn btn--icon" id="prev" type="button" aria-label="Previous note" aria-controls="row" data-rv>
-      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M16 10H4M9 4.5 3.5 10 9 15.5"/></svg>
-    </button>
-    <button class="btn btn--icon" id="next" type="button" aria-label="Next note" aria-controls="row" data-rv>
-      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h12M11 4.5l5.5 5.5-5.5 5.5"/></svg>
-    </button>
-    <button class="btn toggle" id="drift-toggle" type="button" data-state="running" hidden data-rv>
-      <span class="swap"><span><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 4.5v11M13 4.5v11"/></svg>Stop the drift</span><span aria-hidden="true"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 4.5v11l10-5.5z"/></svg>Let the row drift</span></span>
-    </button>
   </div>
 
   <div class="add" id="add-words" tabindex="-1">
@@ -975,6 +977,9 @@
   const phone = () => matchMedia('(max-width: 767px)').matches;
   let played = false;
 
+  // If the motion branch ever throws, nothing stays hidden: drop html.js and show the error
+  const fail = err => { root.classList.remove('js'); gsap.set('.card, .swell, .rule, .intro, .controls .btn', { clearProps: 'clipPath,opacity' }); console.error(err); };
+  try {
   gsap.matchMedia().add({
     motion: '(prefers-reduced-motion: no-preference)',
     reduce: '(prefers-reduced-motion: reduce)',
@@ -1000,18 +1005,21 @@
     gsap.ticker.lagSmoothing(0);
 
     // ---- The signature: the line-up drifts over a still swell, endlessly
-    const S = { load: played ? 1 : 0, scroll: 1, go: played ? 1 : 0, flow: 1, run: toggle.dataset.state === 'stopped' ? 0 : 1 };
+    // Factors on the drift: load (swell rises), scroll (S1), form (S1b, calms toward the form), go (load surge), flow (hover/focus/pin hold), run (stop control)
+    const S = { load: played ? 1 : 0, scroll: 1, form: 1, go: played ? 1 : 0, flow: 1, run: toggle.dataset.state === 'stopped' ? 0 : 1 };
     const R = { off: 0 };   // the rail's offset in px; every card's x comes from it
-    let W, A, lam, gap, P, lo, gutter, tiltMax, leanMax, speed, items = [];
-    let last = 0, vx = 0, lean = 0, leanV = 0, glide = 0, dragging = false, base = 0, target = null, awake = true, lastA = -1;
+    let W, A, lam, gap, P, lo, gutter, tiltMax, leanMax, speed, mid, steps, holdS, items = [];
+    let last = 0, vx = 0, lean = 0, leanV = 0, glide = 0, dragging = false, base = 0, target = null, awake = true, lastA = -1, wait = 3;
     row.classList.add('rail');
     row.scrollLeft = 0;
     function measure() {   // cached once per resize and after a card is added: no rect reads per frame
       W = lineup.clientWidth;
-      A = css('--swell-amp'); tiltMax = css('--tilt-max'); leanMax = css('--lean-max'); speed = css('--drift-speed');
+      A = css('--swell-amp'); tiltMax = css('--tilt-max'); leanMax = css('--lean-max'); speed = css('--drift-speed'); holdS = css('--step-hold');
+      mid = svg.clientHeight / 2;
+      steps = matchMedia('(max-width: 767px), (hover: none)').matches;   // phones and touch: hold a card, then step one on
       gutter = parseFloat(getComputedStyle(row).paddingLeft);
       items = lis().map(li => ({ el: li.firstElementChild, c: li.offsetLeft + li.offsetWidth / 2, w: li.offsetWidth, h: li.offsetHeight }));
-      items.forEach(({ el }) => { el._k ??= { calm: 1, to: 1, drop: 0, lift: 0, sink: 0 }; });
+      items.forEach(({ el }) => { el._k ??= { calm: 1, to: 1, drop: 0, sink: 0 }; });
       gap = items.length > 1 ? items[1].c - items[0].c : W;
       P = items.length * gap;
       // centres wrap inside [lo, lo + P): a card leaves fully off the left edge and comes back fully off the right one.
@@ -1031,19 +1039,21 @@
       const f = Math.min(dt, 64) / 16.667;   // frames at 60fps
       if (!dragging) {
         if (glide) { R.off += glide * f; glide *= .94 ** f; if (Math.abs(glide) < .05) glide = 0; }
-        R.off -= speed / 60 * f * S.go * S.flow * S.run;
+        const drive = S.go * S.flow * S.run;
+        if (!steps) R.off -= speed / 60 * f * drive;
+        else if (!glide && !gsap.isTweening(R) && (wait += Math.min(dt, 64) / 1000 * drive) >= holdS) { wait = 0; fx.rail.step(1, false); }
       }
       // the lean follows the row's speed on a damped spring, so cards overshoot a little and settle when it stops
       vx += ((R.off - last) / f - vx) * .2;
       last = R.off;
       leanV = (leanV + (clamp(-leanMax, leanMax, vx * .15) - lean) * .12) * .78;
       lean += leanV;
-      const a = A * S.load * S.scroll;
-      if (a !== lastA) { g.setAttribute('transform', `translate(0 60) scale(1 ${Math.max(a, .001).toFixed(3)})`); lastA = a; }
+      const a = A * S.load * S.scroll * S.form;
+      if (a !== lastA) { g.setAttribute('transform', `translate(0 ${mid}) scale(1 ${Math.max(a, .001).toFixed(3)})`); lastA = a; }
       const k2 = 2 * Math.PI / lam;
       for (const { el, c, h } of items) {
         const k = el._k, x = wrapTo(c + R.off, lo, P);
-        const y = a * wave(x, lam) * k.calm + k.lift + k.drop + k.sink * h;
+        const y = a * wave(x, lam) * k.calm + k.drop + k.sink * h;
         // half the water's slope angle: a card this long bridges most of a crest, so it rides flatter than the water
         const r = clamp(-tiltMax, tiltMax, Math.atan(-a * k2 * Math.cos(k2 * x)) * 28.65) * k.calm;
         el.style.transform = `translate3d(${(x - c).toFixed(2)}px,${y.toFixed(2)}px,0) rotate(${r.toFixed(3)}deg) skewX(${(lean * k.calm).toFixed(3)}deg)`;
@@ -1051,21 +1061,25 @@
     };
     gsap.ticker.add(tick);
     addEventListener('resize', measure, on);
+    // Find-in-page and focus scroll the row natively; fold that into the rail so the card lands where the browser wanted it
+    row.addEventListener('scroll', () => { const d = row.scrollLeft; if (!d) return; R.off -= d; last -= d; row.scrollLeft = 0; }, on);
 
     const stopMoves = () => { gsap.killTweensOf(R); glide = 0; target = null; };
-    const bringIn = card => {   // a focused card slides fully into view, the short way round the loop
+    const bringIn = (card, cut = 0) => {   // a card slides fully into view, the short way round the loop (cut: only if more than this share is hidden)
       const it = items.find(i => i.el === card);
       if (!it) return;
       const x = wrapTo(it.c + R.off, lo, P);
       if (x - it.w / 2 >= gutter - 1 && x + it.w / 2 <= W - gutter + 1) return;
+      if (cut && 1 - (Math.min(x + it.w / 2, W) - Math.max(x - it.w / 2, 0)) / it.w <= cut) return;
       stopMoves();
       gsap.to(R, { off: R.off + wrapTo(gutter + it.w / 2 - x, -P / 2, P), duration: .7, ease: 'power3.inOut' });
     };
     fx.rail = {
-      step: dir => {   // Previous and Next: one card, landing on the gutter; repeated clicks add up
-        glide = 0;
+      step: (dir, asked = true) => {   // Previous and Next (asked): one card, landing on the gutter, held for reading; repeated clicks add up. Phones step on their own.
+        glide = 0; wait = 0;
         target = (Math.round((target ?? R.off) / gap) - dir) * gap;
-        gsap.to(R, { off: target, duration: .8, ease: 'power3.inOut', overwrite: true, onComplete: () => { target = null; } });
+        gsap.to(R, { off: target, duration: asked ? .8 : 1.4, ease: asked ? 'power3.inOut' : 'power2.inOut', overwrite: true,
+          onComplete: () => { target = null; if (asked) pin(2500); } });
       },
       grab: () => { stopMoves(); dragging = true; base = R.off; hovered = null; settle(); },
       pull: dx => { R.off = base + dx; },
@@ -1088,23 +1102,31 @@
       $('.read', L[(i + (e.key === 'ArrowRight' ? 1 : L.length - 1)) % L.length]).focus({ preventScroll: true });
     }, act);
 
-    // The card you are reading: the row glides to a stop, and that card goes level and sits up a little
-    let hovered = null, focused = null, still = false, holdT = 0;
+    // The card you are reading: the row glides to a stop, and that card goes level
+    let hovered = null, focused = null, pinned = false, still = false, pinT = 0, dwellT = 0;
     function settle() {
       for (const { el } of items) {
         const to = el === hovered || el === focused ? 0 : 1;
-        if (el._k.to !== to) { el._k.to = to; gsap.to(el._k, { calm: to, lift: to ? 0 : -6, duration: .6, ease: 'power3.out', overwrite: 'auto' }); }
+        if (el._k.to !== to) { el._k.to = to; gsap.to(el._k, { calm: to, duration: .6, ease: 'power3.out', overwrite: 'auto' }); }
       }
-      const s = !!(hovered || focused);
+      const s = !!(hovered || focused || pinned);
       if (s !== still) { still = s; gsap.to(S, { flow: s ? 0 : 1, duration: s ? .5 : .8, ease: s ? 'power2.out' : 'power2.inOut', overwrite: 'auto' }); }
     }
-    row.addEventListener('pointerover', e => { if (e.pointerType === 'mouse' && !dragging) { hovered = e.target.closest('.card'); settle(); } }, on);
-    row.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') { hovered = null; settle(); } }, on);
-    document.addEventListener('pointerdown', e => {   // touch: a tapped card holds still for 4s, so it can be read
+    function pin(ms) {   // hold the row (not the calm) for a moment: after Previous/Next and the reprise
+      pinned = true; clearTimeout(pinT); settle();
+      pinT = setTimeout(() => { pinned = false; settle(); }, ms);
+    }
+    row.addEventListener('pointerover', e => {
+      if (e.pointerType !== 'mouse' || dragging) return;
+      const card = e.target.closest('.card');
+      if (card !== hovered) { clearTimeout(dwellT); if (card) dwellT = setTimeout(() => bringIn(card, .25), 350); }   // a cut-off card slides in after a short dwell
+      hovered = card; settle();
+    }, on);
+    row.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') { clearTimeout(dwellT); hovered = null; settle(); } }, on);
+    document.addEventListener('pointerdown', e => {   // touch: a tapped card holds until the next tap or swipe
       if (e.pointerType === 'mouse') return;
-      clearTimeout(holdT);
-      hovered = e.target.closest?.('#row .card') || null;
-      if (hovered) holdT = setTimeout(() => { hovered = null; settle(); }, 4000);
+      const card = e.target.closest?.('#row .card') || null;
+      hovered = card && (card !== hovered || e.target.closest('.read')) ? card : null;
       settle();
     }, on);
     row.addEventListener('focusin', e => {
@@ -1123,8 +1145,10 @@
       onToggle: self => { awake = self.isActive; if (awake && pending && !reprising) dropIn(reveal(pending)); },
     });
 
-    // S1: the swell builds as the line-up comes into view
+    // S1: the swell builds as the line-up comes into view (only visible when the section starts below the fold)
     gsap.fromTo(S, { scroll: 0 }, { scroll: 1, ease: 'none', scrollTrigger: { trigger: row, start: 'top 85%', end: 'top 35%', scrub: true } });
+    // S1b: the water calms to 40% while the reader moves on to the form, and builds again on the way back up
+    gsap.fromTo(S, { form: 1 }, { form: .4, ease: 'none', scrollTrigger: { trigger: '#add-words', start: 'top 90%', end: 'top 50%', scrub: true } });
 
     toggle.hidden = false;
     fx.run = run => gsap.to(S, { run: run ? 1 : 0, duration: .8, ease: 'power2.inOut', overwrite: 'auto' });
@@ -1154,12 +1178,16 @@
         const head = $('#surf-title');
         shown(head);
         tl.add(tx2(head, { stagger: { amount: .45 } }), .15);   // L2
-        tl.fromTo('.intro', { opacity: 0, y: 40, rotation: 2, transformOrigin: '0% 50%' },
-          { opacity: 1, y: 0, rotation: 0, duration: .5, ease: 'power3.out', onComplete: () => shown('.intro') }, .55);   // L3
+        const intro = $('.intro');
+        shown(intro);
+        const lines = SplitText.create(intro, { type: 'lines', mask: 'lines' });
+        tl.fromTo(lines.lines, { yPercent: 100 }, { yPercent: 0, duration: .6, ease: 'power3.out', stagger: .06, onComplete: () => lines.revert() }, .55);   // L3
         tl.to(S, { load: 1, duration: 1.2, ease: 'power2.out' }, .8);   // the swell rises under the cards
-        tl.fromTo('.controls [data-rv]', { opacity: 0, y: 8 },
-          { opacity: 1, y: 0, duration: .5, ease: 'power3.out', stagger: .06, onComplete: () => shown('.controls [data-rv]') }, 1.4);   // L5
-        tl.to(S, { go: 1, duration: 1, ease: 'power1.inOut' }, 1.9);   // L6: the drift starts
+        tl.fromTo('#prev, #next', { opacity: 0 }, { opacity: 1, duration: .5, ease: 'power3.out', stagger: .06, onComplete: () => shown('#prev, #next') }, 1.4);   // L5
+        tl.fromTo(toggle, { opacity: 1, clipPath: 'inset(0% 100% 0% 0%)' },   // the stop control wipes in with the motion it stops
+          { clipPath: 'inset(0% 0% 0% 0%)', duration: .4, ease: 'power3.out', onComplete: () => { shown(toggle); gsap.set(toggle, { clearProps: 'clipPath' }); } }, 1.9);
+        tl.to(S, { go: 4, duration: .6, ease: 'power2.out' }, 1.9)   // L6: the drift surges in, so every card climbs a crest in the first seconds,
+          .to(S, { go: 1, duration: 2.4, ease: 'power3.inOut' });    // then settles to the slow drift
       }
       // S3: the form heading settles, then the field baselines draw
       const addTitle = $('#add-title');
@@ -1171,7 +1199,7 @@
           gsap.to('.rule', { scaleX: 1, duration: .8, ease: 'expo.out', stagger: .08, delay: .3 });
         },
       });
-    }));
+    })).catch(fail);
 
     // ---- Dialog (CD7); a bottom sheet under 600px
     const shut = () => (sheet() ? { y: '100%' } : { opacity: 0, y: 12, scale: .98 });
@@ -1200,21 +1228,24 @@
       li.hidden = true;
       measure();
     };
-    function reveal(li) {   // into the row at the gutter, invisible, high in the row's headroom
+    function reveal(li) {   // into the row at the gutter, invisible (but focusable), high in the row's headroom
       if (li === pending) pending = null;
       li.hidden = false;
       relabel();
-      measure();
       stopMoves();
-      R.off = last = 0;
+      R.off = last = wrapTo(R.off, -P, P) - gap;   // the old cards stay put while the newcomer pushes them one step right
+      measure();
+      const home = R.off + wrapTo(-R.off, -P / 2, P);   // the nearest offset that puts the front of the row at the gutter
+      if (awake) gsap.to(R, { off: home, duration: .6, ease: 'power3.inOut' });
+      else R.off = last = home;
       const card = li.firstElementChild;
-      gsap.set(card, { autoAlpha: 0 });
-      card._k.drop = 12 - css('--row-pt');   // the scrolling row clips anything above its headroom
+      gsap.set(card, { opacity: 0 });
+      card._k.drop = 12 - css('--row-pt');   // the row clips anything above its headroom
       return card;
     }
     function dropIn(card) {
       gsap.to(card._k, { drop: 0, duration: .9, ease: 'back.out(1.4)' });
-      gsap.to(card, { autoAlpha: 1, duration: .3, clearProps: 'opacity,visibility' });
+      gsap.to(card, { opacity: 1, duration: .3, clearProps: 'opacity' });
       tx2($('.quote p', card), { delay: .25 });
     }
     fx.reprise = (card, read) => {
@@ -1227,6 +1258,7 @@
         reprising = false;
         dropIn(card);
         read.focus({ preventScroll: true });
+        pin(2500);   // the row holds while the newcomer lands and its words settle
       };
       lenis.scrollTo(lineup, { offset: -Math.max(24, (innerHeight - lineup.offsetHeight) / 2), duration: 1.2, onComplete: land });
       gsap.delayedCall(1.4, land);   // in case Lenis had nowhere to go
@@ -1235,7 +1267,8 @@
     return () => {
       live = false;
       ac.abort();
-      clearTimeout(holdT);
+      clearTimeout(pinT);
+      clearTimeout(dwellT);
       gsap.ticker.remove(raf);
       gsap.ticker.remove(tick);
       gsap.ticker.lagSmoothing(500, 33);
@@ -1252,6 +1285,7 @@
       toggle.hidden = true;
     };
   });
+  } catch (err) { fail(err); }
 })();
 </script>
 </body>

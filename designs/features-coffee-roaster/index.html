@@ -172,11 +172,12 @@ button { font: inherit; color: inherit; }
 .plate-art { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .plate-art text { font-family: var(--font-stencil); font-weight: 700; fill: var(--stencil-blue); text-anchor: middle; }
 
-/* ---------- Stage: the roast log on top, the box contents in a track below. One time value drives both. ---------- */
-.stage { position: relative; }
-.roast { border-top: 2px solid var(--roast); padding-block: var(--space-5) var(--space-4); }
+/* ---------- Stage: the box contents in a track, the roast log along the bottom like its scroll bar. One time value drives both. ---------- */
+.stage { position: relative; border-top: 2px solid var(--roast); }
+.box-head { padding-block: var(--space-5) var(--space-3); }
+.box-head h3, .roast-head h3 { font-size: var(--step-1); line-height: 1.2; font-weight: 600; }
+.roast { border-top: 1px solid var(--roast); padding-block: var(--space-5) var(--space-4); }
 .roast-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: var(--space-2) var(--space-7); margin-bottom: var(--space-2); }
-.roast-head h3 { font-size: var(--step-1); line-height: 1.2; font-weight: 600; }
 .roast-sub { color: var(--roast-2); font-size: var(--step--1); margin-top: 2px; }
 .legend { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-5); font: 500 var(--step--1)/1.3 var(--font-readout); }
 .legend li::before { content: ""; display: inline-block; width: 28px; vertical-align: middle; margin-right: var(--space-2); border-top: 2.5px solid var(--stencil-blue); }
@@ -246,6 +247,13 @@ html.js .ev:not(.is-on) .ev-dot, html.js .ev:not(.is-on) .ev-label { scale: .4; 
 .thumb:focus-visible { outline: 2px solid var(--roast); outline-offset: 3px; }
 .xaxis { grid-column: 2; position: relative; height: 1.9em; font: 500 var(--step--1)/1 var(--font-readout); font-variant-numeric: tabular-nums; color: var(--roast-2); }
 .xaxis span { position: absolute; top: 8px; left: calc(var(--t) / 640 * 100%); transform: translateX(-50%); }
+/* The box index sits on the time axis at each item's roast stop: the axis is the box's scroll bar */
+.idx { grid-column: 2; position: relative; height: 1.9em; list-style: none; margin: 0; padding: 0; font-size: var(--step--1); line-height: 1.3; }
+.idx li { position: absolute; top: 0; left: calc(var(--t) / 640 * 100%); translate: -50% 0; white-space: nowrap; }
+.idx li:first-child { translate: 0 0; }
+.idx li:last-child { translate: -100% 0; }
+.idx .link { color: var(--roast-2); font-weight: 500; transition: background-size .4s var(--ease), color var(--dur-out) var(--ease); }
+.idx .link[aria-current] { color: var(--roast); font-weight: 600; }
 .bean-panel { display: grid; grid-template-columns: 104px minmax(0, 1fr); align-items: center; gap: var(--space-2) var(--space-4); }
 .bean { width: 104px; height: auto; overflow: visible; }
 .bean-body { transform-box: fill-box; transform-origin: center; transform: scale(var(--bs)); }
@@ -266,8 +274,6 @@ html.js .bean:not(.is-cracked) .crease-open { clip-path: inset(0 0 100% 0); }
 .readout dd { font: 500 var(--step-0)/1.15 var(--font-readout); font-variant-numeric: tabular-nums; text-align: right; }
 .readout .big dd { font-size: var(--step-2); line-height: 1; }
 .roast-help { grid-column: 1 / -1; color: var(--roast-2); font-size: var(--step--1); line-height: 1.4; }
-.help-scroll { display: none; }
-@media (prefers-reduced-motion: no-preference) { html.js .help-scroll { display: inline; } }
 
 /* The track: a native scroll-snap row by default (touch, narrow, no library); pinned and moved by the scroll on wide fine-pointer screens */
 .track {
@@ -278,9 +284,9 @@ html.js .bean:not(.is-cracked) .crease-open { clip-path: inset(0 0 100% 0); }
   scrollbar-width: thin; scrollbar-color: var(--rule-strong) transparent;
   border-top: 1px solid var(--rule);
 }
-.track.is-seeking { scroll-snap-type: none; }
+.track.is-seeking, .track.is-scrubbed { scroll-snap-type: none; }
 .panel {
-  flex: 0 0 var(--panel-w); scroll-snap-align: start; container-type: inline-size;
+  flex: 0 0 var(--panel-w); scroll-snap-align: center; container-type: inline-size;
   display: grid; align-content: center;
   padding: var(--space-6) var(--space-7) var(--space-6) 0;
 }
@@ -292,11 +298,23 @@ html.js .bean:not(.is-cracked) .crease-open { clip-path: inset(0 0 100% 0); }
 .panel-text p { max-width: 38ch; }
 .panel-text p + * { margin-top: var(--space-4); }
 .stage.is-pinned { height: 100svh; display: flex; flex-direction: column; overflow: clip; }
+.stage.is-pinned .box-head { padding-block: var(--space-4) var(--space-2); }
 .stage.is-pinned .track { flex: 1; min-height: 0; width: max-content; overflow: visible; scroll-snap-type: none; }
+.stage.is-pinned .panel { padding-block: var(--space-5); }
+/* Pinned, the log is a strip along the bottom: short plot, head on one line, small bean beside the readouts */
+.stage.is-pinned .roast { padding-block: var(--space-3) var(--space-2); }
+.stage.is-pinned .roast-head { margin-bottom: 0; }
+.stage.is-pinned .roast-head > div { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: var(--space-4); }
+.stage.is-pinned .roast-body { align-items: center; gap: var(--space-6); }
+.stage.is-pinned .chart { padding-top: 34px; }
+.stage.is-pinned .plot { height: clamp(110px, 18svh, 190px); }
+.stage.is-pinned .bean-panel { grid-template-columns: 72px minmax(0, 1fr); }
+.stage.is-pinned .bean { width: 72px; }
 
 .paper { background: var(--paper); border-radius: var(--r-paper); box-shadow: var(--shadow-paper); }
 .bags { display: flex; flex-wrap: wrap; gap: var(--space-5); transform: translateX(calc(var(--d, 0) * -.15px)); }
 .bag {
+  width: clamp(120px, min(12vw, 22svh), 168px);
   display: grid; gap: var(--space-3); justify-items: start;
   padding: 0; border: 0; background: none; text-align: left; cursor: pointer;
   transition: transform var(--dur-release) var(--ease);
@@ -305,7 +323,7 @@ html.js .bean:not(.is-cracked) .crease-open { clip-path: inset(0 0 100% 0); }
 .bag:active { transform: scale(.97); transition-duration: var(--dur-press); }
 .bag:focus-visible { outline: 2px solid var(--roast); outline-offset: 5px; }
 .bag-body {
-  position: relative; width: clamp(124px, 12vw, 168px); aspect-ratio: 3 / 4;
+  position: relative; width: 100%; aspect-ratio: 3 / 4;
   display: flex; flex-direction: column; padding: 30px 12px 12px;
   background: var(--paper); border-radius: var(--r-paper); box-shadow: var(--shadow-paper);
 }
@@ -324,7 +342,10 @@ html.js .bean:not(.is-cracked) .crease-open { clip-path: inset(0 0 100% 0); }
   mix-blend-mode: screen; opacity: 0; transition: opacity var(--dur-out) var(--ease);
 }
 @media (hover: hover) { .bag:hover .bag-label::after { opacity: .85; } }
-@media (hover: none) { .bag-label::after { opacity: .45; } }
+/* Touch: one copper sweep across the label on press, then it fades (no static sheen) */
+@property --x { syntax: '<percentage>'; inherits: true; initial-value: 50%; }
+.bag.is-swept .bag-label::after { animation: sweep .75s var(--ease); }
+@keyframes sweep { 0% { --x: 0%; opacity: .85; } 60% { --x: 100%; opacity: .85; } 100% { --x: 100%; opacity: 0; } }
 .bag:focus-visible .bag-label::after { --x: 50%; --y: 50%; opacity: .85; }
 .bag-cta { font-weight: 600; padding-bottom: .12em; background: linear-gradient(currentColor, currentColor) 100% 100% / 0% .08em no-repeat, linear-gradient(var(--rule-strong), var(--rule-strong)) 0 100% / 100% .08em no-repeat; transition: background-size .4s var(--ease); }
 @media (hover: hover) { .bag:hover .bag-cta { background-size: 100% .08em, 100% .08em; background-position: 0 100%, 0 100%; } }
@@ -446,10 +467,13 @@ legend { font-weight: 600; font-size: var(--step--1); padding: 0; margin-bottom:
 }
 @media (max-width: 700px) {
   :root { --panel-w: 86vw; }
+  .track { align-items: flex-start; } /* short panels stay short instead of stretching to the tallest */
   .panel { padding: var(--space-5) var(--space-4) var(--space-5) 0; align-content: start; }
   .panel + .panel { padding-left: var(--space-4); }
   .ev-full { display: none; }
   .ev-abbr { display: inline; }
+  .idx { height: 3.4em; }
+  .idx li:nth-child(even) { top: 1.7em; }
   .ev-key { display: block; margin-top: var(--space-1); font-size: var(--step--1); color: var(--roast-2); }
   .bean-panel { grid-template-columns: 72px minmax(0, 1fr); }
   .bean { width: 72px; }
@@ -459,6 +483,8 @@ legend { font-weight: 600; font-size: var(--step--1); padding: 0; margin-bottom:
 }
 @media (max-width: 599px) {
   .xaxis .odd { display: none; }
+  .title { font-size: clamp(3.4rem, 14.5vw, 4.5rem); }
+  .plate { width: 100%; height: auto; aspect-ratio: 16 / 9; }
   .actions .btn { width: 100%; }
   dialog { width: 100%; max-width: none; height: 100dvh; max-height: none; margin: 0; border-radius: 0; }
   .sheet { padding: var(--space-5) var(--space-4) var(--space-7); }
@@ -534,99 +560,8 @@ legend { font-weight: 600; font-size: var(--step--1); padding: 0; margin-bottom:
   <div class="stage" id="box" style="--p:1;--by:.1605;--bs:1.15">
     <a class="link skip" href="#start">Skip the box contents</a>
 
-    <section class="roast" id="roast" aria-labelledby="roast-title">
-      <div class="wrap">
-        <div class="roast-head">
-          <div>
-            <h3 id="roast-title">Roast log, batch 26-10-A</h3>
-            <p class="roast-sub">El Mirador, roasted on Tuesday 6 October in our 12 kg drum. Its lot card carries this same curve.</p>
-          </div>
-          <ul class="legend" aria-hidden="true">
-            <li class="lg-bt">Bean temperature (BT)</li>
-            <li class="lg-et">Exhaust temperature (ET)</li>
-          </ul>
-        </div>
-        <div class="roast-body">
-          <div>
-            <div class="chart">
-              <div class="yaxis" aria-hidden="true">
-                <span style="--y:0">240&nbsp;°C</span><span style="--y:20">200</span><span style="--y:40">160</span><span style="--y:60">120</span><span style="--y:80">80</span><span style="--y:100">40</span>
-              </div>
-              <div class="plot" id="plot">
-                <div class="plot-grid" aria-hidden="true"></div>
-                <svg class="curves ghost" viewBox="0 0 640 200" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-                  <defs>
-                    <path id="bt" d="M0 40L2 45.6L4 51L6 56.2L8 61.3L10 66.3L12 71.1L14 75.7L16 80.2L18 84.5L20 88.6L22 92.6L24 96.5L26 100.2L28 103.7L30 107.1L32 110.4L34 113.5L36 116.5L38 119.3L40 122L42 124.5L44 126.9L46 129.1L48 131.3L50 133.2L52 135.1L54 136.8L56 138.4L58 139.8L60 141.1L62 142.3L64 143.4L66 144.4L68 145.2L70 145.9L72 146.5L74 147L76 147.4L78 147.7L80 147.9L82 148L84 148L86 148L88 147.9L90 147.8L92 147.6L94 147.4L96 147.1L98 146.8L100 146.4L102 146L104 145.5L106 145L108 144.4L110 143.8L112 143.1L114 142.4L116 141.6L118 140.8L120 139.9L122 139L124 138.1L126 137.3L128 136.4L130 135.5L132 134.7L134 133.8L136 133L138 132.1L140 131.3L142 130.4L144 129.6L146 128.8L148 128L150 127.2L152 126.4L154 125.6L156 124.8L158 124L160 123.2L162 122.5L164 121.7L166 120.9L168 120.2L170 119.4L172 118.7L174 118L176 117.2L178 116.5L180 115.8L182 115.1L184 114.4L186 113.7L188 113L190 112.3L192 111.7L194 111L196 110.3L198 109.7L200 109L202 108.4L204 107.7L206 107.1L208 106.5L210 105.8L212 105.2L214 104.6L216 104L218 103.4L220 102.8L222 102.2L224 101.7L226 101.1L228 100.5L230 100L232 99.4L234 98.9L236 98.3L238 97.8L240 97.2L242 96.7L244 96.2L246 95.7L248 95.2L250 94.7L252 94.2L254 93.7L256 93.2L258 92.8L260 92.3L262 91.8L264 91.4L266 90.9L268 90.5L270 90.1L272 89.6L274 89.2L276 88.8L278 88.3L280 87.9L282 87.5L284 87.1L286 86.6L288 86.2L290 85.8L292 85.4L294 84.9L296 84.5L298 84.1L300 83.7L302 83.3L304 82.9L306 82.5L308 82L310 81.6L312 81.2L314 80.8L316 80.4L318 80L320 79.6L322 79.2L324 78.8L326 78.4L328 78L330 77.6L332 77.2L334 76.8L336 76.4L338 76L340 75.6L342 75.2L344 74.9L346 74.5L348 74.1L350 73.7L352 73.3L354 72.9L356 72.6L358 72.2L360 71.8L362 71.4L364 71L366 70.7L368 70.3L370 69.9L372 69.5L374 69.2L376 68.8L378 68.4L380 68.1L382 67.7L384 67.3L386 67L388 66.6L390 66.3L392 65.9L394 65.5L396 65.2L398 64.8L400 64.5L402 64.1L404 63.8L406 63.4L408 63.1L410 62.7L412 62.4L414 62L416 61.7L418 61.3L420 61L422 60.7L424 60.3L426 60L428 59.6L430 59.3L432 59L434 58.6L436 58.3L438 58L440 57.6L442 57.3L444 57L446 56.7L448 56.3L450 56L452 55.7L454 55.4L456 55L458 54.7L460 54.4L462 54.1L464 53.8L466 53.5L468 53.1L470 52.8L472 52.5L474 52.2L476 51.9L478 51.6L480 51.3L482 51L484 50.7L486 50.4L488 50.1L490 49.8L492 49.5L494 49.2L496 48.9L498 48.6L500 48.3L502 48L504 47.7L506 47.4L508 47.1L510 46.9L512 46.6L514 46.3L516 46L518 45.7L520 45.4L522 45.2L524 44.9L526 44.6L528 44.3L530 44.1L532 43.8L534 43.5L536 43.2L538 43L540 42.7L542 42.4L544 42.2L546 41.9L548 41.7L550 41.4L552 41.2L554 40.9L556 40.7L558 40.4L560 40.2L562 39.9L564 39.7L566 39.4L568 39.2L570 39L572 38.7L574 38.5L576 38.3L578 38.1L580 37.8L582 37.6L584 37.4L586 37.2L588 37L590 36.7L592 36.5L594 36.3L596 36.1L598 35.9L600 35.7L602 35.5L604 35.3L606 35.1L608 34.9L610 34.7L612 34.5L614 34.3L616 34.1L618 34L620 33.8L622 33.6L624 33.4L626 33.2L628 33.1L630 32.9L632 32.7L634 32.6L636 32.4L638 32.2L640 32.1"/>
-                    <path id="et" d="M0 12L2 13.8L4 15.5L6 17.2L8 18.9L10 20.5L12 22.1L14 23.6L16 25.1L18 26.5L20 27.9L22 29.3L24 30.6L26 31.9L28 33.1L30 34.3L32 35.4L34 36.5L36 37.6L38 38.6L40 39.6L42 40.5L44 41.4L46 42.2L48 43L50 43.8L52 44.5L54 45.2L56 45.8L58 46.4L60 46.9L62 47.4L64 47.8L66 48.3L68 48.6L70 48.9L72 49.2L74 49.5L76 49.7L78 49.8L80 49.9L82 50L84 50L86 49.4L88 48.7L90 48.1L92 47.5L94 46.9L96 46.3L98 45.7L100 45.1L102 44.6L104 44L106 43.5L108 42.9L110 42.4L112 41.8L114 41.3L116 40.8L118 40.3L120 39.8L122 39.3L124 38.8L126 38.3L128 37.8L130 37.3L132 36.9L134 36.4L136 35.9L138 35.5L140 35L142 34.6L144 34.2L146 33.7L148 33.3L150 32.9L152 32.5L154 32.1L156 31.7L158 31.3L160 30.9L162 30.5L164 30.2L166 29.8L168 29.4L170 29.1L172 28.7L174 28.3L176 28L178 27.6L180 27.3L182 27L184 26.6L186 26.3L188 26L190 25.7L192 25.4L194 25.1L196 24.7L198 24.4L200 24.2L202 23.9L204 23.6L206 23.3L208 23L210 22.7L212 22.4L214 22.2L216 21.9L218 21.6L220 21.4L222 21.1L224 20.9L226 20.6L228 20.4L230 20.1L232 19.9L234 19.7L236 19.4L238 19.2L240 19L242 18.7L244 18.5L246 18.3L248 18.1L250 17.9L252 17.7L254 17.5L256 17.2L258 17L260 16.8L262 16.7L264 16.5L266 16.3L268 16.1L270 15.9L272 15.7L274 15.5L276 15.3L278 15.2L280 15L282 14.8L284 14.7L286 14.5L288 14.3L290 14.2L292 14L294 13.8L296 13.7L298 13.5L300 13.4L302 13.2L304 13.1L306 12.9L308 12.8L310 12.6L312 12.5L314 12.4L316 12.2L318 12.1L320 12L322 11.8L324 11.7L326 11.6L328 11.4L330 11.3L332 11.2L334 11.1L336 10.9L338 10.8L340 10.7L342 10.6L344 10.5L346 10.4L348 10.3L350 10.1L352 10L354 9.9L356 9.8L358 9.7L360 9.6L362 9.5L364 9.4L366 9.3L368 9.2L370 9.1L372 9L374 8.9L376 8.9L378 8.8L380 8.7L382 8.6L384 8.5L386 8.4L388 8.3L390 8.2L392 8.2L394 8.1L396 8L398 7.9L400 7.8L402 7.8L404 7.7L406 7.6L408 7.5L410 7.5L412 7.4L414 7.3L416 7.2L418 7.2L420 7.1L422 7L424 7L426 6.9L428 6.8L430 6.8L432 6.7L434 6.7L436 6.6L438 6.5L440 6.5L442 6.4L444 6.4L446 6.3L448 6.2L450 6.2L452 6.1L454 6.1L456 6L458 6L460 5.9L462 5.9L464 5.8L466 5.8L468 5.7L470 5.7L472 5.6L474 5.6L476 5.5L478 5.5L480 5.4L482 5.4L484 5.3L486 5.3L488 5.2L490 5.2L492 5.2L494 5.1L496 5.1L498 5L500 5L502 5L504 4.9L506 4.9L508 4.8L510 4.8L512 4.8L514 4.7L516 4.7L518 4.7L520 4.6L522 4.6L524 4.6L526 4.5L528 4.5L530 4.5L532 4.4L534 4.4L536 4.4L538 4.3L540 4.3L542 4.3L544 4.2L546 4.2L548 4.2L550 4.1L552 4.1L554 4.1L556 4.1L558 4L560 4L562 4L564 4L566 3.9L568 3.9L570 3.9L572 3.9L574 3.8L576 3.8L578 3.8L580 3.8L582 3.7L584 3.7L586 3.7L588 3.7L590 3.6L592 3.6L594 3.6L596 3.6L598 3.6L600 3.5L602 3.5L604 3.5L606 3.5L608 3.5L610 3.4L612 3.4L614 3.4L616 3.4L618 3.4L620 3.3L622 3.3L624 3.3L626 3.3L628 3.3L630 3.3L632 3.2L634 3.2L636 3.2L638 3.2L640 3.2"/>
-                    <path id="kb" d="M0 42L2 48L4 53.8L6 59.4L8 64.9L10 70.1L12 75.2L14 80.1L16 84.8L18 89.4L20 93.7L22 97.9L24 101.9L26 105.7L28 109.4L30 112.9L32 116.2L34 119.4L36 122.3L38 125.1L40 127.8L42 130.3L44 132.6L46 134.8L48 136.8L50 138.7L52 140.4L54 141.9L56 143.3L58 144.6L60 145.7L62 146.7L64 147.5L66 148.2L68 148.8L70 149.3L72 149.6L74 149.8L76 150L78 150L80 150L82 149.9L84 149.8L86 149.6L88 149.3L90 149L92 148.7L94 148.3L96 147.8L98 147.3L100 146.7L102 146.1L104 145.4L106 144.7L108 143.9L110 143.1L112 142.2L114 141.3L116 140.3L118 139.3L120 138.4L122 137.4L124 136.5L126 135.6L128 134.7L130 133.7L132 132.8L134 131.9L136 131L138 130.2L140 129.3L142 128.4L144 127.5L146 126.7L148 125.8L150 125L152 124.2L154 123.3L156 122.5L158 121.7L160 120.9L162 120.1L164 119.3L166 118.5L168 117.8L170 117L172 116.2L174 115.5L176 114.7L178 114L180 113.3L182 112.5L184 111.8L186 111.1L188 110.4L190 109.7L192 109L194 108.4L196 107.7L198 107L200 106.4L202 105.7L204 105.1L206 104.4L208 103.8L210 103.2L212 102.6L214 102L216 101.4L218 100.8L220 100.2L222 99.6L224 99L226 98.5L228 97.9L230 97.4L232 96.8L234 96.3L236 95.8L238 95.3L240 94.7L242 94.2L244 93.8L246 93.3L248 92.8L250 92.3L252 91.8L254 91.4L256 90.9L258 90.5L260 90L262 89.6L264 89.2L266 88.8L268 88.3L270 87.9L272 87.5L274 87L276 86.6L278 86.2L280 85.8L282 85.4L284 84.9L286 84.5L288 84.1L290 83.7L292 83.3L294 82.9L296 82.4L298 82L300 81.6L302 81.2L304 80.8L306 80.4L308 80L310 79.6L312 79.2L314 78.8L316 78.4L318 78L320 77.6L322 77.2L324 76.8L326 76.4L328 76L330 75.6L332 75.2L334 74.8L336 74.4L338 74L340 73.7L342 73.3L344 72.9L346 72.5L348 72.1L350 71.7L352 71.4L354 71L356 70.6L358 70.2L360 69.8L362 69.5L364 69.1L366 68.7L368 68.4L370 68L372 67.6L374 67.3L376 66.9L378 66.5L380 66.2L382 65.8L384 65.4L386 65.1L388 64.7L390 64.4L392 64L394 63.6L396 63.3L398 62.9L400 62.6L402 62.2L404 61.9L406 61.5L408 61.2L410 60.8L412 60.5L414 60.2L416 59.8L418 59.5L420 59.1L422 58.8L424 58.5L426 58.1L428 57.8L430 57.5L432 57.1L434 56.8L436 56.5L438 56.1L440 55.8L442 55.5L444 55.1L446 54.8L448 54.5L450 54.2L452 53.9L454 53.5L456 53.2L458 52.9L460 52.6L462 52.3L464 52L466 51.6L468 51.3L470 51L472 50.7L474 50.4L476 50.1L478 49.8L480 49.5L482 49.2L484 48.9L486 48.6L488 48.3L490 48L492 47.7L494 47.4L496 47.1L498 46.8L500 46.5L502 46.2L504 45.9L506 45.6L508 45.3L510 45L512 44.8L514 44.5L516 44.2L518 43.9L520 43.6L522 43.4L524 43.1L526 42.8L528 42.6L530 42.3L532 42L534 41.8L536 41.5L538 41.3L540 41L542 40.8L544 40.5L546 40.3L548 40.1L550 39.8L552 39.6L554 39.4L556 39.1L558 38.9L560 38.7L562 38.4L564 38.2L566 38L568 37.8L570 37.6L572 37.4L574 37.2L576 37L578 36.8L580 36.6L582 36.4L584 36.2L586 36L588 35.8L590 35.6L592 35.4L594 35.2L596 35.1"/>
-                  </defs>
-                  <use class="et" href="#et"/><use class="bt" href="#bt"/>
-                </svg>
-                <div class="live" aria-hidden="true">
-                  <svg class="curves" viewBox="0 0 640 200" preserveAspectRatio="none" focusable="false"><use class="et" href="#et"/><use class="bt" href="#bt"/></svg>
-                </div>
-                <div class="ev below" data-t="84" style="--t:84;--v:92" aria-hidden="true"><span class="ev-dot"></span><span class="ev-label"><span class="ev-full">Turning point</span><span class="ev-abbr">TP</span> 1:24</span></div>
-                <div class="ev below-right" data-t="270" style="--t:270;--v:150" aria-hidden="true"><span class="ev-dot"></span><span class="ev-label"><span class="ev-full">Dry end</span><span class="ev-abbr">DE</span> 4:30</span></div>
-                <div class="ev below-right fc" data-t="530" style="--t:530;--v:196" aria-hidden="true"><span class="ev-dot"></span><span class="ev-label"><span class="ev-full">First crack</span><span class="ev-abbr">FC</span> 8:50</span></div>
-                <div class="ev above-left" data-t="640" style="--t:640;--v:208" aria-hidden="true"><span class="ev-dot"></span><span class="ev-label">Drop 10:40</span></div>
-                <div class="hover-line" aria-hidden="true"><span>0:00</span></div>
-                <div class="cross">
-                  <span class="cross-dot" aria-hidden="true"></span>
-                  <div class="thumb" id="thumb" role="slider" tabindex="0" aria-label="Roast time, batch 26-10-A" aria-describedby="roast-help" aria-valuemin="0" aria-valuemax="640" aria-valuenow="640" aria-valuetext="10:40, bean 208&nbsp;°C, dropped">10:40</div>
-                </div>
-              </div>
-              <div class="xaxis" aria-hidden="true">
-                <span style="--t:0">0:00</span><span class="odd" style="--t:60">1:00</span><span style="--t:120">2:00</span><span class="odd" style="--t:180">3:00</span><span style="--t:240">4:00</span><span class="odd" style="--t:300">5:00</span><span style="--t:360">6:00</span><span class="odd" style="--t:420">7:00</span><span style="--t:480">8:00</span><span class="odd" style="--t:540">9:00</span><span style="--t:600">10:00</span>
-              </div>
-            </div>
-            <p class="ev-key" aria-hidden="true">TP turning point, DE dry end, FC first crack.</p>
-          </div>
-          <div class="bean-panel">
-            <svg class="bean" viewBox="0 0 200 240" aria-hidden="true" focusable="false">
-              <defs>
-                <path id="bean-shape" d="M100 16C148 16 174 66 174 122C174 182 140 224 98 224C54 224 26 180 26 122C26 64 54 16 100 16Z"/>
-                <radialGradient id="bean-shade" cx="36%" cy="28%" r="78%">
-                  <stop class="shade-hi" offset="0" stop-opacity=".3"/>
-                  <stop class="shade-hi" offset=".5" stop-opacity="0"/>
-                  <stop class="shade-lo" offset="1" stop-opacity=".3"/>
-                </radialGradient>
-              </defs>
-              <g class="bean-body">
-                <g transform="rotate(-16 100 120)">
-                  <use class="bean-layer l0" href="#bean-shape"/>
-                  <use class="bean-layer l1" href="#bean-shape" data-from="132" data-span="20"/>
-                  <use class="bean-layer l2" href="#bean-shape" data-from="152" data-span="18"/>
-                  <use class="bean-layer l3" href="#bean-shape" data-from="170" data-span="17"/>
-                  <use class="bean-layer l4" href="#bean-shape" data-from="187" data-span="18"/>
-                  <use href="#bean-shape" fill="url(#bean-shade)"/>
-                  <use class="bean-edge" href="#bean-shape"/>
-                  <path class="crease" d="M104 36C82 76 118 102 100 128C84 152 114 184 98 206"/>
-                  <path class="crease-open" d="M104 36C82 76 118 102 100 128C84 152 114 184 98 206"/>
-                </g>
-              </g>
-            </svg>
-            <dl class="readout" aria-live="off">
-              <div class="big"><dt>Roast time</dt><dd data-r="time">10:40</dd></div>
-              <div><dt>Bean</dt><dd data-r="bt">208&nbsp;°C</dd></div>
-              <div><dt>Stage</dt><dd data-r="stage">Dropped</dd></div>
-            </dl>
-            <p class="roast-help" id="roast-help"><span class="help-scroll">Scroll or swipe through the box below to roast the batch. </span>Drag along the log, or focus the time marker and use the arrow keys (10 seconds a step); Page Up and Page Down jump between events.</p>
-          </div>
-        </div>
-        <table class="sr-only">
-          <caption>Roast events, batch 26-10-A</caption>
-          <thead><tr><th scope="col">Event</th><th scope="col">Time</th><th scope="col">Bean temperature</th></tr></thead>
-          <tbody>
-            <tr><th scope="row">Turning point</th><td>1:24</td><td>92&nbsp;°C</td></tr>
-            <tr><th scope="row">Dry end</th><td>4:30</td><td>150&nbsp;°C</td></tr>
-            <tr><th scope="row">First crack</th><td>8:50</td><td>196&nbsp;°C</td></tr>
-            <tr><th scope="row">Drop</th><td>10:40</td><td>208&nbsp;°C</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <ul class="track" id="track" aria-label="In the box">
+    <div class="wrap box-head"><h3 id="box-title">In the box</h3></div>
+    <ul class="track" id="track" aria-labelledby="box-title">
       <li class="panel" id="box-lots" tabindex="-1">
         <div class="panel-in">
           <div class="panel-text">
@@ -666,7 +601,7 @@ legend { font-weight: 600; font-size: var(--step--1); padding: 0; margin-bottom:
         <div class="panel-in">
           <div class="panel-text">
             <h3>A lot card with the price we paid</h3>
-            <p>Farm, producer, altitude, process, harvest, and what we paid: $7.40 a kilo, free on board, to Luz Dary Ortiz’s growers’ association for El Mirador. The curve on the back of the card is the roast log above.</p>
+            <p>Farm, producer, altitude, process, harvest, and what we paid: $7.40 a kilo, free on board, to Luz Dary Ortiz’s growers’ association for El Mirador. The curve on the back of the card is the roast log below.</p>
             <button class="link" type="button" data-open="lot" data-lot="mirador" aria-haspopup="dialog">Open the El Mirador lot card</button>
           </div>
           <figure class="paper card-back">
@@ -713,6 +648,106 @@ legend { font-weight: 600; font-size: var(--step--1); padding: 0; margin-bottom:
         </div>
       </li>
     </ul>
+
+    <section class="roast" id="roast" aria-labelledby="roast-title">
+      <div class="wrap">
+        <div class="roast-head">
+          <div>
+            <h3 id="roast-title">Roast log, batch 26-10-A</h3>
+            <p class="roast-sub">El Mirador, roasted on Tuesday 6 October in our 12 kg drum. Its lot card carries this same curve.</p>
+          </div>
+          <ul class="legend" aria-hidden="true">
+            <li class="lg-bt">Bean temperature (BT)</li>
+            <li class="lg-et">Exhaust temperature (ET)</li>
+          </ul>
+        </div>
+        <div class="roast-body">
+          <div>
+            <div class="chart">
+              <div class="yaxis" aria-hidden="true">
+                <span style="--y:0">240&nbsp;°C</span><span style="--y:20">200</span><span style="--y:40">160</span><span style="--y:60">120</span><span style="--y:80">80</span><span style="--y:100">40</span>
+              </div>
+              <div class="plot" id="plot">
+                <div class="plot-grid" aria-hidden="true"></div>
+                <svg class="curves ghost" viewBox="0 0 640 200" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+                  <defs>
+                    <path id="bt" d="M0 40L2 45.6L4 51L6 56.2L8 61.3L10 66.3L12 71.1L14 75.7L16 80.2L18 84.5L20 88.6L22 92.6L24 96.5L26 100.2L28 103.7L30 107.1L32 110.4L34 113.5L36 116.5L38 119.3L40 122L42 124.5L44 126.9L46 129.1L48 131.3L50 133.2L52 135.1L54 136.8L56 138.4L58 139.8L60 141.1L62 142.3L64 143.4L66 144.4L68 145.2L70 145.9L72 146.5L74 147L76 147.4L78 147.7L80 147.9L82 148L84 148L86 148L88 147.9L90 147.8L92 147.6L94 147.4L96 147.1L98 146.8L100 146.4L102 146L104 145.5L106 145L108 144.4L110 143.8L112 143.1L114 142.4L116 141.6L118 140.8L120 139.9L122 139L124 138.1L126 137.3L128 136.4L130 135.5L132 134.7L134 133.8L136 133L138 132.1L140 131.3L142 130.4L144 129.6L146 128.8L148 128L150 127.2L152 126.4L154 125.6L156 124.8L158 124L160 123.2L162 122.5L164 121.7L166 120.9L168 120.2L170 119.4L172 118.7L174 118L176 117.2L178 116.5L180 115.8L182 115.1L184 114.4L186 113.7L188 113L190 112.3L192 111.7L194 111L196 110.3L198 109.7L200 109L202 108.4L204 107.7L206 107.1L208 106.5L210 105.8L212 105.2L214 104.6L216 104L218 103.4L220 102.8L222 102.2L224 101.7L226 101.1L228 100.5L230 100L232 99.4L234 98.9L236 98.3L238 97.8L240 97.2L242 96.7L244 96.2L246 95.7L248 95.2L250 94.7L252 94.2L254 93.7L256 93.2L258 92.8L260 92.3L262 91.8L264 91.4L266 90.9L268 90.5L270 90.1L272 89.6L274 89.2L276 88.8L278 88.3L280 87.9L282 87.5L284 87.1L286 86.6L288 86.2L290 85.8L292 85.4L294 84.9L296 84.5L298 84.1L300 83.7L302 83.3L304 82.9L306 82.5L308 82L310 81.6L312 81.2L314 80.8L316 80.4L318 80L320 79.6L322 79.2L324 78.8L326 78.4L328 78L330 77.6L332 77.2L334 76.8L336 76.4L338 76L340 75.6L342 75.2L344 74.9L346 74.5L348 74.1L350 73.7L352 73.3L354 72.9L356 72.6L358 72.2L360 71.8L362 71.4L364 71L366 70.7L368 70.3L370 69.9L372 69.5L374 69.2L376 68.8L378 68.4L380 68.1L382 67.7L384 67.3L386 67L388 66.6L390 66.3L392 65.9L394 65.5L396 65.2L398 64.8L400 64.5L402 64.1L404 63.8L406 63.4L408 63.1L410 62.7L412 62.4L414 62L416 61.7L418 61.3L420 61L422 60.7L424 60.3L426 60L428 59.6L430 59.3L432 59L434 58.6L436 58.3L438 58L440 57.6L442 57.3L444 57L446 56.7L448 56.3L450 56L452 55.7L454 55.4L456 55L458 54.7L460 54.4L462 54.1L464 53.8L466 53.5L468 53.1L470 52.8L472 52.5L474 52.2L476 51.9L478 51.6L480 51.3L482 51L484 50.7L486 50.4L488 50.1L490 49.8L492 49.5L494 49.2L496 48.9L498 48.6L500 48.3L502 48L504 47.7L506 47.4L508 47.1L510 46.9L512 46.6L514 46.3L516 46L518 45.7L520 45.4L522 45.2L524 44.9L526 44.6L528 44.3L530 44.1L532 43.8L534 43.5L536 43.2L538 43L540 42.7L542 42.4L544 42.2L546 41.9L548 41.7L550 41.4L552 41.2L554 40.9L556 40.7L558 40.4L560 40.2L562 39.9L564 39.7L566 39.4L568 39.2L570 39L572 38.7L574 38.5L576 38.3L578 38.1L580 37.8L582 37.6L584 37.4L586 37.2L588 37L590 36.7L592 36.5L594 36.3L596 36.1L598 35.9L600 35.7L602 35.5L604 35.3L606 35.1L608 34.9L610 34.7L612 34.5L614 34.3L616 34.1L618 34L620 33.8L622 33.6L624 33.4L626 33.2L628 33.1L630 32.9L632 32.7L634 32.6L636 32.4L638 32.2L640 32.1"/>
+                    <path id="et" d="M0 12L2 13.8L4 15.5L6 17.2L8 18.9L10 20.5L12 22.1L14 23.6L16 25.1L18 26.5L20 27.9L22 29.3L24 30.6L26 31.9L28 33.1L30 34.3L32 35.4L34 36.5L36 37.6L38 38.6L40 39.6L42 40.5L44 41.4L46 42.2L48 43L50 43.8L52 44.5L54 45.2L56 45.8L58 46.4L60 46.9L62 47.4L64 47.8L66 48.3L68 48.6L70 48.9L72 49.2L74 49.5L76 49.7L78 49.8L80 49.9L82 50L84 50L86 49.4L88 48.7L90 48.1L92 47.5L94 46.9L96 46.3L98 45.7L100 45.1L102 44.6L104 44L106 43.5L108 42.9L110 42.4L112 41.8L114 41.3L116 40.8L118 40.3L120 39.8L122 39.3L124 38.8L126 38.3L128 37.8L130 37.3L132 36.9L134 36.4L136 35.9L138 35.5L140 35L142 34.6L144 34.2L146 33.7L148 33.3L150 32.9L152 32.5L154 32.1L156 31.7L158 31.3L160 30.9L162 30.5L164 30.2L166 29.8L168 29.4L170 29.1L172 28.7L174 28.3L176 28L178 27.6L180 27.3L182 27L184 26.6L186 26.3L188 26L190 25.7L192 25.4L194 25.1L196 24.7L198 24.4L200 24.2L202 23.9L204 23.6L206 23.3L208 23L210 22.7L212 22.4L214 22.2L216 21.9L218 21.6L220 21.4L222 21.1L224 20.9L226 20.6L228 20.4L230 20.1L232 19.9L234 19.7L236 19.4L238 19.2L240 19L242 18.7L244 18.5L246 18.3L248 18.1L250 17.9L252 17.7L254 17.5L256 17.2L258 17L260 16.8L262 16.7L264 16.5L266 16.3L268 16.1L270 15.9L272 15.7L274 15.5L276 15.3L278 15.2L280 15L282 14.8L284 14.7L286 14.5L288 14.3L290 14.2L292 14L294 13.8L296 13.7L298 13.5L300 13.4L302 13.2L304 13.1L306 12.9L308 12.8L310 12.6L312 12.5L314 12.4L316 12.2L318 12.1L320 12L322 11.8L324 11.7L326 11.6L328 11.4L330 11.3L332 11.2L334 11.1L336 10.9L338 10.8L340 10.7L342 10.6L344 10.5L346 10.4L348 10.3L350 10.1L352 10L354 9.9L356 9.8L358 9.7L360 9.6L362 9.5L364 9.4L366 9.3L368 9.2L370 9.1L372 9L374 8.9L376 8.9L378 8.8L380 8.7L382 8.6L384 8.5L386 8.4L388 8.3L390 8.2L392 8.2L394 8.1L396 8L398 7.9L400 7.8L402 7.8L404 7.7L406 7.6L408 7.5L410 7.5L412 7.4L414 7.3L416 7.2L418 7.2L420 7.1L422 7L424 7L426 6.9L428 6.8L430 6.8L432 6.7L434 6.7L436 6.6L438 6.5L440 6.5L442 6.4L444 6.4L446 6.3L448 6.2L450 6.2L452 6.1L454 6.1L456 6L458 6L460 5.9L462 5.9L464 5.8L466 5.8L468 5.7L470 5.7L472 5.6L474 5.6L476 5.5L478 5.5L480 5.4L482 5.4L484 5.3L486 5.3L488 5.2L490 5.2L492 5.2L494 5.1L496 5.1L498 5L500 5L502 5L504 4.9L506 4.9L508 4.8L510 4.8L512 4.8L514 4.7L516 4.7L518 4.7L520 4.6L522 4.6L524 4.6L526 4.5L528 4.5L530 4.5L532 4.4L534 4.4L536 4.4L538 4.3L540 4.3L542 4.3L544 4.2L546 4.2L548 4.2L550 4.1L552 4.1L554 4.1L556 4.1L558 4L560 4L562 4L564 4L566 3.9L568 3.9L570 3.9L572 3.9L574 3.8L576 3.8L578 3.8L580 3.8L582 3.7L584 3.7L586 3.7L588 3.7L590 3.6L592 3.6L594 3.6L596 3.6L598 3.6L600 3.5L602 3.5L604 3.5L606 3.5L608 3.5L610 3.4L612 3.4L614 3.4L616 3.4L618 3.4L620 3.3L622 3.3L624 3.3L626 3.3L628 3.3L630 3.3L632 3.2L634 3.2L636 3.2L638 3.2L640 3.2"/>
+                    <path id="kb" d="M0 42L2 48L4 53.8L6 59.4L8 64.9L10 70.1L12 75.2L14 80.1L16 84.8L18 89.4L20 93.7L22 97.9L24 101.9L26 105.7L28 109.4L30 112.9L32 116.2L34 119.4L36 122.3L38 125.1L40 127.8L42 130.3L44 132.6L46 134.8L48 136.8L50 138.7L52 140.4L54 141.9L56 143.3L58 144.6L60 145.7L62 146.7L64 147.5L66 148.2L68 148.8L70 149.3L72 149.6L74 149.8L76 150L78 150L80 150L82 149.9L84 149.8L86 149.6L88 149.3L90 149L92 148.7L94 148.3L96 147.8L98 147.3L100 146.7L102 146.1L104 145.4L106 144.7L108 143.9L110 143.1L112 142.2L114 141.3L116 140.3L118 139.3L120 138.4L122 137.4L124 136.5L126 135.6L128 134.7L130 133.7L132 132.8L134 131.9L136 131L138 130.2L140 129.3L142 128.4L144 127.5L146 126.7L148 125.8L150 125L152 124.2L154 123.3L156 122.5L158 121.7L160 120.9L162 120.1L164 119.3L166 118.5L168 117.8L170 117L172 116.2L174 115.5L176 114.7L178 114L180 113.3L182 112.5L184 111.8L186 111.1L188 110.4L190 109.7L192 109L194 108.4L196 107.7L198 107L200 106.4L202 105.7L204 105.1L206 104.4L208 103.8L210 103.2L212 102.6L214 102L216 101.4L218 100.8L220 100.2L222 99.6L224 99L226 98.5L228 97.9L230 97.4L232 96.8L234 96.3L236 95.8L238 95.3L240 94.7L242 94.2L244 93.8L246 93.3L248 92.8L250 92.3L252 91.8L254 91.4L256 90.9L258 90.5L260 90L262 89.6L264 89.2L266 88.8L268 88.3L270 87.9L272 87.5L274 87L276 86.6L278 86.2L280 85.8L282 85.4L284 84.9L286 84.5L288 84.1L290 83.7L292 83.3L294 82.9L296 82.4L298 82L300 81.6L302 81.2L304 80.8L306 80.4L308 80L310 79.6L312 79.2L314 78.8L316 78.4L318 78L320 77.6L322 77.2L324 76.8L326 76.4L328 76L330 75.6L332 75.2L334 74.8L336 74.4L338 74L340 73.7L342 73.3L344 72.9L346 72.5L348 72.1L350 71.7L352 71.4L354 71L356 70.6L358 70.2L360 69.8L362 69.5L364 69.1L366 68.7L368 68.4L370 68L372 67.6L374 67.3L376 66.9L378 66.5L380 66.2L382 65.8L384 65.4L386 65.1L388 64.7L390 64.4L392 64L394 63.6L396 63.3L398 62.9L400 62.6L402 62.2L404 61.9L406 61.5L408 61.2L410 60.8L412 60.5L414 60.2L416 59.8L418 59.5L420 59.1L422 58.8L424 58.5L426 58.1L428 57.8L430 57.5L432 57.1L434 56.8L436 56.5L438 56.1L440 55.8L442 55.5L444 55.1L446 54.8L448 54.5L450 54.2L452 53.9L454 53.5L456 53.2L458 52.9L460 52.6L462 52.3L464 52L466 51.6L468 51.3L470 51L472 50.7L474 50.4L476 50.1L478 49.8L480 49.5L482 49.2L484 48.9L486 48.6L488 48.3L490 48L492 47.7L494 47.4L496 47.1L498 46.8L500 46.5L502 46.2L504 45.9L506 45.6L508 45.3L510 45L512 44.8L514 44.5L516 44.2L518 43.9L520 43.6L522 43.4L524 43.1L526 42.8L528 42.6L530 42.3L532 42L534 41.8L536 41.5L538 41.3L540 41L542 40.8L544 40.5L546 40.3L548 40.1L550 39.8L552 39.6L554 39.4L556 39.1L558 38.9L560 38.7L562 38.4L564 38.2L566 38L568 37.8L570 37.6L572 37.4L574 37.2L576 37L578 36.8L580 36.6L582 36.4L584 36.2L586 36L588 35.8L590 35.6L592 35.4L594 35.2L596 35.1"/>
+                  </defs>
+                  <use class="et" href="#et"/><use class="bt" href="#bt"/>
+                </svg>
+                <div class="live" aria-hidden="true">
+                  <svg class="curves" viewBox="0 0 640 200" preserveAspectRatio="none" focusable="false"><use class="et" href="#et"/><use class="bt" href="#bt"/></svg>
+                </div>
+                <div class="ev below" data-t="84" style="--t:84;--v:92" aria-hidden="true"><span class="ev-dot"></span><span class="ev-label"><span class="ev-full">Turning point</span><span class="ev-abbr">TP</span> 1:24</span></div>
+                <div class="ev below-right" data-t="270" style="--t:270;--v:150" aria-hidden="true"><span class="ev-dot"></span><span class="ev-label"><span class="ev-full">Dry end</span><span class="ev-abbr">DE</span> 4:30</span></div>
+                <div class="ev below-right fc" data-t="530" style="--t:530;--v:196" aria-hidden="true"><span class="ev-dot"></span><span class="ev-label"><span class="ev-full">First crack</span><span class="ev-abbr">FC</span> 8:50</span></div>
+                <div class="ev above-left" data-t="640" style="--t:640;--v:208" aria-hidden="true"><span class="ev-dot"></span><span class="ev-label">Drop 10:40</span></div>
+                <div class="hover-line" aria-hidden="true"><span>0:00</span></div>
+                <div class="cross">
+                  <span class="cross-dot" aria-hidden="true"></span>
+                  <div class="thumb" id="thumb" role="slider" tabindex="0" aria-label="Roast time, batch 26-10-A" aria-describedby="roast-help" aria-valuemin="0" aria-valuemax="640" aria-valuenow="640" aria-valuetext="10:40, bean 208&nbsp;°C, dropped">10:40</div>
+                </div>
+              </div>
+              <div class="xaxis" aria-hidden="true">
+                <span style="--t:0">0:00</span><span class="odd" style="--t:60">1:00</span><span style="--t:120">2:00</span><span class="odd" style="--t:180">3:00</span><span style="--t:240">4:00</span><span class="odd" style="--t:300">5:00</span><span style="--t:360">6:00</span><span class="odd" style="--t:420">7:00</span><span style="--t:480">8:00</span><span class="odd" style="--t:540">9:00</span><span style="--t:600">10:00</span>
+              </div>
+              <ol class="idx" aria-label="In the box, by roast time">
+                <li style="--t:0"><a class="link" href="#box-lots">Coffees</a></li>
+                <li style="--t:84"><a class="link" href="#box-roastday">Roast day</a></li>
+                <li style="--t:270"><a class="link" href="#box-lotcard">Lot card</a></li>
+                <li style="--t:408"><a class="link" href="#box-brew">Brew card</a></li>
+                <li style="--t:530"><a class="link" href="#box-cupping">Cupping</a></li>
+                <li style="--t:640"><a class="link" href="#box-terms" aria-current="true">Terms</a></li>
+              </ol>
+            </div>
+            <p class="ev-key" aria-hidden="true">TP turning point, DE dry end, FC first crack.</p>
+          </div>
+          <div class="bean-panel">
+            <svg class="bean" viewBox="0 0 200 240" aria-hidden="true" focusable="false">
+              <defs>
+                <path id="bean-shape" d="M100 16C148 16 174 66 174 122C174 182 140 224 98 224C54 224 26 180 26 122C26 64 54 16 100 16Z"/>
+                <radialGradient id="bean-shade" cx="36%" cy="28%" r="78%">
+                  <stop class="shade-hi" offset="0" stop-opacity=".3"/>
+                  <stop class="shade-hi" offset=".5" stop-opacity="0"/>
+                  <stop class="shade-lo" offset="1" stop-opacity=".3"/>
+                </radialGradient>
+              </defs>
+              <g class="bean-body">
+                <g transform="rotate(-16 100 120)">
+                  <use class="bean-layer l0" href="#bean-shape"/>
+                  <use class="bean-layer l1" href="#bean-shape" data-from="132" data-span="20"/>
+                  <use class="bean-layer l2" href="#bean-shape" data-from="152" data-span="18"/>
+                  <use class="bean-layer l3" href="#bean-shape" data-from="170" data-span="17"/>
+                  <use class="bean-layer l4" href="#bean-shape" data-from="187" data-span="18"/>
+                  <use href="#bean-shape" fill="url(#bean-shade)"/>
+                  <use class="bean-edge" href="#bean-shape"/>
+                  <path class="crease" d="M104 36C82 76 118 102 100 128C84 152 114 184 98 206"/>
+                  <path class="crease-open" d="M104 36C82 76 118 102 100 128C84 152 114 184 98 206"/>
+                </g>
+              </g>
+            </svg>
+            <dl class="readout" aria-live="off">
+              <div class="big"><dt>Roast time</dt><dd data-r="time">10:40</dd></div>
+              <div><dt>Bean</dt><dd data-r="bt">208&nbsp;°C</dd></div>
+              <div><dt>Stage</dt><dd data-r="stage">Dropped</dd></div>
+            </dl>
+            <p class="roast-help" id="roast-help"><span id="help-line">Drag along the log to replay the roast.</span><span class="sr-only"> Or focus the time marker and use the arrow keys, 10 seconds a step; Page Up and Page Down jump between events, Home and End go to the ends.</span></p>
+          </div>
+        </div>
+        <table class="sr-only">
+          <caption>Roast events, batch 26-10-A</caption>
+          <thead><tr><th scope="col">Event</th><th scope="col">Time</th><th scope="col">Bean temperature</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Turning point</th><td>1:24</td><td>92&nbsp;°C</td></tr>
+            <tr><th scope="row">Dry end</th><td>4:30</td><td>150&nbsp;°C</td></tr>
+            <tr><th scope="row">First crack</th><td>8:50</td><td>196&nbsp;°C</td></tr>
+            <tr><th scope="row">Drop</th><td>10:40</td><td>208&nbsp;°C</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
   </div>
 
   <div class="wrap grid closing" id="start" tabindex="-1">
@@ -835,25 +870,42 @@ legend { font-weight: 600; font-size: var(--step--1); padding: 0; margin-bottom:
   const $ = (s, el = document) => el.querySelector(s);
   const $$ = (s, el = document) => [...el.querySelectorAll(s)];
   const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
-  const env = { motion: false, lenis: null, goTo: null, keepY: null };
+  const env = { motion: false, lenis: null, goTo: null, keep: null };
 
-  /* ---------- Roast log: one time value drives the curves, crosshair, readouts, events, the bean and the panel objects ---------- */
+  /* ---------- Roast log: one time value drives the curves, crosshair, readouts, events, the bean, the box index and the panel objects ---------- */
   const stage = $('#box'), plot = $('#plot'), thumb = $('#thumb'), bean = $('.bean', stage), hoverLine = $('.hover-line', stage);
-  const track = $('#track'), panels = $$('.panel', track);
+  const track = $('#track'), panels = $$('.panel', track), idx = $$('.idx a', stage);
+  const help = $('#help-line'), helpText = help.textContent;
   const END = 640, FC = 530;
+  // Each thing in the box rests on a roast stop: charge, turning point, dry end, 6:48 (browning), first crack, drop.
+  const ROUTE = [0, 84, 270, 408, 530, 640];
+  // Piecewise-linear map of v from xs to ys (xs strictly ascending).
+  const pw = (v, xs, ys) => {
+    if (v <= xs[0]) return ys[0];
+    for (let i = 1; i < xs.length; i++) if (v <= xs[i]) return ys[i - 1] + (ys[i] - ys[i - 1]) * (v - xs[i - 1]) / (xs[i] - xs[i - 1]);
+    return ys[ys.length - 1];
+  };
+  // Track offsets (0 to max) at which each panel sits centred in a view w wide, kept strictly ascending.
+  const rests = (w, max) => {
+    const xs = panels.map((p) => clamp(p.offsetLeft + p.offsetWidth / 2 - w / 2, 0, max));
+    xs[0] = 0; xs[xs.length - 1] = Math.max(max, xs.length);
+    for (let i = xs.length - 2; i > 0; i--) xs[i] = Math.min(xs[i], xs[i + 1] - 1);
+    return xs;
+  };
   // The SVG paths are the data: one point every 2 s, y = 240 - temperature.
   const series = (id) => { const n = $('#' + id).getAttribute('d').match(/[\d.]+/g).map(Number), out = []; for (let i = 1; i < n.length; i += 2) out.push(240 - n[i]); return out; };
   const BT = series('bt');
   const at = (s, t) => { const i = Math.min(s.length - 2, Math.floor(t / 2)); return s[i] + (s[i + 1] - s[i]) * (t / 2 - i); };
-  const C = ' °C';
+  const C = ' °C';
   const mmss = (s) => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
   const phaseAt = (s) => s >= END ? 'dropped' : s >= FC ? 'development' : s >= 270 ? 'browning' : s > 0 ? 'drying' : 'charge';
   const events = $$('.ev', stage), stops = events.map((e) => +e.dataset.t);
   const layers = $$('.bean-layer[data-from]', stage);
   const out = Object.fromEntries($$('[data-r]', stage).map((el) => [el.dataset.r, el]));
-  let t = END, goal = END, shown = '', hx = null, seekUntil = 0;
+  let t = END, goal = END, shown = '', phase = 'dropped', cur = ROUTE.length - 1, hx = null, seekUntil = 0;
 
   function render(next) {
+    const was = t;
     t = clamp(next, 0, END);
     const bt = at(BT, t);
     const colour = t < 84 ? 92 : bt; // before the turning point the probe still reads the hot drum; the beans are green
@@ -865,16 +917,26 @@ legend { font-weight: 600; font-size: var(--step--1); padding: 0; margin-bottom:
     layers.forEach((l) => { l.style.opacity = clamp((colour - l.dataset.from) / l.dataset.span, 0, 1).toFixed(3); });
     events.forEach((e, i) => e.classList.toggle('is-on', t >= stops[i] - .5));
     bean.classList.toggle('is-cracked', t >= FC - .5);
+    // I9b: one short crack jolt, only when the clock crosses first crack going forwards.
+    if (env.motion && was < FC - .5 && t >= FC - .5) gsap.to(bean, { keyframes: { x: [0, -1.5, 1.5, -1.5, 1.5, -1.5, 1.5, 0] }, duration: .18, ease: 'none', overwrite: true });
+    // The box index marks the item nearest the clock.
+    const n = ROUTE.reduce((b, s, i) => Math.abs(s - t) < Math.abs(ROUTE[b] - t) ? i : b, 0);
+    if (n !== cur) { idx[cur].removeAttribute('aria-current'); idx[n].setAttribute('aria-current', 'true'); cur = n; }
     if (performance.now() > seekUntil) goal = t; // a scroll or swipe moved the clock: arrow keys step from here
     const s = Math.round(t), b = Math.round(bt), key = `${s} ${b}`;
     if (key === shown) return; // write text only when a shown value changes
     shown = key;
-    const time = mmss(s), phase = phaseAt(s);
+    const time = mmss(s), now = phaseAt(s);
     thumb.textContent = out.time.textContent = time;
     out.bt.textContent = b + C;
-    out.stage.textContent = phase[0].toUpperCase() + phase.slice(1);
     thumb.setAttribute('aria-valuenow', s);
-    thumb.setAttribute('aria-valuetext', `${time}, bean ${b}${C}, ${phase}`);
+    thumb.setAttribute('aria-valuetext', `${time}, bean ${b}${C}, ${now}`);
+    if (now !== phase) {
+      phase = now;
+      out.stage.textContent = now[0].toUpperCase() + now.slice(1);
+      // I9a: the new stage name is wiped in from the left.
+      if (env.motion) gsap.fromTo(out.stage, { clipPath: 'inset(0% 100% 0% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: .35, ease: 'expo.out', overwrite: true });
+    }
   }
   // Each panel's object answers its own distance from the centre of the screen (shift = the track's x offset).
   function place(shift) {
@@ -885,10 +947,13 @@ legend { font-weight: 600; font-size: var(--step--1); padding: 0; margin-bottom:
       p.style.setProperty('--f', clamp(1 - ds[i] / (1.2 * vc), 0, 1).toFixed(3));
     });
   }
-  // check-flows.mjs loads #selftest: the curve data must agree with the event table and the Kebel caption.
+  // check-flows.mjs loads #selftest: the curve data must agree with the event table and the Kebel caption,
+  // and the panel-to-roast-stop map must round-trip.
   const runSelfTest = () => {
+    const xsT = [0, 100, 250, 400, 700, 900];
     const ok = [[84, 92], [270, 150], [530, 196], [640, 208]].every(([s, v]) => Math.round(at(BT, s)) === v)
-      && Math.round(at(series('kb'), 596)) === 205 && series('kb').length === 299;
+      && Math.round(at(series('kb'), 596)) === 205 && series('kb').length === 299
+      && ROUTE.every((r, i) => pw(xsT[i], xsT, ROUTE) === r) && Math.abs(pw(pw(333, ROUTE, xsT), xsT, ROUTE) - 333) < 1e-9;
     console.log(ok ? 'SELFTEST PASS' : 'SELFTEST FAIL');
   };
   if (location.hash === '#selftest') runSelfTest();
@@ -1042,28 +1107,49 @@ legend { font-weight: 600; font-size: var(--step--1); padding: 0; margin-bottom:
   gsap.registerPlugin(ScrollTrigger, SplitText);
   // Split the H2 only once the stencil face is in, so the lines are measured with real metrics.
   const fonts = Promise.race([document.fonts.load('800 48px "Stick No Bills"'), new Promise((r) => setTimeout(r, 2500))]).catch(() => {});
-  let introPlayed = false;
-  const mm = gsap.matchMedia();
-  mm.add({
+  const Q = {
     motion: '(prefers-reduced-motion: no-preference)',
     reduce: '(prefers-reduced-motion: reduce)',
     fine: '(hover: hover) and (pointer: fine)',
     coarse: '(pointer: coarse)',
-    wide: '(min-width: 992px) and (min-height: 620px)',
-  }, (ctx) => {
+    wide: '(min-width: 992px) and (min-height: 560px)',
+  };
+  // A live media switch keeps the reader on the same thing: the box item in view, or the block under the middle of the screen.
+  // Registered before gsap.matchMedia so it reads the layout before the old context is reverted.
+  const blocks = [$('.intro'), ...panels, $('#roast'), $('#start')];
+  const anchorNow = () => {
+    const mid = innerHeight / 2;
+    const el = blocks.find((b) => { const q = b.getBoundingClientRect(); return q.top <= mid && q.bottom >= mid; });
+    if (!el) return { y: scrollY };
+    if (el.matches('.panel')) return { panel: env.motion ? panels[cur] : el };
+    return { el, top: el.getBoundingClientRect().top };
+  };
+  Object.values(Q).forEach((q) => matchMedia(q).addEventListener('change', () => { env.keep ??= anchorNow(); }));
+  let introPlayed = false, peeked = false;
+  const mm = gsap.matchMedia();
+  mm.add(Q, (ctx) => {
     const { motion, fine, coarse, wide } = ctx.conditions;
     env.motion = motion;
-    const keep = env.keepY; env.keepY = null; // a live media switch keeps the reader where they were
     let sync = () => {};
-    const restore = () => { if (keep != null) requestAnimationFrame(() => { env.lenis ? env.lenis.scrollTo(keep, { immediate: true, force: true }) : scrollTo(0, keep); ScrollTrigger.update(); sync(); }); };
+    const restore = () => {
+      const k = env.keep; env.keep = null;
+      if (k) requestAnimationFrame(() => {
+        if (k.panel && env.goTo) env.goTo(k.panel, true);
+        else {
+          const y = k.panel ? k.panel.getBoundingClientRect().top + scrollY - 24 : k.el ? k.el.getBoundingClientRect().top + scrollY - k.top : k.y;
+          env.lenis ? env.lenis.scrollTo(y, { immediate: true, force: true }) : scrollTo(0, y);
+        }
+        ScrollTrigger.update(); sync();
+      });
+    };
     if (!motion) {
       // Reduced motion: native scroll, panels stacked, the log drawn and parked at Drop, the slider instant.
       seek = direct;
       direct(END);
       restore();
-      return () => { env.keepY = scrollY; };
+      return;
     }
-    let alive = true, raf = 0;
+    let alive = true, raf = 0, free = false, peek = null, xs = [];
     const offs = [];
     const on = (el, type, fn, opts) => { el.addEventListener(type, fn, opts); offs.push(() => el.removeEventListener(type, fn, opts)); };
 
@@ -1080,46 +1166,83 @@ legend { font-weight: 600; font-size: var(--step--1); padding: 0; margin-bottom:
     render(0);
     const pinned = wide && !coarse; // touch screens keep the native row, whatever their width
     stage.classList.toggle('is-pinned', pinned);
-    const padL = () => parseFloat(getComputedStyle(track).paddingLeft);
+    help.textContent = pinned || fine ? 'Scroll to roast the batch, or drag the log.' : 'Swipe the box to roast the batch.';
 
     if (pinned) {
-      // S1, the signature: one scrubbed timeline pins the stage, slides the box contents and runs the roast clock.
-      // The pin is exactly as long as the track overflows, so it lets go at Drop 10:40.
+      // S1, the signature: the stage pins and one scrubbed tween slides the box contents; the track offset is the roast clock,
+      // mapped piecewise so each item settles centred exactly as its roast event pops.
+      // The pin is exactly as long as the track overflows, so it lets go at Drop 10:40 on the last item.
       const dist = () => track.scrollWidth - doc.clientWidth;
-      const clock = { t: 0 };
-      const tl = gsap.timeline({ scrollTrigger: { trigger: stage, pin: true, start: 'top top', end: () => '+=' + dist(), scrub: true, invalidateOnRefresh: true } });
-      tl.to(track, { x: () => -dist(), ease: 'none' }, 0)
-        .to(clock, { t: END, ease: 'none', onUpdate: () => sync() }, 0);
-      sync = () => { render(clock.t); place(gsap.getProperty(track, 'x')); };
-      const st = tl.scrollTrigger;
-      const yAt = (time) => st.start + time / END * (st.end - st.start);
-      const panelY = (p) => yAt(clamp((p.offsetLeft - padL()) / dist(), 0, 1) * END);
+      const nearest = (v) => xs.map((x) => x / dist()).reduce((a, b) => Math.abs(b - v) < Math.abs(a - v) ? b : a);
+      const tween = gsap.to(track, {
+        x: () => -dist(), ease: 'none', onUpdate: () => sync(),
+        scrollTrigger: {
+          trigger: stage, pin: true, start: 'top top', end: () => '+=' + dist(), scrub: true, invalidateOnRefresh: true,
+          onRefresh: () => { xs = rests(doc.clientWidth, dist()); },
+          snap: { snapTo: (v) => free ? v : nearest(v), duration: { min: .2, max: .6 }, ease: 'expo.out', delay: .08 },
+        },
+      });
+      const st = tween.scrollTrigger;
+      xs = rests(doc.clientWidth, dist());
+      sync = () => { const x = -gsap.getProperty(track, 'x'); render(pw(x, xs, ROUTE)); place(-x); };
+      // A slider seek stays where it was put; the next wheel, touch or key outside the slider hands the clock back to snapping.
+      ['wheel', 'touchstart', 'keydown'].forEach((type) => on(window, type, (e) => { if (!thumb.contains(e.target)) free = false; }, { passive: true }));
       seek = (next, now) => {
-        goal = clamp(next, 0, END); seekUntil = performance.now() + 800;
-        lenis.scrollTo(yAt(goal), now ? { immediate: true } : { duration: .6 });
+        goal = clamp(next, 0, END); seekUntil = performance.now() + 800; free = true;
+        // A press before the stage has pinned eases there instead of jumping the page under the cursor.
+        lenis.scrollTo(st.start + pw(goal, ROUTE, xs), now && st.isActive ? { immediate: true } : { duration: .6 });
       };
-      env.goTo = (el) => { const p = el.closest('.panel'); lenis.scrollTo(p ? panelY(p) : el, p ? { duration: 1 } : { offset: -24 }); };
+      env.goTo = (el, now) => {
+        const i = panels.indexOf(el.closest('.panel'));
+        if (i >= 0) free = false;
+        lenis.scrollTo(i >= 0 ? st.start + xs[i] : el, now ? { immediate: true, force: true } : i >= 0 ? { duration: 1 } : { offset: -24 });
+      };
       // Keyboard focus never lands off screen inside the moving track.
-      on(track, 'focusin', (e) => { const p = e.target.closest('.panel'); if (p && e.target.matches(':focus-visible')) lenis.scrollTo(panelY(p), { duration: .6 }); });
+      on(track, 'focusin', (e) => { const p = e.target.closest('.panel'); if (p && e.target.matches(':focus-visible')) env.goTo(p); });
       place(0);
     } else {
-      // S2, touch and narrow screens: the native scroll-snap row is the clock. Swiping it roasts the batch.
+      // S2, touch and narrow screens: the native scroll-snap row is the clock, mapped to the same roast stops,
+      // so every snap rest shows a named event.
       const max = () => track.scrollWidth - track.clientWidth;
-      const fromRow = () => { raf = 0; render(max() > 0 ? track.scrollLeft / max() * END : END); place(-track.scrollLeft); };
+      const remeasure = () => { xs = rests(track.clientWidth, max()); };
+      remeasure();
+      on(window, 'resize', remeasure);
+      const fromRow = () => { raf = 0; render(max() > 0 ? pw(track.scrollLeft, xs, ROUTE) : END); place(-track.scrollLeft); };
       on(track, 'scroll', () => { raf ||= requestAnimationFrame(fromRow); }, { passive: true });
       // While the slider drives the row, snapping is off; touching the row hands it back.
       const unseek = () => track.classList.remove('is-seeking');
-      ['pointerdown', 'wheel', 'touchstart'].forEach((type) => on(track, type, unseek, { passive: true }));
+      ['pointerdown', 'wheel', 'touchstart'].forEach((type) => on(track, type, () => { unseek(); peek?.kill(); }, { passive: true }));
       seek = (next, now) => {
-        goal = clamp(next, 0, END); seekUntil = performance.now() + 800;
+        goal = clamp(next, 0, END); seekUntil = performance.now() + 800; free = true;
         track.classList.add('is-seeking');
-        track.scrollTo({ left: goal / END * max(), behavior: now ? 'instant' : 'smooth' });
+        track.scrollTo({ left: pw(goal, ROUTE, xs), behavior: now ? 'instant' : 'smooth' });
       };
-      env.goTo = (el) => {
-        const p = el.closest('.panel');
-        if (p) track.scrollTo({ left: p.offsetLeft - padL(), behavior: 'smooth' });
-        lenis.scrollTo(p ? stage : el, { offset: -24 });
+      env.goTo = (el, now) => {
+        const i = panels.indexOf(el.closest('.panel'));
+        if (i >= 0) { free = true; track.scrollTo({ left: xs[i], behavior: now ? 'instant' : 'smooth' }); }
+        lenis.scrollTo(i >= 0 ? stage : el, { offset: -24, immediate: !!now, force: !!now });
       };
+      if (fine) {
+        // S2b, mouse below the pin: scrolling the page past the log runs the row, so the batch roasts without shift+wheel.
+        // A drag or index jump holds the row until the log leaves the screen.
+        track.classList.add('is-scrubbed');
+        ScrollTrigger.create({
+          trigger: '#roast', start: 'top 85%', end: 'bottom 85%',
+          onUpdate: (self) => { if (!free) track.scrollLeft = self.progress * max(); },
+          onLeave: () => { free = false; }, onLeaveBack: () => { free = false; },
+        });
+      } else if (!peeked) {
+        // S2c, touch: the first time the row is well in view it nudges 56px and back, so the curve twitches and shows that swiping roasts.
+        const io = new IntersectionObserver(([en]) => {
+          if (!en.isIntersecting) return;
+          io.disconnect(); peeked = true;
+          if (track.scrollLeft > 0) return;
+          track.classList.add('is-seeking');
+          peek = gsap.to(track, { scrollLeft: 56, duration: .45, ease: 'expo.out', yoyo: true, repeat: 1, repeatDelay: .1, onComplete: unseek });
+        }, { threshold: .6 });
+        io.observe(track);
+        offs.push(() => io.disconnect());
+      }
       sync = fromRow;
       fromRow();
     }
@@ -1131,8 +1254,8 @@ legend { font-weight: 600; font-size: var(--step--1); padding: 0; margin-bottom:
       intro = gsap.timeline({ paused: true, defaults: { ease: 'expo.out' } })
         // L2: the sack plate is sprayed stencil by stencil, ending on the lot number.
         .fromTo('.plate-line', { clipPath: 'inset(0% 100% 0% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: .45, ease: 'steps(5)', stagger: .1 }, .2)
-        // L3: lede and actions settle; never invisible.
-        .fromTo('.lede, .actions > *', { y: 8, opacity: .4 }, { y: 0, opacity: 1, duration: .5, stagger: .08 }, .45)
+        // L3: lede and actions settle by 8px; they are fully opaque from the first frame.
+        .fromTo('.lede, .actions > *', { y: 8 }, { y: 0, duration: .5, stagger: .08 }, .45)
         // L4: the empty log's grid draws from 0:00 and the probe reads the drum charging to 200 °C.
         .fromTo('.plot-grid', { scaleX: 0, transformOrigin: '0% 50%' }, { scaleX: 1, duration: .7 }, .9)
         .fromTo(charge, { v: 40 }, {
@@ -1142,26 +1265,27 @@ legend { font-weight: 600; font-size: var(--step--1); padding: 0; margin-bottom:
         }, .9);
     }
 
-    // I5: bag sheen follows the pointer across the label; tilt capped at 4deg.
-    if (fine) {
-      $$('.bag').forEach((bag) => {
-        const body = $('.bag-body', bag), label = $('.bag-label', bag), pos = { x: 50, y: 50 };
-        const paint = () => { bag.style.setProperty('--x', pos.x.toFixed(1) + '%'); bag.style.setProperty('--y', pos.y.toFixed(1) + '%'); };
-        const qx = gsap.quickTo(pos, 'x', { duration: .4, ease: 'expo.out', onUpdate: paint });
-        const qy = gsap.quickTo(pos, 'y', { duration: .4, ease: 'expo.out', onUpdate: paint });
-        const rx = gsap.quickTo(body, 'rotationX', { duration: .5, ease: 'expo.out' });
-        const ry = gsap.quickTo(body, 'rotationY', { duration: .5, ease: 'expo.out' });
-        gsap.set(body, { transformPerspective: 700 });
-        let br = null, lr = null;
-        on(bag, 'pointerenter', () => { br = bag.getBoundingClientRect(); lr = label.getBoundingClientRect(); });
-        on(bag, 'pointermove', (e) => {
-          if (!br) return;
-          qx((e.clientX - lr.left) / lr.width * 100); qy((e.clientY - lr.top) / lr.height * 100);
-          ry(((e.clientX - br.left) / br.width - .5) * 8); rx((.5 - (e.clientY - br.top) / br.height) * 8);
-        });
-        on(bag, 'pointerleave', () => { br = lr = null; rx(0); ry(0); qx(50); qy(50); });
+    // I5: bag sheen follows the pointer across the label; tilt capped at 4deg. Touch gets one sweep per press.
+    $$('.bag').forEach((bag) => {
+      on(bag, 'pointerdown', (e) => { if (e.pointerType !== 'touch') return; bag.classList.remove('is-swept'); void bag.offsetWidth; bag.classList.add('is-swept'); });
+      on(bag, 'animationend', () => bag.classList.remove('is-swept'));
+      if (!fine) return;
+      const body = $('.bag-body', bag), label = $('.bag-label', bag), pos = { x: 50, y: 50 };
+      const paint = () => { bag.style.setProperty('--x', pos.x.toFixed(1) + '%'); bag.style.setProperty('--y', pos.y.toFixed(1) + '%'); };
+      const qx = gsap.quickTo(pos, 'x', { duration: .4, ease: 'expo.out', onUpdate: paint });
+      const qy = gsap.quickTo(pos, 'y', { duration: .4, ease: 'expo.out', onUpdate: paint });
+      const rx = gsap.quickTo(body, 'rotationX', { duration: .5, ease: 'expo.out' });
+      const ry = gsap.quickTo(body, 'rotationY', { duration: .5, ease: 'expo.out' });
+      gsap.set(body, { transformPerspective: 700 });
+      let br = null, lr = null;
+      on(bag, 'pointerenter', () => { br = bag.getBoundingClientRect(); lr = label.getBoundingClientRect(); });
+      on(bag, 'pointermove', (e) => {
+        if (!br) return;
+        qx((e.clientX - lr.left) / lr.width * 100); qy((e.clientY - lr.top) / lr.height * 100);
+        ry(((e.clientX - br.left) / br.width - .5) * 8); rx((.5 - (e.clientY - br.top) / br.height) * 8);
       });
-    }
+      on(bag, 'pointerleave', () => { br = lr = null; rx(0); ry(0); qx(50); qy(50); });
+    });
 
     ctx.add('start', () => {
       if (intro && !introPlayed) {
@@ -1188,12 +1312,13 @@ legend { font-weight: 600; font-size: var(--step--1); padding: 0; margin-bottom:
 
     return () => {
       alive = false;
-      env.keepY = scrollY;
       seek = direct; env.goTo = null; hx = null;
       cancelAnimationFrame(raf);
+      peek?.kill();
       offs.forEach((off) => off());
       stage.classList.remove('is-pinned');
-      track.classList.remove('is-seeking');
+      track.classList.remove('is-seeking', 'is-scrubbed');
+      help.textContent = helpText;
       panels.forEach((p) => { p.style.removeProperty('--d'); p.style.removeProperty('--f'); });
       gsap.ticker.remove(tick);
       gsap.ticker.lagSmoothing(500, 33);

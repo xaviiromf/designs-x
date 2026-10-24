@@ -27,7 +27,7 @@
     --fs-l: 1.375rem;
     --fs-xl: 1.875rem;
     --fs-price: clamp(2.25rem, 1.6vw + 1.1rem, 3rem);
-    --fs-display: clamp(2.75rem, 5.2vw + 1rem, 5.25rem);
+    --fs-display: clamp(2.75rem, 5.2vw + 1rem, 4.25rem);
 
     /* space (4px base) */
     --sp-1: .25rem; --sp-2: .5rem; --sp-3: .75rem; --sp-4: 1rem; --sp-5: 1.5rem;
@@ -98,12 +98,14 @@
   }
   .ul:hover, .ul:focus-visible, .ul[aria-current="true"] { background-position: 0 100%; background-size: 100% .07em; }
   @media (hover: none) { .ul { background-size: 100% .07em; } }
+  /* links in rows of their own get a 24px target (WCAG 2.5.8); the underline stays .1em under the text */
+  .bar__nav .ul, .plan__back, .tag__see { display: inline-block; line-height: 1.2; padding-top: .375rem; }
 
   /* ---------- top bar ---------- */
   .bar {
     display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between;
     gap: var(--sp-2) var(--sp-6);
-    padding-block: var(--sp-5) var(--sp-7);
+    padding-block: var(--sp-5) var(--sp-6);
   }
   .wordmark { font: 700 1.5rem/1 var(--ff-display); letter-spacing: -.005em; }
   .bar__right { display: grid; justify-items: start; gap: var(--sp-1); }
@@ -126,6 +128,11 @@
     html.js .rw-title:not(.is-ready) { visibility: hidden; }
   }
   .lede { max-width: 64ch; }
+  .vat-note { display: none; }
+  @media (max-width: 599px) {   /* phones: the lede keeps two sentences; what prices include sits under the rail */
+    .lede__vat { display: none; }
+    .vat-note { display: block; order: 1; margin-top: calc(-1 * var(--sp-3)); font-size: var(--fs-s); color: var(--c-ink-2); }
+  }
   /* first frame of the load sequence; the inline script sets html.intro before first paint and
      removes it once GSAP holds the same states (or after 2s if the libraries never arrive) */
   html.intro [data-chrome] { opacity: 0; }
@@ -218,11 +225,9 @@
   .room__label .cm { display: none; }
   .room--walk { display: flex; align-items: center; padding-left: 1.5rem; }
   .lane { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
-  .wave {   /* the fob read at the front door: a band with a tar leading edge runs east along the Walk */
-    position: absolute; top: 0; bottom: 0; left: 0; width: 5rem; opacity: 0; visibility: hidden;
-    background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--c-access) 35%, var(--c-ground)));
-    border-right: 2px solid var(--c-ink);
-  }
+  /* the fob read at the front door: a tar tick flashes at the reader, then a 2px tar edge leads the Walk's own fill east */
+  .lane::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 8px; background: var(--c-ink); opacity: var(--tick, 0); }
+  .wave { position: absolute; top: 0; bottom: 0; left: 0; width: 2px; background: var(--c-ink); opacity: 0; visibility: hidden; }
   .room--walk .room__label { display: flex; gap: var(--sp-6); }
   .room--walk .nm { font-weight: 700; }
 
@@ -231,6 +236,8 @@
     position: absolute; width: 12px; height: 12px;
     border: 1px solid var(--c-ink); border-bottom: 0; border-top-right-radius: 100%;
     left: .5rem; bottom: 0;
+    /* --swing turns the leaf about its hinge (bottom-left) in the glyph's own frame, whatever its resting rotate */
+    transform: translate(-6px, 6px) rotate(calc(var(--swing, 0) * 1deg)) translate(6px, -6px);
   }
   .room[data-side="s"] .door { bottom: auto; top: 0; left: auto; right: .5rem; rotate: 180deg; }
   .room[data-side="w"] .door { bottom: auto; top: calc(50% - 6px); left: 0; rotate: 90deg; }
@@ -249,6 +256,7 @@
 
   .plan__foot { display: grid; gap: var(--sp-3); }
   .caption { font-size: var(--fs-s); line-height: 1.45; min-height: 2.9em; overflow: hidden; }
+  .plan__let { flex-basis: 100%; font-size: var(--fs-xs); color: var(--c-ink-2); }
   .caption__in { display: block; }
   /* the week as a calendar: one column per day, the day running down from 00 to 24, one shared scale */
   .hours { --bar-h: 4.5rem; display: grid; grid-template-columns: 2.25ch repeat(7, minmax(0, 1fr)); column-gap: .375rem; padding-bottom: .4rem; font-size: var(--fs-xs); line-height: 1.2; }
@@ -269,7 +277,11 @@
   }
   .plan__say { display: grid; gap: var(--sp-1); align-content: start; }
   .plan__chosen { display: flex; align-items: center; gap: .4rem; font-size: var(--fs-s); }
-  .plan__chosen .badge { position: static; width: 18px; height: 18px; transform: none; opacity: 1; flex: none; }
+  .plan__chosen .badge { position: static; width: 18px; height: 18px; transform: none; opacity: 1; flex: none; transition: opacity var(--d-fast) var(--ease-out), scale var(--d-fast) var(--ease-out); }
+  /* S2: the stuck line says what the building shows; green means 'your fob', so the badge leaves with it */
+  .plan.is-rooms .plan__chosen .badge { opacity: 0; scale: .6; }
+  .plan.is-rooms .plan__mode > :first-child { translate: 0 -105%; }
+  .plan.is-rooms .plan__mode > :last-child { translate: 0 0; }
   .plan__note { font-size: var(--fs-xs); color: var(--c-ink-2); }
   .plan__back { justify-self: start; font-weight: 500; grid-column: 1 / -1; }
 
@@ -379,7 +391,8 @@
   .rooms__intro h3, .trial__intro h3 { font: 700 var(--fs-xl)/1.1 var(--ff-display); letter-spacing: -.01em; }
   .rooms__list { grid-column: 1 / -1; }
   .rooms__list li { position: relative; }
-  .rule { position: absolute; left: 0; right: 0; top: 0; height: 1px; background: var(--c-ink); }
+  .rule { position: absolute; left: 0; right: 0; top: 0; height: 1px; background: var(--c-ink); transform-origin: 0 50%; transition: transform var(--d-fill) var(--ease-out) calc(var(--i, 0) * .06s); }
+  .rooms.is-waiting .rule { transform: scaleX(0); }   /* stage only: drawn with the rooms' rings when the plan switches (S2) */
   .rule--end { top: auto; bottom: 0; }
   .row {
     appearance: none; width: 100%; margin: 0; border: 0; background: none; cursor: pointer; text-align: left;
@@ -417,7 +430,7 @@
   .field:focus-within > label, .field:focus-within > legend, .field.is-invalid > label, .field.is-invalid > legend { color: var(--c-ink); }
   .ctl { position: relative; }
   .ctl input, .ctl select {
-    display: block; width: 100%; min-height: 2.75rem; margin: 0;
+    display: block; width: 100%; min-width: 0; min-height: 2.75rem; margin: 0;
     padding: .55rem .75rem;
     background: var(--c-paper); color: var(--c-ink);
     border: 0; border-bottom: var(--part) solid var(--c-ink-2); border-radius: var(--r-btn) var(--r-btn) 0 0;
@@ -462,6 +475,8 @@
   @keyframes fade { from { opacity: 0; } }
   .sheet__in { display: grid; gap: var(--sp-4); padding: var(--sp-5); }
   .sheet__head { display: flex; align-items: start; justify-content: space-between; gap: var(--sp-4); }
+  .sheet__head > div { min-width: 0; }
+  .sheet__head .btn { flex: none; }
   .sheet__head h3 { font: 700 var(--fs-xl)/1.1 var(--ff-display); }
   .sheet__meta { font-size: var(--fs-s); color: var(--c-ink-2); margin-top: var(--sp-1); }
   .sheet .fields { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
@@ -470,6 +485,11 @@
   .total b { font: 700 var(--fs-l) var(--ff-display); }
   @media (max-width: 599px) {
     .sheet { width: 100%; max-width: 100%; margin: auto 0 0; border-radius: var(--r-window) var(--r-window) 0 0; border-bottom: 0; }
+  }
+  @media (max-width: 399px) {   /* 320 to 399px: one column, and four lengths still fit one track */
+    .sheet__in { padding: var(--sp-4); }
+    .sheet .fields { grid-template-columns: minmax(0, 1fr); }
+    .sheet .seg__opt, .sheet .seg__ghost > span { padding-inline: var(--sp-1); }
   }
 
   /* ---------- CU1 room follower (fine pointer, wide) ---------- */
@@ -484,6 +504,12 @@
   .follow__text { display: block; }
 
   /* ---------- breakpoints ---------- */
+  /* the hours fact rides on the 'Opens' line where tags are short (phones, compact stage) and on its own line elsewhere */
+  .tag__when { display: none; }
+  @media (max-width: 639px) {
+    .tag__desc, .tag__hrs { display: none; }
+    .tag__when { display: inline; }
+  }
   @media (min-width: 640px) {
     .tag__desc { min-height: calc(3 * 1.45em); }   /* prices line up across a row of tags */
     .fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -493,10 +519,12 @@
   @media (max-width: 991px) {
     .spine { gap: var(--sp-5); }
     .rooms { margin-top: var(--sp-6); }
-    /* capped so the snapped tag and the plan share one phone screen */
-    .floor { grid-template-columns: minmax(0, 1fr) 2.5rem minmax(0, 1fr); grid-template-rows: repeat(24, minmax(0, 1fr)); height: clamp(17rem, 36vh, 24rem); }
+    /* sized on the small viewport (svh, browser bars showing) so a snapped tag and the whole building share the screen */
+    .floor { grid-template-columns: minmax(0, 1fr) 2.5rem minmax(0, 1fr); grid-template-rows: repeat(24, minmax(0, 1fr)); height: clamp(15rem, 34svh, 22rem); }
     .plan__head { display: contents; }   /* title, floor, then the key, so the floor sits right under the rail */
-    .legend { order: 1; }
+    .legend, .plan__let { order: 1; }
+    .room[data-side="n"] { padding-right: .9rem; }   /* labels clear the door glyph on the Walk wall */
+    .room[data-side="s"] { padding-left: .9rem; }
     .plan__foot { order: 2; }
     .room { grid-row: var(--at); grid-column: var(--row); padding: .15rem .4rem; }
     .room[data-side="n"] { --t: 0; --l: 1; }  /* north column: door on its east wall, fills from the right */
@@ -513,15 +541,16 @@
     .room[data-side="s"] .door { top: auto; right: auto; left: 0; bottom: .25rem; rotate: 90deg; }
     .room[data-side="w"] .door { top: 0; left: calc(50% - 6px); rotate: 180deg; }
     .rate, .ring { display: none; }
-    .wave { top: 0; left: 0; right: 0; bottom: auto; width: auto; height: 5rem; border-right: 0; border-bottom: 2px solid var(--c-ink);
-      background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--c-access) 35%, var(--c-ground))); }
+    .wave { right: 0; bottom: auto; width: auto; height: 2px; }
+    .lane::before { right: 0; bottom: auto; width: auto; height: 8px; }
   }
 
   @media (min-width: 992px) {
     .bar { padding-bottom: var(--sp-7); }
     .bar__right { justify-items: end; }
     .intro__copy { grid-column: 1 / span 7; }
-    .controls { grid-column: 9 / -1; }
+    /* beside the heading, the legend's cap line on the heading's first cap line */
+    .controls { grid-column: 9 / -1; align-self: start; align-content: start; margin-top: calc(var(--fs-display) * .16); }
     .plan { order: 0; }
     .plan__note { display: none; }
     .plan__foot { grid-template-columns: minmax(0, 1fr) minmax(20rem, 27rem); gap: var(--sp-6); align-items: start; }
@@ -547,15 +576,25 @@
   }
 
   /* wide but not the stage: the plan is not sticky, so tags link to it and it links back */
-  @media (min-width: 992px) and (max-width: 1199px), (min-width: 1200px) and (max-height: 879px) {
-    .tag__see, .plan__back { display: revert; }
-    .plan__back { display: block; }
+  @media (min-width: 992px) and (max-width: 1199px), (min-width: 1200px) and (max-height: 719px) {
+    .tag__see { display: inline-block; }
+    .plan__back { display: block; justify-self: start; }
+  }
+
+  /* compact stage (1440x900 and 1536x864 windows, 1366x768 with a short toolbar): a lower plan, shorter tags,
+     so the stuck plan and a whole row of tags with their Choose buttons share the screen */
+  @media (min-width: 1200px) and (min-height: 720px) and (max-height: 879px) {
+    .floor { grid-template-rows: minmax(2.75rem, auto) 1.5rem minmax(2.75rem, auto); }
+    .hours { --bar-h: 3rem; }
+    .caption { min-height: 1.45em; }
+    .tag__desc, .tag__hrs { display: none; }
+    .tag__when { display: inline; }
   }
 
   /* stage: the plan stays on screen while you scroll the tags and rooms under it. It sticks with its
      title and legend scrolled off (--plan-cut), so the stuck part is the floor, the chosen line and the hours;
      --plan-h is that stuck height, and native focus scrolling and anchors keep clear of it. */
-  @media (min-width: 1200px) and (min-height: 880px) {
+  @media (min-width: 1200px) and (min-height: 720px) {
     html { scroll-padding-top: calc(var(--plan-h, 16rem) + var(--sp-4)); }
     .plan { position: sticky; top: calc(-1 * var(--plan-cut, 0px)); z-index: 5; padding-block: var(--sp-3); margin-block: calc(-1 * var(--sp-3)); border-bottom: 1px solid var(--c-ink); }
   }
@@ -587,7 +626,7 @@
   <div class="intro">
     <div class="intro__copy">
       <h2 id="rw-title" class="rw-title">Choose which doors your fob opens.</h2>
-      <p class="lede">Every membership comes on a key fob. Pick a plan and the floor plan shows each door it opens, and the hours it opens them. Prices include VAT, Wi-Fi, filter coffee and 200 printed pages a month.</p>
+      <p class="lede">Every membership comes on a key fob. Pick a plan and the floor plan shows each door it opens, and the hours it opens them.<span class="lede__vat"> Prices include VAT, Wi-Fi, filter coffee and 200 printed pages a month.</span></p>
     </div>
     <div class="controls">
       <fieldset class="seg" data-seg>
@@ -615,123 +654,6 @@
 
   <div class="spine">
 
-    <section id="plans" class="plans" aria-label="Plans" tabindex="-1">
-      <article class="tag is-chosen" data-plan="hot" aria-labelledby="t-hot">
-        <div class="tag__frame"><div class="tag__window">
-          <h3 id="t-hot" class="tag__name">Hot desk</h3>
-          <p class="tag__desc">Any free desk on the Walk. Bring a laptop, sit where you like.</p>
-          <div class="tag__money">
-            <p class="tag__price"><span data-price>£165</span> <span class="tag__per">a month</span></p>
-            <p class="tag__bill"><span class="swap"><span>Billed monthly</span><span data-billed>£1,782 billed yearly</span></span></p>
-            <p class="tag__pp"><span data-each></span><span data-pp></span></p>
-          </div>
-          <ul class="tag__facts" role="list">
-            <li><b>Opens</b> the front desk, café and kitchen, the Walk, phone booths, bikes and showers.</li>
-            <li>Weekdays, 08:00 to 19:00</li>
-            <li data-hours>4 meeting-room hours a month</li>
-          </ul>
-          <div class="tag__act">
-            <button class="btn" type="button" data-choose aria-pressed="true"><span class="swap"><span data-label>Choose Hot desk</span><span aria-hidden="true">Chosen</span></span></button>
-            <a class="ul tag__see" href="#floor-plan" data-see>See its doors on the plan</a>
-          </div>
-        </div></div>
-        <span class="badge" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6.5l2.6 2.5L10 3.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-      </article>
-
-      <article class="tag" data-plan="fixed" aria-labelledby="t-fixed">
-        <div class="tag__frame"><div class="tag__window">
-          <h3 id="t-fixed" class="tag__name">Fixed desk</h3>
-          <p class="tag__desc">Your own desk in the Quiet Bay, with a 27-inch monitor and a locker.</p>
-          <div class="tag__money">
-            <p class="tag__price"><span data-price>£260</span> <span class="tag__per">a month</span></p>
-            <p class="tag__bill"><span class="swap"><span>Billed monthly</span><span data-billed>£2,808 billed yearly</span></span></p>
-            <p class="tag__pp"><span data-each></span><span data-pp></span></p>
-          </div>
-          <ul class="tag__facts" role="list">
-            <li><b>Opens</b> everything Hot desk does, plus the Quiet Bay and lockers.</li>
-            <li>Any hour, every day</li>
-            <li data-hours>8 meeting-room hours a month</li>
-          </ul>
-          <div class="tag__act">
-            <button class="btn" type="button" data-choose aria-pressed="false"><span class="swap"><span data-label>Choose Fixed desk</span><span aria-hidden="true">Chosen</span></span></button>
-            <a class="ul tag__see" href="#floor-plan" data-see>See its doors on the plan</a>
-          </div>
-        </div></div>
-        <span class="badge" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6.5l2.6 2.5L10 3.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-      </article>
-
-      <article class="tag" data-plan="s2" aria-labelledby="t-s2">
-        <svg class="key" viewBox="0 0 96 40" aria-hidden="true"><use href="#key"/></svg>
-        <div class="tag__frame"><div class="tag__window">
-          <h3 id="t-s2" class="tag__name">Studio for 2</h3>
-          <p class="tag__desc">A lockable room with its own key, furniture and a post slot.</p>
-          <div class="tag__money">
-            <p class="tag__price"><span data-price>£720</span> <span class="tag__per">a month</span></p>
-            <p class="tag__bill"><span class="swap"><span>Billed monthly</span><span data-billed>£7,776 billed yearly</span></span></p>
-            <p class="tag__pp"><span data-each></span><span data-pp></span></p>
-          </div>
-          <ul class="tag__facts" role="list">
-            <li><b>Opens</b> Studio 3 with its own key, plus everything Hot desk does.</li>
-            <li>Any hour, every day</li>
-            <li data-hours>16 meeting-room hours a month</li>
-          </ul>
-          <div class="tag__act">
-            <button class="btn" type="button" data-choose aria-pressed="false"><span class="swap"><span data-label>Choose Studio for 2</span><span aria-hidden="true">Chosen</span></span></button>
-            <a class="ul tag__see" href="#floor-plan" data-see>See its doors on the plan</a>
-          </div>
-        </div></div>
-        <span class="badge" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6.5l2.6 2.5L10 3.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-      </article>
-
-      <article class="tag" data-plan="s4" aria-labelledby="t-s4">
-        <svg class="key" viewBox="0 0 96 40" aria-hidden="true"><use href="#key"/></svg>
-        <div class="tag__frame"><div class="tag__window">
-          <h3 id="t-s4" class="tag__name">Studio for 4</h3>
-          <p class="tag__desc">A lockable room with its own key, furniture and a post slot.</p>
-          <div class="tag__money">
-            <p class="tag__price"><span data-price>£1,280</span> <span class="tag__per">a month</span></p>
-            <p class="tag__bill"><span class="swap"><span>Billed monthly</span><span data-billed>£13,824 billed yearly</span></span></p>
-            <p class="tag__pp"><span data-each></span><span data-pp></span></p>
-          </div>
-          <ul class="tag__facts" role="list">
-            <li><b>Opens</b> Studio 6 with its own key, plus everything Hot desk does.</li>
-            <li>Any hour, every day</li>
-            <li data-hours>24 meeting-room hours a month</li>
-          </ul>
-          <div class="tag__act">
-            <button class="btn" type="button" data-choose aria-pressed="false"><span class="swap"><span data-label>Choose Studio for 4</span><span aria-hidden="true">Chosen</span></span></button>
-            <a class="ul tag__see" href="#floor-plan" data-see>See its doors on the plan</a>
-          </div>
-        </div></div>
-        <span class="badge" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6.5l2.6 2.5L10 3.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-      </article>
-
-      <article class="tag" data-plan="s6" aria-labelledby="t-s6">
-        <svg class="key" viewBox="0 0 96 40" aria-hidden="true"><use href="#key"/></svg>
-        <div class="tag__frame"><div class="tag__window">
-          <h3 id="t-s6" class="tag__name">Studio for 6</h3>
-          <p class="tag__desc">A lockable room with its own key, furniture and a post slot.</p>
-          <div class="tag__money">
-            <p class="tag__price"><span data-price>£1,790</span> <span class="tag__per">a month</span></p>
-            <p class="tag__bill"><span class="swap"><span>Billed monthly</span><span data-billed>£19,332 billed yearly</span></span></p>
-            <p class="tag__pp"><span data-each></span><span data-pp></span></p>
-          </div>
-          <ul class="tag__facts" role="list">
-            <li><b>Opens</b> Studio 8 with its own key, plus everything Hot desk does.</li>
-            <li>Any hour, every day</li>
-            <li data-hours>32 meeting-room hours a month</li>
-          </ul>
-          <div class="tag__act">
-            <button class="btn" type="button" data-choose aria-pressed="false"><span class="swap"><span data-label>Choose Studio for 6</span><span aria-hidden="true">Chosen</span></span></button>
-            <a class="ul tag__see" href="#floor-plan" data-see>See its doors on the plan</a>
-          </div>
-        </div></div>
-        <span class="badge" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6.5l2.6 2.5L10 3.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-      </article>
-
-      <p class="divider is-empty" data-divider></p>
-    </section>
-
     <figure id="floor-plan" class="plan" tabindex="-1" aria-labelledby="plan-title">
       <div class="plan__head">
         <p id="plan-title" class="plan__title">What the <span data-plan-name>Hot desk</span> fob opens</p>
@@ -740,6 +662,7 @@
           <li class="legend__book">Bookable with your hours</li>
           <li class="legend__locked">Locked</li>
         </ul>
+        <p class="plan__let">Studios 3, 6 and 8 are free and come with a studio plan; the other five are let to members.</p>
       </div>
       <div class="floor" role="img" aria-label="Ground floor of the 96 m ropewalk. The Walk runs east from the front door. North side: front desk, café and kitchen, phone booths, meeting rooms Bowline and Clove Hitch, Studios 1 to 4, meeting room Reef. South side: bikes and showers, lockers, the Quiet Bay, Studios 5 to 8, meeting room Sheet Bend.">
         <div class="room room--walk" data-side="w" data-room="walk" data-name="The Walk" data-pos="0" style="--at: 1 / -1; --fill: 1"><span class="fill"></span><span class="lane" aria-hidden="true"><span class="wave"></span></span><span class="door"></span><span class="room__label"><span class="nm">Front door</span><span>The Walk: 60 hot desks<span class="walk__more"> along the 96 m floor where rope was laid until 1961</span></span></span></div>
@@ -767,11 +690,11 @@
       </div>
       <figcaption class="plan__foot">
         <div class="plan__say">
-          <p class="plan__chosen"><span class="badge" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6.5l2.6 2.5L10 3.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>Chosen: <b data-chosen-name>Hot desk</b></span></p>
+          <p class="plan__chosen"><span class="badge" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6.5l2.6 2.5L10 3.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="swap plan__mode"><span>Chosen: <b data-chosen-name>Hot desk</b></span><span aria-hidden="true">Showing: a meeting-room booking</span></span></p>
           <p class="caption" aria-live="polite"><span class="caption__in">Hot desk fob: opens 5 spaces on weekdays, 08:00 to 19:00, and books all 4 meeting rooms.</span></p>
         </div>
-        <div class="hours" role="img" aria-label="Hours this fob opens doors: Monday to Friday, 08:00 to 19:00; closed to this fob at weekends.">
-          <span class="hours__scale" aria-hidden="true"><span style="--h: 0">00</span><span style="--h: 8">08</span><span style="--h: 19">19</span><span style="--h: 24">24</span></span>
+        <div class="hours" role="img" aria-label="Each day runs midnight to midnight. Hours this fob opens doors: Monday to Friday, 08:00 to 19:00; closed to this fob at weekends.">
+          <span class="hours__scale" aria-hidden="true"><span style="--h: 8">08</span><span style="--h: 19">19</span></span>
           <span class="day"><span>Mon</span><span class="bar7"><span class="bar7__fill" style="--from: 8; --to: 19"></span></span></span>
           <span class="day"><span>Tue</span><span class="bar7"><span class="bar7__fill" style="--from: 8; --to: 19"></span></span></span>
           <span class="day"><span>Wed</span><span class="bar7"><span class="bar7__fill" style="--from: 8; --to: 19"></span></span></span>
@@ -785,16 +708,134 @@
       </figcaption>
     </figure>
 
+    <section id="plans" class="plans" aria-label="Plans" tabindex="-1">
+      <article class="tag is-chosen" data-plan="hot" aria-labelledby="t-hot">
+        <div class="tag__frame"><div class="tag__window">
+          <h3 id="t-hot" class="tag__name">Hot desk</h3>
+          <p class="tag__desc">Any free desk on the Walk. Bring a laptop, sit where you like.</p>
+          <div class="tag__money">
+            <p class="tag__price"><span data-price>£165</span> <span class="tag__per">a month</span></p>
+            <p class="tag__bill"><span class="swap"><span>Billed monthly</span><span data-billed>£1,782 billed yearly</span></span></p>
+            <p class="tag__pp"><span data-each></span><span data-pp></span></p>
+          </div>
+          <ul class="tag__facts" role="list">
+            <li><b>Opens</b> the front desk, café and kitchen, the Walk, phone booths, bikes and showers<span class="tag__when">, weekdays 08:00 to 19:00</span>.</li>
+            <li class="tag__hrs">Weekdays, 08:00 to 19:00</li>
+            <li data-hours>4 meeting-room hours a month</li>
+          </ul>
+          <div class="tag__act">
+            <button class="btn" type="button" data-choose aria-pressed="true"><span class="swap"><span data-label>Choose Hot desk</span><span aria-hidden="true">Chosen</span></span></button>
+            <a class="ul tag__see" href="#floor-plan" data-see>See its doors on the plan</a>
+          </div>
+        </div></div>
+        <span class="badge" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6.5l2.6 2.5L10 3.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      </article>
+
+      <article class="tag" data-plan="fixed" aria-labelledby="t-fixed">
+        <div class="tag__frame"><div class="tag__window">
+          <h3 id="t-fixed" class="tag__name">Fixed desk</h3>
+          <p class="tag__desc">Your own desk in the Quiet Bay, with a 27-inch monitor and a locker.</p>
+          <div class="tag__money">
+            <p class="tag__price"><span data-price>£260</span> <span class="tag__per">a month</span></p>
+            <p class="tag__bill"><span class="swap"><span>Billed monthly</span><span data-billed>£2,808 billed yearly</span></span></p>
+            <p class="tag__pp"><span data-each></span><span data-pp></span></p>
+          </div>
+          <ul class="tag__facts" role="list">
+            <li><b>Opens</b> everything Hot desk does, plus the Quiet Bay and lockers<span class="tag__when">, any hour</span>.</li>
+            <li class="tag__hrs">Any hour, every day</li>
+            <li data-hours>8 meeting-room hours a month</li>
+          </ul>
+          <div class="tag__act">
+            <button class="btn" type="button" data-choose aria-pressed="false"><span class="swap"><span data-label>Choose Fixed desk</span><span aria-hidden="true">Chosen</span></span></button>
+            <a class="ul tag__see" href="#floor-plan" data-see>See its doors on the plan</a>
+          </div>
+        </div></div>
+        <span class="badge" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6.5l2.6 2.5L10 3.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      </article>
+
+      <article class="tag" data-plan="s2" aria-labelledby="t-s2">
+        <svg class="key" viewBox="0 0 96 40" aria-hidden="true"><use href="#key"/></svg>
+        <div class="tag__frame"><div class="tag__window">
+          <h3 id="t-s2" class="tag__name">Studio for 2</h3>
+          <p class="tag__desc">Studio 3: two desks under the north rooflight, 9 m².</p>
+          <div class="tag__money">
+            <p class="tag__price"><span data-price>£720</span> <span class="tag__per">a month</span></p>
+            <p class="tag__bill"><span class="swap"><span>Billed monthly</span><span data-billed>£7,776 billed yearly</span></span></p>
+            <p class="tag__pp"><span data-each></span><span data-pp></span></p>
+          </div>
+          <ul class="tag__facts" role="list">
+            <li><b>Opens</b> Studio 3, furnished and lockable with its own key and post slot, plus everything Hot desk does<span class="tag__when">, any hour</span>.</li>
+            <li class="tag__hrs">Any hour, every day</li>
+            <li data-hours>16 meeting-room hours a month</li>
+          </ul>
+          <div class="tag__act">
+            <button class="btn" type="button" data-choose aria-pressed="false"><span class="swap"><span data-label>Choose Studio for 2</span><span aria-hidden="true">Chosen</span></span></button>
+            <a class="ul tag__see" href="#floor-plan" data-see>See its doors on the plan</a>
+          </div>
+        </div></div>
+        <span class="badge" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6.5l2.6 2.5L10 3.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      </article>
+
+      <article class="tag" data-plan="s4" aria-labelledby="t-s4">
+        <svg class="key" viewBox="0 0 96 40" aria-hidden="true"><use href="#key"/></svg>
+        <div class="tag__frame"><div class="tag__window">
+          <h3 id="t-s4" class="tag__name">Studio for 4</h3>
+          <p class="tag__desc">Studio 6: four desks and a pin-up wall, 16 m², south side.</p>
+          <div class="tag__money">
+            <p class="tag__price"><span data-price>£1,280</span> <span class="tag__per">a month</span></p>
+            <p class="tag__bill"><span class="swap"><span>Billed monthly</span><span data-billed>£13,824 billed yearly</span></span></p>
+            <p class="tag__pp"><span data-each></span><span data-pp></span></p>
+          </div>
+          <ul class="tag__facts" role="list">
+            <li><b>Opens</b> Studio 6, furnished and lockable with its own key and post slot, plus everything Hot desk does<span class="tag__when">, any hour</span>.</li>
+            <li class="tag__hrs">Any hour, every day</li>
+            <li data-hours>24 meeting-room hours a month</li>
+          </ul>
+          <div class="tag__act">
+            <button class="btn" type="button" data-choose aria-pressed="false"><span class="swap"><span data-label>Choose Studio for 4</span><span aria-hidden="true">Chosen</span></span></button>
+            <a class="ul tag__see" href="#floor-plan" data-see>See its doors on the plan</a>
+          </div>
+        </div></div>
+        <span class="badge" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6.5l2.6 2.5L10 3.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      </article>
+
+      <article class="tag" data-plan="s6" aria-labelledby="t-s6">
+        <svg class="key" viewBox="0 0 96 40" aria-hidden="true"><use href="#key"/></svg>
+        <div class="tag__frame"><div class="tag__window">
+          <h3 id="t-s6" class="tag__name">Studio for 6</h3>
+          <p class="tag__desc">Studio 8: six desks and its own sink, 24 m², next to Sheet Bend.</p>
+          <div class="tag__money">
+            <p class="tag__price"><span data-price>£1,790</span> <span class="tag__per">a month</span></p>
+            <p class="tag__bill"><span class="swap"><span>Billed monthly</span><span data-billed>£19,332 billed yearly</span></span></p>
+            <p class="tag__pp"><span data-each></span><span data-pp></span></p>
+          </div>
+          <ul class="tag__facts" role="list">
+            <li><b>Opens</b> Studio 8, furnished and lockable with its own key and post slot, plus everything Hot desk does<span class="tag__when">, any hour</span>.</li>
+            <li class="tag__hrs">Any hour, every day</li>
+            <li data-hours>32 meeting-room hours a month</li>
+          </ul>
+          <div class="tag__act">
+            <button class="btn" type="button" data-choose aria-pressed="false"><span class="swap"><span data-label>Choose Studio for 6</span><span aria-hidden="true">Chosen</span></span></button>
+            <a class="ul tag__see" href="#floor-plan" data-see>See its doors on the plan</a>
+          </div>
+        </div></div>
+        <span class="badge" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6.5l2.6 2.5L10 3.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      </article>
+
+      <p class="divider is-empty" data-divider></p>
+    </section>
+    <p class="vat-note">Prices include VAT, Wi-Fi, filter coffee and 200 printed pages a month.</p>
+
     <section id="rooms" class="rooms" aria-labelledby="rooms-title">
       <div class="rooms__intro">
         <h3 id="rooms-title" tabindex="-1">Meeting rooms by the hour</h3>
         <p>Members spend their included hours first. Anyone can book; you don't need a membership.</p>
       </div>
       <ul class="rooms__list" role="list">
-        <li><span class="rule" aria-hidden="true"></span><button class="row" type="button" data-room="bowline"><span class="row__name">Bowline</span><span class="row__seats">4 seats</span><span class="row__kit">TV screen</span><span class="row__price">£22 an hour</span><span class="row__act" data-text="Book Bowline"><span>Book Bowline</span></span></button></li>
-        <li><span class="rule" aria-hidden="true"></span><button class="row" type="button" data-room="clove"><span class="row__name">Clove Hitch</span><span class="row__seats">6 seats</span><span class="row__kit">Screen and whiteboard wall</span><span class="row__price">£30 an hour</span><span class="row__act" data-text="Book Clove Hitch"><span>Book Clove Hitch</span></span></button></li>
-        <li><span class="rule" aria-hidden="true"></span><button class="row" type="button" data-room="reef"><span class="row__name">Reef</span><span class="row__seats">10 seats</span><span class="row__kit">Projector</span><span class="row__price">£44 an hour</span><span class="row__act" data-text="Book Reef"><span>Book Reef</span></span></button></li>
-        <li><span class="rule" aria-hidden="true"></span><button class="row" type="button" data-room="sheet"><span class="row__name">Sheet Bend</span><span class="row__seats">14 seats</span><span class="row__kit">Boardroom table and video-call kit</span><span class="row__price">£58 an hour</span><span class="row__act" data-text="Book Sheet Bend"><span>Book Sheet Bend</span></span></button><span class="rule rule--end" aria-hidden="true"></span></li>
+        <li style="--i: 0"><span class="rule" aria-hidden="true"></span><button class="row" type="button" data-room="bowline"><span class="row__name">Bowline</span><span class="row__seats">4 seats</span><span class="row__kit">TV screen</span><span class="row__price">£22 an hour</span><span class="row__act" data-text="Book Bowline"><span>Book Bowline</span></span></button></li>
+        <li style="--i: 1"><span class="rule" aria-hidden="true"></span><button class="row" type="button" data-room="clove"><span class="row__name">Clove Hitch</span><span class="row__seats">6 seats</span><span class="row__kit">Screen and whiteboard wall</span><span class="row__price">£30 an hour</span><span class="row__act" data-text="Book Clove Hitch"><span>Book Clove Hitch</span></span></button></li>
+        <li style="--i: 2"><span class="rule" aria-hidden="true"></span><button class="row" type="button" data-room="reef"><span class="row__name">Reef</span><span class="row__seats">10 seats</span><span class="row__kit">Projector</span><span class="row__price">£44 an hour</span><span class="row__act" data-text="Book Reef"><span>Book Reef</span></span></button></li>
+        <li style="--i: 3"><span class="rule" aria-hidden="true"></span><button class="row" type="button" data-room="sheet"><span class="row__name">Sheet Bend</span><span class="row__seats">14 seats</span><span class="row__kit">Boardroom table and video-call kit</span><span class="row__price">£58 an hour</span><span class="row__act" data-text="Book Sheet Bend"><span>Book Sheet Bend</span></span></button><span class="rule rule--end" aria-hidden="true"></span></li>
       </ul>
     </section>
   </div>
@@ -981,7 +1022,7 @@
   /* ---------- DOM ---------- */
   const planEl = $('#floor-plan'), floor = $('.floor'), plansEl = $('#plans'), divider = $('[data-divider]');
   const capIn = $('.caption__in'), hoursEl = $('.hours'), bars = $$('.bar7__fill'), planName = $('[data-plan-name]');
-  const title = $('#rw-title'), trialPlan = $('#tr-plan'), chosenName = $('[data-chosen-name]');
+  const title = $('#rw-title'), trialPlan = $('#tr-plan'), chosenName = $('[data-chosen-name]'), modeLines = [...$('.plan__mode').children];
   const ROOMS = Object.fromEntries($$('.room').map(el => [el.dataset.room, {
     el, fill: $('.fill', el), name: el.dataset.name, seats: +el.dataset.seats || 0, pos: +el.dataset.pos,
   }]));
@@ -1056,7 +1097,9 @@
     planName.nextSibling.textContent = want === 'rooms' ? ' opens' : ' fob opens';
     const cap = want === 'rooms' || want === S.chosen ? caption(want) : diffCaption(S.chosen, want);
     if (cap !== capText) { capText = cap; fx.caption(capIn, cap); }
-    hoursEl.setAttribute('aria-label', `Hours ${want === 'rooms' ? 'meeting rooms can be booked' : 'this fob opens doors'}: ${HOURS_TEXT[hoursKey(want)]}`);
+    modeLines[0].setAttribute('aria-hidden', String(want === 'rooms'));
+    modeLines[1].setAttribute('aria-hidden', String(want !== 'rooms'));
+    hoursEl.setAttribute('aria-label', `Each day runs midnight to midnight. Hours ${want === 'rooms' ? 'meeting rooms can be booked' : 'this fob opens doors'}: ${HOURS_TEXT[hoursKey(want)]}`);
     const commit = prev && want !== 'rooms' && want === S.chosen;
     if (S.ready && S.inView && (want !== S.shown || commit)) {
       fx.flood(litOf(S.shown), litOf(want), HOURS[hoursKey(want)], commit ? litOf(prev) : null);
@@ -1155,9 +1198,16 @@
     S.chosen = id; S.preview = null; S.inspect = null;
     renderChosen(); fx.badge(TAG[id].badge); syncPlan(prev !== id && prev);
   }
+  // touch on wide screens (no hover, no rail): tapping a tag's body previews its doors, tapping it again goes back
+  let ptr = 'mouse';
+  plansEl.addEventListener('pointerdown', e => { ptr = e.pointerType; });
   plansEl.addEventListener('click', e => {
     const b = e.target.closest('[data-choose]');
-    if (b && !b.disabled) choose(b.closest('.tag').dataset.plan);
+    if (b && !b.disabled) return choose(b.closest('.tag').dataset.plan);
+    const id = e.target.closest('.tag')?.dataset.plan;
+    if (id && ptr !== 'mouse' && !rail.matches && !e.target.closest('a, button')) {
+      S.inspect = S.inspect === id || id === S.chosen ? null : id; syncPlan();
+    }
   });
 
   // SIG preview: hover or focus a tag (after a short intent delay) to see its doors; leave the group to go back.
@@ -1348,7 +1398,7 @@
     reduce: '(prefers-reduced-motion: reduce)',
     fine: '(hover: hover) and (pointer: fine)',
     wide: '(min-width: 992px)',
-    stage: '(min-width: 1200px) and (min-height: 880px)',
+    stage: '(min-width: 1200px) and (min-height: 720px)',
   }, ctx => {
     const { motion, fine, wide, stage } = ctx.conditions;
     let alive = true;
@@ -1357,14 +1407,23 @@
     S.mode = 'plan'; S.inView = true;
     if (!first) { S.ready = true; S.holdPills = false; renderAll(); root.classList.remove('intro'); title.classList.add('is-ready'); }
 
-    // S2: on the sticky plan, reaching the room list turns the building into a map of bookable rooms
+    // S2: on the sticky plan, reaching the room list turns the building into a map of bookable rooms;
+    // the rules above the room rows draw with the rooms' rings (same 0.06s step by --i), once
+    const roomsEl = $('#rooms');
+    if (stage && motion && !roomsEl.classList.contains('is-drawn')) roomsEl.classList.add('is-waiting');
     if (stage) ScrollTrigger.create({
       trigger: '#rooms', start: 'top 60%',
-      onEnter: () => { S.mode = 'rooms'; syncPlan(); },
+      onEnter: () => { S.mode = 'rooms'; roomsEl.classList.replace('is-waiting', 'is-drawn'); syncPlan(); },
       onLeaveBack: () => { S.mode = 'plan'; syncPlan(); },
     });
 
     if (!motion) return () => { alive = false; };
+
+    // off the stage the plan can be off screen: a change made meanwhile plays as a diff when it scrolls back in (S4)
+    if (!stage) {
+      const seen = ScrollTrigger.create({ trigger: planEl, start: 'top bottom', end: 'bottom top', onToggle: self => { S.inView = self.isActive; syncPlan(); } });
+      S.inView = seen.isActive;
+    }
 
     // One clock: Lenis runs from GSAP's ticker
     const lenis = new Lenis({ autoRaf: false, lerp: 0.1, smoothWheel: true });
@@ -1401,23 +1460,28 @@
 
     // SIG: the fob flood as a diff. Shared rooms stay lit; old-only rooms drain to their door;
     // new-only rooms fill from their door, ranked by walking distance from the front door (TR3).
-    // Commit: the fob is read at the front door. A band runs east along the Walk (0.6s power2.inOut) and each
-    // room the new plan adds opens as the band passes its door (data-pos is metres along the 96 m Walk).
-    const wave = $('.wave'), walk = ROOMS.walk.el, W = 0.6;
+    // Commit: the fob is read at the front door. A tar tick flashes at the reader, the Walk re-fills from the door
+    // behind a 2px tar edge (0.6s power2.inOut; the only shared room that re-sweeps), and each room the new plan adds
+    // opens, door leaf swinging, as the edge passes its door (data-pos is metres along the 96 m Walk).
+    const wave = $('.wave'), lane = $('.lane'), walk = ROOMS.walk, W = 0.6;
     const tAt = p => p < 0.5 ? Math.sqrt(p / 2) : 1 - Math.sqrt((1 - p) / 2);   // inverse of power2.inOut
     const pour = (from, to, hrs, prev) => {
-      const ax = wide ? 'x' : 'y', r = walk.getBoundingClientRect(), len = wide ? r.width : r.height, band = wide ? wave.offsetWidth : wave.offsetHeight;
-      gsap.killTweensOf(wave);
-      gsap.timeline().set(wave, { autoAlpha: 1, [ax]: -band })
-        .to(wave, { [ax]: len - band, duration: W, ease: 'power2.inOut' })
+      const ax = wide ? 'x' : 'y', r = walk.el.getBoundingClientRect(), len = wide ? r.width : r.height;
+      gsap.killTweensOf([wave, lane, walk.fill]);
+      gsap.fromTo(lane, { '--tick': 1 }, { '--tick': 0, duration: 0.5, ease: 'expo.out' });
+      gsap.timeline().set(wave, { autoAlpha: 1, [ax]: 0 })
+        .to(wave, { [ax]: len - 2, duration: W, ease: 'power2.inOut' })
         .to(wave, { autoAlpha: 0, duration: 0.2, ease: 'expo.out' });
+      gsap.fromTo(walk.fill, { '--fill': 0 }, { '--fill': 1, duration: W, ease: 'power2.inOut' });
       [...from].filter(id => !to.has(id)).forEach(id => gsap.to(ROOMS[id].fill, { '--fill': 0, duration: T.drain, ease: 'expo.inOut', overwrite: true }));
       [...to].filter(id => id !== 'walk' && (!prev.has(id) || !from.has(id))).forEach(id => {
-        const f = ROOMS[id].fill, at = tAt(Math.min(1, ROOMS[id].pos / 96)) * W, lit = from.has(id);
-        gsap.killTweensOf(f);
+        const { fill: f, el } = ROOMS[id], at = tAt(Math.min(1, ROOMS[id].pos / 96)) * W, lit = from.has(id), door = $('.door', el);
+        gsap.killTweensOf([f, door]);
         const tl = gsap.timeline();
         if (lit) tl.to(f, { '--fill': 0, duration: 0.18, ease: 'expo.inOut' });   // previewed already: close it, then open it as the fob is read
-        tl.to(f, { '--fill': 1, duration: 0.55, ease: 'expo.inOut' }, Math.max(at, lit ? 0.18 : 0));
+        const t = Math.max(at, lit ? 0.18 : 0);
+        tl.to(f, { '--fill': 1, duration: 0.55, ease: 'expo.inOut' }, t)
+          .fromTo(door, { '--swing': 60 }, { '--swing': 0, duration: 0.3, ease: 'expo.out' }, t);   // from near shut to open
       });
       bars.forEach((b, i) => {
         const h = hrs[i] || [8, 8];
@@ -1505,16 +1569,11 @@
     } else if (first) {
       gsap.set(rooms, { clipPath: 'inset(-2px -2px 100% -2px)' });
       gsap.set(wall, { clipPath: 'inset(0% 0% 100% 0%)' });
-      const seen = ScrollTrigger.create({ trigger: planEl, start: 'top bottom', end: 'bottom top', onToggle: self => { S.inView = self.isActive; syncPlan(); } });
-      S.inView = seen.isActive;
       ScrollTrigger.create({
         trigger: planEl, start: 'top 75%', once: true,
         onEnter: () => { reveal(0); gsap.delayedCall(0.5, () => { S.ready = true; syncPlan(); }); },
       });
     }
-
-    // S3 rules above the room rows draw in from the left before the rows are read
-    gsap.from($$('.rule'), { scaleX: 0, transformOrigin: '0% 50%', duration: 1, ease: 'expo.out', stagger: 0.08, scrollTrigger: { trigger: '.rooms__list', start: 'top 88%', once: true } });
 
     // I9 CU1 follower over the plan (fine pointer, wide only); the native cursor stays
     if (fine && wide) {
@@ -1546,6 +1605,7 @@
     return () => {
       alive = false;
       ac.abort();
+      roomsEl.classList.remove('is-waiting');
       gsap.ticker.remove(tick);
       gsap.ticker.lagSmoothing(500, 33);
       lenis.destroy();
