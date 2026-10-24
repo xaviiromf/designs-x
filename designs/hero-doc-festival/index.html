@@ -17,7 +17,8 @@
   --leader: #A6A4AD;  /* academy-leader grey: secondary text, lower-third bars, curtain card. 6.79:1 on booth */
   --screen: #F4F3EF;  /* projector-screen white: text, iris ring, primary button. 15.05:1 on booth */
   --pencil: #EC5A43;  /* red chinagraph: hand marks, curtain mark, focus. 4.86:1 on booth */
-  --mask: #15141A;    /* projector masking: darkens the frame outside the iris while it opens. 16.49:1 under screen */
+  --mask: #15141A;    /* projector masking: dims the title outside the iris while it opens */
+  --lit: #2C2B35;     /* the lit aperture: inside the iris while it opens, settling to booth */
 
   --font-display: 'Red Hat Display', system-ui, sans-serif;
   --font-text: 'Red Hat Text', system-ui, sans-serif;
@@ -191,7 +192,8 @@ html:not(.js) .btn--solid:hover { background: var(--booth); color: var(--screen)
 .title br { display: none; }
 @media (min-width: 992px) { .title br { display: inline; } }
 @media (max-width: 991.98px) { :root { --fs-title: min(19vw, 15svh); } }
-@media (max-height: 700px) { .title-layer { gap: var(--s-5); padding-bottom: var(--s-4); } .intro { gap: var(--s-4); } }
+@media (max-height: 700px) { .title-layer { gap: var(--s-5); padding-top: calc(var(--header-h) + var(--s-4)); padding-bottom: var(--s-4); } .intro { gap: var(--s-4); } .ctas { gap: var(--s-2) var(--s-6); } }
+@media (max-width: 599.98px), (max-height: 700px) { .cue { display: none; } }
 .bl { display: inline-block; width: 0; height: 0; vertical-align: baseline; }
 .hero-foot { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: var(--s-6); }
 .intro { display: grid; gap: var(--s-5); }
@@ -206,8 +208,8 @@ html:not(.motion) .cue { visibility: hidden; } /* it describes the pinned iris, 
 }
 
 .iris-mask { display: none; }
-.is-pinned .iris-mask { display: block; position: absolute; inset: 0; background: var(--mask); opacity: 0; pointer-events: none; }
-.grain { position: absolute; inset: 0; z-index: 2; overflow: hidden; pointer-events: none; }
+.is-pinned .iris-mask { display: block; position: absolute; z-index: 2; inset: 0; background: var(--mask); opacity: 0; pointer-events: none; }
+.grain { position: absolute; inset: 0; z-index: 3; overflow: hidden; pointer-events: none; }
 .grain::before {
   content: ""; position: absolute; inset: -2em; background: var(--screen); opacity: var(--grain-o);
   -webkit-mask: var(--noise); mask: var(--noise);
@@ -224,6 +226,9 @@ html:not(.motion) .cue { visibility: hidden; } /* it describes the pinned iris, 
 .is-pinned .iris-ring, .is-pinned .iris-scene { clip-path: circle(0 at 50% 50%); }
 .is-pinned .iris-ring { display: block; position: absolute; inset: 0; z-index: 3; background: var(--screen); }
 .iris-scene { position: relative; z-index: 4; background: var(--booth); }
+.iris-lit { display: none; }
+.is-pinned .iris-lit { display: block; position: absolute; inset: 0; background: var(--lit); pointer-events: none; }
+.frame { position: relative; }
 /* Pinned, the scene is one composed frame: heading near the top, the first two screenings at the foot,
    so the opening-night line lands close to the full stop (both are bottom-anchored). Taller content grows the stage. */
 .is-pinned .frame { min-height: 100svh; display: grid; grid-template-rows: minmax(0, 1fr) auto minmax(var(--s-6), 1fr) auto; padding-top: var(--header-h); }
@@ -245,7 +250,8 @@ html:not(.motion) .cue { visibility: hidden; } /* it describes the pinned iris, 
   transition: transform var(--dur-release) var(--ease-release);
 }
 .film__when { display: grid; justify-items: start; gap: var(--s-1); font-size: var(--fs-small); font-weight: 500; color: var(--leader); }
-.film__time { position: relative; display: inline-block; color: var(--screen); font-variant-numeric: tabular-nums; }
+.film__time { position: relative; display: inline-block; color: var(--screen); font: 700 1.125rem/1.1 var(--font-display); font-variant-numeric: tabular-nums; }
+.film__go { position: relative; display: inline-block; }
 .film__day { font-variant-numeric: tabular-nums; }
 .film__title { font: 700 var(--fs-film)/1 var(--font-display); letter-spacing: -.015em; transition: transform .5s var(--ease-out); }
 .film__body { display: grid; justify-items: start; gap: var(--s-3); }
@@ -259,7 +265,9 @@ html:not(.motion) .cue { visibility: hidden; } /* it describes the pinned iris, 
 .film:has(.film__open:active) { transform: scale(.985); transition-duration: var(--dur-press); transition-timing-function: ease-out; }
 @media (hover: hover) {
   .film:hover .film__open { color: var(--screen); }
+  html:not(.fine) .film:hover .film__go .pl__u path { opacity: 1; }
 }
+html:not(.fine) .film:has(.film__open:focus-visible) .film__go .pl__u path { opacity: 1; }
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
   .film:hover .film__title { transform: translateX(.25em); }
 }
@@ -271,7 +279,13 @@ html:not(.motion) .cue { visibility: hidden; } /* it describes the pinned iris, 
 html:not(.fine) .film:has(.film__open:focus-visible) .mark path { opacity: 1; }
 @media (hover: hover) { html:not(.fine) .film:hover .mark path { opacity: 1; } }
 html.fine .mark path { opacity: 1; }
-@media (hover: none) { .film:has(.film__open:active) .mark path { opacity: 1; } } /* touch: the circle shows under the finger as the row is pressed */
+@media (hover: none) { .film:has(.film__open:active) :is(.mark, .pl__u) path { opacity: 1; } } /* touch: the circle shows under the finger as the row is pressed */
+/* From 1100px the rows share the pass rows' columns: venue ends where the prices end, Synopsis where the buttons end. */
+@media (min-width: 1100px) {
+  .film { grid-template-columns: 7rem minmax(0, 38rem) 1fr 12rem 14rem; justify-content: stretch; }
+  .film__venue { grid-column: 4; }
+  .film__open { grid-column: 5; justify-self: end; }
+}
 @media (max-width: 759.98px) {
   .film { grid-template-columns: auto minmax(0, 1fr); }
   .film__when { grid-column: 1; display: flex; flex-wrap: wrap; gap: 0 var(--s-2); }
@@ -315,13 +329,16 @@ html.fine .mark path { opacity: 1; }
   .venue { grid-template-columns: 1fr; }
 }
 
-/* ---------- Burn-in timecode: the screener copy the programme was chosen from ---------- */
+/* ---------- Footage counter: the flatbed's feet+frames readout for the title sequence ---------- */
 .tc {
   position: fixed; z-index: 30; inset: auto 0 var(--s-3); width: max-content; margin-inline: auto;
   padding: .1em .45em; background: var(--booth); color: var(--screen);
   font-size: var(--fs-tc); font-weight: 500; line-height: 1.4; letter-spacing: .02em; font-variant-numeric: tabular-nums;
-  pointer-events: none;
+  pointer-events: none; transition: opacity var(--dur-field) var(--ease-out);
 }
+.tc.is-off { opacity: 0; }
+@media (max-width: 759.98px) { .tc { display: none; } }
+@media (min-width: 760px) { .title-layer { padding-bottom: calc(var(--s-6) + var(--s-6)); } }
 
 /* ---------- Curtain: the leader card ---------- */
 .curtain {
@@ -341,6 +358,7 @@ dialog {
   width: min(40rem, calc(100% - 2 * var(--gutter))); max-height: calc(100svh - 2 * var(--s-6));
   padding: 0; border: 0; border-radius: 0; background: var(--deck); color: var(--screen); overflow: auto;
 }
+@media (min-width: 600px) { dialog { margin: 10svh auto auto; max-height: calc(90svh - var(--s-6)); } }
 dialog::backdrop { background: rgb(30 29 36 / .7); backdrop-filter: blur(4px); }
 .dlg { display: grid; gap: var(--s-5); padding: var(--s-7) var(--s-6) var(--s-6); }
 .dlg h2 { font: 700 clamp(2rem, 4vw, 3rem)/1 var(--font-display); letter-spacing: -.02em; }
@@ -393,10 +411,10 @@ dialog::backdrop { background: rgb(30 29 36 / .7); backdrop-filter: blur(4px); }
 .qty { display: grid; justify-items: start; }
 .stepper { display: flex; align-items: center; border: 1px solid var(--leader); }
 .stepper button { width: 2.75rem; height: 2.75rem; border: 0; background: transparent; cursor: pointer; font-size: 1.25rem; transition: background-color var(--dur-hover) var(--ease-out), transform var(--dur-release) var(--ease-release); }
-@media (hover: hover) { .stepper button:not(:disabled):hover { background: var(--booth); } }
+@media (hover: hover) { .stepper button:not([aria-disabled="true"]):hover { background: var(--booth); } }
 .stepper button:focus-visible { background: var(--booth); outline-offset: -2px; }
-.stepper button:active:not(:disabled) { transform: scale(.92); transition-duration: var(--dur-press); }
-.stepper button:disabled { color: var(--leader); opacity: .5; cursor: not-allowed; }
+.stepper button:active:not([aria-disabled="true"]) { transform: scale(.92); transition-duration: var(--dur-press); }
+.stepper button[aria-disabled="true"] { color: var(--leader); opacity: .5; cursor: not-allowed; }
 .stepper__mask { overflow: hidden; }
 .stepper input { width: 2.5rem; height: 2.75rem; border: 0; background: transparent; text-align: center; font: 800 1.25rem/1 var(--font-display); font-variant-numeric: tabular-nums; appearance: textfield; -moz-appearance: textfield; }
 .stepper input::-webkit-inner-spin-button, .stepper input::-webkit-outer-spin-button { appearance: none; margin: 0; }
@@ -420,7 +438,7 @@ dialog::backdrop { background: rgb(30 29 36 / .7); backdrop-filter: blur(4px); }
   html { animation: none; background: var(--booth); }
   .curtain { display: none; }
   *, *::before, *::after { transition-duration: 0s !important; transition-delay: 0s !important; }
-  .btn:active, .film:has(.film__open:active), .pl:active, .wordmark:active, .stepper button:active:not(:disabled) { transform: none; }
+  .btn:active, .film:has(.film__open:active), .pl:active, .wordmark:active, .stepper button:active:not([aria-disabled="true"]) { transform: none; }
 }
 </style>
 </head>
@@ -432,10 +450,11 @@ dialog::backdrop { background: rgb(30 29 36 / .7); backdrop-filter: blur(4px); }
   <nav aria-label="Main">
     <ul>
       <li><a class="pl" href="#programme" data-go>Programme</a></li>
+      <li><a class="pl" href="#passes" data-go>Passes</a></li>
       <li><a class="pl" href="#venues" data-go>Venues</a></li>
     </ul>
   </nav>
-  <button class="btn btn--small buy" type="button" data-pass="festival"><span class="btn__label">Buy a pass</span></button>
+  <button class="btn btn--small buy" type="button" data-pass="festival"><span class="btn__label">Reserve a pass</span></button>
   <button class="btn btn--small menu-btn" type="button" aria-expanded="false" aria-controls="menu">
     <span class="btn__label swap"><span>Menu</span><span aria-hidden="true">Close</span></span>
   </button>
@@ -449,7 +468,7 @@ dialog::backdrop { background: rgb(30 29 36 / .7); backdrop-filter: blur(4px); }
       <li><a class="pl" href="#venues" data-go>Venues</a></li>
     </ul>
   </nav>
-  <button class="btn btn--solid" type="button" data-pass="festival"><span class="btn__label">Buy a pass</span></button>
+  <button class="btn btn--solid" type="button" data-pass="festival"><span class="btn__label">Reserve a pass</span></button>
 </div>
 
 <main id="top">
@@ -461,7 +480,7 @@ dialog::backdrop { background: rgb(30 29 36 / .7); backdrop-filter: blur(4px); }
         <div class="intro">
           <p class="lede">The 11th Aldermouth Documentary Festival: 91 films from 34 countries, 6 to 14 March 2027, in five cinemas across town. The programme is out and passes are on sale.</p>
           <div class="ctas">
-            <button class="btn btn--solid" type="button" data-pass="festival"><span class="btn__label">Buy a festival pass</span></button>
+            <button class="btn btn--solid" type="button" data-pass="festival"><span class="btn__label">Reserve a festival pass</span></button>
             <a class="pl" href="#programme" data-go>Browse the programme</a>
           </div>
         </div>
@@ -471,24 +490,25 @@ dialog::backdrop { background: rgb(30 29 36 / .7); backdrop-filter: blur(4px); }
     </div>
     <div class="iris-ring" aria-hidden="true"></div>
     <div class="iris-scene">
+      <div class="iris-lit" aria-hidden="true"></div>
       <div class="frame">
         <div class="opener">
           <h2 id="programme" tabindex="-1">The programme</h2>
           <p>91 films, 23 of them world premieres. Here are six to start with; the full list is in the printed guide, free at every venue from 1 February.</p>
         </div>
         <ul class="films films--scene" aria-label="Six films from the programme">
-          <li class="film">
+          <li class="film film--lead">
             <p class="film__when"><span class="film__day">Sat 6 Mar</span> <span class="film__time">19:30</span> <span>Opening night</span></p>
             <div class="film__body"><h3 class="film__title">Keeper</h3><p class="bar">Ines Halvorsen, director. Norway, 84 min</p></div>
             <p class="film__venue">Harbour Hall</p>
-            <button class="film__open" type="button" data-lang="Norwegian with English subtitles">Synopsis<span class="vh"> of Keeper</span></button>
+            <button class="film__open" type="button" data-lang="Norwegian with English subtitles"><span class="film__go">Synopsis</span><span class="vh"> of Keeper</span></button>
             <p class="film__syn" hidden>Arne Solli has kept the light on Sørholmen for 31 winters. In April the coastal authority switches it to automatic. Halvorsen spent his last winter with him, with one 16mm camera and 400 feet of film a week.</p>
           </li>
           <li class="film">
             <p class="film__when"><span class="film__day">Sun 7 Mar</span> <span class="film__time">14:00</span></p>
             <div class="film__body"><h3 class="film__title">Ward 9, Nights</h3><p class="bar">Femi Adeyemi, director. United Kingdom, 97 min</p></div>
             <p class="film__venue">Leaf Street Cinema</p>
-            <button class="film__open" type="button" data-lang="English with captions">Synopsis<span class="vh"> of Ward 9, Nights</span></button>
+            <button class="film__open" type="button" data-lang="English with captions"><span class="film__go">Synopsis</span><span class="vh"> of Ward 9, Nights</span></button>
             <p class="film__syn" hidden>Three nurses on a stroke ward in Leeds through one winter of night shifts. Filmed with the consent of every patient who appears, and shown to them first.</p>
           </li>
         </ul>
@@ -501,28 +521,28 @@ dialog::backdrop { background: rgb(30 29 36 / .7); backdrop-filter: blur(4px); }
       <p class="film__when"><span class="film__day">Sun 7 Mar</span> <span class="film__time">21:00</span></p>
       <div class="film__body"><h3 class="film__title">Salt</h3><p class="bar">Camila Rojas Vergara, director. Chile, 72 min</p></div>
       <p class="film__venue">The Ropewalk</p>
-      <button class="film__open" type="button" data-lang="Spanish with English subtitles">Synopsis<span class="vh"> of Salt</span></button>
+      <button class="film__open" type="button" data-lang="Spanish with English subtitles"><span class="film__go">Synopsis</span><span class="vh"> of Salt</span></button>
       <p class="film__syn" hidden>The Pavez family harvest salt by hand from the Cáhuil lagoon, as four generations did before them. This year the sea comes in a month early.</p>
     </li>
     <li class="film">
       <p class="film__when"><span class="film__day">Tue 9 Mar</span> <span class="film__time">18:15</span></p>
       <div class="film__body"><h3 class="film__title">Four Hundred Letters</h3><p class="bar">Tomasz Wierzbicki, director. Poland, 88 min</p></div>
       <p class="film__venue">Corn Exchange</p>
-      <button class="film__open" type="button" data-lang="Polish with English subtitles">Synopsis<span class="vh"> of Four Hundred Letters</span></button>
+      <button class="film__open" type="button" data-lang="Polish with English subtitles"><span class="film__go">Synopsis</span><span class="vh"> of Four Hundred Letters</span></button>
       <p class="film__syn" hidden>In December 1981 a young postman in Białystok kept a sack of letters he was told to burn. Forty-five years later he goes looking for the people they were written to.</p>
     </li>
     <li class="film">
       <p class="film__when"><span class="film__day">Wed 10 Mar</span> <span class="film__time">20:45</span></p>
       <div class="film__body"><h3 class="film__title">Hold Music</h3><p class="bar">Dana Whitlock, director. United States, 61 min</p></div>
       <p class="film__venue">Leaf Street Cinema</p>
-      <button class="film__open" type="button" data-lang="English with captions">Synopsis<span class="vh"> of Hold Music</span></button>
+      <button class="film__open" type="button" data-lang="English with captions"><span class="film__go">Synopsis</span><span class="vh"> of Hold Music</span></button>
       <p class="film__syn" hidden>One eleven-hour shift in a debt-collection call centre in Tucson, told only through the calls. No faces until the last minute.</p>
     </li>
     <li class="film">
       <p class="film__when"><span class="film__day">Sun 14 Mar</span> <span class="film__time">19:00</span> <span>Closing night</span></p>
       <div class="film__body"><h3 class="film__title">Home Movies of the Alder</h3><p class="bar">Aldermouth Film Archive and 214 local families. United Kingdom, 79 min</p></div>
       <p class="film__venue">Harbour Hall</p>
-      <button class="film__open" type="button" data-lang="Silent, with live piano by Moira Fenwick">Synopsis<span class="vh"> of Home Movies of the Alder</span></button>
+      <button class="film__open" type="button" data-lang="Silent, with live piano by Moira Fenwick"><span class="film__go">Synopsis</span><span class="vh"> of Home Movies of the Alder</span></button>
       <p class="film__syn" hidden>Sixty years of the town’s home movies, donated this summer and cut into one evening.</p>
     </li>
   </ul>
@@ -579,7 +599,7 @@ dialog::backdrop { background: rgb(30 29 36 / .7); backdrop-filter: blur(4px); }
     <p id="syn-text"></p>
     <p class="dlg__lang" id="syn-lang"></p>
     <div class="dlg__actions">
-      <button class="btn btn--solid" type="button" data-reserve><span class="btn__label">Reserve a pass for this screening</span></button>
+      <button class="btn btn--solid" type="button" data-reserve><span class="btn__label">Reserve a pass</span></button>
       <button class="pl" type="button" data-close>Close</button>
     </div>
   </div>
@@ -611,7 +631,7 @@ dialog::backdrop { background: rgb(30 29 36 / .7); backdrop-filter: blur(4px); }
         <div class="qty">
           <label for="f-qty">Number of passes</label>
           <div class="stepper">
-            <button type="button" data-step="-1" aria-label="One fewer pass" disabled>−</button>
+            <button type="button" data-step="-1" aria-label="One fewer pass" aria-disabled="true">−</button>
             <div class="stepper__mask"><input id="f-qty" name="qty" type="number" min="1" max="6" value="1" inputmode="numeric"></div>
             <button type="button" data-step="1" aria-label="One more pass">+</button>
           </div>
@@ -638,7 +658,7 @@ dialog::backdrop { background: rgb(30 29 36 / .7); backdrop-filter: blur(4px); }
 <div class="curtain" aria-hidden="true">
   <p class="slate"><span>Aldermouth Documentary Festival</span><span>Programme 2027<svg viewBox="0 0 100 8" preserveAspectRatio="none"><path d="M1 5.2C20 3.4 44 6.4 66 4.6S92 3.6 99 5.8"/></svg></span></p>
 </div>
-<p class="tc" aria-hidden="true">01:00:00:00</p>
+<p class="tc" aria-hidden="true">0000+00</p>
 
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
@@ -660,17 +680,18 @@ dialog::backdrop { background: rgb(30 29 36 / .7); backdrop-filter: blur(4px); }
   const money = (n) => '£' + (Number.isInteger(n) ? n : n.toFixed(2));
   const passes = (pass, q) => `${q} ${NAME[pass][q > 1 ? 1 : 0]}`;
   const seg = (p, a, b) => Math.min(1, Math.max(0, (p - a) / (b - a)));
-  const in2 = (t) => t * t, in3 = (t) => t * t * t; // power2.in, power3.in
-  // The fly-through: the dot hollows into a ring (0-.08), then the title scales about it (power3.in, to 24 by .9,
-  // so the letters rush out past the frame edges) while the hole never gets smaller than the scaled dot.
+  const in2 = (t) => t * t; // power2.in
+  // The fly-through: the dot hollows into a ring (0-.08), then the title scales about it to 24 by .9 while the hole
+  // never gets smaller than the scaled dot. The scale is exponential (S_MAX ** t^1.3), so every scroll step grows it
+  // by a similar factor: visible from the first wheel tick, a slight acceleration, no lurch at the end.
   const S_MAX = 24;
   const iris = (p, rStop, rMax) => {
-    const s = 1 + (S_MAX - 1) * in3(seg(p, 0.08, 0.9));
+    const s = S_MAX ** (seg(p, 0.08, 0.9) ** 1.3);
     if (p < 0.08) return { s, r: rStop * seg(p, 0, 0.08) };
     return { s, r: Math.max(rStop * s, rStop + (rMax - rStop) * in2(seg(p, 0.08, 0.92))) };
   };
-  // Burn-in timecode at 25 fps from picture start 01:00:00:00, one frame per 4px of scroll.
-  const tc = (y) => { const f = 90000 + Math.max(0, Math.round(y / 4)); return [f / 90000, f / 1500 % 60, f / 25 % 60, f % 25].map((n) => String(Math.floor(n)).padStart(2, '0')).join(':'); };
+  // The flatbed's 35mm footage counter, feet+frames at 16 frames a foot, one frame per 4px of scroll.
+  const footage = (y) => { const f = Math.max(0, Math.round(y / 4)); return `${String(Math.floor(f / 16)).padStart(4, '0')}+${String(f % 16).padStart(2, '0')}`; };
   // Ink box of the full stop from its pixels (canvas text metrics are quantised): coverage-weighted centre,
   // widest row and tallest column, so the result is sub-pixel accurate. Per em.
   const stopInk = (font) => {
@@ -695,10 +716,13 @@ dialog::backdrop { background: rgb(30 29 36 / .7); backdrop-filter: blur(4px); }
     }
     for (let i = 0; i < 8; i++) { const g = iris(i / 100, 15, 1700); ok(g.s === 1 && g.r <= 15, `title moved before the dot became a ring at p=${i / 100}`); }
     ok(iris(0.9, 15, 1700).s === S_MAX && iris(1, 15, 1700).s === S_MAX && iris(0.92, 15, 1700).r >= 1700, 'iris end state');
+    ok(iris(0.3, 15, 1700).s > 1.5, 'fly-through has a dead start');
+    let jump = 0; for (let i = 1; i <= 50; i++) jump = Math.max(jump, iris(0.08 + 0.82 * i / 50, 15, 1700).s / iris(0.08 + 0.82 * (i - 1) / 50, 15, 1700).s);
+    ok(jump < 1.1, `fly-through lurches: x${jump.toFixed(3)} in one step`);
     ok(total('festival', 2, true) === 96 && money(total('festival', 2, true)) === '£96', '£96 x 2 with concession should be £96');
     ok(money(total('five', 1, true)) === '£17.50', 'five-film concession should be £17.50');
     ok(`Reserve ${passes('weekend', 3)}, ${money(total('weekend', 3, false))}` === 'Reserve 3 weekend passes, £144', 'submit label');
-    ok(tc(0) === '01:00:00:00' && tc(4 * (25 * 61 + 7)) === '01:01:01:07' && tc(4 * 90000) === '02:00:00:00', 'burn-in timecode');
+    ok(footage(0) === '0000+00' && footage(4 * (16 * 142 + 7)) === '0142+07' && footage(4 * 16 * 1000) === '1000+00', 'footage counter');
     if (document.fonts) {
       await Promise.race([document.fonts.load('800 100px "Red Hat Display"'), new Promise((r) => setTimeout(r, 1500))]);
       if (document.fonts.check('800 100px "Red Hat Display"')) {
@@ -737,7 +761,7 @@ dialog::backdrop { background: rgb(30 29 36 / .7); backdrop-filter: blur(4px); }
 
   // Each pencil link gets its own slightly different underline.
   const rnd = (n) => { const v = Math.sin(n * 12.9898) * 43758.5453; return v - Math.floor(v); };
-  $$('.pl').forEach((a, i) => {
+  $$('.pl, .film__go').forEach((a, i) => {
     const r = (k) => rnd(i * 7 + k);
     a.insertAdjacentHTML('beforeend', `<svg class="pl__u" viewBox="0 0 100 8" preserveAspectRatio="none" aria-hidden="true"><path d="M1 ${(4.4 + r(1) * 1.4).toFixed(1)}C${(18 + r(2) * 8).toFixed(1)} ${(2.6 + r(3) * 1.6).toFixed(1)} ${(44 + r(4) * 8).toFixed(1)} ${(5 + r(5) * 1.8).toFixed(1)} ${(68 + r(6) * 6).toFixed(1)} ${(3.6 + r(7) * 1.4).toFixed(1)}S94 ${(3 + r(8) * 1.6).toFixed(1)} 99 ${(4.6 + r(9) * 1.6).toFixed(1)}"/></svg>`);
   });
@@ -750,7 +774,7 @@ dialog::backdrop { background: rgb(30 29 36 / .7); backdrop-filter: blur(4px); }
   function go(hash, immediate) {
     const el = hash === '#top' ? null : document.getElementById(hash.slice(1));
     if (hash !== '#top' && !el) return;
-    const y = !el ? 0 : hash === '#programme' && pinST ? pinST.end + 1 : el.getBoundingClientRect().top + scrollY - (hash === '#programme' ? 0 : header.offsetHeight + 16);
+    const y = !el ? 0 : hash === '#programme' && pinST ? pinST.end + 1 : el.getBoundingClientRect().top + scrollY - header.offsetHeight - 16;
     if (lenis && !immediate) lenis.scrollTo(y, { force: true, duration: Math.min(1.3, 0.65 + Math.abs(y - scrollY) / 4000), onComplete: () => focusEl(el) });
     else { lenis ? lenis.scrollTo(y, { immediate: true, force: true }) : scrollTo(0, y); window.ScrollTrigger?.update(); focusEl(el); }
   }
@@ -761,8 +785,11 @@ dialog::backdrop { background: rgb(30 29 36 / .7); backdrop-filter: blur(4px); }
   }));
 
   let lastY = scrollY;
+  const titleLayer = $('.title-layer');
   function onScroll(y, dir) {
-    counter.textContent = tc(y);
+    counter.textContent = footage(y);
+    // The counter reads the title sequence; past it, it would only sit on programme text.
+    counter.classList.toggle('is-off', y > (pinST ? pinST.end : titleLayer.offsetHeight) + 40);
     if (dir && !menuOpen && !header.contains(document.activeElement)) header.classList.toggle('is-hidden', dir > 0 && y > 120);
     if (y <= 120) header.classList.remove('is-hidden');
   }
@@ -836,15 +863,16 @@ dialog::backdrop { background: rgb(30 29 36 / .7); backdrop-filter: blur(4px); }
     const pass = form.pass.value, n = q(), t = total(pass, n, form.conc.checked);
     setLabel(submit, `Reserve ${passes(pass, n)}, ${money(t)}`);
     $('#total').textContent = `Total ${money(t)}, paid at the box office`;
-    minus.disabled = n <= 1; plus.disabled = n >= 6;
+    minus.setAttribute('aria-disabled', String(n <= 1)); plus.setAttribute('aria-disabled', String(n >= 6));
   }
   form.addEventListener('change', update);
   form.addEventListener('input', (e) => { if (e.target === qty) update(); if (e.target.getAttribute('aria-invalid') === 'true') check(e.target); });
   qty.addEventListener('blur', () => { qty.value = q(); update(); });
+  // aria-disabled, not disabled: focus stays put at a limit, so a held key cannot turn round and undo the change.
   [minus, plus].forEach((b) => b.addEventListener('click', () => {
+    if (b.getAttribute('aria-disabled') === 'true') return;
     const dir = +b.dataset.step; qty.value = q() + dir; update();
     if (G && motion) G.fromTo(qty, { yPercent: 70 * dir, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.3, ease: 'expo.out' });
-    if (b.disabled) focusEl(dir > 0 ? minus : plus);
   }));
   const valid = { name: (v) => v.trim().length > 0, email: (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()) };
   function check(input) {
@@ -859,12 +887,12 @@ dialog::backdrop { background: rgb(30 29 36 / .7); backdrop-filter: blur(4px); }
     const pass = form.pass.value, n = q(), t = total(pass, n, form.conc.checked);
     $('#done-title').textContent = `Held: ${passes(pass, n)} for ${name.value.trim()}`;
     $('#done-text').textContent = `Reference AD27-${String(Math.floor(1000 + Math.random() * 9000))}. Pay ${money(t)} at any festival box office by 1 March and your ${n > 1 ? 'passes are' : 'pass is'} printed there. Nothing has been charged and no email was sent.`;
-    form.hidden = true; done.hidden = false;
+    form.hidden = true; done.hidden = false; passDlg.setAttribute('aria-labelledby', 'done-title');
     if (G && motion) G.fromTo(done, { clipPath: 'inset(0 0 100% 0)' }, { clipPath: 'inset(0 0 0% 0)', duration: 0.5, ease: 'expo.out', clearProps: 'clipPath' });
     focusEl($('#done-title'));
   });
   function resetPass(pass) {
-    form.reset(); form.hidden = false; done.hidden = true;
+    form.reset(); form.hidden = false; done.hidden = true; passDlg.setAttribute('aria-labelledby', 'pass-title');
     $$('[aria-invalid]', form).forEach((i) => { i.removeAttribute('aria-invalid'); i.closest('.field').classList.remove('has-err'); });
     if (pass) form.querySelector(`input[name=pass][value=${pass}]`).checked = true;
     update();
@@ -909,7 +937,9 @@ dialog::backdrop { background: rgb(30 29 36 / .7); backdrop-filter: blur(4px); }
 
     /* S1 geometry: the full stop's ink centre and radius, in stage coordinates (offsets ignore transforms).
        Before the web font is ready the ink is approximated from Red Hat Display's measured values. */
-    let G0 = null, ix = 0, iy = 0, rStop = 0, rMax = 0, ringW = 2, ringMax = 5, pinned = false;
+    let G0 = null, ix = 0, iy = 0, rStop = 0, rMax = 0, ringW = 2, ringMax = 5, pinned = false, fdx = 0, fdy = 0;
+    const leadTime = $('.film--lead .film__time'), leadMark = $('.film--lead .mark path'), heroFoot = $('.hero-foot');
+    G.set(leadMark, { drawSVG: '0% 0%', opacity: 0 }); // drawn by the pin, not by hover
     const INK = { cx: 0.125, cy: 0.072, w: 0.162, h: 0.162 };
     const st = { p: 0, grow: 1 };
     const offsetIn = (el, anc) => { let x = 0, y = 0; while (el && el !== anc) { x += el.offsetLeft; y += el.offsetTop; el = el.offsetParent; } return { x, y }; };
@@ -921,6 +951,9 @@ dialog::backdrop { background: rgb(30 29 36 / .7); backdrop-filter: blur(4px); }
       const W = stage.offsetWidth, H = stage.offsetHeight, h = offsetIn(h1, stage), f = offsetIn(frame, stage);
       G.set(h1, { transformOrigin: `${ix - h.x}px ${iy - h.y}px` });
       G.set(frame, { transformOrigin: `${ix - f.x}px ${iy - f.y}px` });
+      // Offset the scene frame (at its 1.12 start scale) so the opening-night time sits on the full stop's centre.
+      const t = offsetIn(leadTime, frame);
+      fdx = 1.12 * (ix - f.x - t.x - leadTime.offsetWidth / 2); fdy = 1.12 * (iy - f.y - t.y - leadTime.offsetHeight / 2);
       ringW = parseFloat(rs.getPropertyValue('--ring-w')) || 2; ringMax = parseFloat(rs.getPropertyValue('--ring-w-max')) || 5;
       rMax = Math.max(Math.hypot(ix, iy), Math.hypot(W - ix, iy), Math.hypot(ix, H - iy), Math.hypot(W - ix, H - iy)) + ringMax + 2;
     };
@@ -932,7 +965,16 @@ dialog::backdrop { background: rgb(30 29 36 / .7); backdrop-filter: blur(4px); }
       scene.style.clipPath = `circle(${r}px at ${ix}px ${iy}px)`;
       ring.style.clipPath = `circle(${r > 0.5 ? r + w : 0}px at ${ix}px ${iy}px)`;
       stage.classList.toggle('is-rolling', st.p > 0.001 && st.p < 0.999);
+      const k = seg(st.p, 0.6, 0.95); // the frame settles from the time-on-the-dot offset to its place
+      G.set(frame, { scale: 1.12 - 0.12 * k, x: fdx * (1 - k), y: fdy * (1 - k) });
+      // Nothing invisible takes focus: the hero text once it has clipped out (inert), and see the scene's focusin below.
+      if (heroFoot.inert !== st.p > 0.12) heroFoot.inert = st.p > 0.12;
     };
+    // Tabbing into the scene before the iris has opened jumps to the pin end, where that control is visible.
+    on(scene, 'focusin', () => {
+      if (!pinST || st.p >= 0.9) return;
+      lenis.scrollTo(pinST.end + 1, { immediate: true, force: true }); ScrollTrigger.update();
+    });
     measure();
 
     /* Page load: curtain hand-off (LD3), the title grows toward the reader about its full stop, the same axis the
@@ -959,6 +1001,7 @@ dialog::backdrop { background: rgb(30 29 36 / .7); backdrop-filter: blur(4px); }
           .fromTo('.title .w', { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.5, stagger: 0.08, ease: 'power1.out', clearProps: 'opacity,visibility' }, t);
       }
       if (hidden($('.lede'))) tl.fromTo('.lede', { clipPath: 'inset(0 0 100% 0)' }, { clipPath: 'inset(0 0 0% 0)', duration: 0.8, clearProps: 'clipPath' }, t + 0.4);
+      if (hidden($('.cue'))) tl.fromTo('.cue', { clipPath: 'inset(0 0 100% 0)' }, { clipPath: 'inset(0 0 0% 0)', duration: 0.8, clearProps: 'clipPath' }, t + 0.75);
       if (hidden($('.ctas'))) tl.fromTo('.ctas', { clipPath: 'inset(0 0 100% 0)' }, { clipPath: 'inset(0 0 0% 0)', duration: 0.8, clearProps: 'clipPath' }, t + 0.48);
       tl.fromTo('.wordmark, .site nav a, .site .buy, .menu-btn', { autoAlpha: 0, y: -8 }, { autoAlpha: 1, y: 0, duration: 0.6, stagger: 0.05, clearProps: 'all' }, t + 0.55)
         .fromTo(counter, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.4, clearProps: 'all' }, t + 0.75);
@@ -978,13 +1021,21 @@ dialog::backdrop { background: rgb(30 29 36 / .7); backdrop-filter: blur(4px); }
           }
         });
         pinST = tl.scrollTrigger;
+        // immediateRender false: the load reveal may still own .ctas' clip when the pin is built
+        const ir = { immediateRender: false };
         tl.to(st, { p: 1, duration: 1, onUpdate: render }, 0)
-          // the hero text leaves the way it arrived: a clip from the bottom edge
-          .fromTo('.hero-foot', { clipPath: 'inset(0 0 0% 0)' }, { clipPath: 'inset(0 0 100% 0)', duration: 0.12 }, 0)
-          // projector masking: the frame outside the aperture darkens as it opens, so the inside reads as lit
-          .fromTo('.iris-mask', { opacity: 0 }, { opacity: 1, duration: 0.27 }, 0.08)
+          // the hero text leaves the way it arrived, clipped from the bottom edge: buttons first, fading so the
+          // solid button never shrinks to a bright sliver, then the lede and cue
+          .fromTo('.ctas', { clipPath: 'inset(0 0 0% 0)', opacity: 1 }, { clipPath: 'inset(0 0 100% 0)', opacity: 0.4, duration: 0.06, ...ir }, 0)
+          .fromTo('.intro, .cue', { clipPath: 'inset(0 0 0% 0)' }, { clipPath: 'inset(0 0 100% 0)', duration: 0.09, ...ir }, 0.03)
+          // projector masking over the title (not under it): the glyphs outside dim, so the aperture reads as lit
+          .fromTo('.iris-mask', { opacity: 0 }, { opacity: 0.72, duration: 0.5 }, 0.25)
+          // the lit aperture settles to booth as the programme comes to rest
+          .fromTo('.iris-lit', { opacity: 1 }, { opacity: 0, duration: 0.35 }, 0.6)
           .set(h1, { autoAlpha: 0 }, 0.9) // safety only: by .9 every glyph has left the frame
-          .fromTo(frame, { scale: 1.12 }, { scale: 1, duration: 0.35 }, 0.6);
+          // the projector iris becomes the programmer's pencil circle round opening night
+          .set(leadMark, { opacity: 1 }, 0.94)
+          .fromTo(leadMark, { drawSVG: '0% 0%' }, { drawSVG: '0% 100%', duration: 0.05 }, 0.94);
         measure(); render();
 
         /* S3: the programmer's pencil circle round the five-film pass: drawn once, never rewound. */
@@ -1023,7 +1074,11 @@ dialog::backdrop { background: rgb(30 29 36 / .7); backdrop-filter: blur(4px); }
         on(focusTarget, 'blur', () => { const w = hovered || focused; focused = false; sync(w); });
       };
       $$('.pl').forEach((a) => pair(a, a, $('.pl__u path', a)));
-      $$('.film').forEach((f) => pair(f, $('.film__open', f), $('.mark path', f)));
+      $$('.film').forEach((f) => {
+        const o = $('.film__open', f);
+        pair(f, o, $('.film__go .pl__u path', f));
+        if (!f.classList.contains('film--lead')) pair(f, o, $('.mark path', f));
+      });
     }
 
     return () => {
@@ -1032,10 +1087,11 @@ dialog::backdrop { background: rgb(30 29 36 / .7); backdrop-filter: blur(4px); }
       lenis.destroy(); lenis = null; pinST = null; menuTl = null;
       stage.classList.remove('is-pinned', 'is-rolling'); pinned = false;
       [scene, ring, menu].forEach((el) => { el.style.clipPath = ''; });
+      heroFoot.inert = false; counter.classList.remove('is-off');
       menu.style.visibility = '';
       root.classList.remove('motion', 'fine');
       curtain?.classList.remove('curtain-js');
-      G.set('.pl__u path, .mark path, #five .circle path, .title, .title .w, .frame, .hero-foot, .iris-mask', { clearProps: 'all' });
+      G.set('.pl__u path, .mark path, #five .circle path, .title, .title .w, .frame, .intro, .ctas, .cue, .iris-mask, .iris-lit', { clearProps: 'all' });
       if (menuOpen) menu.classList.add('is-open');
     };
   });

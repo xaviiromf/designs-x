@@ -28,10 +28,13 @@
   --sheen: 255 255 255;     /* rgb channels for highlights and glass */
   --edge: color-mix(in oklab, var(--steel) 30%, var(--paint));
   --rule: color-mix(in oklab, var(--steel) 28%, var(--room));
-  --slot: color-mix(in oklab, var(--room) 70%, black);
+  --black: #000;           /* hard shadow ink */
+  --slot: color-mix(in oklab, var(--room) 70%, var(--black));
+  --bezel: color-mix(in oklab, var(--paint) 70%, var(--black));
   --knob-hi: #3A4754;
   --knob-lo: #1C252E;
-  --skirt: color-mix(in oklab, var(--paint) 45%, black);
+  --skirt: color-mix(in oklab, var(--paint) 45%, var(--black));
+  --bloom: color-mix(in oklab, var(--pilot) 38%, transparent);
 
   /* Type */
   --font-legend: "Signika", "Trebuchet MS", system-ui, sans-serif;
@@ -39,6 +42,7 @@
   --step--2: .75rem;
   --step--1: .8125rem;
   --step-0: 1.0625rem;
+  --step-0-5: 1.25rem;      /* wordmark, phone tabs: between body and lede */
   --step-1: 1.375rem;
   --step-2: 1.875rem;
   --step-3: clamp(2.25rem, 1.6rem + 3vw, 3.5rem);
@@ -49,6 +53,7 @@
   --gutter: clamp(16px, 4vw, 48px);
   --max: 1240px;
   --strip-w: 300px;
+  --knob: 52px;
   --hdr-h: 64px;
 
   /* Radius by object */
@@ -71,7 +76,7 @@
   --m-beat: .652s;     --m-ease-eq: cubic-bezier(.7, 0, .2, 1);           /* one beat at 92 BPM */
 
   /* Motion: read by the script (seconds and GSAP ease names) */
-  --g-rise: .9;     --ge-rise: expo.inOut;
+  --g-rise: .75;    --ge-rise: expo.out;
   --g-recall: .6;   --ge-recall: power3.out;
   --g-lamp: .5;     /* ease: the "lamp" CustomEase */
   --g-kick: .22;    --ge-kick: power2.out;
@@ -81,7 +86,6 @@
   --g-in: .25;      --ge-in: power2.out;
   --g-detent: .35;  --ge-detent: back.out(1.7);
   --g-air: .25;     --ge-air: power3.out;
-  --g-rule: .9;     --ge-rule: expo.out;
   --g-sheet: .5;    --ge-sheet: expo.inOut;
   --g-links: .45;   --ge-links: expo.out;
   --g-glare: 1.2;   --ge-glare: power3.out;
@@ -148,8 +152,10 @@ h4 { font: 500 var(--step-1)/1.2 var(--font-legend); }
 }
 .skip:focus { clip-path: inset(-6px); }
 
-/* Illuminated push-button cap: tabs, segmented radios, switches, primary buttons */
+/* Illuminated push-button cap: tabs, segmented radios, switches, primary buttons, the play key.
+   --lamp is the lamp's brightness: 0 off, .18 pre-glow (hover, focus, armed), 1 lit. Only opacity animates. */
 .cap {
+  --lamp: 0; --lamp-t: var(--m-lamp-off); --lamp-e: var(--m-ease-off);
   position: relative; isolation: isolate;
   display: inline-flex; align-items: center; justify-content: center; gap: var(--s2);
   min-height: 44px; padding: 0 var(--s4);
@@ -161,40 +167,40 @@ h4 { font: 500 var(--step-1)/1.2 var(--font-legend); }
   text-decoration: none; cursor: pointer; user-select: none;
   transition: transform var(--m-release) var(--m-ease-release);
 }
-.cap::before {
-  content: ""; position: absolute; inset: -1px; z-index: -1; border-radius: inherit;
-  background: var(--pilot); opacity: 0;
-  transition: opacity var(--m-lamp-off) var(--m-ease-off);
+.cap::before, .cap::after {
+  content: ""; position: absolute; inset: -1px; z-index: -1; border-radius: inherit; pointer-events: none;
+  opacity: var(--lamp); transition: opacity var(--lamp-t) var(--lamp-e);
 }
+/* the filament: hottest just above centre, falling off to the lens edge */
+.cap::before { background: radial-gradient(ellipse at 50% 40%, color-mix(in oklab, var(--pilot), white 25%), var(--pilot) 60%, color-mix(in oklab, var(--pilot) 80%, var(--paint))); }
+/* the bloom the lens throws onto the panel around it */
+.cap::after { box-shadow: 0 0 14px 2px var(--bloom); }
 @media (hover: hover) and (pointer: fine) {
-  .cap:hover::before, label:hover > .cap::before { opacity: .18; transition-duration: var(--m-lamp-on); }
+  .cap:hover, label:hover > :not(:checked) + .cap, .play:hover .cap { --lamp: .18; --lamp-t: var(--m-lamp-on); }
 }
-.cap:focus-visible::before, input:focus-visible + .cap::before { opacity: .18; }
+.cap:focus-visible, input:not(:checked):focus-visible + .cap, .play:focus-visible .cap { --lamp: .18; }
 input:focus-visible + .cap { outline: 2px solid var(--pilot); outline-offset: 3px; }
-.cap:active, label:active > .cap { transform: translateY(1px); transition-duration: var(--m-press); }
-.cap:active::before, label:active > .cap::before,
-.cap.is-lit::before, .cap[aria-selected="true"]::before, .cap[aria-pressed="true"]::before, :checked + .cap::before {
-  opacity: 1; transition: opacity var(--m-lamp-on) var(--m-ease-on);
-}
-.cap:active, label:active > .cap,
-.cap.is-lit, .cap[aria-selected="true"], .cap[aria-pressed="true"], :checked + .cap {
+.cap:active, label:active > .cap, .play:active .cap { transform: translateY(1px); transition-duration: var(--m-press); }
+.cap:active, label:active > .cap, .play:active .cap, .play.is-on .cap,
+.cap[aria-selected="true"], .cap[aria-pressed="true"], :checked + .cap {
+  --lamp: 1; --lamp-t: var(--m-lamp-on); --lamp-e: var(--m-ease-on);
   color: var(--room); font-variation-settings: "GRAD" 0;
 }
 .cap[aria-disabled="true"] { cursor: not-allowed; color: var(--steel); }
-.cap[aria-disabled="true"]::before { opacity: 0 !important; }
+.cap[aria-disabled="true"], .play[aria-disabled="true"] .cap { --lamp: 0 !important; color: var(--steel); font-variation-settings: "GRAD" -30; }
 .cap--big { min-height: 52px; padding: 0 var(--s5); }
 
 /* MI2: masked label swap, width reserved by sharing one cell */
 .swap { display: inline-grid; overflow: hidden; justify-items: start; }
 .swap > * { grid-area: 1 / 1; transition: transform var(--m-swap) var(--m-ease-swap); }
 .swap > :last-child { transform: translateY(110%); }
-.is-on > .swap > :first-child, [aria-expanded="true"] > .swap > :first-child, [aria-pressed="false"] > .swap > :first-child { transform: translateY(-110%); }
-.is-on > .swap > :last-child, [aria-expanded="true"] > .swap > :last-child, [aria-pressed="false"] > .swap > :last-child { transform: none; }
+.is-on .swap > :first-child, [aria-expanded="true"] > .swap > :first-child, [aria-pressed="false"] > .swap > :first-child { transform: translateY(-110%); }
+.is-on .swap > :last-child, [aria-expanded="true"] > .swap > :last-child, [aria-pressed="false"] > .swap > :last-child { transform: none; }
 
 /* ---------- Header ---------- */
 .hdr { position: sticky; top: 0; z-index: 30; background: var(--room); border-bottom: 1px solid var(--rule); }
 .hdr__in { display: flex; align-items: center; gap: var(--s6); min-height: var(--hdr-h); }
-.wordmark { margin-right: auto; font: 600 1.25rem/1 var(--font-legend); letter-spacing: -.01em; font-variation-settings: "GRAD" 0; }
+.wordmark { margin-right: auto; font: 600 var(--step-0-5)/1 var(--font-legend); padding-block: var(--s1); letter-spacing: -.01em; font-variation-settings: "GRAD" 0; }
 .nav { display: flex; gap: var(--s5); }
 .nav a { font: 500 var(--step-0)/1.4 var(--font-legend); letter-spacing: .02em; color: var(--ivory); }
 .menu-btn { display: none; }
@@ -243,7 +249,7 @@ html.menu-open { overflow: hidden; } /* locks scroll without Lenis too (reduced 
 html.js .tabs { display: flex; gap: var(--s2); }
 html.js .tabs .cap { flex: 0 1 auto; min-width: 5.5em; }
 html.js:not(.booted) .tabs:not(.lit) .cap[aria-selected="true"] { color: var(--ivory); font-variation-settings: "GRAD" -30; }
-html.js:not(.booted) .tabs:not(.lit) .cap[aria-selected="true"]::before { opacity: 0; }
+html.js:not(.booted) .tabs:not(.lit) .cap[aria-selected="true"] { --lamp: 0; }
 .panels { display: grid; gap: var(--s8); }
 html.js .panels { gap: 0; margin-top: var(--s5); }
 html.js .panel { grid-area: 1 / 1; }
@@ -253,7 +259,7 @@ html.js .panel:not(.is-active) { visibility: hidden; opacity: 0; }
 html.js .panel h3 { margin-top: var(--s2); }
 @media (max-width: 819px) {
   html.js .tabs { gap: 6px; }
-  html.js .tabs .cap { flex: 1 1 0; min-width: 0; padding: 0 var(--s1); font-size: .9375rem; }
+  html.js .tabs .cap { flex: 1 1 0; min-width: 0; padding: 0 var(--s1); font-size: var(--step-0-5); }
 }
 
 .control { display: grid; gap: var(--s2); margin-top: var(--s2); }
@@ -277,7 +283,7 @@ html.js .panel h3 { margin-top: var(--s2); }
 .range output { font: 500 var(--step-1)/1 var(--font-legend); font-variant-numeric: tabular-nums; min-width: 4.5em; text-align: right; }
 input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 44px; margin: 0; background: transparent; cursor: pointer; }
 input[type="range"]:focus-visible { outline: none; }
-input[type="range"]::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: var(--slot); box-shadow: inset 0 1px 2px black; }
+input[type="range"]::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: var(--slot); box-shadow: inset 0 1px 2px var(--black); }
 input[type="range"]::-moz-range-track { height: 6px; border-radius: 3px; background: var(--slot); }
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none; width: 22px; height: 34px; margin-top: -14px; border-radius: var(--r-fader);
@@ -319,7 +325,7 @@ html.js:not(.booted) .plate { transform: translateY(101%); }
 .vu {
   position: relative; overflow: hidden; border-radius: 3px; background: var(--vu-black);
   aspect-ratio: 300 / 170;
-  box-shadow: 0 0 0 1px rgb(var(--shadow) / .55), 0 0 0 4px color-mix(in oklab, var(--paint) 70%, black);
+  box-shadow: 0 0 0 1px rgb(var(--shadow) / .55), 0 0 0 4px var(--bezel);
 }
 .vu svg { display: block; width: 100%; height: 100%; }
 .vu text { font-family: var(--font-legend); font-weight: 500; fill: var(--vu-ink); text-anchor: middle; font-variant-numeric: tabular-nums; }
@@ -368,11 +374,11 @@ html.js .play.js-ready { display: inline-flex; }
 .mod.is-on .mod__lamp { opacity: 1; }
 .mod__name { position: relative; display: flex; align-items: center; gap: 6px; font: 500 var(--step--1)/1 var(--font-legend); letter-spacing: .02em; color: var(--steel); font-variation-settings: "GRAD" -30; }
 .mod__name::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: color-mix(in oklab, var(--steel) 35%, var(--paint)); transition: background-color var(--m-stage); }
-.mod.is-on .mod__name { color: var(--ivory); font-variation-settings: "GRAD" 0; }
+.mod.is-on .mod__name, .mod.is-on .knob__label { color: var(--ivory); font-variation-settings: "GRAD" 0; } /* steel drops under 4.5:1 on the lit tint */
 .mod.is-on .mod__name::before { background: var(--pilot); box-shadow: 0 0 6px color-mix(in oklab, var(--pilot) 60%, transparent); }
 .knobs { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); margin-top: var(--s2); }
 .knob { display: grid; justify-items: center; gap: 1px; }
-.knob__ring { position: relative; width: var(--knob, 52px); height: var(--knob, 52px); }
+.knob__ring { position: relative; width: var(--knob); height: var(--knob); }
 .knob__ring svg { position: absolute; inset: 0; fill: none; stroke: var(--steel); stroke-width: 1.4; stroke-linecap: round; opacity: .7; }
 .knob__cap {
   position: absolute; inset: 21%; border-radius: 50%;
@@ -381,7 +387,7 @@ html.js .play.js-ready { display: inline-flex; }
 }
 .knob__cap::after { content: ""; position: absolute; left: calc(50% - 1px); top: 3px; width: 2px; height: 10px; border-radius: 1px; background: var(--ivory); }
 .knob__label { font: 500 var(--step--2)/1.2 var(--font-legend); letter-spacing: .02em; color: var(--steel); text-align: center; }
-.lamp-cap { display: grid; justify-items: center; align-content: center; gap: 7px; height: var(--knob, 52px); }
+.lamp-cap { display: grid; justify-items: center; align-content: center; gap: 7px; height: var(--knob); }
 .lamp-cap span { width: 26px; height: 16px; border-radius: var(--r-cap); background: var(--paint); border: 1px solid var(--edge); box-shadow: 0 2px 0 var(--skirt); position: relative; }
 .lamp-cap span::before { content: ""; position: absolute; inset: -1px; border-radius: inherit; background: var(--pilot); opacity: 0; transition: opacity var(--m-lamp-off) var(--m-ease-off); }
 .lamp-cap.is-on span::before { opacity: 1; transition: opacity var(--m-lamp-on) var(--m-ease-on); }
@@ -403,7 +409,7 @@ html.js .play.js-ready { display: inline-flex; }
 }
 .fader { display: grid; justify-items: center; gap: var(--s2); }
 .fader__slot { position: relative; width: 100%; height: var(--slot-h); }
-.fader__slot::before { content: ""; position: absolute; left: calc(50% - 2px); width: 4px; top: 0; bottom: 0; border-radius: 2px; background: var(--slot); box-shadow: inset 0 1px 2px black; }
+.fader__slot::before { content: ""; position: absolute; left: calc(50% - 2px); width: 4px; top: 0; bottom: 0; border-radius: 2px; background: var(--slot); box-shadow: inset 0 1px 2px var(--black); }
 .fader__slot::after { content: ""; position: absolute; left: calc(50% - 9px); width: 18px; top: var(--unity); height: 1px; background: var(--steel); opacity: .6; }
 .fader__ride { position: absolute; left: calc(50% - 11px); top: calc(var(--unity) - 15px); width: 22px; height: 30px; }
 .fader__cap {
@@ -430,7 +436,6 @@ html.js .play.js-ready { display: inline-flex; }
 .spec-row { position: relative; display: grid; grid-template-columns: 7.5em minmax(0, 1fr); column-gap: var(--s4); padding-block: var(--s3) var(--s4); }
 .spec-row::before {
   content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: var(--edge);
-  transform: scaleX(var(--rule-x, 1)); transform-origin: left center;
 }
 .spec-row dt { font: 500 var(--step-0)/1.6 var(--font-legend); letter-spacing: .02em; color: var(--steel); }
 .spec-row dd { font-variant-numeric: tabular-nums; }

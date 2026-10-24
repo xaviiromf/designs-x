@@ -73,5 +73,7 @@ export async function launch({ width = 1440, height = 900, fine = !!process.env.
     else if (method === 'Page.javascriptDialogOpening') send('Page.handleJavaScriptDialog', { accept: true });
   });
   await Promise.all(['Page', 'Runtime', 'Network', 'Log'].map(d => send(`${d}.enable`)));
+  // Headless Chromium clamps --window-size to a 500px minimum width; emulate narrower phones explicitly.
+  if (width < 500) await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: true });
   return page;
 }
