@@ -33,7 +33,8 @@
     --t-lg: 1.66rem;
     --t-xl: clamp(2.25rem, 4.8vw, 4.25rem);
     --t-readout: clamp(3.25rem, 10.5vw, 10rem);
-    --t-readout-s: 1.75rem;
+    --t-readout-s: 1.75rem;      /* the strip readout; 2.25rem from 600px */
+    --t-readout-xl: clamp(5rem, 28vw, 9rem); /* the intro readout below 992px, which docks into the strip */
     --measure: 62ch;
 
     /* Space */
@@ -48,6 +49,7 @@
     --cols-narrow: 6;
     --cell-size: calc(100vw / var(--cols-narrow)); /* the script sets the exact px */
     --strip-h: 4.5rem;
+    --overlap: var(--strip-h);   /* how far #launches slides under the track while the cover runs: the pinned instrument's height */
     /* One solar cell: four cropped corners, 1px grout, two busbars. Shared by the cover cells and #launches. */
     --array:
       linear-gradient(135deg, var(--anodize) 6%, transparent 6%),
@@ -59,11 +61,11 @@
       linear-gradient(90deg, transparent 33%, var(--busbar) 33% calc(33% + 1px), transparent calc(33% + 1px) 66%, var(--busbar) 66% calc(66% + 1px), transparent calc(66% + 1px));
 
     /* Motion: CSS durations and curves (the script reads the --d-* values) */
-    --d-chrome: .5s; --d-rise: 1s; --d-rule: .8s; --d-decode: .9s; --d-redecode: .6s; --d-label: .35s;
-    --d-ind: .5s; --d-gate: .7s; --d-tick: .3s; --d-glide: 1s; --d-hover: .2s; --d-sweep: .45s;
+    --d-chrome: .5s; --d-rise: 1s; --d-rule: .8s; --d-roll: .4s; --d-roll-max: .9s; --d-glint: .6s;
+    --d-ind: .5s; --d-gate: .7s; --d-tick: .3s; --d-glide: .8s; --d-hover: .2s; --d-sweep: .45s;
     --d-fill: .4s; --d-fill-out: .3s; --d-press: .12s; --d-release: .4s; --d-swap: .4s; --d-focus: .3s;
     --d-sheet: .45s; --d-sheet-out: .3s; --d-backdrop: .3s; --d-clip: .4s; --d-err: .25s; --d-pop: .25s;
-    --d-pulse: .5s; --d-ref: .8s;
+    --d-pulse: .5s;
     --ease-sweep: cubic-bezier(.35, 0, 0, 1);
     --ease-fill: cubic-bezier(.65, 0, .35, 1);
     --ease-release: cubic-bezier(.34, 1.56, .64, 1);
@@ -71,8 +73,8 @@
     --ease-settle: cubic-bezier(.16, 1, .3, 1);
     --ease-clip: cubic-bezier(.4, 0, .2, 1);
   }
-  @media (min-width: 600px) { :root { --gutter: clamp(16px, 4vw, 56px); } }
-  @media (min-width: 992px) { :root { --cell-size: calc(100vw / var(--cols-wide)); } }
+  @media (min-width: 600px) { :root { --gutter: clamp(16px, 4vw, 56px); --t-readout-s: 2.25rem; } }
+  @media (min-width: 992px) { :root { --cell-size: calc(100vw / var(--cols-wide)); --overlap: 100svh; } }
 
   /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
   html.lenis, html.lenis body { height: auto; }
@@ -111,13 +113,13 @@
     padding-bottom: .1em;
   }
   .u:hover, .u:focus-visible { background-position: 0 100%; background-size: 100% .07em; }
-  .u.ext { /* inline links keep a thin underline at rest, then thicken */
+  .u.ul { /* inline links keep a thin underline at rest, then thicken */
     background:
       linear-gradient(currentColor, currentColor) 100% 100% / 0 .09em no-repeat,
       linear-gradient(var(--graphite), var(--graphite)) 0 100% / 100% .05em no-repeat;
   }
-  .u.ext:hover, .u.ext:focus-visible { background-position: 0 100%, 0 100%; background-size: 100% .09em, 100% .05em; }
-  @media (hover: none) { .u { background-size: 100% .07em; } .u:active { color: var(--kapton); } }
+  .u.ul:hover, .u.ul:focus-visible { background-position: 0 100%, 0 100%; background-size: 100% .09em, 100% .05em; }
+  @media (hover: none) { .u:not(.ul) { background-size: 100% .07em; } .u:active { color: var(--kapton); } }
 
   .btn { /* HV4 fill from the entry edge, MI1 press */
     --from: left;
@@ -161,18 +163,21 @@
     display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--s-5); row-gap: var(--s-5);
     padding: var(--s-7) var(--gutter) var(--s-7);
   }
-  .h2 { grid-column: 1 / -1; font-size: var(--t-xl); font-weight: 700; line-height: 1.02; letter-spacing: -.015em; max-width: 12ch; }
+  .h2 { grid-column: 1 / -1; font-size: var(--t-xl); font-weight: 700; line-height: 1.02; letter-spacing: -.015em; max-width: 16ch; }
   .h2 .ln-mask { padding-bottom: .12em; margin-bottom: -.12em; }
   .lede { grid-column: 1 / -1; max-width: var(--measure); color: var(--silver); }
+  .ro-big { grid-column: 1 / -1; margin-top: var(--s-4); font-size: var(--t-readout-xl); transform-origin: 0 0; }
+  .ro-big .ro-u { font-size: .2em; }
   @media (min-width: 992px) {
     .intro { padding-block: var(--s-8) var(--s-8); align-items: end; }
     .h2 { grid-column: 1 / 8; max-width: 9.5em; }
     .lede { grid-column: 8 / 13; }
+    .ro-big { display: none; }
   }
 
   /* ---------- Track: instrument column + stages ---------- */
-  .instr { /* mobile: the sticky strip */
-    position: sticky; top: 0; z-index: 1;
+  .instr { /* mobile: the sticky strip. Above the cover (2) and the closing panels (3). */
+    position: sticky; top: 0; z-index: 4;
     display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--s-3);
     height: var(--strip-h); padding: 0 var(--gutter);
     background: var(--anodize-raised);
@@ -181,8 +186,15 @@
   .readout {
     display: flex; align-items: baseline;
     font: 700 var(--t-readout-s)/.9 var(--font-readout); letter-spacing: -.02em; white-space: nowrap;
+    transition: color var(--d-hover);
   }
-  .ro-l { letter-spacing: -.14em; margin-right: .06em; }
+  .readout.is-preview { color: var(--graphite); } /* a rail item's lead time, previewed on hover */
+  .readout i { font-style: normal; letter-spacing: -.14em; margin-right: .06em; }
+  /* Odometer: the sizer holds the value; while rolling, a reel of every integer in between moves inside the clip. */
+  .ro-n { position: relative; display: inline-block; clip-path: inset(-.02em -100vw -.02em -.1em); }
+  .ro-reel { position: absolute; left: 0; top: 0; }
+  .ro-reel > span { display: block; }
+  .ro-n.is-rolling .ro-sz { visibility: hidden; }
   .ro-u { font: 700 var(--t-sm)/1 var(--font-sans); letter-spacing: 0; margin-left: .3em; color: var(--graphite); }
   .rail { display: none; }
   .strip-t { font-size: var(--t-sm); line-height: 1.3; min-width: 0; }
@@ -194,18 +206,24 @@
   .stage { scroll-margin-top: var(--strip-h); min-height: 80svh; }
   .stage-in { padding: var(--s-7) var(--gutter) var(--s-7); max-width: calc(var(--measure) + 2 * var(--gutter)); }
   #stage-7 { min-height: 100svh; padding-bottom: 45svh; } /* runway: the cover wave rises below stage 7's text */
+  /* While the cover runs, the track gains one instrument-height of runway and #launches slides under it by the same
+     amount, so the instrument stays pinned through the whole wave and the page length does not change. */
+  html.has-cover .stages::after { content: ""; display: block; height: var(--overlap); }
+  html.has-cover .launches { margin-top: calc(-1 * var(--overlap)); }
   @media (hover: none) {
     html { scroll-snap-type: y proximity; }
-    .stage { scroll-snap-align: start; }
+    .bar, .stage { scroll-snap-align: start; }
   }
 
   @media (min-width: 992px) {
     .track { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
     .instr-col { display: block; background: var(--anodize-raised); }
-    .instr {
+    .instr { /* transparent: the column colour stays below the cover, the readout and rail sit above it */
       display: flex; flex-direction: column; align-items: stretch; gap: 0;
       height: 100svh; padding: var(--s-8) var(--gutter) var(--s-6);
+      background: none; pointer-events: none;
     }
+    .rail { pointer-events: auto; }
     .readout { font-size: var(--t-readout); }
     .ro-u { font-size: var(--t-lg); }
     .strip-t, .strip-b { display: none; }
@@ -225,9 +243,10 @@
     transition: color var(--d-hover);
   }
   .rl { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
-  .rl b { font-weight: 400; }
+  .rail a > span:nth-child(2) { transition: transform .25s var(--ease-settle); }
   .rail a[aria-current] { color: var(--silver); }
   .rail a:hover, .rail a:focus-visible { color: var(--silver); }
+  .rail a:hover > span:nth-child(2), .rail a:focus-visible > span:nth-child(2) { transform: translateX(4px); }
   .rail a:focus-visible { outline-offset: 0; }
   .ind, .ghost { position: absolute; left: 0; top: 0; width: 3px; height: 2.75rem; pointer-events: none; }
   .ind { background: var(--kapton); }
@@ -260,19 +279,20 @@
     background-color: var(--cell); background-image: var(--array);
     background-size: var(--cell-size) var(--cell-size); background-position: 0 0;
   }
-  .launches.is-bare { background: var(--anodize); } /* while the cover wave runs over it */
+  .launches.is-bare { background: none; } /* while the cover wave runs over it, the track shows through */
+  .l-glint { position: absolute; left: 0; top: 0; z-index: 1; pointer-events: none; }
   .l-grid { position: relative; z-index: 3; display: grid; row-gap: var(--cell-size); padding: var(--cell-size) 0; }
   @media (max-width: 991.98px) { .l-grid { padding-top: max(45svh, calc(4 * var(--cell-size))); } } /* room for the array to read before the panels */
-  @media (min-width: 992px) {
-    .l-grid { grid-template-columns: repeat(var(--cols-wide), var(--cell-size)); align-items: start; }
-    .panel--copy, .panel--book { grid-column: 2 / 12; }
+  @media (min-width: 992px) { /* one clean screen of array, with the closing lines at its foot and the booking below the fold */
+    .l-grid { grid-template-columns: repeat(var(--cols-wide), var(--cell-size)); align-items: start; padding-top: calc(100svh - 12.5rem); }
+    .panel--copy { grid-column: 2 / 8; }
+    .panel--book { grid-column: 2 / 12; }
   }
-  @media (min-width: 1200px) {
-    .panel--copy { grid-column: 2 / 6; }
-    .panel--book { grid-column: 7 / 12; }
-  }
+  @media (min-width: 1200px) { .panel--book { grid-column: 6 / 12; } }
   .panel { background: var(--anodize); padding: var(--s-6) var(--gutter); }
+  .panel--copy { background: none; } /* set straight on the cells: silver on cell indigo is about 11:1 */
   @media (min-width: 600px) { .panel { padding: var(--s-6); } }
+  @media (min-width: 992px) { .panel--copy { padding-block: 0; } }
   .panel h3 { font-size: var(--t-lg); line-height: 1.15; font-weight: 700; }
   .panel--copy p { margin-top: var(--s-4); max-width: 40ch; }
   .panel--book { container-type: inline-size; }
@@ -342,6 +362,8 @@
   .ctl::after { height: 2px; background: var(--kapton); transform: scaleX(0); transform-origin: left center; transition: transform var(--d-focus) var(--ease-settle); }
   .ctl:hover::before { background: var(--silver); }
   .ctl:focus-within::after { transform: scaleX(1); }
+  .ctl :focus-visible { outline: none; } /* one ring, around the whole control */
+  .ctl:has(:focus-visible) { outline: 2px solid var(--kapton); outline-offset: 2px; }
   .ctl input, .ctl select {
     width: 100%; min-height: 2.75rem; padding: 0 var(--s-3); border: 0; border-radius: var(--radius) var(--radius) 0 0;
     background: transparent; color: var(--silver); color-scheme: dark;
@@ -369,13 +391,12 @@
   /* Result */
   .result h4 { font-size: var(--t-md); font-weight: 700; line-height: 1.2; }
   .result p { margin-top: var(--s-4); max-width: 46ch; }
-  .ref { display: inline-grid; font-weight: 700; }
-  .ref > span { grid-area: 1 / 1; }
-  .ref .sz { visibility: hidden; }
+  .ref { font-weight: 700; }
   .acts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-4) var(--s-5); margin-top: var(--s-6); font-size: var(--t-sm); }
 
   /* Cover: one fixed layer of cells, built by the script */
   .cover { position: fixed; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; visibility: hidden; }
+  @media (max-width: 991.98px) { .cover { top: var(--strip-h); } } /* starts under the pinned strip */
   .cover i {
     position: absolute; width: var(--cell-size); height: var(--cell-size);
     background-color: var(--cell); background-image: var(--array); background-size: 100% 100%;
@@ -409,6 +430,7 @@
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { transition-duration: 0s !important; }
     .btn:active { transform: none; }
+    .rail a > span:nth-child(2) { transform: none !important; }
   }
 </style>
 </head>
@@ -418,29 +440,30 @@
   <header class="bar">
     <p class="mark" data-rv>Petrel Orbital</p>
     <nav aria-label="Shortcuts">
-      <a class="u" href="#launches" data-rv>Skip to open launches</a>
+      <a class="u ul" href="#launches" data-rv>Open launches</a>
       <a class="btn" href="#hold" data-rv>Hold a slot</a>
     </nav>
   </header>
 
   <div class="intro">
     <h2 id="proc-h" class="h2" data-rv>From booked slot to first contact</h2>
-    <p class="lede" data-rv>We fly 1U to 12U CubeSats on shared launches from our integration room in Glasgow. Here is what happens between your deposit and your satellite’s first beacon, and what we need from you at each stage. Plan on twelve months. If your satellite is already tested, we can start at stage 5.</p>
+    <p class="lede" data-rv>We fly 1U to 12U CubeSats on shared launches from our integration room in Glasgow. Here is what happens between your deposit and your satellite’s first beacon, and what we need from you at each stage. Plan on twelve months. If your satellite is already tested and licensed, stages 3 and 4 close as soon as we have your papers, and it can fly in six.</p>
+    <p class="readout ro-big" aria-hidden="true"><span class="ro-n"><span class="ro-sz"><i>L-</i>12</span><span class="ro-reel"></span></span><span class="ro-u"><span class="sw"><span>mo</span><span></span></span></span></p>
   </div>
 
   <div class="track">
     <div class="instr-col">
       <div class="instr">
-        <p class="readout" aria-hidden="true"><span class="ro-l">L-</span><span class="ro-n">12</span><span class="ro-u">mo</span></p>
+        <p class="readout ro-main" aria-hidden="true"><span class="ro-n"><span class="ro-sz"><i>L-</i>12</span><span class="ro-reel"></span></span><span class="ro-u"><span class="sw"><span>mo</span><span></span></span></span></p>
         <nav class="rail" aria-label="Stages">
           <ol>
-            <li><span class="rule"></span><a href="#stage-1" aria-label="Stage 1, 12 months before launch: Book a slot" aria-current="step"><span class="rl" aria-hidden="true">L-<b>12</b> mo</span><span aria-hidden="true">Book a slot</span></a></li>
-            <li><span class="rule"></span><a href="#stage-2" aria-label="Stage 2, 10 months before launch: Agree the interface"><span class="rl" aria-hidden="true">L-<b>10</b> mo</span><span aria-hidden="true">Agree the interface</span></a></li>
-            <li><span class="rule"></span><a href="#stage-3" aria-label="Stage 3, 9 months before launch: File the frequencies"><span class="rl" aria-hidden="true">L-<b>9</b> mo</span><span aria-hidden="true">File the frequencies</span></a></li>
-            <li><span class="rule"></span><a href="#stage-4" aria-label="Stage 4, 4 months before launch: Prove it survives"><span class="rl" aria-hidden="true">L-<b>4</b> mo</span><span aria-hidden="true">Prove it survives</span></a></li>
-            <li><span class="rule"></span><a href="#stage-5" aria-label="Stage 5, 6 weeks before launch: Ship and fit-check"><span class="rl" aria-hidden="true">L-<b>6</b> wk</span><span aria-hidden="true">Ship and fit-check</span></a></li>
-            <li><span class="rule"></span><a href="#stage-6" aria-label="Stage 6, 4 weeks before launch: Load the dispenser"><span class="rl" aria-hidden="true">L-<b>4</b> wk</span><span aria-hidden="true">Load the dispenser</span></a></li>
-            <li><span class="rule"></span><a href="#stage-7" aria-label="Stage 7, launch day: Launch and deploy"><span class="rl" aria-hidden="true">L-<b>0</b></span><span aria-hidden="true">Launch and deploy</span></a></li>
+            <li><span class="rule"></span><a href="#stage-1" aria-current="step"><span class="rl">L-12 mo</span><span>Book a slot</span><span class="vh">, stage 1, 12 months before launch</span></a></li>
+            <li><span class="rule"></span><a href="#stage-2"><span class="rl">L-10 mo</span><span>Agree the interface</span><span class="vh">, stage 2, 10 months before launch</span></a></li>
+            <li><span class="rule"></span><a href="#stage-3"><span class="rl">L-9 mo</span><span>File the frequencies</span><span class="vh">, stage 3, 9 months before launch</span></a></li>
+            <li><span class="rule"></span><a href="#stage-4"><span class="rl">L-4 mo</span><span>Prove it survives</span><span class="vh">, stage 4, 4 months before launch</span></a></li>
+            <li><span class="rule"></span><a href="#stage-5"><span class="rl">L-6 wk</span><span>Ship and fit-check</span><span class="vh">, stage 5, 6 weeks before launch</span></a></li>
+            <li><span class="rule"></span><a href="#stage-6"><span class="rl">L-4 wk</span><span>Load the dispenser</span><span class="vh">, stage 6, 4 weeks before launch</span></a></li>
+            <li><span class="rule"></span><a href="#stage-7"><span class="rl">L-0</span><span>Launch and deploy</span><span class="vh">, stage 7, launch day</span></a></li>
           </ol>
           <span class="ind" aria-hidden="true"></span>
           <span class="ghost" aria-hidden="true"></span>
@@ -466,7 +489,7 @@
       <li><article class="stage" id="stage-2" data-l="10" data-u="mo" data-name="Agree the interface" aria-labelledby="st-2"><div class="stage-in">
         <h3 id="st-2" tabindex="-1"><span class="st-n">2</span> Agree the interface</h3>
         <p class="when">10 months before launch</p>
-        <p class="body">The interface control document fixes the satellite we will load: envelope, mass, centre of mass, rail finish, deployment switches and the remove-before-flight pin. It follows the <a class="u ext" href="https://www.cubesat.org/" target="_blank" rel="noopener">CubeSat Design Specification<span class="vh"> (opens in a new tab)</span></a> within our dispenser’s limits.</p>
+        <p class="body">The interface control document fixes the satellite we will load: envelope, mass, centre of mass, rail finish, deployment switches and the remove-before-flight pin. It follows the <a class="u ul" href="https://www.cubesat.org/" target="_blank" rel="noopener">CubeSat Design Specification<span class="vh"> (opens in a new tab)</span></a> within our dispenser’s limits.</p>
         <div class="io">
           <div><h4>You send</h4><ul><li>CAD envelope and mass budget</li><li>Switch drawing</li></ul></div>
           <div><h4>We send</h4><ul><li>ICD rev A</li><li>Dispenser drawing and load levels</li></ul></div>
@@ -478,7 +501,7 @@
       <li><article class="stage" id="stage-3" data-l="9" data-u="mo" data-name="File the frequencies" aria-labelledby="st-3"><div class="stage-in">
         <h3 id="st-3" tabindex="-1"><span class="st-n">3</span> File the frequencies</h3>
         <p class="when">9 months before launch</p>
-        <p class="body">Your satellite may not transmit without a licence from your national regulator, which files your frequencies with the <a class="u ext" href="https://www.itu.int/" target="_blank" rel="noopener">ITU<span class="vh"> (opens in a new tab)</span></a>. We give you the orbit and launch date they ask for. Start now: coordination takes months.</p>
+        <p class="body">Your satellite may not transmit without a licence from your national regulator, which files your frequencies with the <a class="u ul" href="https://www.itu.int/" target="_blank" rel="noopener">ITU<span class="vh"> (opens in a new tab)</span></a>. We give you the orbit and launch date they ask for. Start now: coordination takes months.</p>
         <div class="io">
           <div><h4>You send</h4><ul><li>Licence application reference</li><li>Frequency plan</li></ul></div>
           <div><h4>We send</h4><ul><li>Orbit parameters letter</li><li>Launch date confirmation</li></ul></div>
@@ -542,7 +565,7 @@
       <div class="panel panel--copy">
         <h3 id="launches-h" tabindex="-1">Panels out, beacon on</h3>
         <p>Once the door opens, the satellite is yours to fly. Book the next one and we start again at stage 1.</p>
-        <p><a class="u ext" href="mailto:integration@petrel-orbital.example" target="_blank" rel="noopener">Email the integration team<span class="vh"> (opens your email app)</span></a></p>
+        <p><a class="u ul" href="mailto:integration@petrel-orbital.example" target="_blank" rel="noopener">Email the integration team<span class="vh"> (opens your email app)</span></a></p>
       </div>
 
       <div class="panel panel--book">
@@ -556,7 +579,7 @@
                 <span class="l-head"><span class="l-id"><span class="vh">Shared launch </span>27-2</span><span>June 2027</span></span>
                 <span class="l-orbit">Sun-synchronous, 550 km</span>
                 <span class="l-slots"><span class="cells" aria-hidden="true"></span><span class="l-count"><span class="l-open">2 of 12 slots open</span><span class="l-yours"></span></span></span>
-                <span class="l-note">Tested satellites only. Book by 15 December 2026.</span>
+                <span class="l-note">For satellites already tested and licensed. Book by 15 December 2026.</span>
               </label>
               <label class="lrow" data-id="27-3">
                 <input type="radio" name="launch" value="27-3" required aria-describedby="err-launch">
@@ -615,7 +638,7 @@
 
             <div class="result" role="status" hidden>
               <h4 id="res-h" tabindex="-1">Slot held on shared launch 27-3</h4>
-              <p id="res-p">One 3U slot is yours until 6 November 2026. Reference <span class="ref"><span class="vh" id="ref-real">PO-273-0418</span><span class="sz" aria-hidden="true">PO-273-0418</span><span class="sc" aria-hidden="true">PO-273-0418</span></span>. A 20% deposit turns it into a booking.</p>
+              <p id="res-p">One 3U slot is yours until 6 November 2026. Reference <span class="ref">PO-273-0418</span>. A 20% deposit turns it into a booking.</p>
               <div class="acts">
                 <button class="btn" type="button" id="change">Change details</button>
                 <a class="u" href="#stage-1">Read the stages again</a>
@@ -648,7 +671,6 @@
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/SplitText.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrambleTextPlugin.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
 <script>
 (() => {
@@ -656,7 +678,7 @@
   const root = document.documentElement;
   const $ = (s, c = document) => c.querySelector(s);
   const $$ = (s, c = document) => [...c.querySelectorAll(s)];
-  const libs = !!(window.gsap && window.ScrollTrigger && window.SplitText && window.ScrambleTextPlugin && window.Lenis);
+  const libs = !!(window.gsap && window.ScrollTrigger && window.SplitText && window.Lenis);
   if (libs) root.classList.add('js'); // hidden start states only exist when the motion stack loaded
 
   /* ---------- Data and rules (pure, asserted at #selftest) ---------- */
@@ -718,20 +740,19 @@
   /* ---------- Shared state ---------- */
   const css = (n) => getComputedStyle(root).getPropertyValue(n).trim();
   const D = (k) => parseFloat(css(`--d-${k}`)) || 0;
-  const DIGITS = '0123456789';
   const expoOut = (t) => (t === 1 ? 1 : 1 - 2 ** (-10 * t));
   const inOutQuart = (t) => (t < 0.5 ? 8 * t ** 4 : 1 - (-2 * t + 2) ** 4 / 2);
   const M = { on: false, fine: false, lenis: null, run: (fn) => fn() }; // run() records tweens in the live matchMedia context
   const setY = (el, y) => { if (libs) gsap.set(el, { y }); else el.style.transform = `translateY(${y}px)`; };
 
   const stages = $$('.stage');
+  const intro = $('.intro');
   const railLinks = $$('.rail a');
   const ind = $('.ind');
-  const roN = $('.ro-n'), roU = $('.ro-u');
   const stripBox = $('.strip-t .sw');
   const gates = stages.map((s) => ({ rule: $('.gate-rule', s), tick: $('.gate-tick path', s), key: $('.gate-k', s) }));
   const drawn = new Set();
-  let cur = 0;
+  let cur = 0, preview = 0, deployed = false;
 
   /* TR1 caption swap: the old line leaves upward, the new one rises in its mask. */
   function swapText(box, text, anim) {
@@ -748,6 +769,56 @@
 
   const stripTitle = (n) => `${n} of ${stages.length}: ${stages[n - 1].dataset.name}`;
 
+  /* ---------- The countdown readout: an odometer, never a scramble ---------- */
+  // Values carry their place in the sequence (k: stage 1-7, 8 = deployed) so the reel knows which way to roll.
+  const T0 = { k: 8, n: 0, u: '', t: true };
+  const stageVal = (k) => (k === 8 ? T0 : { k, n: +stages[k - 1].dataset.l, u: stages[k - 1].dataset.u });
+  const roHTML = (v) => `<i>${v.t ? 'T+' : 'L-'}</i>${v.n}`;
+  const roMain = $('.ro-main'), roBig = $('.ro-big');
+  const readouts = [roMain, roBig].map((el) => ({ el, box: $('.ro-n', el), sz: $('.ro-sz', el), reel: $('.ro-reel', el), unit: $('.ro-u', el), sw: $('.ro-u .sw', el), v: null, tw: null }));
+
+  // mode: false sets the value, true rolls through every integer in between, 'in' rises from below the mask (load).
+  function roll(r, v, mode) {
+    const from = r.v;
+    if (from && from.k === v.k && mode !== 'in') return;
+    r.v = v;
+    r.tw?.kill(); r.tw = null;
+    if (libs) gsap.set(r.unit, { x: 0 });
+    const x0 = r.unit.getBoundingClientRect().left;
+    r.sz.innerHTML = roHTML(v);
+    swapText(r.sw, v.u, !!mode && M.on && mode !== 'in');
+    r.box.classList.remove('is-rolling'); r.reel.innerHTML = '';
+    if (!mode || !M.on) return;
+    let list = [v], fwd = true;
+    if (from && mode !== 'in') {
+      fwd = v.k > from.k;
+      list = [from];
+      // Same unit (or arriving at / leaving L-0): count through each integer. A unit change is one step.
+      if (!from.t && !v.t && (from.u === v.u || !from.u || !v.u)) {
+        const st = v.n < from.n ? -1 : 1;
+        for (let n = from.n + st; n !== v.n; n += st) list.push({ n });
+      }
+      list.push(v);
+      if (!fwd) list.reverse();
+    }
+    const len = list.length, end = (-100 * (len - 1)) / len;
+    const d = Math.min(D('roll-max'), D('roll') + 0.05 * (len - 1));
+    r.reel.innerHTML = list.map((x) => `<span>${roHTML(x)}</span>`).join('');
+    r.box.classList.add('is-rolling');
+    const dx = x0 - r.unit.getBoundingClientRect().left;
+    M.run(() => {
+      r.tw = gsap.timeline({ onComplete: () => { r.box.classList.remove('is-rolling'); r.reel.innerHTML = ''; r.tw = null; } })
+        .fromTo(r.reel, { yPercent: mode === 'in' ? 100 : fwd ? 0 : end }, { yPercent: mode === 'in' ? 0 : fwd ? end : 0, duration: d, ease: 'expo.out' }, 0)
+        .fromTo(r.unit, { x: mode === 'in' ? 0 : dx }, { x: 0, duration: d, ease: 'expo.out' }, 0);
+      if (mode === 'in') r.tw.fromTo(r.sw.children[+(r.sw.dataset.i || 0)], { yPercent: 100 }, { yPercent: 0, duration: d, ease: 'expo.out', clearProps: 'transform' }, 0.08);
+    });
+  }
+  function showReadout(mode) {
+    const v = stageVal(preview || (deployed ? 8 : cur || 1));
+    readouts.forEach((r) => { roll(r, v, mode); r.el.classList.toggle('is-preview', !!preview && preview !== cur); });
+  }
+
+  /* Gate n draws when the reader passes stage n (stage n+1 becomes active); gate 7 when the door opens (cover starts). */
   function drawGates(n, instant) {
     for (let k = 1; k <= n; k++) {
       if (drawn.has(k)) continue;
@@ -764,45 +835,37 @@
   /* One source of truth for the active stage: readout, rail, strip, gates. */
   function activate(n, instant) {
     if (n < 1) return;
-    const s = stages[n - 1], anim = M.on && !instant;
+    const anim = M.on && !instant;
     if (n !== cur) {
       cur = n;
       railLinks.forEach((a, i) => (i === n - 1 ? a.setAttribute('aria-current', 'step') : a.removeAttribute('aria-current')));
       $$('.sheet-list a').forEach((a, i) => (i === n - 1 ? a.setAttribute('aria-current', 'step') : a.removeAttribute('aria-current')));
-      roU.textContent = s.dataset.u;
       const y = railLinks[n - 1].parentElement.offsetTop;
-      if (anim) {
-        M.run(() => {
-          gsap.to(roN, { duration: D('redecode'), ease: 'none', overwrite: true, scrambleText: { text: s.dataset.l, chars: DIGITS, speed: 0.85 } });
-          gsap.to(ind, { y, duration: D('ind'), ease: 'expo.out', overwrite: 'auto' }); // auto: keep the load fade on opacity
-        });
-      } else {
-        if (libs) gsap.killTweensOf([roN, ind]);
-        roN.textContent = s.dataset.l;
-        setY(ind, y);
-      }
+      if (anim) M.run(() => gsap.to(ind, { y, duration: D('ind'), ease: 'expo.out', overwrite: 'auto' })); // auto: keep the load fade on opacity
+      else { if (libs) gsap.killTweensOf(ind); setY(ind, y); }
+      showReadout(anim);
       swapText(stripBox, stripTitle(n), anim);
     }
-    if (M.on) drawGates(n, instant);
+    if (M.on) drawGates(n - 1, instant);
   }
-  function resetState() { // instant re-sync after a media query flips
-    const n = cur || 1, s = stages[n - 1];
-    if (libs) gsap.killTweensOf([roN, ind]);
-    roN.textContent = s.dataset.l; roU.textContent = s.dataset.u;
-    setY(ind, railLinks[n - 1].parentElement.offsetTop);
-    swapText(stripBox, stripTitle(n), false);
+  // The stage whose top has crossed 45% of the viewport (stage 1 at the top of the page).
+  const inView = () => stages.filter((s) => s.getBoundingClientRect().top <= innerHeight * 0.45).length || 1;
+  function resetState(n = cur || 1) { // instant re-sync after a media query flips
+    cur = 0; readouts.forEach((r) => { r.v = null; });
+    activate(n, true);
   }
 
-  // NV6 section spy: the stage crossing 40 to 45% of the viewport is the active one.
-  const spy = new IntersectionObserver((ents) => ents.forEach((e) => { if (e.isIntersecting) activate(stages.indexOf(e.target) + 1); }), { rootMargin: '-40% 0px -55% 0px' });
-  stages.forEach((s) => spy.observe(s));
+  // NV6 section spy: the stage crossing 40 to 45% of the viewport is the active one; the intro there means stage 1.
+  const spy = new IntersectionObserver((ents) => ents.forEach((e) => { if (e.isIntersecting) activate(e.target === intro ? 1 : stages.indexOf(e.target) + 1); }), { rootMargin: '-40% 0px -55% 0px' });
+  [intro, ...stages].forEach((s) => spy.observe(s));
 
   // Cell size for the array background (and the cover): whole pixels, so tiles and cells line up exactly.
+  let cellSize = 0;
   const sizeCells = () => {
     const cols = matchMedia('(min-width: 992px)').matches ? +css('--cols-wide') : +css('--cols-narrow');
-    const cs = Math.ceil(root.clientWidth / cols);
-    root.style.setProperty('--cell-size', `${cs}px`);
-    return { cols, cs };
+    cellSize = Math.ceil(root.clientWidth / cols);
+    root.style.setProperty('--cell-size', `${cellSize}px`);
+    return { cols, cs: cellSize };
   };
   sizeCells();
   addEventListener('resize', sizeCells);
@@ -848,7 +911,8 @@
     else gsap.fromTo(sheet, { opacity: 0 }, { opacity: 1, duration: 0.2 });
   });
   function closeDlg(then) {
-    if (!dlg.open || closing) return;
+    if (!dlg.open) return;
+    if (closing) { if (then) after = then; return; } // a stage tapped while the sheet is already closing still goes there
     after = then || null; closing = true;
     dlg.classList.remove('is-in');
     if (!libs) return dlg.close();
@@ -917,7 +981,7 @@
   });
   form.addEventListener('input', (e) => { if (ERR_KEYS.includes(e.target.name) && e.target.name !== 'launch') setError(e.target.name, ''); });
 
-  let serial = 418;
+  let serial = 418, swapTl = null;
   const resH = $('#res-h'), resP = $('#res-p'), mailHold = $('#mail-hold');
   form.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -934,30 +998,30 @@
     const until = fmtDate(holdUntil(todayUTC()));
     resH.textContent = `Slot${need > 1 ? 's' : ''} held on shared launch ${v.launch}`;
     const who = need > 1 ? `${WORDS[need][0].toUpperCase()}${WORDS[need].slice(1)} slots for your ${v.ff} are` : `One ${v.ff} slot is`;
-    resP.innerHTML = `${who} yours until ${until}. Reference <span class="ref"><span class="vh">${ref}</span><span class="sz" aria-hidden="true">${ref}</span><span class="sc" aria-hidden="true">${ref}</span></span>. A 20% deposit turns it into a booking.`;
+    resP.innerHTML = `${who} yours until ${until}. Reference <span class="ref">${ref}</span>. A 20% deposit turns it into a booking.`;
     const body = `Shared launch ${v.launch}, ${v.ff}, ${v.mass} kg, ready to ship by ${fmtDate(utc(v.ready))}.\nReference ${ref}, held until ${until}.\nContact: ${v.email.trim()}`;
     mailHold.href = `mailto:integration@petrel-orbital.example?subject=${encodeURIComponent(`Hold ${ref} on shared launch ${v.launch}`)}&body=${encodeURIComponent(body)}`;
     lset.disabled = true;
     result.hidden = false;
-    const hideFields = () => { fields.style.visibility = 'hidden'; fields.inert = true; };
+    const hideFields = () => { if (result.hidden) return; fields.style.visibility = 'hidden'; fields.inert = true; };
     if (M.on) {
-      M.run(() => gsap.timeline()
+      M.run(() => { swapTl = gsap.timeline()
         .fromTo(fields, { clipPath: 'inset(0% 0% 0% 0%)' }, { clipPath: 'inset(0% 0% 0% 100%)', duration: D('clip'), ease: 'power2.inOut', onComplete: hideFields })
-        .fromTo(result, { clipPath: 'inset(0% 100% 0% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: D('clip'), ease: 'power2.inOut', clearProps: 'clipPath' }, 0.15)
-        .to($('.sc', resP), { duration: D('ref'), ease: 'none', scrambleText: { text: ref, chars: 'ABCDEFGHJKLMNPRSTUVWXYZ0123456789', speed: 0.85 } }, 0.3));
+        .fromTo(result, { clipPath: 'inset(0% 100% 0% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: D('clip'), ease: 'power2.inOut', clearProps: 'clipPath' }, 0.15); });
     } else hideFields();
     resH.focus({ preventScroll: true });
   }
 
   $('#change').addEventListener('click', () => {
     if (result.hidden) return;
+    swapTl?.kill(); swapTl = null; // a pending hide from the submit must not run after this
     lset.disabled = false;
     fields.inert = false; fields.style.visibility = '';
     const done = () => { result.hidden = true; };
     if (M.on) {
-      M.run(() => gsap.timeline()
+      M.run(() => { swapTl = gsap.timeline()
         .to(result, { clipPath: 'inset(0% 0% 0% 100%)', duration: D('clip') * 0.75, ease: 'power2.inOut', onComplete: done, clearProps: 'clipPath' })
-        .fromTo(fields, { clipPath: 'inset(0% 100% 0% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: D('clip'), ease: 'power2.inOut', clearProps: 'clipPath' }, 0.1));
+        .fromTo(fields, { clipPath: 'inset(0% 100% 0% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: D('clip'), ease: 'power2.inOut', clearProps: 'clipPath' }, 0.1); });
     } else { if (libs) gsap.set(fields, { clearProps: 'clipPath' }); done(); }
     firstField().focus({ preventScroll: true });
   });
@@ -965,8 +1029,8 @@
   if (!libs) { resetState(); return; } // CDN blocked: everything above works, instantly
 
   /* ---------- Motion (GSAP + Lenis) ---------- */
-  gsap.registerPlugin(ScrollTrigger, SplitText, ScrambleTextPlugin);
-  const launches = $('#launches'), h2 = $('#proc-h');
+  gsap.registerPlugin(ScrollTrigger, SplitText);
+  const launches = $('#launches'), h2 = $('#proc-h'), instr = $('.instr'), rail = $('.rail');
   let played = false;
 
   const mm = gsap.matchMedia();
@@ -980,34 +1044,35 @@
     const { motion, fine, wide, tall } = ctx.conditions;
     if (!motion) { // reduced: final states, native scroll, no Lenis, no cover, gates drawn by CSS
       M.on = false; M.lenis = null; M.run = (fn) => fn();
-      resetState();
+      resetState(inView());
       return;
     }
     let alive = true;
     M.on = true; M.fine = fine; M.run = (fn) => (alive ? ctx.add(fn) : fn());
 
     /* Lenis on GSAP's clock. Wheel steps between stages go through its virtualScroll hook (SC15). */
-    let stepOn = false, busy = false, needQuiet = false, lastWheel = 0, safety = 0, tops = [];
+    let stepOn = false, busy = false, needQuiet = false, lastWheel = 0, safety = 0, aim = -1, tops = [];
     const release = () => { busy = false; needQuiet = true; clearTimeout(safety); };
     const wheel = ({ event, deltaY }) => {
       if (!stepOn || event.type !== 'wheel' || event.ctrlKey || !deltaY) return true;
-      const y = lenis.animatedScroll, H = innerHeight, last = tops.length - 1;
+      const y = lenis.animatedScroll, H = innerHeight, last = tops.length - 1, dir = Math.sign(deltaY);
       let j;
-      if (deltaY > 0) {
+      if (aim >= 0) j = aim + dir; // a second gesture late in a glide steps on from the glide's target
+      else if (dir > 0) {
         if (y < tops[0] - H * 0.5 || y >= tops[last] - 2) return true; // released below stage 7 and above the intro
         j = tops.findIndex((t) => t > y + 2);
       } else {
         if (y <= tops[0] + 2 || y > tops[last] + H * 0.5) return true; // released above stage 1
         j = tops.findLastIndex((t) => t < y - 2);
       }
-      if (j < 0) return true;
+      if (j < 0 || j > last) { if (aim < 0) return true; j = -1; }
       if (event.cancelable) event.preventDefault(); // returning false skips Lenis's own preventDefault, so do it here
       const now = performance.now(), quiet = now - lastWheel;
       lastWheel = now;
-      if (busy || (needQuiet && quiet < 140)) return false; // input held for the glide, then 140 ms of quiet against trackpad tails
-      needQuiet = false; busy = true;
-      clearTimeout(safety); safety = setTimeout(release, D('glide') * 1000 + 300);
-      lenis.scrollTo(tops[j], { duration: D('glide'), easing: inOutQuart, lock: true, force: true, onComplete: release });
+      if (j < 0 || busy || (needQuiet && quiet < 140)) return false; // input held for 75% of the glide, then 140 ms of quiet against trackpad tails
+      needQuiet = false; busy = true; aim = j;
+      clearTimeout(safety); safety = setTimeout(release, D('glide') * 750);
+      lenis.scrollTo(tops[j], { duration: D('glide'), easing: inOutQuart, lock: true, force: true, onComplete: () => { aim = -1; } });
       return false;
     };
     const lenis = new Lenis({ autoRaf: false, anchors: false, smoothWheel: true, lerp: 0.1, virtualScroll: (d) => wheel(d) });
@@ -1017,6 +1082,13 @@
     const tick = (time) => lenis.raf(time * 1000);
     gsap.ticker.add(tick);
     gsap.ticker.lagSmoothing(0);
+    // Native key scrolling takes over from an in-flight glide instead of being eased back to Lenis's old target.
+    const KEYS = ['Home', 'End', 'PageUp', 'PageDown', ' ', 'ArrowUp', 'ArrowDown'];
+    const onKey = (e) => {
+      if (!KEYS.includes(e.key) || e.target.closest?.('input, select, textarea, button, [contenteditable], dialog')) return;
+      if (lenis.isScrolling === 'smooth' || lenis.isLocked) { lenis.reset(); release(); aim = -1; }
+    };
+    addEventListener('keydown', onKey, true);
 
     const fits = () => stages.every((s) => $('.stage-in', s).offsetHeight <= innerHeight);
     const measure = () => {
@@ -1026,30 +1098,31 @@
     ScrollTrigger.addEventListener('refresh', measure);
     measure();
 
-    /* Gates hide until their stage becomes active (motion only; CSS shows them drawn). */
+    /* Gates hide until their stage is passed (motion only; CSS shows them drawn). */
     gsap.set(gates.map((g) => g.rule), { scaleX: 0 });
     gsap.set(gates.map((g) => g.tick), { strokeDashoffset: 1 });
     gsap.set(gates.map((g) => g.key), { color: css('--graphite') });
     drawn.clear();
-    resetState();
-    drawGates(cur, true);
+    resetState(inView());
 
-    /* Page load: LD8 chrome, TX1 heading, SC16 rail, TX4 readout. Nothing gates input. */
-    const chrome = $$('.bar [data-rv]'), lede = $('.lede'), readout = $('.readout');
-    const rules = $$('.rail .rule'), rlinks = railLinks;
+    /* Page load: the instrument powers on. Chrome, heading lines, rail rules, stage names lit top to bottom like a
+       checklist, then the readout rolls up into L-12 as the last beat. Nothing gates input. */
+    const chrome = $$('.bar [data-rv]'), lede = $('.lede');
+    const roFirst = wide ? roMain : roBig; // the readout on screen at load
+    const rules = $$('.rail .rule');
     if (played) {
-      gsap.set([...chrome, lede, readout, h2, ind, ...rlinks], { opacity: 1 });
+      gsap.set([...chrome, lede, roMain, roBig, h2, ind, ...railLinks], { opacity: 1 });
       gsap.set(rules, { scaleX: 1 });
     } else {
       played = true;
       const t0 = performance.now();
       gsap.timeline()
         .to(chrome, { opacity: 1, duration: D('chrome'), ease: 'power2.out' }, 0)
-        .fromTo(rules, { scaleX: 0 }, { scaleX: 1, duration: D('rule'), ease: 'expo.out', stagger: 0.05 }, 0.45)
-        .to([ind, ...rlinks], { opacity: 1, duration: 0.06, ease: 'steps(1)', stagger: 0.05 }, 0.5)
-        .set(readout, { opacity: 1 }, 0.6)
-        .add(() => { if (alive) ctx.add(() => gsap.to(roN, { duration: D('decode'), ease: 'none', overwrite: true, scrambleText: { text: stages[(cur || 1) - 1].dataset.l, chars: DIGITS, speed: 0.85 } })); }, 0.6)
-        .to(lede, { opacity: 1, duration: 0.5, ease: 'power2.out' }, 0.9);
+        .fromTo(rules, { scaleX: 0 }, { scaleX: 1, duration: D('rule'), ease: 'expo.out', stagger: 0.05 }, 0.3)
+        .to(lede, { opacity: 1, duration: 0.5, ease: 'power2.out' }, 0.35)
+        .to([ind, ...railLinks], { opacity: 1, duration: 0.06, ease: 'steps(1)', stagger: 0.07 }, 0.4)
+        .set(wide ? [roMain, roBig] : roBig, { opacity: 1 }, 0.9)
+        .add(() => { if (alive) roll(readouts[roFirst === roMain ? 0 : 1], stageVal(cur || 1), 'in'); }, 0.9);
       Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 900))]).then(() => {
         if (!alive) return;
         const wait = Math.max(0, 0.1 - (performance.now() - t0) / 1000);
@@ -1057,57 +1130,150 @@
           type: 'lines', mask: 'lines', linesClass: 'ln', autoSplit: true,
           onSplit: (self) => {
             gsap.set(h2, { opacity: 1 });
-            return gsap.from(self.lines, { yPercent: 110, duration: D('rise'), ease: 'expo.out', stagger: 0.08, delay: wait });
+            return gsap.from(self.lines, { yPercent: 110, duration: D('rise'), ease: 'expo.out', stagger: 0.04, delay: wait });
           },
         }));
       });
     }
     document.fonts.ready.then(() => { if (alive) ScrollTrigger.refresh(); });
 
-    /* SC17 signature: solar cells switch on bottom rows first, scrubbed, until the screen is the array. */
+    /* Below 992px the big intro readout docks into the strip over the 30% of the viewport before the strip pins. */
+    const dockSync = (s) => {
+      const end = s.progress >= 1;
+      roMain.style.opacity = end ? '1' : '0';
+      roBig.style.visibility = end ? 'hidden' : '';
+    };
+    if (!wide) ctx.add(() => {
+      const bigAt = () => { // untransformed position of the big readout in document coordinates
+        const r = roBig.getBoundingClientRect();
+        return { x: r.left - gsap.getProperty(roBig, 'x'), y: r.top - gsap.getProperty(roBig, 'y') + scrollY };
+      };
+      const trackTop = () => $('.track').getBoundingClientRect().top + scrollY;
+      gsap.timeline({ scrollTrigger: { trigger: '.track', start: 'top 30%', end: 'top top', scrub: true, invalidateOnRefresh: true, onUpdate: dockSync, onRefresh: dockSync } })
+        .fromTo(roBig, { x: 0, y: 0, scale: 1 }, {
+          x: () => instr.getBoundingClientRect().left + roMain.offsetLeft - bigAt().x,
+          y: () => roMain.offsetTop - (bigAt().y - trackTop()), // where the strip readout sits once the strip pins at the top
+          scale: () => parseFloat(getComputedStyle(roMain).fontSize) / parseFloat(getComputedStyle(roBig).fontSize),
+          ease: 'none',
+        });
+    });
+
+    /* SC17 signature: solar cells switch on bottom rows first, scrubbed, until the screen is the array. The track
+       gains a runway (html.has-cover) so the instrument stays pinned above the cells for the whole wave. */
     let cover = null, coverTl = null, key = '';
+    const deploy = (on) => {
+      if (on === deployed) return;
+      deployed = on;
+      if (on) drawGates(7); // the door-opens tick is what starts the deployment
+      showReadout(true); // L-0 to T+0, and back
+    };
     const buildCover = () => {
       const { cols, cs } = sizeCells();
-      const rowsN = Math.ceil((innerHeight + (fine ? 0 : 120)) / cs); // a spare row under touch address bars
-      if (`${cols}x${cs}x${rowsN}` === key) return;
-      key = `${cols}x${cs}x${rowsN}`;
+      root.classList.add('has-cover');
+      const next = document.createElement('div');
+      next.className = 'cover'; next.setAttribute('aria-hidden', 'true');
+      document.body.append(next);
+      const top = next.offsetTop, off = top % cs; // below 992px the cover starts under the strip; rows keep #launches' origin
+      const rowsN = Math.ceil((innerHeight - top + off + (fine ? 0 : 120)) / cs); // a spare row under touch address bars
+      if (`${cols}x${cs}x${rowsN}x${off}` === key) { next.remove(); return; }
+      key = `${cols}x${cs}x${rowsN}x${off}`;
       coverTl?.scrollTrigger?.kill(); coverTl?.kill(); cover?.remove();
-      cover = document.createElement('div');
-      cover.className = 'cover'; cover.setAttribute('aria-hidden', 'true');
+      cover = next;
       const cells = [];
       for (let r = 0; r < rowsN; r++) for (let c = 0; c < cols; c++) {
         const d = document.createElement('i');
-        d.style.left = `${c * cs}px`; d.style.top = `${r * cs}px`;
+        d.style.left = `${c * cs}px`; d.style.top = `${r * cs - off}px`;
         cells.push([50 * (rowsN - 1 - r) + 140 * Math.random(), d]); // row bias plus noise: a ragged front rising from the hinge
         cover.append(d);
       }
-      document.body.append(cover);
       const sorted = cells.sort((a, b) => a[0] - b[0]).map((x) => x[1]);
       const sync = (s) => {
         cover.style.visibility = s.isActive ? 'visible' : 'hidden';
         launches.classList.toggle('is-bare', s.progress < 1); // the section's own array shows only once the cover is complete
+        deploy(s.progress > 0);
       };
       ctx.add(() => {
         gsap.set(sorted, { autoAlpha: 0 });
+        const T = 1.52; // stagger amount 1.5 plus one cell's .02
         coverTl = gsap.timeline({
-          scrollTrigger: { trigger: '#stage-7', start: 'clamp(bottom bottom)', end: 'clamp(bottom top)', scrub: true, onUpdate: sync, onToggle: sync, onRefresh: sync },
-        }).to(sorted, { autoAlpha: 1, duration: 0.1, stagger: { amount: 1.5 }, ease: 'none' });
+          scrollTrigger: { trigger: launches, start: 'top bottom', end: 'top top', scrub: true, onUpdate: sync, onToggle: sync, onRefresh: sync },
+        }).to(sorted, { autoAlpha: 1, duration: 0.02, ease: 'steps(1)', stagger: { amount: 1.5 } }, 0); // each cell switches on, never half-lit
+        // Desktop: the rail fades as the array rises, then the readout goes as the last cells light.
+        if (wide) coverTl
+          .fromTo(rail, { autoAlpha: 1 }, { autoAlpha: 0, duration: 0.3 * T, ease: 'none', immediateRender: false }, 0.5 * T)
+          .fromTo(instr, { autoAlpha: 1 }, { autoAlpha: 0, duration: 0.2 * T, ease: 'none', immediateRender: false }, 0.8 * T);
       });
     };
     buildCover();
+
+    /* Sunlight on the deployed array: a cell entered by the pointer (or tapped) lights, and the light spreads ring by
+       ring to its neighbours and fades. Canvas between the array and the panels; runs only while there is light. */
+    const cvs = document.createElement('canvas');
+    cvs.className = 'l-glint'; cvs.setAttribute('aria-hidden', 'true');
+    launches.prepend(cvs);
+    const g2 = cvs.getContext('2d');
+    const RINGS = 2, RING_DELAY = 0.06, PEAK = 0.18, LIFE = D('glint');
+    let waves = [], gRun = false, gSeen = false, lastCell = '', gW = 0, gH = 0;
+    g2.fillStyle = css('--silver');
+    const fitCanvas = () => {
+      const dpr = Math.min(2, devicePixelRatio || 1);
+      gW = launches.offsetWidth; gH = launches.offsetHeight;
+      cvs.width = Math.round(gW * dpr); cvs.height = Math.round(gH * dpr);
+      cvs.style.width = `${gW}px`; cvs.style.height = `${gH}px`;
+      g2.setTransform(dpr, 0, 0, dpr, 0, 0); g2.fillStyle = css('--silver');
+    };
+    fitCanvas();
+    ScrollTrigger.addEventListener('refresh', fitCanvas);
+    const stopGlint = () => { if (gRun) { gRun = false; gsap.ticker.remove(drawGlint); } g2.clearRect(0, 0, gW, gH); };
+    function drawGlint() {
+      const now = performance.now() / 1000, cs = cellSize, k = cs * 0.12, lit = new Map();
+      waves = waves.filter((w) => now - w.t0 < RINGS * RING_DELAY + LIFE);
+      for (const w of waves) for (let dr = -RINGS; dr <= RINGS; dr++) for (let dc = -RINGS; dc <= RINGS; dc++) {
+        const d = Math.max(Math.abs(dr), Math.abs(dc)), age = now - w.t0 - d * RING_DELAY;
+        if (age < 0 || age > LIFE) continue;
+        const id = `${w.r + dr},${w.c + dc}`, a = PEAK * (1 - d / (RINGS + 1)) * (1 - age / LIFE);
+        if (a > (lit.get(id) || 0)) lit.set(id, a);
+      }
+      g2.clearRect(0, 0, gW, gH);
+      lit.forEach((a, id) => { // the chamfered cell inside its 1px grout
+        const [r, c] = id.split(',').map(Number), x = c * cs + 1, y = r * cs + 1, s = cs - 1;
+        g2.globalAlpha = a; g2.beginPath();
+        g2.moveTo(x + k, y); g2.lineTo(x + s - k, y); g2.lineTo(x + s, y + k); g2.lineTo(x + s, y + s - k);
+        g2.lineTo(x + s - k, y + s); g2.lineTo(x + k, y + s); g2.lineTo(x, y + s - k); g2.lineTo(x, y + k);
+        g2.closePath(); g2.fill();
+      });
+      if (!waves.length) stopGlint();
+    }
+    const light = (e, again) => {
+      if (!gSeen || launches.classList.contains('is-bare') || e.target.closest('.panel--book')) return; // only once deployed, not under the booking panel
+      const b = launches.getBoundingClientRect(), r = Math.floor((e.clientY - b.top) / cellSize), c = Math.floor((e.clientX - b.left) / cellSize);
+      if (!again && `${r},${c}` === lastCell) return;
+      lastCell = `${r},${c}`;
+      waves.push({ r, c, t0: performance.now() / 1000 });
+      if (!gRun) { gRun = true; gsap.ticker.add(drawGlint); }
+    };
+    const onGMove = (e) => { if (e.pointerType === 'mouse') light(e); };
+    const onGDown = (e) => { if (e.pointerType !== 'mouse') light(e, true); };
+    if (fine) launches.addEventListener('pointermove', onGMove);
+    launches.addEventListener('pointerdown', onGDown);
+    const gio = new IntersectionObserver(([e]) => { gSeen = e.isIntersecting; if (!gSeen) { waves = []; stopGlint(); } });
+    gio.observe(launches);
+
     let rt = 0;
     const onResize = () => { clearTimeout(rt); rt = setTimeout(() => { if (!alive) return; buildCover(); ScrollTrigger.refresh(); }, 200); };
     addEventListener('resize', onResize);
 
-    /* Rail: TX4 re-scramble of the L-label on hover and keyboard focus; a graphite cursor tracks the pointer. */
-    const scramble = (a) => {
-      const b = $('.rl b', a);
-      ctx.add(() => gsap.to(b, { duration: D('label'), ease: 'none', overwrite: true, scrambleText: { text: b.dataset.v, chars: DIGITS, speed: 0.85 } }));
+    /* Rail: hovering or focusing a stage previews its lead time in the readout (graphite) and nudges the name;
+       a graphite cursor tracks the pointer along the rail. */
+    const onRailIn = (e) => {
+      if (e.type === 'focus' && !e.currentTarget.matches(':focus-visible')) return;
+      preview = railLinks.indexOf(e.currentTarget) + 1; showReadout(true);
     };
-    railLinks.forEach((a) => { const b = $('.rl b', a); b.dataset.v ??= b.textContent; });
-    const onRailEnter = (e) => scramble(e.currentTarget);
-    const onRailFocus = (e) => { if (e.currentTarget.matches(':focus-visible')) scramble(e.currentTarget); };
-    railLinks.forEach((a) => { if (fine) a.addEventListener('pointerenter', onRailEnter); a.addEventListener('focus', onRailFocus); });
+    const onRailOut = () => { if (!preview) return; preview = 0; showReadout(true); };
+    railLinks.forEach((a) => {
+      if (fine) { a.addEventListener('pointerenter', onRailIn); a.addEventListener('pointerleave', onRailOut); }
+      a.addEventListener('focus', onRailIn); a.addEventListener('blur', onRailOut);
+    });
 
     const railOl = $('.rail ol'), ghost = $('.ghost');
     let rr = null, gy = null;
@@ -1125,20 +1291,34 @@
     }
 
     return () => {
+      const y = scrollY; // a media flip (reduced motion, width) keeps the reader where they were
       alive = false;
       M.on = false; M.lenis = null; M.run = (fn) => fn();
+      preview = 0; deployed = false;
       clearTimeout(rt); clearTimeout(safety);
       removeEventListener('resize', onResize);
+      removeEventListener('keydown', onKey, true);
       ScrollTrigger.removeEventListener('refresh', measure);
-      railLinks.forEach((a) => { a.removeEventListener('pointerenter', onRailEnter); a.removeEventListener('focus', onRailFocus); });
+      ScrollTrigger.removeEventListener('refresh', fitCanvas);
+      railLinks.forEach((a) => {
+        a.removeEventListener('pointerenter', onRailIn); a.removeEventListener('pointerleave', onRailOut);
+        a.removeEventListener('focus', onRailIn); a.removeEventListener('blur', onRailOut);
+      });
       railOl.removeEventListener('pointerenter', gEnter);
       railOl.removeEventListener('pointermove', gMove);
       railOl.removeEventListener('pointerleave', gLeave);
+      launches.removeEventListener('pointermove', onGMove);
+      launches.removeEventListener('pointerdown', onGDown);
+      gio.disconnect(); stopGlint(); cvs.remove();
       gsap.ticker.remove(tick);
       gsap.ticker.lagSmoothing(500, 33);
       lenis.destroy();
       cover?.remove(); cover = null;
+      root.classList.remove('has-cover');
       launches.classList.remove('is-bare');
+      roMain.style.opacity = ''; roBig.style.visibility = '';
+      readouts.forEach((r) => { r.tw?.kill(); r.tw = null; r.box.classList.remove('is-rolling'); r.reel.innerHTML = ''; });
+      scrollTo(0, y);
     };
   });
 })();

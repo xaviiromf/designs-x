@@ -25,6 +25,7 @@
     --glow-4: rgba(124, 221, 242, .9);
     --lamp-glow: #FFE3A8;   /* lamp light growing over the Wishlist button */
     --scrim: rgb(10 28 38 / .78);
+    --grid-raised: #1F4558;  /* grid lines on the dialog's pool ground */
 
     /* Type */
     --font-display: "Handjet", "Arial Narrow", sans-serif;
@@ -38,12 +39,14 @@
     --lh-body: 1.55;
     --lh-lede: 1.45;
 
-    /* Space: the board. Every step is a whole or half cell. */
+    /* Space: the board. Every step is a whole or half 12px cell (approximate on phones, where the cell is 8px). */
     --cell: 12px;
     --s1: 6px; --s2: 12px; --s3: 24px; --s4: 36px;
     --s5: 48px; --s6: 72px; --s7: 96px; --s8: 144px;
     --notch: 4px;           /* pixel corner on buttons */
-    --tap: 48px;
+    --tap: 48px;            /* button and field height */
+    --hit: 44px;            /* minimum target for text actions and the checkbox row */
+    --max-w: 1296px;        /* content width, 108 cells */
 
     /* Motion (CSS transitions and the script read these) */
     --d-press: .12s;
@@ -117,8 +120,8 @@
     overflow: clip;
     isolation: isolate;
     padding-top: var(--s7);
-    padding-inline: max(var(--s3), (100% - 1296px) / 2);
-    padding-inline: round(down, max(var(--s3), (100% - 1296px) / 2), var(--cell));
+    padding-inline: max(var(--s3), (100% - var(--max-w)) / 2);
+    padding-inline: round(down, max(var(--s3), (100% - var(--max-w)) / 2), var(--cell));
     background-color: var(--night);
     background-image:
       repeating-linear-gradient(90deg, var(--grid-line) 0 1px, transparent 1px var(--cell)),
@@ -141,7 +144,6 @@
       min-height: calc(100svh - var(--s7) - var(--s4));
     }
     .copy { grid-column: 1; grid-row: 1; }
-    .hint { grid-column: 1; grid-row: 2; align-self: end; }
     .studio { grid-column: 1; grid-row: 3; }
     .panel { grid-column: 2; grid-row: 1 / 4; align-self: start; }
   }
@@ -149,12 +151,11 @@
   /* ---------- Copy ---------- */
   .h2 {
     margin: 0;
-    font: 700 var(--t-h2)/.92 var(--font-display);
+    font: 700 var(--t-h2)/1 var(--font-display);
     font-variation-settings: var(--modules);
     letter-spacing: 0;
     text-wrap: balance;
   }
-  .h2 .line-mask { padding-bottom: .12em; margin-bottom: -.12em; }
   .lede {
     margin: var(--s4) 0 0;
     max-width: 52ch;
@@ -170,13 +171,14 @@
     display: flex; flex-wrap: wrap; gap: var(--s2);
     margin-top: var(--s5);
   }
-  .hint { margin: var(--s4) 0 0; color: var(--kelp); }
-  @media (min-width: 960px) { .hint { margin-top: var(--s6); } }
+  .hint { margin: var(--s3) 0 0; color: var(--kelp); }
   .studio { margin: var(--s2) 0 0; max-width: 56ch; }
 
   /* ---------- Buttons: pixel-cornered tiles ---------- */
-  .btn {
+  .btn, .demo {
     --corners: polygon(0 var(--notch), var(--notch) var(--notch), var(--notch) 0, calc(100% - var(--notch)) 0, calc(100% - var(--notch)) var(--notch), 100% var(--notch), 100% calc(100% - var(--notch)), calc(100% - var(--notch)) calc(100% - var(--notch)), calc(100% - var(--notch)) 100%, var(--notch) 100%, var(--notch) calc(100% - var(--notch)), 0 calc(100% - var(--notch)));
+  }
+  .btn {
     display: inline-block;
     padding: 0; border: 0; background: none;
     color: inherit; text-decoration: none;
@@ -210,15 +212,16 @@
   /* Without the motion layer (reduced motion, blocked CDN): an instant colour change. */
   html:not(.fx) .btn:hover .inner, html:not(.fx) .btn:focus-visible .inner { background: var(--fill); }
   html:not(.fx) .btn-line:hover, html:not(.fx) .btn-line:focus-visible { --ink: var(--spark); }
+  /* Touch: :active, plus .is-tap from the press handler where :active is unreliable. */
   @media (hover: none) {
-    .btn:active .inner { background: var(--fill); transition: none; }
-    .btn-line:active { --ink: var(--spark); }
+    .btn:active .inner, .btn.is-tap .inner { background: var(--fill); transition: none; }
+    .btn-line:active, .btn-line.is-tap { --ink: var(--spark); }
   }
 
   /* ---------- Underlined text actions (HV2) ---------- */
   .u {
     display: inline-block;
-    min-width: 44px;
+    min-width: var(--hit);
     padding: 10px 0;
     border: 0;
     color: var(--foam);
@@ -238,7 +241,7 @@
   .u.is-on { background-size: 100% 2px, 100% 1px; }
   html:not(.fx) .u:hover, html:not(.fx) .u:focus-visible { color: var(--spark); }
   @media (hover: none) {
-    .u:active { background-size: 100% 2px, 100% 2px; color: var(--spark); transition: none; }
+    .u:active, .u.is-tap { background-size: 100% 2px, 100% 2px; color: var(--spark); transition: none; }
   }
 
   /* ---------- The tray ---------- */
@@ -248,7 +251,7 @@
     padding: var(--s3) 0 var(--s3) var(--s3);
   }
   @media (min-width: 960px) { .panel { margin-top: 0; } }
-  .rule { position: absolute; background: var(--pool); transform-origin: 0 0; }
+  .rule { position: absolute; background: var(--kelp); transform-origin: 0 0; }
   .rule-top { left: 0; right: 0; top: 0; height: 2px; }
   .rule-left { left: 0; top: 0; bottom: 0; width: 2px; }
   .rule-mid { position: relative; display: block; height: 2px; margin: var(--s4) 0 var(--s3) calc(-1 * var(--s3)); }
@@ -266,10 +269,15 @@
   .facts > div { display: grid; grid-template-columns: 7.5em minmax(0, 1fr); gap: var(--s2); }
   .facts dt { font-weight: 600; }
   .facts dd { margin: 0; font-variant-numeric: tabular-nums; }
+  @media (max-width: 599px) {
+    .panel { padding-left: var(--s2); }
+    .rule-mid { margin-left: calc(-1 * var(--s2)); }
+    .facts > div { grid-template-columns: 6.5em minmax(0, 1fr); }
+  }
 
   /* ---------- Launch email ---------- */
   .swap { display: grid; }
-  .swap > * { grid-area: 1 / 1; }
+  .swap > * { grid-area: 1 / 1; align-self: start; }
   .swap > .is-off { visibility: hidden; }
   .lbl { display: block; margin-top: var(--s3); font-weight: 600; }
   .field { margin-top: var(--s1); }
@@ -287,12 +295,7 @@
   }
   .field input:hover { border-color: var(--foam); }
   .field input:focus { border-color: var(--spark); outline: none; } /* the spark border and the cell strip are its focus ring */
-  .strip {
-    display: block;
-    height: 4px;
-    background: repeating-linear-gradient(90deg, var(--spark) 0 calc(var(--cell) - 2px), transparent 0 var(--cell));
-    clip-path: inset(0 100% 0 0);
-  }
+  .strip { clip-path: inset(0 100% 0 0); }
   .field .strip { margin-top: 4px; transition: clip-path var(--d-strip) steps(16, end); }
   .field input:focus + .strip { clip-path: inset(0); }
   .err {
@@ -308,14 +311,14 @@
   .check {
     position: relative;
     display: flex; gap: var(--s2); align-items: flex-start;
-    min-height: 44px;
+    min-height: var(--hit);
     margin-top: var(--s1);
     padding: 10px 0;
     cursor: pointer;
   }
   .check input {
     flex: none;
-    width: 24px; height: 24px;
+    width: var(--s3); height: var(--s3);
     margin: 0;
     border: 2px solid var(--kelp);
     border-radius: 0;
@@ -326,7 +329,7 @@
   }
   .check:hover input { border-color: var(--foam); }
   .check input:checked { border-color: var(--spark); background: var(--spark); }
-  .check svg { position: absolute; left: 0; top: 10px; width: 24px; height: 24px; pointer-events: none; }
+  .check svg { position: absolute; left: 0; top: 10px; width: var(--s3); height: var(--s3); pointer-events: none; }
   .check path {
     fill: none; stroke: var(--night); stroke-width: 2.5; stroke-linecap: square;
     stroke-dasharray: 1; stroke-dashoffset: 1;
@@ -346,7 +349,7 @@
     height: .64em;
     margin: var(--s6) 0 0 -.03em;
     color: var(--pool);
-    font: 800 calc(100cqw / 3.32)/.68 var(--font-display);
+    font: 800 calc(100vw / 3.32)/.68 var(--font-display);
     font-variation-settings: var(--modules);
     text-transform: uppercase;
     white-space: nowrap;
@@ -354,7 +357,7 @@
   }
   .is-drawn .mark { color: transparent; }
   @media (max-width: 599px) {
-    .mark { height: 1.42em; font-size: calc(100cqw / 1.79); line-height: .8; }
+    .mark { height: 1.42em; font-size: calc(100vw / 1.79); line-height: .8; }
     .mark span { display: block; }
   }
 
@@ -365,16 +368,25 @@
     margin: auto;
     padding: 0;
     border: 0;
-    background: var(--pool);
+    background: none;
     color: var(--foam);
     overflow: visible;
+    --notch: var(--cell);   /* a bigger tile, the same stepped corner */
   }
   .demo::backdrop { background: var(--scrim); }
   .demo[open]::backdrop { animation: scrim-in var(--d-backdrop) linear both; }
   .demo.is-closing::backdrop { animation: scrim-out var(--d-dlg-out) linear both; }
   @keyframes scrim-in { from { opacity: 0; } }
   @keyframes scrim-out { to { opacity: 0; } }
-  .dlg { padding: var(--s4); }
+  .dlg-rim { padding: 2px; background: var(--kelp); clip-path: var(--corners); }
+  .dlg {
+    padding: var(--s4);
+    clip-path: var(--corners);
+    background-color: var(--pool);
+    background-image:
+      repeating-linear-gradient(90deg, var(--grid-raised) 0 1px, transparent 1px var(--cell)),
+      repeating-linear-gradient(180deg, var(--grid-raised) 0 1px, transparent 1px var(--cell));
+  }
   .dlg-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s3); }
   .dlg h2 { margin: 0; font: 600 var(--t-h3)/1.15 var(--font-text); letter-spacing: -.01em; }
   .dlg-intro { margin: var(--s2) 0 var(--s3); max-width: 46ch; }
@@ -391,16 +403,24 @@
   }
   .store-name { display: block; font: 600 var(--t-lede)/1.25 var(--font-text); }
   .store-meta { display: block; margin-top: 2px; color: var(--kelp); font-variant-numeric: tabular-nums; }
-  .store .strip { position: absolute; left: 0; right: 0; bottom: 0; transition: clip-path var(--d-row) steps(10, end); }
-  .store:hover .strip, .store:focus-visible .strip { clip-path: inset(0); }
+  .strip, .store::before {
+    display: block;
+    height: 4px;
+    background: repeating-linear-gradient(90deg, var(--spark) 0 calc(var(--cell) - 2px), transparent 0 var(--cell));
+  }
+  .store .strip, .store::before { position: absolute; left: 0; right: 0; bottom: 0; }
+  .store .strip { transition: clip-path var(--d-row) steps(10, end); }
+  /* The resting strip at 30% steps in with each row as the dialog opens, so the rows read as tiles. */
+  .store::before { content: ""; opacity: .3; }
+  .demo[open] .store::before { animation: strip-in var(--d-row) steps(10, end) .3s both; }
+  .demo[open] li + li .store::before { animation-delay: .35s; }
+  @keyframes strip-in { from { clip-path: inset(0 100% 0 0); } }
+  .store:hover .strip, .store:focus-visible .strip, .store:active .strip, .store.is-tap .strip { clip-path: inset(0); }
   @media (hover: hover) {
     .stores:has(.store:hover) .store:not(:hover) { opacity: .45; }
   }
   .stores:has(.store:focus-visible) .store:not(:focus-visible) { opacity: .45; }
-  @media (hover: none) {
-    .store .strip { clip-path: none; opacity: .3; }
-    .store:active .strip { opacity: 1; }
-  }
+  @media (hover: none) { .store:active .strip, .store.is-tap .strip { transition: none; } }
 
   /* ---------- Narrow screens ---------- */
   @media (max-width: 599px) {
@@ -415,7 +435,7 @@
 
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { transition-duration: 0s !important; }
-    .demo[open]::backdrop, .demo.is-closing::backdrop { animation: none; }
+    .demo[open]::backdrop, .demo.is-closing::backdrop, .demo[open] .store::before { animation: none; }
   }
 </style>
 </head>
@@ -432,10 +452,9 @@
           <a class="btn btn-lamp" href="https://store.steampowered.com/" target="_blank" rel="noopener"><span class="face"><span class="inner"><span class="fill"></span><span class="label">Wishlist on Steam<span class="vh"> (opens in a new tab)</span></span></span></span></a>
           <button class="btn btn-line" id="demo-open" type="button" aria-haspopup="dialog" aria-controls="demo"><span class="face"><span class="inner"><span class="fill"></span><span class="label">Play the free demo</span></span></span></button>
         </div>
+        <p class="hint" id="hint" data-rv hidden></p>
         <p class="note" data-rv>The full game comes out in spring 2027 for Windows, macOS and Linux, and it plays on Steam Deck. When you wishlist it, Steam emails you on launch day and shows Noctiluca to more players.</p>
       </div>
-
-      <p class="hint" id="hint" data-rv hidden></p>
 
       <div class="panel" id="panel">
         <span class="rule rule-top" aria-hidden="true"></span>
@@ -457,7 +476,7 @@
               <input id="email" name="email" type="email" autocomplete="email" spellcheck="false" required>
               <span class="strip" aria-hidden="true"></span>
             </div>
-            <p class="err" id="email-err"></p>
+            <p class="err" id="email-err" aria-live="polite"></p>
             <label class="check" data-rv>
               <input type="checkbox" name="playtest">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path pathLength="1" d="M6 12.5l4 4 8-9"/></svg>
@@ -482,7 +501,7 @@
 </section>
 
 <dialog class="demo" id="demo" aria-labelledby="demo-title" data-lenis-prevent>
-  <div class="dlg">
+  <div class="dlg-rim"><div class="dlg">
     <div class="dlg-head" data-row>
       <h2 id="demo-title">Play the free demo</h2>
       <button class="u" id="demo-close" type="button">Close</button>
@@ -492,7 +511,7 @@
       <li data-row><a class="store" href="https://store.steampowered.com/" target="_blank" rel="noopener"><span class="store-name">Get the demo on Steam</span><span class="store-meta">Windows, macOS, Linux, Steam Deck. 412 MB</span><span class="vh"> (opens in a new tab)</span><span class="strip" aria-hidden="true"></span></a></li>
       <li data-row><a class="store" href="https://itch.io/" target="_blank" rel="noopener"><span class="store-name">Get the demo on itch.io</span><span class="store-meta">Windows, macOS, Linux. DRM-free download, 398 MB</span><span class="vh"> (opens in a new tab)</span><span class="strip" aria-hidden="true"></span></a></li>
     </ul>
-  </div>
+  </div></div>
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
@@ -533,6 +552,7 @@
       from.classList.add('is-off'); from.inert = true;
       to.classList.remove('is-off'); to.inert = false;
       (toDone ? doneTitle : email).focus();
+      if (toDone) fx?.haloAt(done, 4); // the light gathers around the new message
     };
     fx ? fx.swap(from, to, toDone, finish) : finish();
   };
@@ -543,16 +563,18 @@
     if (msg) { email.focus(); return; }
     doneMail.textContent = email.value.trim();
     donePlay.hidden = !form.elements.playtest.checked;
-    fx?.burstAt(submit, 5);
     swap(true);
   });
   email.addEventListener('input', () => { if (email.hasAttribute('aria-invalid') && !check()) showError(''); });
   again.addEventListener('click', () => { if (!done.classList.contains('is-off')) swap(false); });
 
   /* ---------- Demo dialog ---------- */
-  let closing = false;
+  let closing = false, downOn = null;
+  // Recover from any close, even one the browser forces (a second Escape is not cancelable) mid-tween.
+  const settle = () => { closing = false; dlg.classList.remove('is-closing'); fx?.dialogReset(); };
   openBtn.addEventListener('click', () => {
     if (dlg.open) return;
+    settle();
     dlg.showModal();
     lenis?.stop();
     fx?.dialogIn(openBtn);
@@ -565,8 +587,10 @@
   };
   closeBtn.addEventListener('click', closeDialog);
   dlg.addEventListener('cancel', (e) => { e.preventDefault(); closeDialog(); });
-  dlg.addEventListener('click', (e) => { if (e.target === dlg) closeDialog(); });
-  dlg.addEventListener('close', () => lenis?.start());
+  // Close on a backdrop click only when the press also started on the backdrop (not a text selection overshoot).
+  dlg.addEventListener('pointerdown', (e) => { downOn = e.target; });
+  dlg.addEventListener('click', (e) => { if (e.target === dlg && downOn === dlg) closeDialog(); });
+  dlg.addEventListener('close', () => { settle(); lenis?.start(); });
 
   if (!lib) return;
 
@@ -574,9 +598,9 @@
   const read = (n) => getComputedStyle(root).getPropertyValue(n).trim();
   const water = (() => {
     const g = canvas.getContext('2d');
-    const WORD = 'NOCTILUCA', FACE = '"Handjet"';
+    const WORD = 'NOCTILUCA';
     let W = 0, H = 0, cell = 12, cols = 0, rows = 0, top = 0, hw = .15, hm = .45, glow = [];
-    let heat = new Float32Array(0), floor = heat;
+    let heat = new Float32Array(0), floor = heat, markMask = heat, bandRows = 0, rise = 0, mids = [];
 
     function build(rest) {
       cell = parseFloat(read('--cell')) || 12;
@@ -588,31 +612,32 @@
       canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
       g.setTransform(dpr, 0, 0, dpr, 0, 0);
       cols = Math.ceil(W / cell); rows = Math.ceil(H / cell);
-      heat = new Float32Array(cols * rows); floor = new Float32Array(cols * rows);
+      heat = new Float32Array(cols * rows); floor = new Float32Array(cols * rows); markMask = new Float32Array(cols * rows);
 
       // The wordmark is cells, not text: sample Handjet 800 at 4x4 per cell, letter by letter, each letter's
       // ink snapped to whole cells with at least one empty column between letters, the cap height on whole
-      // rows and the word spread across the content width. The section edge crops the letters through their
-      // bottom stroke: a deeper crop removes the feet of I, L and U, and the name reads NOCTIIIICA.
-      const S = 4, o = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+      // rows and the word spread two cells past both section edges, so N and A bleed off the sides. The
+      // section edge crops the letters through their bottom stroke: a deeper crop removes the feet of I, L
+      // and U, and the name reads NOCTIIIICA.
+      const S = 4, FACE = read('--font-display'), o = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
       o.font = `800 100px ${FACE}`;
       const asc = o.measureText(WORD).actualBoundingBoxAscent;
       const glyph = (ch) => { const m = o.measureText(ch); return { ch, l: m.actualBoundingBoxLeft, w: m.actualBoundingBoxLeft + m.actualBoundingBoxRight }; };
       // Phone widths (8px cells) stack the name as NOCTI / LUCA, night / light, so it stays legible.
       const lines = (cell < 12 ? ['NOCTI', 'LUCA'] : [WORD]).map((t) => [...t].map(glyph));
-      const left = Math.round(wrap.offsetLeft / cell), span = Math.floor(wrap.clientWidth / cell);
+      const left = -2, span = cols + 4;
       const gap = cell < 12 ? 1 : 2, lead = 2;
       const widthOf = (line, em) => line.map((q) => Math.max(1, Math.round(q.w * em / 100)));
       const total = (ws) => ws.reduce((a, b) => a + b, 0) + gap * (ws.length - 1);
       let cap = 80, em = 0;
       do { cap--; em = cap / asc * 100; } while (cap > 5 && lines.some((line) => total(widthOf(line, em)) > span));
-      const bandRows = lines.length * cap + (lines.length - 1) * lead + 1;
+      bandRows = lines.length * cap + (lines.length - 1) * lead + 1;
       top = Math.round(H / cell + Math.max(.5, Math.round(cap / 12) - 1) - (bandRows - 1)); // Handjet caps are 12 modules tall
       o.canvas.width = cols * S; o.canvas.height = bandRows * S;
       o.font = `800 ${em * S}px ${FACE}`;
       o.fillStyle = '#fff';
       lines.forEach((line, n) => {
-        const ws = widthOf(line, em), gaps = line.length - 1, spare = lines.length > 1 ? 0 : span - total(ws);
+        const ws = widthOf(line, em), gaps = line.length - 1, spare = span - total(ws);
         const base = (n * (cap + lead) + cap) * S;
         let x = left;
         line.forEach((q, i) => {
@@ -628,10 +653,35 @@
         for (let cx = 0; cx < cols; cx++) {
           let a = 0;
           for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) a += px[((cy * S + y) * stride + cx * S + x) * 4 + 3];
-          if (a > need) floor[r * cols + cx] = rest;
+          if (a > need) markMask[r * cols + cx] = rest;
         }
       }
+      mids = lines.map((_, n) => (top + n * (cap + lead) + cap / 2) * cell);
+      rise = Math.min(rise, bandRows);
+      shift(false);
       heat.set(floor);
+    }
+
+    // TX11, quantised: the floor is the mask shifted down by `rise` whole rows. When the word climbs a row,
+    // its new top row breaks the surface lit.
+    function shift(lit) {
+      floor.fill(0);
+      const off = Math.min(rise * cols, floor.length);
+      floor.set(markMask.subarray(0, floor.length - off), off);
+      let crest = -1;
+      for (let i = 0; i < floor.length; i++) {
+        if (!floor[i]) continue;
+        const r = Math.floor(i / cols);
+        if (crest < 0) crest = r;
+        if (lit && r === crest && heat[i] < .9) heat[i] = .9;
+        if (heat[i] < floor[i]) heat[i] = floor[i];
+      }
+    }
+    function setRise(n) {
+      n = Math.max(0, Math.min(bandRows || n, n));
+      if (n === rise) return false;
+      rise = n; shift(true);
+      return true;
     }
 
     function step(dt) {
@@ -678,13 +728,14 @@
         }
       }
     }
-    // The same square halo around a rectangle: a focused control disturbs the water along its edges.
+    // The same square halo around a rectangle: a focused control disturbs the water along its edges
+    // (never under it, so text on a transparent control stays readable).
     function ring(x0, y0, x1, y1, R) {
       const c0 = Math.floor(x0 / cell), c1 = Math.floor((x1 - 1) / cell), r0 = Math.floor(y0 / cell), r1 = Math.floor((y1 - 1) / cell), n = Math.ceil(R);
       for (let r = Math.max(0, r0 - n); r <= Math.min(rows - 1, r1 + n); r++) {
         for (let c = Math.max(0, c0 - n); c <= Math.min(cols - 1, c1 + n); c++) {
           const d = Math.max(r0 - r, r - r1, c0 - c, c - c1, 0);
-          if (d > R) continue;
+          if (d === 0 || d > R) continue;
           const v = 1 - d / (R + 1), i = r * cols + c;
           if (v > heat[i]) heat[i] = v;
         }
@@ -694,28 +745,9 @@
       const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / (cell * .5)));
       for (let k = 1; k <= n; k++) stamp(x0 + (x1 - x0) * k / n, y0 + (y1 - y0) * k / n, R);
     }
-    // A vertical band through the wordmark rows, for the one sweep across the name.
-    function column(x, R) {
-      const cx = Math.floor(x / cell), n = Math.ceil(R);
-      for (let r = Math.max(0, top - 2); r < rows; r++) {
-        for (let dx = -n; dx <= n; dx++) {
-          const c = cx + dx;
-          if (c < 0 || c >= cols) continue;
-          const v = 1 - Math.abs(dx) / (R + 1), i = r * cols + c;
-          if (v > heat[i]) heat[i] = v;
-        }
-      }
-    }
-    function sparkle(n, y0, y1) {
-      const r0 = Math.max(0, Math.floor(y0 / cell)), r1 = Math.min(rows, Math.ceil(y1 / cell));
-      if (r1 <= r0) return;
-      for (let k = 0; k < n; k++) {
-        const i = (r0 + Math.floor(Math.random() * (r1 - r0))) * cols + Math.floor(Math.random() * cols);
-        heat[i] = Math.max(heat[i], .35 + Math.random() * .3);
-      }
-    }
     const clear = () => g.clearRect(0, 0, W, H);
-    return { build, step, draw, stamp, ring, trail, column, sparkle, clear, get cell() { return cell; } };
+    return { build, step, draw, stamp, ring, trail, setRise, clear,
+      get cell() { return cell; }, get bandRows() { return bandRows; }, get mids() { return mids; } };
   })();
 
   /* ---------- Motion ---------- */
@@ -724,7 +756,7 @@
     Promise.all([document.fonts.ready, document.fonts.load(`800 100px "Handjet"`), document.fonts.load(`700 100px "Handjet"`)]).then(() => 'fonts', () => 'fonts'),
     new Promise((r) => setTimeout(() => r('timeout'), 1500))
   ]);
-  let played = false, markSeen = false;
+  let played = false, nameLit = false;
 
   const mm = gsap.matchMedia();
   mm.add({
@@ -755,8 +787,9 @@
     };
 
     if (!motion) {
-      // Reduced motion: final states, native scroll, a static grid and the name drawn at the .38 step.
+      // Reduced motion: final states, native scroll, a static grid and the name drawn in place at the .38 step.
       root.classList.add('go');
+      water.setRise(0);
       fontsReady.then((how) => { if (!dead) start(how); });
       return () => { dead = true; off.forEach((f) => f()); water.clear(); sec.classList.remove('is-drawn'); };
     }
@@ -765,6 +798,7 @@
       .map((k) => [k, parseFloat(read(`--d-${k}`))]));
 
     root.classList.add('fx');
+    if (!played) water.setRise(1e4); // the name starts under the surface; S1 raises it
     hint.textContent = fine ? 'Move through the water to light it.' : 'Drag through the water to light it.';
     hint.hidden = false;
 
@@ -776,11 +810,15 @@
     gsap.ticker.lagSmoothing(0);
 
     /* The light loop runs only while something is lit, and sleeps off screen. */
-    let awake = false, inView = true, dy = 0, lastY = window.scrollY;
+    let awake = false, inView = true, dy = 0, lastY = window.scrollY, ptr = null;
     const frame = (t, dms) => {
       if (dy) { // SC10: scrolling disturbs the water
         const r = sec.getBoundingClientRect();
-        water.sparkle(Math.min(Math.round(dy * .6), 36), -r.top, innerHeight - r.top);
+        if (ptr) disturb(ptr[0] - r.left, ptr[1] - r.top, 2); // the water moves under a still hand: a trail
+        else { // touch, or no pointer yet: a bow wave in both side gutters at the viewport's leading edge
+          const y = dy > 0 ? innerHeight - r.top : -r.top, gw = wrap.offsetLeft, R = Math.min(4, 1 + Math.abs(dy) * .05);
+          water.trail(0, y, gw, y, R); water.trail(r.width - gw, y, r.width, y, R);
+        }
         dy = 0;
       }
       const alive = water.step(Math.min(dms, 100) / 1000);
@@ -808,48 +846,56 @@
       const p = { r: 0 };
       gsap.to(p, { r: R, duration: T.burst, ease: 'power2.out', onUpdate: () => { water.stamp(x, y, p.r); wake(); } });
     };
-    const burstAt = (el, R) => {
-      const a = el.getBoundingClientRect(), r = sec.getBoundingClientRect();
-      burst(a.left + a.width / 2 - r.left, a.top + a.height / 2 - r.top, R);
-    };
     const haloAt = (el, R) => {
       const a = el.getBoundingClientRect(), r = sec.getBoundingClientRect(), p = { r: 0 };
       gsap.to(p, { r: R, duration: T.burst, ease: 'power2.out', onUpdate: () => { water.ring(a.left - r.left, a.top - r.top, a.right - r.left, a.bottom - r.top, p.r); wake(); } });
     };
-    // A virtual pointer crossing the water (the opening wake and the sweep over the name).
-    const crossing = (dur, path, R, band) => {
+    // A virtual boat crossing the water (the opening wake and the crossing over the name).
+    const crossing = (dur, path, R, onX) => {
       const p = { t: 0 };
       let prev = null;
       return gsap.to(p, {
         t: 1, duration: dur, ease: 'power1.inOut',
         onUpdate: () => {
           const [x, y] = path(p.t);
-          if (band) water.column(x, R);
-          else if (prev) water.trail(prev[0], prev[1], x, y, R);
+          if (prev) water.trail(prev[0], prev[1], x, y, R);
           else water.stamp(x, y, R);
           prev = [x, y];
+          onX?.(x);
           wake();
         }
       });
     };
 
+    // The hint is acknowledged by the water it describes: on the first real disturbance, once.
+    let heard = false;
+    const heardIt = () => {
+      if (heard || !played) return;
+      heard = true;
+      haloAt(hint, 1);
+      gsap.to(hint, { opacity: .6, duration: .4, ease: 'power1.out' });
+    };
     if (fine) {
-      on(sec, 'pointermove', (e) => { if (e.pointerType !== 'touch') disturb(...local(e), 2); });
-      on(sec, 'pointerleave', () => { last = null; });
+      on(sec, 'pointermove', (e) => { if (e.pointerType === 'touch') return; ptr = [e.clientX, e.clientY]; disturb(...local(e), 2); heardIt(); });
+      on(sec, 'pointerleave', () => { last = null; ptr = null; });
     }
     on(sec, 'touchstart', (e) => { const [x, y] = local(e.touches[0]); burst(x, y, 4); last = [x, y]; lastT = performance.now(); }, { passive: true });
-    on(sec, 'touchmove', (e) => disturb(...local(e.touches[0]), 2), { passive: true });
-    on(window, 'scroll', () => { const y = window.scrollY; dy += Math.abs(y - lastY); lastY = y; if (dy) wake(); }, { passive: true });
-    // Keyboard focus disturbs the water around the control (text fields have their own cell strip instead).
-    on(sec, 'focusin', (e) => { if (e.target.matches(':focus-visible:not([type=email])')) haloAt(e.target, 3); });
+    on(sec, 'touchmove', (e) => { disturb(...local(e.touches[0]), 2); heardIt(); }, { passive: true });
+    on(window, 'scroll', () => { const y = window.scrollY; dy += y - lastY; lastY = y; if (dy) wake(); }, { passive: true });
+    // Keyboard focus disturbs the water around the control. Text fields have their own cell strip, and the
+    // confirmation heading takes focus only to be read.
+    on(sec, 'focusin', (e) => { if (e.target.matches(':focus-visible:not([type=email]):not([tabindex="-1"])')) haloAt(e.target, 3); });
 
     /* ---------- Interactive items ---------- */
     const btns = $$('.btn'), us = $$('.u'), stores = $$('.store'), box = $('.check input');
 
     // MI1 press and release
     const press = (el, s) => {
-      on(el, 'pointerdown', () => gsap.to(el, { scale: s, duration: T.press, ease: 'power2.out', overwrite: 'auto' }));
-      const up = () => gsap.to(el, { scale: 1, duration: T.release, ease: 'power3.out', overwrite: 'auto' });
+      on(el, 'pointerdown', (e) => {
+        if (e.pointerType === 'touch') el.classList.add('is-tap'); // the touch fill, where :active does not apply
+        gsap.to(el, { scale: s, duration: T.press, ease: 'power2.out', overwrite: 'auto' });
+      });
+      const up = () => { el.classList.remove('is-tap'); gsap.to(el, { scale: 1, duration: T.release, ease: 'power3.out', overwrite: 'auto' }); };
       ['pointerup', 'pointerleave', 'pointercancel'].forEach((t) => on(el, t, up));
     };
     btns.forEach((b) => press(b, .96));
@@ -901,7 +947,8 @@
       return { x: b.left + b.width / 2 - (d.left + d.width / 2), y: b.top + b.height / 2 - (d.top + d.height / 2), clipPath: `inset(${iy}px ${ix}px ${iy}px ${ix}px)` };
     };
     fx = {
-      burstAt,
+      haloAt,
+      dialogReset() { gsap.killTweensOf([dlg, ...rows]); gsap.set([dlg, ...rows], { clearProps: 'all' }); },
       dialogIn(btn) { // CD7: the panel opens out of the button that asked for it
         gsap.fromTo(dlg, fromButton(btn), { x: 0, y: 0, clipPath: 'inset(0px 0px 0px 0px)', duration: T['dlg-in'], ease: 'expo.out', overwrite: true });
         gsap.fromTo(rows, { y: 10, opacity: 0 }, { y: 0, opacity: 1, duration: .4, ease: 'expo.out', stagger: .05, delay: .1, overwrite: true });
@@ -925,40 +972,65 @@
     };
 
     /* ---------- Load sequence and scroll moments ---------- */
-    const h2 = $('.h2'), soft = $$('.copy [data-rv], .hint, .studio'), cta = $$('.actions .btn');
+    const h2 = $('.h2'), soft = $$('.copy [data-rv], .studio'), cta = $$('.actions .btn');
     const rules = $$('.rule'), bits = $$('.panel [data-rv]'), mark = $('.mark');
-    const markSweep = () => {
-      const x0 = wrap.offsetLeft, w = wrap.clientWidth;
-      crossing(T['mark-wake'], (t) => [x0 - w * .1 + w * 1.2 * t, 0], 3, true);
+
+    // S1: the name surfaces one cell row at a time as the page ends. Once it is fully up, a boat crosses
+    // each line of it: the letters hold the wake three times longer than the water.
+    const nameWake = () => {
+      const W = sec.offsetWidth, c = water.cell;
+      water.mids.forEach((y, n) => gsap.delayedCall(n * .3, () => crossing(T['mark-wake'], (t) => [W * (-.1 + 1.2 * t), y + Math.sin(t * Math.PI * 3) * 2 * c], 3)));
     };
-    const markTrigger = () => {
-      if (markSeen) return;
-      ScrollTrigger.create({ trigger: mark, start: '60% bottom', once: true, onEnter: () => { markSeen = true; markSweep(); } });
+    const surface = (self) => {
+      const p = ScrollTrigger.maxScroll(window) < 1 ? 1 : self.progress; // nothing to scroll: the page has already ended
+      if (water.setRise(Math.round((1 - p) * water.bandRows))) wake();
+      if (p === 1 && !nameLit && played) { nameLit = true; ctx.add(nameWake); }
+    };
+    const riseTrigger = () => {
+      const st = ScrollTrigger.create({ trigger: mark, start: 'top bottom', end: 'max', onUpdate: surface, onRefresh: surface });
+      surface(st);
     };
 
     fontsReady.then((how) => ctx.add(() => {
       if (dead) return;
       start(how);
-      if (played) { root.classList.add('go'); markTrigger(); return; }
+      if (played) { root.classList.add('go'); riseTrigger(); return; }
 
-      SplitText.create(h2, {
-        type: 'lines', mask: 'lines', linesClass: 'line', autoSplit: true,
-        onSplit: (self) => { gsap.set(h2, { visibility: 'visible' }); return gsap.from(self.lines, { yPercent: 110, duration: T.rise, ease: 'expo.out', stagger: .09, delay: .3 }); }
+      // L1-L4: the opening boat crosses the headline, and each line is uncovered exactly where the water
+      // lights, in whole cells. As it leaves the headline, the rest surfaces.
+      const split = SplitText.create(h2, { type: 'lines', linesClass: 'line' });
+      const r = sec.getBoundingClientRect(), W = r.width, c = water.cell;
+      const L = split.lines.map((el) => {
+        const a = el.getBoundingClientRect(), t = document.createRange();
+        t.selectNodeContents(el);
+        return { el, x: a.left - r.left, w: a.width, end: t.getBoundingClientRect().right - r.left, y: a.top - r.top + a.height * .6 };
       });
-      gsap.set(soft, { opacity: 0, y: 12 });
+      const x0 = L[0].x, x1 = Math.max(...L.map((l) => l.end)), y0 = L[0].y, y1 = L[L.length - 1].y;
+      const uncover = (x) => L.forEach((l) => {
+        const shown = Math.max(0, Math.floor((x - l.x) / c) * c);
+        l.el.style.clipPath = `inset(-25% ${Math.max(0, l.w - shown)}px -25% -4px)`;
+      });
+      uncover(-Infinity);
+      gsap.set(h2, { visibility: 'visible' });
+      gsap.set(soft, { opacity: 0 });
       gsap.set(cta, { clipPath: 'inset(0% 100% 0% 0%)' });
       gsap.set(bits, { opacity: 0 });
       gsap.set(rules, { scaleX: (i, el) => el.classList.contains('rule-left') ? 1 : 0, scaleY: (i, el) => el.classList.contains('rule-left') ? 0 : 1 });
       root.classList.add('go');
 
-      // L1 the opening wake teaches the page: a boat crosses the first screen.
-      const r = sec.getBoundingClientRect(), vh = innerHeight, W = r.width, c = water.cell;
-      const path = (t) => [W * (-.1 + 1.2 * t), -r.top + vh * (.72 - .14 * t) + Math.sin(t * Math.PI * 2) * 2 * c];
-      const tl = gsap.timeline({ onComplete: () => { played = true; } });
-      tl.add(crossing(T.wake, path, 3), .15)
-        .to(soft, { opacity: 1, y: 0, duration: T.fade, ease: 'expo.out', stagger: .06 }, .65)
-        .to(cta, { clipPath: 'inset(0% 0% 0% 0%)', duration: T.clip, ease: 'expo.out', stagger: .08, clearProps: 'clipPath' }, .8)
-        .add(() => ctx.add(markTrigger), 1.5);
+      let rest = false;
+      const surfaceRest = () => {
+        rest = true;
+        gsap.to(soft, { opacity: 1, duration: .45, ease: 'steps(3)', stagger: .06 });
+        gsap.to(cta, { clipPath: 'inset(0% 0% 0% 0%)', duration: T.clip, ease: 'expo.out', stagger: .08, clearProps: 'clipPath' });
+      };
+      const path = (t) => {
+        const x = W * (-.1 + 1.2 * t), k = gsap.utils.clamp(0, 1, (x - x0) / (x1 - x0)); // line 1, dipping to the last line
+        return [x, y0 + (y1 - y0) * k + Math.sin(t * Math.PI * 2) * 2 * c];
+      };
+      const tl = gsap.timeline({ onComplete: () => { split.revert(); played = true; riseTrigger(); } });
+      tl.add(crossing(T.wake, path, 3, (x) => { uncover(x); if (!rest && x > x1) surfaceRest(); }), .15)
+        .add(() => { if (!rest) surfaceRest(); }, .15 + T.wake);
 
       // L5 / S3: the tray's rules draw in at load on wide screens, on entering view on narrow ones.
       ScrollTrigger.create({

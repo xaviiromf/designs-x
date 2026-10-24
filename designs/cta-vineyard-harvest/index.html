@@ -57,11 +57,15 @@
     --ease-swap: cubic-bezier(.65, 0, 0, 1);         /* MI2 label swap */
     --ease-pop: cubic-bezier(.34, 1.8, .64, 1);      /* about back.out(2), radio dot */
     --dur-xs: .12s; --dur-s: .25s; --dur-m: .45s; --dur-l: .7s;
-    --t-drop: .35; --t-plate: .3; --t-glide: .7; --t-ripple: .45; --t-open: .7;
+    --t-drop: .35; --t-plate: .25; --t-glide: .7; --t-ripple: .45; --t-open: .7;
     --t-dialog: .6; --t-dialog-out: .35; --t-done: .7; --t-done-out: .35; --t-swap: .3;
   }
   @media (max-width: 639px) {
     :root { --eye: 160px; --fs-plan: 14px; --fs-fig: var(--fs-l); --fs-eye: 18; }
+  }
+  @media (min-width: 992px) {
+    /* the instrument grows with the screen; scale numbers stay about 14-17px rendered */
+    :root { --eye: clamp(240px, 20vw, 320px); --fs-fig: calc(var(--eye) * .16); --fs-eye: 12; }
   }
 
   /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
@@ -73,6 +77,7 @@
   *, *::before, *::after { box-sizing: border-box; }
   [hidden] { display: none !important; }
   html { background: var(--granite); -webkit-text-size-adjust: 100%; }
+  html:has(dialog[open]) { overflow: clip; }   /* the page stays put behind the dialog, with or without Lenis */
   body { margin: 0; background: var(--granite); color: var(--must); font: 400 var(--fs-m)/1.6 var(--font-text); }
   h2, h3, h4, p, ul, ol, fieldset, legend { margin: 0; padding: 0; }
   ul, ol { list-style: none; }
@@ -91,15 +96,18 @@
   /* ---------- links and buttons ---------- */
   /* HV2: a resting hairline, and an ink underline that enters from the left and leaves to the right */
   .ul {
-    display: inline; padding: 0 0 .12em; border: 0; color: var(--must); text-decoration: none; cursor: pointer; font-weight: 600;
-    background:
-      linear-gradient(currentColor, currentColor) 100% 100% / 0 .07em no-repeat,
-      linear-gradient(var(--rule), var(--rule)) 0 100% / 100% 1px no-repeat;
-    transition: background-size var(--dur-m) var(--ease-sweep), transform .4s var(--ease-follow);
+    position: relative; display: inline-block; padding: 0 0 .12em; border: 0; background: none;
+    color: var(--must); text-decoration: none; cursor: pointer; font-weight: 600;
   }
-  .ul:hover, .ul:focus-visible { background-position: 0 100%, 0 100%; background-size: 100% .07em, 100% 1px; }
-  @media (hover: none) { .ul { background-size: 100% .07em, 100% 1px; } }
-  button.ul { display: inline-block; font-size: var(--fs-s); line-height: 1.5; }
+  .ul::before, .ul::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; pointer-events: none; }
+  .ul::before { height: 1px; background: var(--rule); }
+  .ul::after {
+    height: max(1.5px, .07em); background: currentColor;
+    transform: scaleX(0); transform-origin: right; transition: transform var(--dur-m) var(--ease-sweep);
+  }
+  .ul:hover::after, .ul:focus-visible::after { transform: scaleX(1); transform-origin: left; }
+  @media (hover: none) { .ul::after { transform: scaleX(1); } }
+  button.ul { font-size: var(--fs-s); line-height: 1.5; }
 
   /* HV4: a fill sweeps in from the edge the pointer entered, and leaves by the edge it left */
   .fill { position: relative; isolation: isolate; overflow: hidden; }
@@ -110,7 +118,7 @@
   .fill:hover::before, .fill:focus-visible::before { transform: scaleX(1); transition-duration: var(--dur-m); }
 
   /* MI1: press and release */
-  .press { transition: transform .4s var(--ease-follow), color .2s, background-size var(--dur-m) var(--ease-sweep); }
+  .press { transition: transform .4s var(--ease-follow), color .2s; }
   .press:active { transform: scale(.97); transition: transform var(--dur-xs), color .2s; }
 
   .btn-line {
@@ -139,9 +147,10 @@
   .dots circle { fill: var(--paper); stroke: var(--leaf); stroke-width: calc(var(--u, 1) * 1.25px); pointer-events: none; }
   .ripe { opacity: 0; transition: opacity var(--dur-s); pointer-events: none; }
   .ripe.on { opacity: 1; }
+  .ripe.peek { opacity: .5; }
   .ripe circle { fill: var(--cinsault); }
   .hl {
-    fill: none; stroke: var(--cinsault); stroke-width: calc(var(--u, 1) * 1.5px); stroke-dasharray: 1; stroke-dashoffset: 0;
+    fill: none; stroke: var(--cinsault); stroke-width: calc(var(--u, 1) * 2px); stroke-dasharray: 1; stroke-dashoffset: 0;
     pointer-events: none; opacity: 0; transition: opacity .2s;
   }
   .hl.on { opacity: 1; }
@@ -150,8 +159,8 @@
     position: absolute; transform: translateY(-50%); display: inline-flex; align-items: center; gap: 5px;
     padding-right: 5px; background: var(--paper); font: 600 var(--fs-plan)/1.15 var(--font-text); white-space: nowrap;
   }
-  .name i { width: 4px; height: 1.05em; background: var(--must); transition: background-color var(--dur-s); }
-  .name.sel i { background: var(--cinsault); }
+  .name i { width: 4px; height: 1.05em; background: var(--must); }
+  .name.sel i, .name.peek i { background: var(--cinsault); }
 
   /* the eyepiece: one fixed refractometer view */
   .eye-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s4) var(--s5); }
@@ -169,11 +178,8 @@
   .eye-fig { left: 52%; top: 17%; right: auto; bottom: auto; color: var(--prism-ink); line-height: 1; }
   .eye-fig .fig { display: block; font-size: var(--fs-fig); font-weight: 500; font-variant-numeric: lining-nums tabular-nums; }
   .eye-fig .unit { display: block; margin-top: 4px; font-size: var(--fs-xs); font-style: italic; }
-  .eye-drop { background: var(--must); clip-path: circle(0% at 50% 50%); opacity: 0; }
-  .eye-plate {
-    background: color-mix(in srgb, var(--daylight) 74%, transparent); border-top: 5px solid var(--prism-ink);
-    transform-origin: 50% 0; opacity: 0;
-  }
+  .eye-drop { background: color-mix(in srgb, var(--cinsault) 45%, transparent); clip-path: circle(0% at 50% 50%); opacity: 0; }
+  .eye-plate { background: color-mix(in srgb, var(--daylight) 74%, transparent); border-bottom: 1px solid var(--prism-ink); opacity: 0; }
   .caption { flex: 1 1 10rem; min-width: 0; max-width: 24em; font-size: var(--fs-s); line-height: 1.5; }
   .caption b { font-weight: 600; }
 
@@ -211,7 +217,7 @@
       grid-template-areas: "plan head" "plan eye" "plan rows"; grid-template-rows: auto auto 1fr; align-items: start;
     }
     .head { grid-area: head; } .plan { grid-area: plan; position: sticky; top: var(--s6); }
-    .eye-row { grid-area: eye; } .rows { grid-area: rows; }
+    .eye-row { grid-area: eye; flex-direction: column; align-items: flex-start; } .rows { grid-area: rows; }
     .caption { font-size: var(--fs-m); }
   }
 
@@ -223,18 +229,18 @@
   .slots { border-bottom: 1px solid var(--rule); }
   .slots li { display: grid; grid-template-columns: 3.25em minmax(0, 1fr); gap: var(--s4); padding: var(--s3) 0; font-size: var(--fs-s); line-height: 1.45; }
   .slots time { font-weight: 500; text-align: right; font-variant-numeric: lining-nums tabular-nums; }
-  .weekend > .ul { margin-top: var(--s6); }
+  .weekend > .ul { margin-top: var(--s5); }
   @media (min-width: 640px) { .days { grid-template-columns: 1fr 1fr; column-gap: var(--s7); } }
   @media (min-width: 1200px) {
     .weekend { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--col-gap); align-items: start; }
     .weekend > h3 { grid-area: 1 / 1 / 2 / 6; }
     .weekend > .about { grid-area: 2 / 1 / 3 / 6; }
-    .days { grid-area: 1 / 6 / 3 / 13; margin: 0 0 0 var(--s6); column-gap: var(--s6); }
-    .weekend > .ul { grid-area: 3 / 6 / 4 / 13; justify-self: start; margin-left: var(--s6); }
+    .days { grid-area: 1 / 6 / 4 / 13; margin: 0 0 0 var(--s6); column-gap: var(--s6); }
+    .weekend > .ul { grid-area: 3 / 1 / 4 / 6; justify-self: start; align-self: start; }
   }
 
   /* ---------- sign-up ---------- */
-  .signup { display: grid; gap: var(--s6); margin-top: var(--s9); }
+  .signup { display: grid; gap: var(--s6); margin-top: var(--s8); }
   .signup-intro p { margin-top: var(--s3); max-width: 34ch; }
   .stage { display: grid; }
   .stage > * { grid-area: 1 / 1; align-self: start; }
@@ -246,7 +252,7 @@
   form { display: grid; gap: var(--s4); }
   .pair { display: grid; gap: var(--s4) var(--s5); }
   @media (min-width: 640px) { .pair { grid-template-columns: 1fr 1fr; } }
-  .field > label, legend { display: block; margin-bottom: var(--s2); font-size: var(--fs-s); font-weight: 600; color: var(--ink-soft); transition: color .2s; }
+  .field > label, legend { display: block; margin-bottom: var(--s2); font-size: var(--fs-s); font-weight: 600; color: var(--ink-soft); }
   .field:focus-within > label, fieldset:focus-within > legend { color: var(--must); }
   .ctl { position: relative; display: block; }
   .ctl input, .ctl select {
@@ -275,27 +281,29 @@
   .chip {
     position: relative; isolation: isolate; display: flex; align-items: center; gap: var(--s3); min-height: 48px; padding: var(--s2) var(--s4);
     border: 1px solid var(--leaf); border-radius: var(--r-field); background: var(--paper); font-size: var(--fs-s); cursor: pointer;
-    transition: border-color .2s;
   }
+  .chip::after {   /* the Cinsault border fades in over the leaf one */
+    content: ""; position: absolute; inset: -1px; border: 1px solid var(--cinsault); border-radius: inherit;
+    opacity: 0; transition: opacity .2s; pointer-events: none;
+  }
+  .chip:hover::after, .chip:has(:checked)::after, .chip:has([aria-invalid="true"])::after { opacity: 1; }
   .chip::before {
     content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--tint);
     clip-path: inset(0 100% 0 0); transition: clip-path .35s var(--ease-out);
   }
   .chip input { position: absolute; width: 1px; height: 1px; opacity: 0; margin: 0; }
-  .chip:hover, .chip:has(:checked) { border-color: var(--cinsault); }
   .chip:has(:checked)::before { clip-path: inset(0); }
   .chip:has(:focus-visible) { outline: var(--focus); outline-offset: 3px; }
-  .chip:has([aria-invalid="true"]) { border-color: var(--cinsault); }
   .dot { display: grid; place-items: center; flex: none; width: 18px; height: 18px; border: 1.5px solid var(--must); border-radius: 50%; background: var(--paper); }
   .dot::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--cinsault); transform: scale(0); transition: transform .35s var(--ease-pop); }
   .chip:has(:checked) .dot::after { transform: scale(1); }
   .chip .tnum { font-weight: 500; }
 
-  .check { display: flex; align-items: flex-start; gap: var(--s3); font-size: var(--fs-s); line-height: 1.45; cursor: pointer; margin-bottom: var(--s3); }
+  .check { display: flex; align-items: center; gap: var(--s3); min-height: 44px; font-size: var(--fs-s); line-height: 1.45; cursor: pointer; margin-bottom: var(--s2); }
   .check input { position: absolute; width: 1px; height: 1px; opacity: 0; margin: 0; }
   .box {
     display: grid; place-items: center; flex: none; width: 22px; height: 22px; border: 1.5px solid var(--must);
-    border-radius: var(--r-field); background: var(--paper); transition: border-color .2s, background-color .2s;
+    border-radius: var(--r-field); background: var(--paper);
   }
   .box svg { width: 16px; height: 16px; }
   .box path { fill: none; stroke: var(--granite); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset .3s var(--ease-out); }
@@ -347,7 +355,6 @@
   /* hidden starting states: only when the libraries loaded, motion is allowed and the load has not played */
   @media (prefers-reduced-motion: no-preference) {
     html.js:not(.played) #harvest-title { visibility: hidden; }
-    html.js:not(.played) [data-load] { opacity: 0; }
   }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after, ::backdrop { transition-duration: .01ms !important; animation-duration: .01ms !important; }
@@ -360,10 +367,10 @@
   <div class="wrap">
     <header class="intro">
       <h2 id="harvest-title">Pick old vines with us on 13 and 14 March</h2>
-      <p class="lead" data-load>The Herrera family farms 4.2 hectares of dry-farmed bush vines in Guarilihue, in the Itata Valley. The Cinsault is ready a week early this year. We need sixty pairs of hands each day, and we feed everyone who comes.</p>
+      <p class="lead">The Herrera family farms 4.2 hectares of dry-farmed bush vines in Guarilihue, in the Itata Valley. The Cinsault is ready a week early this year. We need sixty pairs of hands each day, and we feed everyone who comes.</p>
       <p class="actions">
-        <a class="btn-line fill press" href="#signup" data-load>Save my place</a>
-        <a class="ul press" href="#weekend" data-load>See the weekend</a>
+        <a class="btn-line fill press" href="#signup">Save my place</a>
+        <a class="ul press" href="#weekend">See the weekend</a>
       </p>
     </header>
 
@@ -388,16 +395,17 @@
         </div>
         <p class="caption" id="caption" aria-live="polite"><b>Los Quillayes</b>: Cinsault planted 1958, 23.8 °Brix. We pick it Saturday from 7:30.</p>
       </div>
-      <ul class="rows" aria-labelledby="blocks-title"></ul>
+      <ul class="rows" role="list" aria-labelledby="blocks-title"></ul>
     </div>
 
     <div class="weekend" id="weekend">
       <h3 id="weekend-title" tabindex="-1">How the weekend goes</h3>
       <p class="about">We are three generations and six blocks of bush vines, with no wires and no irrigation. Every bunch is cut by hand and carried out in 18 kg crates. Last March forty-one people came, from Concepción, Chillán, Santiago and two from Lyon, and we picked it all in two days.</p>
+      <button class="ul press" type="button" id="bring-btn" aria-haspopup="dialog">What to bring</button>
       <div class="days">
         <div class="day">
           <h4>Saturday 13 March</h4>
-          <ol class="slots">
+          <ol class="slots" role="list">
             <li><time datetime="2027-03-13T07:00">7:00</time><span>Coffee and secateurs at the shed</span></li>
             <li><time datetime="2027-03-13T07:30">7:30</time><span>Los Quillayes, the 1958 Cinsault</span></li>
             <li><time datetime="2027-03-13T10:00">10:00</time><span>La Higuera</span></li>
@@ -408,7 +416,7 @@
         </div>
         <div class="day">
           <h4>Sunday 14 March</h4>
-          <ol class="slots">
+          <ol class="slots" role="list">
             <li><time datetime="2027-03-14T07:30">7:30</time><span>El Alto, the 1890s País</span></li>
             <li><time datetime="2027-03-14T10:00">10:00</time><span>Don Lalo, then El Bajo</span></li>
             <li><time datetime="2027-03-14T13:30">13:30</time><span>Lunch with last year's wine</span></li>
@@ -416,7 +424,6 @@
           </ol>
         </div>
       </div>
-      <button class="ul press" type="button" id="bring-btn" aria-haspopup="dialog">What to bring</button>
     </div>
 
     <div class="signup" id="signup">
@@ -430,13 +437,13 @@
             <div class="field">
               <label for="f-name">Your name</label>
               <span class="ctl"><input id="f-name" name="name" type="text" autocomplete="name" required aria-describedby="e-name"></span>
-              <p class="msg" id="e-name"></p>
+              <p class="msg" role="alert" id="e-name"></p>
             </div>
             <div class="field">
               <label for="f-email">Email</label>
               <span class="ctl"><input id="f-email" name="email" type="email" autocomplete="email" required aria-describedby="h-email e-email"></span>
               <p class="f-hint" id="h-email">We send the Friday weather call here.</p>
-              <p class="msg" id="e-email"></p>
+              <p class="msg" role="alert" id="e-email"></p>
             </div>
           </div>
           <fieldset>
@@ -446,7 +453,7 @@
               <label class="chip"><input type="radio" name="day" value="sun" required aria-describedby="e-day"><span class="dot" aria-hidden="true"></span><span>Sunday 14, <span class="tnum" data-left="sun">9</span> left</span></label>
               <label class="chip"><input type="radio" name="day" value="both" required aria-describedby="e-day"><span class="dot" aria-hidden="true"></span><span>Both days</span></label>
             </div>
-            <p class="msg" id="e-day"></p>
+            <p class="msg" role="alert" id="e-day"></p>
           </fieldset>
           <div class="field">
             <label for="f-party">How many of you</label>
@@ -456,7 +463,7 @@
               </select>
               <svg class="chev" viewBox="0 0 12 8" aria-hidden="true"><path d="M1 1.5l5 5 5-5"/></svg>
             </span>
-            <p class="msg" id="e-party"></p>
+            <p class="msg" role="alert" id="e-party"></p>
           </div>
           <label class="check"><input type="checkbox" name="cot"><span class="box" aria-hidden="true"><svg viewBox="0 0 16 16"><path pathLength="1" d="M3.5 8.5l3 3 6-7"/></svg></span><span>We need a cot in the shed on Saturday night</span></label>
           <button class="submit fill press" type="submit" id="submit"><span class="sw"><span>Save my place</span></span></button>
@@ -465,7 +472,7 @@
           <h4 id="done-title" tabindex="-1">Your place is saved</h4>
           <p id="done-what"></p>
           <p id="done-cot" hidden></p>
-          <ul class="done-links">
+          <ul class="done-links" role="list">
             <li><a class="ul" href="https://www.google.com/maps/search/?api=1&amp;query=Guarilihue%2C+Coelemu" target="_blank" rel="noopener">Open directions in Google Maps</a></li>
             <li><a class="ul" id="wa" href="https://wa.me/56955501234?text=Hola%2C%20I%20saved%20a%20place%20for%20the%20harvest." target="_blank" rel="noopener">Message the family on WhatsApp</a></li>
           </ul>
@@ -481,11 +488,11 @@
       <div class="bring-cols">
         <div>
           <h4>Bring</h4>
-          <ul><li>Closed shoes</li><li>A hat</li><li>Long sleeves</li><li>Gloves, if you have them</li></ul>
+          <ul role="list"><li>Closed shoes</li><li>A hat</li><li>Long sleeves</li><li>Gloves, if you have them</li></ul>
         </div>
         <div>
           <h4>We provide</h4>
-          <ul><li>Secateurs and crates</li><li>Water, and lunch both days</li><li>A cot in the shearing shed on Saturday night: 12 cots, ask on the form</li></ul>
+          <ul role="list"><li>Secateurs and crates</li><li>Water, and lunch both days</li><li>A cot in the shearing shed on Saturday night: 12 cots, ask on the form</li></ul>
         </div>
       </div>
       <button class="ul press" type="button" data-close>Close</button>
@@ -520,7 +527,7 @@
     { name: 'El Bajo', variety: 'Moscatel de Alejandría', planted: '1965', ha: .7, brix: 21.6, when: 'Sunday 11:30',
       note: 'It should pass 22 by Sunday; we pick it from 11:30.', poly: [[244.9, 122.6], [400, 126.9], [400, 252], [238.9, 250.4]], post: [250, 139] },
     { name: 'La Cruz', variety: 'Semillón', planted: '1980', ha: .7, brix: 20.9, when: 'Not ready',
-      note: 'Not ready; the family picks it on 20 March.', poly: [[0, 248], [400, 252], [400, 300], [0, 300]], post: [6, 271] }
+      note: 'Not ready; we pick it on 20 March.', poly: [[0, 248], [400, 252], [400, 300], [0, 300]], post: [6, 271] }
   ];
   const READY = 22;                                   // °Brix: dots turn cinsault from here
   const PER_HA = 400 * 300 / 4.2;                     // plan units per hectare
@@ -551,8 +558,18 @@
 
   $('.names').innerHTML = BLOCKS.map(b => `<span class="name" style="left:${b.post[0] / 4}%;top:${b.post[1] / 3}%"><i></i>${b.name}</span>`).join('');
   const nameEls = $$('.name');
+  // Vines under a painted name are hidden whole, so a name plate never cuts a dot in half (it would on phones).
+  function clearNames() {
+    const pr = svg.getBoundingClientRect(), s = 400 / (pr.width || 400), r = 4.7;
+    const boxes = nameEls.map(n => { const b = n.getBoundingClientRect(); return [(b.left - pr.left) * s, (b.top - pr.top) * s, (b.right - pr.left) * s, (b.bottom - pr.top) * s]; });
+    DOTS.forEach(d => {
+      const v = boxes.some(([a, t, c, e]) => d.x + r > a && d.x - r < c && d.y + r > t && d.y - r < e) ? 'hidden' : '';
+      d.base.style.visibility = d.ripe.style.visibility = v;
+    });
+  }
   // Strokes stay about 1px at any plan width.
-  new ResizeObserver(() => planBox.style.setProperty('--u', 400 / (planBox.clientWidth || 400))).observe(planBox);
+  new ResizeObserver(() => { planBox.style.setProperty('--u', 400 / (planBox.clientWidth || 400)); clearNames(); }).observe(planBox);
+  document.fonts.ready.then(clearNames);
 
   const Y = b => 26 + b * 5.6;                       // eyepiece scale: 0 °Brix at the top, 30 at the bottom
   const yp = b => (Y(b) / 220 - 1) * 100;            // shadow offset that puts its edge at reading b
@@ -574,9 +591,9 @@
   /* ---------- motion helpers (instant without GSAP or under reduced motion) ---------- */
   let M = false, lenis = null;
   const G = () => M && !!window.gsap;
-  const S = { sel: 0, hl: null, eyeOpen: true, booked: { sat: 0, sun: 0 } };
+  const S = { sel: 0, hl: null, booked: { sat: 0, sun: 0 } };
   const eye = $('.eye'), shadow = $('.eye-shadow'), figEl = $('.fig'), drop = $('.eye-drop'), plate = $('.eye-plate'), cap = $('#caption');
-  const FIG = { v: 0 };
+  const FIG = { v: 0 }, fig = () => { figEl.textContent = FIG.v.toFixed(1); };
   const center = el => { const r = el.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; };
   // A circle centred on point p (viewport coordinates), in el's own coordinates, with the radius that covers el.
   const circleIn = (el, p) => { const r = el.getBoundingClientRect(), x = p[0] - r.left, y = p[1] - r.top; return [x, y, Math.hypot(Math.max(x, r.width - x), Math.max(y, r.height - y)) + 2]; };
@@ -600,40 +617,58 @@
     capTl = gsap.timeline().to(cap, { opacity: 0, duration: .12, ease: 'power1.in' }).call(write).to(cap, { opacity: 1, duration: .25, ease: 'power1.out' });
   }
 
-  // Plan outline for a block under a fine pointer or a focused row. Drawn around the block, never a reading.
+  // Peek: a block under a fine pointer, or a focused row, is outlined on the plan, its post turns Cinsault,
+  // its ripe vines show at half strength and the eyepiece previews its reading. Leaving returns to the selection.
+  let rit = null;
   function setHL(k) {
     if (k === S.hl) return;
     S.hl = k;
-    if (k == null) return hl.classList.remove('on');
-    hl.setAttribute('points', BLOCKS[k].poly.join(' '));
-    hl.classList.add('on');
-    if (G()) gsap.fromTo(hl, { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: .45, ease: 'expo.out', overwrite: true });
+    nameEls.forEach((n, i) => n.classList.toggle('peek', i === k));
+    ripeG.forEach((g, i) => g.classList.toggle('peek', i === k && i !== S.sel && BLOCKS[i].brix >= READY));
+    if (k == null) hl.classList.remove('on');
+    else {
+      hl.setAttribute('points', BLOCKS[k].poly.join(' '));
+      hl.classList.add('on');
+      if (G()) gsap.fromTo(hl, { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: .35, ease: 'expo.out', overwrite: true });
+    }
+    if (rit && rit.isActive()) return;   // never fight a reading in progress
+    const v = BLOCKS[k == null ? S.sel : k].brix;
+    if (!G()) return setEye(v);
+    const o = k == null ? { duration: .6, ease: 'expo.out', overwrite: 'auto' } : { duration: .45, ease: 'power3.out', overwrite: 'auto' };
+    gsap.to(shadow, { yPercent: yp(v), ...o });
+    gsap.to(FIG, { v, ...o, onUpdate: fig });
   }
 
   /* ---------- the reading ritual (signature) ---------- */
   // (a) a drop of must on the prism, (b) the daylight plate closes, (c) the shadow line glides to the reading,
   // the figure rolls with it and the block's vines answer in a ripple from its row-end post.
-  let rit = null, pulsed = null, openEye = null;
-  function ritual(prev, k) {
+  // The full ritual runs on the first choice and after 4s without one; quick comparisons only glide.
+  let pulsed = null, lastPick = -Infinity, endScrub = null;
+  function ritual(k) {
     const b = BLOCKS[k];
     if (!G()) { setEye(b.brix); showDots(k); setCaption(k); return; }
-    const busy = rit && rit.isActive();
+    const now = performance.now(), full = !(rit && rit.isActive()) && now - lastPick > 4000;
+    lastPick = now;
     rit && rit.kill();
+    gsap.killTweensOf([shadow, FIG]);   // a peek in flight
     if (pulsed != null) { gsap.set(ofBlock(pulsed).map(d => d.base), { scale: 1 }); pulsed = null; }
     ripeG.forEach((g, i) => { if (i !== k) g.classList.remove('on'); });
     const tl = rit = gsap.timeline({ defaults: { ease: 'expo.out' } });
     let c = 0;
-    if (!busy) {   // rapid changes skip straight to the glide
-      tl.fromTo(drop, { autoAlpha: 1, clipPath: 'circle(0% at 50% 50%)' }, { clipPath: 'circle(30% at 50% 50%)', duration: T('drop') }, 0)
-        .fromTo(plate, { autoAlpha: 1, rotationX: -90, transformPerspective: 420 }, { rotationX: 0, duration: T('plate'), ease: 'power3.out' }, T('drop') - .05);
+    gsap.set([drop, plate], { autoAlpha: 0 });
+    if (full) {
+      tl.fromTo(drop, { autoAlpha: 1, clipPath: 'circle(0% at 50% 50%)' }, { clipPath: 'circle(18% at 50% 50%)', duration: T('drop') }, 0)
+        .fromTo(plate, { autoAlpha: 1, yPercent: -100 }, { yPercent: 0, duration: T('plate'), ease: 'power3.out' }, T('drop') - .05);
       c = T('drop') + T('plate') - .05;
+      tl.to(drop, { clipPath: 'circle(60% at 50% 50%)', autoAlpha: 0, duration: .5, ease: 'power1.out' }, c)
+        .to(plate, { autoAlpha: 0, duration: .3, ease: 'power1.out' }, c);
     }
+    const g = full ? T('glide') : .5;
     const ds = ofBlock(k), [px, py] = b.post, dist = d => Math.hypot(d.x - px, d.y - py), far = Math.max(...ds.map(dist));
     const at = i => dist(ds[i]) / far * T('ripple');
-    tl.to([drop, plate], { autoAlpha: 0, duration: .3, ease: 'power1.out' }, c)
-      .to(shadow, { yPercent: yp(b.brix), duration: T('glide') }, c)
-      .to(FIG, { v: b.brix, duration: T('glide'), onUpdate: () => { figEl.textContent = FIG.v.toFixed(1); } }, c)
-      .call(() => setCaption(k), null, c + .35);
+    tl.to(shadow, { yPercent: yp(b.brix), duration: g }, c)
+      .to(FIG, { v: b.brix, duration: g, onUpdate: fig }, c)
+      .call(() => setCaption(k), null, c + Math.min(.35, g / 2));
     if (b.brix >= READY) {
       ripeG[k].classList.add('on');
       tl.fromTo(ds.map(d => d.ripe), { scale: 0 }, { scale: 1, duration: .5, stagger: at }, c);
@@ -643,12 +678,12 @@
     }
   }
   function select(k) {
-    const prev = S.sel;
     S.sel = k;
+    endScrub && endScrub();
     rows.forEach((r, i) => r.setAttribute('aria-pressed', String(i === k)));
     nameEls.forEach((n, i) => n.classList.toggle('sel', i === k));
-    if (!S.eyeOpen && openEye) return openEye();
-    ritual(prev, k);
+    ripeG[k].classList.remove('peek');
+    ritual(k);
   }
 
   rowsEl.addEventListener('click', e => { const r = e.target.closest('.row'); if (r) select(+r.dataset.b); });
@@ -785,7 +820,8 @@
     cot.hidden = !F.cot.checked;
     cot.textContent = d === 'sun' ? 'Cots are only for Saturday night, so we have not kept one for you.' : 'Your cot in the shearing shed is kept for Saturday night.';
     $('#wa').href = 'https://wa.me/56955501234?text=' + encodeURIComponent(`Hola, I saved ${n === 1 ? 'a place' : n + ' places'} for the harvest on ${when}. ${first}`);
-    const from = center(submit), title = $('#done-title');
+    const from = center(submit), title = $('#done-title'), stage = $('.stage');
+    stage.style.minHeight = stage.offsetHeight + 'px';   // the panel opens inside the form's height, so the page never jumps
     done.hidden = false;
     if (!G()) { form.hidden = true; return title.focus(); }
     const top = $('.stage').getBoundingClientRect().top;
@@ -799,22 +835,25 @@
   $('#change').addEventListener('click', () => {
     S.booked = { sat: 0, sun: 0 };
     renderCounts();
+    if (window.gsap) gsap.killTweensOf([form, done]);
     form.hidden = false;
+    $('.stage').style.minHeight = '';
     swap(swBox, label());
     if (!G()) { done.hidden = true; return F.name.focus(); }
     const [x, y, R] = circleIn(done, center(submit));
-    gsap.fromTo(form, { autoAlpha: 0 }, { autoAlpha: 1, duration: .3, delay: .1, ease: 'power1.out', clearProps: 'opacity,visibility' });
+    // opacity only, with visibility forced back first: focus() fails on a visibility:hidden field
+    gsap.fromTo(form, { opacity: 0, visibility: 'visible' }, { opacity: 1, duration: .3, delay: .1, ease: 'power1.out', clearProps: 'opacity,visibility' });
     gsap.fromTo(done, { clipPath: circ(x, y, R) }, { clipPath: circ(x, y, 0), duration: T('done-out'), ease: 'power3.in',
       onComplete: () => { done.hidden = true; gsap.set(done, { clearProps: 'clipPath' }); } });
     F.name.focus({ preventScroll: true });
   });
 
-  /* ---------- S3: the pill shows once the plan has gone by, and hides while the form is in view ---------- */
+  /* ---------- S3: the pill shows once the hero actions have scrolled away, and hides while any of the sign-up is in view ---------- */
   const dock = $('.dock');
   let past = false, inSignup = false;
   const pill = () => dock.classList.toggle('on', past && !inSignup);
-  new IntersectionObserver(([e]) => { past = !e.isIntersecting && e.boundingClientRect.top < 0; pill(); }).observe($('.reading'));
-  new IntersectionObserver(([e]) => { inSignup = e.isIntersecting; pill(); }, { rootMargin: '0px 0px -20% 0px' }).observe($('#signup'));
+  new IntersectionObserver(([e]) => { past = !e.isIntersecting && e.boundingClientRect.top < 0; pill(); }).observe($('.actions'));
+  new IntersectionObserver(([e]) => { inSignup = e.isIntersecting; pill(); }).observe($('#signup'));
 
   /* ---------- first render ---------- */
   setEye(BLOCKS[0].brix);
@@ -827,7 +866,7 @@
     BLOCKS.forEach(b => ok(Math.abs(area(b.poly) / PER_HA - b.ha) < .02, 'plan area of ' + b.name));
     ok(new Date(2027, 2, 13).getDay() === 6 && new Date(2027, 2, 14).getDay() === 0, '13 and 14 March 2027 are a Saturday and a Sunday');
     ok(DOTS.length > 180 && DOTS.length <= 234 && BLOCKS.every((b, k) => ofBlock(k).length > 10), 'vines on every block');
-    ok(caption(5).join('') === 'La Cruz: Semillón planted 1980, 20.9 °Brix. Not ready; the family picks it on 20 March.', 'La Cruz caption');
+    ok(caption(5).join('') === 'La Cruz: Semillón planted 1980, 20.9 °Brix. Not ready; we pick it on 20 March.', 'La Cruz caption');
     ok(caption(0).join('') === 'Los Quillayes: Cinsault planted 1958, 23.8 °Brix. We pick it Saturday from 7:30.', 'Los Quillayes caption');
     F.name.value = 'Ana Riquelme'; F.email.value = 'ana@correo.cl'; $('[value="sat"]', form).checked = true; F.party.value = '2';
     form.dispatchEvent(new Event('change'));
@@ -858,7 +897,6 @@
   const draws = $$('.eye-scale .draw'), nums = $$('.eye-scale text');
 
   function settle() {   // final states, no motion
-    S.eyeOpen = true;
     gsap.set([...BASE, ...ripeC.flat()], { scale: 1 });
     setEye(BLOCKS[S.sel].brix); showDots(S.sel); setCaption(S.sel);
     root.classList.add('played');
@@ -881,64 +919,70 @@
     gsap.ticker.add(tick);
     gsap.ticker.lagSmoothing(0);
 
-    // The eyepiece opens, its scale draws, then the ritual runs once on the selected block.
-    let eyeST = null;
-    const eyeIntro = () => {
-      if (S.eyeOpen) return;
-      S.eyeOpen = true;
-      eyeST && eyeST.kill();
-      gsap.timeline({ defaults: { ease: 'expo.out' } })
-        .to(eye, { clipPath: 'circle(50% at 50% 50%)', duration: T('open') }, 0)
-        .to(draws, { strokeDashoffset: 0, duration: .6, ease: 'power2.out', stagger: .12 }, .15)
-        .to(nums, { opacity: 1, duration: .3, stagger: .03, ease: 'power1.out' }, .35)
-        .call(() => ritual(S.sel, S.sel), null, .6);
-    };
-    openEye = eyeIntro;
-
-    let split = null;
+    let split = null, eyeST = null, intro = null;
     if (!root.classList.contains('played')) {
-      S.eyeOpen = false;
+      const b0 = BLOCKS[S.sel], inView = eye.getBoundingClientRect().top < innerHeight * .85;
       gsap.set(BASE, { scale: 0 });
       gsap.set(nameEls, { opacity: 0 });
-      gsap.set(eye, { clipPath: 'circle(0% at 50% 50%)' });
-      gsap.set(draws, { strokeDashoffset: 1 });
-      gsap.set(nums, { opacity: 0 });
-      gsap.set(cap, { opacity: 0 });
       gsap.set(ripeC[S.sel], { scale: 0 });
       setEye(0);
+      if (inView) {
+        gsap.set(eye, { clipPath: 'circle(0% at 50% 50%)' });
+        gsap.set(draws, { strokeDashoffset: 1 });
+        gsap.set(nums, { opacity: 0 });
+        gsap.set(cap, { opacity: 0 });
+      } else {
+        // Phones: the eye is below the fold. Its scale draws and the line falls to the reading as it scrolls in.
+        const sc = gsap.timeline({ defaults: { ease: 'none' } })
+          .fromTo(draws, { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: .4, stagger: .1 }, 0)
+          .fromTo(nums, { opacity: 0 }, { opacity: 1, duration: .2, stagger: .02 }, .2)
+          .to(shadow, { yPercent: yp(b0.brix), duration: .6 }, .4)
+          .to(FIG, { v: b0.brix, duration: .6, onUpdate: fig }, .4);
+        eyeST = ScrollTrigger.create({ trigger: eye, start: 'top 95%', end: 'bottom 65%', scrub: .6, animation: sc });
+        endScrub = () => { eyeST.kill(); sc.progress(1).kill(); eyeST = endScrub = null; };
+      }
 
       const far = Math.max(...DOTS.map(d => Math.hypot(d.x, 300 - d.y)));
+      const [px, py] = b0.post, lq = ofBlock(S.sel), farLq = Math.max(...lq.map(d => Math.hypot(d.x - px, d.y - py)));
       const ready = Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 1200))]);
       ready.then(() => ctx.add(() => {
-        const h2 = $('#harvest-title');
-        split = SplitText.create(h2, { type: 'lines', mask: 'lines', linesClass: 'ln' });
-        gsap.set(h2, { visibility: 'visible' });
-        gsap.timeline({ defaults: { ease: 'expo.out' }, onComplete: () => root.classList.add('played') })
-          .from(split.lines, { yPercent: 110, duration: 1, stagger: .08, onComplete: () => { split.revert(); split = null; } }, 0)
-          .fromTo('[data-load]', { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: .8, stagger: .06 }, .25)
-          // TR3: the vineyard plants itself from the south-west corner
-          .to(BASE, { scale: 1, duration: .5, stagger: i => Math.hypot(DOTS[i].x, 300 - DOTS[i].y) / far * (wide ? .9 : .7) }, .2)
-          .to(nameEls, { opacity: 1, duration: .4, stagger: .05, ease: 'power1.out' }, 1)
-          .call(() => {
-            if (S.eyeOpen) return;
-            if (eye.getBoundingClientRect().top < innerHeight * .85) eyeIntro();
-            else eyeST = ScrollTrigger.create({ trigger: eye, start: 'top 85%', once: true, onEnter: eyeIntro });
-          }, null, 1.1);
-        ScrollTrigger.refresh();
+        try {
+          const h2 = $('#harvest-title');
+          split = SplitText.create(h2, { type: 'lines', mask: 'lines', linesClass: 'ln' });
+          gsap.set(h2, { visibility: 'visible' });
+          intro = gsap.timeline({ defaults: { ease: 'expo.out' }, onComplete: () => root.classList.add('played') })
+            .from(split.lines, { yPercent: 110, duration: 1, stagger: .08, onComplete: () => { split.revert(); split = null; } }, 0)
+            // TR3: the vineyard plants itself from the south-west corner
+            .to(BASE, { scale: 1, duration: .5, stagger: i => Math.hypot(DOTS[i].x, 300 - DOTS[i].y) / far * (wide ? .9 : .7) }, .2)
+            // the selected block ripens from its post and lands with the last vines
+            .to(ripeC[S.sel], { scale: 1, duration: .5, stagger: i => Math.hypot(lq[i].x - px, lq[i].y - py) / farLq * .45 }, wide ? .65 : .45)
+            .to(nameEls, { opacity: 1, duration: .4, stagger: .05, ease: 'power1.out' }, 1);
+          if (inView) {
+            // The first reading has no drop or plate: the eyepiece opens and the line falls from 0 to the reading.
+            intro.to(eye, { clipPath: 'circle(50% at 50% 50%)', duration: T('open') }, .35)
+              .to(draws, { strokeDashoffset: 0, duration: .6, ease: 'power2.out', stagger: .12 }, .45)
+              .to(nums, { opacity: 1, duration: .3, stagger: .03, ease: 'power1.out' }, .6)
+              .to(shadow, { yPercent: yp(b0.brix), duration: .9 }, .5)
+              .to(FIG, { v: b0.brix, duration: .9, onUpdate: fig }, .5)
+              .to(cap, { opacity: 1, duration: .3, ease: 'power1.out' }, 1.1);
+          }
+          ScrollTrigger.refresh();
+        } catch (err) {   // never leave the headline hidden
+          console.warn(err);
+          intro && intro.progress(1);
+          settle();
+        }
       }));
+      // Belt and braces: if the intro never got going, show everything.
+      setTimeout(() => { if (!root.classList.contains('played')) { intro ? intro.progress(1) : settle(); gsap.set('#harvest-title', { visibility: 'visible' }); } }, 4500);
     }
 
-    // SC16: row rules draw from the left as they arrive; schedule text follows its rule.
-    const ruleLis = $$('.rows li, .slots li'), slotKids = $$('.slots li > *');
+    // SC16: row and slot rules draw from the left as they arrive. The text is there from the start.
+    const ruleLis = $$('.rows li, .slots li');
     gsap.set(ruleLis, { '--d': 0 });
-    gsap.set(slotKids, { opacity: 0 });
     ScrollTrigger.batch(ruleLis, {
       start: 'top 88%', once: true,
-      onEnter: els => {
-        gsap.to(els, { '--d': 1, duration: .9, ease: 'expo.out', stagger: .06 });
-        const kids = els.flatMap(li => (li.closest('.slots') ? [...li.children] : []));
-        if (kids.length) gsap.to(kids, { opacity: 1, duration: .4, delay: .15, stagger: .03, ease: 'power1.out' });
-      }
+      onEnter: els => gsap.to(els, { '--d': 1, duration: .9, ease: 'expo.out', stagger: .06 })
     });
 
     return () => {
@@ -947,12 +991,12 @@
       rit && rit.kill();
       capTl && capTl.kill();
       eyeST && eyeST.kill();
+      endScrub = null;
       split && split.revert();
       gsap.ticker.remove(tick);
       gsap.ticker.lagSmoothing(500, 33);
       lenis.destroy();
       lenis = null;
-      openEye = null;
       settle();
     };
   });

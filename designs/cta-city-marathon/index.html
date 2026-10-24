@@ -92,10 +92,11 @@
   .bar__btn { grid-area: btn; }
   @media (min-width: 992px) {
     .bar { grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-areas: none; column-gap: var(--s5); padding-top: var(--s5); }
-    .bar__name { grid-area: auto; grid-column: 1 / 4; }
-    .bar__date { grid-area: auto; grid-column: 7 / 10; }
-    .bar__count { grid-area: auto; grid-column: 10 / 12; }
-    .bar__btn { grid-area: auto; grid-column: 12 / 13; justify-self: end; }
+    /* the date and the countdown stack on column 7, the edge the lede and the form share */
+    .bar__name { grid-area: 1 / 1 / 3 / 4; }
+    .bar__date { grid-area: 1 / 7 / 2 / 11; }
+    .bar__count { grid-area: 2 / 7 / 3 / 11; }
+    .bar__btn { grid-area: 1 / 11 / 3 / 13; justify-self: end; }
   }
 
   /* the wordmark: one line at bib weight, fitted to the measure */
@@ -621,8 +622,8 @@
     if (!clip) return;
     // the reveal edge rides the centre of the bulge; once it is on the N the whole word shows
     const i0 = Math.min(Math.max(Math.floor(c), 0), centres.length - 2);
-    const xc = c > 7.5 ? avail : centres[i0] + (c - i0) * (centres[i0 + 1] - centres[i0]);
-    mark.style.clipPath = `inset(-30% ${Math.max(0, avail - xc).toFixed(1)}px -30% 0)`;
+    const xc = centres[i0] + (c - i0) * (centres[i0 + 1] - centres[i0]); // keeps running past the N
+    mark.style.clipPath = `inset(-30% ${c > 7.5 ? 0 : Math.max(0, avail - xc).toFixed(1)}px -30% 0)`;
     return xc;
   }
 
@@ -842,11 +843,8 @@
             if (!alive) return;
             const xc = draw(proxy.c, 1.6 * gsap.utils.clamp(0, 1, (9.5 - proxy.c) / 2), true);
             if (!lefts) { const m = mark.getBoundingClientRect().left; lefts = barItems.map((el) => el.getBoundingClientRect().left - m); }
-            barItems.forEach((el, i) => {
-              if (lefts[i] === null || xc < lefts[i]) return;
-              lefts[i] = null;
-              ctx.add(() => gsap.to(el, { opacity: 1, duration: .3, ease: 'none' }));
-            });
+            // driven by the edge itself, not a tween, so a dropped frame can never leave a fact hidden
+            barItems.forEach((el, i) => { el.style.opacity = gsap.utils.clamp(0, 1, (xc - lefts[i]) / 120); });
           },
           onComplete: startLive
         }, .1)
@@ -939,6 +937,7 @@
     return () => {
       ac.abort(); alive = false;
       mark.style.clipPath = ''; intro.style.clipPath = '';
+      barItems.forEach((el) => { el.style.opacity = ''; });
       ScrollTrigger.removeEventListener('refresh', sync);
       gsap.ticker.remove(frame);
       gsap.ticker.remove(raf);

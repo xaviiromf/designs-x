@@ -76,7 +76,7 @@
 }
 @supports (height: 1svh) { :root { --week: max(44svh, 19rem); --needle-at: 45svh; } }
 @media (max-width: 991px) {
-  :root { --week: max(34svh, 17.5rem); --tape-w: 44px; --pin-len: 1.25rem; }
+  :root { --week: max(40svh, 20rem); --tape-w: 44px; --pin-len: 1.25rem; }
 }
 
 /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
@@ -253,7 +253,9 @@ figcaption { max-width: 26em; color: var(--thread-muted); min-height: 3.2em; }
   figcaption { min-height: 0; font-size: var(--step--1); line-height: 1.45; }
 }
 
-/* ---------- the fittings: a tape measure graduated in weeks ---------- */
+/* ---------- the fittings: a tape measure graduated in weeks ----------
+   Base layout (reduced motion, no JS, or under 992px): the tape hangs down the left and the page scrolls past a sticky needle.
+   Wide + motion: the section pins and the tape slides left under a fixed needle (block further down). */
 .fittings { padding-top: var(--s-9); padding-bottom: var(--s-8); }
 .fit-head { align-items: end; margin-bottom: var(--s-8); }
 .fit-head p { margin-top: var(--s-4); max-width: var(--measure); color: var(--thread-muted); }
@@ -267,10 +269,13 @@ figcaption { max-width: 26em; color: var(--thread-muted); min-height: 3.2em; }
   grid-template-columns: var(--tape-w) minmax(0, 1fr);
   margin-left: calc(-1 * var(--gutter));
 }
-.ruler > * { grid-row: 1; }
+.track { display: contents; }
+.ruler > *, .track > * { grid-row: 1; }
 @media (min-width: 992px) {
   .ruler { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gap); margin-left: 0; }
 }
+/* shortcut: the week-9 panel is taller than one week on phones, so room is reserved after the tape's end; retune 32rem if its copy changes */
+@media (max-width: 991px) { .ruler { margin-bottom: max(0px, 32rem - var(--week)); } }
 
 .tape {
   grid-column: 1; position: relative; width: var(--tape-w); height: calc(100% + 2px);
@@ -280,6 +285,10 @@ figcaption { max-width: 26em; color: var(--thread-muted); min-height: 3.2em; }
     repeating-linear-gradient(to bottom, transparent 0 calc(var(--week) / 2 - 1px), var(--black) calc(var(--week) / 2 - 1px) calc(var(--week) / 2), transparent calc(var(--week) / 2) var(--week)) 100% 0 / 16% 100% no-repeat,
     var(--tape);
   border-inline: 1px solid var(--tape-edge);
+}
+.tape::after {   /* the steel end tab at week 10 */
+  content: ''; position: absolute; left: -.35rem; right: -.35rem; bottom: -.7rem; height: .7rem;
+  background: var(--thread-muted); border-radius: 0 0 2px 2px;
 }
 @media (min-width: 992px) { .tape { grid-column: 2; justify-self: end; } }
 .mark { position: absolute; left: 0; right: 0; top: calc(var(--w) * var(--week)); height: 0; }
@@ -333,25 +342,35 @@ a.num:active, button.num:active { transform: scale(.94); transition: transform v
 }
 html.run .needle { display: block; }
 .needle svg { position: absolute; left: -8px; width: calc(var(--tape-w) + 16px); top: -7px; height: 14px; }
-.needle path { fill: none; stroke: var(--thread); stroke-width: 4; stroke-linecap: round; filter: url(#chalk); }
-.reading { position: absolute; font: 600 var(--step-1)/1 var(--font-tape); color: var(--thread); white-space: nowrap; }
+.needle path { fill: none; stroke-linecap: round; }
+.needle .n-edge { stroke: var(--black); stroke-width: 6.5; }
+.needle .n-chalk { stroke: var(--needle); stroke-width: 4; filter: url(#chalk); }
+.reading { position: absolute; display: grid; font: 600 var(--step-1)/1.1 var(--font-tape); color: var(--thread); white-space: nowrap; }
+.rn, .hn { display: inline-grid; overflow: hidden; vertical-align: top; }
+.rn > span, .hn > span { grid-area: 1 / 1; }
+.rh { font: 500 var(--step--1)/1.3 var(--font-tape); letter-spacing: .02em; color: var(--thread-muted); }
+.rh .hs { display: none; }
+.rh .hx { display: none; }
 @media (min-width: 992px) {
   .needle { grid-column: 1 / 3; }
   .needle svg { left: auto; right: -8px; }
-  .reading { right: calc(var(--tape-w) + 1.1rem); top: 0; transform: translateY(-50%); letter-spacing: .02em; }
+  .reading { right: calc(var(--tape-w) + 1.1rem); top: 0; transform: translateY(-.7em); justify-items: end; letter-spacing: .02em; }
 }
 @media (max-width: 991px) {
   .reading {
     left: 0; width: var(--tape-w); top: 0; transform: translateY(-50%);
-    display: grid; justify-items: center; padding: .3rem 0 .35rem;
-    background: var(--thread); color: var(--black); font-size: 1.2rem;
+    justify-items: center; padding: .3rem 0 .35rem;
+    background: var(--thread); color: var(--black); font-size: 1.2rem; text-align: center;
   }
+  .rd { display: grid; justify-items: center; }
   .reading .rw { font: 500 .7rem/1 var(--font-tape); letter-spacing: .03em; margin-bottom: .1rem; }
+  .rh { color: var(--black); font-size: .7rem; margin-top: .15rem; }
+  .rh .hl { display: none; }
+  .rh .hs { display: inline; }
 }
-.reading .rw::after { content: ' '; }
 
-.panels { grid-column: 2; position: relative; padding-right: var(--gutter); }
-@media (min-width: 992px) { .panels { grid-column: 3 / 13; padding-right: 0; } }
+.panels, .notes { grid-column: 2; position: relative; padding-right: var(--gutter); }
+@media (min-width: 992px) { .panels, .notes { grid-column: 3 / 13; padding-right: 0; } }
 .panel {
   position: absolute; left: 0; right: 0; top: calc(var(--w) * var(--week));
   padding-left: var(--pin-len); transform: translateY(-.9rem);
@@ -370,18 +389,87 @@ html.run .needle { display: block; }
 .panel p:not(.wk) { margin-top: var(--s-3); color: var(--thread-muted); }
 .panel h3 + p { color: var(--thread); }
 .draw { display: block; float: right; width: 36%; max-width: 9rem; margin: var(--s-2) 0 var(--s-3) var(--s-4); height: auto; }
+@media (max-width: 599px) {   /* too narrow to float beside text: the drawing sits between the week line and the heading */
+  .draw { float: none; width: min(56%, 11rem); max-width: none; margin: var(--s-3) 0; }
+}
 @media (min-width: 992px) {
-  .panel { display: grid; grid-template-columns: minmax(0, 26em) minmax(0, 16rem); column-gap: var(--s-8); align-items: start; }
+  .panel { display: grid; grid-template-columns: minmax(0, 26em) minmax(0, 1fr); column-gap: var(--s-8); align-items: start; }
   .panel .txt { display: contents; }
   .panel .txt > * { grid-column: 1; }
-  .panel .txt > .draw { grid-column: 2; grid-row: 1 / span 5; float: none; width: 100%; max-width: none; margin: -.25rem 0 0; }
+  /* kept inside one week so the week-9 panel ends before the tape does */
+  .panel .txt > .draw { grid-column: 2; grid-row: 1 / span 5; float: none; width: clamp(12rem, 18vw, 18rem); max-width: none; margin: -.25rem 0 0; }
 }
 .coat { fill: var(--shade); stroke: var(--thread-faint); stroke-width: 1.3; stroke-linejoin: round; stroke-linecap: round; }
 .coat-line { fill: none; stroke: var(--thread-faint); stroke-width: 1.3; stroke-linejoin: round; }
-.stitch { fill: none; stroke: var(--thread); stroke-width: 1.8; stroke-dasharray: 6 4; stroke-linecap: round; }
-.mk { fill: none; stroke: #fff; stroke-width: 7; stroke-linecap: round; stroke-linejoin: round; }
+.stitch { fill: none; stroke: var(--thread); stroke-width: 2.4; stroke-dasharray: 9 6; stroke-linecap: round; }
+.mk { fill: none; stroke: #fff; stroke-width: 7; stroke-linecap: round; stroke-linejoin: round; }   /* mask paint: white = shown */
 .chalk-mark { fill: none; stroke: var(--thread); stroke-width: 2.6; stroke-linecap: round; filter: url(#chalk); }
 .pencil { fill: none; stroke: var(--black); stroke-width: 1.4; stroke-linejoin: round; stroke-linecap: round; }
+
+/* Workroom notes in chalk, at the week the work is done */
+.note {
+  position: absolute; left: 0; top: calc(var(--w) * var(--week)); transform: translateY(-50%);
+  padding-left: var(--pin-len); max-width: calc(var(--pin-len) + 15em);
+  font: italic 400 var(--step-1)/1.3 var(--font-text); color: var(--thread);
+}
+.nu { display: block; width: 100%; height: auto; margin-top: .1rem; }
+
+/* ---------- wide + motion: the section pins and the tape slides under the needle (SC4) ---------- */
+@media (min-width: 992px) and (prefers-reduced-motion: no-preference) {
+  html.js .fittings { height: 100svh; display: flex; flex-direction: column; padding-block: var(--s-7) 0; overflow: clip; }
+  html.js .fit-head { flex: none; margin-bottom: 0; }
+  html.js .ruler { display: block; flex: 1; min-height: 0; margin-inline: calc(50% - 50vw); }
+  html.js .track { display: block; position: absolute; top: 0; bottom: 0; left: 0; width: calc(10 * var(--W) + 100vw); }
+  html.js .tape {
+    position: absolute; top: auto; bottom: var(--tape-b); left: calc(var(--x0) - 1.5rem);
+    width: calc(10 * var(--W) + 1.5rem); height: var(--tape-h);
+    border-inline: 0; border-block: 1px solid var(--tape-edge);
+    background:
+      repeating-linear-gradient(to right, transparent 0 calc(var(--W) / 2 - 1px), var(--black) calc(var(--W) / 2 - 1px) calc(var(--W) / 2 + 1px), transparent calc(var(--W) / 2 + 1px) var(--W)) 1.5rem 0 / calc(10 * var(--W)) 26% no-repeat,
+      repeating-linear-gradient(to right, transparent 0 calc(var(--W) / 2 - 1px), var(--black) calc(var(--W) / 2 - 1px) calc(var(--W) / 2 + 1px), transparent calc(var(--W) / 2 + 1px) var(--W)) 1.5rem 100% / calc(10 * var(--W)) 14% no-repeat,
+      var(--tape);
+  }
+  html.js .tape::after { left: auto; right: -.8rem; top: -.4rem; bottom: -.4rem; width: .8rem; height: auto; border-radius: 0 2px 2px 0; }
+  html.js .mark { left: calc(1.5rem + var(--w) * var(--W)); right: auto; top: 0; bottom: 0; width: 0; height: auto; }
+  html.js .mark::before { left: -1px; top: 0; width: 2px; height: 46%; transform-origin: 50% 0; }
+  html.js .mark::after { left: -1px; right: auto; top: auto; bottom: 0; width: 2px; height: 20%; }
+  html.js .mark:has(.num:hover)::before, html.js .mark:has(.num:focus-visible)::before { transform: scaleY(1.6); }
+  html.js .num { left: .3rem; right: auto; top: .3rem; height: auto; min-width: 2.75rem; min-height: 2.75rem; padding: .2rem .45rem; place-items: start start; }
+  html.js .num b { padding: 0; }
+  html.js .lbl { writing-mode: horizontal-tb; right: auto; left: .75rem; top: auto; bottom: .6rem; transform: none; }
+  html.js .mark.end .num { left: auto; right: .3rem; bottom: auto; place-items: start end; }
+  html.js .mark.end .lbl { left: auto; right: .75rem; bottom: .6rem; }
+
+  html.js .needle { position: absolute; left: var(--x0); top: auto; bottom: 0; height: var(--band); width: 0; }
+  html.js .needle svg { display: none; }
+  html.js .needle::before {   /* blue chalk needle, edged in black so it reads on the yellow tape */
+    content: ''; position: absolute; left: -3px; width: 6px; top: 0; bottom: calc(var(--tape-b) - .6rem);
+    background: var(--needle); border: 1px solid var(--black); border-radius: 3px;
+  }
+  html.js .reading {
+    right: .9rem; left: auto; top: 0; transform: none; justify-items: end;
+    padding: .35rem .6rem .45rem; background: var(--twill), var(--flannel); font-size: var(--step-2);
+  }
+  html.js .rh .hx { display: inline; }
+
+  html.js .panels, html.js .notes { position: absolute; inset: 0; padding: 0; }
+  html.js .panel {
+    left: calc(var(--x0) + var(--w) * var(--W)); right: auto; top: 0; bottom: var(--band); transform: none;
+    display: grid; grid-template-columns: auto minmax(0, min(24em, 30vw)); column-gap: var(--s-7);
+    align-content: end; align-items: end; padding: 0 0 var(--s-6) 1.5rem;
+  }
+  html.js .panel .txt > * { grid-column: 2; }
+  html.js .panel .txt > .draw {
+    grid-column: 1; grid-row: 1 / span 5; align-self: end; margin: 0;
+    width: auto; height: clamp(12rem, calc(100svh - var(--band) - 14rem), 30rem); aspect-ratio: 176 / 224;
+  }
+  html.js .pin {
+    left: 0; top: calc(100% - var(--s-5)); width: 0; height: calc(var(--s-5) + var(--band) - var(--tape-h) - var(--tape-b) + .6rem);
+    border-top: 0; border-left: 1.5px solid var(--thread-muted); transform-origin: 50% 100%;
+  }
+  html.js .pin::after { right: auto; left: calc(-.35rem - 1px); top: -.35rem; }
+  html.js .note { left: calc(var(--x0) + var(--w) * var(--W)); top: 24%; transform: none; padding-left: 1.5rem; max-width: 14em; font-size: var(--step-2); line-height: 1.2; }
+}
 
 /* ---------- collection: the frame opens to full bleed (MD2) ---------- */
 .collection { position: relative; min-height: 100svh; display: grid; align-items: center; padding-block: var(--s-10); overflow: clip; }
@@ -410,7 +498,8 @@ html.run .needle { display: block; }
 .woven .w-sm { display: block; font-size: var(--step--1); margin-top: .2rem; font-variant-numeric: lining-nums; }
 .woven .w-for { display: block; margin-top: var(--s-3); padding-top: var(--s-3); border-top: 1px solid var(--ink-rule); }
 @media (min-width: 992px) {
-  .col-inner { grid-template-columns: minmax(0, 1fr) auto; padding-inline: 24vw; column-gap: var(--s-8); }
+  /* text starts where the needle stood, so the cloth opens from the tape's end tab towards it */
+  .col-inner { grid-template-columns: minmax(0, 1fr) auto; padding-inline: calc(var(--x0) + 2vw) 8vw; column-gap: var(--s-8); }
   .woven { justify-self: center; }
 }
 
@@ -438,6 +527,10 @@ dialog[open]::backdrop { animation: dim .3s var(--ease-out); }
 @keyframes dim { from { opacity: 0; } }
 @media (max-width: 599px) {
   dialog { width: 100%; max-width: 100%; height: 100%; max-height: 100%; margin: 0; border-radius: 0; padding: var(--s-5) var(--s-4); }
+  .dlg-head {   /* Close stays in reach while the sheet scrolls to an error */
+    position: sticky; top: calc(-1 * var(--s-5)); z-index: 2; background: var(--card);
+    margin: calc(-1 * var(--s-5)) calc(-1 * var(--s-4)) 0; padding: var(--s-5) var(--s-4) var(--s-3);
+  }
 }
 .dlg-head { display: flex; justify-content: space-between; align-items: start; gap: var(--s-4); }
 .dlg-head h2 { font-size: var(--step-2); line-height: 1.15; }
@@ -460,8 +553,8 @@ select { appearance: none; padding-right: 1.5rem; cursor: pointer;
     linear-gradient(-45deg, transparent 50%, var(--black) 50%) calc(100% - .2rem) 55% / .4rem .4rem no-repeat transparent; }
 textarea { resize: vertical; min-height: 4.5rem; }
 input:not([type="radio"]):hover, select:hover, textarea:hover { background-size: 100% 2px, .4rem .4rem, .4rem .4rem; }
-input:not([type="radio"]):focus-visible, select:focus-visible, textarea:focus-visible { outline: none; }
-.ctl .line { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--black); transform: scaleX(0); transform-origin: 0 50%; transition: transform var(--t-rule) var(--ease-out); pointer-events: none; }
+input:not([type="radio"]):focus-visible, select:focus-visible, textarea:focus-visible { outline: none; background-color: var(--field-tint); }
+.ctl .line { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--black); transform: scaleX(0); transform-origin: 0 50%; transition: transform var(--t-rule) var(--ease-out); pointer-events: none; }
 .ctl :focus + .line { transform: scaleX(1); }
 .ctl [aria-invalid="true"] + .line { transform: scaleX(1); background: var(--red-pencil); }
 .err { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--t-err) var(--ease-out); }
@@ -475,15 +568,17 @@ legend { padding: 0; margin-bottom: var(--s-2); }
 .opt { position: relative; display: inline-grid; place-items: center; padding: .55rem .85rem; cursor: pointer; }
 .opt input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
 .opt .ring { position: absolute; inset: -.1rem -.3rem; width: calc(100% + .6rem); height: calc(100% + .2rem); pointer-events: none; }
-.ring path {
+.ring path {   /* drawn faintly at rest so the four choices read as choices */
   fill: none; stroke: var(--black); stroke-width: 1.6; stroke-linecap: round;
-  stroke-dasharray: 1 2; stroke-dashoffset: 1.01; opacity: 1;
-  transition: stroke-dashoffset var(--t-draw-out) var(--ease-draw), opacity var(--t-draw-out);
+  stroke-dasharray: 1 2; stroke-dashoffset: 0; opacity: .28;
+  transition: opacity var(--t-draw-out) var(--ease-draw);
 }
-@media (hover: hover) { .opt:hover .ring path { stroke-dashoffset: 0; opacity: .35; transition-duration: var(--t-ring); } }
-.opt input:checked ~ .ring path { stroke-dashoffset: 0; opacity: 1; transition-duration: var(--t-ring); }
+@media (hover: hover) { .opt:hover .ring path { opacity: .55; } }
+.opt input:checked ~ .ring path { opacity: 1; stroke-width: 2.2; animation: ring-draw var(--t-ring) var(--ease-draw); }
+@keyframes ring-draw { from { stroke-dashoffset: 1.01; } }
 .opt:has(input:focus-visible) { outline: 3px solid var(--black); outline-offset: 2px; border-radius: 2px; }
-.opt:has(input:focus-visible) .ring path { stroke-dashoffset: 0; }
+.opt:has(input:focus-visible) .ring path { opacity: .55; }
+.opt:has(input:focus-visible) input:checked ~ .ring path { opacity: 1; }
 .done { margin-top: var(--s-6); display: grid; gap: var(--s-4); justify-items: start; }
 .done[hidden] { display: none; }
 .done svg { width: 3rem; height: 3rem; }
@@ -499,6 +594,7 @@ legend { padding: 0; margin-bottom: var(--s-2); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0s !important; animation-duration: 0s !important; }
   .btn:active, a.num:active, button.num:active { transform: none; }
+  dialog[open]::backdrop { animation: none; }
 }
 </style>
 </head>
@@ -652,10 +748,11 @@ legend { padding: 0; margin-bottom: var(--s-2); }
 
     <div class="ruler" id="ruler">
       <div class="needle" aria-hidden="true">
-        <svg viewBox="0 0 100 14" preserveAspectRatio="none"><path d="M2 8 C 30 6, 60 9, 98 6"/></svg>
-        <span class="reading"><span class="rw">Week</span><span class="rn">0</span></span>
+        <svg viewBox="0 0 100 14" preserveAspectRatio="none"><path class="n-edge" d="M2 8 C 30 6, 60 9, 98 6"/><path class="n-chalk" d="M2 8 C 30 6, 60 9, 98 6"/></svg>
+        <span class="reading"><span class="rd"><span class="rw">Week </span><span class="rn"><span>0</span></span></span><span class="rh"><span class="hn"><span>0</span></span><span class="hl"> hours</span><span class="hx"> of handwork</span><span class="hs"> h</span></span></span>
       </div>
 
+      <div class="track">
       <div class="tape" role="group" aria-label="Tape measure marked in weeks">
         <ol class="marks">
           <li class="mark" style="--w:0"><a class="num" href="#measure" aria-label="Week 0, first measure: go back to the measure book"><span class="fill"></span><b>0</b></a><span class="lbl" aria-hidden="true">First measure</span></li>
@@ -750,6 +847,12 @@ legend { padding: 0; margin-bottom: var(--s-2); }
           </div>
         </li>
       </ol>
+
+      <div class="notes">
+        <p class="note" style="--w:5">Coat unpicked and recut, 9 hours<svg class="nu" viewBox="0 0 200 8" aria-hidden="true"><path class="chalk-mark dr" d="M2 5 C 50 2.5, 112 6.5, 198 3.5"/></svg></p>
+        <p class="note" style="--w:8">Canvas and lapels padded by hand, 14 hours<svg class="nu" viewBox="0 0 200 8" aria-hidden="true"><path class="chalk-mark dr" d="M2 4 C 60 6.5, 120 2.5, 198 5"/></svg></p>
+      </div>
+      </div>
     </div>
   </section>
 
@@ -814,10 +917,10 @@ legend { padding: 0; margin-bottom: var(--s-2); }
     <fieldset class="field" aria-describedby="e-made">
       <legend>What would you like made</legend>
       <div class="opts">
-        <label class="opt"><input type="radio" name="made" value="Two-piece suit" required><span>Two-piece suit</span><svg class="ring" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M14 8 C40 1 88 2 96 16 C102 30 60 39 26 36 C4 34 -2 22 8 13 C14 8 26 6 34 6"/></svg></label>
-        <label class="opt"><input type="radio" name="made" value="Three-piece suit"><span>Three-piece suit</span><svg class="ring" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M18 6 C46 0 92 4 97 18 C101 32 56 39 24 35 C2 32 -1 18 10 11 C16 7 28 5 38 5"/></svg></label>
-        <label class="opt"><input type="radio" name="made" value="Odd jacket"><span>Odd jacket</span><svg class="ring" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M12 9 C38 2 90 1 96 17 C100 31 62 38 28 37 C6 36 -2 24 7 14 C12 9 24 7 32 7"/></svg></label>
-        <label class="opt"><input type="radio" name="made" value="Overcoat"><span>Overcoat</span><svg class="ring" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M16 7 C42 0 90 3 97 17 C101 31 58 39 26 36 C3 33 -1 20 9 12 C15 8 27 6 36 6"/></svg></label>
+        <label class="opt"><input type="radio" name="made" value="Two-piece suit" required aria-describedby="e-made"><span>Two-piece suit</span><svg class="ring" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M14 8 C40 1 88 2 96 16 C102 30 60 39 26 36 C4 34 -2 22 8 13 C14 8 26 6 34 6"/></svg></label>
+        <label class="opt"><input type="radio" name="made" value="Three-piece suit" aria-describedby="e-made"><span>Three-piece suit</span><svg class="ring" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M18 6 C46 0 92 4 97 18 C101 32 56 39 24 35 C2 32 -1 18 10 11 C16 7 28 5 38 5"/></svg></label>
+        <label class="opt"><input type="radio" name="made" value="Odd jacket" aria-describedby="e-made"><span>Odd jacket</span><svg class="ring" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M12 9 C38 2 90 1 96 17 C100 31 62 38 28 37 C6 36 -2 24 7 14 C12 9 24 7 32 7"/></svg></label>
+        <label class="opt"><input type="radio" name="made" value="Overcoat" aria-describedby="e-made"><span>Overcoat</span><svg class="ring" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M16 7 C42 0 90 3 97 17 C101 31 58 39 26 36 C3 33 -1 20 9 12 C15 8 27 6 36 6"/></svg></label>
       </div>
       <div class="err" id="e-made"><span></span></div>
     </fieldset>
@@ -853,11 +956,12 @@ legend { padding: 0; margin-bottom: var(--s-2); }
   root.classList.add('run', 'js');
   const $ = (s, el = document) => el.querySelector(s);
   const $$ = (s, el = document) => [...el.querySelectorAll(s)];
-  const LIB = !!(window.gsap && window.ScrollTrigger && window.SplitText && window.DrawSVGPlugin && window.Lenis);
+  const LIB = !!(window.gsap && window.ScrollTrigger && window.DrawSVGPlugin && window.SplitText && window.Lenis);
   if (!LIB) root.classList.remove('js');   // CDN blocked: everything is already visible and still works
 
   let M = false;        // true while the motion branch is active
   let lenis = null;
+  let jumpY = null;     // set while the tape slides horizontally: week -> scroll position inside the pin
 
   /* ---------- anchors and tape jumps (NV6 eased scroll + focus) ---------- */
   const scrollToY = (y, focusEl) => {
@@ -867,6 +971,7 @@ legend { padding: 0; margin-bottom: var(--s-2); }
   };
   const needle = $('.needle'), ruler = $('#ruler');
   const needleTop = () => parseFloat(getComputedStyle(needle).top) || innerHeight * .45;
+  const weekOf = (el) => parseFloat(el.closest('[style*="--w"]').style.getPropertyValue('--w'));
 
   document.addEventListener('click', (e) => {
     const a = e.target.closest('a[href^="#"]');
@@ -880,7 +985,7 @@ legend { padding: 0; margin-bottom: var(--s-2); }
     const g = e.target.closest('[data-go]');
     if (g) {   // land the panel's week mark on the needle
       const p = document.getElementById(g.dataset.go), pin = $('.pin', p);
-      scrollToY(pin.getBoundingClientRect().top + scrollY - needleTop() + 1, $('h3', p));
+      scrollToY(jumpY ? jumpY(weekOf(p)) : pin.getBoundingClientRect().top + scrollY - needleTop() + 1, $('h3', p));
       return;
     }
     const o = e.target.closest('[data-open]');
@@ -901,16 +1006,40 @@ legend { padding: 0; margin-bottom: var(--s-2); }
     b.addEventListener('pointerleave', set);
   });
 
-  /* ---------- the needle reading: written only when the half-week changes ---------- */
-  const rn = $('.reading .rn');
-  let lastWeek = -1;
-  const readNeedle = () => {
-    const r = ruler.getBoundingClientRect(), n = needle.getBoundingClientRect();
-    const w = Math.min(10, Math.max(0, Math.round((n.top - r.top) / (r.height / 10) * 2) / 2));
+  /* ---------- the needle reading: week and hours of handwork, written only when the half-week changes ---------- */
+  const rn = $('.reading .rn'), hn = $('.reading .hn');
+  const KNOTS = [[0, 0], [1, 4], [3, 10], [5, 19], [6, 26], [8, 40], [9, 52], [10, 60]];   // cumulative hours at each week
+  const hoursAt = (w) => {
+    for (let i = 1; i < KNOTS.length; i++) {
+      const [a, ha] = KNOTS[i - 1], [b, hb] = KNOTS[i];
+      if (w <= b) return Math.round(ha + (hb - ha) * (w - a) / (b - a));
+    }
+    return 60;
+  };
+  const roll = (el, text, dir) => {   // the counter turns the way the tape moves
+    const cur = el.lastElementChild;
+    if (cur.textContent === text) return;
+    if (!M) { el.replaceChildren(cur); cur.textContent = text; return; }
+    const n = document.createElement('span');
+    n.textContent = text;
+    el.append(n);
+    gsap.killTweensOf(cur);
+    gsap.to(cur, { yPercent: -100 * dir, duration: .25, ease: 'expo.out', onComplete: () => cur.remove() });
+    gsap.fromTo(n, { yPercent: 100 * dir }, { yPercent: 0, duration: .25, ease: 'expo.out' });
+  };
+  let lastWeek = 0;
+  const setWeek = (raw) => {
+    const w = Math.min(10, Math.max(0, Math.round(raw * 2) / 2));
     if (w === lastWeek) return;
+    const dir = w > lastWeek ? 1 : -1;
     lastWeek = w;
     const whole = Math.floor(w), half = w % 1 ? '½' : '';
-    rn.textContent = (whole || !half ? whole : '') + half;
+    roll(rn, (whole || !half ? whole : '') + half, dir);
+    roll(hn, String(hoursAt(w)), dir);
+  };
+  const readNeedle = () => {   // vertical tape: where the sticky needle sits on the ruler
+    const r = ruler.getBoundingClientRect(), n = needle.getBoundingClientRect();
+    setWeek((n.top - r.top) / (r.height / 10));
   };
 
   /* ---------- the measure book and the dress form ---------- */
@@ -958,31 +1087,29 @@ legend { padding: 0; margin-bottom: var(--s-2); }
 
   /* ---------- dialog (CD7) ---------- */
   const dlg = $('#dlg'), form = $('#book-form'), done = $('.done', dlg);
-  let opener = null, split = null, resetOnClose = false;
+  let opener = null, resetOnClose = false;
   const sheet = () => innerWidth < 600;
   function openDialog(from) {
     opener = from;
     dlg.showModal();
     lenis && lenis.stop();
-    if (!window.gsap) return;
+    if (!M) return;   // reduced motion or no library: it simply appears
     gsap.killTweensOf(dlg);
-    if (!M) gsap.fromTo(dlg, { autoAlpha: 0 }, { autoAlpha: 1, duration: .15 });
-    else if (sheet()) gsap.fromTo(dlg, { yPercent: 100, autoAlpha: 1 }, { yPercent: 0, duration: .5, ease: 'expo.out' });
+    if (sheet()) gsap.fromTo(dlg, { yPercent: 100, autoAlpha: 1 }, { yPercent: 0, duration: .5, ease: 'expo.out' });
     else gsap.fromTo(dlg, { autoAlpha: 0, y: 12, scale: .98 }, { autoAlpha: 1, y: 0, scale: 1, duration: .45, ease: 'expo.out' });
   }
   function closeDialog(reset) {
-    resetOnClose = reset;
+    resetOnClose = reset || !done.hidden;   // after a request, any way out leaves a fresh form behind
     const finish = () => dlg.close();
-    if (!window.gsap || !dlg.open) return finish();
+    if (!M || !dlg.open) return finish();
     gsap.killTweensOf(dlg);
-    if (!M) gsap.to(dlg, { autoAlpha: 0, duration: .15, onComplete: finish });
-    else if (sheet()) gsap.to(dlg, { yPercent: 100, duration: .3, ease: 'power2.in', onComplete: finish });
+    if (sheet()) gsap.to(dlg, { yPercent: 100, duration: .3, ease: 'power2.in', onComplete: finish });
     else gsap.to(dlg, { autoAlpha: 0, y: 12, scale: .98, duration: .3, ease: 'power2.in', onComplete: finish });
   }
   dlg.addEventListener('cancel', (e) => { e.preventDefault(); closeDialog(false); });
   dlg.addEventListener('close', () => {   // also runs if the browser force-closes on a repeated Escape
     if (window.gsap) gsap.set(dlg, { clearProps: 'all' });
-    if (resetOnClose) resetForm();
+    if (resetOnClose || !done.hidden) resetForm();
     resetOnClose = false;
     lenis && lenis.start();
     opener && opener.focus();
@@ -1029,15 +1156,9 @@ legend { padding: 0; margin-bottom: var(--s-2); }
     form.hidden = true;
     done.hidden = false;
     $('.msg', done).focus();
-    if (M) {
-      gsap.fromTo('.done-tick', { drawSVG: 0 }, { drawSVG: '100%', duration: .5, ease: 'power3.out' });
-      split && split.revert();
-      split = SplitText.create($$('.msg, .msg-2', done), { type: 'lines', mask: 'lines' });
-      gsap.from(split.lines, { yPercent: 110, duration: .6, ease: 'expo.out', stagger: .06, delay: .1 });
-    }
+    if (M) gsap.fromTo('.done-tick', { drawSVG: 0 }, { drawSVG: '100%', duration: .5, ease: 'power3.out' });
   });
   function resetForm() {
-    split && split.revert(); split = null;
     form.reset();
     ['name', 'contact', 'made'].forEach((k) => setErr(k, F[k] || null, ''));
     form.hidden = false;
@@ -1055,6 +1176,24 @@ legend { padding: 0; margin-bottom: var(--s-2); }
   gsap.registerPlugin(ScrollTrigger, SplitText, DrawSVGPlugin);
   const t0 = performance.now();
   const fontsReady = Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 1200))]);
+  const fittings = $('#fittings'), tape = $('.tape'), track = $('.track');
+
+  // One panel's visit: the pin goes in, the coat firms up and its stitches are basted; then the thread is pulled tight.
+  const baste = (p, st, pinAxis) => {
+    const coat = $$('.coat, .coat-line', p), draw = $('.draw', p);
+    const tight = () => {
+      if (coat.length) gsap.to(coat, { opacity: 1, duration: .35, ease: 'expo.out' });
+      gsap.fromTo(draw, { scale: 1.012 }, { scale: 1, duration: .35, ease: 'expo.out', transformOrigin: '50% 50%' });
+    };
+    const tl = gsap.timeline({ defaults: { ease: 'none' }, scrollTrigger: { ...st, scrub: true, invalidateOnRefresh: true, onLeave: tight } })
+      .fromTo($('.pin', p), { [pinAxis]: 0 }, { [pinAxis]: 1, duration: .25 }, 0)
+      .fromTo($$('.dr', p), { drawSVG: 0 }, { drawSVG: '100%', duration: .6, stagger: .05 }, .3);
+    if (coat.length) tl.fromTo(coat, { opacity: .3 }, { opacity: .7, duration: .9 }, 0);
+  };
+  // A workroom note is written in chalk as its week reaches the needle.
+  const chalkNote = (n, st) => gsap.timeline({ defaults: { ease: 'none' }, scrollTrigger: { ...st, scrub: true, invalidateOnRefresh: true } })
+    .fromTo(n, { clipPath: 'inset(-10% 100% -10% 0%)' }, { clipPath: 'inset(-10% 0% -10% 0%)', duration: .8 }, 0)
+    .fromTo($('.dr', n), { drawSVG: 0 }, { drawSVG: '100%', duration: .4 }, .6);
 
   const mm = gsap.matchMedia();
   mm.add({
@@ -1063,12 +1202,13 @@ legend { padding: 0; margin-bottom: var(--s-2); }
     fine: '(hover: hover) and (pointer: fine)',
     wide: '(min-width: 992px)'
   }, (ctx) => {
-    const { motion, fine, wide } = ctx.conditions;
+    const { motion, wide } = ctx.conditions;
+    const horiz = motion && wide;   // matches the CSS block that lays the tape along the bottom
 
-    // S2 reading: one ScrollTrigger across the ruler, in both branches.
-    ScrollTrigger.create({ trigger: ruler, start: 'top bottom', end: 'bottom top', onUpdate: readNeedle, onRefresh: readNeedle });
-    readNeedle();
-
+    if (!horiz) {   // vertical tape: one ScrollTrigger across the ruler keeps the reading
+      ScrollTrigger.create({ trigger: ruler, start: 'top bottom', end: 'bottom top', onUpdate: readNeedle, onRefresh: readNeedle });
+      readNeedle();
+    }
     if (!motion) {   // reduced motion: final states, native scroll, no Lenis
       M = false;
       return;
@@ -1081,14 +1221,15 @@ legend { padding: 0; margin-bottom: var(--s-2); }
     gsap.ticker.add(tick);
     gsap.ticker.lagSmoothing(0);
 
-    /* ----- page load, about 1.6 s ----- */
+    /* ----- page load, about 1.6 s, in the order of the object: hook, pieces, words, name ----- */
     const hero = $('.hero');
     gsap.timeline()
-      .fromTo('.hook', { drawSVG: 0, autoAlpha: 1 }, { drawSVG: '100%', duration: .5, ease: 'power3.out' }, .1)
+      .fromTo('.hook', { drawSVG: 0, autoAlpha: 1 }, { drawSVG: '100%', duration: .5, ease: 'power3.out' }, 0)
       .fromTo('.drop', { y: -40, opacity: 0 }, { y: 0, opacity: 1, duration: .6, ease: 'expo.out', stagger: .12 }, .35)
+      .from('.drop', { rotation: (i) => [5, -5, 4][i], svgOrigin: '0 0', duration: 1.1, ease: 'elastic.out(1, .35)', stagger: .12 }, .35)
       .fromTo([$('.lead', hero), $('.actions', hero)], { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: .6, ease: 'expo.out', stagger: .06 }, .55)
-      .fromTo('.name-ul', { drawSVG: 0, autoAlpha: 1 }, { drawSVG: '100%', duration: .6, ease: 'power3.out' }, 1)
-      .fromTo('.card-name', { opacity: 0 }, { opacity: 1, duration: .4 }, 1);
+      .fromTo('.card-name', { opacity: 0 }, { opacity: 1, duration: .4 }, 1.35)
+      .fromTo('.name-ul', { drawSVG: 0, autoAlpha: 1 }, { drawSVG: '100%', duration: .6, ease: 'power3.out' }, 1.5);
 
     const h1 = $('#h1');
     fontsReady.then(() => {
@@ -1098,7 +1239,7 @@ legend { padding: 0; margin-bottom: var(--s-2); }
           onSplit(self) {
             gsap.set(self.masks, { paddingBottom: '.14em', marginBottom: '-.14em' });   // Petrona descenders
             gsap.set(h1, { visibility: 'visible' });
-            const wait = Math.max(0, .2 - (performance.now() - t0) / 1000);
+            const wait = Math.max(0, .9 - (performance.now() - t0) / 1000);   // once the forepart has landed
             return gsap.from(self.lines, { yPercent: 110, duration: 1, ease: 'expo.out', stagger: .08, delay: wait });
           }
         });
@@ -1113,36 +1254,42 @@ legend { padding: 0; margin-bottom: var(--s-2); }
       .fromTo('.rule', { scaleX: 0 }, { scaleX: 1, duration: .8, ease: 'expo.out', stagger: .04 }, 0)
       .add(() => lines.forEach((l) => l.classList.remove('wait')), .55);
 
-    /* ----- S2 signature: each visit is basted as its week reaches the needle ----- */
-    $$('.panel').forEach((p) => {
-      const coat = $$('.coat, .coat-line', p);
-      const tl = gsap.timeline({
-        defaults: { ease: 'none' },
-        scrollTrigger: { trigger: $('.pin', p), start: 'top 75%', end: () => `top ${needleTop()}px`, scrub: true, invalidateOnRefresh: true }
-      })
-        .fromTo($('.pin', p), { scaleX: 0 }, { scaleX: 1, duration: .25 }, 0)
-        .fromTo($$('.dr', p), { drawSVG: 0 }, { drawSVG: '100%', duration: .6, stagger: .05 }, .3);
-      if (coat.length) tl.fromTo(coat, { opacity: .3 }, { opacity: 1, duration: .4 }, 0);   // week 1 is a card, not a coat
-    });
-
-    /* ----- S3: the cloth opens from a frame to full bleed ----- */
-    const coll = $('#collection'), colH = $('#col-h'), woven = $('.woven');
-    if (wide && fine) {
-      gsap.timeline({ defaults: { ease: 'none' }, scrollTrigger: { trigger: coll, start: 'top 80%', end: 'center center', scrub: true } })
-        .fromTo('.frame', { clipPath: 'inset(12% 22% round 4px)' }, { clipPath: 'inset(0% 0% round 0px)' }, 0)
-        .fromTo('.cloth', { scale: 1.2 }, { scale: 1 }, 0);
-      fontsReady.then(() => SplitText.create(colH, {
-        type: 'lines', mask: 'lines', autoSplit: true,
-        onSplit: (self) => gsap.from(self.lines, { yPercent: 110, duration: 1, ease: 'expo.out', stagger: .08,
-          scrollTrigger: { trigger: coll, start: 'top 40%', once: true } })
-      }));
-      gsap.from(woven, { opacity: 0, duration: .5, ease: 'expo.out', scrollTrigger: { trigger: coll, start: 'top 30%', once: true } });
+    /* ----- S2 signature ----- */
+    const cleanups = [];
+    if (horiz) {
+      // The section pins and the tape slides left under the fixed needle; one week is --W wide.
+      const marks = $$('.mark', tape);
+      const weekPx = () => marks[1].offsetLeft - marks[0].offsetLeft;
+      const needleX = () => needle.getBoundingClientRect().left;
+      const slide = gsap.to(track, {
+        x: () => -10 * weekPx(), ease: 'none',
+        scrollTrigger: { trigger: fittings, start: 'top top', end: () => '+=' + 10 * weekPx(), pin: true, scrub: .6, invalidateOnRefresh: true },
+        onUpdate() { setWeek(this.progress() * 10); }
+      });
+      jumpY = (w) => { const st = slide.scrollTrigger; return st.start + (w / 10) * (st.end - st.start) + 1; };
+      $$('.panel').forEach((p) => baste(p, { trigger: p, containerAnimation: slide, start: 'left 70%', end: () => 'left ' + needleX() + 'px' }, 'scaleY'));
+      $$('.note').forEach((n) => chalkNote(n, { trigger: n, containerAnimation: slide, start: 'left 75%', end: () => 'left ' + needleX() + 'px' }));
+      // Tabbing along the tape moves it, so the focused week is always on screen under the needle.
+      const onFocus = (e) => {
+        const n = e.target.closest('.num');
+        if (n && n.matches(':focus-visible')) scrollToY(jumpY(weekOf(n)));
+      };
+      tape.addEventListener('focusin', onFocus);
+      cleanups.push(() => { tape.removeEventListener('focusin', onFocus); jumpY = null; });
     } else {
-      gsap.from([colH, woven], { opacity: 0, y: 16, duration: .8, ease: 'expo.out', stagger: .1,
-        scrollTrigger: { trigger: coll, start: 'top 70%', once: true } });
+      $$('.panel').forEach((p) => baste(p, { trigger: $('.pin', p), start: 'top 75%', end: () => `top ${needleTop()}px` }, 'scaleX'));
+      $$('.note').forEach((n) => chalkNote(n, { trigger: n, start: 'top 75%', end: () => `center ${needleTop()}px` }));
     }
 
+    /* ----- S3: the cloth opens from the tape's end tab to full bleed; the woven label is stitched on last ----- */
+    const tabX = () => horiz ? needle.getBoundingClientRect().left : tape.getBoundingClientRect().right;
+    gsap.timeline({ defaults: { ease: 'none' }, scrollTrigger: { trigger: '#collection', start: 'top bottom', end: 'center center', scrub: true, invalidateOnRefresh: true } })
+      .fromTo('.frame', { clipPath: () => `inset(8% ${wide ? 4 : 6}% 8% ${tabX()}px round 4px)` }, { clipPath: 'inset(0% 0% 0% 0px round 0px)', duration: 1 }, 0)
+      .fromTo('.cloth', { scale: 1.2 }, { scale: 1, duration: 1 }, 0)
+      .fromTo('.woven', { scaleY: 0, transformOrigin: '50% 0%' }, { scaleY: 1, duration: .2 }, .8);
+
     return () => {
+      cleanups.forEach((f) => f());
       gsap.ticker.remove(tick);
       gsap.ticker.lagSmoothing(500, 33);
       lenis.destroy();

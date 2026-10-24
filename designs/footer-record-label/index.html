@@ -20,8 +20,22 @@
     --dialog-ink-2: #6A5459;   /* secondary text on paper (5.6:1) */
     --gloss: #0C090B;          /* smooth bands between tracks */
     --groove: #201A1D;         /* groove ridges */
-    --rule: rgb(168 153 156 / .45);
-    --rim: rgb(168 153 156 / .35);
+    --rule: rgb(from var(--wax) r g b / .45);
+    --rim: rgb(from var(--wax) r g b / .35);
+    --rim-mini: rgb(from var(--wax) r g b / .6);   /* row discs, so black vinyl holds its edge */
+    --groove-hi: rgb(from var(--paper) r g b / .07);
+    --sheen: rgb(from var(--paper) r g b / .17);
+    --sheen-2: rgb(from var(--paper) r g b / .12);
+    --sleeve-print: rgb(from var(--paper) r g b / .55);
+    --backdrop: rgb(from var(--vinyl) r g b / .72);
+    --shadow-ink: #000;   /* the tonearm's shadow, drawn at 40% */
+    --mask-clear: #fff;   /* SVG mask luminance, not a colour anyone sees */
+    /* Pressing colours (content: one per release, set on each row as --v) */
+    --vinyl-seaglass: var(--seaglass);
+    --vinyl-black: var(--vinyl);
+    --vinyl-smoke: #6F6870;
+    --vinyl-marble: #6B2232;
+    --marble: conic-gradient(from 40deg, #6B2232, #8E3A4B 18%, #571A28 36%, #7C2C3D 58%, #4E1724 80%, #6B2232);
     --board: #44212A;          /* sleeve board in the rows, a step up from the ground */
     --focus: var(--sticker);
 
@@ -31,6 +45,7 @@
     --wdth-mark: 75%;  --wght-mark: 700;
     --wdth-head: 87.5%; --wght-head: 600;
     --wdth-cat: 75%;   --wght-cat: 600;
+    --step--2: .625rem;
     --step--1: .8125rem;
     --step-0: clamp(1rem, .96rem + .2vw, 1.0625rem);
     --step-1: 1.25rem;
@@ -40,6 +55,9 @@
     --lh-body: 1.5;
     --lh-tight: 1.02;
     --lh-head: 1.2;
+    --lh-mark: 1.05;
+    --lh-small: 1.4;
+    --lh-roll: 1.35;
 
     /* Space */
     --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px;
@@ -50,7 +68,10 @@
     --measure: 62ch;
     --thumb: 44px;              /* thumb cut-out on the inner sleeve */
     --disc: min(150vw, 600px);  /* 12-inch LP; fractions of R live in the script */
-    --sleeve: 3rem;
+    --sleeve: 4rem;
+    --sleeve-slot: calc(var(--sleeve) * .6);   /* room for the disc slid 58% out */
+    --art: 11rem;
+    --hair: 1px;
     --r-ui: 3px;
 
     /* Motion */
@@ -69,10 +90,10 @@
 
   /* Hidden start states exist only when the motion stack loaded */
   html.js [data-load] { opacity: 0; }
-  html.js .trk__rule, html.js .releases .rule { transform: scaleX(0); }
+  html.js .trk__rule, html.js .releases .rule, html.js .trk__prog { transform: scaleX(0); }
   @media (prefers-reduced-motion: reduce) {
     html.js [data-load] { opacity: 1; }
-    html.js .trk__rule, html.js .releases .rule { transform: none; }
+    html.js .trk__rule, html.js .releases .rule, html.js .trk__prog { transform: none; }
   }
 
   *, *::before, *::after { box-sizing: border-box; }
@@ -82,7 +103,7 @@
     font-family: var(--font-text); font-size: var(--step-0); line-height: var(--lh-body);
     font-stretch: 100%; font-weight: 400;
   }
-  p, h2, ul, ol, dl, dd { margin: 0; }
+  p, h1, h2, ul, ol, dl, dd { margin: 0; }
   .vh { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   :focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
   [tabindex="-1"]:focus:not(:focus-visible) { outline: none; }
@@ -92,11 +113,18 @@
   .stub {
     --focus: var(--vinyl);
     background: var(--seaglass); color: var(--vinyl);
+    min-height: 100svh; display: grid; align-content: center;
     padding: var(--s-9) var(--gutter) var(--s-9);
     -webkit-mask: radial-gradient(circle var(--thumb) at 50% 100%, #0000 calc(100% - 1px), #000 100%);
     mask: radial-gradient(circle var(--thumb) at 50% 100%, #0000 calc(100% - 1px), #000 100%);
   }
-  .stub__inner { max-width: var(--max); margin-inline: auto; }
+  @media (min-width: 992px) {   /* the sleeve's thumb cut sits over the record it slides off */
+    .stub {
+      -webkit-mask: radial-gradient(circle var(--thumb) at calc(100% - var(--disc) * .38) 100%, #0000 calc(100% - 1px), #000 100%);
+      mask: radial-gradient(circle var(--thumb) at calc(100% - var(--disc) * .38) 100%, #0000 calc(100% - 1px), #000 100%);
+    }
+  }
+  .stub__inner { width: 100%; max-width: var(--max); margin-inline: auto; }
   .stub__title {
     font-size: var(--step-4); line-height: var(--lh-tight); letter-spacing: -.01em;
     font-stretch: var(--wdth-head); font-weight: var(--wght-head);
@@ -108,6 +136,8 @@
   .trk__in { display: grid; grid-template-columns: 3rem minmax(0, 1fr) auto; column-gap: var(--s-4); align-items: baseline; padding: var(--s-3) 0; }
   .trk__no { color: var(--seaglass-ink); }
   .trk__time { text-align: right; }
+  .trk[aria-current] .trk__title { font-weight: 600; }
+  .trk__prog { position: absolute; inset: auto 0 0; height: 2px; background: var(--vinyl); transform-origin: 0 50%; }
   .stub__total { color: var(--seaglass-ink); }
 
   /* ---------- Footer ---------- */
@@ -118,7 +148,7 @@
     padding: var(--s-9) var(--gutter) 0;   /* below 992px the record bleeds off the page end */
     display: grid; grid-template-columns: minmax(0, 1fr); column-gap: var(--col-gap);
   }
-  .mark { font-size: var(--step-3); line-height: 1.05; font-stretch: var(--wdth-mark); font-weight: var(--wght-mark); }
+  .mark { font-size: var(--step-3); line-height: var(--lh-mark); font-stretch: var(--wdth-mark); font-weight: var(--wght-mark); }
   .lede { margin-top: var(--s-3); max-width: var(--measure); }
   .h2 { font-size: var(--step-1); line-height: var(--lh-head); font-stretch: var(--wdth-head); font-weight: var(--wght-head); }
   .meta { color: var(--wax); }
@@ -132,7 +162,7 @@
   .release {
     appearance: none; background: none; border: 0; border-radius: 0; margin: 0; color: inherit; font: inherit; text-align: left; cursor: pointer;
     width: 100%; padding: var(--s-4) 0; display: grid; align-items: start;
-    grid-template-columns: minmax(0, 1fr) calc(var(--sleeve) + 1.5rem); column-gap: var(--s-4);
+    grid-template-columns: minmax(0, 1fr) calc(var(--sleeve) + var(--sleeve-slot)); column-gap: var(--s-4);
     transition: transform var(--t-release) var(--ease);
   }
   .release > :not(.sleeve) { grid-column: 1; }
@@ -146,10 +176,15 @@
     font-stretch: var(--wdth-cat); font-weight: var(--wght-cat);
   }
   .sleeve { grid-column: 2; grid-row: 1 / span 3; position: relative; width: var(--sleeve); aspect-ratio: 1; }
-  .sleeve::before { content: ''; position: absolute; inset: 0; z-index: 1; background: var(--board); box-shadow: inset 0 0 0 1px var(--rim); }
+  .sleeve::before { content: ''; position: absolute; inset: 0; z-index: 1; background: var(--board); box-shadow: inset 0 0 0 var(--hair) var(--rim); }
+  .sleeve::after {   /* the catalogue number printed on the sleeve face */
+    content: attr(data-cat); position: absolute; z-index: 2; left: var(--s-2); bottom: var(--s-1);
+    font-size: var(--step--2); line-height: var(--lh-small); color: var(--sleeve-print);
+    font-stretch: var(--wdth-cat); font-weight: var(--wght-cat); font-variant-numeric: tabular-nums;
+  }
   @container (min-width: 760px) {   /* below this the title column gets too narrow, so rows stay stacked */
     .release {
-      grid-template-columns: 4.5rem minmax(0, 1fr) minmax(0, 10.5rem) minmax(0, 9.5rem) calc(var(--sleeve) + 1.5rem);
+      grid-template-columns: 4.5rem minmax(0, 1fr) minmax(0, 10.5rem) minmax(0, 9.5rem) calc(var(--sleeve) + var(--sleeve-slot));
       align-items: center;
     }
     .release > * { grid-row: 1; }
@@ -157,45 +192,46 @@
     .release > .who { grid-column: 2; }
     .release > .format { grid-column: 3; }
     .release > .status { grid-column: 4; margin: 0; justify-self: end; text-align: right; }
-    .release > .sleeve { grid-column: 5; justify-self: end; margin-right: 1.5rem; }
+    .release > .sleeve { grid-column: 5; justify-self: end; margin-right: var(--sleeve-slot); }
   }
 
   /* A record in its colour: grooves, a paper label with one printed line (so a turn shows), the hole */
   .mini {
     position: absolute; inset: 2px; border-radius: 50%;
     background:
-      repeating-radial-gradient(circle closest-side, rgb(255 255 255 / .07) 0 2%, transparent 2% 4%),
+      repeating-radial-gradient(circle closest-side, var(--groove-hi) 0 2%, transparent 2% 4%),
       var(--v2, var(--v));
-    box-shadow: 0 0 0 1px var(--rim);
+    box-shadow: 0 0 0 var(--hair) var(--rim-mini);
   }
   .mini::before {
     content: ''; position: absolute; inset: 33%; border-radius: 50%;
     background: linear-gradient(var(--oxblood), var(--oxblood)) 50% 26% / 58% 13% no-repeat, var(--paper);
   }
   .mini::after { content: ''; position: absolute; inset: 47.5%; border-radius: 50%; background: var(--oxblood); }
-  .release .mini { transition: transform var(--t-slide-out) var(--ease); }
+  /* The disc peeks 14% at rest on every pointer, so each row shows its pressing colour */
+  .release .mini { transform: translateX(14%); transition: transform var(--t-slide-out) var(--ease); }
 
   @media (prefers-reduced-motion: no-preference) {
     .release:active { transform: scale(.985); transition-duration: var(--t-press); }
-    .release:focus-visible .mini { transform: translateX(46%) rotate(120deg); transition-duration: var(--t-slide-in); }
+    .release:focus-visible .mini { transform: translateX(58%) rotate(120deg); transition-duration: var(--t-slide-in); }
   }
+  /* Dimmed rows stay at .8 so wax text keeps 4.5:1 on oxblood */
   @media (hover: hover) and (pointer: fine) {
-    .releases:has(.release:hover) li:not(:has(.release:hover)) { opacity: .5; }
+    .releases:has(.release:hover) li:not(:has(.release:hover)) { opacity: .8; }
   }
   @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-    .release:hover .mini { transform: translateX(46%) rotate(120deg); transition-duration: var(--t-slide-in); }
+    .release:hover .mini { transform: translateX(58%) rotate(120deg); transition-duration: var(--t-slide-in); }
   }
-  .releases:has(.release:focus-visible) li:not(:has(.release:focus-visible)) { opacity: .5; }
-  @media (hover: none) { .release .mini { transform: translateX(18%); } }
+  .releases:has(.release:focus-visible) li:not(:has(.release:focus-visible)) { opacity: .8; }
   @media (prefers-reduced-motion: reduce) {
-    .release .mini { transform: translateX(18%); transition: none; }
+    .release .mini { transition: none; }
     .releases li { transition: none; }
   }
 
-  /* CU6 string divider */
-  .string { height: 96px; margin: var(--s-6) 0 var(--s-5); }
+  /* CU6 string: the bottom bar's rule, a 24px band so the bend and the landing pluck have room */
+  .string { position: absolute; inset: calc(-1 * var(--s-3)) 0 auto; height: var(--s-5); }
   .string svg { display: block; width: 100%; height: 100%; overflow: visible; }
-  .string path { fill: none; stroke: var(--wax); stroke-width: 1; vector-effect: non-scaling-stroke; }
+  .string path { fill: none; stroke: var(--wax); stroke-width: var(--hair); vector-effect: non-scaling-stroke; }
 
   /* Shop, demos and emails */
   .info { container-type: inline-size; }
@@ -209,11 +245,10 @@
   /* HV1 two-copy roll; the copy is a pseudo-element with empty alt text, so it is never read */
   .link, .btn-text {
     color: inherit; text-decoration: none; padding-bottom: 2px;
-    background: linear-gradient(var(--wax), var(--wax)) 0 100% / 100% 1px no-repeat;
-    transition: background-size var(--t-hover) var(--ease);
+    background: linear-gradient(var(--wax), var(--wax)) 0 100% / 100% var(--hair) no-repeat;
   }
   .btn-text { appearance: none; border: 0; font: inherit; cursor: pointer; padding-inline: 0; }
-  .roll { display: inline-grid; overflow: hidden; vertical-align: top; line-height: 1.35; }
+  .roll { display: inline-grid; overflow: hidden; vertical-align: top; line-height: var(--lh-roll); }
   .roll > span, .roll::after { grid-area: 1 / 1; transition: translate var(--t-roll) var(--ease); }
   .roll::after { content: attr(data-text); content: attr(data-text) / ""; translate: 0 100%; }
   @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
@@ -221,7 +256,7 @@
     :is(a, button):is(:hover, :focus-visible) .roll::after { translate: 0 0; }
   }
   @media (prefers-reduced-motion: no-preference) {
-    :is(.link, .btn-text, .btn) { transition: transform var(--t-release) var(--ease), background-size var(--t-hover) var(--ease); }
+    :is(.link, .btn-text, .btn) { transition: transform var(--t-release) var(--ease); }
     :is(.link, .btn-text, .btn):active { transform: scale(.985); transition-duration: var(--t-press); }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -233,7 +268,7 @@
   /* Buttons: outlined, fill inverts at once on hover and focus */
   .btn {
     appearance: none; display: inline-flex; align-items: center; min-height: 44px; padding: var(--s-2) var(--s-5);
-    border: 1px solid currentColor; border-radius: var(--r-ui); background: none; color: inherit;
+    border: var(--hair) solid currentColor; border-radius: var(--r-ui); background: none; color: inherit;
     font: inherit; font-weight: 600; text-decoration: none; cursor: pointer;
   }
   .btn--join { color: var(--paper); }
@@ -256,29 +291,32 @@
   .field__label { display: block; color: var(--wax); }
   .field__wrap { position: relative; display: block; }
   .field input {
-    width: 100%; min-height: 44px; padding: var(--s-2) 0; border: 0; border-bottom: 1px solid var(--wax); border-radius: 0;
-    background: none; color: var(--paper); font: inherit; transition: border-color var(--t-hover) var(--ease);
+    width: 100%; min-height: 44px; padding: var(--s-2) 0; border: 0; border-bottom: var(--hair) solid var(--wax); border-radius: 0;
+    background: none; color: var(--paper); font: inherit;
   }
-  .field input:hover { border-bottom-color: var(--paper); }
-  .field input[aria-invalid="true"] { border-bottom-color: var(--paper); }
+  /* Hover brightens the rule through an opacity overlay, not a border-colour transition */
+  .field__wrap::before { content: ''; position: absolute; inset: auto 0 0; height: var(--hair); background: var(--paper); opacity: 0; transition: opacity var(--t-hover) var(--ease); pointer-events: none; }
+  .field__wrap:hover::before, .field__wrap:has([aria-invalid="true"])::before { opacity: 1; }
   .field__line { position: absolute; inset: auto 0 0; height: 2px; background: var(--paper); transform: scaleX(0); transform-origin: 0 50%; transition: transform var(--t-rule) var(--ease); pointer-events: none; }
   .field input:focus + .field__line { transform: scaleX(1); }
   .field__err {
-    min-height: calc(2.8em + var(--s-2)); padding-top: var(--s-2); font-size: var(--step--1); line-height: 1.4; color: var(--paper);
+    min-height: calc(2.8em + var(--s-2)); padding-top: var(--s-2); font-size: var(--step--1); line-height: var(--lh-small); color: var(--paper);
     clip-path: inset(0 0 100% 0); opacity: 0; transition: clip-path var(--t-err) var(--ease), opacity var(--t-err) var(--ease);
   }
   .field__err.is-on { clip-path: inset(0); opacity: 1; }
   .check { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: var(--s-3); align-items: start; margin: var(--s-2) 0 var(--s-5); cursor: pointer; }
   .check input { grid-area: 1 / 1; width: 18px; height: 18px; margin: 3px 0 0; opacity: 0; cursor: pointer; }
-  .check__box { grid-area: 1 / 1; width: 18px; height: 18px; margin-top: 3px; border: 1px solid var(--wax); border-radius: var(--r-ui); pointer-events: none; transition: border-color var(--t-hover) var(--ease); }
-  .check__box svg { display: block; width: 100%; height: 100%; }
-  .check__box path { fill: none; stroke: var(--paper); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset var(--t-tick) var(--ease); }
-  .check input:checked + .check__box path { stroke-dashoffset: 0; }
-  .check:hover .check__box { border-color: var(--paper); }
+  .check__box { position: relative; grid-area: 1 / 1; width: 18px; height: 18px; margin-top: 3px; border: var(--hair) solid var(--wax); border-radius: var(--r-ui); pointer-events: none; }
+  .check__box::before { content: ''; position: absolute; inset: calc(-1 * var(--hair)); border: var(--hair) solid var(--paper); border-radius: inherit; opacity: 0; transition: opacity var(--t-hover) var(--ease); }
+  .check:hover .check__box::before { opacity: 1; }
+  /* The tick wipes in from its short stroke with clip-path */
+  .check__box svg { display: block; width: 100%; height: 100%; clip-path: inset(0 100% 0 0); transition: clip-path var(--t-tick) var(--ease); }
+  .check__box path { fill: none; stroke: var(--paper); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .check input:checked + .check__box svg { clip-path: inset(0); }
   .check input:focus-visible + .check__box { outline: 2px solid var(--focus); outline-offset: 3px; }
   .check > span:last-child { color: var(--paper); }
   @media (prefers-reduced-motion: reduce) {
-    .field__line, .field__err, .check__box path { transition: none; }
+    .field__line, .field__err, .field__wrap::before, .check__box::before, .check__box svg { transition: none; }
   }
   .joined { align-self: start; }
   .joined p { max-width: 40ch; }
@@ -287,7 +325,6 @@
 
   /* Bottom bar */
   .bar { position: relative; margin-top: var(--s-8); padding-top: var(--s-5); display: flex; flex-wrap: wrap; gap: var(--s-4) var(--s-6); justify-content: space-between; align-items: baseline; }
-  .bar .rule { position: absolute; inset: 0 0 auto; height: 1px; background: var(--rule); }
   .legal { color: var(--wax); }
 
   /* ---------- The record ---------- */
@@ -295,7 +332,7 @@
   .record { position: absolute; width: var(--disc); aspect-ratio: 1; left: 50%; top: calc(var(--disc) * .2); translate: -50% 0; }
   .disc {
     position: absolute; inset: 0; border-radius: 50%;
-    box-shadow: 0 0 0 1px var(--rim);
+    box-shadow: 0 0 0 var(--hair) var(--rim);
     background:
       radial-gradient(circle closest-side, var(--vinyl) 0 52%, transparent 52% 59.7%, var(--gloss) 59.7% 60.3%,
         transparent 60.3% 69.5%, var(--gloss) 69.5% 70.1%, transparent 70.1% 76.5%, var(--gloss) 76.5% 77.1%,
@@ -305,13 +342,13 @@
   /* HV12: real light stays still while a record turns, so the sheen never rotates with the disc */
   .disc__sheen {
     position: absolute; inset: 0; border-radius: 50%; pointer-events: none; mix-blend-mode: screen;
-    background: conic-gradient(from 105deg, transparent 0deg, rgb(238 230 226 / .17) 28deg, transparent 58deg 180deg,
-      rgb(238 230 226 / .12) 208deg, transparent 238deg);
+    background: conic-gradient(from 105deg, transparent 0deg, var(--sheen) 28deg, transparent 58deg 180deg,
+      var(--sheen-2) 208deg, transparent 238deg);
   }
   .record svg { position: absolute; left: 0; top: -20%; width: 100%; height: 120%; overflow: visible; }
   .groove { fill: none; stroke: var(--wax); stroke-opacity: .75; stroke-width: 5; }
-  .etch { font-family: var(--font-etch); font-size: 64px; fill: var(--wax); }
-  .etch-mask { fill: none; stroke: #fff; stroke-width: 84; }
+  .etch { font-family: var(--font-etch); font-size: 76px; fill: var(--paper); fill-opacity: .8; }   /* dead-wax scratches catch the light */
+  .etch-mask { fill: none; stroke: var(--mask-clear); stroke-width: 100; }
   .label { fill: var(--paper); }
   .lbl { fill: var(--oxblood); font-family: var(--font-text); font-stretch: var(--wdth-cat); font-weight: var(--wght-cat); font-size: 40px; font-variant-numeric: tabular-nums; }
   .lbl--mark { font-size: 66px; font-stretch: var(--wdth-mark); font-weight: var(--wght-mark); }
@@ -322,7 +359,7 @@
   .arm__part { fill: var(--vinyl); stroke: var(--wax); stroke-width: 5; }
   .arm__head { fill: var(--wax); }
   .arm__shadow { opacity: .4; }
-  .arm__shadow * { fill: none; stroke: #000; }
+  .arm__shadow * { fill: none; stroke: var(--shadow-ink); }
   .tip { fill: var(--sticker); }
 
   @media (min-width: 992px) {
@@ -330,7 +367,7 @@
     .footer__inner > * { grid-column: 1 / 8; }
     .footer__inner > .bar { grid-column: 1 / -1; }
     .footer__inner > .record-cell {
-      grid-column: 8 / -1; grid-row: 3 / 6; height: auto; margin: 0; overflow: visible;
+      grid-column: 8 / -1; grid-row: 3 / 5; height: auto; margin: 0; overflow: visible;
     }
     .record {
       left: auto; translate: none; top: auto; bottom: 0;
@@ -345,17 +382,18 @@
     padding: 0; border: 0; border-radius: var(--r-ui); background: var(--paper); color: var(--oxblood);
     overflow: auto; overscroll-behavior: contain;
   }
-  .sheet::backdrop { background: rgb(22 17 20 / .72); }
+  .sheet::backdrop { background: var(--backdrop); }
+  html:has(dialog[open]) { overflow: clip; }   /* lock the page behind the modal even without Lenis */
   @media (prefers-reduced-motion: no-preference) { .sheet[open]::backdrop { animation: fade .45s var(--ease); } }
   @keyframes fade { from { opacity: 0; } }
   .sheet__panel { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--s-6); padding: var(--s-6); align-items: start; }
-  .art { position: relative; width: 11rem; aspect-ratio: 1; margin-right: 4.2rem; }
+  .art { position: relative; width: var(--art); aspect-ratio: 1; margin-right: calc(var(--art) * .38); }
   .art .mini { inset: 3%; transform: translateX(38%); }
   .art__sleeve {
     position: absolute; inset: 0; z-index: 1; display: flex; flex-direction: column; justify-content: space-between;
     padding: var(--s-4); background: var(--oxblood); color: var(--paper);
   }
-  .art__title { font-size: var(--step-2); line-height: 1.05; font-stretch: var(--wdth-mark); font-weight: var(--wght-mark); }
+  .art__title { font-size: var(--step-2); line-height: var(--lh-mark); font-stretch: var(--wdth-mark); font-weight: var(--wght-mark); }
   .art__by { font-size: var(--step--1); color: var(--wax); }
   .sheet__cat { color: var(--dialog-ink-2); }
   .sheet__title { font-size: var(--step-2); line-height: var(--lh-head); font-stretch: var(--wdth-head); font-weight: var(--wght-head); }
@@ -376,14 +414,14 @@
   <!-- Stand-in: page content above. Replace with yours, and re-point #top. -->
   <section class="stub" id="top" tabindex="-1" aria-labelledby="stub-title">
     <div class="stub__inner">
-      <h2 class="stub__title" id="stub-title" data-load>Haar Songs, side B</h2>
+      <h1 class="stub__title" id="stub-title" data-load>Haar Songs, side B</h1>
       <p class="stub__sub" data-load>Ailsa Grieve. MRM 041, out 14 November 2026.</p>
       <ol class="tracks">
         <li class="trk"><span class="trk__rule" aria-hidden="true"></span><span class="trk__in" data-load><span class="trk__no cat">B1</span><span>Breakwater at Seafield</span><time class="trk__time cat" datetime="PT4M12S">4:12</time></span></li>
         <li class="trk"><span class="trk__rule" aria-hidden="true"></span><span class="trk__in" data-load><span class="trk__no cat">B2</span><span>Haar over the Shore</span><time class="trk__time cat" datetime="PT5M47S">5:47</time></span></li>
         <li class="trk"><span class="trk__rule" aria-hidden="true"></span><span class="trk__in" data-load><span class="trk__no cat">B3</span><span>Bus 16 to Silverknowes</span><time class="trk__time cat" datetime="PT3M31S">3:31</time></span></li>
         <li class="trk"><span class="trk__rule" aria-hidden="true"></span><span class="trk__in" data-load><span class="trk__no cat">B4</span><span>Salt in the Cassette Deck</span><time class="trk__time cat" datetime="PT4M58S">4:58</time></span></li>
-        <li class="trk"><span class="trk__rule" aria-hidden="true"></span><span class="trk__in" data-load><span class="trk__no cat">B5</span><span>Inchkeith Light</span><time class="trk__time cat" datetime="PT4M3S">4:03</time></span></li>
+        <li class="trk" aria-current="true"><span class="trk__rule" aria-hidden="true"></span><span class="trk__in" data-load><span class="trk__no cat">B5</span><span class="trk__title">Inchkeith Light<span class="vh">, playing</span></span><time class="trk__time cat" datetime="PT4M3S">4:03</time></span><span class="trk__prog" aria-hidden="true"></span></li>
       </ol>
       <p class="stub__total" data-load>Side B runs 22 minutes 31 seconds.</p>
     </div>
@@ -399,56 +437,52 @@
       <h2 class="h2" id="pressings-h">Latest pressings</h2>
       <ul class="releases">
         <li>
-          <button class="release" type="button" aria-haspopup="dialog" data-release="041" style="--v: #7FA79A"
+          <button class="release" type="button" aria-haspopup="dialog" data-release="041" style="--v: var(--vinyl-seaglass)"
             aria-label="MRM 041, Ailsa Grieve, Haar Songs, LP on sea-glass green vinyl, Pre-order, ships 14 November">
             <span class="cat">MRM 041</span>
             <span class="who"><span class="artist">Ailsa Grieve</span><span class="title">Haar Songs</span></span>
             <span class="format">LP, sea-glass green</span>
             <span class="status"><span class="sticker">Pre-order</span></span>
-            <span class="sleeve" aria-hidden="true"><span class="mini"></span></span>
+            <span class="sleeve" aria-hidden="true" data-cat="MRM 041"><span class="mini"></span></span>
           </button>
           <span class="rule" aria-hidden="true"></span>
         </li>
         <li>
-          <button class="release" type="button" aria-haspopup="dialog" data-release="040" style="--v: var(--vinyl)"
+          <button class="release" type="button" aria-haspopup="dialog" data-release="040" style="--v: var(--vinyl-black)"
             aria-label="MRM 040, The Ferry Lights, Portobello Baths, 12-inch EP on black vinyl, In stock">
             <span class="cat">MRM 040</span>
             <span class="who"><span class="artist">The Ferry Lights</span><span class="title">Portobello Baths</span></span>
             <span class="format">12-inch EP, black</span>
             <span class="status">In stock</span>
-            <span class="sleeve" aria-hidden="true"><span class="mini"></span></span>
+            <span class="sleeve" aria-hidden="true" data-cat="MRM 040"><span class="mini"></span></span>
           </button>
           <span class="rule" aria-hidden="true"></span>
         </li>
         <li>
-          <button class="release" type="button" aria-haspopup="dialog" data-release="039" style="--v: #6F6870"
+          <button class="release" type="button" aria-haspopup="dialog" data-release="039" style="--v: var(--vinyl-smoke)"
             aria-label="MRM 039, Dunes Inn, Late Bus to Granton, LP on smoke vinyl, Last 12 copies">
             <span class="cat">MRM 039</span>
             <span class="who"><span class="artist">Dunes Inn</span><span class="title">Late Bus to Granton</span></span>
             <span class="format">LP, smoke</span>
             <span class="status">Last 12 copies</span>
-            <span class="sleeve" aria-hidden="true"><span class="mini"></span></span>
+            <span class="sleeve" aria-hidden="true" data-cat="MRM 039"><span class="mini"></span></span>
           </button>
           <span class="rule" aria-hidden="true"></span>
         </li>
         <li>
           <button class="release" type="button" aria-haspopup="dialog" data-release="038"
-            style="--v: #6B2232; --v2: conic-gradient(from 40deg, #6B2232, #8E3A4B 18%, #571A28 36%, #7C2C3D 58%, #4E1724 80%, #6B2232)"
+            style="--v: var(--vinyl-marble); --v2: var(--marble)"
             aria-label="MRM 038, Kit Varga, Bonded Warehouse, 7-inch on oxblood marble, Sold out, repress in January">
             <span class="cat">MRM 038</span>
             <span class="who"><span class="artist">Kit Varga</span><span class="title">Bonded Warehouse</span></span>
             <span class="format">7-inch, oxblood marble</span>
             <span class="status">Sold out, repress in January</span>
-            <span class="sleeve" aria-hidden="true"><span class="mini"></span></span>
+            <span class="sleeve" aria-hidden="true" data-cat="MRM 038"><span class="mini"></span></span>
           </button>
           <span class="rule" aria-hidden="true"></span>
         </li>
       </ul>
     </section>
-
-    <div class="string" aria-hidden="true">
-      <svg viewBox="0 0 1000 96" preserveAspectRatio="none" focusable="false"><path d="M0,48 Q500,48 1000,48"/></svg>
-    </div>
 
     <div class="info">
       <div class="info__grid">
@@ -473,11 +507,11 @@
           <h2 class="h2" id="emails-h">Release emails</h2>
           <p class="meta">One email per release, a day before the shop gets it.</p>
           <div class="stack">
-            <form id="list-form" novalidate aria-labelledby="emails-h">
+            <form id="list-form" novalidate>
               <div class="field">
                 <label class="field__label" for="email">Email address</label>
                 <span class="field__wrap"><input id="email" name="email" type="email" autocomplete="email" spellcheck="false" required><span class="field__line" aria-hidden="true"></span></span>
-                <p class="field__err" id="email-err" aria-live="polite"></p>
+                <p class="field__err" id="email-err" aria-live="polite" aria-hidden="true"></p>
               </div>
               <label class="check">
                 <input type="checkbox" name="tests">
@@ -497,7 +531,9 @@
     </div>
 
     <div class="bar">
-      <span class="rule" aria-hidden="true"></span>
+      <div class="string" aria-hidden="true">
+        <svg viewBox="0 0 1000 24" preserveAspectRatio="none" focusable="false"><path d="M0,12 Q500,12 1000,12"/></svg>
+      </div>
       <p class="legal">© 2026 Marram Records Ltd, registered in Scotland.</p>
       <a class="link" id="to-top" href="#top"><span class="roll" data-text="Back to the top"><span>Back to the top</span></span></a>
     </div>
@@ -508,14 +544,14 @@
         <!-- viewBox units: the disc radius R is 1000. Grooves end at .52R, lead-out to .40R, locked groove .38R, label .333R, hole .024R. -->
         <svg viewBox="-1000 -1400 2000 2400" aria-hidden="true" focusable="false">
           <defs>
-            <path id="arc-e1" d="M-396.4 -210.8A449 449 0 0 1 -210.8 -396.4"/>
-            <path id="arc-e2" d="M-457.6 56.2A461 461 0 0 0 -277.4 368.2"/>
+            <path id="arc-e1" d="M-413.3 -175.4A449 449 0 0 1 -175.4 -413.3"/>
+            <path id="arc-e2" d="M-460.7 -16.1A461 461 0 0 0 -202.1 414.3"/>
             <path id="arc-legal" d="M-291.7 78.2A302 302 0 0 0 291.7 78.2"/>
             <mask id="mask-e1" maskUnits="userSpaceOnUse" x="-1000" y="-1000" width="2000" height="2000">
-              <path class="etch-mask" d="M-408.8 -217.4A463 463 0 0 1 -217.4 -408.8"/>
+              <path class="etch-mask" d="M-426.2 -180.9A463 463 0 0 1 -180.9 -426.2"/>
             </mask>
             <mask id="mask-e2" maskUnits="userSpaceOnUse" x="-1000" y="-1000" width="2000" height="2000">
-              <path class="etch-mask" d="M-445.7 54.7A449 449 0 0 0 -270.2 358.6"/>
+              <path class="etch-mask" d="M-448.7 -15.7A449 449 0 0 0 -196.8 403.6"/>
             </mask>
           </defs>
           <g id="turn">
@@ -618,20 +654,24 @@
     groove.push([+(r * Math.cos(a)).toFixed(1), +(r * Math.sin(a)).toFixed(1)]);
     if (i) cum.push(cum[i - 1] + Math.hypot(groove[i][0] - groove[i - 1][0], groove[i][1] - groove[i - 1][1]));
   }
-  const spiral = $('#spiral'), turn = $('#turn'), arm = $('#arm');
+  const spiral = $('#spiral'), turn = $('#turn'), arm = $('#arm'), shadow = $('.arm__shadow');
   spiral.setAttribute('d', 'M' + groove.join('L'));
   const lenAt = p => { const x = Math.min(N, Math.max(0, p * N)), i = Math.min(N - 1, Math.floor(x)); return cum[i] + (cum[i + 1] - cum[i]) * (x - i); };
+  // The arm's shadow, in arm units: resting (14, 30), lifted (28, 56) over the last 15% of the side, touching down (4, 8)
+  const lerp = (a, b, t) => a + (b - a) * t;
   const pose = (p, drop = 0) => {
+    const k = Math.min(1, Math.max(0, (p - .85) / .15)), sx = lerp(lerp(14, 28, k), 4, drop), sy = lerp(lerp(30, 56, k), 8, drop);
+    shadow.setAttribute('transform', `translate(${sx.toFixed(1)} ${sy.toFixed(1)})`);
     arm.setAttribute('transform', `translate(${PIVOT}) rotate(${deg(beta(rAt(p) - (R_RUNOUT - R_LOCK) * drop)).toFixed(3)})`);
     turn.setAttribute('transform', `rotate(${(TURNS * p % 360).toFixed(2)})`);
   };
   pose(1, 1);   // final state: stylus in the locked groove, label upright
 
   // ================= CU6 string: a straight line until motion bends it =================
-  const str = $('.string'), strSvg = $('svg', str), strPath = $('path', str), C = { x: 500, y: 48 };
+  const str = $('.string'), strSvg = $('svg', str), strPath = $('path', str), MID = 12, C = { x: 500, y: MID };
   let sw = 1000;
-  const strDraw = () => strPath.setAttribute('d', `M0,48 Q${C.x.toFixed(1)},${C.y.toFixed(2)} ${sw},48`);
-  new ResizeObserver(() => { sw = str.clientWidth || 1000; strSvg.setAttribute('viewBox', `0 0 ${sw} 96`); C.x = sw / 2; strDraw(); }).observe(str);
+  const strDraw = () => strPath.setAttribute('d', `M0,${MID} Q${C.x.toFixed(1)},${C.y.toFixed(2)} ${sw},${MID}`);
+  new ResizeObserver(() => { sw = str.clientWidth || 1000; strSvg.setAttribute('viewBox', `0 0 ${sw} ${2 * MID}`); C.x = sw / 2; strDraw(); }).observe(str);
 
   // ================= Release dialog =================
   const REL = {
@@ -680,7 +720,9 @@
   // ================= Release emails =================
   const form = $('#list-form'), email = $('#email'), err = $('#email-err'), joined = $('#joined'), join = $('#join');
   const looksLikeEmail = v => /^[^\s@]+@[^\s@]+$/.test(v);
+  let errClear = 0;
   const setErr = on => {
+    clearTimeout(errClear);
     if (on) {
       email.setAttribute('aria-invalid', 'true');
       email.setAttribute('aria-describedby', 'email-err');
@@ -688,7 +730,9 @@
     } else {
       email.removeAttribute('aria-invalid');
       email.removeAttribute('aria-describedby');
+      errClear = setTimeout(() => { err.textContent = ''; }, 300);   // after the .25s clip-out, so no stale message is left to read
     }
+    err.toggleAttribute('aria-hidden', !on);
     err.classList.toggle('is-on', on);
   };
   form.addEventListener('submit', e => {
@@ -731,9 +775,23 @@
     if (Math.abs(2 * 360 / 3.6 - (100 / 3) * 6) > 1e-9) fail.push('power2.out spin-down does not start at 33 1/3 rpm');
     if (Math.abs(360 / ((100 / 3) * 6) - 1.8) > 1e-9) fail.push('one revolution at 33 1/3 rpm is not 1.8s');
     if (TURNS % 360) fail.push('scrub does not end upright');
+    $$('.etch textPath').forEach(tp => {
+      const arc = $(tp.getAttribute('href')), len = tp.parentNode.getComputedTextLength();
+      if (len > arc.getTotalLength()) fail.push(`etching "${tp.textContent}" (${len.toFixed(0)}) overruns its arc (${arc.getTotalLength().toFixed(0)})`);
+    });
     console.log(fail.length ? `SELFTEST FAIL ${fail.join('; ')}` : 'SELFTEST PASS');
   }
-  if (location.hash === '#selftest') runSelfTest();
+  if (location.hash === '#selftest') document.fonts.ready.then(runSelfTest);
+  // Scroll checks (motion only): the run-out spans at least 60vh, and the label is on screen when the side starts
+  function scrollSelfTest(st) {
+    const fail = [], back = scrollY;
+    if (st.end - st.start < .6 * innerHeight) fail.push(`run-out spans ${Math.round(st.end - st.start)}px, under 60vh`);
+    lenis.scrollTo(st.start, { immediate: true, force: true }); ScrollTrigger.update();
+    const r = $('.record').getBoundingClientRect(), cy = r.top + r.height / 2;
+    if (cy < 0 || cy > innerHeight) fail.push(`disc centre at ${Math.round(cy)}px is off screen at p=0`);
+    lenis.scrollTo(back, { immediate: true, force: true }); ScrollTrigger.update();
+    console.log(fail.length ? `SELFTEST SCROLL FAIL ${fail.join('; ')}` : `SELFTEST SCROLL PASS span ${Math.round(st.end - st.start)}px (${st.start} to ${st.end}), disc centre at ${Math.round(cy)}px of ${innerHeight}`);
+  }
 
   if (!libs) return;   // CDN blocked: everything stays visible and usable, in its final state
 
@@ -758,13 +816,9 @@
   }, ctx => {
     const { motion, fine, sheet } = ctx.conditions;
 
-    if (!motion) {   // final states, native scroll, a straight string
+    if (!motion) {   // final states, native scroll, a straight string, a dialog that opens and closes at once
       pose(1, 1);
-      fx = {
-        open: () => gsap.fromTo(dlg, { opacity: 0 }, { opacity: 1, duration: .15, clearProps: 'opacity' }),
-        close: done => gsap.to(dlg, { opacity: 0, duration: .15, onComplete: () => { gsap.set(dlg, { clearProps: 'opacity' }); done(); } }),
-      };
-      return () => { fx = {}; };
+      return;
     }
 
     const ac = new AbortController(), on = { signal: ac.signal, passive: true };
@@ -780,7 +834,12 @@
     // ---- S2 SC8: the inner sleeve slides off and the footer is uncovered from beneath
     gsap.timeline({ scrollTrigger: { trigger: footer, start: 'clamp(top bottom)', end: 'clamp(top top)', scrub: true, invalidateOnRefresh: true } })
       .fromTo(inner, { y: () => -.35 * innerHeight }, { y: 0, duration: 1, ease: 'none' }, 0)
-      .fromTo(veil, { opacity: .5 }, { opacity: 0, duration: .7, ease: 'none' }, 0);
+      .fromTo(veil, { opacity: .5 }, { opacity: 0, duration: .7, ease: 'none' }, 0)
+      // B5 runs out as the sleeve slides away; the stylus below takes over
+      .fromTo('.trk__prog', { scaleX: .92 }, { scaleX: 1, duration: 1, ease: 'none', immediateRender: false }, 0);
+
+    // The footer holds at the page end for 70vh, so the side has room to play out on screen
+    const hold = ScrollTrigger.create({ trigger: footer, start: 'bottom bottom', end: () => '+=' + .7 * innerHeight, pin: true, pinSpacing: true });
 
     // ---- S3 the side plays out (signature), S4 the needle drop
     const S = { p: 0, drop: 0 };
@@ -788,8 +847,8 @@
     const render = () => { pose(S.p, S.drop); draw.progress(lenAt(S.p) / cum[N]); };
     gsap.set([lock, ...etch], { drawSVG: '0% 0%' });
     const pluck = () => gsap.timeline()
-      .to(C, { y: 60, duration: .08, ease: 'expo.out', overwrite: true, onUpdate: strDraw })
-      .to(C, { y: 48, duration: 1.6, ease: 'elastic.out(1, .2)', onUpdate: strDraw });
+      .to(C, { y: MID + 6, duration: .08, ease: 'expo.out', overwrite: true, onUpdate: strDraw })
+      .to(C, { y: MID, duration: 1.6, ease: 'elastic.out(1, .2)', onUpdate: strDraw });
     let landed = false, arrive = null;
     const arrival = () => gsap.timeline({ onComplete: () => gsap.set(spin, { rotation: 0, svgOrigin: '0 0' }) })
       .to(S, { drop: 1, duration: .3, ease: 'expo.out', onUpdate: render }, 0)
@@ -813,8 +872,8 @@
       else if (landed && p < .9) { landed = false; lift(); }           // re-arms only after backing off the end
     };
     const follow = self => { S.p = self.progress; render(); land(S.p); };
-    // the side starts playing as the tonearm's pivot (.2 of the disc above it) comes into view
-    ScrollTrigger.create({ start: () => Math.max(0, docTop(record) - .2 * record.offsetWidth - innerHeight), end: 'max', onUpdate: follow, onRefresh: follow });
+    // The side starts when the label's centre reaches 90% of the viewport and ends where the footer's hold ends
+    const runout = ScrollTrigger.create({ start: () => Math.max(0, docTop(record) + .5 * record.offsetWidth - .9 * innerHeight), end: () => hold.end, onUpdate: follow, onRefresh: follow });
 
     // ---- S5 SC16: rules under the release rows draw from the left
     const relRules = $$('.releases .rule');
@@ -827,17 +886,28 @@
     if (fine) {
       const tilt = gsap.quickTo(sheen, 'rotation', { duration: .8, ease: 'power3.out' });
       let inBand = false;
-      const release = () => gsap.to(C, { y: 48, duration: 2, ease: 'elastic.out(1, .2)', overwrite: true, onUpdate: strDraw });
+      const release = () => gsap.to(C, { y: MID, duration: 2, ease: 'elastic.out(1, .2)', overwrite: true, onUpdate: strDraw });
       footer.addEventListener('pointermove', e => {
         tilt((e.clientX / innerWidth * 2 - 1) * 10);
         const r = str.getBoundingClientRect(), x = e.clientX - r.left, dy = e.clientY - (r.top + r.height / 2);
         if (x >= 0 && x <= r.width && Math.abs(dy) <= 48) {
           inBand = true;
-          gsap.to(C, { x, y: 48 + gsap.utils.clamp(-32, 32, dy * 2), duration: .2, ease: 'expo.out', overwrite: true, onUpdate: strDraw });
+          gsap.to(C, { x, y: MID + gsap.utils.clamp(-32, 32, dy * 2), duration: .2, ease: 'expo.out', overwrite: true, onUpdate: strDraw });
         } else if (inBand) { inBand = false; release(); }
       }, on);
       footer.addEventListener('pointerleave', () => { tilt(0); if (inBand) { inBand = false; release(); } }, on);
     }
+
+    // ---- Keyboard focus: the browser scrolls a focused control into view before the uncover moves it,
+    // so it can land under the fold. Re-scroll until it sits fully on screen (a few passes settle the scrub).
+    footer.addEventListener('focusin', e => requestAnimationFrame(() => {
+      for (let i = 0; i < 4; i++) {
+        const r = e.target.getBoundingClientRect();
+        if (r.top >= 8 && r.bottom <= innerHeight - 8) break;
+        lenis.scrollTo(scrollY + r.top - innerHeight * .33, { immediate: true, force: true });
+        ScrollTrigger.update();
+      }
+    }), { signal: ac.signal });
 
     // ---- I2 dialog (CD7), closing plays the opening in reverse
     let shown = null;
@@ -865,7 +935,8 @@
     // ---- S1 page load, once fonts are in so lines split where they will stay
     fonts.then(() => live && ctx.add(() => {
       ScrollTrigger.refresh();
-      if (played) { gsap.set('[data-load]', { opacity: 1 }); gsap.set('.trk__rule', { scaleX: 1 }); return; }
+      if (location.hash === '#selftest') scrollSelfTest(runout);
+      if (played) { gsap.set('[data-load]', { opacity: 1 }); gsap.set('.trk__rule', { scaleX: 1 }); gsap.set('.trk__prog', { scaleX: .92 }); return; }
       played = true;
       const head = ['.stub__title', '.stub__sub'];
       gsap.set(head, { opacity: 1 });
@@ -874,7 +945,9 @@
         .add(tween, 0)
         .fromTo('.trk__rule', { scaleX: 0 }, { scaleX: 1, transformOrigin: '0 50%', duration: .9, ease: 'expo.out', stagger: .07 }, .15)
         .fromTo('.trk__in', { yPercent: 110, opacity: 1 }, { yPercent: 0, duration: .8, ease: 'expo.out', stagger: .07 }, .3)
-        .fromTo('.stub__total', { autoAlpha: 0 }, { autoAlpha: 1, duration: .4, ease: 'expo.out' }, .9);
+        .fromTo('.stub__total', { autoAlpha: 0 }, { autoAlpha: 1, duration: .4, ease: 'expo.out' }, .9)
+        // B5 is playing: 3:44 of 4:03 gone, so the bar stops at .92
+        .fromTo('.trk__prog', { scaleX: 0 }, { scaleX: .92, transformOrigin: '0 50%', duration: 1.1, ease: 'expo.out' }, .75);
     }));
 
     return () => {
@@ -885,7 +958,7 @@
       lenis.destroy();
       lenis = null;
       fx = {};
-      C.x = sw / 2; C.y = 48; strDraw();
+      C.x = sw / 2; C.y = MID; strDraw();
       pose(1, 1);
     };
   });

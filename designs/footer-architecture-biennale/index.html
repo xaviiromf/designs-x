@@ -69,11 +69,16 @@ html.lenis, html.lenis body { height: auto; }
 html.js [data-rv] { opacity: 0; }
 html.js .rule { transform: scaleX(0); }
 html.js .rise, html.js .draw { visibility: hidden; }
+html.js .venue .key { transform: scale(0); }
+html.js .m-datum { transform: scaleX(0); }
+html:not(.js) .mark-run { height: auto; }
 @media (prefers-reduced-motion: no-preference) { html.js .plan-top:not(.is-drawn) .ov { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) {
   html.js [data-rv] { opacity: 1; }
   html.js .rule { transform: none; }
   html.js .rise, html.js .draw { visibility: visible; }
+  html.js .venue .key, html.js .m-datum { transform: none; }
+  .mark-run { height: auto; }
   *, ::before, ::after { transition-duration: 0s !important; }
 }
 
@@ -111,8 +116,8 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
 @media (hover: hover) {
   .dim:has(.dl:hover) .dl:not(:hover) { opacity: .45; }
 }
-.dim:has(.dl:focus-visible, .dl :focus-visible) .dl:not(:focus-visible, :has(:focus-visible)),
 .vlist.has-hot .venue:not(.is-hot) { opacity: .45; }
+/* keyboard focus does not dim: dimmed marl would drop below 4.5:1, and focus is a sustained state */
 
 /* ---------- Frame ---------- */
 .foot { padding-top: var(--band-gap); }
@@ -247,6 +252,8 @@ h3 {
 }
 .vpanel {
   grid-area: 1 / 1;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
   padding: var(--s5);
   visibility: hidden;
 }
@@ -262,7 +269,7 @@ h3 {
 }
 .vpanel h4 .num { font-weight: var(--w-label); }
 .vpanel p { max-width: 38em; }
-.vpanel .small { margin-top: var(--s2); }
+.vpanel .small { align-self: end; max-width: none; margin-top: var(--s4); padding-top: var(--s3); border-top: var(--rule) solid var(--marl); }
 
 /* ---------- Plan ---------- */
 .plan {
@@ -292,14 +299,17 @@ h3 {
 .t-wall { fill: none; stroke: var(--flysch); stroke-width: 10; }
 .t-in { fill: none; stroke: var(--sheet-2); stroke-width: 7; }
 .t-track { fill: none; stroke: var(--marl); stroke-width: .9; stroke-dasharray: 4 3; }
-.p-lab { font-size: 12.5px; font-weight: var(--w-label); fill: var(--flysch); }
+.p-lab { font-size: 15px; font-weight: var(--w-label); fill: var(--flysch); }
 .quay { fill: none; stroke: var(--flysch); stroke-width: 1.5; }
 .site { cursor: pointer; }
 .site .ov { fill: var(--ochre); opacity: 0; transition: opacity var(--d-fast) var(--ease-out); }
 .site .fp { fill: none; stroke: var(--flysch); stroke-width: 1.5; }
+/* the pen going over the outline; GSAP draws it in motion mode, CSS shows it instantly otherwise */
+.site .fp-hi { fill: none; stroke: var(--flysch); stroke-width: 2.5; stroke-dasharray: 0 10000; }
+.site.is-hot .fp-hi { stroke-dasharray: none; }
 .site.is-hot .ov, .site.is-sel .ov { opacity: .35; }
 .pkey circle { fill: var(--sheet); stroke: var(--flysch); stroke-width: 1; }
-.pkey text { font-size: 11px; font-weight: var(--w-head); fill: var(--flysch); text-anchor: middle; dominant-baseline: central; }
+.pkey text { font-size: 14px; font-weight: var(--w-head); fill: var(--flysch); text-anchor: middle; dominant-baseline: central; }
 .site.is-hot .pkey circle { fill: var(--ochre); stroke: var(--ochre); }
 .site.is-sel .pkey circle { fill: var(--flysch); }
 .site.is-hot .pkey text, .site.is-sel .pkey text { fill: var(--sheet); }
@@ -507,13 +517,17 @@ button.ln { text-align: left; }
 .imprint { margin-top: var(--s5); }
 
 /* ---------- The wordmark: a section cut through street level (TX11) ---------- */
-.mark {
+.mark-run {
   --u: calc(112vw / 1120);              /* one viewBox unit; the SVG is 112vw wide */
   --above: calc(var(--u) * 125);         /* datum height inside the viewBox */
   --band: max(56px, calc(var(--u) * 43)); /* ground shown below grade */
-  position: relative;
-  height: calc(var(--above) + var(--band));
+  height: calc(var(--above) + var(--band) + 40svh); /* the scroll the rise runs over */
   margin-top: var(--s7);
+}
+.mark {
+  position: sticky;                      /* held at the viewport bottom, datum in view, while it rises */
+  top: calc(100svh - var(--above) - var(--band));
+  height: calc(var(--above) + var(--band));
   overflow: clip;
 }
 .mark-svg {
@@ -531,7 +545,7 @@ button.ln { text-align: left; }
 .hatch-line { stroke: var(--ochre); }
 .ground { position: absolute; left: 0; right: 0; top: var(--above); bottom: 0; background: var(--below); }
 .m-datum, .m-water { position: absolute; left: 0; right: 0; z-index: 2; }
-.m-datum { top: calc(var(--above) - 1px); height: var(--datum); background: var(--flysch); }
+.m-datum { top: calc(var(--above) - 1px); height: var(--datum); background: var(--flysch); transform-origin: left; }
 .m-water { top: calc(var(--above) + var(--band) * .55); border-top: 2px dashed var(--groundwater); }
 .m-lab {
   position: absolute;
@@ -557,12 +571,15 @@ dialog {
   color: var(--flysch);
 }
 dialog::backdrop { background: var(--backdrop); }
+html:has(dialog[open]) { overflow: clip; } /* no scroll behind the modal, with or without Lenis */
 .dlg { padding: var(--s6); overflow: auto; max-height: inherit; }
 .dlg h2 { font-size: var(--fs-l); margin-bottom: var(--s5); }
 .dlg li { padding: var(--s3) 0; border-top: var(--rule) solid var(--marl); }
 .dlg li b { display: block; font-weight: var(--w-label); }
 .dlg .after { margin-top: var(--s4); padding-top: var(--s4); border-top: var(--rule) solid var(--marl); }
 .dlg .ln-btn { margin-top: var(--s4); }
+
+@media (pointer: coarse) { .index .ln, .press .ln { padding-block: 9px; } } /* 44px taps, same underline */
 
 /* ---------- Layout ---------- */
 @media (min-width: 992px) {
@@ -592,7 +609,7 @@ dialog::backdrop { background: var(--backdrop); }
 <footer id="visit" class="foot" tabindex="-1" aria-labelledby="visit-h">
   <div class="wrap">
     <div class="intro grid">
-      <h2 id="visit-h" class="rise">Visit Below Grade</h2>
+      <h2 id="visit-h" class="rise">Visit the biennale</h2>
       <p class="lead" data-rv>22 May to 21 November 2027 in Trieste’s old port. Five venues, two of them underground. One ticket opens all five.</p>
     </div>
 
@@ -640,7 +657,7 @@ dialog::backdrop { background: var(--backdrop); }
           </button>
         </div>
 
-        <div class="vpanels">
+        <div class="vpanels" data-rv>
           <div class="vpanel is-on" role="tabpanel" id="panel-a" aria-labelledby="tab-a" tabindex="0">
             <h4>Molo IV shed <span class="num">+1.80</span></h4>
             <p>Talks every Thursday and Saturday at 18:00; the book fair fills the east bay.</p>
@@ -654,7 +671,7 @@ dialog::backdrop { background: var(--backdrop); }
           <div class="vpanel" role="tabpanel" id="panel-c" aria-labelledby="tab-c" tabindex="0">
             <h4>Old Customs Hall <span class="num">±0.00</span></h4>
             <p>Visitor centre, ticket desk, cloakroom and the press office.</p>
-            <p class="small">Open daily, 9:30 to 19:30.</p>
+            <p class="small">Open Tuesday to Sunday, 9:30 to 19:30.</p>
           </div>
           <div class="vpanel" role="tabpanel" id="panel-d" aria-labelledby="tab-d" tabindex="0">
             <h4>Salt Cistern <span class="num">−6.40</span></h4>
@@ -671,7 +688,7 @@ dialog::backdrop { background: var(--backdrop); }
 
       <figure class="plan-fig">
         <div class="plan" role="img" aria-labelledby="plan-cap">
-          <svg class="plan-street" viewBox="0 0 400 300" aria-hidden="true" focusable="false">
+          <svg class="plan-street" data-rv viewBox="0 0 400 300" aria-hidden="true" focusable="false">
             <defs>
               <pattern id="sea" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line class="sea-line" x1="0" y1="0" x2="0" y2="6"/></pattern>
             </defs>
@@ -712,27 +729,32 @@ dialog::backdrop { background: var(--backdrop); }
             <g class="site is-sel" data-v="a">
               <rect class="ov" x="34" y="74" width="76" height="34"/>
               <rect class="fp draw" x="34" y="74" width="76" height="34"/>
-              <g class="pkey" data-rv><circle cx="72" cy="91" r="9"/><text x="72" y="91">A</text></g>
+              <rect class="fp-hi" x="34" y="74" width="76" height="34"/>
+              <g class="pkey" data-rv><circle cx="72" cy="91" r="11"/><text x="72" y="91">A</text></g>
             </g>
             <g class="site" data-v="b">
               <rect class="ov" x="140" y="30" width="120" height="86"/>
               <rect class="fp draw" x="140" y="30" width="120" height="86"/>
-              <g class="pkey" data-rv><circle cx="200" cy="73" r="9"/><text x="200" y="73">B</text></g>
+              <rect class="fp-hi" x="140" y="30" width="120" height="86"/>
+              <g class="pkey" data-rv><circle cx="200" cy="73" r="11"/><text x="200" y="73">B</text></g>
             </g>
             <g class="site" data-v="c">
               <rect class="ov" x="140" y="176" width="70" height="60"/>
               <rect class="fp draw" x="140" y="176" width="70" height="60"/>
-              <g class="pkey" data-rv><circle cx="175" cy="206" r="9"/><text x="175" y="206">C</text></g>
+              <rect class="fp-hi" x="140" y="176" width="70" height="60"/>
+              <g class="pkey" data-rv><circle cx="175" cy="206" r="11"/><text x="175" y="206">C</text></g>
             </g>
             <g class="site" data-v="d">
               <rect class="ov" x="232" y="176" width="74" height="74"/>
               <rect class="fp draw" x="232" y="176" width="74" height="74"/>
-              <g class="pkey" data-rv><circle cx="269" cy="213" r="9"/><text x="269" y="213">D</text></g>
+              <rect class="fp-hi" x="232" y="176" width="74" height="74"/>
+              <g class="pkey" data-rv><circle cx="269" cy="213" r="11"/><text x="269" y="213">D</text></g>
             </g>
             <g class="site" data-v="e">
               <rect class="ov" x="332" y="136" width="34" height="26"/>
               <rect class="fp draw" x="332" y="136" width="34" height="26"/>
-              <g class="pkey" data-rv><circle cx="349" cy="149" r="9"/><text x="349" y="149">E</text></g>
+              <rect class="fp-hi" x="332" y="136" width="34" height="26"/>
+              <g class="pkey" data-rv><circle cx="349" cy="149" r="11"/><text x="349" y="149">E</text></g>
             </g>
           </svg>
         </div>
@@ -749,7 +771,7 @@ dialog::backdrop { background: var(--backdrop); }
       <section class="tickets" aria-labelledby="tickets">
         <h3 id="tickets" tabindex="-1">Tickets</h3>
         <div class="book">
-          <form id="reserve" novalidate aria-labelledby="tickets">
+          <form id="reserve" novalidate aria-label="Reserve tickets">
             <fieldset class="stubs dim">
               <legend class="sr">Ticket type</legend>
               <label class="stub dl">
@@ -853,6 +875,7 @@ dialog::backdrop { background: var(--backdrop); }
     <p class="imprint small">© 2027 Trieste Biennale of Architecture</p>
   </div>
 
+  <div class="mark-run">
   <div class="mark">
     <span class="ground" aria-hidden="true"></span>
     <svg class="mark-svg" viewBox="0 0 1120 300" role="img" aria-label="Below Grade, 6th Trieste Biennale of Architecture">
@@ -869,6 +892,7 @@ dialog::backdrop { background: var(--backdrop); }
     <span class="m-water" aria-hidden="true"></span>
     <span class="m-lab m-lab-datum" aria-hidden="true">±0.00 street level</span>
     <span class="m-lab m-lab-water" aria-hidden="true"><svg viewBox="0 0 10 8" focusable="false"><path d="M0 0H10L5 8Z"/></svg>−3.20 water table</span>
+  </div>
   </div>
 </footer>
 
@@ -933,13 +957,18 @@ dialog::backdrop { background: var(--backdrop); }
   // ---- Venues: a vertical tablist ranked by floor level, mirrored on the plan ----
   const vlist = $('.vlist'), tabs = $$('.venue'), panels = $$('.vpanel'), sites = $$('.site');
   let sel = 0, hot = -1, ptl = null;
-  const heat = (i) => {
+  // dim: pointer hover dims the other rows; keyboard focus only fills the key and marks the footprint
+  const heat = (i, dim = true) => {
+    vlist.classList.toggle('has-hot', i >= 0 && dim);
     if (i === hot) return;
+    const was = hot;
     hot = i;
     tabs.forEach((t, k) => t.classList.toggle('is-hot', k === i));
     sites.forEach((s, k) => s.classList.toggle('is-hot', k === i));
-    vlist.classList.toggle('has-hot', i >= 0);
-    if (i >= 0 && anim()) gsap.fromTo($('.fp', sites[i]), { drawSVG: '0%' }, { drawSVG: '100%', duration: 0.5, ease: 'power2.inOut', overwrite: true });
+    if (!anim()) return;
+    // a second, heavier line is drawn over the static outline, and retracted when the pen moves on
+    if (was >= 0) gsap.to($('.fp-hi', sites[was]), { drawSVG: '0%', duration: 0.5, ease: 'power2.inOut', overwrite: true });
+    if (i >= 0) gsap.to($('.fp-hi', sites[i]), { drawSVG: '100%', duration: 0.5, ease: 'power2.inOut', overwrite: true });
   };
   const select = (i, focus) => {
     if (focus) tabs[i].focus();
@@ -951,17 +980,21 @@ dialog::backdrop { background: var(--backdrop); }
     const swap = () => { panels.forEach((p) => p.classList.toggle('is-on', p === next)); };
     ptl?.progress(1).kill();
     if (!anim()) return swap();
+    // The incoming panel is live (and next in the Tab order) at once; the outgoing one is inert while it fades.
+    gsap.set(next, { opacity: 0, y: 4 });
+    next.classList.add('is-on');
+    old.inert = true;
     ptl = gsap.timeline()
       .to(old, { opacity: 0, y: -4, duration: 0.15, ease: 'expo.out' })
-      .call(() => { swap(); gsap.set(old, { clearProps: 'opacity,transform' }); })
-      .fromTo(next, { opacity: 0, y: 4 }, { opacity: 1, y: 0, duration: 0.25, ease: 'expo.out', clearProps: 'opacity,transform' });
+      .call(() => { old.classList.remove('is-on'); old.inert = false; gsap.set(old, { clearProps: 'opacity,transform' }); })
+      .to(next, { opacity: 1, y: 0, duration: 0.25, ease: 'expo.out', clearProps: 'opacity,transform' });
   };
   const mouse = (e) => e.pointerType === 'mouse';
   tabs.forEach((t, i) => {
     t.addEventListener('click', () => select(i));
     t.addEventListener('pointerenter', (e) => { if (mouse(e)) heat(i); });
     t.addEventListener('pointerleave', (e) => { if (mouse(e)) heat(-1); });
-    t.addEventListener('focus', () => { if (t.matches(':focus-visible')) heat(i); });
+    t.addEventListener('focus', () => { if (t.matches(':focus-visible')) heat(i, false); });
     t.addEventListener('blur', () => heat(-1));
   });
   vlist.addEventListener('keydown', (e) => {
@@ -1129,12 +1162,17 @@ dialog::backdrop { background: var(--backdrop); }
   document.addEventListener('click', (e) => {
     const a = e.target.closest('a[href^="#"]');
     const t = a && document.getElementById(a.hash.slice(1));
-    if (!t) return;
+    if (!t || e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     e.preventDefault();
-    const done = () => t.focus({ preventScroll: true });
+    history.pushState(null, '', a.hash);
+    let moved = false;
+    const done = () => { if (!moved) { moved = true; t.focus({ preventScroll: true }); } };
     const y = Math.max(0, scrollY + t.getBoundingClientRect().top - 16);
-    if (state.lenis) state.lenis.scrollTo(y, { duration: Math.min(1.3, 0.65 + Math.abs(y - scrollY) / 4000), onComplete: done });
-    else { scrollTo(0, y); done(); }
+    if (state.lenis) {
+      const dur = Math.min(1.3, 0.65 + Math.abs(y - scrollY) / 4000);
+      state.lenis.scrollTo(y, { duration: dur, onComplete: done });
+      setTimeout(done, dur * 1000 + 100); // an interrupted scroll never completes; focus still moves
+    } else { scrollTo(0, y); done(); }
   });
 
   // ---- Access dialog (CD7) ----
@@ -1143,13 +1181,13 @@ dialog::backdrop { background: var(--backdrop); }
   opener.addEventListener('click', () => {
     dlg.showModal();
     state.lenis?.stop();
-    if (libs) gsap.fromTo(dlg, anim() ? { autoAlpha: 0, y: 12, scale: 0.98 } : { autoAlpha: 0 }, { autoAlpha: 1, y: 0, scale: 1, duration: anim() ? 0.45 : 0.2, ease: 'expo.out' });
+    if (anim()) gsap.fromTo(dlg, { autoAlpha: 0, y: 12, scale: 0.98 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.45, ease: 'expo.out' });
   });
   const closeDlg = () => {
     if (!dlg.open || closing) return;
-    if (!libs) return dlg.close();
+    if (!anim()) return dlg.close();
     closing = true;
-    gsap.to(dlg, { autoAlpha: 0, ...(anim() ? { y: 12 } : {}), duration: 0.3, ease: 'expo.out', onComplete: () => dlg.close() });
+    gsap.to(dlg, { autoAlpha: 0, y: 12, duration: 0.3, ease: 'expo.out', onComplete: () => dlg.close() });
   };
   dlg.addEventListener('cancel', (e) => { e.preventDefault(); closeDlg(); });
   dlg.addEventListener('click', (e) => { if (e.target === dlg) closeDlg(); });
@@ -1213,11 +1251,12 @@ dialog::backdrop { background: var(--backdrop); }
     gsap.ticker.add(tick);
     gsap.ticker.lagSmoothing(0);
 
+    gsap.set('.fp-hi', { drawSVG: '0%' });
     let alive = true, split = null;
     ctx.add('build', () => {
       // Load: the heading rises, the floors draw, the venues rise onto them, the plan draws itself.
       split = SplitText.create('#visit-h', { type: 'lines', mask: 'lines' });
-      const names = $$('.nm-i'), keys = $$('.pkey'), fps = $$('.site .fp');
+      const names = $$('.nm-i'), keys = $$('.pkey'), fps = $$('.site .fp'), vkeys = $$('.venue .key');
       gsap.set(split.lines, { yPercent: 105 });
       gsap.set(names, { yPercent: 100 });
       gsap.set('.rise', { visibility: 'visible' });
@@ -1227,27 +1266,32 @@ dialog::backdrop { background: var(--backdrop); }
         .to('.lead', { opacity: 1, duration: 0.6, ease: 'expo.out' }, 0.15)
         .to('.vrule', { scaleX: 1, duration: 0.7, ease: 'expo.out', stagger: 0.05 }, 0.3)
         .to(names, { yPercent: 0, duration: 0.6, ease: 'expo.out', stagger: 0.05 }, 0.4)
+        .to(vkeys, { scale: 1, duration: 0.5, ease: 'expo.out', stagger: 0.05 }, 0.4)
         .to($$('.venue [data-rv]'), { opacity: 1, duration: 0.6, ease: 'expo.out', stagger: 0.025 }, 0.4)
         .to('.datum-rule', { scaleX: 1, duration: 0.9, ease: 'expo.out' }, 0.45)
         .to('.datum-lab', { opacity: 1, duration: 0.3, ease: 'expo.out' }, 0.75)
-        .to('.quay', { drawSVG: '100%', duration: 0.8, ease: 'power2.inOut' }, 0.55)
-        .to(fps, { drawSVG: '100%', duration: 0.9, ease: 'power2.inOut', stagger: 0.08 }, 0.85)
-        .to(keys, { opacity: 1, duration: 0.4, ease: 'expo.out', stagger: 0.05 }, 1.1)
-        .call(() => $('.plan-top').classList.add('is-drawn'), null, 1.1)
-        .to('.plan-foot', { opacity: 1, duration: 0.4, ease: 'expo.out' }, 1.3);
+        .to('.vpanels', { opacity: 1, duration: 0.4, ease: 'expo.out' }, 0.9);
       ScrollTrigger.create({ trigger: '#visit', start: 'top 85%', once: true, onEnter: () => load.play() });
+
+      // The plan draws itself when it arrives, which on phones is well below the fold.
+      const planTl = gsap.timeline({ paused: true })
+        .to('.plan-street', { opacity: 1, duration: 0.4, ease: 'expo.out' }, 0)
+        .to('.quay', { drawSVG: '100%', duration: 0.8, ease: 'power2.inOut' }, 0)
+        .to(fps, { drawSVG: '100%', duration: 0.9, ease: 'power2.inOut', stagger: 0.08 }, 0.3)
+        .to(keys, { opacity: 1, duration: 0.4, ease: 'expo.out', stagger: 0.05 }, 0.55)
+        .call(() => $('.plan-top').classList.add('is-drawn'), null, 0.55)
+        .to('.plan-foot', { opacity: 1, duration: 0.4, ease: 'expo.out' }, 0.75);
+      ScrollTrigger.create({ trigger: '.plan-fig', start: 'top 80%', once: true, onEnter: () => planTl.play() });
 
       // S1: the ticket perforations draw as the stubs arrive (SC16).
       gsap.to('.perf', { scaleX: 1, duration: 0.7, ease: 'expo.out', stagger: 0.06, scrollTrigger: { trigger: '.stubs', start: 'top 85%', once: true } });
 
       // S2, the signature: the word rises out of the ground through the street datum (TX11).
-      // The datum is only on screen for the last band-height of scroll, so the scrub spans two band heights
-      // ending at the page end: the tops surface first, then the crossing happens in view.
-      const ground = $('.ground');
-      gsap.fromTo(word, { y: () => 0.58 * CAP * fontSize }, {
-        y: 0, ease: 'none',
-        scrollTrigger: { trigger: ground, start: () => `top bottom+=${ground.offsetHeight}`, end: 'bottom bottom', scrub: true, invalidateOnRefresh: true },
-      });
+      // .mark is sticky at the viewport bottom inside .mark-run, so the run's height is the scroll the rise takes.
+      // Street level is laid in the first 15% of the run, then the letters surface through it.
+      gsap.timeline({ scrollTrigger: { trigger: '.mark-run', start: 'top bottom', end: 'bottom bottom', scrub: true, invalidateOnRefresh: true } })
+        .fromTo('.m-datum', { scaleX: 0 }, { scaleX: 1, duration: 0.15, ease: 'none' }, 0)
+        .fromTo(word, { y: () => 0.58 * CAP * fontSize }, { y: 0, duration: 1, ease: 'none' }, 0);
       ScrollTrigger.refresh();
     });
     Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 1200))]).then(() => { if (alive) ctx.build(); });
