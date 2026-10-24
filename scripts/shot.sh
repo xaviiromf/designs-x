@@ -9,6 +9,14 @@ file="$root/designs/$slug/index.html"
 [ -f "$file" ] || { echo "missing $file" >&2; exit 1; }
 out="${4:-$root/.shots/$slug-${w}x${h}.png}"
 mkdir -p "$(dirname "$out")"
+# Headless Chromium clamps --window-size to a 500px minimum width, so narrower shots go through CDP emulation.
+if [ "$w" -lt 500 ]; then
+  exec node --input-type=module -e "
+    import { launch } from '$root/scripts/lib/cdp.mjs';
+    const p = await launch({ width: $w, height: $h });
+    try { await p.goto('file://$file', 15000); await p.waitFor(5000); await p.screenshot('$out');
+      p.errors.forEach(e => console.log('CONSOLE ERROR: ' + e.text)); console.log('screenshot: $out'); } finally { await p.close(); }"
+fi
 profile="$(mktemp -d)"; trap 'rm -rf "$profile"' EXIT
 chromium --headless=new --disable-gpu --hide-scrollbars --no-first-run \
   --user-data-dir="$profile" --window-size="$w,$h" --virtual-time-budget=5000 \

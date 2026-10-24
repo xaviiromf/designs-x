@@ -24,7 +24,7 @@ const page = await launch({ width: W, height: H });
 const shot = async () => (await page.send('Page.captureScreenshot', { format: 'jpeg', quality: 60 })).data;
 const sheet = async (name, frames) => {
   // Compose frames into one image by rendering a grid page in the same browser.
-  const html = `<body style="margin:0;background:#222;font:14px sans-serif;color:#fff;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:6px">${frames.map(f => `<figure style="margin:0"><img style="width:100%;display:block" src="data:image/jpeg;base64,${f.img}"><figcaption>${f.label}</figcaption></figure>`).join('')}</body>`;
+  const html = `<meta charset="utf-8"><body style="margin:0;background:#222;font:14px sans-serif;color:#fff;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:6px">${frames.map(f => `<figure style="margin:0"><img style="width:100%;display:block" src="data:image/jpeg;base64,${f.img}"><figcaption>${f.label}</figcaption></figure>`).join('')}</body>`;
   const file = join(out, `${name}.html`); writeFileSync(file, html);
   const rows = Math.ceil(frames.length / 3);
   await page.send('Emulation.setDeviceMetricsOverride', { width: 1500, height: Math.ceil(rows * (1500 / 3) * (H / W) + rows * 26 + 12), deviceScaleFactor: 1, mobile: false });
