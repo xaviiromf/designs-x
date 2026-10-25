@@ -5,8 +5,8 @@ subject: The fourteen people of the Ochoa Lab, a fictional kelp forest ecology l
 aesthetic: The lab's own field kit. A white PVC quadrat strung with teal line into one cell per person, a yellow fiberglass transect tape as the filter, matte dive slates with lanyard holes for the projects, graphite pencil for the ink and bull-kelp olive for species names and links.
 mode: light
 fonts:
-  - Instrument Sans (Google Fonts, variable wdth 75-100, wght 400-700): wordmark, headings, names, initials, nav, tape labels and readout at wdth 80, buttons, labels, tabular figures
-  - STIX Two Text (Google Fonts, variable wght 400-700 with italic 400-500): lede, bios, project questions, citations, form help; italic only for binomial species names
+  - "Instrument Sans (Google Fonts, variable wdth 75-100, wght 400-700): wordmark, headings, names, initials, nav, tape labels and readout at wdth 80, buttons, labels, tabular figures"
+  - "STIX Two Text (Google Fonts, variable wght 400-700 with italic 400-500): lede, bios, project questions, citations, form help; italic only for binomial species names"
 js: Draws the quadrat, filters the people by project with a Flip sweep that closes the frame and plucks every string, bends strings under a fine pointer, stacks the project slates, runs the header, menu and profile dialog, and turns the question form into an in-page mailto draft.
 libraries: [GSAP 3.15 (ScrollTrigger, SplitText, Flip), Lenis 1.3.26]
 tags: [team, people, research, science, university, marine, filter, flip, dialog, form, gsap, lenis, light]

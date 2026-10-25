@@ -17,7 +17,7 @@ use_when:
 avoid_when:
   - The route doubles back east and west. The sailed line is revealed by longitude, so the route has to keep heading one way across the chart.
   - There is no geography worth showing, or the reports carry the story without a map.
-  - The brand cannot take a long pinned chapter: the crossing is about five screens of scroll on desktop.
+  - "The brand cannot take a long pinned chapter: the crossing is about five screens of scroll on desktop."
 ---
 
 ## Why it works

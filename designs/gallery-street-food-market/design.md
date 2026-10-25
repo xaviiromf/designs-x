@@ -13,7 +13,7 @@ tags: [gallery, filter, food, market, street-food, map, wayfinding, inline-svg, 
 use_when:
   - A place with fixed physical spots (market pitches, festival stands, fair booths, food hall counters) where filtering should also tell people where to go.
   - A gallery of 8 to 30 vendors or exhibitors with one category to filter on and a short menu or detail each.
-  - No photography yet, or mixed-quality photos: the drawn fronts carry the page and real photos drop into the same frame.
+  - "No photography yet, or mixed-quality photos: the drawn fronts carry the page and real photos drop into the same frame."
 avoid_when:
   - The order of items means nothing. Shutters in place only pay off when position is information; use a reflowing filter instead.
   - Several filters at once (diet, price, open now). One radio group is the whole interaction.

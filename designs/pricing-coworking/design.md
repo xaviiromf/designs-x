@@ -2,7 +2,7 @@
 title: Which doors your fob opens
 section: pricing
 subject: Membership plans (hot desk, fixed desk, studios for 2, 4 and 6) and hourly meeting rooms at Ropewalk Works, a fictional coworking space in a converted 1790s ropewalk, 96 m long.
-aesthetic: Architect's floor plan of a limewashed industrial building in Stockholm-tar ink, tar plastic key-fob tags with paper inserts, and one card-reader 'access granted' green. Palette - limewash #EEF0EC ground, Stockholm tar #3A2A1E ink, weathered tar #5A4C41, access green #50D47E for 'open' only.
+aesthetic: "Architect's floor plan of a limewashed industrial building in Stockholm-tar ink, tar plastic key-fob tags with paper inserts, and one card-reader 'access granted' green. Palette - limewash #EEF0EC ground, Stockholm tar #3A2A1E ink, weathered tar #5A4C41, access green #50D47E for 'open' only."
 mode: light
 fonts:
   - Zilla Slab (Google Fonts, 700), display, wordmark, plan and room names, prices in proportional lining figures
@@ -13,7 +13,7 @@ tags: [pricing, coworking, floor-plan, access, key-fob, membership, headcount, b
 use_when:
   - A place sells access to physical spaces (coworking, makerspace, studios, members' club, storage, gym zones) and plans differ by which rooms and hours they unlock.
   - Price depends on headcount or seats, and some plans stop fitting as the team grows.
-  - There is a real floor plan to draw: rooms off a corridor or along one axis.
+  - "There is a real floor plan to draw: rooms off a corridor or along one axis."
   - The page can afford a scripted, choreographed section (detailed tier).
 avoid_when:
   - Plans differ by features, quotas or seats in software, with nothing spatial to show. Use a comparison table.

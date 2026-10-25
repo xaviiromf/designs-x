@@ -1,7 +1,7 @@
 ---
 title: Bread-clip menu
 section: nav
-subject: Header and menu for Bramling Street Bakery (fictional), a two-oven neighbourhood bakery at 12 Bramling Street, Sheffield, that answers what regulars ask: are you open, what is out of the oven, and how do I order ahead.
+subject: "Header and menu for Bramling Street Bakery (fictional), a two-oven neighbourhood bakery at 12 Bramling Street, Sheffield, that answers what regulars ask: are you open, what is out of the oven, and how do I order ahead."
 aesthetic: A paper bread bag and its plastic clip. Bag-brown kraft for the header and menu, a straight bag fold where it ends, greaseproof white for the page, warm flexo-print black for every word, and one green die-cut bread clip as the menu toggle.
 mode: light
 fonts:

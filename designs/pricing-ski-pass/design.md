@@ -11,7 +11,7 @@ js: Computes the cheapest pass for 1 to 20 days and draws it as a draggable SVG 
 libraries: [GSAP 3.15 (ScrollTrigger), Lenis 1.3.26]
 tags: [pricing, calculator, break-even, chart, slider, drag, ski, resort, trail-map, form, dialog, gsap, lenis]
 use_when:
-  - The real question behind the prices is "which option is cheapest for how much I'll use it": lift passes, transit passes, gym visits, coworking days, pool cards, parking.
+  - "The real question behind the prices is \"which option is cheapest for how much I'll use it\": lift passes, transit passes, gym visits, coworking days, pool cards, parking."
   - There are two to four options whose costs cross at real thresholds you can compute and state.
   - You want people to try their own number, see where the answer changes, and leave the section having bought the right option.
 avoid_when:

@@ -12,7 +12,7 @@ tags: [story, scroll-story, sticky, pin, map, cartography, annotation, glacier, 
 use_when:
   - A long-term monitoring record (glacier fronts, coastline, treeline, river channel, shoreline erosion, a dune) whose story is the same measurement repeated over many years from one fixed point.
   - The data fits one drawing that can carry every year at once, so the scroll can build the classic summary diagram line by line and stop on it.
-  - The section has to end in something a researcher can use: request the data, cite it, write to the team.
+  - "The section has to end in something a researcher can use: request the data, cite it, write to the team."
 avoid_when:
   - The series has fewer than about ten points, or the points do not share a place on one drawing; the line-by-line build becomes decoration.
   - Readers need exact values while scrolling. The pin is a narrative; the table under "Show all 41 front positions" is the reference.

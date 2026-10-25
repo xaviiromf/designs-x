@@ -16,7 +16,7 @@ use_when:
 avoid_when:
   - Everyone works the same hours; the day columns would carry no information.
   - Portrait photography is the point (a studio, an agency).
-  - More than about 25 people: the board gets long and the row-by-row draw takes too long to read as a single gesture.
+  - "More than about 25 people: the board gets long and the row-by-row draw takes too long to read as a single gesture."
 ---
 
 ## Why it works

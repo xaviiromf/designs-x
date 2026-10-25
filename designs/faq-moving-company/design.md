@@ -13,7 +13,7 @@ tags: [faq, search, filter, accordion, disclosure, removals, moving, local-busin
 use_when:
   - A service business whose FAQ is long enough (15 to 40 questions) that people search for one worry rather than read it all.
   - Questions fall into a few groups with a natural order, such as the stages of a booking, a trip or a move.
-  - The brand has a physical object to borrow for the one search panel: a label, a ticket, a tag, a docket.
+  - "The brand has a physical object to borrow for the one search panel: a label, a ticket, a tag, a docket."
 avoid_when:
   - Fewer than about ten questions. Search is the bold element, and it is pointless on a short list.
   - Brands where handwriting would read as unserious (banking, medical, legal).

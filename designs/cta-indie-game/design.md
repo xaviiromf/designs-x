@@ -6,7 +6,7 @@ aesthetic: A harbour at night drawn on the game's own board. Deep harbour-navy w
 mode: dark
 fonts:
   - Handjet (Google Fonts, variable wght 100-900, ELSH 0-16, ELGR 1-2). Display only, set at ELSH 2 and ELGR 1 so the modules are square tiles. Used for the H2 at 700 and as the source for the dormant NOCTILUCA wordmark at 800.
-  - Host Grotesk (Google Fonts, variable wght 300-800). Everything else: 400 for body, 600 for buttons, h3 and dl terms, tabular-nums so the figures in the demo facts and store sizes line up.
+  - Host Grotesk (Google Fonts, variable wght 300-800). Everything else, at 400 for body, 600 for buttons, h3 and dl terms, tabular-nums so the figures in the demo facts and store sizes line up.
 js: Lights a canvas cell field in a decaying square wake behind the pointer, touch, scrolling, focus and a sent form, raises the cropped NOCTILUCA wordmark in the same cells as the page ends, and runs the load sequence, micro-interactions, demo dialog and in-place email confirmation (nothing is sent).
 libraries: [GSAP 3.15 (ScrollTrigger, SplitText), Lenis 1.3.26]
 tags: [cta, game, indie, wishlist, demo, canvas, lattice, pointer, dialog, form, dark, gsap, lenis]

@@ -12,7 +12,7 @@ libraries: [GSAP 3.15.0 (ScrollTrigger, SplitText, Flip, CustomEase, DrawSVGPlug
 tags: [portfolio, motion-design, 3d, graph-editor, bezier, easing, canvas, charts, booking-form, gsap, lenis, light]
 use_when:
   - A motion, animation or 3D person whose craft is timing, where letting the visitor change the timing is the most honest demo.
-  - A portfolio for buyers who decide by schedule and cost (producers, studios): it shows how long jobs take, not only how they look.
+  - "A portfolio for buyers who decide by schedule and cost (producers, studios): it shows how long jobs take, not only how they look."
   - Work that can be represented by generated loops or diagrams instead of photos or video files.
 avoid_when:
   - A photographer, illustrator or anyone whose work must be seen as real images; the clay loops would stand in for the actual work.
