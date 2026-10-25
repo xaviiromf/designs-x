@@ -1,0 +1,1146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calibre R.30, taken apart</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gloock&family=Ysabeau+Office:wght@400..700&display=swap">
+<style>
+  /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+
+  :root {
+    /* Colour: the movement's own materials on heat-blued steel */
+    --steel-night: #1E348C;   /* the royal blue of a heat-blued screw: page ground */
+    --steel-plate: #182C78;   /* one temper deeper: drawing stage, timegrapher paper, form fields */
+    --steel-ink: #0F1A4A;     /* darkest temper: labels on ruby and silver fills (5.4:1 on ruby, 14.0:1 on silver) */
+    --silver: #E9ECF2;        /* rhodium-plated German silver: text, linework (9.2:1 on night, 10.6:1 on plate) */
+    --rhodium: #B8C2E0;       /* secondary text, inner rims, control outlines (6.2:1 on night, 7.1:1 on plate) */
+    --ruby: #F2637F;          /* jewels: graphics only (lit layer, jewel dots, pill, primary fill); 3.6:1 on night */
+    --ruby-lite: #FF8FA3;     /* ruby for text and focus rings (5.0:1 on night, 5.8:1 on plate) */
+    --gilt: #D9C48C;          /* gold chatons and the tolerance fan only */
+    --rule: #3A52A8;          /* 1px structure rules and tracks */
+
+    --font-display: 'Gloock', 'Bodoni 72', Didot, 'Bodoni MT', Georgia, serif;
+    --font-text: 'Ysabeau Office', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+
+    /* Type: perfect fourth from a 17px body */
+    --fs-cap: .8125rem;
+    --fs-small: .9375rem;
+    --fs-body: 1.0625rem;
+    --fs-lead: 1.375rem;
+    --fs-h3: 1.75rem;
+    --fs-h2: clamp(2.25rem, 1.6rem + 2.4vw, 3.5rem);
+    --fs-display: clamp(2.75rem, 1.2rem + 3.4vw, 4.375rem);
+    --lh-body: 1.55;
+    --measure: 62ch;
+
+    /* Space: 4px base */
+    --sp-1: .25rem; --sp-2: .5rem; --sp-3: .75rem; --sp-4: 1rem; --sp-5: 1.5rem;
+    --sp-6: 2rem; --sp-7: 3rem; --sp-8: 4rem; --sp-9: 6rem; --sp-10: 8rem;
+    --gutter: clamp(16px, 4vw, 56px);
+    --col-gap: 24px;
+    --max: 1440px;
+    --bar-h: 56px;
+    --chapter: 85svh;          /* scroll length per step of the tour */
+    --stage-chapters: 7;
+
+    --r-ctl: 999px;            /* controls and chips, jewel-like */
+
+    /* Motion */
+    --dur-fast: .25s;
+    --dur: .45s;
+    --dur-slow: 1s;
+    --ease-out: cubic-bezier(.16, 1, .3, 1);        /* expo.out */
+    --ease-sweep: cubic-bezier(.35, 0, 0, 1);       /* underline sweep */
+    --ease-fill: cubic-bezier(.65, 0, .35, 1);      /* button fill */
+    --ease-swap: cubic-bezier(.65, 0, 0, 1);        /* label swap */
+    --ease-spring: cubic-bezier(.34, 1.56, .64, 1); /* press release */
+    --ease-pop: cubic-bezier(.3, 2.1, .55, 1);      /* jewel pop, close to back.out(2.5) */
+    --ease-ind: cubic-bezier(.215, .61, .355, 1);   /* power3.out */
+  }
+  @media (max-width: 991.98px) { :root { --bar-h: 52px; --chapter: 70svh; } }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-padding-top: var(--bar-h); -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  html.sheet-lock { overflow: clip; } /* the open Index sheet holds the page still, with or without Lenis */
+  body {
+    margin: 0; background: var(--steel-night); color: var(--silver);
+    font: 400 var(--fs-body)/var(--lh-body) var(--font-text);
+    -webkit-font-smoothing: antialiased; overflow-x: clip;
+  }
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 400; font-synthesis: none; margin: 0; text-wrap: balance; }
+  p { margin: 0; }
+  a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--ruby-lite); outline-offset: 3px; }
+  [tabindex="-1"]:focus { outline: none; }
+  .sr-only { position: absolute !important; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+
+  .wrap { width: 100%; max-width: var(--max); margin-inline: auto; padding-inline: var(--gutter); }
+  .grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--col-gap); }
+
+  /* ---- HV2: underline enters from the left, leaves to the right ---- */
+  .u {
+    text-decoration: none; padding-bottom: .1em;
+    background: linear-gradient(currentColor, currentColor) 100% 100% / 0 .07em no-repeat;
+    transition: background-size var(--dur) var(--ease-sweep);
+  }
+  .u:focus-visible, .u[aria-current] { background-position: 0 100%; background-size: 100% .07em; }
+  @media (hover: hover) { .u:hover { background-position: 0 100%; background-size: 100% .07em; } }
+  @media (hover: none) { .u:active, .u.always { background-size: 100% .07em; } }
+
+  /* ---- HV4 + MI1: fill from the entry edge, press and release ---- */
+  .btn {
+    position: relative; isolation: isolate; overflow: hidden;
+    display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2);
+    min-height: 48px; padding: 0 var(--sp-5); border-radius: var(--r-ctl);
+    border: 1px solid var(--rhodium); background: transparent; color: var(--silver);
+    font: 600 var(--fs-body)/1 var(--font-text); text-decoration: none; cursor: pointer;
+    transition: color .2s, border-color .2s, transform .4s var(--ease-spring);
+  }
+  .btn::before {
+    content: ''; position: absolute; inset: 0; z-index: -1; background: var(--ruby);
+    transform: scaleX(0); transform-origin: var(--from, left) 50%;
+    transition: transform .3s var(--ease-fill);
+  }
+  .btn:focus-visible { color: var(--steel-ink); border-color: var(--ruby); }
+  .btn:focus-visible::before { transform: scaleX(1); transition-duration: .4s; }
+  @media (hover: hover) {
+    .btn:hover { color: var(--steel-ink); border-color: var(--ruby); }
+    .btn:hover::before { transform: scaleX(1); transition-duration: .4s; }
+  }
+  .btn:active { transform: scale(.97); transition: transform .12s ease-out; }
+  .btn.primary { background: var(--ruby); border-color: var(--ruby); color: var(--steel-ink); }
+  .btn.primary::before { background: var(--silver); }
+  .btn.primary:focus-visible { border-color: var(--silver); }
+  @media (hover: hover) { .btn.primary:hover { border-color: var(--silver); } }
+  .btn.small { min-height: 36px; padding: 0 var(--sp-4); font-size: var(--fs-small); }
+  .btn.large { min-height: 56px; padding: 0 var(--sp-6); }
+
+  /* ---- Tour bar ---- */
+  .bar { position: sticky; top: 0; z-index: 20; background: var(--steel-night); border-bottom: 1px solid var(--rule); }
+  .bar .wrap { height: var(--bar-h); display: flex; align-items: center; justify-content: space-between; gap: var(--sp-5); }
+  .wordmark { font: 400 1.3125rem/1 var(--font-display); font-synthesis: none; }
+  .bar-nav { display: flex; align-items: center; gap: var(--sp-6); }
+  .bar-links { display: flex; gap: var(--sp-6); margin: 0; padding: 0; list-style: none; font-weight: 500; font-size: var(--fs-small); }
+  .index-btn { display: none; }
+  .swap { display: grid; overflow: hidden; }
+  .swap > span { grid-area: 1 / 1; transition: transform .35s var(--ease-swap); }
+  .swap > span + span { transform: translateY(105%); }
+  .index-btn.is-open .swap > span:first-child { transform: translateY(-105%); }
+  .index-btn.is-open .swap > span + span { transform: none; }
+  .sheet { display: none; }
+  @media (max-width: 991.98px) {
+    .bar-nav { display: none; }
+    .index-btn { display: inline-flex; }
+    .sheet {
+      display: block; visibility: hidden; position: fixed; z-index: 19; inset: var(--bar-h) 0 auto 0;
+      background: var(--steel-night); border-bottom: 1px solid var(--rule); padding: var(--sp-4) var(--gutter) var(--sp-7);
+    }
+    .sheet.is-open { visibility: visible; }
+    .sheet ul { margin: 0; padding: 0; list-style: none; }
+    .sheet li { overflow: hidden; border-top: 1px solid var(--rule); }
+    .sheet li:first-child { border-top: 0; }
+    .sheet a { display: block; padding: var(--sp-4) 0; font: 400 var(--fs-h3)/1.15 var(--font-display); text-decoration: none; }
+    .sheet a span { padding-bottom: .08em; background: linear-gradient(currentColor, currentColor) 100% 100% / 0 .07em no-repeat; transition: background-size var(--dur) var(--ease-sweep); }
+    .sheet a:active span, .sheet a:focus-visible span, .sheet a[aria-current] span { background-position: 0 100%; background-size: 100% .07em; }
+  }
+  @media (scripting: none) {
+    .index-btn { display: none; }
+    .bar-nav { display: flex; }
+    @media (max-width: 991.98px) { .bar .wrap { height: auto; min-height: var(--bar-h); flex-wrap: wrap; padding-block: var(--sp-3); } .bar-nav { flex-wrap: wrap; gap: var(--sp-3) var(--sp-5); } .bar-links { flex-wrap: wrap; gap: var(--sp-3) var(--sp-5); } }
+  }
+
+  /* ---- The tour: one stage, read as a stack without the motion branch ---- */
+  .tour { position: relative; }
+  .stage { position: relative; padding-block: var(--sp-8); row-gap: var(--sp-7); }
+  .cap { display: contents; }
+  .intro { grid-column: 1 / 7; grid-row: 1; }
+  .rail { grid-column: 1 / 7; grid-row: 2; }
+  .chapter { grid-column: 1 / 7; }
+  .drawing { grid-column: 7 / 13; grid-row: 1 / span 8; align-self: start; position: sticky; top: calc(var(--bar-h) + var(--sp-4)); margin: 0; background: var(--steel-plate); }
+  .end, .seg { display: none; }
+  .mvt { display: block; width: 100%; height: auto; }
+
+  .display { font-size: var(--fs-display); line-height: 1.02; letter-spacing: -.01em; }
+  .lede { font-size: var(--fs-lead); line-height: 1.45; max-width: 34ch; margin-top: var(--sp-5); }
+  .acts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-4) var(--sp-6); margin-top: var(--sp-6); }
+  .pos { font-size: var(--fs-small); margin-bottom: var(--sp-3); }
+  .pos span { color: var(--rhodium); margin-right: .6em; }
+  .chapter h2 { font-size: var(--fs-h2); line-height: 1.08; max-width: 15ch; }
+  .chapter h2 + p { margin-top: var(--sp-4); max-width: 46ch; }
+  .end-line { font: 400 var(--fs-h2)/1.08 var(--font-display); font-synthesis: none; max-width: 14ch; text-wrap: balance; }
+  .end-more { margin-top: var(--sp-4); max-width: 40ch; }
+  .end-next { margin-top: var(--sp-5); }
+
+  .rail ol { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--sp-2); }
+  .rl { display: block; text-decoration: none; font-size: var(--fs-small); line-height: 1.3; }
+  .rn { color: var(--rhodium); margin-right: .5em; }
+  .rt { padding-bottom: .08em; background: linear-gradient(currentColor, currentColor) 100% 100% / 0 .07em no-repeat; transition: background-size var(--dur) var(--ease-sweep); }
+  .rl:focus-visible .rt, .rl[aria-current] .rt { background-position: 0 100%; background-size: 100% .07em; }
+  @media (hover: hover) { .rl:hover .rt { background-position: 0 100%; background-size: 100% .07em; } }
+  @media (hover: none) { .rl:active .rt { background-size: 100% .07em; } }
+
+  .skip {
+    position: absolute; z-index: 5; left: var(--gutter); top: var(--sp-3); font-size: var(--fs-small);
+    clip-path: inset(0 0 100% 0); transition: clip-path .3s var(--ease-out), background-size var(--dur) var(--ease-sweep);
+  }
+  .skip:focus { clip-path: inset(0); }
+
+  /* SVG drawing */
+  .mvt .ln { stroke: var(--silver); fill: none; stroke-width: .9; stroke-linecap: round; stroke-linejoin: round; }
+  .mvt .sub { stroke: var(--rhodium); }
+  .mvt .fill { fill: var(--steel-plate); }
+  .mvt .teeth { stroke: var(--silver); fill: none; stroke-width: 2; stroke-dasharray: 1 1; }
+  .mvt .knurl { stroke: var(--rhodium); stroke-width: .8; stroke-dasharray: none; }
+  .mvt .jewel { fill: var(--ruby); }
+  .mvt .stone { stroke: var(--ruby); stroke-width: 2.6; fill: none; }
+  .mvt .chaton { stroke: var(--gilt); fill: none; stroke-width: 1.4; }
+  .mvt .engr { font: 400 7px var(--font-display); fill: var(--rhodium); letter-spacing: .04em; }
+  .mvt .lead { stroke: var(--rhodium); stroke-width: .6; fill: none; }
+  .mvt .dot { fill: var(--silver); }
+  .mvt .callout text { font: 500 10px var(--font-text); fill: var(--silver); }
+  .mvt .hl .ln, .mvt .hl .teeth, .mvt .hl .chaton { stroke: var(--ruby); stroke-width: 1; }
+  .mvt .hl .teeth { stroke-width: 2; }
+  .mvt .hl .fill, .mvt .hl .jewel, .mvt .hl .engr, .mvt .hl .stone { display: none; }
+  .mvt.wind .hl > :not(.wind) { visibility: hidden; } /* Winding lights the parts, not the plates they sit on */
+  .mvt.lit .callout text { fill: var(--rhodium); }
+  .mvt .is-lit .callout text { fill: var(--silver); }
+  .mvt .is-lit .lead { stroke: var(--ruby); }
+  .mvt .is-lit .dot { fill: var(--ruby); }
+  @media (max-width: 1279.98px) { .mvt .callout { display: none; } } /* under about 12px the labels stop being legible */
+
+  @media (max-width: 991.98px) {
+    .stage { display: flex; flex-direction: column; row-gap: var(--sp-6); }
+    .drawing { position: static; order: 2; align-self: stretch; margin-inline: calc(-1 * var(--gutter)); padding: var(--sp-4); }
+    .intro { order: 1; } .rail { order: 3; } .chapter { order: 4; }
+
+    .lede { font-size: var(--fs-body); line-height: var(--lh-body); }
+  }
+
+  /* Staged: set by the motion branch only. One sticky stage, chapters swap in place. */
+  .tour.staged { height: calc(100svh - var(--bar-h) + var(--stage-chapters) * var(--chapter)); }
+  .staged .stage {
+    position: sticky; top: var(--bar-h); height: calc(100svh - var(--bar-h)); padding-block: var(--sp-6);
+    grid-template-rows: minmax(0, 1fr) auto; row-gap: var(--sp-5); overflow: clip;
+  }
+  .staged .cap { display: grid; grid-column: 1 / 6; grid-row: 1; align-content: center; padding-top: var(--sp-5); }
+  .staged .blk { grid-area: 1 / 1; }
+  .staged .end, .staged .seg { display: block; }
+  .staged .drawing { position: relative; top: auto; grid-column: 6 / 13; grid-row: 1 / 3; align-self: stretch; display: grid; place-items: center; min-height: 0; }
+  .staged .mvt { width: 100%; height: 100%; }
+  .staged .rail { grid-column: 1 / 6; grid-row: 2; }
+  .staged .rail ol { grid-template-columns: repeat(5, minmax(min-content, 1fr)); gap: var(--sp-3); align-items: start; }
+  .staged .rn { display: block; margin: 0 0 2px; font-size: var(--fs-cap); }
+  .staged .seg { position: relative; height: 2px; margin-bottom: var(--sp-3); background: var(--rule); }
+  .staged .seg i { position: absolute; inset: 0; background: var(--ruby); transform: scaleX(0); transform-origin: left; }
+  .staged [data-split] > div, [data-tx] > div { padding-bottom: .12em; margin-bottom: -.12em; }
+  @media (min-width: 992px) { .staged .pos { display: none; } } /* the rail already names the part and its place */
+  @media (max-width: 991.98px) {
+    .staged .stage { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: clamp(28svh, 100svh - 460px, 50svh) auto minmax(0, 1fr); gap: var(--sp-4) var(--sp-5); padding-block: 0 var(--sp-4); }
+    .staged .drawing { grid-column: 1 / -1; grid-row: 1; margin-inline: calc(-1 * var(--gutter)); padding: var(--sp-3) var(--sp-4); }
+    .staged .rail { grid-column: 1; grid-row: 2; align-self: center; }
+    .staged .cap { grid-column: 1 / -1; grid-row: 3; grid-template-rows: minmax(0, 1fr); padding-top: 0; }
+    .staged .end { align-self: center; } /* the closing card sits mid-panel, so the stage leaves with no bare band under it */
+    .tour.staged + .rate { padding-top: var(--sp-7); }
+    .staged .skip { position: static; grid-column: 2; grid-row: 2; align-self: center; clip-path: none; background-size: 100% .07em; }
+    .staged .rl { padding-block: 20px 21px; margin-block: -9px -10px; } /* 44px tap height around a 3px bar */
+    .staged .rn, .staged .rt { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    .staged .seg { height: 3px; margin: 0; }
+    .staged .chapter h2 { font-size: clamp(1.75rem, 1.2rem + 2.4vw, 2.25rem); }
+    .staged .display { font-size: clamp(2.5rem, 1.4rem + 4.6vw, 3rem); }
+    .staged .lede { margin-top: var(--sp-4); max-width: none; }
+    .staged .acts { margin-top: var(--sp-5); }
+  }
+  @media (max-width: 991.98px) and (max-height: 760px) {
+    .staged .stage { grid-template-rows: clamp(28svh, 100svh - 400px, 40svh) auto minmax(0, 1fr); row-gap: var(--sp-3); }
+    .staged .display { font-size: 2.25rem; }
+    .staged .chapter h2 { font-size: 1.75rem; }
+    .staged .lede, .staged .chapter h2 + p { font-size: var(--fs-small); line-height: 1.5; margin-top: var(--sp-3); }
+    .staged .acts { margin-top: var(--sp-4); }
+    .staged .acts .btn.large { min-height: 46px; }
+  }
+  /* Very short screens: the drawing gives way first, then captions stop at three lines. Phones on their side get the layout below and keep the full text. */
+  @media (max-width: 991.98px) and (max-height: 599.98px) {
+    .staged .lede, .staged .chapter h2 + p { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
+  }
+  /* Phones on their side: drawing on the left, rail and caption on the right, as on desktop. */
+  @media (max-width: 991.98px) and (max-height: 499.98px) and (orientation: landscape) {
+    .staged .stage { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) auto; grid-template-rows: auto minmax(0, 1fr); padding-block: var(--sp-3); }
+    .staged .drawing { grid-column: 1; grid-row: 1 / 3; margin-inline: calc(-1 * var(--gutter)) 0; }
+    .staged .rail { grid-column: 2; grid-row: 1; }
+    .staged .skip { grid-column: 3; grid-row: 1; }
+    .staged .cap { grid-column: 2 / 4; grid-row: 2; }
+    .staged .display { font-size: 1.875rem; }
+    .staged .chapter h2 { font-size: 1.5rem; max-width: none; }
+    .staged .chapter h2 + p { max-width: 62ch; }
+    .staged .lede, .staged .chapter h2 + p { display: block; -webkit-line-clamp: none; line-clamp: none; overflow: visible; }
+    .staged .pos { margin-bottom: var(--sp-1); }
+    .staged .acts { margin-top: var(--sp-3); }
+  }
+
+  /* ---- Regulation ---- */
+  .rate, .specs, .reserve { padding-block: var(--sp-10) 0; }
+  .rate .wrap, .specs .wrap, .reserve .wrap { row-gap: var(--sp-6); }
+  .sec-text { grid-column: 1 / 6; }
+  .sec-text h2 { font-size: var(--fs-h2); line-height: 1.08; }
+  .sec-text p { margin-top: var(--sp-5); max-width: 44ch; }
+  .tg { grid-column: 6 / 13; margin: 0; }
+  .paper { display: block; width: 100%; height: auto; background: var(--steel-plate); }
+  .paper .band { stroke: var(--gilt); stroke-width: 1; fill: none; }
+  .paper .band-fill { fill: var(--gilt); }
+  .paper .trace { stroke: var(--silver); stroke-width: 3.2; stroke-linecap: round; fill: none; }
+  .tg figcaption { margin-top: var(--sp-3); color: var(--rhodium); font-size: var(--fs-small); max-width: 60ch; }
+  .readouts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-4) var(--col-gap); margin: var(--sp-6) 0 0; }
+  .readouts dt { color: var(--rhodium); font-size: var(--fs-small); }
+  .readouts dd { margin: var(--sp-1) 0 0; font: 600 var(--fs-h3)/1.15 var(--font-text); font-variant-numeric: tabular-nums lining-nums; }
+  .readouts .unit { font-size: var(--fs-small); font-weight: 400; color: var(--rhodium); margin-left: .3em; }
+  .positions { border: 0; margin: var(--sp-6) 0 0; padding: 0; min-width: 0; }
+  .positions legend { padding: 0; margin-bottom: var(--sp-3); color: var(--rhodium); font-size: var(--fs-small); }
+  .pos-opts { position: relative; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--sp-2); }
+  .pos-opts input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
+  .pos-opts label {
+    position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; text-align: center;
+    min-height: 44px; padding: 0 var(--sp-3); border-radius: var(--r-ctl); border: 1px solid var(--rule);
+    color: var(--rhodium); font-weight: 500; cursor: pointer; transition: color .2s, border-color .2s;
+  }
+  @media (hover: hover) { .pos-opts label:hover { color: var(--silver); border-color: var(--rhodium); } }
+  .pos-opts input:checked + label { color: var(--steel-ink); border-color: transparent; transition: color .25s .12s, border-color .2s; }
+  .pos-opts input:focus-visible + label { outline: 2px solid var(--ruby-lite); outline-offset: 3px; color: var(--steel-ink); }
+  .ind { position: absolute; left: 0; top: 0; z-index: 0; display: none; border-radius: var(--r-ctl); background: var(--ruby); pointer-events: none; transition: transform .4s var(--ease-ind); }
+  .ind.ready { display: block; }
+  .pos-opts:not(:has(.ind.ready)) input:checked + label { background: var(--ruby); }
+
+  /* ---- Specification ---- */
+  .specs h2 { grid-column: 1 / 5; font-size: var(--fs-h2); line-height: 1.08; }
+  .specs dl { grid-column: 5 / 13; margin: 0; }
+  .spec-row { position: relative; display: grid; grid-template-columns: 3fr 5fr; column-gap: var(--col-gap); padding-block: var(--sp-4); }
+  .spec-row::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 1px; background: var(--rule); transform: scaleX(var(--s, 1)); transform-origin: left; }
+  .spec-row dt { color: var(--rhodium); }
+  .spec-row dd { margin: 0; font-variant-numeric: tabular-nums lining-nums; max-width: 48ch; }
+
+  /* ---- Reserve ---- */
+  .hold { grid-column: 6 / 12; }
+  .field { margin-bottom: var(--sp-2); }
+  .field input { scroll-margin-top: var(--sp-7); } /* focus on an invalid field keeps its label clear of the bar */
+  .field > label, .field legend { display: block; padding: 0; margin-bottom: var(--sp-2); color: var(--rhodium); font-size: var(--fs-small); transition: color .2s; }
+  .field:focus-within > label, .field:focus-within legend { color: var(--silver); }
+  .ctl { position: relative; }
+  .ctl input {
+    display: block; width: 100%; min-height: 50px; padding: var(--sp-3) var(--sp-4); border: 0; border-radius: 0;
+    background: var(--steel-plate); color: var(--silver); font: 400 var(--fs-body)/1.3 var(--font-text);
+  }
+  .ctl input:focus { outline: none; }
+  .ctl input:focus-visible { outline: 2px solid var(--ruby-lite); outline-offset: 3px; }
+  .rule { position: absolute; inset: auto 0 0 0; height: 1px; background: var(--rhodium); opacity: .6; transition: opacity .2s; pointer-events: none; }
+  .rule::after { content: ''; position: absolute; inset: auto 0 0 0; height: 2px; background: var(--ruby); transform: scaleX(0); transform-origin: left; transition: transform .35s var(--ease-out); }
+  @media (hover: hover) { .ctl:hover .rule { opacity: 1; } }
+  .ctl:focus-within .rule::after, [aria-invalid="true"] + .rule::after { transform: scaleX(1); }
+  .hint { margin-top: var(--sp-2); color: var(--rhodium); font-size: var(--fs-cap); font-variant-numeric: tabular-nums; }
+  .err { min-height: 1.6em; padding-top: var(--sp-1); color: var(--ruby-lite); font-size: var(--fs-small); clip-path: inset(0 0 100% 0); transition: clip-path var(--dur-fast) var(--ease-out); }
+  .err.show { clip-path: inset(0); }
+  fieldset.field { border: 0; margin: 0 0 var(--sp-2); padding: 0; min-width: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: var(--sp-3); }
+  .chips input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
+  .chips label {
+    display: inline-flex; align-items: center; gap: var(--sp-3); min-height: 48px; padding: 0 var(--sp-5) 0 var(--sp-4);
+    border-radius: var(--r-ctl); border: 1px solid var(--rhodium); cursor: pointer; font-variant-numeric: tabular-nums lining-nums;
+    transition: border-color .2s;
+  }
+  @media (hover: hover) { .chips label:hover { border-color: var(--silver); } }
+  .chips input:checked + label { border-color: var(--silver); }
+  .chips input:focus-visible + label { outline: 2px solid var(--ruby-lite); outline-offset: 3px; }
+  .jw { display: grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; border: 1px solid var(--rhodium); flex: none; }
+  .jw::after { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--ruby); transform: scale(0); transition: transform .35s var(--ease-pop); }
+  .chips input:checked + label .jw::after { transform: scale(1); }
+  .chips label:active .jw { transform: scale(.9); }
+  .submit-row { margin-top: var(--sp-4); }
+  .conf h3 { font-size: var(--fs-h3); line-height: 1.15; max-width: 22ch; }
+  .conf p { margin-top: var(--sp-4); max-width: 46ch; }
+  .conf .acts { margin-top: var(--sp-6); }
+  [hidden] { display: none !important; }
+
+  .colo { margin-top: var(--sp-10); border-top: 1px solid var(--rule); }
+  .colo .wrap { display: flex; flex-wrap: wrap; gap: var(--sp-3) var(--sp-6); padding-block: var(--sp-6) var(--sp-7); color: var(--rhodium); font-size: var(--fs-small); }
+  .colo .wrap > :first-child { margin-right: auto; }
+  .colo a { color: var(--silver); }
+
+  @media (max-width: 991.98px) {
+    .sec-text, .tg, .specs h2, .specs dl, .hold { grid-column: 1 / -1; }
+    .rate, .specs, .reserve { padding-top: var(--sp-9); }
+    .readouts { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    .readouts > div { display: grid; grid-template-columns: 8.5rem minmax(0, 1fr); align-items: baseline; padding-block: var(--sp-3); border-top: 1px solid var(--rule); }
+    .readouts dd { margin: 0; }
+    .pos-opts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .spec-row { grid-template-columns: minmax(0, 1fr); row-gap: var(--sp-1); }
+  }
+
+  /* Hidden starting states exist only when the libraries loaded and motion is allowed. */
+  @media (prefers-reduced-motion: no-preference) {
+    html.js .bar-item, html.js .lede, html.js .acts { opacity: 0; }
+    html.js .display, html.js [data-tx] { visibility: hidden; }
+    html.js .mvt .stack { opacity: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0s !important; transition-delay: 0s !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+<main>
+<section class="rv" id="top" tabindex="-1" aria-labelledby="tour-title">
+
+  <header class="bar">
+    <div class="wrap">
+      <a class="wordmark u bar-item" href="#top">Atelier Ravoire</a>
+      <nav class="bar-nav" aria-label="Tour">
+        <ul class="bar-links">
+          <li class="bar-item"><a class="u" href="#tour">The movement</a></li>
+          <li class="bar-item"><a class="u" href="#rate">Regulation</a></li>
+          <li class="bar-item"><a class="u" href="#specs">Specification</a></li>
+        </ul>
+        <a class="btn small bar-item" href="#reserve"><span data-reserve-label>Reserve no. 14</span></a>
+      </nav>
+      <button class="btn small index-btn bar-item" type="button" aria-expanded="false" aria-controls="sheet"><span class="swap"><span>Index</span><span aria-hidden="true">Close</span></span></button>
+    </div>
+  </header>
+  <div class="sheet" id="sheet">
+    <nav aria-label="Tour index">
+      <ul>
+        <li><a href="#tour"><span>The movement</span></a></li>
+        <li><a href="#rate"><span>Regulation</span></a></li>
+        <li><a href="#specs"><span>Specification</span></a></li>
+        <li><a href="#reserve"><span data-reserve-label>Reserve no. 14</span></a></li>
+      </ul>
+    </nav>
+  </div>
+
+  <div class="tour" id="tour" tabindex="-1">
+    <div class="stage wrap grid">
+      <a class="skip u" href="#rate">Skip the tour</a>
+
+      <div class="cap" aria-live="polite">
+        <div class="blk intro">
+          <h1 class="display" id="tour-title" data-split>One movement, taken apart.</h1>
+          <p class="lede" data-split>Calibre R.30 is the hand-wound movement we make 24 of each year in Sainte-Croix. Here we take it apart piece by piece, in the order the power from your thumb travels to the balance.</p>
+          <div class="acts" data-item>
+            <a class="btn primary large" href="#ch-1">Take it apart</a>
+            <a class="u" href="#reserve">Reserve no. 14 of 24</a>
+          </div>
+        </div>
+
+        <article class="blk chapter" id="ch-1" tabindex="-1" aria-labelledby="ch-1-t">
+          <p class="pos" data-split><span>1 of 5</span>Winding</p>
+          <h2 id="ch-1-t" data-split>Forty turns of the crown</h2>
+          <p data-split>Turning the crown spins the crown wheel, which drives the ratchet wheel on the barrel arbor. A click lets the ratchet move one way only; it is the soft rasp under your thumb. Forty turns take the spring from empty to full, and then the crown stops. Never force it further.</p>
+        </article>
+        <article class="blk chapter" id="ch-2" tabindex="-1" aria-labelledby="ch-2-t">
+          <p class="pos" data-split><span>2 of 5</span>Mainspring and barrel</p>
+          <h2 id="ch-2-t" data-split>Sixty hours in a coiled strip</h2>
+          <p data-split>The mainspring is a strip of cobalt-nickel alloy 0.10 mm thick and half a metre long, coiled inside the barrel. As it lets down, the barrel turns once every eight hours, seven and a half turns from full to stopped.</p>
+        </article>
+        <article class="blk chapter" id="ch-3" tabindex="-1" aria-labelledby="ch-3-t">
+          <p class="pos" data-split><span>3 of 5</span>Gear train</p>
+          <h2 id="ch-3-t" data-split>From hours down to seconds</h2>
+          <p data-split>The barrel drives the centre wheel, which turns once an hour and carries the minute hand. The third wheel steps the speed up again; the fourth wheel turns once a minute, and the small seconds at six o’clock sits on its arbor.</p>
+        </article>
+        <article class="blk chapter" id="ch-4" tabindex="-1" aria-labelledby="ch-4-t">
+          <p class="pos" data-split><span>4 of 5</span>Escapement</p>
+          <h2 id="ch-4-t" data-split>Letting go five times a second</h2>
+          <p data-split>The escape wheel has 15 teeth. The pallet fork rocks across it, its two ruby pallets locking and releasing one tooth at a time, and each release gives the balance a small push. That release is the tick: 18,000 of them an hour.</p>
+        </article>
+        <article class="blk chapter" id="ch-5" tabindex="-1" aria-labelledby="ch-5-t">
+          <p class="pos" data-split><span>5 of 5</span>Balance and hairspring</p>
+          <h2 id="ch-5-t" data-split>The part that keeps time</h2>
+          <p data-split>An 11 mm screwed balance swings two and a half times a second on a Breguet overcoil hairspring. A swan-neck spring under the cock lets us move the regulator by hundredths of a millimetre.</p>
+        </article>
+        <div class="blk end">
+          <p class="end-line" data-split>Back together, it runs.</p>
+          <p class="end-more" data-split>Five beats a second, sixty hours from one winding. Next it spends three weeks on the timegrapher.</p>
+          <p class="end-next" data-item><a class="u" href="#rate">See how no. 13 was regulated</a></p>
+        </div>
+      </div>
+
+      <figure class="drawing">
+        <svg class="mvt" viewBox="-275 -290 550 580" role="img" aria-labelledby="mvt-t mvt-d">
+      <title id="mvt-t">Calibre R.30, exploded along the arbor axis</title>
+      <desc id="mvt-d">Six layers, bottom to top: Main plate; Barrel; Gear train; Escape wheel and pallet fork; Three-quarter plate, ratchet and crown wheel; Balance and cock.</desc>
+      <g class="cam"><g class="stack">
+        <g class="layer" data-i="0" transform="translate(0 209)"><g class="par"><g class="iso" transform="matrix(.866 .5 -.866 .5 0 0)"><circle class="fill" cx="0" cy="0" r="100"/><circle class="ln" cx="0" cy="0" r="100"/><circle class="ln sub" cx="0" cy="0" r="95"/><g class="wind"><path class="fill" d="M-74 -2.4H-121V2.4H-74Z"/><path class="ln" d="M-74 -2.4H-121V2.4H-74Z"/><path class="fill" d="M-137,11L-137.96,10L-138.91,8.92L-139.85,7.78L-140.76,6.57L-141.65,5.32L-142.5,4.03L-143.31,2.7L-144.07,1.36L-144.78,0L-145.43,-1.36L-146.01,-2.7L-146.53,-4.03L-146.97,-5.32L-147.34,-6.57L-147.63,-7.78L-147.83,-8.92L-147.96,-10L-148,-11L-147.96,-11.92L-147.83,-12.74L-147.63,-13.47L-147.34,-14.1L-146.97,-14.62L-146.53,-15.03L-146.01,-15.32L-145.43,-15.5L-144.78,-15.56L-129.78,-15.56L-129.07,-15.5L-128.31,-15.32L-127.5,-15.03L-126.65,-14.62L-125.76,-14.1L-124.85,-13.47L-123.91,-12.74L-122.96,-11.92L-122,-11L-121.04,-10L-120.09,-8.92L-119.15,-7.78L-118.24,-6.57L-117.35,-5.32L-116.5,-4.03L-115.69,-2.7L-114.93,-1.36L-114.22,0L-113.57,1.36L-112.99,2.7L-112.47,4.03L-112.03,5.32L-111.66,6.57L-111.37,7.78L-111.17,8.92L-111.04,10L-111,11L-111.04,11.92L-111.17,12.74L-111.37,13.47L-111.66,14.1L-112.03,14.62L-112.47,15.03L-112.99,15.32L-113.57,15.5L-114.22,15.56L-129.22,15.56L-129.93,15.5L-130.69,15.32L-131.5,15.03L-132.35,14.62L-133.24,14.1L-134.15,13.47L-135.09,12.74L-136.04,11.92Z"/><path class="ln" d="M-137,11L-137.96,10L-138.91,8.92L-139.85,7.78L-140.76,6.57L-141.65,5.32L-142.5,4.03L-143.31,2.7L-144.07,1.36L-144.78,0L-145.43,-1.36L-146.01,-2.7L-146.53,-4.03L-146.97,-5.32L-147.34,-6.57L-147.63,-7.78L-147.83,-8.92L-147.96,-10L-148,-11L-147.96,-11.92L-147.83,-12.74L-147.63,-13.47L-147.34,-14.1L-146.97,-14.62L-146.53,-15.03L-146.01,-15.32L-145.43,-15.5L-144.78,-15.56L-129.78,-15.56L-129.07,-15.5L-128.31,-15.32L-127.5,-15.03L-126.65,-14.62L-125.76,-14.1L-124.85,-13.47L-123.91,-12.74L-122.96,-11.92L-122,-11L-121.04,-10L-120.09,-8.92L-119.15,-7.78L-118.24,-6.57L-117.35,-5.32L-116.5,-4.03L-115.69,-2.7L-114.93,-1.36L-114.22,0L-113.57,1.36L-112.99,2.7L-112.47,4.03L-112.03,5.32L-111.66,6.57L-111.37,7.78L-111.17,8.92L-111.04,10L-111,11L-111.04,11.92L-111.17,12.74L-111.37,13.47L-111.66,14.1L-112.03,14.62L-112.47,15.03L-112.99,15.32L-113.57,15.5L-114.22,15.56L-129.22,15.56L-129.93,15.5L-130.69,15.32L-131.5,15.03L-132.35,14.62L-133.24,14.1L-134.15,13.47L-135.09,12.74L-136.04,11.92Z"/><path class="ln" d="M-122,11L-123.91,8.92L-125.76,6.57L-127.5,4.03L-129.07,1.36L-130.43,-1.36L-131.53,-4.03L-132.34,-6.57L-132.83,-8.92L-133,-11L-132.83,-12.74L-132.34,-14.1L-131.53,-15.03L-130.43,-15.5L-129.07,-15.5L-127.5,-15.03L-125.76,-14.1L-123.91,-12.74L-122,-11L-120.09,-8.92L-118.24,-6.57L-116.5,-4.03L-114.93,-1.36L-113.57,1.36L-112.47,4.03L-111.66,6.57L-111.17,8.92L-111,11L-111.17,12.74L-111.66,14.1L-112.47,15.03L-113.57,15.5L-114.93,15.5L-116.5,15.03L-118.24,14.1L-120.09,12.74L-122,11"/><path class="ln sub" d="M-116.5,15.03L-131.5,15.03M-119.85,12.93L-134.85,12.93M-123.44,9.47L-138.44,9.47M-126.87,5L-141.87,5M-129.78,0L-144.78,0M-131.87,-5L-146.87,-5M-132.91,-9.47L-147.91,-9.47M-132.79,-12.93L-147.79,-12.93M-131.53,-15.03L-146.53,-15.03"/></g><circle class="jewel" cx="0" cy="0" r="1.8"/><circle class="jewel" cx="-36" cy="28" r="1.8"/><circle class="jewel" cx="-10" cy="58" r="1.8"/><circle class="jewel" cx="16" cy="64" r="1.8"/><circle class="jewel" cx="30.67" cy="45.01" r="1.8"/><circle class="jewel" cx="50" cy="20" r="1.8"/><circle class="jewel" cx="-18" cy="-38" r="1.8"/><circle class="fill" cx="-79.76" cy="-37.19" r="4.2"/><circle class="ln" cx="-79.76" cy="-37.19" r="4.2"/><path class="ln dt" d="M-76.85,-35.51 L-82.67,-38.87"/><circle class="fill" cx="22.78" cy="85" r="4.2"/><circle class="ln" cx="22.78" cy="85" r="4.2"/><path class="ln dt" d="M25.69,86.68 L19.87,83.32"/></g><g class="callout"><path class="lead" d="M-122.5,0H-138"/><circle class="dot" cx="-122.5" cy="0" r="1.8"/><text x="-144" y="3.4" text-anchor="end">Main plate</text></g></g></g>
+        <g class="layer" data-i="1" transform="translate(0 117)"><g class="par"><g class="iso" transform="matrix(.866 .5 -.866 .5 0 0)"><g data-rot="barrel"><circle class="fill" cx="-18" cy="-38" r="36"/><circle class="ln" cx="-18" cy="-38" r="36"/><circle class="teeth" cx="-18" cy="-38" r="37.4" pathLength="180"/><path class="ln spring" d="M-18,-45.5L-16.68,-45.46L-15.38,-45.2L-14.13,-44.7L-12.98,-43.99L-11.95,-43.07L-11.1,-41.99L-10.43,-40.75L-9.99,-39.41L-9.79,-38L-9.84,-36.56L-10.14,-35.14L-10.69,-33.78L-11.47,-32.52L-12.47,-31.41L-13.66,-30.48L-15,-29.77L-16.47,-29.3L-18,-29.08L-19.56,-29.14L-21.1,-29.47L-22.58,-30.07L-23.93,-30.93L-25.13,-32.02L-26.13,-33.31L-26.9,-34.76L-27.4,-36.34L-27.63,-38L-27.56,-39.69L-27.19,-41.35L-26.54,-42.93L-25.61,-44.39L-24.44,-45.67L-23.05,-46.74L-21.48,-47.56L-19.78,-48.1L-18,-48.33L-16.19,-48.25L-14.41,-47.86L-12.72,-47.15L-11.16,-46.16L-9.78,-44.9L-8.64,-43.4L-7.77,-41.72L-7.2,-39.9L-6.96,-38L-7.05,-36.07L-7.48,-34.17L-8.23,-32.36L-9.3,-30.7L-10.65,-29.24L-12.24,-28.03L-14.04,-27.11L-15.97,-26.51L-18,-26.25L-20.05,-26.35L-22.07,-26.81L-23.99,-27.62L-25.76,-28.76L-27.3,-30.19L-28.58,-31.89L-29.56,-33.79L-30.19,-35.85L-30.46,-38L-30.35,-40.18L-29.85,-42.31L-28.99,-44.35L-27.78,-46.21L-26.26,-47.85L-24.47,-49.2L-22.45,-50.22L-20.27,-50.89L-18,-51.17L-15.7,-51.04L-13.44,-50.52L-11.3,-49.61L-9.33,-48.33L-7.61,-46.72L-6.19,-44.82L-5.11,-42.69L-4.41,-40.4L-4.13,-38L-4.26,-35.58L-4.81,-33.2L-5.78,-30.94L-7.13,-28.88L-8.83,-27.07L-10.83,-25.57L-13.07,-24.44L-15.48,-23.72L-18,-23.42L-20.55,-23.56L-23.04,-24.15L-25.41,-25.17L-27.58,-26.59L-29.47,-28.37L-31.04,-30.47L-32.22,-32.82L-32.98,-35.36L-33.29,-38L-33.14,-40.67L-32.52,-43.28L-31.45,-45.76L-29.96,-48.03L-28.08,-50.02L-25.88,-51.65L-23.42,-52.89L-20.76,-53.68L-18,-54L-15.21,-53.83L-12.47,-53.18L-9.88,-52.06L-7.51,-50.5L-5.44,-48.54L-3.73,-46.24L-2.45,-43.66L-1.62,-40.89L-1.29,-38L-1.47,-35.08L-2.15,-32.23L-3.33,-29.53L-4.96,-27.06L-7.01,-24.9L-9.41,-23.12L-12.1,-21.78L-14.99,-20.93L-18,-20.58L-21.04,-20.77L-24.01,-21.49L-26.83,-22.71L-29.4,-24.42L-31.64,-26.55L-33.49,-29.06L-34.88,-31.85L-35.77,-34.87L-36.13,-38L-35.93,-41.16L-35.18,-44.25L-33.9,-47.18L-32.13,-49.85L-29.9,-52.19L-27.3,-54.11L-24.39,-55.55L-21.26,-56.47L-18,-56.83L-14.72,-56.62L-11.5,-55.85L-8.47,-54.51L-5.69,-52.67L-3.27,-50.36L-1.28,-47.65L0.22,-44.63L1.17,-41.38L1.54,-38L1.32,-34.59L0.51,-31.26L-0.87,-28.11L-2.79,-25.24L-5.19,-22.73L-7.99,-20.67L-11.13,-19.12L-14.5,-18.14L-18,-17.75L-21.53,-17.98L-24.98,-18.82L-28.24,-20.26L-31.22,-22.25L-33.81,-24.73L-35.95,-27.64L-37.55,-30.89L-38.56,-34.37L-38.96,-38L-38.72,-41.65L-37.84,-45.22L-36.35,-48.6L-34.3,-51.67L-31.72,-54.36L-28.72,-56.56L-25.36,-58.21L-21.75,-59.26L-18,-59.67L-14.22,-59.42L-10.54,-58.51L-7.05,-56.97L-3.87,-54.84L-1.1,-52.18L1.17,-49.07L2.88,-45.6L3.96,-41.87L4.38,-38L4.11,-34.1L3.17,-30.29L1.58,-26.69L-0.62,-23.42L-3.36,-20.56L-6.58,-18.21L-10.16,-16.46L-14.01,-15.34L-18,-14.92L-22.02,-15.19L-25.95,-16.16L-29.66,-17.8L-33.04,-20.08L-35.98,-22.91L-38.4,-26.22L-40.21,-29.92L-41.35,-33.88L-41.79,-38L-41.51,-42.15L-40.5,-46.19L-38.81,-50.01L-36.47,-53.5L-33.55,-56.53L-30.13,-59.01L-26.33,-60.87L-22.24,-62.05L-18,-62.5L-13.73,-62.21L-9.57,-61.17L-5.63,-59.42L-2.05,-57.01L1.07,-54L3.63,-50.49L5.54,-46.57L6.75,-42.36L7.21,-38L6.9,-33.61L5.84,-29.32L4.04,-25.28L1.55,-21.59L-1.54,-18.39L-5.16,-15.76L-9.19,-13.79L-13.51,-12.55L-18,-12.08L-22.51,-12.4L-26.92,-13.5L-31.08,-15.35L-34.86,-17.91L-38.15,-21.09L-40.85,-24.81L-42.87,-28.95L-44.14,-33.39L-44.63,-38L-44.3,-42.64L-43.17,-47.16L-41.26,-51.43L-38.64,-55.32L-35.37,-58.7L-31.55,-61.47L-27.29,-63.54L-22.73,-64.84L-18,-65.33L-13.24,-65L-8.6,-63.83L-4.22,-61.88L-0.23,-59.18L3.24,-55.82L6.08,-51.9L8.2,-47.54L9.54,-42.86L10.04,-38L9.69,-33.12L8.5,-28.36L6.49,-23.86L3.72,-19.77L0.28,-16.22L-3.74,-13.31L-8.22,-11.13L-13.02,-9.76L-18,-9.25L-23.01,-9.61L-27.89,-10.84L-32.49,-12.9L-36.68,-15.74L-40.33,-19.27L-43.31,-23.39L-45.53,-27.98L-46.93,-32.9L-47.46,-38L-47.09,-43.13L-45.83,-48.13L-43.72,-52.85L-40.81,-57.14L-37.19,-60.87L-32.97,-63.92L-28.26,-66.2L-23.22,-67.63L-18,-68.17L-12.75,-67.79L-7.63,-66.5L-2.8,-64.33L1.59,-61.35L5.41,-57.64L8.53,-53.32L10.87,-48.51L12.33,-43.35L12.88,-38L12.48,-32.62L11.16,-27.39L8.94,-22.44L5.89,-17.95L2.1,-14.05L-2.33,-10.85L-7.25,-8.47L-12.53,-6.97L-18,-6.42L-23.5,-6.82L-28.86,-8.17L-33.91,-10.44L-38.5,-13.56L-42.5,-17.45L-45.76,-21.97L-48.2,-27.01L-49.72,-32.41L-50.29,-38L-49.88,-43.62L-48.49,-49.1L-46.17,-54.26L-42.98,-58.96L-39.01,-63.04L-34.38,-66.37L-29.23,-68.86L-23.72,-70.42L-18,-71"/><circle class="ln" cx="-18" cy="-38" r="5.5"/><path class="ln" d="M-18,-43.5 L-14.92,-46.46"/></g></g><g class="callout"><path class="lead" d="M61.32,-28H138"/><circle class="dot" cx="61.32" cy="-28" r="1.8"/><text x="144" y="-24.6">Barrel and mainspring</text></g></g></g>
+        <g class="layer" data-i="2" transform="translate(0 5)"><g class="par"><g class="iso" transform="matrix(.866 .5 -.866 .5 0 0)"><g data-rot="centre"><circle class="ln" cx="0" cy="0" r="28"/><circle class="ln sub" cx="0" cy="0" r="23.24"/><circle class="ln" cx="0" cy="0" r="4.76"/><path class="ln sub" d="M3.37,3.37 L16.43,16.43"/><path class="ln sub" d="M-3.37,3.37 L-16.43,16.43"/><path class="ln sub" d="M-3.37,-3.37 L-16.43,-16.43"/><path class="ln sub" d="M3.37,-3.37 L16.43,-16.43"/><circle class="teeth" cx="0" cy="0" r="29.3" pathLength="160"/></g><g data-rot="third"><circle class="ln" cx="-36" cy="28" r="18"/><circle class="ln sub" cx="-36" cy="28" r="14.94"/><circle class="ln" cx="-36" cy="28" r="3.06"/><path class="ln sub" d="M-33.12,29.05 L-21.96,33.11"/><path class="ln sub" d="M-37.05,30.88 L-41.11,42.04"/><path class="ln sub" d="M-38.88,26.95 L-50.04,22.89"/><path class="ln sub" d="M-34.95,25.12 L-30.89,13.96"/><circle class="teeth" cx="-36" cy="28" r="19.3" pathLength="150"/></g><g data-rot="fourth"><circle class="ln" cx="-10" cy="58" r="20"/><circle class="ln sub" cx="-10" cy="58" r="16.6"/><circle class="ln" cx="-10" cy="58" r="3.4"/><path class="ln sub" d="M-8.3,60.94 L-1.7,72.38"/><path class="ln sub" d="M-12.94,59.7 L-24.38,66.3"/><path class="ln sub" d="M-11.7,55.06 L-18.3,43.62"/><path class="ln sub" d="M-7.06,56.3 L4.38,49.7"/><circle class="teeth" cx="-10" cy="58" r="21.3" pathLength="140"/></g></g><g class="callout"><path class="lead" d="M-77.42,-4H-138"/><circle class="dot" cx="-77.42" cy="-4" r="1.8"/><text x="-144" y="-0.6" text-anchor="end">Gear train</text></g></g></g>
+        <g class="layer" data-i="3" transform="translate(0 -83)"><g class="par"><g class="iso" transform="matrix(.866 .5 -.866 .5 0 0)"><g data-rot="escape"><path class="ln" d="M26.5,64L30.04,67.61L29.43,68.18L25.59,68.27L27.36,73.01L26.57,73.28L23.03,71.8L22.72,76.85L21.88,76.78L19.24,73.99L16.91,78.47L16.18,78.06L14.9,74.44L10.95,77.59L10.44,76.92L10.75,73.09L5.85,74.36L5.67,73.54L7.51,70.17L2.52,69.34L2.68,68.51L5.73,66.18L1.51,63.39L1.99,62.71L5.73,61.82L3.01,57.55L3.73,57.12L7.51,57.83L6.76,52.83L7.59,52.73L10.75,54.91L12.1,50.03L12.9,50.28L14.9,53.56L18.12,49.66L18.75,50.21L19.24,54.01L23.77,51.76L24.12,52.52L23.03,56.2L28.08,55.98L28.09,56.81L25.59,59.73L30.3,61.58L29.97,62.35Z"/><circle class="ln sub" cx="16" cy="64" r="8"/><circle class="ln" cx="16" cy="64" r="2.6"/><path class="ln sub" d="M16,66.6 L16,72"/><path class="ln sub" d="M13.75,62.7 L9.07,60"/><path class="ln sub" d="M18.25,62.7 L22.93,60"/></g><g data-rot="fork"><path class="ln" d="M32.47,59.8L30.67,45.01L15.91,47M30.67,45.01L44.49,27.13"/><path class="ln" d="M46.55 28.72l2.75 -3.56M42.43 25.54l2.75 -3.56M46.55 28.72L42.43 25.54"/><path class="stone" d="M28.02,60.94L32.09,59.9M15.93,51.6L15.91,47.4"/><circle class="fill" cx="30.67" cy="45.01" r="3"/><circle class="ln" cx="30.67" cy="45.01" r="3"/><circle class="jewel" cx="30.67" cy="45.01" r="1.4"/></g></g><g class="callout"><path class="lead" d="M18.03,35.81H138"/><circle class="dot" cx="18.03" cy="35.81" r="1.8"/><text x="144" y="39.21">Escapement</text></g></g></g>
+        <g class="layer" data-i="4" transform="translate(0 -140)"><g class="par"><g class="iso" transform="matrix(.866 .5 -.866 .5 0 0)"><path class="fill" d="M79.97,54.9A97 97 0 1 1 95.77,15.4A46 46 0 1 0 79.97,54.9Z"/><path class="ln" d="M79.97,54.9A97 97 0 1 1 95.77,15.4A46 46 0 1 0 79.97,54.9Z"/><circle class="chaton" cx="0" cy="0" r="6.5"/><circle class="jewel" cx="0" cy="0" r="2.2"/><circle class="chaton" cx="-36" cy="28" r="6.5"/><circle class="jewel" cx="-36" cy="28" r="2.2"/><circle class="chaton" cx="-10" cy="58" r="6.5"/><circle class="jewel" cx="-10" cy="58" r="2.2"/><circle class="chaton" cx="16" cy="64" r="6.5"/><circle class="jewel" cx="16" cy="64" r="2.2"/><circle class="jewel" cx="30.67" cy="45.01" r="1.6"/><circle class="fill" cx="-70" cy="40" r="4.2"/><circle class="ln" cx="-70" cy="40" r="4.2"/><path class="ln dt" d="M-67.09,41.68 L-72.91,38.32"/><circle class="fill" cx="42" cy="-72" r="4.2"/><circle class="ln" cx="42" cy="-72" r="4.2"/><path class="ln dt" d="M44.91,-70.32 L39.09,-73.68"/><circle class="fill" cx="-38" cy="74" r="4.2"/><circle class="ln" cx="-38" cy="74" r="4.2"/><path class="ln dt" d="M-35.09,75.68 L-40.91,72.32"/><g class="wind" data-rot="ratchet"><path class="fill" d="M8.5,-38L11.82,-34.71L10.86,-34.26L8.17,-33.85L10.94,-30.08L9.92,-29.79L7.2,-29.81L9.34,-25.65L8.29,-25.53L5.61,-25.97L7.07,-21.53L6.02,-21.57L3.44,-22.42L4.19,-17.81L3.15,-18.01L0.74,-19.26L0.76,-14.59L-0.24,-14.95L-2.42,-16.56L-3.14,-11.94L-4.06,-12.46L-5.97,-14.39L-7.4,-9.94L-8.23,-10.59L-9.81,-12.8L-11.92,-8.62L-12.64,-9.4L-13.85,-11.83L-16.59,-8.03L-17.18,-8.91L-18,-11.5L-21.29,-8.18L-21.74,-9.14L-22.15,-11.83L-25.92,-9.06L-26.21,-10.08L-26.19,-12.8L-30.35,-10.66L-30.47,-11.71L-30.03,-14.39L-34.47,-12.93L-34.43,-13.98L-33.58,-16.56L-38.19,-15.81L-37.99,-16.85L-36.74,-19.26L-41.41,-19.24L-41.05,-20.24L-39.44,-22.42L-44.06,-23.14L-43.54,-24.06L-41.61,-25.97L-46.06,-27.4L-45.41,-28.23L-43.2,-29.81L-47.38,-31.92L-46.6,-32.64L-44.17,-33.85L-47.97,-36.59L-47.09,-37.18L-44.5,-38L-47.82,-41.29L-46.86,-41.74L-44.17,-42.15L-46.94,-45.92L-45.92,-46.21L-43.2,-46.19L-45.34,-50.35L-44.29,-50.47L-41.61,-50.03L-43.07,-54.47L-42.02,-54.43L-39.44,-53.58L-40.19,-58.19L-39.15,-57.99L-36.74,-56.74L-36.76,-61.41L-35.76,-61.05L-33.58,-59.44L-32.86,-64.06L-31.94,-63.54L-30.03,-61.61L-28.6,-66.06L-27.77,-65.41L-26.19,-63.2L-24.08,-67.38L-23.36,-66.6L-22.15,-64.17L-19.41,-67.97L-18.82,-67.09L-18,-64.5L-14.71,-67.82L-14.26,-66.86L-13.85,-64.17L-10.08,-66.94L-9.79,-65.92L-9.81,-63.2L-5.65,-65.34L-5.53,-64.29L-5.97,-61.61L-1.53,-63.07L-1.57,-62.02L-2.42,-59.44L2.19,-60.19L1.99,-59.15L0.74,-56.74L5.41,-56.76L5.05,-55.76L3.44,-53.58L8.06,-52.86L7.54,-51.94L5.61,-50.03L10.06,-48.6L9.41,-47.77L7.2,-46.19L11.38,-44.08L10.6,-43.36L8.17,-42.15L11.97,-39.41L11.09,-38.82Z"/><path class="ln" d="M8.5,-38L11.82,-34.71L10.86,-34.26L8.17,-33.85L10.94,-30.08L9.92,-29.79L7.2,-29.81L9.34,-25.65L8.29,-25.53L5.61,-25.97L7.07,-21.53L6.02,-21.57L3.44,-22.42L4.19,-17.81L3.15,-18.01L0.74,-19.26L0.76,-14.59L-0.24,-14.95L-2.42,-16.56L-3.14,-11.94L-4.06,-12.46L-5.97,-14.39L-7.4,-9.94L-8.23,-10.59L-9.81,-12.8L-11.92,-8.62L-12.64,-9.4L-13.85,-11.83L-16.59,-8.03L-17.18,-8.91L-18,-11.5L-21.29,-8.18L-21.74,-9.14L-22.15,-11.83L-25.92,-9.06L-26.21,-10.08L-26.19,-12.8L-30.35,-10.66L-30.47,-11.71L-30.03,-14.39L-34.47,-12.93L-34.43,-13.98L-33.58,-16.56L-38.19,-15.81L-37.99,-16.85L-36.74,-19.26L-41.41,-19.24L-41.05,-20.24L-39.44,-22.42L-44.06,-23.14L-43.54,-24.06L-41.61,-25.97L-46.06,-27.4L-45.41,-28.23L-43.2,-29.81L-47.38,-31.92L-46.6,-32.64L-44.17,-33.85L-47.97,-36.59L-47.09,-37.18L-44.5,-38L-47.82,-41.29L-46.86,-41.74L-44.17,-42.15L-46.94,-45.92L-45.92,-46.21L-43.2,-46.19L-45.34,-50.35L-44.29,-50.47L-41.61,-50.03L-43.07,-54.47L-42.02,-54.43L-39.44,-53.58L-40.19,-58.19L-39.15,-57.99L-36.74,-56.74L-36.76,-61.41L-35.76,-61.05L-33.58,-59.44L-32.86,-64.06L-31.94,-63.54L-30.03,-61.61L-28.6,-66.06L-27.77,-65.41L-26.19,-63.2L-24.08,-67.38L-23.36,-66.6L-22.15,-64.17L-19.41,-67.97L-18.82,-67.09L-18,-64.5L-14.71,-67.82L-14.26,-66.86L-13.85,-64.17L-10.08,-66.94L-9.79,-65.92L-9.81,-63.2L-5.65,-65.34L-5.53,-64.29L-5.97,-61.61L-1.53,-63.07L-1.57,-62.02L-2.42,-59.44L2.19,-60.19L1.99,-59.15L0.74,-56.74L5.41,-56.76L5.05,-55.76L3.44,-53.58L8.06,-52.86L7.54,-51.94L5.61,-50.03L10.06,-48.6L9.41,-47.77L7.2,-46.19L11.38,-44.08L10.6,-43.36L8.17,-42.15L11.97,-39.41L11.09,-38.82Z"/><circle class="ln sub" cx="-18" cy="-38" r="20"/><circle class="fill" cx="-18" cy="-38" r="6"/><circle class="ln" cx="-18" cy="-38" r="6"/><path class="ln dt" d="M-13.49,-36.36 L-22.51,-39.64"/><path class="ln dt" d="M-19.64,-33.49 L-16.36,-42.51"/></g><g class="wind" data-rot="crownwheel"><circle class="fill" cx="-55.96" cy="-13.84" r="15"/><circle class="ln" cx="-55.96" cy="-13.84" r="15"/><circle class="teeth" cx="-55.96" cy="-13.84" r="16.2" pathLength="72"/><circle class="ln sub" cx="-55.96" cy="-13.84" r="10"/><circle class="fill" cx="-55.96" cy="-13.84" r="3.6"/><circle class="ln" cx="-55.96" cy="-13.84" r="3.6"/><path class="ln dt" d="M-54.52,-11.35 L-57.4,-16.33"/></g><g class="wind"><path class="fill" d="M15.68,-59.48L-6,-64.95L12.94,-67Z"/><path class="ln" d="M15.68,-59.48L-6,-64.95L12.94,-67Z"/><circle class="fill" cx="14.31" cy="-63.24" r="3.2"/><circle class="ln" cx="14.31" cy="-63.24" r="3.2"/><path class="ln sub" d="M19.95,-61.19Q29.6,-57.2 28.9,-47.5"/></g><text class="engr" text-anchor="middle" transform="translate(44.5 -39.5) rotate(-45)">Ravoire R.30</text></g><g class="callout"><path class="lead" d="M-54.88,-34.9H-138"/><circle class="dot" cx="-54.88" cy="-34.9" r="1.8"/><text x="-144" y="-31.5" text-anchor="end">Three-quarter plate</text></g></g></g>
+        <g class="layer" data-i="5" transform="translate(0 -288)"><g class="par"><g class="iso" transform="matrix(.866 .5 -.866 .5 0 0)"><g transform="translate(50,20)"><g class="bal"><circle class="ln" cx="0" cy="0" r="34"/><circle class="ln sub" cx="0" cy="0" r="31"/><path class="ln" d="M-31,0 L31,0"/><circle class="ln" cx="0" cy="0" r="3.6"/><circle class="ln scr" cx="35.21" cy="7" r="1.9"/><circle class="ln scr" cx="29.85" cy="19.94" r="1.9"/><circle class="ln scr" cx="19.94" cy="29.85" r="1.9"/><circle class="ln scr" cx="7" cy="35.21" r="1.9"/><circle class="ln scr" cx="-7" cy="35.21" r="1.9"/><circle class="ln scr" cx="-19.94" cy="29.85" r="1.9"/><circle class="ln scr" cx="-29.85" cy="19.94" r="1.9"/><circle class="ln scr" cx="-35.21" cy="7" r="1.9"/><circle class="ln scr" cx="-35.21" cy="-7" r="1.9"/><circle class="ln scr" cx="-29.85" cy="-19.94" r="1.9"/><circle class="ln scr" cx="-19.94" cy="-29.85" r="1.9"/><circle class="ln scr" cx="-7" cy="-35.21" r="1.9"/><circle class="ln scr" cx="7" cy="-35.21" r="1.9"/><circle class="ln scr" cx="19.94" cy="-29.85" r="1.9"/><circle class="ln scr" cx="29.85" cy="-19.94" r="1.9"/><circle class="ln scr" cx="35.21" cy="-7" r="1.9"/></g></g><path class="ln hair" d="M54.5,20L54.48,20.79L54.32,21.57L54.03,22.33L53.6,23.02L53.06,23.64L52.4,24.16L51.66,24.56L50.85,24.83L50,24.96L49.13,24.93L48.27,24.76L47.44,24.43L46.68,23.95L46.01,23.35L45.44,22.63L45.01,21.82L44.72,20.93L44.58,20L44.62,19.05L44.81,18.11L45.18,17.22L45.69,16.39L46.35,15.66L47.14,15.04L48.03,14.58L48.99,14.26L50,14.13L51.03,14.16L52.04,14.38L53.01,14.78L53.91,15.34L54.7,16.06L55.35,16.91L55.86,17.87L56.19,18.91L56.33,20L56.29,21.11L56.05,22.2L55.62,23.24L55.01,24.2L54.23,25.05L53.32,25.75L52.29,26.29L51.17,26.64L50,26.79L48.81,26.74L47.64,26.48L46.53,26.01L45.5,25.36L44.6,24.53L43.85,23.55L43.28,22.44L42.91,21.25L42.75,20L42.81,18.73L43.09,17.49L43.59,16.3L44.29,15.21L45.18,14.25L46.22,13.46L47.4,12.85L48.67,12.46L50,12.29L51.35,12.36L52.67,12.66L53.93,13.19L55.09,13.94L56.1,14.88L56.94,15.99L57.58,17.24L57.99,18.59L58.17,20L58.09,21.43L57.77,22.83L57.2,24.16L56.41,25.38L55.41,26.45L54.24,27.34L52.92,28.01L51.49,28.44L50,28.63L48.49,28.54L47.02,28.2L45.61,27.6L44.33,26.76L43.2,25.71L42.27,24.47L41.56,23.07L41.1,21.57L40.92,20L41,18.41L41.37,16.86L42,15.38L42.89,14.03L44,12.85L45.31,11.87L46.77,11.13L48.35,10.65L50,10.46L51.67,10.55L53.3,10.94L54.85,11.6L56.26,12.53L57.5,13.7L58.53,15.08L59.3,16.61L59.8,18.27L60,20L59.9,21.75L59.49,23.46L58.79,25.08L57.82,26.56L56.59,27.86L55.15,28.92L53.54,29.73L51.81,30.25L50,30.46L48.18,30.35L46.39,29.92L44.69,29.19L43.15,28.17L41.79,26.89L40.68,25.38L39.84,23.7L39.3,21.89L39.08,20L39.2,18.1L39.65,16.23L40.41,14.47L41.48,12.85L42.82,11.44L44.39,10.28L46.14,9.41L48.03,8.85L50,8.63L51.98,8.75L53.93,9.22L55.76,10.02L57.44,11.13L58.91,12.52L60.12,14.16L61.02,15.99L61.6,17.95L61.83,20L61.7,22.06L61.22,24.08L60.38,25.99L59.22,27.74L57.77,29.26L56.07,30.51L54.17,31.45L52.13,32.05L50,32.29L47.86,32.16L45.76,31.65L43.78,30.78L41.97,29.57L40.39,28.06L39.09,26.3L38.11,24.33L37.49,22.21L37.25,20L37.39,17.78L37.92,15.6L38.83,13.55L40.08,11.67L41.64,10.04L43.47,8.69L45.52,7.68L47.72,7.04L50,6.79L52.3,6.94L54.55,7.49L56.68,8.43L58.62,9.73L60.31,11.35L61.7,13.24L62.75,15.36L63.41,17.64L63.67,20L63.51,22.38L62.94,24.71L61.97,26.91L60.63,28.92L58.95,30.66L56.99,32.1L54.8,33.18L52.44,33.86L50,34.13L47.54,33.96L45.13,33.37L42.86,32.36L40.79,30.98L38.98,29.24L37.5,27.22L36.39,24.95L35.69,22.52L35.42,20L35.59,17.46L36.2,14.98L37.24,12.63L38.67,10.5L40.46,8.63L42.56,7.11L44.89,5.96L47.4,5.24L50,4.96L52.62,5.14L55.18,5.77L57.6,6.84L59.8,8.32L61.72,10.17L63.29,12.33L64.47,14.73L65.21,17.32L65.5,20"/><path class="fill" d="M67.75,-32.77L41.25,15.16A10 10 0 0 0 57.96,26.06L91.14,-17.52A14 14 0 1 0 67.75,-32.77Z"/><path class="ln" d="M67.75,-32.77L41.25,15.16A10 10 0 0 0 57.96,26.06L91.14,-17.52A14 14 0 1 0 67.75,-32.77Z"/><path class="ln sub" d="M73.07,-22C58.33,-22.18 68.39,4.57 45.55,7.78"/><circle class="fill" cx="80" cy="-26" r="4.6"/><circle class="ln" cx="80" cy="-26" r="4.6"/><path class="ln dt" d="M83.62,-25.36 L76.38,-26.64"/><circle class="chaton" cx="50" cy="20" r="5"/><circle class="jewel" cx="50" cy="20" r="2.2"/></g><g class="callout"><path class="lead" d="M71.98,35H138"/><circle class="dot" cx="71.98" cy="35" r="1.8"/><text x="144" y="38.4">Balance and cock</text></g></g></g>
+      </g></g>
+    </svg>
+      </figure>
+
+      <nav class="rail" aria-label="Power path, five chapters">
+        <ol>
+          <li><a class="rl" href="#ch-1"><span class="seg"><i></i></span><span class="rn">1 of 5</span><span class="rt">Winding</span></a></li>
+          <li><a class="rl" href="#ch-2"><span class="seg"><i></i></span><span class="rn">2 of 5</span><span class="rt">Mainspring and barrel</span></a></li>
+          <li><a class="rl" href="#ch-3"><span class="seg"><i></i></span><span class="rn">3 of 5</span><span class="rt">Gear train</span></a></li>
+          <li><a class="rl" href="#ch-4"><span class="seg"><i></i></span><span class="rn">4 of 5</span><span class="rt">Escapement</span></a></li>
+          <li><a class="rl" href="#ch-5"><span class="seg"><i></i></span><span class="rn">5 of 5</span><span class="rt">Balance and hairspring</span></a></li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  <section class="rate" id="rate" tabindex="-1" aria-labelledby="rate-t">
+    <div class="wrap grid">
+      <div class="sec-text">
+        <h2 id="rate-t" data-tx>Regulated in five positions, by hand, for three weeks</h2>
+        <p>Every R.30 sits on the timegrapher for three weeks before it is cased. These are the readings for no. 13, signed off on 9 October 2026. Our tolerance is 0 to +6 seconds a day in every position.</p>
+      </div>
+      <figure class="tg">
+        <svg class="paper" viewBox="0 0 600 240" role="img" aria-labelledby="tg-t">
+          <title id="tg-t">Timegrapher trace for no. 13, dial up</title>
+          <defs><clipPath id="feed"><rect class="feed" x="0" y="0" width="600" height="240"/></clipPath></defs>
+          <g clip-path="url(#feed)">
+          <polygon class="band-fill" points="24,165 576,165 576,75" fill-opacity=".18"/>
+          <path class="band" d="M24 165H576"/>
+          <path class="band" d="M24 165L576 75"/>
+          <path class="trace" d="M24 161h1.4M34 160.18h1.4M44 159.37h1.4M54 158.55h1.4M64 157.74h1.4M74 156.92h1.4M84 156.11h1.4M94 155.29h1.4M104 154.48h1.4M114 153.66h1.4M124 152.85h1.4M134 152.03h1.4M144 151.22h1.4M154 150.4h1.4M164 149.59h1.4M174 148.77h1.4M184 147.96h1.4M194 147.14h1.4M204 146.33h1.4M214 145.51h1.4M224 144.7h1.4M234 143.88h1.4M244 143.07h1.4M254 142.25h1.4M264 141.43h1.4M274 140.62h1.4M284 139.8h1.4M294 138.99h1.4M304 138.17h1.4M314 137.36h1.4M324 136.54h1.4M334 135.73h1.4M344 134.91h1.4M354 134.1h1.4M364 133.28h1.4M374 132.47h1.4M384 131.65h1.4M394 130.84h1.4M404 130.02h1.4M414 129.21h1.4M424 128.39h1.4M434 127.58h1.4M444 126.76h1.4M454 125.95h1.4M464 125.13h1.4M474 124.32h1.4M484 123.5h1.4M494 122.68h1.4M504 121.87h1.4M514 121.05h1.4M524 120.24h1.4M534 119.42h1.4M544 118.61h1.4M554 117.79h1.4M564 116.98h1.4M574 116.16h1.4"/>
+          <path class="trace" d="M24 169h1.4M34 168.18h1.4M44 167.37h1.4M54 166.55h1.4M64 165.74h1.4M74 164.92h1.4M84 164.11h1.4M94 163.29h1.4M104 162.48h1.4M114 161.66h1.4M124 160.85h1.4M134 160.03h1.4M144 159.22h1.4M154 158.4h1.4M164 157.59h1.4M174 156.77h1.4M184 155.96h1.4M194 155.14h1.4M204 154.33h1.4M214 153.51h1.4M224 152.7h1.4M234 151.88h1.4M244 151.07h1.4M254 150.25h1.4M264 149.43h1.4M274 148.62h1.4M284 147.8h1.4M294 146.99h1.4M304 146.17h1.4M314 145.36h1.4M324 144.54h1.4M334 143.73h1.4M344 142.91h1.4M354 142.1h1.4M364 141.28h1.4M374 140.47h1.4M384 139.65h1.4M394 138.84h1.4M404 138.02h1.4M414 137.21h1.4M424 136.39h1.4M434 135.58h1.4M444 134.76h1.4M454 133.95h1.4M464 133.13h1.4M474 132.32h1.4M484 131.5h1.4M494 130.68h1.4M504 129.87h1.4M514 129.05h1.4M524 128.24h1.4M534 127.42h1.4M544 126.61h1.4M554 125.79h1.4M564 124.98h1.4M574 124.16h1.4"/>
+          </g>
+        </svg>
+        <figcaption>Each dot is one beat, printed in two lines for the two halves of the swing. A line that climbs is gaining time; the gilt fan is our tolerance.</figcaption>
+        <dl class="readouts">
+          <div><dt>Rate</dt><dd><span data-r="rate">+3</span><span class="unit">s a day</span></dd></div>
+          <div><dt>Amplitude</dt><dd><span data-r="amp">292</span><span class="unit">degrees</span></dd></div>
+          <div><dt>Beat error</dt><dd><span data-r="be">0.1</span><span class="unit">ms</span></dd></div>
+        </dl>
+        <fieldset class="positions">
+          <legend>Position on the timegrapher</legend>
+          <div class="pos-opts">
+            <span class="ind" aria-hidden="true"></span>
+            <input type="radio" name="position" id="p1" value="dial-up" checked><label for="p1">Dial up</label>
+            <input type="radio" name="position" id="p2" value="dial-down"><label for="p2">Dial down</label>
+            <input type="radio" name="position" id="p3" value="crown-down"><label for="p3">Crown down</label>
+            <input type="radio" name="position" id="p4" value="crown-left"><label for="p4">Crown left</label>
+            <input type="radio" name="position" id="p5" value="crown-up"><label for="p5">Crown up</label>
+          </div>
+        </fieldset>
+        <p class="sr-only" id="tg-live" aria-live="polite"></p>
+      </figure>
+    </div>
+  </section>
+
+  <section class="specs" id="specs" tabindex="-1" aria-labelledby="specs-t">
+    <div class="wrap grid">
+      <h2 id="specs-t" data-tx>Specification</h2>
+      <dl>
+        <div class="spec-row"><dt>Winding</dt><dd>By hand, about 40 turns of the crown</dd></div>
+        <div class="spec-row"><dt>Diameter</dt><dd>30.0 mm (13¼ lignes)</dd></div>
+        <div class="spec-row"><dt>Height</dt><dd>4.2 mm</dd></div>
+        <div class="spec-row"><dt>Frequency</dt><dd>18,000 vibrations an hour (2.5 Hz)</dd></div>
+        <div class="spec-row"><dt>Power reserve</dt><dd>60 hours</dd></div>
+        <div class="spec-row"><dt>Jewels</dt><dd>19, the train jewels set in gold chatons</dd></div>
+        <div class="spec-row"><dt>Plates</dt><dd>Untreated German silver, three-quarter plate</dd></div>
+        <div class="spec-row"><dt>Balance</dt><dd>11 mm screwed balance, Breguet overcoil, swan-neck regulator</dd></div>
+        <div class="spec-row"><dt>Finishing</dt><dd>Hand-engraved balance cock, bevelled and polished edges, heat-blued screws</dd></div>
+        <div class="spec-row"><dt>Case</dt><dd>38 mm, 9.6 mm thick, sapphire caseback</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="reserve" id="reserve" tabindex="-1" aria-labelledby="reserve-t">
+    <div class="wrap grid">
+      <div class="sec-text">
+        <h2 id="reserve-t" data-tx>Reserve no. 14 of 24</h2>
+        <p>We build in numbered order. Reserving holds the next free number for 14 days while we send case drawings and answer your questions. Nothing is charged.</p>
+      </div>
+      <div class="hold">
+        <form id="hold" novalidate>
+          <div class="field">
+            <label for="f-name">Your name</label>
+            <div class="ctl"><input id="f-name" name="name" type="text" autocomplete="name" required aria-describedby="err-name"><span class="rule"></span></div>
+            <p class="err" id="err-name"></p>
+          </div>
+          <div class="field">
+            <label for="f-email">Email</label>
+            <div class="ctl"><input id="f-email" name="email" type="email" autocomplete="email" required aria-describedby="err-email"><span class="rule"></span></div>
+            <p class="err" id="err-email"></p>
+          </div>
+          <fieldset class="field" aria-describedby="err-case">
+            <legend>Case</legend>
+            <div class="chips">
+              <input type="radio" name="case" id="c-steel" value="steel" required><label for="c-steel"><span class="jw"></span>Steel, 38 mm, CHF 18,400</label>
+              <input type="radio" name="case" id="c-gold" value="rose-gold"><label for="c-gold"><span class="jw"></span>Rose gold, 38 mm, CHF 31,900</label>
+            </div>
+            <p class="err" id="err-case"></p>
+          </fieldset>
+          <div class="field">
+            <label for="f-ini">Initials for the balance cock (optional, up to 4 letters)</label>
+            <div class="ctl"><input id="f-ini" name="initials" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-describedby="ini-count err-initials"><span class="rule"></span></div>
+            <p class="hint" id="ini-count">0 of 4 letters</p>
+            <p class="err" id="err-initials"></p>
+          </div>
+          <div class="submit-row"><button class="btn primary large" type="submit">Hold no. 14 for me</button></div>
+        </form>
+        <div class="conf" hidden>
+          <h3 tabindex="-1">No. 14 is held for you until <span data-until>two weeks from today</span>.</h3>
+          <p>We will email case drawings for the <span data-case>steel</span> case to <span data-email>you</span> within two working days.</p>
+          <div class="acts">
+            <button class="btn" type="button" id="change">Change details</button>
+            <a class="u always" href="mailto:atelier@ravoire.example" target="_blank" rel="noopener">Email the atelier</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="colo">
+    <div class="wrap">
+      <span>Atelier Ravoire, Sainte-Croix</span>
+      <a class="u always" href="mailto:atelier@ravoire.example" target="_blank" rel="noopener">atelier@ravoire.example</a>
+      <a class="u always" href="#top">Back to the start of the tour</a>
+    </div>
+  </footer>
+</section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/SplitText.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/DrawSVGPlugin.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  const root = document.documentElement;
+  const libs = !!(window.gsap && window.ScrollTrigger && window.SplitText && window.DrawSVGPlugin && window.Lenis);
+  root.classList.add('js');
+  if (!libs) root.classList.remove('js'); // CDN blocked: nothing waits to be revealed, and every control below still works
+
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const clamp = (v, a = -1, b = 1) => Math.min(b, Math.max(a, v));
+  // Shared with the motion branch, which fills these in while it runs.
+  const M = { on: false, lenis: null, staged: false, chY: null, sheetTl: null, redraw: null, tx1: null, refresh: null };
+  const bar = $('.bar');
+
+  // ---- Anchors (NV6): eased through Lenis when it runs, then focus moves to the target ----
+  const go = (y, focusEl) => {
+    const done = () => focusEl.focus({ preventScroll: true });
+    if (M.lenis) M.lenis.scrollTo(y, { duration: Math.min(1.3, 0.65 + Math.abs(y - scrollY) / 4000), force: true, onComplete: done });
+    else { scrollTo({ top: y, behavior: 'instant' }); done(); }
+  };
+  // Where an in-page id lives: chapters share one cell of the pinned stage, so they map to a scroll position, not a box.
+  const spot = (hash, mid) => {
+    const id = decodeURIComponent(hash.slice(1)), t = id && document.getElementById(id);
+    if (!t) return null;
+    const ch = /^ch-(\d)$/.exec(id);
+    const y = M.staged && ch ? M.chY(+ch[1], mid)
+      : id === 'top' ? 0 : Math.round(t.getBoundingClientRect().top + scrollY - bar.offsetHeight);
+    return [Math.max(0, y), t];
+  };
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('a[href^="#"]');
+    if (!a || e.metaKey || e.ctrlKey || e.shiftKey) return;
+    const s = spot(a.hash, a.classList.contains('rl'));
+    if (!s) return;
+    e.preventDefault();
+    if (sheetOpen) closeSheet(true);
+    history.replaceState(null, '', a.hash); // the address names the chapter, so it can be shared
+    go(...s);
+  });
+  addEventListener('hashchange', () => { const s = spot(location.hash); if (s) go(...s); });
+
+  // ---- Section spy: aria-current on the bar and index links ----
+  const spyLinks = $$('.bar-links a, .bar-nav .btn, .sheet a');
+  const spy = new IntersectionObserver((entries) => entries.forEach((en) => {
+    if (!en.isIntersecting) return;
+    spyLinks.forEach((a) => (a.hash === `#${en.target.id}` ? a.setAttribute('aria-current', 'true') : a.removeAttribute('aria-current')));
+  }), { rootMargin: '-40% 0px -55% 0px' });
+  ['tour', 'rate', 'specs', 'reserve'].forEach((id) => spy.observe(document.getElementById(id)));
+
+  // ---- HV4: the fill enters from the side the pointer came in, leaves toward the side it left ----
+  $$('.btn').forEach((b) => {
+    const edge = (e) => { const r = b.getBoundingClientRect(); b.style.setProperty('--from', e.clientX < r.left + r.width / 2 ? 'left' : 'right'); };
+    b.addEventListener('pointerenter', edge);
+    b.addEventListener('pointerleave', edge);
+    b.addEventListener('focus', () => b.style.setProperty('--from', 'left'));
+  });
+
+  // ---- Index sheet (below 992px) ----
+  const sheet = $('#sheet'), idxBtn = $('.index-btn'), sheetLinks = $$('a', sheet);
+  let sheetOpen = false;
+  sheet.inert = true;
+  const setIdx = (open) => {
+    idxBtn.setAttribute('aria-expanded', String(open));
+    idxBtn.classList.toggle('is-open', open);
+    const [a, b] = idxBtn.querySelector('.swap').children;
+    a.toggleAttribute('aria-hidden', open);
+    b.toggleAttribute('aria-hidden', !open);
+  };
+  function openSheet() {
+    sheetOpen = true;
+    setIdx(true);
+    sheet.inert = false;
+    sheet.classList.add('is-open');
+    root.classList.add('sheet-lock');
+    M.lenis?.stop();
+    M.sheetTl?.timeScale(1).play();
+    sheetLinks[0].focus({ preventScroll: true });
+  }
+  function closeSheet(keepFocus) {
+    if (!sheetOpen) return;
+    sheetOpen = false;
+    setIdx(false);
+    sheet.inert = true;
+    root.classList.remove('sheet-lock');
+    M.lenis?.start();
+    if (M.sheetTl) M.sheetTl.timeScale(1.6).reverse(); else sheet.classList.remove('is-open');
+    if (!keepFocus) idxBtn.focus({ preventScroll: true });
+  }
+  idxBtn.addEventListener('click', () => (sheetOpen ? closeSheet() : openSheet()));
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && sheetOpen) closeSheet(); });
+  // Focus landing anywhere outside the sheet and its button closes it, from either direction, so the keyboard is never held.
+  document.addEventListener('focusin', (e) => { if (sheetOpen && !sheet.contains(e.target) && e.target !== idxBtn) closeSheet(true); });
+  matchMedia('(min-width: 992px)').addEventListener('change', (q) => { if (q.matches) closeSheet(true); });
+
+  // ---- Timegrapher: five positions, readings for no. 13 ----
+  const POS = { 'dial-up': [3, 292, 0.1], 'dial-down': [2, 288, 0.1], 'crown-down': [5, 262, 0.2], 'crown-left': [4, 258, 0.2], 'crown-up': [1, 260, 0.3] };
+  const trace = (rate, be) => [-1, 1].map((s) => {
+    let d = '';
+    for (let k = 0; k < 56; k++) {
+      const x = 24 + k * 10, y = 165 - (rate / 6) * 90 * ((x - 24) / 552) + (s * (4 + be * 40)) / 2;
+      d += `M${x} ${+y.toFixed(2)}h1.4`;
+    }
+    return d;
+  });
+  const tg = $('.tg'), ind = $('.ind', tg), opts = $('.pos-opts', tg), traces = $$('.trace', tg);
+  const outs = { rate: $('[data-r="rate"]'), amp: $('[data-r="amp"]'), be: $('[data-r="be"]') };
+  const shown = { rate: 3, amp: 292, be: 0.1 };
+  const fmt = { rate: (v) => (Math.round(v) > 0 ? '+' : '') + Math.round(v), amp: (v) => String(Math.round(v)), be: (v) => v.toFixed(1) };
+  const paint = () => { for (const k in outs) outs[k].textContent = fmt[k](shown[k]); };
+  const placeInd = (animate) => {
+    const lab = $('input:checked + label', opts);
+    if (!animate) ind.style.transition = 'none';
+    ind.style.width = `${lab.offsetWidth}px`;
+    ind.style.height = `${lab.offsetHeight}px`;
+    ind.style.transform = `translate(${lab.offsetLeft}px, ${lab.offsetTop}px)`;
+    if (!animate) { void ind.offsetWidth; ind.style.transition = ''; }
+  };
+  ind.classList.add('ready');
+  new ResizeObserver(() => placeInd(false)).observe(opts);
+  $$('input', opts).forEach((r) => r.addEventListener('change', () => {
+    const [rate, amp, be] = POS[r.value], name = r.labels[0].textContent;
+    placeInd(true);
+    trace(rate, be).forEach((d, i) => traces[i].setAttribute('d', d));
+    $('#tg-t').textContent = `Timegrapher trace for no. 13, ${name.toLowerCase()}`;
+    $('#tg-live').textContent = `${name}: rate ${fmt.rate(rate)} seconds a day, amplitude ${amp} degrees, beat error ${be.toFixed(1)} ms.`;
+    if (M.on) {
+      M.redraw();
+      gsap.to(shown, { rate, amp, be, duration: 0.6, ease: 'power2.out', snap: { rate: 1, amp: 1, be: 0.1 }, onUpdate: paint, overwrite: true });
+    } else { Object.assign(shown, { rate, amp, be }); paint(); }
+  }));
+
+  // ---- Reserve form: validated here, confirmed in place ----
+  const form = $('#hold'), conf = $('.conf');
+  const fld = { name: form.elements.name, email: form.elements.email, initials: form.elements.initials };
+  const cases = $$('input[name="case"]', form);
+  const letters = (v) => (v.match(/\p{L}/gu) || []).length;
+  const MSG = {
+    name: 'Enter your name as it should appear on the certificate.',
+    email: 'Enter an email address, like name@example.com.',
+    case: 'Choose a case.',
+    initials: 'Use up to 4 letters.'
+  };
+  const OK = {
+    name: () => fld.name.value.trim().length > 0,
+    email: () => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fld.email.value.trim()),
+    case: () => cases.some((c) => c.checked),
+    initials: () => /^[\p{L}\s.]*$/u.test(fld.initials.value) && letters(fld.initials.value) <= 4
+  };
+  const setErr = (k, on) => {
+    const el = $(`#err-${k}`);
+    el.textContent = on ? MSG[k] : '';
+    el.classList.toggle('show', on);
+    (k === 'case' ? cases : [fld[k]]).forEach((c) => (on ? c.setAttribute('aria-invalid', 'true') : c.removeAttribute('aria-invalid')));
+  };
+  const recheck = (e) => { const k = e.target.name; if (k in OK && $(`#err-${k}`).classList.contains('show') && OK[k]()) setErr(k, false); };
+  form.addEventListener('input', recheck);
+  form.addEventListener('change', recheck);
+  fld.initials.addEventListener('input', () => { $('#ini-count').textContent = `${letters(fld.initials.value)} of 4 letters`; });
+  const swapPanels = (from, to, focusEl) => {
+    const hold = from.parentElement;
+    hold.style.minHeight = `${Math.max(hold.offsetHeight, parseFloat(hold.style.minHeight) || 0)}px`; // keep the page still when the shorter panel swaps in
+    const show = () => { from.hidden = true; to.hidden = false; focusEl.focus(); M.refresh?.(); };
+    if (!M.on) return show();
+    gsap.to(from, { autoAlpha: 0, duration: 0.25, ease: 'power1.in', onComplete: () => {
+      show();
+      gsap.set(from, { clearProps: 'opacity,visibility' });
+      gsap.fromTo(to, { opacity: 0 }, { opacity: 1, duration: 0.3, ease: 'power1.out', clearProps: 'opacity' }); // opacity only: visibility would drop the focus just set
+      if (to === conf) M.tx1?.($('h3', conf));
+    } });
+  };
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const bad = Object.keys(OK).filter((k) => !OK[k]());
+    Object.keys(OK).forEach((k) => setErr(k, bad.includes(k)));
+    if (bad.length) { (bad[0] === 'case' ? cases[0] : fld[bad[0]]).focus(); return; }
+    const until = new Date();
+    until.setDate(until.getDate() + 14);
+    $('[data-until]', conf).textContent = until.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    $('[data-case]', conf).textContent = cases.find((c) => c.checked).value === 'rose-gold' ? 'rose gold' : 'steel';
+    $('[data-email]', conf).textContent = fld.email.value.trim();
+    $$('[data-reserve-label]').forEach((el) => { el.textContent = 'No. 14 held'; });
+    swapPanels(form, conf, $('h3', conf));
+  });
+  $('#change').addEventListener('click', () => swapPanels(conf, form, fld.name));
+
+  if (!libs) return;
+
+  // =================== Motion (GSAP + Lenis) ===================
+  gsap.registerPlugin(ScrollTrigger, SplitText, DrawSVGPlugin);
+  const tour = $('#tour'), stage = $('.stage', tour), svg = $('.mvt'), cam = $('.cam', svg), stack = $('.stack', svg);
+  const layers = $$('.layer', svg), blocks = $$('.blk', tour), railLinks = $$('.rl', tour), callouts = $$('.callout', svg);
+  // Projected top and bottom of each layer in iso space, measured once from the geometry, bottom layer first.
+  const EXT = [[-76, 70.7], [-54.4, -1.6], [-20.7, 39.1], [29.8, 50.1], [-68.6, 68.6], [8.5, 61.5]];
+  const spread = (gap) => {                            // exploded y per layer, so every gap between neighbours is the same
+    const total = EXT.reduce((s, [a, b]) => s + b - a, 0) + gap * (EXT.length - 1);
+    const d = [total / 2 - EXT[0][1]];
+    for (let i = 1; i < EXT.length; i++) d.push(d[i - 1] + EXT[i - 1][0] - gap - EXT[i][1]);
+    return d.map(Math.round);                          // spread(18) is the markup's translate values
+  };
+  const LIT = [[], [0, 4], [1], [2], [3], [5]];        // chapter -> layers it lights; winding lights only the .wind parts
+  const CH = [[0.24, 0.36], [0.36, 0.48], [0.48, 0.60], [0.60, 0.72], [0.72, 0.86]]; // the last chapter runs about 15% longer
+  const AX = { ratchet: [-18, -38], crownwheel: [-55.96, -13.84], barrel: [-18, -38], centre: [0, 0], third: [-36, 28], fourth: [-10, 58], escape: [16, 64], fork: [30.67, 45.01] };
+  const N = 59;                                        // frames in the explode and the reassembly
+  let ran = false;
+
+  const mm = gsap.matchMedia();
+  mm.add({
+    motion: '(prefers-reduced-motion: no-preference)',
+    reduce: '(prefers-reduced-motion: reduce)',
+    fine: '(hover: hover) and (pointer: fine)',
+    wide: '(min-width: 992px)',                      // layout flips at 992 (sticky stage columns, index sheet)
+    roomy: '(min-width: 1280px)'                     // room for callouts beside the drawing
+  }, (ctx) => {
+    const { motion, fine, roomy } = ctx.conditions;
+    const vb = roomy ? [550, 580] : [300, 424];       // without callouts the drawing takes a tighter box and grows
+    svg.setAttribute('viewBox', roomy ? '-275 -290 550 580' : '-150 -212 300 424');
+    const depth = spread(roomy ? 18 : -10);           // the tight box cannot hold clear gaps, so neighbours overlap evenly
+    if (!motion) {                                    // reduced: one static, fully exploded drawing; native scroll
+      layers.forEach((l, i) => gsap.set(l, { y: depth[i] }));
+      return;
+    }
+
+    M.on = true;
+    const first = !ran;
+    ran = true;
+    const ac = new AbortController(), sig = { signal: ac.signal };
+    const lenis = new Lenis({ lerp: 0.1, smoothWheel: true, autoRaf: false, anchors: false });
+    M.lenis = lenis;
+    lenis.on('scroll', ScrollTrigger.update);
+    const tick = (t) => lenis.raf(t * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
+    tour.classList.add('staged');
+    M.staged = true;
+
+    const isos = layers.map((l) => $('.iso', l));
+    // ---- Chapter camera: framed on the lit part, measured before anything turns ----
+    const box = (el, i) => {                           // el's plan bbox through the iso matrix, in stack space, fully open
+      const b = el.getBBox(), xs = [], ys = [];
+      for (const [x, y] of [[b.x, b.y], [b.x + b.width, b.y], [b.x, b.y + b.height], [b.x + b.width, b.y + b.height]]) { xs.push(0.866 * (x - y)); ys.push(0.5 * (x + y) + depth[i]); }
+      return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+    };
+    const VIEW = LIT.map((L, ch) => {
+      if (!L.length) return { x: 0, y: 0, s: 1 };
+      const bs = ch === 1 ? L.flatMap((i) => $$(':scope > .wind', isos[i]).map((el) => box(el, i))) : L.map((i) => box(isos[i], i));
+      const x0 = Math.min(...bs.map((b) => b[0])), y0 = Math.min(...bs.map((b) => b[1])), x1 = Math.max(...bs.map((b) => b[2])), y1 = Math.max(...bs.map((b) => b[3]));
+      const s = clamp(Math.min(vb[0] / (x1 - x0), vb[1] / (y1 - y0)) * 0.9, 1, 2.4); // corner boxes run large on circles, hence .9
+      return { x: -((x0 + x1) / 2) * s, y: -((y0 + y1) / 2) * s, s };
+    });
+    const camS = { x: 0, y: 0, s: 1 };
+    let par = null;                                     // pointer parallax, set below on fine pointers
+    const applyCam = () => { cam.setAttribute('transform', `translate(${camS.x.toFixed(2)} ${camS.y.toFixed(2)}) scale(${camS.s.toFixed(4)})`); par?.(); };
+    const camTo = (ch, dur = 0.9) => gsap.to(camS, { ...(VIEW[ch] || VIEW[0]), duration: dur, ease: 'expo.inOut', overwrite: true, onUpdate: applyCam });
+
+    // Ruby copies of each layer for the chapter redraw.
+    const hls = layers.map((l, i) => { const c = isos[i].cloneNode(true); c.classList.add('hl'); isos[i].after(c); return c; });
+    const draws = (g) => $$('.ln', g);
+    const fades = (g) => $$('.fill, .teeth, .chaton, .jewel, .stone, .engr', g);
+    const hlDraw = hls.map(draws), hlFade = hls.map(fades);
+    gsap.set(hls, { opacity: 0 });
+
+    // ---- The power travels: each part turns under the scroll in its own chapter, at its real ratio (silver and ruby copies alike) ----
+    const rots = {}, lastRot = {};
+    $$('[data-rot]', svg).forEach((g) => (rots[g.dataset.rot] ||= []).push(g));
+    const turn = (k, a) => { if (lastRot[k] === a) return; lastRot[k] = a; rots[k].forEach((g) => g.setAttribute('transform', `rotate(${a.toFixed(2)} ${AX[k]})`)); };
+    const mech = (lp) => {
+      turn('ratchet', lp[0] * 60); turn('crownwheel', lp[0] * -106);       // the crown wheel drives the ratchet the other way
+      turn('barrel', lp[1] * 45);                                           // an eighth of a turn: one hour of the barrel's eight
+      turn('centre', lp[2] * 6); turn('third', lp[2] * -45); turn('fourth', lp[2] * 360); // one minute: 6 deg, 7.5x, 60x
+      const step = Math.floor(lp[3] * 15);                                   // 15 teeth, one 24 deg step per release
+      turn('escape', step * -24); turn('fork', lp[3] > 0 && lp[3] < 1 ? (step % 2 ? 7 : -7) : 0);
+    };
+
+    // ---- Balance: 2.5 Hz (five beats a second); runs down as the stack opens, ramps up once it seats, sleeps off screen ----
+    const bals = $$('.bal', svg), amp = { v: 0 }, ph = { v: 0 };
+    let ampTarget = 0, inView = true, loaded = false, ampTw;
+    const setBal = (a) => bals.forEach((b) => b.setAttribute('transform', `rotate(${a.toFixed(2)})`));
+    const drawBal = () => setBal(amp.v * 146 * Math.sin(ph.v * Math.PI * 2));
+    const osc = gsap.to(ph, { v: 1, duration: 0.4, ease: 'none', repeat: -1, paused: true, onUpdate: drawBal });
+    const syncOsc = () => (inView && (ampTarget === 1 || amp.v > 0.001) ? osc.play() : osc.pause());
+    const ampTo = (v, duration, ease) => { ampTarget = v; ampTw?.kill(); ampTw = gsap.to(amp, { v, duration, ease, onUpdate: drawBal, onComplete: syncOsc }); };
+    let f = -1, open = 0;
+    const runBalance = (p) => {
+      if (!loaded) return;
+      if (p < 0.24 && f > 0) { ampTw?.kill(); ampTarget = null; amp.v = Math.max(0, 1 - f / 24); drawBal(); } // amplitude follows the frame, gone by frame 24
+      else if (f === 0) { if (ampTarget !== 1) ampTo(1, 0.8, 'power2.out'); }                          // seated: the payoff ramp
+      else if (ampTarget !== 0) ampTo(0, 0.4, 'power1.out');                                            // jumped into an open stack
+      syncOsc();
+    };
+
+    // ---- Frames: the explode is 60 snapped frames of one value ----
+    const sa = roomy ? 1.45 : 1.15;                      // assembled scale, so the closed movement fills the stage
+    const lift = layers.map(() => ({ v: 0 }));           // rail preview on a closed stack lifts one layer out
+    const place = (i) => gsap.set(layers[i], { y: depth[i] * open - i * 2.5 * (1 - open) - lift[i].v });
+    let curLight = -1, previewing = false, prevCh = null, peekL = -1, calloutsOn = false;
+    const syncCallouts = () => {                         // labels belong to the whole open stack, not to a framed part
+      const on = f === N && curLight === 0;
+      if (on === calloutsOn) return;
+      calloutsOn = on;
+      gsap.to(callouts, { autoAlpha: on ? 1 : 0, duration: on ? 0.4 : 0.2, stagger: on ? 0.04 : 0, ease: 'power1.out', overwrite: true });
+    };
+    gsap.set(callouts, { autoAlpha: 0 });
+    const setFrame = (nf) => {
+      if (nf === f) return;
+      const was = f;
+      f = nf;
+      open = f / N;
+      layers.forEach((_, i) => place(i));
+      gsap.set(stack, { scale: sa + (1 - sa) * open, svgOrigin: '0 0' });
+      par?.();
+      syncCallouts();
+      if (previewing && (f === N) !== (was === N)) preview(prevCh); // a peek becomes the dimmed preview once the stack is fully open
+    };
+
+    // ---- Chapter light: the lit part redraws in ruby, the rest dim ----
+    const lightTo = (ch, kind) => {                     // kind: 'chapter' draws, 'preview' and 'restore' are instant
+      const L = LIT[ch] || [], wind = ch === 1, peek = kind === 'preview' && f < N;
+      const windChanged = svg.classList.contains('wind') !== wind;
+      svg.classList.toggle('lit', L.length > 0 && !peek);
+      svg.classList.toggle('wind', wind);
+      layers.forEach((l, i) => {
+        const on = L.includes(i);
+        l.classList.toggle('is-lit', on);
+        const o = !L.length || peek || (on && !wind) ? 1 : kind === 'preview' ? 0.6 : 0.35;
+        gsap.to(isos[i], { opacity: o, duration: kind === 'preview' ? 0.3 : 0.45, ease: 'power1.out', overwrite: 'auto' });
+        if (!on) { gsap.to(hls[i], { opacity: 0, duration: windChanged ? 0 : 0.3, ease: 'power1.out', overwrite: 'auto' }); return; }
+        gsap.to(hls[i], { opacity: kind === 'preview' && !peek ? 0.6 : 1, duration: 0.2, ease: 'power1.out', overwrite: 'auto' });
+        if (kind === 'chapter') {
+          gsap.fromTo(hlDraw[i], { drawSVG: '0%' }, { drawSVG: '100%', duration: 0.7, ease: 'power1.inOut', overwrite: true });
+          gsap.fromTo(hlFade[i], { opacity: 0 }, { opacity: 1, duration: 0.45, delay: 0.2, ease: 'power1.out', overwrite: true });
+        } else { gsap.set(hlDraw[i], { drawSVG: '100%' }); gsap.set(hlFade[i], { opacity: 1 }); }
+      });
+    };
+    // I8: on a closed or opening stack the previewed layer lifts out on top, in ruby; on the open stack the rest dim and the camera frames it.
+    const order = (top) => { layers.forEach((l) => stack.appendChild(l)); if (top >= 0) stack.appendChild(layers[top]); };
+    function preview(ch) {
+      previewing = ch != null;
+      prevCh = ch;
+      const target = previewing && f < N && ch !== 1 ? LIT[ch][0] : -1; // winding parts already sit clear of the plates
+      if (target !== peekL) {
+        const old = peekL;
+        peekL = target;
+        if (target >= 0) order(target);
+        lift.forEach((o, i) => {
+          if (i !== target && i !== old) return;
+          gsap.to(o, { v: i === target ? 56 : 0, duration: 0.35, ease: 'power3.out', overwrite: true, onUpdate: () => place(i),
+            onComplete: () => { if (i === old && peekL !== old) order(peekL); } });
+        });
+      }
+      lightTo(previewing ? ch : curLight, previewing ? 'preview' : 'restore');
+      if (f === N) camTo(previewing ? ch : curLight, 0.6);
+    }
+
+    // ---- TR1: caption swap, out faster than in ----
+    const splits = new Map();
+    const linesOf = (b) => {
+      const s = splits.get(b);
+      return [...(s ? s.flatMap((x) => x.lines) : $$('[data-split]', b)), ...$$('[data-item]', b)];
+    };
+    let curIdx = -1, swapTl;
+    const swap = (idx) => {
+      const prev = blocks[curIdx], next = blocks[idx];
+      curIdx = idx;
+      railLinks.forEach((a, j) => (j + 1 === idx ? a.setAttribute('aria-current', 'step') : a.removeAttribute('aria-current')));
+      const busy = swapTl?.isActive();
+      swapTl?.kill();
+      blocks.forEach((b) => { if (b !== prev && b !== next) gsap.set(b, { autoAlpha: 0 }); });
+      if (!prev) { gsap.set(next, { autoAlpha: 1 }); return; }
+      const out = linesOf(prev), inn = linesOf(next);
+      gsap.set(next, { autoAlpha: 1 });
+      gsap.set(inn, { yPercent: 100, autoAlpha: 0 });
+      swapTl = gsap.timeline();
+      // On fast scroll (a swap still running) skip the exit so the newest caption rises at once.
+      if (!busy) swapTl.to(out, { yPercent: 100, autoAlpha: 0, duration: 0.25, ease: 'power2.in', stagger: Math.min(0.03, 0.12 / out.length) });
+      swapTl.set(prev, { autoAlpha: 0 })
+        .set(out, { yPercent: 0, autoAlpha: 1 })
+        .to(inn, { yPercent: 0, autoAlpha: 1, duration: 0.6, ease: 'expo.out', stagger: Math.min(0.07, 0.35 / inn.length) });
+    };
+
+    // ---- S1: one trigger, one progress value drives the stage ----
+    const segSet = $$('.seg i', tour).map((s) => gsap.quickSetter(s, 'scaleX'));
+    // .02-.21 opens the stack (the first scroll moves it), .21-.24 holds it open with labels, .86-.96 closes it.
+    const frameAt = (p) => (p < 0.02 ? 0 : p < 0.21 ? Math.round(((p - 0.02) / 0.19) * N) : p < 0.86 ? N : p < 0.96 ? Math.round((1 - (p - 0.86) / 0.1) * N) : 0);
+    const idxAt = (p) => { if (p < 0.24) return 0; if (p >= 0.96) return 6; for (let j = 0; j < 5; j++) if (p < CH[j][1]) return j + 1; return 5; };
+    let lastP = 0;
+    const render = (p) => {
+      lastP = p;
+      setFrame(frameAt(p));
+      runBalance(p);
+      const idx = idxAt(p);
+      if (idx !== curIdx) swap(idx);
+      const lit = p >= 0.24 && p < 0.86 ? idx : 0;
+      if (lit !== curLight) {
+        curLight = lit;
+        syncCallouts();
+        if (!previewing) { lightTo(lit, 'chapter'); camTo(lit); }
+      }
+      const lp = CH.map(([a, b]) => clamp((p - a) / (b - a), 0, 1));
+      lp.forEach((v, j) => segSet[j](v));
+      mech(lp);
+      if (ampTarget !== 1 && amp.v === 0) setBal(146 * Math.sin(lp[4] * 4 * Math.PI)); // chapter 5: two swings under the scroll
+    };
+    const st = ScrollTrigger.create({
+      trigger: tour, start: () => `top ${bar.offsetHeight}px`, end: 'bottom bottom',
+      onUpdate: (s) => render(s.progress), onRefresh: (s) => render(s.progress)
+    });
+    ScrollTrigger.create({ trigger: tour, start: 'top bottom', end: 'bottom top', onToggle: (s) => { inView = s.isActive; syncOsc(); } });
+    M.chY = (n, mid) => { const [a, b] = CH[n - 1]; return Math.round(st.start + (mid ? (a + b) / 2 : a + 0.01) * (st.end - st.start)); };
+    M.refresh = () => { lenis.resize(); ScrollTrigger.refresh(); };
+
+    // ---- Page load: chrome, the drawing assembles in build order, the headline rises ----
+    const isoDraw = isos.map(draws), isoFade = isos.map(fades);
+    const load = gsap.timeline();
+    gsap.set(stack, { opacity: 1 });
+    load.fromTo('.bar-item', { opacity: 0, y: -8 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out', stagger: 0.05 }, 0);
+    layers.forEach((l, i) => {
+      const t = 0.1 + 0.11 * i;
+      load.fromTo(isoDraw[i], { drawSVG: '0%' }, { drawSVG: '100%', duration: 0.9, ease: 'power2.inOut' }, t)
+        .fromTo(isoFade[i], { opacity: 0 }, { opacity: 1, duration: 0.4, ease: 'power1.out' }, t + 0.45);
+    });
+    load.fromTo(['.lede', '.acts'], { opacity: 0 }, { opacity: 1, duration: 0.6, ease: 'power1.out' }, 0.85);
+    load.add(() => { loaded = true; runBalance(lastP); }, 1.3);
+    if (!first) load.progress(1);
+
+    const t0 = performance.now();
+    document.fonts.ready.then(() => ctx.add(() => {
+      $$('[data-split]', tour).forEach((el) => {
+        const h1 = el.classList.contains('display');
+        let intro = h1 && first;
+        const s = SplitText.create(el, {
+          type: 'lines', mask: 'lines', autoSplit: true, aria: 'none',
+          onSplit(self) {
+            if (!h1) return;
+            gsap.set(el, { visibility: 'visible' });
+            if (!intro) return;
+            intro = false;
+            const wait = Math.max(0, 0.35 - (performance.now() - t0) / 1000);
+            return gsap.fromTo(self.lines, { yPercent: 110 }, { yPercent: 0, duration: 1, ease: 'expo.out', stagger: 0.08, delay: wait });
+          }
+        });
+        const b = el.closest('.blk');
+        splits.set(b, [...(splits.get(b) || []), s]);
+      });
+      // S6 TX1: lower section headings rise line by line, once each
+      $$('[data-tx]').forEach((el) => {
+        let played = false;
+        SplitText.create(el, {
+          type: 'lines', mask: 'lines', autoSplit: true, aria: 'none',
+          onSplit(self) {
+            gsap.set(el, { visibility: 'visible' });
+            if (played) return;
+            return gsap.fromTo(self.lines, { yPercent: 110 }, { yPercent: 0, duration: 1, ease: 'expo.out', stagger: 0.08,
+              scrollTrigger: { trigger: el, start: 'clamp(top 85%)', once: true, onEnter: () => { played = true; } } });
+          }
+        });
+      });
+      ScrollTrigger.refresh();
+      // A shared address (index.html#ch-3, #rate) lands where it names, now that the pinned stage has its real length.
+      const s = first && spot(location.hash);
+      if (s) { lenis.scrollTo(s[0], { immediate: true, force: true }); s[1].focus({ preventScroll: true }); }
+    }));
+
+    // ---- I8: rail preview on fine pointers (hover and keyboard focus) ----
+    if (fine) railLinks.forEach((a, j) => {
+      a.addEventListener('pointerenter', () => preview(j + 1), sig);
+      a.addEventListener('pointerleave', () => preview(null), sig);
+      a.addEventListener('focus', () => preview(j + 1), sig);
+      a.addEventListener('blur', () => preview(null), sig);
+    });
+
+    // ---- I9 CU3: look between the plates; deeper layers move more, and a closed movement stays rigid ----
+    if (fine) {
+      const pars = layers.map((l) => $('.par', l));
+      const qx = pars.map((p) => gsap.quickTo(p, 'x', { duration: 1, ease: 'power3.out' }));
+      const qy = pars.map((p) => gsap.quickTo(p, 'y', { duration: 1, ease: 'power3.out' }));
+      let nx = 0, ny = 0, u = 1;
+      par = () => pars.forEach((_, i) => { const k = (u * open) / camS.s; qx[i](nx * (4 + 5 * i) * k); qy[i](ny * (2 + 3 * i) * k); });
+      stage.addEventListener('pointermove', (e) => {
+        const r = svg.getBoundingClientRect();
+        u = 1 / Math.min(r.width / vb[0], r.height / vb[1]);
+        nx = clamp(((e.clientX - r.left) / r.width) * 2 - 1);
+        ny = clamp(((e.clientY - r.top) / r.height) * 2 - 1);
+        par();
+      }, sig);
+      stage.addEventListener('pointerleave', () => { nx = ny = 0; par(); }, sig);
+    }
+
+    // ---- I5 NV1: index sheet as one reversible timeline ----
+    M.sheetTl = gsap.timeline({ paused: true, onReverseComplete: () => sheet.classList.remove('is-open') })
+      .fromTo(sheet, { clipPath: 'inset(0% 0% 100% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: 0.5, ease: 'expo.out' })
+      .fromTo(sheetLinks, { yPercent: 100 }, { yPercent: 0, duration: 0.6, ease: 'expo.out', stagger: 0.05 }, 0.05);
+
+    // ---- S4: the first trace prints as the paper feeds in (one clip, so band, fan and dots share an edge); later changes redraw in time ----
+    let tgDone = false;
+    const tgTl = gsap.timeline({ scrollTrigger: { trigger: '.paper', start: 'top 70%', end: 'center 55%', scrub: true,
+      onUpdate: (s) => { if (s.progress === 1 && !tgDone) { tgDone = true; tgTl.progress(1); s.kill(false, true); } } } })
+      .fromTo('.paper .feed', { scaleX: 0 }, { scaleX: 1, transformOrigin: '0% 50%', ease: 'none', duration: 1 }, 0);
+    M.redraw = () => {
+      if (!tgDone) { tgDone = true; tgTl.scrollTrigger?.kill(); tgTl.progress(1).kill(); }
+      gsap.fromTo(traces, { drawSVG: '0%' }, { drawSVG: '100%', duration: 0.9, ease: 'none', overwrite: true });
+    };
+
+    // ---- S5 SC16: specification rules draw before anything else moves ----
+    gsap.fromTo('.spec-row', { '--s': 0 }, { '--s': 1, duration: 0.9, ease: 'expo.out', stagger: 0.05, scrollTrigger: { trigger: '.specs dl', start: 'top 88%', once: true } });
+
+    // ---- I13: confirmation heading rises line by line ----
+    M.tx1 = (el) => {
+      const s = SplitText.create(el, { type: 'lines', mask: 'lines', aria: 'none' });
+      gsap.fromTo(s.lines, { yPercent: 110 }, { yPercent: 0, duration: 1, ease: 'expo.out', stagger: 0.08, onComplete: () => s.revert() });
+    };
+
+    return () => {
+      ac.abort();
+      gsap.ticker.remove(tick);
+      gsap.ticker.lagSmoothing(500, 33);
+      lenis.destroy();
+      hls.forEach((h) => h.remove());
+      $$('.bal, [data-rot]', svg).forEach((b) => b.removeAttribute('transform'));
+      cam.removeAttribute('transform');
+      order(-1);
+      layers.forEach((l) => l.classList.remove('is-lit'));
+      svg.classList.remove('lit', 'wind');
+      tour.classList.remove('staged');
+      if (sheetOpen) closeSheet(true);
+      sheet.classList.remove('is-open');
+      Object.assign(M, { on: false, lenis: null, staged: false, chY: null, sheetTl: null, redraw: null, tx1: null, refresh: null });
+    };
+  });
+})();
+</script>
+</body>
+</html>
