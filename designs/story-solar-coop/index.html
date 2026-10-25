@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hollins Road Solar: how the roof pays</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bitter:wght@600;700&family=Fira+Sans:wght@400;500;600&display=swap">
+<style>
+:root {
+  /* colour */
+  --ground: #C9DCEC;      /* daylight sky, page ground */
+  --navy: #1B2440;        /* ink, links, focus ring, installed panels, capital back */
+  --ink-2: #4E5965;       /* secondary text */
+  --frame: #E6EBEF;       /* silver panel frames, input field */
+  --membrane: #8D9AA7;    /* roof surface around the array */
+  --amber: #E3A21A;       /* generated kWh, interest; fill only, never text */
+  --pool: #2A9AA0;        /* fill only: used by the baths, community fund */
+  --meter: #5E6A75;       /* fill: exported, running costs, reserve hatch, parapet and gutter */
+  --track: rgb(27 36 64 / .3); /* rail track */
+
+  /* type */
+  --font-head: "Bitter", Rockwell, "Roboto Slab", Georgia, serif;
+  --font-body: "Fira Sans", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --fs-xs: .8125rem;
+  --fs-s: .9375rem;
+  --fs-m: 1.0625rem;
+  --fs-l: 1.375rem;
+  --fs-xl: clamp(1.5rem, 1.1rem + 1.4vw, 2.125rem);
+  --fs-xxl: clamp(2.125rem, 1.4rem + 3vw, 3.5rem);
+
+  /* space */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px;
+  --sp-6: 32px; --sp-7: 48px; --sp-8: 72px; --sp-9: 112px;
+  --gutter: 16px;
+  --max: 1240px;
+
+  /* roof (--cols and --rows are set from DATA by the script) */
+  --cell-gap: 2px;
+  --cell-h: 1.7;          /* portrait panel: height per unit width */
+  --cell-radius: 1px;
+  --lab: calc(2rem + var(--sp-2)); /* month-label gutter beside the roof */
+  --radius-ctl: 8px;
+  --ease-out: cubic-bezier(.2,.7,.2,1);
+}
+@media (max-width: 699px) { :root { --cell-h: 1.2; --lab: calc(1rem + 4px); } }
+@media (max-width: 699px) and (min-height: 740px) { :root { --cell-h: 1.5; } }
+@media (min-width: 600px) { :root { --gutter: 32px; } }
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; interpolate-size: allow-keywords; }
+}
+body {
+  margin: 0; background: var(--ground); color: var(--navy);
+  font: 400 var(--fs-m)/1.55 var(--font-body);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+h2, h3, .total {
+  font-family: var(--font-head);
+  font-variant-numeric: lining-nums tabular-nums; /* Bitter defaults to oldstyle figures */
+  margin: 0; text-wrap: balance;
+}
+p { margin: 0; }
+a { color: var(--navy); }
+:focus-visible { outline: 3px solid var(--navy); outline-offset: 3px; }
+[tabindex="-1"]:focus { outline: none; }
+
+.solar { padding: var(--sp-8) var(--gutter) var(--sp-9); }
+@media (min-width: 900px) { .solar { padding-top: 0; } }
+.wrap { max-width: var(--max); margin: 0 auto; }
+
+/* intro */
+.intro { display: grid; gap: var(--sp-5); padding-bottom: var(--sp-7); justify-items: start; }
+.intro h2 { font-size: var(--fs-xxl); line-height: 1.05; font-weight: 700; letter-spacing: -.01em; max-width: 18ch; }
+.lede { font-size: var(--fs-l); line-height: 1.4; max-width: 34rem; }
+
+/* HV2 underline links */
+.uline {
+  color: var(--navy); font-weight: 500; text-decoration: none;
+  background:
+    linear-gradient(currentColor, currentColor) no-repeat right bottom / 0 .1em,
+    linear-gradient(var(--track), var(--track)) no-repeat left bottom / 100% 1px;
+  padding-bottom: .1em;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .uline { transition: background-size 400ms cubic-bezier(.35,0,0,1); }
+}
+.uline:focus-visible { background-size: 100% .1em, 100% 1px; }
+@media (hover: hover) { .uline:hover { background-size: 100% .1em, 100% 1px; background-position: left bottom, left bottom; } }
+@media (hover: none), (prefers-reduced-motion: reduce) { .uline { background-size: 100% .1em, 100% 1px; } }
+
+/* story */
+.story { display: grid; grid-template-columns: minmax(0, 1fr); }
+html:not(.js) .stage { display: none; }
+
+.stage {
+  position: sticky; top: 0; z-index: 1;
+  background: var(--ground);
+  padding: var(--sp-3) 0 var(--sp-3);
+  display: grid; gap: var(--sp-3); align-content: start;
+}
+.rail ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--sp-2); }
+.rail a {
+  display: grid; gap: 6px; padding: var(--sp-1) 0 var(--sp-2);
+  color: var(--ink-2); text-decoration: none; font-size: var(--fs-s); font-weight: 500;
+}
+.rail .lab { display: inline-grid; }
+.rail .lab::after { content: attr(data-t); font-weight: 600; height: 0; visibility: hidden; overflow: hidden; }
+.rail .lab > span { grid-area: 1 / 1; }
+.track { height: 3px; background: var(--track); overflow: hidden; }
+.track i { display: block; height: 100%; background: var(--navy); transform: scaleX(var(--p, 0)); transform-origin: left; }
+.rail a[aria-current="step"] { color: var(--navy); font-weight: 600; }
+@media (hover: hover) {
+  .rail a:hover { color: var(--navy); }
+  .rail a:hover .track { background: rgb(27 36 64 / .5); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .rail a, .track { transition: color 150ms ease-out, background-color 150ms ease-out; }
+}
+@media (max-width: 399px) { .rail a { font-size: var(--fs-xs); } .rail ol { gap: 6px; } }
+
+.board { position: relative; padding: 7px 0 0 var(--lab); --rp: 10px; }
+.months {
+  position: absolute; inset: calc(7px + var(--rp) + var(--cell-gap)) auto calc(var(--rp) + 7px + var(--cell-gap)) 0; width: calc(var(--lab) - var(--sp-1)); list-style: none; margin: 0; padding: 0;
+  display: grid; grid-template-rows: repeat(var(--rows), minmax(0, 1fr)); row-gap: var(--cell-gap);
+  font-size: var(--fs-xs); color: var(--ink-2); line-height: 1;
+}
+.months li { display: flex; align-items: center; opacity: 0; }
+@media (max-width: 699px) { .months span { display: none; } .months li::before { content: attr(data-s); } }
+.stage[data-ch="3"] .months li { opacity: 1; }
+@media (prefers-reduced-motion: no-preference) {
+  .months li { transition: opacity 120ms ease-out; }
+  .stage[data-ch="3"] .months li { transition: opacity 200ms ease-out 250ms; }
+}
+/* the baths roof: ridge on top, parapet at the verges, gutter along the eaves */
+.house {
+  position: relative; width: fit-content; max-width: 100%;
+  padding: var(--rp); background: var(--membrane);
+  border-inline: 4px solid var(--meter);
+}
+.house::before, .house::after { content: ""; position: absolute; left: -10px; right: -10px; }
+.house::before { top: -7px; height: 7px; background: var(--navy); border-radius: 2px 2px 0 0; }
+.house::after { bottom: -7px; height: 7px; background: var(--meter); border-radius: 0 0 7px 7px; }
+.roof {
+  width: min(calc(100vw - 2 * var(--gutter) - var(--lab) - 2 * var(--rp) - 8px), calc((46svh - 10rem) * var(--cols) / (var(--rows) * var(--cell-h))));
+  display: grid; grid-template-columns: repeat(var(--cols), 1fr); gap: var(--cell-gap);
+  padding: var(--cell-gap); background-color: var(--frame); /* silver frame gaps between panels */
+}
+/* Raise: panels marked out on the bare roof; Build installs the frame and the panels */
+.stage[data-ch="1"] .roof, .stage[data-ch="1"] .cell { background-color: transparent; }
+.cell {
+  aspect-ratio: 1 / var(--cell-h); border-radius: var(--cell-radius);
+  background-color: var(--frame); box-shadow: inset 0 0 0 1px var(--navy);
+  position: relative; overflow: hidden;
+}
+.cell::after {
+  content: ""; position: absolute; inset: 0; opacity: 0;
+  background: repeating-linear-gradient(45deg, var(--meter) 0 1.5px, transparent 1.5px 4px);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .roof { transition: background-color 400ms var(--ease-out); }
+  .cell, .cell::after {
+    transition: background-color 280ms var(--ease-out), opacity 280ms var(--ease-out);
+    transition-delay: calc(var(--c) * 14ms + var(--r) * 6ms);
+  }
+}
+.stage[data-ch="2"] .cell { background-color: var(--navy); }
+.stage[data-ch="3"] .cell { background-color: var(--navy); }
+.stage[data-ch="3"] .cell[data-gen] { background-color: var(--amber); }
+.stage[data-ch="4"] .cell[data-sell="used"] { background-color: var(--pool); }
+.stage[data-ch="4"] .cell[data-sell="exported"] { background-color: var(--meter); }
+.stage[data-ch="5"] .cell[data-pay="run"] { background-color: var(--meter); }
+.stage[data-ch="5"] .cell[data-pay="res"]::after { opacity: 1; }
+.stage[data-ch="5"] .cell[data-pay="int"] { background-color: var(--amber); }
+.stage[data-ch="5"] .cell[data-pay="cap"] { background-color: var(--navy); }
+.stage[data-ch="5"] .cell[data-pay="fund"] { background-color: var(--pool); }
+
+.legends { display: grid; padding-left: var(--lab); font-size: var(--fs-xs); line-height: 1.4; color: var(--navy); }
+.legend { grid-area: 1 / 1; margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 2px var(--sp-3); opacity: 0; visibility: hidden; }
+.legend li { display: flex; align-items: center; gap: 6px; }
+.legend[data-for="5"] { display: grid; grid-template-columns: repeat(2, auto); justify-content: start; column-gap: var(--sp-3); }
+.legend[data-for="5"] li { white-space: nowrap; }
+@media (min-width: 700px) { .legend[data-for="5"] { grid-template-columns: repeat(3, auto); column-gap: var(--sp-5); } }
+.stage[data-ch="1"] .legend[data-for="1"], .stage[data-ch="2"] .legend[data-for="2"],
+.stage[data-ch="3"] .legend[data-for="3"], .stage[data-ch="4"] .legend[data-for="4"],
+.stage[data-ch="5"] .legend[data-for="5"] { opacity: 1; visibility: visible; }
+@media (prefers-reduced-motion: no-preference) {
+  .legend { transition: opacity 150ms ease-out, visibility 0s 150ms; }
+  .stage[data-ch="1"] .legend[data-for="1"], .stage[data-ch="2"] .legend[data-for="2"],
+  .stage[data-ch="3"] .legend[data-for="3"], .stage[data-ch="4"] .legend[data-for="4"],
+  .stage[data-ch="5"] .legend[data-for="5"] { transition: opacity 250ms ease-out 120ms, visibility 0s; }
+}
+.sw { flex: none; width: 10px; height: 14px; border-radius: var(--cell-radius); background: var(--frame); box-shadow: inset 0 0 0 1px var(--navy); display: inline-block; vertical-align: -2px; }
+.sw.out { background: var(--membrane); }
+.sw.navy { background: var(--navy); } .sw.amber { background: var(--amber); }
+.sw.pool { background: var(--pool); } .sw.meter { background: var(--meter); }
+.sw.hatch { background: repeating-linear-gradient(45deg, var(--meter) 0 1.5px, var(--frame) 1.5px 4px); }
+
+/* prose */
+.prose { padding-top: var(--sp-5); }
+.chapter { min-height: 80svh; padding: var(--sp-6) 0; scroll-margin-top: calc(46svh + var(--sp-3)); max-width: 36rem; }
+.chapter:last-child { min-height: 92svh; }
+.chapter h3 { font-size: var(--fs-xl); line-height: 1.15; font-weight: 600; margin-bottom: var(--sp-4); }
+.chapter p + p, .chapter p + details, .chapter dl + p { margin-top: var(--sp-4); }
+
+details { margin-top: var(--sp-5); }
+summary { cursor: pointer; list-style: none; display: inline-flex; align-items: center; gap: var(--sp-2); color: var(--navy); font-weight: 500; }
+summary::-webkit-details-marker { display: none; }
+summary svg { width: 12px; height: 12px; flex: none; }
+details[open] summary svg { transform: rotate(90deg); }
+summary .t { background: linear-gradient(currentColor, currentColor) no-repeat right bottom / 0 .07em; padding-bottom: .08em; }
+@media (hover: hover) { summary:hover .t { background-size: 100% .07em; background-position-x: left; } }
+@media (hover: none) { summary .t { background-size: 100% .07em; } }
+@media (prefers-reduced-motion: no-preference) {
+  summary svg { transition: transform 200ms var(--ease-out); }
+  summary .t { transition: background-size 400ms cubic-bezier(.35,0,0,1); }
+  details::details-content {
+    block-size: 0; overflow: clip;
+    transition: block-size 280ms cubic-bezier(.625,.05,0,1), content-visibility 280ms allow-discrete;
+  }
+  details[open]::details-content { block-size: auto; transition-duration: 400ms; }
+}
+.figs { display: grid; grid-template-columns: auto auto; justify-content: start; gap: 2px var(--sp-6); margin: var(--sp-3) 0 0; font-size: var(--fs-s); }
+.figs dt { color: var(--ink-2); }
+.figs dd { margin: 0; text-align: right; }
+.pay { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--sp-2) var(--sp-5); margin: var(--sp-5) 0 0; }
+.pay dd { margin: 0; text-align: right; font-weight: 500; }
+
+/* your share */
+.share { display: grid; gap: var(--sp-6); padding-top: var(--sp-8); scroll-margin-top: var(--sp-5); }
+.share h3 { font-size: var(--fs-xl); line-height: 1.15; font-weight: 600; max-width: 20ch; }
+.note { color: var(--ink-2); font-size: var(--fs-s); margin-top: var(--sp-4); max-width: 30rem; }
+form { display: grid; gap: var(--sp-2); max-width: 34rem; }
+label { font-weight: 500; font-size: var(--fs-s); }
+.row { display: flex; flex-wrap: wrap; gap: var(--sp-3); }
+.field { position: relative; flex: 1 1 10rem; }
+.field span { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--ink-2); font-weight: 500; pointer-events: none; }
+input {
+  width: 100%; height: 48px; padding: 0 14px 0 30px;
+  font: 500 var(--fs-l) var(--font-body); font-variant-numeric: tabular-nums lining-nums; color: var(--navy);
+  background: var(--frame); border: 2px solid var(--meter); border-radius: var(--radius-ctl);
+}
+input:focus { border-color: var(--navy); }
+input[aria-invalid="true"] { border-color: var(--navy); }
+.go {
+  position: relative; overflow: hidden; flex: 1 1 12rem; height: 48px; padding: 0 var(--sp-5);
+  font: 600 var(--fs-m) var(--font-body); color: var(--navy); background: transparent;
+  border: 2px solid var(--navy); border-radius: var(--radius-ctl); cursor: pointer;
+}
+.go::before { content: ""; position: absolute; inset: 0; background: var(--navy); transform: scaleX(0); transform-origin: left; }
+.go span { position: relative; }
+.go:focus-visible, .go:active { color: var(--ground); }
+.go:focus-visible::before, .go:active::before { transform: scaleX(1); }
+@media (hover: hover) { .go:hover { color: var(--ground); } .go:hover::before { transform: scaleX(1); } }
+@media (prefers-reduced-motion: no-preference) {
+  input { transition: border-color 150ms ease-out; }
+  .go { transition: color 220ms, transform 350ms cubic-bezier(.34,1.56,.64,1); }
+  .go::before { transition: transform 220ms var(--ease-out); }
+  .go:hover::before, .go:focus-visible::before { transition-duration: 350ms; }
+  .go:hover, .go:focus-visible { transition-duration: 350ms; }
+  .go:active, .again:active { transform: scale(.97); transition: transform 120ms; }
+}
+.err { display: grid; grid-template-rows: 0fr; }
+.err > p { overflow: hidden; color: var(--navy); font-size: var(--fs-s); font-weight: 500; }
+.err.on { grid-template-rows: 1fr; }
+.err.on > p { padding-top: var(--sp-1); }
+@media (prefers-reduced-motion: no-preference) { .err { transition: grid-template-rows 250ms var(--ease-out); } }
+
+.result { margin-top: var(--sp-6); }
+.result[hidden] { display: none; }
+.result .sentence { font-size: var(--fs-l); line-height: 1.4; max-width: 34rem; }
+.total { font-weight: 600; }
+/* whole panels wrapping at 24 like a roof row, the last one filled to its fraction */
+.glyphs { display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 25px)); gap: 2px; margin-top: var(--sp-5); }
+.glyph { aspect-ratio: 1 / var(--cell-h); border-radius: var(--cell-radius); background: var(--frame); box-shadow: inset 0 0 0 1px var(--navy); overflow: hidden; display: flex; align-items: flex-end; }
+.glyph i { display: block; width: 100%; height: 100%; background: var(--navy); transform-origin: bottom; transform: scaleY(var(--f)); }
+.result.pre .glyph i { transform: scaleY(0); }
+.result.pre { opacity: 0; }
+@media (prefers-reduced-motion: no-preference) {
+  .result { transition: opacity 250ms ease-out; }
+  .glyph i { transition: transform 450ms var(--ease-out) var(--d, 0ms); }
+}
+.actions { display: flex; flex-wrap: wrap; gap: var(--sp-3) var(--sp-6); align-items: center; margin-top: var(--sp-6); }
+.again {
+  font: 500 var(--fs-m) var(--font-body); color: var(--navy); background: none; border: 0; padding: var(--sp-2) 0; cursor: pointer;
+}
+.again span { background: linear-gradient(currentColor, currentColor) no-repeat right bottom / 0 .07em; padding-bottom: .08em; }
+@media (hover: hover) { .again:hover { color: var(--navy); } .again:hover span { background-size: 100% .07em; background-position-x: left; } }
+@media (hover: none) { .again span { background-size: 100% .07em; } }
+@media (prefers-reduced-motion: no-preference) {
+  .again { transition: color 150ms, transform 350ms cubic-bezier(.34,1.56,.64,1); }
+  .again span { transition: background-size 400ms cubic-bezier(.35,0,0,1); }
+}
+
+/* desktop: prose left 5 columns, roof right 7 */
+@media (min-width: 900px) {
+  :root { --fs-xxl: clamp(2.125rem, 1.4rem + 1.8vw, 3rem); }
+  .intro { grid-column: 1 / span 5; grid-row: 1; padding: var(--sp-7) 0 0; }
+  .intro h2 { max-width: 14ch; }
+  .story { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--sp-5); align-items: start; }
+  .stage { grid-column: 6 / span 7; grid-row: 1 / span 2; height: 100svh; align-content: center; gap: var(--sp-5); padding: var(--sp-6) 0; }
+  .roof { width: min(calc((100vw - 2 * var(--gutter)) * 7 / 12 - 2rem - var(--sp-2) - 2 * var(--rp) - 8px), calc(var(--max) * 7 / 12 - 5rem), calc((100svh - 16rem) * var(--cols) / (var(--rows) * var(--cell-h)))); }
+  .board { --rp: 14px; }
+  .legends { font-size: var(--fs-s); }
+  .prose { grid-column: 1 / span 5; grid-row: 2; padding-top: 0; }
+  .chapter { min-height: 110svh; padding: 30svh 0 var(--sp-7); scroll-margin-top: 0; }
+  .chapter:first-child { padding-top: 14svh; }
+  .chapter:last-child { min-height: 126svh; }
+  .share { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--sp-5); }
+  .share > header { grid-column: 1 / span 5; }
+  .share > .calc { grid-column: 6 / span 7; }
+}
+</style>
+</head>
+<body>
+<main>
+<section class="solar" aria-labelledby="solar-title" id="story-top">
+  <div class="wrap">
+    <div class="story">
+    <header class="intro">
+      <h2 id="solar-title">How 288 panels on the Hollins Road baths pay 236 members</h2>
+      <p class="lede">Hollins Road Solar Co-operative owns the array on the swimming baths roof. Here is where last year's money came from and where every pound went, for the year to 31&nbsp;March&nbsp;2026.</p>
+      <a class="uline skip" href="#your-share">Skip the story, go to the calculator</a>
+    </header>
+
+      <div class="stage" data-ch="1">
+        <nav class="rail" aria-label="Story chapters">
+          <ol>
+            <li><a href="#ch-raise"><span class="lab" data-t="Raise"><span>Raise</span></span><span class="track"><i></i></span></a></li>
+            <li><a href="#ch-build"><span class="lab" data-t="Build"><span>Build</span></span><span class="track"><i></i></span></a></li>
+            <li><a href="#ch-generate"><span class="lab" data-t="Generate"><span>Generate</span></span><span class="track"><i></i></span></a></li>
+            <li><a href="#ch-sell"><span class="lab" data-t="Sell"><span>Sell</span></span><span class="track"><i></i></span></a></li>
+            <li><a href="#ch-pay"><span class="lab" data-t="Pay"><span>Pay</span></span><span class="track"><i></i></span></a></li>
+          </ol>
+        </nav>
+        <div class="board" aria-hidden="true">
+          <ul class="months"><li data-s="A"><span>Apr</span></li><li data-s="M"><span>May</span></li><li data-s="J"><span>Jun</span></li><li data-s="J"><span>Jul</span></li><li data-s="A"><span>Aug</span></li><li data-s="S"><span>Sep</span></li><li data-s="O"><span>Oct</span></li><li data-s="N"><span>Nov</span></li><li data-s="D"><span>Dec</span></li><li data-s="J"><span>Jan</span></li><li data-s="F"><span>Feb</span></li><li data-s="M"><span>Mar</span></li></ul>
+          <div class="house"><div class="roof"></div></div>
+        </div>
+        <div class="legends" aria-hidden="true">
+          <ul class="legend" data-for="1"><li><span class="sw out"></span><span>Each outline is one panel, about <span data-k="perPanel">£410</span> of members' money.</span></li></ul>
+          <ul class="legend" data-for="2"><li><span class="sw navy"></span>Fitted 5–13 March 2024, switched on 14 March.</li></ul>
+          <ul class="legend" data-for="3"><li><span class="sw amber"></span>Each row is a month. A full row is June's 15,200 kWh.</li></ul>
+          <ul class="legend" data-for="4"><li><span class="sw pool"></span>Used by the baths 74,400 kWh</li><li><span class="sw meter"></span>Sent to the grid 35,000 kWh</li></ul>
+          <ul class="legend" data-for="5"><li><span class="sw meter"></span>Running costs £2,610</li><li><span class="sw hatch"></span>Inverter reserve £900</li><li><span class="sw amber"></span>Interest £4,720</li><li><span class="sw navy"></span>Capital repaid £3,540</li><li><span class="sw pool"></span>Community fund £1,210</li></ul>
+        </div>
+      </div>
+
+      <div class="prose">
+        <article class="chapter" id="ch-raise" tabindex="-1">
+          <h3>236 neighbours paid for the panels</h3>
+          <p>In autumn 2023 we offered shares at £50 each, from £250 to £20,000 a member. <span data-k="members">236</span> of you put in <span data-k="raised">£118,000</span>, which paid for the panels, two inverters, the scaffolding and the grid connection. Every member has one vote, whether they hold £250 or £20,000.</p>
+        </article>
+        <article class="chapter" id="ch-build" tabindex="-1">
+          <h3>288 panels went up in nine days</h3>
+          <p>In March 2024 the baths closed the sports hall for nine days while 288 panels went onto the south-facing roof: 124 kilowatts at full sun. The pool trust leases us the roof for 25 years and pays only for the power it uses.</p>
+        </article>
+        <article class="chapter" id="ch-generate" tabindex="-1">
+          <h3>Last year the roof made <span data-k="generated">109,400</span> kWh</h3>
+          <p>Each row on the drawing is a month, April at the top. June filled its row with 15,200 kWh; December lit four panels' worth with 2,300. Over the year that's what about 40 homes use.</p>
+          <details>
+            <summary><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span class="t">Month by month</span></summary>
+            <dl class="figs" id="months-list">
+              <dt>April 2025</dt><dd data-m="0">12,200 kWh</dd>
+              <dt>May</dt><dd data-m="1">14,900 kWh</dd>
+              <dt>June</dt><dd data-m="2">15,200 kWh</dd>
+              <dt>July</dt><dd data-m="3">14,700 kWh</dd>
+              <dt>August</dt><dd data-m="4">12,900 kWh</dd>
+              <dt>September</dt><dd data-m="5">10,300 kWh</dd>
+              <dt>October</dt><dd data-m="6">6,800 kWh</dd>
+              <dt>November</dt><dd data-m="7">3,700 kWh</dd>
+              <dt>December</dt><dd data-m="8">2,300 kWh</dd>
+              <dt>January 2026</dt><dd data-m="9">2,900 kWh</dd>
+              <dt>February</dt><dd data-m="10">4,700 kWh</dd>
+              <dt>March</dt><dd data-m="11">8,800 kWh</dd>
+            </dl>
+          </details>
+        </article>
+        <article class="chapter" id="ch-sell" tabindex="-1">
+          <h3>The baths use two thirds of it, at 15p</h3>
+          <p>Pumps, filters and the pool heat pump run all day, so the baths took <span data-k="used">74,400</span> kWh straight off the roof at 15p a unit. That paid us <span data-k="usedIncome">£11,160</span> and cost them <span data-k="saved">£8,928</span> less than the grid's 27p would have. The <span data-k="exported">35,000</span> kWh they couldn't use went to the grid at 5.2p. Together: <span data-k="income">£12,980</span>.</p>
+        </article>
+        <article class="chapter" id="ch-pay" tabindex="-1">
+          <h3>Where the <span data-k="income">£12,980</span> went</h3>
+          <dl class="pay">
+            <dt>Running costs: insurance, monitoring, inspection, audit</dt><dd data-k="run">£2,610</dd>
+            <dt>Inverter reserve</dt><dd data-k="res">£900</dd>
+            <dt>Interest, 4% to members</dt><dd data-k="int">£4,720</dd>
+            <dt>Capital repaid, 3% of what members put in</dt><dd data-k="cap">£3,540</dd>
+            <dt>Community fund, for energy projects on the estate</dt><dd data-k="fund">£1,210</dd>
+          </dl>
+          <p>This year the fund draught-proofed 31 homes on the Hollins estate.</p>
+        </article>
+      </div>
+    </div>
+
+    <div class="share" id="your-share" tabindex="-1">
+      <header>
+        <h3>What would your shares have paid last year?</h3>
+        <p class="note">The AGM sets interest each year and it is not guaranteed. The next share offer opens in spring 2027.</p>
+      </header>
+      <div class="calc">
+        <form id="calc" novalidate>
+          <label for="amount">Amount invested (£250 to £20,000, in £50 steps)</label>
+          <div class="row">
+            <div class="field"><span aria-hidden="true">£</span><input id="amount" name="amount" type="number" inputmode="numeric" min="250" max="20000" step="50" value="1000" aria-describedby="amount-err"></div>
+            <button class="go" type="submit"><span>Work out my year</span></button>
+          </div>
+          <div class="err" id="amount-err"><p role="alert"></p></div>
+        </form>
+        <div class="result pre" id="result" hidden>
+          <p class="sentence" tabindex="-1"></p>
+          <div class="glyphs" aria-hidden="true"></div>
+          <div class="actions">
+            <button class="again" type="button"><span>Change the amount</span></button>
+            <a class="uline" href="#story-top">Back to the start of the story</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<script>
+const DATA = {
+  members: 236, raised: 118000, panels: 288, cols: 24, rows: 12,
+  months: [12200, 14900, 15200, 14700, 12900, 10300, 6800, 3700, 2300, 2900, 4700, 8800], // Apr 2025 .. Mar 2026
+  generated: 109400,
+  sold: { used: { kwh: 74400, price: 0.15 }, exported: { kwh: 35000, price: 0.052 } },
+  income: 12980,
+  payout: { run: 2610, res: 900, int: 4720, cap: 3540, fund: 1210 },
+  rate: { int: 0.04, cap: 0.03 },
+  grid: 0.27, // what the baths would pay the grid per kWh
+  saved: 8928
+};
+document.documentElement.style.cssText = `--cols:${DATA.cols};--rows:${DATA.rows}`;
+
+// Largest-remainder (Hamilton) apportionment: Math.round would give the Pay split 289 cells.
+function apportion(weights, seats) {
+  const sum = weights.reduce((a, b) => a + b, 0);
+  const q = weights.map(w => w * seats / sum);
+  const out = q.map(Math.floor);
+  let left = seats - out.reduce((a, b) => a + b, 0);
+  q.map((v, i) => [v - Math.floor(v), i]).sort((a, b) => b[0] - a[0]).slice(0, left).forEach(([, i]) => out[i]++);
+  return out;
+}
+const fmt = n => n.toLocaleString('en-GB');
+const money = n => '£' + (Number.isInteger(n) ? fmt(n) : n.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+
+const peak = Math.max(...DATA.months);
+const lit = apportion(DATA.months, Math.round(DATA.generated / peak * DATA.cols)); // lit panels per month row
+const sell = apportion([DATA.sold.used.kwh, DATA.sold.exported.kwh], DATA.panels);
+const payKeys = Object.keys(DATA.payout);
+const pay = apportion(payKeys.map(k => DATA.payout[k]), DATA.panels);
+
+function runSelfTest() {
+  const sum = a => a.reduce((x, y) => x + y, 0);
+  const s = DATA.sold;
+  const derived = { perPanel: Math.round(DATA.raised / DATA.panels / 10) * 10, usedIncome: Math.round(s.used.kwh * s.used.price) };
+  const checks = [
+    ['months sum to generation', sum(DATA.months) === DATA.generated],
+    ['sold sums to generation', s.used.kwh + s.exported.kwh === DATA.generated],
+    ['sales make income', Math.round(s.used.kwh * s.used.price + s.exported.kwh * s.exported.price) === DATA.income],
+    ['payout sums to income', sum(Object.values(DATA.payout)) === DATA.income],
+    ['interest is 4% of capital', Math.round(DATA.raised * DATA.rate.int) === DATA.payout.int],
+    ['capital back is 3%', Math.round(DATA.raised * DATA.rate.cap) === DATA.payout.cap],
+    ['roof is 288', DATA.cols * DATA.rows === DATA.panels],
+    ['generate rows fit', lit.every(n => n <= DATA.cols) && lit[2] === 24 && lit[8] === 4],
+    ['generate lights generation/peak rows', sum(lit) === Math.round(DATA.generated / peak * DATA.cols)],
+    ['generate rows follow months', lit.every((n, r) => Math.abs(n - DATA.months[r] / peak * DATA.cols) < 1)],
+    ['saving against the grid', Math.round(s.used.kwh * (DATA.grid - s.used.price)) === DATA.saved],
+    ['sell is 196/92 and sums to 288', sell.join() === '196,92' && sum(sell) === DATA.panels],
+    ['pay is 58/20/105/78/27 and sums to 288', pay.join() === '58,20,105,78,27' && sum(pay) === DATA.panels],
+    ['printed figures match DATA', [...document.querySelectorAll('[data-k]')].every(el => {
+      const k = el.dataset.k, v = derived[k] ?? DATA.payout[k] ?? DATA[k] ?? s[k]?.kwh;
+      return el.textContent === (/raised|income|run|res|int|cap|fund|perPanel|usedIncome|saved/.test(k) ? money(v) : fmt(v));
+    })],
+    ['month list matches DATA', [...document.querySelectorAll('[data-m]')].every(el => el.textContent === fmt(DATA.months[el.dataset.m]) + ' kWh')]
+  ];
+  checks.forEach(([name, ok]) => console.assert(ok, 'self-check failed: ' + name));
+  return checks.every(c => c[1]);
+}
+if (runSelfTest() && location.hash === '#selftest') console.log('SELFTEST PASS');
+
+document.documentElement.classList.add('js');
+
+/* roof: one span per panel, groups per chapter, in column order */
+const roof = document.querySelector('.roof');
+const groupAt = (counts, keys, i) => { for (let g = 0; g < counts.length; g++) { if (i < counts[g]) return keys[g]; i -= counts[g]; } };
+const frag = document.createDocumentFragment();
+for (let r = 0; r < DATA.rows; r++) for (let c = 0; c < DATA.cols; c++) {
+  const el = document.createElement('span'), i = c * DATA.rows + r; // column-major panel order
+  el.className = 'cell';
+  el.style.cssText = `--c:${c};--r:${r}`;
+  if (c < lit[r]) el.dataset.gen = '';
+  el.dataset.sell = groupAt(sell, ['used', 'exported'], i);
+  el.dataset.pay = groupAt(pay, payKeys, i);
+  frag.append(el);
+}
+roof.append(frag);
+
+/* scroll: chapter index and rail progress from cached positions */
+const stage = document.querySelector('.stage');
+const chapters = [...document.querySelectorAll('.chapter')];
+const railLinks = [...document.querySelectorAll('.rail a')];
+const narrow = matchMedia('(max-width: 899px)');
+let tops = [], ends = [], stageH = 0, idx = -1, ticking = false;
+function cache() {
+  // measure from the headings, so the roof repaints as the new heading passes the reading line
+  tops = chapters.map(ch => ch.querySelector('h3').getBoundingClientRect().top + scrollY);
+  ends = tops.slice(1).concat(chapters.at(-1).getBoundingClientRect().bottom + scrollY);
+  stageH = stage.offsetHeight;
+  update();
+}
+function update() {
+  ticking = false;
+  const h = innerHeight;
+  const line = scrollY + (narrow.matches ? stageH + (h - stageH) * .3 : h * .6);
+  let i = 0;
+  while (i < chapters.length - 1 && line >= tops[i + 1]) i++;
+  const local = Math.min(1, Math.max(0, (line - tops[i]) / (ends[i] - tops[i])));
+  railLinks.forEach((a, j) => a.style.setProperty('--p', j < i ? 1 : j > i ? 0 : local.toFixed(3)));
+  if (i !== idx) {
+    idx = i;
+    stage.dataset.ch = i + 1;
+    railLinks.forEach((a, j) => j === i ? a.setAttribute('aria-current', 'step') : a.removeAttribute('aria-current'));
+  }
+}
+addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
+addEventListener('resize', cache);
+new ResizeObserver(cache).observe(document.querySelector('.prose'));
+document.fonts.ready.then(cache);
+cache();
+
+/* calculator */
+const form = document.getElementById('calc');
+const input = document.getElementById('amount');
+const err = document.getElementById('amount-err');
+const result = document.getElementById('result');
+function showError(msg) {
+  result.hidden = true; // an error always replaces the previous answer
+  result.classList.add('pre');
+  err.firstElementChild.textContent = msg;
+  err.classList.add('on');
+  input.setAttribute('aria-invalid', 'true');
+  input.focus();
+}
+form.addEventListener('submit', e => {
+  e.preventDefault();
+  const v = Number(input.value);
+  if (input.value.trim() === '' || !Number.isFinite(v) || v < 250 || v > 20000) return showError('Enter an amount between £250 and £20,000.');
+  if (v % 50) {
+    const lo = Math.max(250, Math.floor(v / 50) * 50), hi = Math.min(20000, lo + 50);
+    return showError(`Shares are sold in £50 steps. Try ${money(lo)} or ${money(hi)}.`);
+  }
+  err.classList.remove('on');
+  err.firstElementChild.textContent = '';
+  input.removeAttribute('aria-invalid');
+  const interest = v * DATA.rate.int, back = v * DATA.rate.cap, share = v / DATA.raised * DATA.panels;
+  result.querySelector('.sentence').innerHTML =
+    `For ${money(v)} you'd have received ${money(interest)} in interest and ${money(back)} of your money back: <strong class="total">${money(interest + back)}</strong> for the year to March 2026. Your shares paid for ${share.toFixed(1)} of the ${DATA.panels} panels.`;
+  const n = Math.ceil(share), step = Math.min(80, 600 / n);
+  result.querySelector('.glyphs').innerHTML = Array.from({ length: n }, (_, k) =>
+    `<span class="glyph"><i style="--f:${Math.min(1, share - k).toFixed(3)};--d:${Math.round(k * step)}ms"></i></span>`).join('');
+  result.classList.add('pre');
+  result.hidden = false;
+  const sentence = result.querySelector('.sentence');
+  sentence.focus({ preventScroll: true }); // read the answer out, keep it in view
+  result.scrollIntoView({ block: 'nearest' });
+  requestAnimationFrame(() => requestAnimationFrame(() => result.classList.remove('pre')));
+});
+result.querySelector('.again').addEventListener('click', () => {
+  result.hidden = true;
+  input.focus();
+  input.select();
+});
+</script>
+</body>
+</html>
