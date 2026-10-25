@@ -1,0 +1,1388 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>Brack 2408 channel strip</title>
+<meta name="description" content="Brack 2408, a mixing-console plugin modelled on a restored 1974 broadcast desk. Play a loop in the browser and switch stages to hear each one.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hedvig+Letters+Sans&family=Hedvig+Letters+Serif:opsz@12..24&display=swap">
+<style>
+:root {
+  /* Colour: the Lindqvist B-24's own paint, lenses and meter */
+  --ground: #B4AF9F;      /* putty broadcast-grey desk paint: the page */
+  --panel: #CFCBBE;       /* the strip face and the fields: lighter panel grey */
+  --ink: #1F1E1B;         /* engraved legends and text: 7.6:1 on ground, 10.3:1 on panel */
+  --ink-2: #3E3B35;       /* worn legends, captions: 5.1:1 on ground, 6.9:1 on panel */
+  --lens-green: #4C9C66;  /* a lit stage lens: ink legend at 5.0:1 */
+  --lens-white: #FFF5DA;  /* a lit selection lamp, warm white */
+  --key: #292825;         /* black key caps, knob caps, fader caps */
+  --meter: #141614;       /* the PPM face */
+  --scale: #F1EEE6;       /* PPM legends and needle: 15.7:1 on the face */
+  --peak: #D64B3C;        /* the PPM's top end and its peak LED, nowhere else */
+  --white: #FFF;          /* highlight ink for light catching edges */
+  --black: #000;          /* shadow ink */
+
+  --lens-off: #C3BEB0;                                             /* an unlit selection lamp */
+  --lens-green-off: color-mix(in oklab, var(--lens-green) 18%, var(--panel)); /* an unlit green lens */
+  --rule: color-mix(in oklab, var(--ink) 30%, var(--ground));
+  --cap-edge: color-mix(in oklab, var(--ink) 34%, var(--ground));
+  --skirt: color-mix(in oklab, var(--ink) 62%, var(--ground));
+  --groove: color-mix(in oklab, var(--ink) 88%, var(--ground));
+  --bezel: color-mix(in oklab, var(--key) 80%, var(--ground));
+  --screw-hi: color-mix(in oklab, var(--panel) 50%, var(--white));
+  --screw-lo: color-mix(in oklab, var(--ink) 45%, var(--panel));
+  --glow-white: radial-gradient(ellipse at 50% 40%, var(--white), var(--lens-white) 58%, color-mix(in oklab, var(--lens-white) 88%, var(--ground)));
+  --glow-green: radial-gradient(ellipse at 50% 40%, color-mix(in oklab, var(--lens-green), var(--white) 24%), var(--lens-green) 62%);
+  --bloom-white: color-mix(in oklab, var(--lens-white) 80%, transparent);
+  --bloom-green: color-mix(in oklab, var(--lens-green) 45%, transparent);
+
+  /* Type: Kanon Foundry's Hedvig Letters. One weight each; hierarchy comes from size. */
+  --font-legend: "Hedvig Letters Sans", "Gill Sans", "Trebuchet MS", sans-serif;
+  --font-text: "Hedvig Letters Serif", Georgia, serif;
+  --step--2: .75rem;      /* knob legends */
+  --step--1: .8125rem;    /* legends, captions */
+  --step-0: 1.0625rem;    /* body, buttons, nav */
+  --step-0-5: 1.25rem;    /* the wordmark */
+  --step-1: 1.375rem;     /* lede, panel headings, readouts */
+  --step-2: 1.875rem;     /* section headings */
+  --step-3: clamp(2.25rem, 1.6rem + 3vw, 3.5rem);   /* h2 and the statement: the meter stays the only display-scale object */
+
+  /* Space (4px base) */
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px;
+  --s6: 32px; --s7: 48px; --s8: 64px; --s9: 96px; --s10: 128px;
+  --gutter: clamp(16px, 4vw, 48px);
+  --max: 1240px;
+  --strip-w: 300px;
+  --knob: 52px;
+  --hdr-h: 64px;
+
+  /* Radius by object */
+  --r-plate: 6px;
+  --r-cap: 3px;
+  --r-fader: 2px;
+
+  /* Motion: CSS transitions */
+  --m-lamp-on: .08s;   --m-ease-on: cubic-bezier(.25, .46, .45, .94);    /* power1.out */
+  --m-lamp-off: .28s;  --m-ease-off: cubic-bezier(.215, .61, .355, 1);   /* power2.out: the afterglow */
+  --m-stage: .3s;
+  --m-press: .12s;
+  --m-release: .4s;    --m-ease-release: cubic-bezier(.34, 1.56, .64, 1);
+  --m-swap: .35s;      --m-ease-swap: cubic-bezier(.65, 0, 0, 1);
+  --m-underline: .45s; --m-ease-underline: cubic-bezier(.35, 0, 0, 1);
+  --m-reveal: .2s;     --m-ease-expo: cubic-bezier(.16, 1, .3, 1);
+  --m-error: .25s;
+  --m-drift: .5s;      --m-ease-drift: cubic-bezier(.215, .61, .355, 1);
+  --m-drift-step: 20ms;
+  --m-beat: .652s;     --m-ease-eq: cubic-bezier(.7, 0, .2, 1);           /* one beat at 92 BPM */
+
+  /* Motion: read by the script (seconds and GSAP ease names) */
+  --g-chrome: .5;   --ge-chrome: expo.out;
+  --g-recall: .6;   --ge-recall: power3.out;
+  --g-test: .06;    /* each lamp in the power-on lamp test */
+  --g-lamp: .5;     /* ease: the "lamp" CustomEase */
+  --g-ppm: .03;     --ge-ppm: power1.out;  /* PPM rise: Type I */
+  --g-fall: 1.7;    /* PPM fall: seconds per 20 dB, linear in dB */
+  --g-hold: .6;     /* the power-on line-up: the needle holds on Test */
+  --g-out: .15;     --ge-out: power1.in;
+  --g-in: .25;      --ge-in: power2.out;
+  --g-detent: .35;  --ge-detent: back.out(1.7);
+  --g-air: .25;     --ge-air: power3.out;
+  --g-sheet: .5;    --ge-sheet: expo.inOut;
+  --g-links: .45;   --ge-links: expo.out;
+  --g-rule: .9;     --ge-rule: expo.out;
+  --g-glare: 1.2;   --ge-glare: power3.out;
+}
+
+/* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+html.lenis, html.lenis body { height: auto; }
+.lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+.lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+.lenis.lenis-smooth iframe { pointer-events: none; }
+
+*, *::before, *::after { box-sizing: border-box; }
+html { background: var(--ground); color: var(--ink); color-scheme: light; font-synthesis: none; -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--ground); color: var(--ink);
+  font: 400 var(--step-0)/1.6 var(--font-text);
+  -webkit-tap-highlight-color: color-mix(in oklab, var(--ink) 14%, transparent);
+}
+h2, h3, h4, p, dl, dd, figure, fieldset { margin: 0; }
+h2, h3, h4 { font-weight: 400; }
+fieldset { border: 0; padding: 0; min-width: 0; }
+button, input { font: inherit; color: inherit; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+[tabindex="-1"]:focus { outline: none; }
+.nw { white-space: nowrap; }
+html:not(.js) .js-only, html.js .no-js { display: none; }
+.vh { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.wrap { width: min(100% - 2 * var(--gutter), var(--max)); margin-inline: auto; }
+.grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--s5); }
+
+/* Legends (engraved, sans) and the manual voice (serif) */
+.legend { font: 400 var(--step--1)/1.2 var(--font-legend); letter-spacing: .03em; color: var(--ink-2); }
+h2 { font: 400 var(--step-3)/1.04 var(--font-text); letter-spacing: -.015em; text-wrap: balance; max-width: 15ch; }
+h3 { font: 400 var(--step-2)/1.15 var(--font-text); letter-spacing: -.01em; text-wrap: balance; }
+h4 { font: 400 var(--step-1)/1.2 var(--font-text); }
+.lede { font-size: var(--step-1); line-height: 1.5; max-width: 34em; margin-top: var(--s5); }
+.body { max-width: 58ch; }
+.spec-line { font-size: var(--step--1); line-height: 1.5; color: var(--ink-2); }
+
+/* HV2: directional underline (in from the left, out to the right) */
+.ul { position: relative; text-decoration: none; }
+.ul::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: calc(var(--ul-pad, 0px) - .14em); height: max(1px, .07em);
+  background: currentColor; transform: scaleX(0); transform-origin: right center;
+  transition: transform var(--m-underline) var(--m-ease-underline);
+}
+@media (hover: hover) and (pointer: fine) {
+  .ul:hover::after { transform: scaleX(1); transform-origin: left center; }
+}
+.ul:focus-visible::after, .ul[aria-current="true"]::after { transform: scaleX(1); transform-origin: left center; }
+@media (hover: none) {
+  .ul:not(.wordmark)::after { transform: scaleX(1); height: 1px; }
+}
+
+/* Skip link: off-screen until focused, then wipes down */
+.skip {
+  position: fixed; z-index: 50; top: var(--s2); left: var(--s2);
+  padding: var(--s2) var(--s4); background: var(--panel); color: var(--ink);
+  font: 400 var(--step-0)/1.4 var(--font-legend); text-decoration: none; border-radius: var(--r-cap);
+  clip-path: inset(0 0 100% 0); transition: clip-path var(--m-reveal) var(--m-ease-expo);
+}
+.skip:focus { clip-path: inset(-6px); }
+
+/* The illuminated push-button cap: every control on the page.
+   --lamp is the lamp's brightness: 0 off, .18 pre-glow, 1 lit. Only opacity animates.
+   A latched cap (selected, checked, pressed, playing, open) also sits 2px lower, so state never rests on colour alone. */
+.cap {
+  --lamp: 0; --lamp-t: var(--m-lamp-off); --lamp-e: var(--m-ease-off);
+  --off: var(--lens-off); --glow: var(--glow-white); --bloom: var(--bloom-white); --fg: var(--ink);
+  position: relative; isolation: isolate;
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s2);
+  min-height: 44px; padding: 0 var(--s4);
+  font: 400 var(--step-0)/1.2 var(--font-legend); letter-spacing: .02em;
+  color: var(--fg); background: var(--off);
+  border: 1px solid var(--cap-edge); border-radius: var(--r-cap);
+  box-shadow: 0 3px 0 var(--skirt), inset 0 1px 0 color-mix(in oklab, var(--white) 40%, transparent);
+  text-decoration: none; cursor: pointer; user-select: none;
+  transition: transform var(--m-release) var(--m-ease-release), box-shadow var(--m-release) var(--m-ease-release), color var(--lamp-t) var(--lamp-e), text-shadow var(--lamp-t) var(--lamp-e);
+}
+.cap::before, .cap::after {
+  content: ""; position: absolute; inset: -1px; z-index: -1; border-radius: inherit; pointer-events: none;
+  opacity: var(--lamp); transition: opacity var(--lamp-t) var(--lamp-e);
+}
+.cap::before { background: var(--glow); }                 /* the filament behind the lens */
+.cap::after { box-shadow: 0 0 14px 3px var(--bloom); }    /* the light the lens throws onto the panel */
+.cap--stage { --off: var(--lens-green-off); --glow: var(--glow-green); --bloom: var(--bloom-green); }
+.cap--key { --off: var(--key); --fg: var(--panel); border-color: var(--key); }
+/* pre-glow: .4 on the pale lenses (18% vanishes over pale grey). Black keys are never washed (it reads as disabled): their legend lights instead. */
+@media (hover: hover) and (pointer: fine) {
+  .cap:hover, label:hover > :not(:checked) + .cap, .play:hover .cap { --lamp: .4; --lamp-t: var(--m-lamp-on); --lamp-e: var(--m-ease-on); }
+  .cap--key:hover, .play:hover .cap--key { --lamp: 0; color: var(--lens-white); text-shadow: 0 0 6px var(--bloom-white); }
+}
+.cap:focus-visible, input:not(:checked):focus-visible + .cap, .play:focus-visible .cap { --lamp: .4; }
+.cap--key:focus-visible, .play:focus-visible .cap--key { --lamp: 0; color: var(--lens-white); text-shadow: 0 0 6px var(--bloom-white); }
+input:focus-visible + .cap { outline: 2px solid var(--ink); outline-offset: 3px; }
+/* latched */
+.cap[aria-selected="true"], .cap[aria-pressed="true"], :checked + .cap, .play.is-on .cap, .menu-btn[aria-expanded="true"] {
+  transform: translateY(2px); box-shadow: 0 1px 0 var(--skirt), inset 0 1px 0 color-mix(in oklab, var(--white) 40%, transparent);
+}
+/* pressed: 1px of travel, the lamp warms in 0.08 s; release cools with the afterglow */
+.cap:active, label:active > .cap, .play:active .cap { transform: translateY(1px); box-shadow: 0 2px 0 var(--skirt); transition-duration: var(--m-press); }
+.cap:active, label:active > .cap, .play:active .cap, .play.is-on .cap, .menu-btn[aria-expanded="true"],
+.cap[aria-selected="true"], .cap[aria-pressed="true"], :checked + .cap {
+  --lamp: 1; --lamp-t: var(--m-lamp-on); --lamp-e: var(--m-ease-on);
+}
+.cap.is-test { --lamp: 1 !important; --lamp-t: var(--m-lamp-on) !important; --lamp-e: var(--m-ease-on) !important; }
+.cap--key:active, .play:active .cap--key, .play.is-on .cap--key, .menu-btn[aria-expanded="true"], .cap--key.is-test { color: var(--ink); text-shadow: none; }
+.cap[aria-disabled="true"], .play[aria-disabled="true"] .cap { --lamp: 0 !important; cursor: not-allowed; }
+.cap--big { min-height: 52px; padding: 0 var(--s5); }
+
+/* MI2: masked label swap, width reserved by sharing one cell */
+.swap { display: inline-grid; overflow: hidden; justify-items: start; }
+.swap > * { grid-area: 1 / 1; transition: transform var(--m-swap) var(--m-ease-swap); }
+.swap > :last-child { transform: translateY(110%); }
+.is-on .swap > :first-child, [aria-expanded="true"] > .swap > :first-child, [aria-pressed="false"] > .swap > :first-child { transform: translateY(-110%); }
+.is-on .swap > :last-child, [aria-expanded="true"] > .swap > :last-child, [aria-pressed="false"] > .swap > :last-child { transform: none; }
+
+/* ---------- Header ---------- */
+.hdr { position: sticky; top: 0; z-index: 30; background: var(--ground); border-bottom: 1px solid var(--rule); }
+.hdr__in { display: flex; align-items: center; gap: var(--s6); min-height: var(--hdr-h); }
+.wordmark { --ul-pad: var(--s1); margin-right: auto; font: 400 var(--step-0-5)/1 var(--font-legend); padding-block: var(--s1); letter-spacing: .01em; }
+.nav { display: flex; gap: var(--s5); }
+.nav a { font: 400 var(--step-0)/1.4 var(--font-legend); letter-spacing: .02em; }
+.menu-btn { display: none; }
+@media (max-width: 819px) {
+  .nav, .hdr .cap--cta { display: none; }
+  html.js .menu-btn { display: inline-flex; min-width: 6.5em; }
+  html:not(.js) .nav { display: flex; flex-wrap: wrap; gap: var(--s4); }
+  html:not(.js) .hdr__in { flex-wrap: wrap; padding-block: var(--s3); }
+}
+
+/* Mobile sheet (NV1) */
+html.menu-open { overflow: hidden; } /* locks scroll without Lenis too (reduced motion) */
+.sheet { display: none; }
+@media (max-width: 819px) {
+  html.js .sheet {
+    display: block; position: fixed; z-index: 25; inset: var(--hdr-h) 0 0;
+    background: var(--ground); visibility: hidden; overflow-y: auto;
+    padding: var(--s7) var(--gutter);
+  }
+  .sheet ul { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s5); }
+  .sheet a { font: 400 var(--step-3)/1.1 var(--font-legend); letter-spacing: -.01em; }
+}
+
+/* ---------- Strip section ---------- */
+.hero { padding-block: var(--s8) var(--s9); row-gap: 0; }
+.hero__intro { grid-column: 1 / 8; grid-row: 1; }
+.hero__controls { grid-column: 1 / 8; grid-row: 2; margin-top: var(--s7); }
+.strip { grid-column: 9 / 13; grid-row: 1 / 3; justify-self: center; align-self: start; width: var(--strip-w); }
+@media (min-width: 1200px) { /* the instrument is the hero: the meter gets the width, the stages pair up beneath it */
+  :root { --strip-w: min(100%, 620px); }
+  .hero__intro, .hero__controls { grid-column: 1 / 6; }
+  .strip { grid-column: 6 / 13; justify-self: end; margin-top: calc(-1 * var(--s6)); }
+  .ppm__needle line { stroke-width: 1.2; } /* about 2.5px on a 590px face */
+  .hero { padding-bottom: var(--s5); } /* the panels cell already reserves the tallest panel below the visible one */
+}
+@media (min-width: 820px) and (max-width: 991px) {
+  :root { --strip-w: 300px; } /* the widest that fits columns 8-12 at 820px */
+  .strip { grid-column: 8 / 13; }
+  .ppm .ppm__scale text, .ppm .ppm__small, .ppm .ppm__test { font-size: 14px; } /* 14 user units at a 0.86 scale: 12px rendered */
+}
+@media (max-width: 819px) {
+  .hero { display: block; padding-block: var(--s6) var(--s8); }
+  .lede { font-size: var(--step-0); margin-top: var(--s4); }
+  .strip { width: min(100%, 420px); justify-self: start; margin-top: var(--s5); } /* capped on tablets so the tabs stay near the meter; left-aligned like the text */
+  .hero__controls { margin-top: var(--s5); }
+}
+
+/* Tabs and panels (CD9) */
+.tabs { display: none; }
+html.js .tabs { display: flex; gap: var(--s2); }
+html.js .tabs .cap { flex: 0 1 auto; min-width: 5.5em; }
+/* before power-up every lamp is dark; the switches already sit where they were left */
+html.js:not(.lit) .cap[aria-selected="true"], html.js:not(.lit) .cap[aria-pressed="true"], html.js:not(.lit) :checked + .cap { --lamp: 0; }
+html.js:not(.lit) .mod.is-on:not(.is-test) .mod__lamp { opacity: 0; }
+html.js:not(.lit) .mod.is-on:not(.is-test) .mod__name::before, html.js:not(.lit) #strip-drift span::before { opacity: 0; }
+.panels { display: grid; gap: var(--s8); }
+html.js .panels { gap: 0; margin-top: var(--s5); }
+html.js .panel { grid-area: 1 / 1; }
+html.js .panel:not(.is-active) { visibility: hidden; opacity: 0; }
+.panel { display: grid; gap: var(--s4); align-content: start; }
+.panel h3 { font-size: var(--step-1); line-height: 1.2; max-width: 30ch; }
+/* the control sits right under its heading, so it shares the screen with the meter it moves */
+.panel > .body { order: 1; }
+.panel > .spec-line { order: 2; }
+html.js .panel h3 { margin-top: var(--s2); }
+@media (max-width: 819px) {
+  html.js .tabs .cap { flex: 1 1 0; min-width: 0; padding: 0 var(--s1); font-size: 1rem; letter-spacing: 0; }
+}
+@media (max-width: 379px) { html.js .tabs .cap { font-size: var(--step--1); } }
+
+.control { display: grid; gap: var(--s2); margin-top: var(--s2); }
+.control > .cap { justify-self: start; min-width: 5.5em; }
+.seg { display: grid; gap: var(--s2); }
+.seg legend { padding: 0; margin-bottom: var(--s2); }
+.seg__caps { display: flex; flex-wrap: wrap; gap: var(--s2); }
+.seg label { position: relative; display: inline-flex; }
+.seg input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.seg .cap { min-width: 4.75em; pointer-events: none; }
+.seg label:has(:checked) { cursor: default; }
+@media (max-width: 819px) { /* after the base rules, so these win */
+  .seg__caps { flex-wrap: nowrap; }
+  .seg label { flex: 1 1 0; }
+  .seg .cap { min-width: 0; width: 100%; padding: 0 var(--s1); }
+}
+
+/* Air shelf: the range input drawn as a fader slot with a fader cap */
+.range { display: grid; grid-template-columns: minmax(0, 22rem) auto; justify-content: start; align-items: center; column-gap: var(--s5); }
+.range label { grid-column: 1 / -1; margin-bottom: var(--s1); }
+.range output { font: 400 var(--step-1)/1 var(--font-legend); min-width: 4.5em; text-align: right; white-space: nowrap; }
+/* Hedvig Letters Sans has no tabular figures, so a live readout sets each character in a fixed slot */
+.fig { display: inline-block; width: .62em; text-align: center; }
+.fig--pt { width: .24em; }
+input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 44px; margin: 0; background: transparent; cursor: pointer; }
+input[type="range"]:focus-visible { outline: none; }
+input[type="range"]::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: var(--groove); box-shadow: inset 0 1px 2px var(--black); }
+input[type="range"]::-moz-range-track { height: 6px; border-radius: 3px; background: var(--groove); }
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 22px; height: 34px; margin-top: -14px; border-radius: var(--r-fader);
+  background: linear-gradient(90deg, transparent 9px, var(--panel) 9px 13px, transparent 13px), var(--key);
+  border: 0; box-shadow: 0 2px 0 var(--skirt);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 22px; height: 34px; border-radius: var(--r-fader); border: 0;
+  background: linear-gradient(90deg, transparent 9px, var(--panel) 9px 13px, transparent 13px), var(--key);
+}
+@media (hover: hover) and (pointer: fine) {
+  input[type="range"]:hover::-webkit-slider-thumb { background: linear-gradient(90deg, transparent 9px, var(--white) 9px 13px, transparent 13px), var(--key); }
+  input[type="range"]:hover::-moz-range-thumb { background: linear-gradient(90deg, transparent 9px, var(--white) 9px 13px, transparent 13px), var(--key); }
+}
+input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px var(--ground), 0 0 0 5px var(--ink); }
+input[type="range"]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px var(--ground), 0 0 0 5px var(--ink); }
+
+/* ---------- The drawn channel strip ---------- */
+.plate {
+  position: relative; background: var(--panel); border-radius: var(--r-plate);
+  padding: var(--s6) var(--s4) var(--s5);
+  box-shadow: 0 0 0 1px var(--cap-edge), inset 0 1px 0 color-mix(in oklab, var(--white) 55%, transparent), 0 2px 0 var(--rule);
+}
+.screw {
+  position: absolute; width: 9px; height: 9px; border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, var(--screw-hi), var(--screw-lo) 80%);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--ink) 30%, transparent);
+}
+.screw::after { content: ""; position: absolute; left: 1px; right: 1px; top: 4px; height: 1px; background: color-mix(in oklab, var(--ink) 70%, transparent); transform: rotate(var(--a, 20deg)); }
+.screw:nth-child(1) { top: 9px; left: 9px; --a: 28deg; }
+.screw:nth-child(2) { top: 9px; right: 9px; --a: -64deg; }
+.screw:nth-child(3) { bottom: 9px; left: 9px; --a: 82deg; }
+.screw:nth-child(4) { bottom: 9px; right: 9px; --a: 12deg; }
+
+.bridge { display: grid; gap: var(--s3); }
+.ppm {
+  position: relative; overflow: hidden; border-radius: 3px; background: var(--meter);
+  aspect-ratio: 300 / 170;
+  box-shadow: 0 0 0 1px var(--ink), 0 0 0 5px var(--bezel), 0 0 0 6px var(--cap-edge);
+  margin: 5px;
+}
+.ppm svg { display: block; width: 100%; height: 100%; }
+.ppm text { font-family: var(--font-legend); fill: var(--scale); text-anchor: middle; }
+.ppm__scale text, .ppm__test { font-size: 13px; } /* 12.4px rendered at 360px wide */
+.ppm__arc, .ppm__ticks { fill: none; stroke: var(--scale); stroke-width: 1.3; }
+.ppm__red { fill: none; stroke: var(--peak); stroke-width: 6; }
+.ppm__needle line { stroke: var(--scale); stroke-width: 1.8; stroke-linecap: round; }
+.ppm__hold line { stroke: var(--scale); stroke-width: 1; opacity: .6; } /* peak hold: the highest peak of the last two bars */
+.ppm__cover { fill: var(--bezel); }
+.ppm__led { fill: var(--peak); opacity: .25; }
+.ppm__unit { font-size: 15px; letter-spacing: .06em; }
+.ppm__small { font-size: 12px; letter-spacing: .02em; }
+.ppm__readout { display: none; font-size: 15px; letter-spacing: .02em; }
+html.js:not(.booted) .ppm__lamp { opacity: .12; }
+html.js:not(.booted) .ppm__scale, html.js:not(.booted) .ppm__test { opacity: .3; }
+.ppm__glare {
+  position: absolute; inset: -16px; pointer-events: none;
+  background:
+    radial-gradient(55% 45% at 30% 14%, color-mix(in oklab, var(--white) 6%, transparent), transparent 70%),
+    linear-gradient(112deg, transparent 32%, color-mix(in oklab, var(--white) 3.5%, transparent) 46%, transparent 60%);
+}
+
+/* The transport key: a black key holding the play/stop glyph and the MI6 bars, its legend beside it */
+.play {
+  justify-self: start; display: inline-flex; align-items: center; gap: var(--s3);
+  min-height: 44px; padding: 0 var(--s2) 0 0; border: 0; background: none; cursor: pointer;
+  font: 400 var(--step-0)/1.2 var(--font-legend); letter-spacing: .02em; color: var(--ink); text-align: left;
+}
+.play .cap { min-width: 64px; padding: 0 var(--s3); gap: var(--s3); pointer-events: none; }
+.play.is-flash:not(.is-on) .cap { --lamp: 1; --lamp-t: var(--m-lamp-on); --lamp-e: var(--m-ease-on); color: var(--ink); } /* one flash when a control moves before the loop plays */
+.play__glyph > * { display: block; width: 12px; height: 12px; fill: currentColor; }
+.eq { display: inline-flex; align-items: flex-end; gap: 2px; width: 18px; height: 14px; flex: none; }
+.eq i { flex: 1; height: 100%; background: currentColor; transform-origin: 50% 100%; transform: scaleY(calc(var(--h) * .45)); opacity: .7; transition: transform .2s var(--m-ease-off), opacity .2s var(--m-ease-off); }
+.eq i:nth-child(1) { --h: 1; }
+.eq i:nth-child(2) { --h: .62; animation-delay: -.163s; }
+.eq i:nth-child(3) { --h: .86; animation-delay: -.326s; }
+.eq i:nth-child(4) { --h: .54; animation-delay: -.489s; }
+@media (hover: hover) and (pointer: fine) { .play:hover:not(.is-on) .eq i { transform: scaleY(calc(var(--h) * .7)); opacity: 1; } }
+.play:focus-visible:not(.is-on) .eq i { transform: scaleY(calc(var(--h) * .7)); opacity: 1; }
+.play.is-on .eq i { opacity: 1; animation: eq var(--m-beat) var(--m-ease-eq) infinite alternate; }
+.bridge.is-away .eq i { animation-play-state: paused; }
+@keyframes eq { from { transform: scaleY(.3); } to { transform: scaleY(var(--h)); } }
+.play:not(.js-ready) { display: none; }
+html.js .play.js-ready { display: inline-flex; }
+.bridge__note { display: grid; font-size: var(--step--1); line-height: 1.45; color: var(--ink-2); }
+.bridge__note > * { grid-area: 1 / 1; }
+.note__hint { opacity: 0; color: var(--ink); }
+html:not(.js) .lede__play { display: none; } /* no play key and no tabs without JS */
+
+.modules { margin-top: var(--s5); }
+.mod { position: relative; padding: var(--s3) 0 var(--s2); border-top: 1px solid var(--rule); }
+.mod__lamp {
+  position: absolute; inset: 0 calc(-1 * var(--s4)); pointer-events: none; opacity: 0;
+  background: linear-gradient(90deg, color-mix(in oklab, var(--lens-green) 16%, transparent), transparent 85%);
+  transition: opacity var(--m-stage) var(--m-ease-off);
+}
+.mod.is-on .mod__lamp { opacity: 1; }
+.mod__name { position: relative; display: flex; align-items: center; gap: var(--s2); font: 400 var(--step--1)/1 var(--font-legend); letter-spacing: .03em; color: var(--ink); }
+.mod__name::before, .mod__name::after { content: ""; width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.mod__name::after { position: absolute; left: 0; background: var(--glow-green); box-shadow: 0 0 8px 1px var(--bloom-green); opacity: 0; transition: opacity var(--m-lamp-off) var(--m-ease-off); }
+.mod__name::before { background: var(--lens-green-off); box-shadow: inset 0 0 0 1px var(--cap-edge); }
+.mod.is-on .mod__name::after, .mod.is-test .mod__name::after { opacity: 1; transition: opacity var(--m-lamp-on) var(--m-ease-on); }
+html.js:not(.lit) .mod.is-on:not(.is-test) .mod__name::after { opacity: 0; }
+.knobs { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); margin-top: var(--s2); }
+.knob { display: grid; justify-items: center; gap: 1px; }
+.knob__ring { position: relative; width: var(--knob); height: var(--knob); }
+.knob__ring svg { position: absolute; inset: 0; fill: none; stroke: var(--ink-2); stroke-width: 1.4; stroke-linecap: round; }
+.knob__cap {
+  position: absolute; inset: 21%; border-radius: 50%;
+  background: radial-gradient(circle at 50% 30%, color-mix(in oklab, var(--key), var(--white) 18%), var(--key) 70%);
+  box-shadow: 0 2px 2px color-mix(in oklab, var(--ink) 45%, transparent), inset 0 1px 0 color-mix(in oklab, var(--white) 14%, transparent);
+}
+.knob__cap::after { content: ""; position: absolute; left: calc(50% - 1px); top: 3px; width: 2px; height: 10px; border-radius: 1px; background: var(--scale); }
+.knob__label { font: 400 var(--step--2)/1.2 var(--font-legend); letter-spacing: .03em; color: var(--ink-2); text-align: center; }
+.lamp-cap { display: grid; justify-items: center; align-content: center; height: var(--knob); }
+.lamp-cap span { width: 26px; height: 16px; border-radius: var(--r-cap); background: var(--lens-off); border: 1px solid var(--cap-edge); box-shadow: 0 2px 0 var(--skirt); position: relative; transition: transform var(--m-release) var(--m-ease-release); }
+.lamp-cap span::before { content: ""; position: absolute; inset: -1px; border-radius: inherit; background: var(--glow-white); box-shadow: 0 0 10px 2px var(--bloom-white); opacity: 0; transition: opacity var(--m-lamp-off) var(--m-ease-off); }
+.lamp-cap.is-on span { transform: translateY(1px); box-shadow: 0 1px 0 var(--skirt); }
+.lamp-cap.is-on span::before { opacity: 1; transition: opacity var(--m-lamp-on) var(--m-ease-on); }
+@media (min-width: 1200px) {
+  .modules { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--s5); }
+  .mod__lamp { inset: 0; }
+}
+@media (min-width: 820px) and (max-height: 800px) { /* short laptops: keep the meter and the controls in one screen */
+  .hero { padding-top: var(--s6); }
+  .hero__controls { margin-top: var(--s5); }
+}
+@media (min-width: 1200px) and (max-height: 800px) { .strip { margin-top: calc(-1 * var(--s4)); } }
+@media (max-width: 819px) { /* phones: only the selected stage, so a changed control turns a knob beside the meter */
+  .modules { margin-top: var(--s4); }
+  .mod:not(.is-on) { display: none; }
+  .mod__lamp { inset: 0; }
+}
+
+/* ---------- The statement (S1) ---------- */
+.say { padding-block: var(--s9) var(--s8); border-top: 1px solid var(--rule); }
+.statement { grid-column: 1 / 11; font: 400 var(--step-3)/1.08 var(--font-text); letter-spacing: -.015em; text-wrap: pretty; }
+@media (max-width: 819px) { .say { padding-block: var(--s8) var(--s7); } .statement { grid-column: 1 / -1; } }
+
+/* ---------- Drift faders ---------- */
+.drift { padding-block: var(--s7) var(--s9); row-gap: var(--s6); align-items: start; }
+.drift__text { grid-column: 1 / 5; display: grid; gap: var(--s4); justify-items: start; }
+.drift__text p { color: var(--ink-2); max-width: 34ch; }
+.faders {
+  --unity: 30%; --db-px: 40px; --slot-h: 188px;
+  grid-column: 5 / 13; display: grid; grid-template-columns: repeat(24, minmax(0, 1fr)); row-gap: var(--s6);
+}
+.fader { display: grid; justify-items: center; gap: var(--s2); }
+.fader__slot { position: relative; width: 100%; height: var(--slot-h); }
+.fader__slot::before { content: ""; position: absolute; left: calc(50% - 2px); width: 4px; top: 0; bottom: 0; border-radius: 2px; background: var(--groove); box-shadow: inset 0 1px 2px var(--black); }
+.fader__slot::after { content: ""; position: absolute; left: calc(50% - 9px); width: 18px; top: var(--unity); height: 1px; background: var(--ink-2); }
+.fader__ride { position: absolute; left: calc(50% - 11px); top: calc(var(--unity) - 15px); width: 22px; height: 30px; }
+.fader__cap {
+  display: block; width: 100%; height: 100%; border-radius: var(--r-fader);
+  background: linear-gradient(transparent 14px, var(--scale) 14px 16px, transparent 16px), linear-gradient(color-mix(in oklab, var(--key), var(--white) 12%), var(--key));
+  box-shadow: 0 2px 0 var(--skirt);
+  transform: translateY(calc(var(--off) * var(--db-px) * -1));
+  transition: transform var(--m-drift) var(--m-ease-drift) calc(var(--c) * var(--m-drift-step));
+}
+.faders.is-flat .fader__cap { transform: translateY(0); }
+.fader__ch { font: 400 var(--step--2)/1 var(--font-legend); color: var(--ink-2); }
+.fader__val { font: 400 var(--step--1)/1 var(--font-legend); white-space: nowrap; }
+@media (max-width: 819px) {
+  .drift { padding-block: var(--s6) var(--s8); }
+  .drift__text, .faders { grid-column: 1 / -1; }
+  .faders { --slot-h: 132px; grid-template-columns: repeat(12, minmax(0, 1fr)); }
+  .fader__val { font-size: var(--step--2); }
+}
+
+/* ---------- Specs and trial ---------- */
+.lower { padding-block: var(--s9); border-top: 1px solid var(--rule); row-gap: var(--s8); }
+.specs { grid-column: 1 / 7; }
+.trial { grid-column: 8 / 13; }
+.specs h3, .trial h3 { margin-bottom: var(--s5); }
+.spec-row { position: relative; display: grid; grid-template-columns: 7.5em minmax(0, 1fr); column-gap: var(--s4); padding-block: var(--s3) var(--s4); }
+.spec-row__rule { position: absolute; top: 0; left: 0; right: 0; height: 1px; background: var(--rule); }
+.spec-row dt { font: 400 var(--step-0)/1.6 var(--font-legend); letter-spacing: .02em; color: var(--ink-2); }
+@media (max-width: 819px) {
+  .specs, .trial { grid-column: 1 / -1; }
+  .spec-row { grid-template-columns: 1fr; }
+}
+
+.trial__intro { max-width: 40ch; margin-bottom: var(--s6); }
+.trial__body { display: grid; }
+html.js .trial__body > * { grid-area: 1 / 1; }
+html:not(.js) .result, html:not(.js) .is-sent > form { display: none; }
+html:not(.js) .is-sent > .result { display: grid; } /* CDN blocked: the form still answers, without the crossfade */
+html.js .result { visibility: hidden; opacity: 0; }
+form { display: grid; gap: var(--s5); align-content: start; }
+.field { position: relative; padding-top: 1.6em; }
+.field input {
+  width: 100%; height: 52px; padding: 0 var(--s3); border: 0; border-radius: 0;
+  background: var(--panel); color: var(--ink); font: 400 var(--step-0)/1 var(--font-text);
+  border-bottom: 1px solid var(--ink-2);
+}
+.field label {
+  position: absolute; left: var(--s3); top: calc(1.6em + 14px); pointer-events: none;
+  font: 400 var(--step-0)/1.4 var(--font-legend); letter-spacing: .02em; color: var(--ink-2);
+  transform-origin: left center; transition: transform var(--m-reveal) var(--m-ease-off);
+}
+.field input:focus + label, .field input:not(:placeholder-shown) + label { transform: translateY(-2.45em) translateX(calc(-1 * var(--s3))) scale(.8); }
+.field::before, .field::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; pointer-events: none; opacity: 0; background: var(--ink); }
+.field::before { height: 1px; transition: opacity .15s var(--m-ease-off); }
+.field::after { height: 2px; transition: opacity var(--m-lamp-on) var(--m-ease-on); }
+@media (hover: hover) and (pointer: fine) { .field:hover::before { opacity: 1; } }
+.field:focus-within::after, .has-error .field::after { opacity: 1; }
+.error {
+  min-height: 1.5em; margin-top: calc(-1 * var(--s3)); font-size: var(--step--1);
+  clip-path: inset(0 0 100% 0); visibility: hidden;
+  transition: clip-path var(--m-error) var(--m-ease-expo), visibility 0s var(--m-error);
+}
+.has-error .error { clip-path: inset(0); visibility: visible; transition: clip-path var(--m-error) var(--m-ease-expo); }
+form .cap--big { justify-self: start; }
+.result { display: grid; gap: var(--s4); align-content: start; }
+.result p { max-width: 40ch; }
+.result strong { font: inherit; font-family: var(--font-legend); }
+.link-btn {
+  --ul-pad: 10px; justify-self: start; min-height: 44px; padding: 10px 0; border: 0; background: none; cursor: pointer;
+  font: 400 var(--step-0)/1.4 var(--font-legend); letter-spacing: .02em; color: var(--ink);
+  transition: transform var(--m-release) var(--m-ease-release);
+}
+.link-btn:active { transform: translateY(1px) scale(.98); transition-duration: var(--m-press); }
+@media (max-width: 819px) { form .cap--big { justify-self: stretch; } }
+
+/* ---------- Footer ---------- */
+.ftr { border-top: 1px solid var(--rule); padding-block: var(--s6) var(--s7); }
+.ftr__in { display: flex; flex-wrap: wrap; gap: var(--s4) var(--s6); align-items: baseline; }
+.ftr p { margin-right: auto; color: var(--ink-2); }
+.ftr a { font: 400 var(--step-0)/1.4 var(--font-legend); letter-spacing: .02em; }
+@media (max-width: 819px) { .ftr__in { flex-direction: column; } }
+@media (pointer: coarse) { /* 44px touch targets; the underline stays under the text */
+  .ftr a { --ul-pad: 10px; padding-block: 10px; }
+  .wordmark { --ul-pad: 12px; padding-block: 12px; } /* 20px line + 24px = 44px */
+}
+
+/* Section anchors land below the sticky header when JS is off */
+[id] { scroll-margin-top: calc(var(--hdr-h) + var(--s5)); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0s !important; transition-delay: 0s !important; animation: none !important; }
+  .ppm__needle, .ppm__hold, .ppm__unit { display: none; }
+  .ppm__readout { display: inline; }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#strip">Skip to the channel strip</a>
+
+<header class="hdr" id="top" tabindex="-1">
+  <div class="wrap hdr__in">
+    <a class="wordmark ul" href="#top">Brack Audio</a>
+    <nav class="nav" aria-label="Sections">
+      <a class="ul" href="#strip">The strip</a>
+      <a class="ul" href="#drift">Measured</a>
+      <a class="ul" href="#specs">Specs</a>
+    </nav>
+    <a class="cap cap--key cap--cta" href="#trial">Try it free</a>
+    <button class="cap cap--key menu-btn" type="button" aria-expanded="false" aria-controls="sheet" aria-label="Menu">
+      <span class="swap" aria-hidden="true"><span>Menu</span><span>Close</span></span>
+    </button>
+  </div>
+</header>
+
+<div class="sheet" id="sheet" inert>
+  <nav aria-label="Sections menu">
+    <ul>
+      <li><a class="ul" href="#strip">The strip</a></li>
+      <li><a class="ul" href="#drift">Measured</a></li>
+      <li><a class="ul" href="#specs">Specs</a></li>
+      <li><a class="ul" href="#trial">Try it free</a></li>
+    </ul>
+  </nav>
+</div>
+
+<main>
+  <section class="wrap" aria-labelledby="strip">
+    <div class="grid hero" data-spy="strip">
+      <div class="hero__intro">
+        <h2 id="strip" tabindex="-1">A 1974 broadcast desk, one strip on every track.</h2>
+        <p class="lede">Brack 2408 is a mixing-console plugin modelled on the Lindqvist <span class="nw">B-24</span>, a broadcast desk we spent two years restoring. Put it on every channel and your mix runs through the same preamp, EQ, dynamics and bus.<span class="lede__play"> Play the loop and switch stages to hear each one.</span></p>
+      </div>
+
+      <div class="strip">
+        <div class="plate">
+          <span class="screw" aria-hidden="true"></span><span class="screw" aria-hidden="true"></span><span class="screw" aria-hidden="true"></span><span class="screw" aria-hidden="true"></span>
+          <div class="bridge">
+            <div class="ppm" role="img" aria-label="Peak programme meter with a Nordic scale from minus 36 to plus 9 dB, red from plus 6. The Test mark, 0 dB, is minus 18 dBFS.">
+              <svg viewBox="0 0 300 170" aria-hidden="true">
+                <defs>
+                  <radialGradient id="ppm-glow" cx=".5" cy="1.05" r=".85"><!-- the meter lamps sit under the cover -->
+                    <stop offset="0" style="stop-color:var(--lens-white)" stop-opacity=".34"/>
+                    <stop offset=".5" style="stop-color:var(--lens-white)" stop-opacity=".1"/>
+                    <stop offset="1" style="stop-color:var(--lens-white)" stop-opacity="0"/>
+                  </radialGradient>
+                </defs>
+                <rect class="ppm__lamp" width="300" height="170" fill="url(#ppm-glow)"/>
+                <g class="ppm__scale">
+                  <path class="ppm__arc" d="M61.1 121.4A116 116 0 0 1 238.9 121.4"/>
+                  <path class="ppm__red" d="M232.3 108.7A120 120 0 0 1 241.9 118.9"/>
+                  <path class="ppm__ticks" d="M61.1 121.4L52.7 114.4M67.2 114.8L62.9 110.6M73.7 108.6L69.8 104.1M80.7 103L74.2 94.1M88.1 97.9L84.9 92.8M95.9 93.4L93.1 88.1M104.1 89.5L99.7 79.4M112.4 86.2L110.5 80.6M121.1 83.7L119.6 77.9M129.9 81.8L127.9 70.9M138.8 80.5L138.2 74.6M147.8 80L147.6 74M156.7 80.2L157.4 69.2M165.7 81.1L166.5 75.1M174.6 82.6L175.8 76.8M183.3 84.9L186.4 74.3M191.8 87.8L193.9 82.2M200 91.3L202.6 85.9M208 95.5L213.5 86M215.6 100.3L219 95.4M222.8 105.7L226.6 101M229.6 111.6L237.2 103.6M235.9 118L240.3 114M238.9 121.4L247.3 114.4"/>
+                  <text x="42.8" y="110">−36</text>
+                  <text x="66.4" y="87.7">−30</text>
+                  <text x="94.5" y="71.4">−24</text>
+                  <text x="125.7" y="62.1">−18</text>
+                  <text x="158.1" y="60.2">−12</text>
+                  <text x="190.2" y="65.9">−6</text>
+                  <text x="246.1" y="98.2">+6</text>
+                  <text x="258.2" y="110">+9</text>
+                  <text class="ppm__unit" x="150" y="136">PPM</text>
+                  <text class="ppm__small" x="264" y="24" style="text-anchor:end">Peak</text>
+                </g>
+                <text class="ppm__test" x="220" y="78.8">Test</text>
+                <circle class="ppm__led" cx="276" cy="20.5" r="4.5"/>
+                <g class="ppm__hold" transform="rotate(-52 150 196)"><line x1="150" y1="98" x2="150" y2="72"/></g>
+                <g class="ppm__needle" transform="rotate(-52 150 196)"><line x1="150" y1="158" x2="150" y2="72"/></g>
+                <path class="ppm__cover" d="M0 170V153Q150 139 300 153V170Z"/>
+                <text class="ppm__readout" x="150" y="136">Peak below −36 dB</text>
+              </svg>
+              <span class="ppm__glare" aria-hidden="true"></span>
+            </div>
+            <button class="play" type="button" aria-label="Play the demo loop">
+              <span class="cap cap--key" aria-hidden="true">
+                <span class="swap play__glyph"><svg viewBox="0 0 12 12"><path d="M1.5 0.5L11.5 6L1.5 11.5Z"/></svg><svg viewBox="0 0 12 12"><rect x="1" y="1" width="10" height="10" rx="1"/></svg></span>
+                <span class="eq"><i></i><i></i><i></i><i></i></span>
+              </span>
+              <span class="swap play__label" aria-hidden="true"><span>Play the demo loop</span><span>Stop the loop</span></span>
+            </button>
+            <p class="bridge__note"><span class="note__base"><span class="js-only">A 92 BPM loop made in your browser. It starts quietly, and the meter reads its peaks the way the B-24's did.</span><span class="no-js">The meter reads peaks the way the B-24's did.</span></span><span class="note__hint" aria-live="polite"></span></p>
+          </div>
+
+          <p class="vh">Below the meter, a drawing of the strip's four stages mirrors the controls in the tabs: the transformer, air and ratio knobs turn and the drift lamp lights when you change those settings. The other knobs are fixed at the factory preset.</p>
+          <div class="modules" aria-hidden="true">
+            <svg width="0" height="0" style="position:absolute">
+              <defs>
+                <path id="t11" d="M-14.8 14.8L-17.3 17.3M-20 6.5L-23.3 7.6M-20.7 -3.3L-24.2 -3.8M-17 -12.3L-19.8 -14.4M-9.5 -18.7L-11.1 -21.8M0 -21L0 -24.5M9.5 -18.7L11.1 -21.8M17 -12.3L19.8 -14.4M20.7 -3.3L24.2 -3.8M20 6.5L23.3 7.6M14.8 14.8L17.3 17.3"/>
+                <path id="t4" d="M-14.1 -14.1L-17.7 -17.7M-5.2 -19.3L-6.5 -24.1M5.2 -19.3L6.5 -24.1M14.1 -14.1L17.7 -17.7"/>
+              </defs>
+            </svg>
+            <div class="mod is-on">
+              <span class="mod__lamp"></span>
+              <p class="mod__name">Preamp</p>
+              <div class="knobs">
+                <div class="knob" data-knob="transformer"><span class="knob__ring"><svg viewBox="-26 -26 52 52"><use href="#t4"/></svg><span class="knob__cap" style="transform:rotate(-15deg)"></span></span><span class="knob__label">Transformer</span></div>
+                <div class="knob" data-knob="drive" data-deg="54"><span class="knob__ring"><svg viewBox="-26 -26 52 52"><use href="#t11"/></svg><span class="knob__cap" style="transform:rotate(54deg)"></span></span><span class="knob__label">Drive</span></div>
+              </div>
+            </div>
+            <div class="mod">
+              <span class="mod__lamp"></span>
+              <p class="mod__name">EQ</p>
+              <div class="knobs">
+                <div class="knob" data-knob="low" data-deg="27"><span class="knob__ring"><svg viewBox="-26 -26 52 52"><use href="#t11"/></svg><span class="knob__cap" style="transform:rotate(27deg)"></span></span><span class="knob__label">Low</span></div>
+                <div class="knob" data-knob="lowmid" data-deg="-27"><span class="knob__ring"><svg viewBox="-26 -26 52 52"><use href="#t11"/></svg><span class="knob__cap" style="transform:rotate(-27deg)"></span></span><span class="knob__label">Low mid</span></div>
+                <div class="knob" data-knob="highmid" data-deg="27"><span class="knob__ring"><svg viewBox="-26 -26 52 52"><use href="#t11"/></svg><span class="knob__cap" style="transform:rotate(27deg)"></span></span><span class="knob__label">High mid</span></div>
+                <div class="knob" data-knob="air"><span class="knob__ring"><svg viewBox="-26 -26 52 52"><use href="#t11"/></svg><span class="knob__cap" style="transform:rotate(-67.5deg)"></span></span><span class="knob__label">Air</span></div>
+              </div>
+            </div>
+            <div class="mod">
+              <span class="mod__lamp"></span>
+              <p class="mod__name">Dynamics</p>
+              <div class="knobs">
+                <div class="knob" data-knob="ratio"><span class="knob__ring"><svg viewBox="-26 -26 52 52"><use href="#t4"/></svg><span class="knob__cap" style="transform:rotate(-15deg)"></span></span><span class="knob__label">Ratio</span></div>
+                <div class="knob" data-knob="threshold" data-deg="-54"><span class="knob__ring"><svg viewBox="-26 -26 52 52"><use href="#t11"/></svg><span class="knob__cap" style="transform:rotate(-54deg)"></span></span><span class="knob__label">Threshold</span></div>
+              </div>
+            </div>
+            <div class="mod">
+              <span class="mod__lamp"></span>
+              <p class="mod__name">Bus</p>
+              <div class="knobs">
+                <div class="knob" data-knob="glue" data-deg="27"><span class="knob__ring"><svg viewBox="-26 -26 52 52"><use href="#t11"/></svg><span class="knob__cap" style="transform:rotate(27deg)"></span></span><span class="knob__label">Glue</span></div>
+                <div class="knob" data-knob="output" data-deg="0"><span class="knob__ring"><svg viewBox="-26 -26 52 52"><use href="#t11"/></svg><span class="knob__cap" style="transform:rotate(0deg)"></span></span><span class="knob__label">Output</span></div>
+                <div class="knob"><span class="lamp-cap is-on" id="strip-drift"><span></span></span><span class="knob__label">Drift</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero__controls">
+        <div class="tabs" role="tablist" aria-label="Stages of the channel strip, in signal order">
+          <button class="cap cap--stage" type="button" role="tab" id="t-preamp" aria-controls="p-preamp" aria-selected="true">Preamp</button>
+          <button class="cap cap--stage" type="button" role="tab" id="t-eq" aria-controls="p-eq" aria-selected="false" tabindex="-1">EQ</button>
+          <button class="cap cap--stage" type="button" role="tab" id="t-dyn" aria-controls="p-dyn" aria-selected="false" tabindex="-1">Dynamics</button>
+          <button class="cap cap--stage" type="button" role="tab" id="t-bus" aria-controls="p-bus" aria-selected="false" tabindex="-1">Bus</button>
+        </div>
+        <div class="panels">
+          <div class="panel is-active" id="p-preamp">
+            <h3>Push the input until it thickens</h3>
+            <p class="body">Three input transformers from the original desk's spares drawer. Nickel stays fast and clean, steel thickens the low mids, and iron adds the most harmonics when you drive it. Output is level-matched as you turn, so you judge tone, not loudness.</p>
+            <fieldset class="seg control">
+              <legend class="legend">Transformer</legend>
+              <div class="seg__caps">
+                <label><input type="radio" name="transformer" value="off"><span class="cap">Off</span></label>
+                <label><input type="radio" name="transformer" value="nickel" checked><span class="cap">Nickel</span></label>
+                <label><input type="radio" name="transformer" value="steel"><span class="cap">Steel</span></label>
+                <label><input type="radio" name="transformer" value="iron"><span class="cap">Iron</span></label>
+              </div>
+            </fieldset>
+            <p class="spec-line">0.8% THD with iron at +12 dB drive.</p>
+          </div>
+          <div class="panel" id="p-eq">
+            <h3>Open the top end at 12 kHz</h3>
+            <p class="body">The air shelf lifts everything above 12 kHz, so cymbals and breath open up without the top turning harsh. All four bands have proportional Q: small moves stay broad and musical, deep cuts get surgical. Frequencies click through the same 11 steps as the original's switched pots, so a setting is easy to repeat.</p>
+            <div class="range control">
+              <label class="legend" for="air">Air shelf at 12 kHz</label>
+              <input type="range" id="air" min="0" max="8" step="0.5" value="2" aria-valuetext="+2.0 dB">
+              <output for="air" id="air-out"><span class="fig">+</span><span class="fig">2</span><span class="fig fig--pt">.</span><span class="fig">0</span> dB</output>
+            </div>
+            <p class="spec-line">Low shelf 35–440 Hz, low mid 120 Hz–2 kHz, high mid 600 Hz–8 kHz, high shelf 4.5–16 kHz.</p>
+          </div>
+          <div class="panel" id="p-dyn">
+            <h3>Ratios from 2:1 to 10:1, on every channel</h3>
+            <p class="body">Feed-forward VCA compression with four ratios and a sidechain filter at 60, 120 or 240 Hz, so the kick stops pumping the whole bass. The gate has a 40 dB range and a hold you can set by ear.</p>
+            <fieldset class="seg control">
+              <legend class="legend">Ratio</legend>
+              <div class="seg__caps">
+                <label><input type="radio" name="ratio" value="off"><span class="cap">Off</span></label>
+                <label><input type="radio" name="ratio" value="2" checked><span class="cap">2:1</span></label>
+                <label><input type="radio" name="ratio" value="4"><span class="cap">4:1</span></label>
+                <label><input type="radio" name="ratio" value="10"><span class="cap">10:1</span></label>
+              </div>
+            </fieldset>
+            <p class="spec-line">Attack 0.1–30 ms, release 50 ms–1.2 s or auto.</p>
+          </div>
+          <div class="panel" id="p-bus">
+            <h3>Sum the channels the way the desk did</h3>
+            <p class="body">Every channel carries the tolerances we measured on the restored desk, with −62 dB of crosstalk between neighbours. Turn drift off and all 24 strips match exactly. Turn it on and the mix opens up.</p>
+            <div class="control js-only">
+              <span class="legend" aria-hidden="true">Channel drift</span>
+              <button class="cap drift-switch" type="button" aria-pressed="true" aria-label="Channel drift">
+                <span class="swap" aria-hidden="true"><span>On</span><span>Off</span></span>
+              </button>
+            </div>
+            <p class="spec-line">Bus compressor at 2:1, 4:1 or 10:1, attack 0.1–30 ms.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid say" data-spy="drift">
+      <p class="statement">We measured all 24 channels of the restored desk, one at a time. No two came out the same, so no two strips in Brack 2408 do either.</p>
+    </div>
+
+    <div class="grid drift" data-spy="drift">
+      <div class="drift__text">
+        <h3 id="drift" tabindex="-1">Measured channel by channel</h3>
+        <p>Gain offset of each channel at 1 kHz, in dB, measured on the Lindqvist <span class="nw">B-24</span> in March 2025. Fader heights are drawn 40 times larger than life.</p>
+        <div class="control js-only">
+          <span class="legend" aria-hidden="true">Channel drift</span>
+          <button class="cap drift-switch" type="button" aria-pressed="true" aria-label="Channel drift, faders">
+            <span class="swap" aria-hidden="true"><span>On</span><span>Off</span></span>
+          </button>
+        </div>
+      </div>
+      <div class="faders" role="img" aria-label="Gain offsets of channels 1 to 24 in dB: +0.2, −0.1, 0.0, +0.3, −0.2, +0.1, −0.3, 0.0, +0.1, +0.2, −0.1, −0.2, +0.3, 0.0, −0.1, +0.1, +0.2, −0.3, 0.0, +0.1, −0.2, +0.2, −0.1, +0.1.">
+<div class="fader" style="--off:0.2;--c:11"><span class="fader__ch" aria-hidden="true">1</span><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">+0.2</span></div>
+<div class="fader" style="--off:-0.1;--c:10"><span class="fader__ch" aria-hidden="true">2</span><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">−0.1</span></div>
+<div class="fader" style="--off:0;--c:9"><span class="fader__ch" aria-hidden="true">3</span><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">0.0</span></div>
+<div class="fader" style="--off:0.3;--c:8"><span class="fader__ch" aria-hidden="true">4</span><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">+0.3</span></div>
+<div class="fader" style="--off:-0.2;--c:7"><span class="fader__ch" aria-hidden="true">5</span><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">−0.2</span></div>
+<div class="fader" style="--off:0.1;--c:6"><span class="fader__ch" aria-hidden="true">6</span><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">+0.1</span></div>
+<div class="fader" style="--off:-0.3;--c:5"><span class="fader__ch" aria-hidden="true">7</span><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">−0.3</span></div>
+<div class="fader" style="--off:0;--c:4"><span class="fader__ch" aria-hidden="true">8</span><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">0.0</span></div>
+<div class="fader" style="--off:0.1;--c:3"><span class="fader__ch" aria-hidden="true">9</span><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">+0.1</span></div>
+<div class="fader" style="--off:0.2;--c:2"><span class="fader__ch" aria-hidden="true">10</span><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">+0.2</span></div>
+<div class="fader" style="--off:-0.1;--c:1"><span class="fader__ch" aria-hidden="true">11</span><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">−0.1</span></div>
+<div class="fader" style="--off:-0.2;--c:0"><span class="fader__ch" aria-hidden="true">12</span><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">−0.2</span></div>
+<div class="fader" style="--off:0.3;--c:0"><span class="fader__ch" aria-hidden="true">13</span><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">+0.3</span></div>
+<div class="fader" style="--off:0;--c:1"><span class="fader__ch" aria-hidden="true">14</span><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">0.0</span></div>
+<div class="fader" style="--off:-0.1;--c:2"><span class="fader__ch" aria-hidden="true">15</span><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">−0.1</span></div>
+<div class="fader" style="--off:0.1;--c:3"><span class="fader__ch" aria-hidden="true">16</span><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">+0.1</span></div>
+<div class="fader" style="--off:0.2;--c:4"><span class="fader__ch" aria-hidden="true">17</span><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">+0.2</span></div>
+<div class="fader" style="--off:-0.3;--c:5"><span class="fader__ch" aria-hidden="true">18</span><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">−0.3</span></div>
+<div class="fader" style="--off:0;--c:6"><span class="fader__ch" aria-hidden="true">19</span><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">0.0</span></div>
+<div class="fader" style="--off:0.1;--c:7"><span class="fader__ch" aria-hidden="true">20</span><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">+0.1</span></div>
+<div class="fader" style="--off:-0.2;--c:8"><span class="fader__ch" aria-hidden="true">21</span><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">−0.2</span></div>
+<div class="fader" style="--off:0.2;--c:9"><span class="fader__ch" aria-hidden="true">22</span><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">+0.2</span></div>
+<div class="fader" style="--off:-0.1;--c:10"><span class="fader__ch" aria-hidden="true">23</span><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">−0.1</span></div>
+<div class="fader" style="--off:0.1;--c:11"><span class="fader__ch" aria-hidden="true">24</span><span class="fader__slot"><span class="fader__ride"><span class="fader__cap"></span></span></span><span class="fader__val">+0.1</span></div>
+      </div>
+    </div>
+
+    <div class="grid lower" data-spy="specs">
+      <div class="specs">
+        <h3 id="specs" tabindex="-1">What it runs on</h3>
+        <dl>
+          <div class="spec-row"><span class="spec-row__rule" aria-hidden="true"></span><dt>Formats</dt><dd>VST3, AU and AAX, 64-bit.</dd></div>
+          <div class="spec-row"><span class="spec-row__rule" aria-hidden="true"></span><dt>Systems</dt><dd>macOS 11 or later, native on Apple silicon; Windows 10 or later.</dd></div>
+          <div class="spec-row"><span class="spec-row__rule" aria-hidden="true"></span><dt>CPU</dt><dd>About 0.4% per channel at 48 kHz on an M1 MacBook Air.</dd></div>
+          <div class="spec-row"><span class="spec-row__rule" aria-hidden="true"></span><dt>Latency</dt><dd>Zero samples with oversampling off; 2x and 4x for bounces.</dd></div>
+          <div class="spec-row"><span class="spec-row__rule" aria-hidden="true"></span><dt>Licence</dt><dd>£79 for three machines, no iLok, no subscription.</dd></div>
+          <div class="spec-row"><span class="spec-row__rule" aria-hidden="true"></span><dt>Updates</dt><dd>Free through version 2.</dd></div>
+        </dl>
+      </div>
+
+      <div class="trial">
+        <h3 id="trial" tabindex="-1">Try it free for 21 days</h3>
+        <p class="trial__intro">The full plugin with nothing switched off. We email you a download link and nothing else.</p>
+        <div class="trial__body">
+          <form id="trial-form" aria-label="Trial request" novalidate>
+            <div class="field">
+              <input id="email" name="email" type="email" autocomplete="email" placeholder=" " required>
+              <label for="email">Your email</label>
+            </div>
+            <p class="error" id="email-error" role="alert">Enter an email address like name@example.com.</p>
+            <fieldset class="seg">
+              <legend class="legend">Platform</legend>
+              <div class="seg__caps">
+                <label><input type="radio" name="platform" value="macOS" checked><span class="cap">macOS</span></label>
+                <label><input type="radio" name="platform" value="Windows"><span class="cap">Windows</span></label>
+              </div>
+            </fieldset>
+            <button class="cap cap--key cap--big" type="submit">Email me the trial</button>
+          </form>
+          <div class="result" id="trial-result" inert>
+            <h4 id="result-title" tabindex="-1">Trial link sent</h4>
+            <p>Check <strong id="r-email">your inbox</strong> for the <span id="r-platform">macOS</span> installer. The link works for 7 days.</p>
+            <button class="link-btn ul" type="button" id="trial-back">Use a different email</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="ftr">
+  <div class="wrap ftr__in">
+    <p>Made by two engineers in Sheffield.</p>
+    <a class="ul" href="mailto:support@brackaudio.example" target="_blank" rel="noopener">Email support</a>
+    <a class="ul" href="#top">Back to top</a>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/SplitText.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/CustomEase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  const root = document.documentElement;
+  root.classList.add('js');
+  const ok = !!(window.gsap && window.Lenis && window.ScrollTrigger && window.SplitText && window.CustomEase);
+  const $ = (s, c = document) => c.querySelector(s);
+  const $$ = (s, c = document) => [...c.querySelectorAll(s)];
+  const css = getComputedStyle(root);
+  const T = k => parseFloat(css.getPropertyValue('--g-' + k));
+  const E = k => css.getPropertyValue('--ge-' + k).trim();
+  let reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let lenis = null, booted = false;
+  const dur = k => (reduce ? 0 : T(k));
+
+  // CD9 crossfade between two elements that share one grid cell. Without GSAP (CDN blocked) the swap is a class toggle.
+  const swap = (from, to, done) => {
+    from.inert = true; to.inert = false;
+    if (!ok) { from.parentNode.classList.toggle('is-sent', to.id === 'trial-result'); done?.(); return; }
+    gsap.timeline({ onComplete: done })
+      .to(from, { autoAlpha: 0, y: -4, duration: dur('out'), ease: E('out') })
+      .fromTo(to, { autoAlpha: 0, y: 4 }, { autoAlpha: 1, y: 0, duration: dur('in'), ease: E('in') });
+  };
+
+  /* ---------- Trial form: validate, then crossfade to the result (works without the CDN too) ---------- */
+  const form = $('#trial-form'), email = $('#email'), result = $('#trial-result');
+  const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  const showError = bad => {
+    form.classList.toggle('has-error', bad);
+    email.setAttribute('aria-invalid', bad);
+    bad ? email.setAttribute('aria-describedby', 'email-error') : email.removeAttribute('aria-describedby');
+  };
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const value = email.value.trim();
+    if (!EMAIL.test(value)) { showError(true); email.focus(); return; }
+    showError(false);
+    $('#r-email').textContent = value;
+    $('#r-platform').textContent = form.elements.platform.value;
+    swap(form, result, () => $('#result-title').focus());
+  });
+  email.addEventListener('input', () => { if (form.classList.contains('has-error') && EMAIL.test(email.value.trim())) showError(false); });
+  $('#trial-back').addEventListener('click', () => { if (!result.inert) swap(result, form, () => email.focus()); });
+
+  if (!ok) { root.classList.remove('js'); return; } // CDN blocked: static page, still readable, form still answers
+  gsap.registerPlugin(ScrollTrigger, SplitText, CustomEase);
+  CustomEase.create('lamp', 'M0,0 C0.18,0 0.32,0.04 0.46,0.24 0.6,0.46 0.7,0.86 1,1'); // filament: slow to glow, then up, no flicker
+  const fmt = v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(1);
+
+  /* ---------- State, mirrored by the drawn strip ---------- */
+  const DRIFT = [0.2, -0.1, 0, 0.3, -0.2, 0.1, -0.3, 0, 0.1, 0.2, -0.1, -0.2, 0.3, 0, -0.1, 0.1, 0.2, -0.3, 0, 0.1, -0.2, 0.2, -0.1, 0.1];
+  const DETENT = { off: -45, nickel: -15, steel: 15, iron: 45, 2: -15, 4: 15, 10: 45 };
+  const air = $('#air'), airOut = $('#air-out'), driftBtns = $$('.drift-switch');
+  const state = {
+    stage: 0,
+    transformer: $('input[name=transformer]:checked').value,
+    air: +air.value,
+    ratio: $('input[name=ratio]:checked').value,
+    drift: true
+  };
+  const knobCaps = $$('.knob__cap');
+  const knobAngle = el => {
+    const k = el.closest('[data-knob]');
+    if (k.dataset.knob === 'transformer') return DETENT[state.transformer];
+    if (k.dataset.knob === 'ratio') return DETENT[state.ratio];
+    if (k.dataset.knob === 'air') return -135 + state.air / 8 * 270;
+    return +k.dataset.deg;
+  };
+  const knob = name => $(`[data-knob="${name}"] .knob__cap`);
+  const syncKnobs = () => gsap.set(knobCaps, { rotation: (i, el) => knobAngle(el) });
+  const turn = name => gsap.to(knob(name), { rotation: knobAngle(knob(name)), duration: dur('detent'), ease: E('detent'), overwrite: true });
+  const airTo = gsap.quickTo(knob('air'), 'rotation', { duration: T('air'), ease: E('air') });
+
+  /* ---------- Audio: a synthesised 92 BPM loop through a working strip ---------- */
+  const BPM = 92, STEP = 60 / BPM / 4, DRIVE = 1.8;
+  const VOICE_CH = [0, 1, 3, 4, 6]; // kick, snare, hat, bass, pad sit on measured channels 1, 2, 4, 5, 7
+  const shape = fn => { const c = new Float32Array(2048); for (let i = 0; i < 2048; i++) c[i] = fn(i / 2047 * 2 - 1); return c; };
+  const CURVES = {
+    off: null,
+    nickel: shape(x => Math.tanh(1.4 * x) / Math.tanh(1.4)),
+    steel: shape(x => Math.tanh(3.2 * x + 0.35 * x * x) / Math.tanh(3.2)),
+    iron: shape(x => Math.tanh(7 * x + 0.5 * x * x) / Math.tanh(7))
+  };
+  // Auto-gain in dB, measured on this loop so its RMS stays within 0.7 dB whichever transformer is in:
+  // you judge tone, not loudness, and the PPM shows what saturation does to the peaks.
+  const MAKEUP = { off: 0, nickel: -8.9, steel: -14.8, iron: -20.8 };
+  // Offsets the DynamicsCompressor's automatic make-up gain so loudness stays within 0.3 dB across ratios.
+  const DYN_TRIM = { off: -1, 2: -2.5, 4: -3.5, 10: -4.2 };
+  const BASS = [[0, 82.41, 5], [7, 82.41, 2], [10, 98, 3], [14, 73.42, 2], [16, 65.41, 5], [22, 65.41, 2], [26, 61.74, 3], [30, 73.42, 2]];
+  const PAD = { 0: [164.81, 196, 246.94, 293.66, 369.99], 16: [130.81, 164.81, 196, 246.94] };
+  const KICK = [0, 7, 10, 16, 22, 26], SNARE = [4, 12, 20, 28];
+
+  const audio = {
+    ctx: null, playing: false, step: 0, next: 0, failed: false,
+    build() {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      const ctx = this.ctx = new AC();
+      const trim = new GainNode(ctx, { gain: 0.13 }); // input trim: the kick peaks at 0.12 into the preamp
+      this.drive = new GainNode(ctx);
+      this.shaper = new WaveShaperNode(ctx, { oversample: '4x' });
+      this.makeup = new GainNode(ctx);
+      const low = new BiquadFilterNode(ctx, { type: 'lowshelf', frequency: 110, gain: 2 });
+      const lowMid = new BiquadFilterNode(ctx, { type: 'peaking', frequency: 320, Q: 1.1, gain: -2 });
+      const highMid = new BiquadFilterNode(ctx, { type: 'peaking', frequency: 2600, Q: 0.9, gain: 1.5 });
+      this.air = new BiquadFilterNode(ctx, { type: 'highshelf', frequency: 12000, gain: 0 });
+      this.comp = new DynamicsCompressorNode(ctx, { threshold: -24, knee: 6, ratio: 2, attack: 0.005, release: 0.12 });
+      this.dynTrim = new GainNode(ctx); // offsets the compressor's automatic make-up gain
+      const lineUp = new GainNode(ctx, { gain: 5 }); // +14 dB into the compressor's -24 dB threshold
+      const bus = new GainNode(ctx, { gain: 0.25 }); // -12 dB: the programme centres around -6 on the PPM, mid-arc
+      const glue = new DynamicsCompressorNode(ctx, { threshold: -14, knee: 4, ratio: 2, attack: 0.03, release: 0.2 });
+      this.an = new AnalyserNode(ctx, { fftSize: 1024 });
+      this.buf = new Float32Array(1024);
+      this.master = new GainNode(ctx, { gain: 0 });
+      [trim, this.drive, this.shaper, this.makeup, low, lowMid, highMid, this.air, lineUp, this.comp, this.dynTrim, bus, glue, this.an, this.master, ctx.destination]
+        .reduce((a, b) => a.connect(b));
+      this.ch = VOICE_CH.map(() => {
+        const g = new GainNode(ctx), p = new StereoPannerNode(ctx);
+        g.connect(p).connect(trim);
+        return { g, p };
+      });
+      this.noise = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
+      const d = this.noise.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      this.apply();
+    },
+    // Every control in the tabs lands here.
+    apply() {
+      if (!this.ctx) return;
+      const t = this.ctx.currentTime, set = (p, v) => p.setTargetAtTime(v, t, 0.02);
+      this.shaper.curve = CURVES[state.transformer];
+      set(this.drive.gain, state.transformer === 'off' ? 1 : DRIVE);
+      set(this.makeup.gain, 10 ** (MAKEUP[state.transformer] / 20));
+      set(this.air.gain, state.air);
+      set(this.comp.ratio, state.ratio === 'off' ? 1 : +state.ratio);
+      set(this.dynTrim.gain, 10 ** (DYN_TRIM[state.ratio] / 20));
+      this.ch.forEach((c, i) => {
+        const off = state.drift ? DRIFT[VOICE_CH[i]] : 0;
+        set(c.g.gain, 10 ** (off / 20));
+        set(c.p.pan, off * 0.25); // measured offsets also skew each channel's pan law a little
+      });
+    },
+    cut(i) { return 1 + (state.drift ? DRIFT[VOICE_CH[i]] / 0.3 * 0.02 : 0); },
+    env(g, t, peak, a, d) {
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(peak, t + a);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + a + d);
+    },
+    noiseVoice(i, t, type, freq, peak, d) {
+      const ctx = this.ctx, src = new AudioBufferSourceNode(ctx, { buffer: this.noise });
+      const f = new BiquadFilterNode(ctx, { type, frequency: freq * this.cut(i) }), g = new GainNode(ctx, { gain: 0 });
+      src.connect(f).connect(g).connect(this.ch[i].g);
+      this.env(g, t, peak, 0.002, d);
+      src.start(t, Math.random() * 0.7); src.stop(t + d + 0.05);
+    },
+    tone(i, t, type, freq, peak, a, d, filter) {
+      const ctx = this.ctx, o = new OscillatorNode(ctx, { type, frequency: freq }), g = new GainNode(ctx, { gain: 0 });
+      let head = o;
+      if (filter) { const f = new BiquadFilterNode(ctx, { type: 'lowpass', frequency: filter * this.cut(i), Q: 4 }); o.connect(f); head = f; }
+      head.connect(g).connect(this.ch[i].g);
+      this.env(g, t, peak, a, d);
+      o.start(t); o.stop(t + a + d + 0.05);
+      return o;
+    },
+    play(s, t) {
+      if (KICK.includes(s)) {
+        const o = this.tone(0, t, 'sine', 150, 0.95, 0.003, 0.42);
+        o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(46, t + 0.12);
+      }
+      if (SNARE.includes(s)) { this.noiseVoice(1, t, 'highpass', 900, 0.5, 0.2); this.tone(1, t, 'triangle', 185, 0.3, 0.002, 0.09); }
+      if (s === 31) this.noiseVoice(1, t, 'highpass', 900, 0.12, 0.1);
+      if (s % 2 === 0) this.noiseVoice(2, t, 'highpass', 7000, s % 4 ? 0.14 : 0.22, 0.05);
+      else this.noiseVoice(2, t, 'highpass', 9500, 0.08, 0.03); // shaker on the off-steps: the air shelf's material
+      if (s === 15 || s === 29) this.noiseVoice(2, t, 'highpass', 7000, 0.12, 0.1);
+      for (const [at, f, len] of BASS) if (at === s) this.tone(3, t, 'sawtooth', f, 0.32, 0.01, len * STEP, 380);
+      if (PAD[s]) for (const f of PAD[s]) {
+        this.tone(4, t, 'sine', f, 0.045, 0.5, 16 * STEP);
+        this.tone(4, t, 'triangle', f * 1.002, 0.03, 0.5, 16 * STEP, 1800);
+      }
+    },
+    schedule() {
+      if (!this.playing || this.ctx.state !== 'running') return;
+      const now = this.ctx.currentTime;
+      if (this.next < now - 0.05) this.next = now + 0.05; // tab was asleep: skip, never burst
+      while (this.next < now + 0.1) { this.play(this.step, this.next); this.next += STEP; this.step = (this.step + 1) % 32; }
+    },
+    // Peak in PPM dB (Test, 0 dB, is -18 dBFS) over the analyser's last 1024 samples.
+    // shortcut: sample peak per frame stands in for Type I's 5 ms integration; within about 1 dB on this programme.
+    peak() {
+      this.an.getFloatTimeDomainData(this.buf);
+      let m = 0;
+      for (let i = 0; i < this.buf.length; i++) { const v = Math.abs(this.buf[i]); if (v > m) m = v; }
+      return 20 * Math.log10(m || 1e-9) + 18;
+    },
+    start() {
+      let resumed;
+      try {
+        if (!this.ctx) this.build();
+        resumed = this.ctx.resume();
+      } catch { return this.fail(); }
+      const ctx = this.ctx, attempt = this.attempt = {};
+      clearTimeout(this.sleep);
+      // resume() can stay pending (autoplay policy, no user gesture): say so instead of showing a Stop key over silence.
+      const late = setTimeout(() => { if (this.attempt === attempt) { this.attempt = null; say('Press again to start sound'); } }, 1000);
+      resumed.then(() => {
+        if (this.attempt !== attempt) return;
+        clearTimeout(late); this.attempt = null;
+        if (ctx.state !== 'running') return say('Press again to start sound');
+        const now = ctx.currentTime, g = this.master.gain;
+        g.cancelScheduledValues(now); g.setValueAtTime(g.value, now); g.linearRampToValueAtTime(0.25, now + 2); // -12 dB, a 2 s fade-in
+        this.next = now + 0.06; this.step = 0; this.playing = true;
+        setPlayUI(); unsay();
+      }, () => { clearTimeout(late); this.fail(); });
+    },
+    stop() {
+      const now = this.ctx.currentTime, g = this.master.gain;
+      g.cancelScheduledValues(now); g.setValueAtTime(g.value, now); g.linearRampToValueAtTime(0, now + 0.15);
+      this.playing = false;
+      this.sleep = setTimeout(() => !this.playing && this.ctx.suspend().catch(() => {}), 200);
+      setPlayUI();
+    },
+    fail() {
+      this.failed = true; this.playing = false;
+      const label = 'Sound isn’t available in this browser';
+      play.setAttribute('aria-disabled', 'true');
+      play.setAttribute('aria-label', label);
+      play.classList.remove('is-on');
+      const lab = $('.play__label', play);
+      lab.classList.remove('swap'); // a lone child would be pushed out of view by the swap's :last-child rule
+      lab.replaceChildren(Object.assign(document.createElement('span'), { textContent: label }));
+      unsay();
+    }
+  };
+
+  const play = $('.play');
+  play.classList.add('js-ready');
+  function setPlayUI() {
+    play.classList.toggle('is-on', audio.playing);
+    play.setAttribute('aria-label', audio.playing ? 'Stop the loop' : 'Play the demo loop');
+  }
+  play.addEventListener('click', () => {
+    if (audio.failed) return;
+    audio.playing ? audio.stop() : audio.start();
+  });
+
+  // The bridge note and a hint share one cell (CD9). The hint is a polite live region.
+  const noteBase = $('.note__base'), noteHint = $('.note__hint');
+  let hinting = false;
+  function say(text) {
+    noteHint.textContent = text;
+    if (hinting) return;
+    hinting = true; gsap.killTweensOf([noteBase, noteHint]);
+    gsap.timeline()
+      .to(noteBase, { autoAlpha: 0, y: -4, duration: dur('out'), ease: E('out') })
+      .fromTo(noteHint, { opacity: 0, y: 4 }, { opacity: 1, y: 0, duration: dur('in'), ease: E('in') });
+  }
+  function unsay() {
+    if (!hinting) return;
+    hinting = false; gsap.killTweensOf([noteBase, noteHint]);
+    gsap.timeline()
+      .to(noteHint, { opacity: 0, y: -4, duration: dur('out'), ease: E('out') })
+      .fromTo(noteBase, { autoAlpha: 0, y: 4 }, { autoAlpha: 1, y: 0, duration: dur('in'), ease: E('in') });
+  }
+  // A control moved before the loop plays: one lamp flash on the transport key and a hint naming the change. The flash happens once per page view.
+  // Later changes keep the visible hint in step with the control, without another flash.
+  let nudged = false;
+  function flash() {
+    play.classList.add('is-flash');
+    setTimeout(() => play.classList.remove('is-flash'), 120); // then the cap's own 0.28 s afterglow
+  }
+  function nudge(what) {
+    if (audio.playing || audio.failed || audio.attempt) return;
+    if (nudged) { if (hinting) noteHint.textContent = 'Press play to hear ' + what; return; }
+    nudged = true;
+    flash();
+    say('Press play to hear ' + what);
+  }
+  const NAMES = { off: null, nickel: 'Nickel', steel: 'Steel', iron: 'Iron' };
+
+  /* ---------- The PPM: IEC 60268-10 Type I ballistics on a Nordic (N9) scale ---------- */
+  // Linear in dB: -36 dB sits at -50deg, +9 dB at +50deg; the stop pin is just below -36.
+  const STOP = -52, DEG = 100 / 45;
+  const angle = db => Math.max(STOP, Math.min(52, -50 + (db + 36) * DEG));
+  const FALL = 20 / T('fall'); // dB per second: 20 dB in 1.7 s, linear in dB
+  const needle = $('.ppm__needle'), needleLine = $('.ppm__needle line'), led = $('.ppm__led'), readout = $('.ppm__readout');
+  gsap.set(needle, { rotation: STOP, svgOrigin: '150 196' });
+  const hold = $('.ppm__hold');
+  gsap.set(hold, { rotation: STOP, svgOrigin: '150 196' });
+  const needleTo = gsap.quickTo(needle, 'rotation', { duration: T('ppm'), ease: E('ppm') });
+  const holdTo = gsap.quickTo(hold, 'rotation', { duration: T('ppm'), ease: E('ppm') });
+  const HOLD = 2 * 4 * 60 / BPM; // peak hold: two bars of the loop, 5.2 s
+  // on: false until the power-on test. hold: the needle stays put until this time (the line-up tone).
+  const meter = { on: false, db: -60, a: STOP, pk: -60, pkAt: 0, ha: STOP, hold: 0, ledAt: -1, textAt: 0, t: null, tap: false };
+  gsap.ticker.add(time => {
+    audio.schedule();
+    const dt = meter.t === null ? 0 : Math.min(0.1, time - meter.t);
+    meter.t = time;
+    const peak = audio.playing && audio.ctx.state === 'running' ? audio.peak() : -Infinity;
+    meter.db = Math.max(peak, time < meter.hold ? meter.db : meter.db - FALL * dt, -60); // fast rise, slow fall
+    if (peak > -Infinity && meter.db >= meter.pk) { meter.pk = meter.db; meter.pkAt = time; } // only real audio feeds the hold mark, never the power-on test
+    else if (time - meter.pkAt > HOLD) meter.pk = Math.max(-60, meter.pk - FALL * dt); // after the hold, falls at the PPM rate
+    const a = meter.on ? Math.round(angle(meter.db) * 20) / 20 : STOP;
+    if (a !== meter.a) { needleTo(a); meter.a = a; }
+    // End of power-up: the needle lands on its stop pin, taps it once, and the play key flashes to hand over.
+    if (meter.tap && time > meter.hold && a === STOP) {
+      meter.tap = false;
+      if (!audio.playing) {
+        gsap.timeline().to(needleLine, { rotation: 1.5, svgOrigin: '150 196', duration: 0.2, ease: 'power2.out' })
+          .to(needleLine, { rotation: 0, svgOrigin: '150 196', duration: 0.25, ease: 'power1.in' });
+        flash();
+      }
+    }
+    const ha = meter.on ? Math.round(angle(meter.pk) * 20) / 20 : STOP;
+    if (ha !== meter.ha) { holdTo(ha); meter.ha = ha; }
+    // Peak LED: lights above +6 dB (the red end), holds 150 ms, fires at most about 3 times a second.
+    if (peak > 6 && time - meter.ledAt > 0.34) meter.ledAt = time;
+    led.style.opacity = time - meter.ledAt < 0.15 ? 1 : '';
+    if (reduce && time - meter.textAt > 0.25) { // numeric readout in place of the needle, 4 times a second
+      meter.textAt = time;
+      const v = Math.round(meter.db);
+      readout.textContent = v < -36 ? 'Peak below −36 dB' : `Peak ${fmt(v).replace('.0', '')} dB`;
+    }
+  });
+
+  /* ---------- Tabs (CD9 crossfade in one grid cell) ---------- */
+  const tabs = $$('[role=tab]'), panels = $$('.panel'), mods = $$('.mod');
+  // Tab semantics only once the tablist exists: without JS the panels are four plain stacked sections.
+  panels.forEach((p, i) => { p.setAttribute('role', 'tabpanel'); p.tabIndex = 0; p.setAttribute('aria-labelledby', tabs[i].id); });
+  let tabTl;
+  function selectTab(i, focus) {
+    if (focus) tabs[i].focus();
+    if (i === state.stage) return;
+    const old = panels[state.stage], next = panels[i];
+    tabs.forEach((t, j) => { t.setAttribute('aria-selected', j === i); t.tabIndex = j === i ? 0 : -1; });
+    mods.forEach((m, j) => m.classList.toggle('is-on', j === i));
+    panels.forEach((p, j) => p.classList.toggle('is-active', j === i));
+    tabTl?.progress(1).kill();
+    gsap.set(panels.filter(p => p !== old && p !== next), { autoAlpha: 0 });
+    tabTl = gsap.timeline()
+      .to(old, { autoAlpha: 0, y: -4, duration: dur('out'), ease: E('out') })
+      .fromTo(next, { autoAlpha: 0, y: 4 }, { autoAlpha: 1, y: 0, duration: dur('in'), ease: E('in') });
+    state.stage = i;
+  }
+  tabs.forEach((t, i) => {
+    t.addEventListener('click', () => selectTab(i));
+    t.addEventListener('keydown', e => {
+      const n = tabs.length;
+      const j = { ArrowRight: (i + 1) % n, ArrowLeft: (i + n - 1) % n, Home: 0, End: n - 1 }[e.key];
+      if (j === undefined) return;
+      e.preventDefault(); selectTab(j, true);
+    });
+  });
+
+  /* ---------- Controls: each changes the sound, the needle and a knob ---------- */
+  $$('input[name=transformer]').forEach(r => r.addEventListener('change', () => { state.transformer = r.value; turn('transformer'); audio.apply(); nudge(NAMES[r.value] || 'the preamp with no transformer'); }));
+  $$('input[name=ratio]').forEach(r => r.addEventListener('change', () => { state.ratio = r.value; turn('ratio'); audio.apply(); nudge(r.value === 'off' ? 'the compressor off' : r.value + ':1'); }));
+  air.addEventListener('input', () => {
+    state.air = +air.value;
+    const txt = fmt(state.air) + ' dB';
+    airOut.replaceChildren(...[...fmt(state.air)].map(ch => Object.assign(document.createElement('span'), { className: ch === '.' ? 'fig fig--pt' : 'fig', textContent: ch })), ' dB');
+    air.setAttribute('aria-valuetext', txt);
+    const a = knobAngle(knob('air'));
+    reduce ? gsap.set(knob('air'), { rotation: a }) : airTo(a);
+    audio.apply(); nudge('the air shelf at ' + txt);
+  });
+  const faders = $('.faders'), faderVals = $$('.fader__val');
+  const faderLabel = faders.getAttribute('aria-label');
+  driftBtns.forEach(b => b.addEventListener('click', () => {
+    state.drift = !state.drift;
+    driftBtns.forEach(d => d.setAttribute('aria-pressed', state.drift)); // the static name "Channel drift" plus the pressed state
+    $('#strip-drift').classList.toggle('is-on', state.drift);
+    faders.classList.toggle('is-flat', !state.drift);
+    faderVals.forEach((v, i) => { v.textContent = state.drift ? fmt(DRIFT[i]) : '0.0'; });
+    faders.setAttribute('aria-label', state.drift ? faderLabel : 'Channel drift is off: all 24 channels at 0.0 dB.');
+    audio.apply(); nudge('channel drift ' + (state.drift ? 'on' : 'off'));
+  }));
+
+  /* ---------- Anchors (NV6): eased scroll, then focus the target ---------- */
+  const header = $('.hdr');
+  function go(hash) {
+    const target = hash === '#top' ? header : document.getElementById(hash.slice(1));
+    if (!target) return;
+    const y = target === header ? 0 : Math.max(0, target.getBoundingClientRect().top + scrollY - header.offsetHeight - 24);
+    const done = () => target.focus({ preventScroll: true });
+    if (lenis) lenis.scrollTo(y, { duration: Math.min(1.3, 0.65 + Math.abs(y - scrollY) / 4000), onComplete: done });
+    else { scrollTo(0, y); done(); }
+  }
+  document.addEventListener('click', e => {
+    const a = e.target.closest('a[href^="#"]');
+    if (!a || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button) return;
+    e.preventDefault();
+    if (location.hash !== a.hash) history.pushState(null, '', a.hash);
+    if (menuOpen) closeMenu(() => go(a.hash)); else go(a.hash);
+  });
+
+  // Section spy: the nav marks the section in the reading band.
+  const navLinks = $$('.nav a');
+  const spy = new IntersectionObserver(entries => entries.forEach(en => {
+    if (!en.isIntersecting) return;
+    navLinks.forEach(a => (a.hash === '#' + en.target.dataset.spy ? a.setAttribute('aria-current', 'true') : a.removeAttribute('aria-current')));
+  }), { rootMargin: '-40% 0px -55% 0px' });
+  $$('[data-spy]').forEach(s => spy.observe(s));
+
+  /* ---------- Mobile menu (NV1): one reversible timeline ---------- */
+  const menuBtn = $('.menu-btn'), sheet = $('#sheet'), sheetLinks = $$('#sheet a'), behind = [$('main'), $('.ftr'), $('.skip'), $('.wordmark')];
+  let menuOpen = false, afterClose = null;
+  const menuTl = gsap.timeline({ paused: true, onReverseComplete: () => closed() })
+    .fromTo(sheet, { clipPath: 'inset(0% 0% 100% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: T('sheet'), ease: E('sheet') })
+    .fromTo(sheetLinks, { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: T('links'), ease: E('links'), stagger: 0.05 }, '-=0.2');
+  function openMenu() {
+    menuOpen = true;
+    menuBtn.setAttribute('aria-expanded', 'true'); menuBtn.setAttribute('aria-label', 'Close');
+    gsap.set(sheet, { visibility: 'visible' });
+    sheet.inert = false; behind.forEach(el => { el.inert = true; });
+    root.classList.add('menu-open'); lenis?.stop();
+    reduce ? menuTl.progress(1) : menuTl.timeScale(1).play();
+    sheetLinks[0].focus({ preventScroll: true });
+  }
+  function closeMenu(then) {
+    menuOpen = false; afterClose = then || null;
+    menuBtn.setAttribute('aria-expanded', 'false'); menuBtn.setAttribute('aria-label', 'Menu');
+    if (reduce || !menuTl.progress()) { menuTl.pause().progress(0, true); closed(); } else menuTl.timeScale(1.4).reverse();
+  }
+  function closed() {
+    gsap.set(sheet, { visibility: 'hidden' });
+    sheet.inert = true; behind.forEach(el => { el.inert = false; });
+    root.classList.remove('menu-open'); lenis?.start();
+    if (afterClose) { const f = afterClose; afterClose = null; f(); }
+    else (menuBtn.offsetParent ? menuBtn : $('.nav a')).focus({ preventScroll: true }); // the Menu button is hidden from 820px
+  }
+  menuBtn.addEventListener('click', () => (menuOpen ? closeMenu() : openMenu()));
+  document.addEventListener('keydown', e => {
+    if (!menuOpen) return;
+    if (e.key === 'Escape') return closeMenu();
+    if (e.key !== 'Tab') return;
+    const last = sheetLinks[sheetLinks.length - 1], to = e.shiftKey ? (document.activeElement === menuBtn && last) : (document.activeElement === last && menuBtn);
+    if (to) { e.preventDefault(); to.focus(); } // wrap between the Close button and the last link
+  });
+  matchMedia('(min-width: 820px)').addEventListener('change', e => { if (e.matches && menuOpen) { menuTl.pause().progress(0, true); menuOpen = false; menuBtn.setAttribute('aria-expanded', 'false'); menuBtn.setAttribute('aria-label', 'Menu'); closed(); } });
+
+  /* ---------- Choreography: everything that moves on its own ---------- */
+  const powered = () => {
+    booted = true; meter.on = true;
+    root.classList.add('booted', 'lit');
+    $$('.is-test').forEach(el => el.classList.remove('is-test'));
+  };
+  const mm = gsap.matchMedia();
+  mm.add({
+    motion: '(prefers-reduced-motion: no-preference)',
+    reduce: '(prefers-reduced-motion: reduce)',
+    fine: '(hover: hover) and (pointer: fine)',
+    wide: '(min-width: 820px)'
+  }, ctx => {
+    const { motion, fine, wide } = ctx.conditions;
+    reduce = !motion;
+    syncKnobs();
+    if (!motion) { // Reduced motion: final states, native scroll, numeric meter readout.
+      gsap.set(['.fader__ride', '.ppm__glare', '.ppm__lamp', '.ppm__scale', '.ppm__test'], { clearProps: 'transform,opacity' }); // whatever the motion branch left inline
+      powered();
+      return;
+    }
+
+    lenis = new Lenis({ lerp: 0.1, smoothWheel: true, autoRaf: false });
+    lenis.on('scroll', ScrollTrigger.update);
+    const tick = time => lenis.raf(time * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
+
+    // Load: the desk powers up. Chrome arrives, the knobs recall, every lamp is tested in signal order,
+    // then the meter lamp warms and the needle snaps to Test and glides back down on its own ballistics.
+    if (!booted) {
+      const chrome = $$('.wordmark, .nav a, .hdr .cap--cta, .menu-btn').filter(el => el.offsetParent);
+      const lamps = [...tabs.map((t, i) => [t, mods[i]]), ...$$('.panel.is-active .seg .cap').map(c => [c]), [$('.play .cap')]];
+      const at = 0.45, step = T('test'), end = at + lamps.length * step;
+      const tl = gsap.timeline({ onComplete: powered })
+        .from(chrome, { y: 6, autoAlpha: 0, duration: T('chrome'), ease: E('chrome'), stagger: 0.08, clearProps: 'transform,opacity,visibility' }, 0.1)
+        .fromTo(knobCaps, { rotation: (i, el) => knobAngle(el) - 30 }, { rotation: (i, el) => knobAngle(el), duration: T('recall'), ease: E('recall'), stagger: 0.03 }, 0.15);
+      lamps.forEach((els, k) => tl
+        .call(() => els.forEach(el => el.classList.add('is-test')), null, at + k * step)
+        .call(() => els.forEach(el => el.classList.remove('is-test')), null, at + (k + 1) * step));
+      tl.call(() => root.classList.add('lit'), null, end + 0.05)
+        .fromTo('.ppm__lamp', { opacity: 0.12 }, { opacity: 1, duration: T('lamp'), ease: 'lamp' }, end + 0.1)
+        .fromTo('.ppm__scale', { opacity: 0.3 }, { opacity: 1, duration: T('lamp'), ease: 'lamp' }, '<')
+        // Signature: 60% into the warm-up the needle snaps to Test (0 dB) in one Type I rise, the Test legend at full,
+        // holds there as on a 1 kHz line-up tone, then falls at 20 dB per 1.7 s. Lamp and needle land as one event.
+        .call(() => { meter.on = true; meter.db = 0; meter.hold = gsap.ticker.time + T('hold'); meter.tap = true; }, null, '<0.3')
+        .set('.ppm__test', { opacity: 1 }, '<');
+    }
+
+    // S1: the statement lights word by word as it crosses the screen; scrolling back dims it.
+    const said = SplitText.create('.statement', { type: 'words' });
+    gsap.fromTo(said.words, { opacity: 0.6 }, {
+      opacity: 1, ease: 'none', stagger: 0.25,
+      scrollTrigger: { trigger: '.statement', start: 'top 85%', end: 'top 60%', scrub: 0.6 }
+    });
+
+    // S2: the 24 fader caps ride up from the bottom of their slots to the mix (outer wrapper only).
+    // From the bottom of the slot, less the deepest drift offset (-0.3 dB), so no inner cap ever covers its printed value.
+    const rideFrom = (i, el) => el.parentNode.clientHeight - el.offsetTop - el.offsetHeight - 0.3 * parseFloat(getComputedStyle(faders).getPropertyValue('--db-px'));
+    gsap.set('.fader__ride', { y: rideFrom }); // staggered scrubs only render their first child up front
+    gsap.fromTo('.fader__ride', { y: rideFrom }, {
+      y: 0, ease: 'none', stagger: { amount: 0.5 },
+      scrollTrigger: { trigger: '.faders', start: 'top 85%', end: 'center 55%', scrub: true, invalidateOnRefresh: true }
+    });
+
+    // S3: the spec rules draw in from the left, once.
+    gsap.from('.spec-row__rule', {
+      scaleX: 0, transformOrigin: 'left center', duration: T('rule'), ease: E('rule'), stagger: 0.06,
+      scrollTrigger: { trigger: '.specs dl', start: 'top 90%', once: true }
+    });
+
+    // MI6 bars rest while the meter bridge is off screen; the loop keeps playing.
+    const bridge = $('.bridge');
+    ScrollTrigger.create({ trigger: bridge, start: 'top bottom', end: 'bottom top', onToggle: s => bridge.classList.toggle('is-away', !s.isActive) });
+
+    // HV12: the meter glass reflects the room; the glare drifts against the pointer.
+    let move, leave;
+    if (fine && wide) {
+      const glare = $('.ppm__glare');
+      const gx = gsap.quickTo(glare, 'x', { duration: T('glare'), ease: E('glare') });
+      const gy = gsap.quickTo(glare, 'y', { duration: T('glare'), ease: E('glare') });
+      move = e => { gx(-(e.clientX / innerWidth * 2 - 1) * 16); gy(-(e.clientY / innerHeight * 2 - 1) * 16); };
+      leave = () => { gx(0); gy(0); };
+      addEventListener('pointermove', move, { passive: true });
+      root.addEventListener('pointerleave', leave);
+    }
+
+    return () => {
+      gsap.ticker.remove(tick);
+      gsap.ticker.lagSmoothing(500, 33);
+      const y = scrollY; // destroying Lenis and reverting the triggers would otherwise land the page at the top
+      lenis.destroy(); lenis = null;
+      requestAnimationFrame(() => scrollTo(0, y));
+      if (move) { removeEventListener('pointermove', move); root.removeEventListener('pointerleave', leave); }
+      bridge.classList.remove('is-away');
+      gsap.set(['.fader__ride', '.ppm__glare'], { clearProps: 'transform' });
+      powered();
+    };
+  });
+})();
+</script>
+</body>
+</html>
