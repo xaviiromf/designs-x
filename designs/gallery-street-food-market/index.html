@@ -1,0 +1,551 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Wharf Street Night Market stalls</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mohave:wght@300..700&family=Rethink+Sans:wght@400..800&display=swap">
+<style>
+  :root {
+    /* Colour: the depot yard at night. Wet granite setts, chalk boards, steel shutters, painted awnings. */
+    --setts: #2A2329;       /* page ground: wet granite setts at night */
+    --kerb: #3A3238;        /* raised surface: idle chip hover, dialog, ground strip under each stall */
+    --chalk: #EDE7DA;       /* body text, name boards, selected chip (12.4:1 on setts, 10.1:1 on kerb) */
+    --concrete: #B0A8AB;    /* secondary text (6.6:1 on setts, 5.3:1 on kerb) */
+    --shutter: #56636B;     /* roller-shutter steel, cool against warm stone (chalk on it 5.0:1) */
+    --shutter-rib: #48545C; /* shutter slat shadows and the shutter box (chalk on it 6.3:1) */
+    --lamp: #FFF1D2;        /* the lit bulb, and the hover frame it throws */
+    --scrim: rgb(42 35 41 / .82);
+
+    /* Art only: awning paints, referenced by name from STALLS */
+    --awn-tomato: #D9533B;
+    --awn-teal: #2F8F86;
+    --awn-mustard: #DDB23C;
+    --awn-plum: #7B3D6E;
+    --awn-leaf: #5A8F3E;
+    --awn-navy: #2E4C7E;
+    --awn-paper: #F0EADD;
+    --art-wall: #3F353C;    /* inside the stall, behind the counter: a step above the setts so the stall has an edge */
+    --art-iron: #1E191D;    /* pans, lamp shades, burners */
+    --art-top: #C9BFAE;     /* counter top */
+    --art-food: #C98A3E;    /* cooked food on the props */
+
+    /* Type */
+    --font-sign: "Mohave", "Arial Narrow", "Roboto Condensed", sans-serif;
+    --font-text: "Rethink Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --fs-0: .875rem;
+    --fs-1: 1rem;
+    --fs-2: 1.25rem;
+    --fs-3: 1.5625rem;
+    --fs-4: 1.953rem;
+    --fs-display: clamp(2.5rem, 1.6rem + 3.8vw, 4.75rem);
+    --fs-board: var(--fs-3);
+
+    /* Space, 4px base */
+    --sp-1: 4px;
+    --sp-2: 8px;
+    --sp-3: 12px;
+    --sp-4: 16px;
+    --sp-5: 24px;
+    --sp-6: 40px;
+    --sp-7: 64px;
+    --sp-8: 104px;
+    --gutter: clamp(16px, 4vw, 48px);
+    --maxw: 1240px;
+    --gap: var(--sp-5);
+    --strip: 56px;          /* a folded, shut stall on phones */
+    --tap: 44px;            /* minimum touch target */
+    --box: 7px;             /* depth of the shutter box under the canopy */
+    --radius: 4px;          /* chips and buttons */
+    --radius-sheet: 8px;    /* dialog */
+    --canopy: 20cqw;        /* canopy depth: 80 of the drawing's 400 units */
+
+    /* Motion */
+    --ease-open: cubic-bezier(.2, .7, .2, 1);
+    --ease-close: cubic-bezier(.5, 0, .75, 0);
+    --ease-fold: cubic-bezier(.625, .05, 0, 1);
+    --ease-spring: cubic-bezier(.34, 1.56, .64, 1);
+    --d-open: 480ms;
+    --d-close: 360ms;
+    --stagger: 16ms;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--setts);
+    color: var(--chalk);
+    font: 400 var(--fs-1)/1.55 var(--font-text);
+  }
+  h2, h3, h4, p, ul, ol, fieldset { margin: 0; padding: 0; }
+  ul, ol { list-style: none; }
+  button, input { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--chalk); outline-offset: 3px; }
+
+  .market {
+    max-width: var(--maxw);
+    margin: 0 auto;
+    padding: var(--sp-8) var(--gutter);
+  }
+
+  /* Header */
+  .head { display: grid; gap: var(--sp-5); align-items: end; }
+  .head h2 {
+    font: 700 var(--fs-display)/.95 var(--font-sign);
+    letter-spacing: -.01em;
+    text-wrap: balance;
+  }
+  .ap { margin-inline: -.07em; } /* Mohave's apostrophe has wide side bearings */
+  .head .text { max-width: 62ch; display: grid; gap: var(--sp-3); }
+  .lede { font-size: var(--fs-2); line-height: 1.45; }
+  .info { color: var(--concrete); }
+  @media (min-width: 900px) {
+    .head { grid-template-columns: 1fr 1fr; gap: var(--sp-6); }
+  }
+
+  /* Cuisine chips */
+  .filter { border: 0; margin-top: var(--sp-7); min-width: 0; }
+  .filter legend { font-weight: 600; margin-bottom: var(--sp-3); padding: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+  .chip {
+    position: relative; /* keeps the hidden radio inside the phone rail's scroll box */
+    display: inline-flex; align-items: center; gap: var(--sp-2);
+    min-height: var(--tap); padding: 0 var(--sp-4);
+    border: 1px solid var(--concrete); border-radius: var(--radius);
+    font-weight: 600; cursor: pointer; user-select: none;
+    transition: background-color 150ms ease-out, color 150ms ease-out, border-color 150ms ease-out, transform 350ms var(--ease-spring);
+  }
+  .chip input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; pointer-events: none; }
+  .chip .n { font-size: var(--fs-0); font-weight: 400; color: var(--concrete); font-variant-numeric: tabular-nums; }
+  @media (hover: hover) { .chip:hover { background: var(--kerb); } }
+  .chip:has(:checked) { background: var(--chalk); border-color: var(--chalk); color: var(--setts); }
+  .chip:has(:checked) .n { color: var(--setts); }
+  .chip:has(:focus-visible) { outline: 2px solid var(--chalk); outline-offset: 3px; }
+  .chip:has(:checked:focus-visible) { outline: 6px double var(--chalk); outline-offset: 2px; } /* a second ring keeps focus distinct from the chalk fill */
+  @media (prefers-reduced-motion: no-preference) {
+    .chip:active { transform: scale(.96); transition-duration: 150ms, 150ms, 150ms, 120ms; }
+  }
+
+  .live { margin-top: var(--sp-4); color: var(--concrete); max-width: 62ch; min-height: 1.55em; }
+
+  /* Aisles */
+  .aisle { margin-top: var(--sp-7); }
+  .aisle h3 {
+    font: 700 var(--fs-4)/1.1 var(--font-text);
+    letter-spacing: -.01em;
+    margin-bottom: var(--sp-5);
+  }
+  .grid { display: grid; gap: var(--gap); grid-template-columns: 1fr; }
+  @media (min-width: 600px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 900px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+
+  /* Stall */
+  .stall {
+    --i: 0;
+    --delay: calc(var(--i) * var(--stagger));
+    container-type: inline-size;
+    position: relative;
+    transition: outline-color 200ms ease-out;
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+  }
+  .fold { display: grid; grid-template-rows: 1fr; }
+  .fold-in { min-height: 0; overflow: clip; }
+  .body { position: relative; }
+  /* rows of stalls share one height when a dish wraps to two lines */
+  @media (min-width: 600px) {
+    .stall, .fold-in, .body { display: flex; flex-direction: column; }
+    .fold, .body, .ground { flex: 1; }
+  }
+  /* .front and .board stay unpositioned: .body is the containing block for the stretched button and the shutter */
+  .front { display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr); aspect-ratio: 4 / 3; background: var(--art-wall); }
+  .front > svg, .front > img, .board { grid-area: 1 / 1; }
+  .front svg, .front img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .board {
+    align-self: start; justify-self: start; margin: 25cqw 0 0 6cqw; max-width: 58cqw;
+    background: var(--chalk); color: var(--setts);
+    padding: var(--sp-1) var(--sp-3) 2px;
+  }
+  .board h4 { font: 700 var(--fs-board)/1 var(--font-sign); letter-spacing: .005em; }
+  .board button {
+    all: unset; cursor: pointer; display: block; overflow-wrap: anywhere;
+  }
+  .board button::after { content: ""; position: absolute; inset: 0; z-index: 3; }
+  .board button:focus-visible { outline: none; }
+  .ground {
+    background: var(--kerb);
+    padding: var(--sp-3) var(--sp-4) var(--sp-4);
+    display: grid; gap: 2px;
+  }
+  .meta { color: var(--concrete); font-size: var(--fs-0); }
+  .dish { display: flex; justify-content: space-between; gap: var(--sp-4); font-weight: 600; }
+  .price, .menu-list .price { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  /* Lamp: unlit until someone points at the stall */
+  .stall { --bulb: var(--concrete); }
+  .lamp { fill: var(--bulb); transition: fill 200ms ease-out, filter 200ms ease-out; }
+  .beam { fill: var(--lamp); opacity: var(--beam, 0); transition: opacity 200ms ease-out; }
+  @media (hover: hover) {
+    .stall:has(.board button:hover) { --bulb: var(--lamp); --beam: .12; outline-color: var(--lamp); }
+    .stall:has(.board button:hover) .lamp { filter: drop-shadow(0 0 6px var(--lamp)) drop-shadow(0 0 14px var(--lamp)); }
+  }
+  .stall:has(.board button:focus-visible) { --bulb: var(--lamp); --beam: .12; outline-color: var(--chalk); }
+  .stall:has(.board button:focus-visible) .lamp,
+  .stall:has(.board button:active) .lamp { filter: drop-shadow(0 0 6px var(--lamp)) drop-shadow(0 0 14px var(--lamp)); }
+  .stall:has(.board button:active) { --bulb: var(--lamp); --beam: .12; }
+
+  /* The signature: a roller shutter that comes down from its box under the canopy */
+  .shut-area {
+    position: absolute; left: 0; right: 0; top: var(--canopy); bottom: 0;
+    overflow: clip; z-index: 4; pointer-events: none;
+  }
+  .shut-area::before { /* the shutter box, always there */
+    content: ""; position: absolute; inset: 0 0 auto; height: var(--box); z-index: 2;
+    background: var(--shutter-rib); border-bottom: 1px solid var(--art-iron);
+  }
+  .shutter {
+    position: absolute; inset: 0;
+    background:
+      repeating-linear-gradient(to bottom, transparent 0 6px, var(--shutter-rib) 6px 8px, transparent 8px 10px),
+      var(--shutter);
+    border-bottom: 8px solid var(--shutter-rib);
+    transform: translateY(-101%);
+    transition: transform var(--d-open) var(--ease-open) var(--delay);
+  }
+  .down .shutter {
+    transform: translateY(0);
+    transition: transform var(--d-close) var(--ease-close) var(--delay);
+  }
+  .plate {
+    position: absolute; left: 6cqw; right: 6cqw; top: 22%;
+    display: grid; gap: var(--sp-1);
+  }
+  .plate b { font: 700 var(--fs-3)/1 var(--font-sign); }
+  .plate .num { font-family: var(--font-text); font-size: .92em; } /* Mohave's zero is slashed; pitch numbers must read plainly */
+  .plate > span { font-weight: 600; font-size: var(--fs-0); }
+  .plate b, .plate > span { background: var(--shutter-rib); justify-self: start; padding: 2px var(--sp-2); }
+
+  /* Phones: a shut stall folds to a 56px strip with its valance still showing */
+  @media (max-width: 599px) {
+    :root { --gap: var(--sp-4); --fs-board: var(--fs-2); }
+    .market { padding-top: var(--sp-7); }
+    .filter { margin-top: var(--sp-6); }
+    /* one swipeable rail, so the first stall shows on the first screen */
+    .filter legend { margin-bottom: var(--sp-1); }
+    .chips {
+      flex-wrap: nowrap; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none;
+      margin-inline: calc(var(--gutter) * -1); padding: var(--sp-2) var(--gutter);
+    }
+    .chip { flex: none; scroll-snap-align: start; scroll-margin-inline: var(--gutter); padding: 0 var(--sp-3); }
+    .aisle { margin-top: var(--sp-6); }
+    .plate { top: calc(var(--box) + var(--sp-2) - 1px); display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--sp-2); }
+    .plate b, .plate > span { background: none; padding: 0; }
+    .plate b { font-size: var(--fs-2); }
+    .fold { transition: grid-template-rows 300ms var(--ease-fold) var(--delay); }
+    .fold-in { min-height: var(--strip); }
+    .body { transition: transform 300ms var(--ease-fold) var(--delay); }
+    /* close: the shutter lands, then the stall folds; open: it unfolds, then the shutter rises */
+    .shutter { transition-delay: calc(var(--delay) + 200ms); }
+    .down .shutter { transition-delay: var(--delay); }
+    .shut .fold { grid-template-rows: 0fr; transition-duration: 400ms; transition-delay: calc(var(--delay) + var(--d-close)); }
+    .shut .body { transform: translateY(calc(var(--canopy) * -1 + 10px)); transition-duration: 400ms; transition-delay: calc(var(--delay) + var(--d-close)); }
+  }
+
+  /* Menu dialog */
+  .menu {
+    border: 0; padding: 0; border-radius: var(--radius-sheet);
+    overscroll-behavior: contain;
+    width: min(32rem, calc(100% - 2 * var(--gutter)));
+    max-height: calc(100dvh - 2 * var(--sp-6));
+    background: var(--kerb); color: var(--chalk);
+    opacity: 1; transform: none;
+    transition: opacity 160ms ease-in, transform 160ms ease-in, overlay 160ms allow-discrete, display 160ms allow-discrete;
+  }
+  .menu:not([open]) { opacity: 0; }
+  .menu[open] { transition: opacity 280ms var(--ease-open), transform 280ms var(--ease-open), overlay 280ms allow-discrete, display 280ms allow-discrete; }
+  @starting-style { .menu[open] { opacity: 0; transform: scale(.98); } }
+  .menu::backdrop { background: var(--scrim); transition: background-color 200ms; }
+  @starting-style { .menu[open]::backdrop { background: transparent; } }
+  .menu-in { display: flex; flex-direction: column; gap: var(--sp-4); padding: var(--sp-6) var(--sp-5) var(--sp-5); max-height: inherit; }
+  html:has(.menu[open]) { overflow: hidden; } /* showModal() does not lock the page behind */
+  .menu h2 { /* the stall's chalk name board, carried into its menu */
+    justify-self: start; width: fit-content; margin-bottom: var(--sp-3);
+    font: 700 var(--fs-4)/1 var(--font-sign); letter-spacing: .005em;
+    background: var(--chalk); color: var(--setts); padding: var(--sp-1) var(--sp-3) 2px;
+  }
+  .menu .where { color: var(--concrete); }
+  .menu-list { border-top: 1px solid var(--shutter); }
+  .menu-list li { display: flex; justify-content: space-between; gap: var(--sp-4); padding: var(--sp-3) 0; border-bottom: 1px solid var(--shutter); }
+  .menu .note { color: var(--concrete); font-size: var(--fs-0); }
+  .menu .note:empty { display: none; }
+  .back {
+    align-self: start; min-height: var(--tap); padding: 0 var(--sp-5); margin-top: var(--sp-2);
+    border: 1px solid var(--concrete); border-radius: var(--radius); background: var(--setts);
+    font-weight: 600; cursor: pointer;
+    transition: background-color 150ms, transform 350ms var(--ease-spring);
+  }
+  @media (hover: hover) { .back:hover { background: var(--shutter); } }
+  @media (prefers-reduced-motion: no-preference) { .back:active { transform: scale(.96); transition-duration: 150ms, 120ms; } }
+  @media (max-width: 599px) {
+    /* a bottom sheet sized to its menu, rising from the bottom edge */
+    .menu { width: 100%; max-width: none; height: fit-content; max-height: 90dvh; margin: auto 0 0; border-radius: var(--radius-sheet) var(--radius-sheet) 0 0; }
+    @starting-style { .menu[open] { transform: translateY(16px); } }
+    .menu-in { padding-bottom: calc(var(--sp-5) + env(safe-area-inset-bottom, 0px)); }
+    .menu-list { overflow-y: auto; }
+    .back { align-self: stretch; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .shutter, .down .shutter, .fold, .body { transition: none !important; }
+    .menu, .menu[open] { transform: none; }
+    @starting-style { .menu[open] { transform: none; } }
+  }
+</style>
+</head>
+<body>
+<main>
+  <section class="market" aria-labelledby="market-title">
+    <div class="head">
+      <h2 id="market-title">Who<span class="ap">’</span>s cooking this weekend</h2>
+      <div class="text">
+        <p class="lede">Eighteen kitchens in the old tram depot. Pick a cuisine to see which pitches to head for.</p>
+        <p class="info">Fridays and Saturdays, 5 to 11pm, April to October. 40 Wharf Street. All stalls take cards.</p>
+      </div>
+    </div>
+
+    <noscript><p class="live">The stall list needs JavaScript. The market is open Fridays and Saturdays, 5 to 11pm, April to October, at 40 Wharf Street.</p></noscript>
+
+    <fieldset class="filter" hidden>
+      <legend>Cuisine</legend>
+      <div class="chips" id="chips"></div>
+    </fieldset>
+    <p class="live" id="live" aria-live="polite"></p>
+
+    <div class="aisle">
+      <h3 id="aisle-wall">Along the depot wall, pitches 1 to 9</h3>
+      <ol class="grid" id="wall" role="list" aria-labelledby="aisle-wall"></ol>
+    </div>
+    <div class="aisle">
+      <h3 id="aisle-middle">Down the middle, pitches 10 to 18</h3>
+      <ol class="grid" id="middle" role="list" aria-labelledby="aisle-middle"></ol>
+    </div>
+  </section>
+
+  <dialog class="menu" id="menu" aria-labelledby="menu-title">
+    <div class="menu-in">
+      <div>
+        <h2 id="menu-title"></h2>
+        <p id="menu-meta"></p>
+        <p class="where" id="menu-where"></p>
+      </div>
+      <ul class="menu-list" id="menu-list" role="list"></ul>
+      <p class="note" id="menu-note"></p>
+      <button class="back" type="button" id="menu-back">Back to the stalls</button>
+    </div>
+  </dialog>
+</main>
+
+<script>
+/* STALLS: the one source for chips, cards, live line and menu dialog.
+   To use real photos, set photo:'https://.../pitch-07.jpg'. drawStall then returns an <img alt=""> with
+   object-fit: cover in the same 4:3 frame, and the name board overlay stays.
+   canopy.a / canopy.b name --awn-* tokens; valance: scallop | zigzag | flat | tassel; prop: griddle | pot | wok | tray. */
+const STALLS = [
+  { pitch: 1, name: 'Gogi Bros', cuisine: 'Korean', dish: 'Yangnyeom fried chicken', price: '£9',
+    menu: [['Kimchi cheese fries', '£6'], ['Rice-crust corn dog', '£5']], diet: 'Fried in shared oil; the gochujang contains wheat.',
+    canopy: { a: 'tomato', b: 'paper', valance: 'scallop', stripes: 7 }, prop: 'griddle', photo: null },
+  { pitch: 2, name: 'Tortilleria Lupe', cuisine: 'Mexican', dish: 'Three al pastor tacos', price: '£9',
+    menu: [['Mushroom and huitlacoche quesadilla', '£8'], ['Horchata', '£3.50']], diet: 'Corn tortillas are pressed at the stall and are gluten-free.',
+    canopy: { a: 'teal', b: 'mustard', valance: 'zigzag', stripes: 9 }, prop: 'griddle', photo: null },
+  { pitch: 3, name: "Lola's Silog", cuisine: 'Filipino', dish: 'Tocilog with garlic rice and fried egg', price: '£10',
+    menu: [['Lumpia, five', '£6'], ['Ube halaya cup', '£4']], diet: '',
+    canopy: { a: 'plum', b: 'mustard', valance: 'flat', stripes: 5 }, prop: 'wok', photo: null },
+  { pitch: 4, name: 'Khachapuri Club', cuisine: 'Georgian', dish: 'Adjaruli khachapuri', price: '£9.50',
+    menu: [['Khinkali, five', '£8'], ['Badrijani with walnut', '£6']], diet: 'The badrijani is vegan and contains walnuts.',
+    canopy: { a: 'tomato', b: 'paper', valance: 'tassel', stripes: 4 }, prop: 'tray', photo: null },
+  { pitch: 5, name: 'Yatai Ken', cuisine: 'Japanese', dish: 'Okonomiyaki', price: '£9',
+    menu: [['Takoyaki, six', '£7'], ['Yakisoba', '£8']], diet: '',
+    canopy: { a: 'navy', b: 'paper', valance: 'flat', stripes: 6 }, prop: 'griddle', photo: null },
+  { pitch: 6, name: 'Injera House', cuisine: 'Ethiopian', dish: 'Beyaynetu veggie platter', price: '£10',
+    menu: [['Doro wot', '£11'], ['Sambusa, two', '£4']], diet: 'The platter is vegan; the injera is teff and wheat.',
+    canopy: { a: 'leaf', b: 'mustard', valance: 'scallop', stripes: 8 }, prop: 'pot', photo: null },
+  { pitch: 7, name: "Za'atar & Dough", cuisine: 'Lebanese', dish: "Za'atar manakish", price: '£6',
+    menu: [['Lahm bi ajeen', '£8'], ['Cheese and nigella manakish', '£7']], diet: '',
+    canopy: { a: 'leaf', b: 'paper', valance: 'zigzag', stripes: 6 }, prop: 'tray', photo: null },
+  { pitch: 8, name: 'Biang Biang', cuisine: 'Chinese', dish: 'Biang biang noodles with cumin lamb', price: '£10',
+    menu: [['Liangpi cold noodles', '£8'], ['Rou jia mo', '£7']], diet: '',
+    canopy: { a: 'tomato', b: 'mustard', valance: 'flat', stripes: 9 }, prop: 'wok', photo: null },
+  { pitch: 9, name: 'Doubles Trouble', cuisine: 'Trinidadian', dish: 'Two doubles', price: '£6',
+    menu: [['Aloo pie', '£5'], ['Sorrel', '£3']], diet: '',
+    canopy: { a: 'mustard', b: 'tomato', valance: 'scallop', stripes: 5 }, prop: 'pot', photo: null },
+  { pitch: 10, name: 'Bifana Bar', cuisine: 'Portuguese', dish: 'Bifana pork roll', price: '£8',
+    menu: [['Prego steak roll', '£10'], ['Piri-piri fries', '£4']], diet: '',
+    canopy: { a: 'navy', b: 'mustard', valance: 'tassel', stripes: 7 }, prop: 'griddle', photo: null },
+  { pitch: 11, name: 'Seoul Rolls', cuisine: 'Korean', dish: 'Gimbap', price: '£8',
+    menu: [['Tteokbokki', '£7'], ['Hotteok', '£4']], diet: '',
+    canopy: { a: 'teal', b: 'paper', valance: 'scallop', stripes: 6 }, prop: 'tray', photo: null },
+  { pitch: 12, name: 'Hoppers & Co', cuisine: 'Sri Lankan', dish: 'Egg hopper with seeni sambol', price: '£7',
+    menu: [['Chicken kottu roti', '£10'], ['Dhal and coconut roti', '£8']], diet: '',
+    canopy: { a: 'plum', b: 'paper', valance: 'zigzag', stripes: 8 }, prop: 'wok', photo: null },
+  { pitch: 13, name: 'Shawarma Sami', cuisine: 'Lebanese', dish: 'Chicken shawarma wrap', price: '£9',
+    menu: [['Falafel wrap', '£8'], ['Fries with toum', '£4']], diet: '',
+    canopy: { a: 'leaf', b: 'mustard', valance: 'flat', stripes: 4 }, prop: 'griddle', photo: null },
+  { pitch: 14, name: 'La Birria Van', cuisine: 'Mexican', dish: 'Three birria quesatacos with consommé', price: '£11',
+    menu: [['Esquites', '£5'], ['Agua de jamaica', '£3']], diet: '',
+    canopy: { a: 'tomato', b: 'teal', valance: 'tassel', stripes: 7 }, prop: 'pot', photo: null },
+  { pitch: 15, name: 'Sando Stand', cuisine: 'Japanese', dish: 'Pork katsu sando', price: '£9',
+    menu: [['Egg sando', '£7'], ['Yuzu lemonade', '£3.50']], diet: '',
+    canopy: { a: 'mustard', b: 'paper', valance: 'flat', stripes: 9 }, prop: 'tray', photo: null },
+  { pitch: 16, name: "Ana's Gözleme", cuisine: 'Turkish', dish: 'Spinach and feta gözleme', price: '£8',
+    menu: [['Spiced lamb gözleme', '£9'], ['Ayran', '£2.50']], diet: '',
+    canopy: { a: 'navy', b: 'tomato', valance: 'scallop', stripes: 5 }, prop: 'griddle', photo: null },
+  { pitch: 17, name: 'Jianbing Stand', cuisine: 'Chinese', dish: 'Jianbing with crispy cracker', price: '£8',
+    menu: [['Scallion pancake', '£5'], ['Soy milk', '£2.50']], diet: '',
+    canopy: { a: 'plum', b: 'mustard', valance: 'zigzag', stripes: 6 }, prop: 'griddle', photo: null },
+  { pitch: 18, name: 'Nata Lisboa', cuisine: 'Portuguese', dish: 'Two pastéis de nata', price: '£5',
+    menu: [['Bolo de arroz', '£3.50'], ['Galão', '£3']], diet: '',
+    canopy: { a: 'teal', b: 'paper', valance: 'tassel', stripes: 8 }, prop: 'tray', photo: null }
+];
+
+const $ = id => document.getElementById(id);
+const esc = s => s.replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
+// For Mohave text (name boards, dialog title): a typographic apostrophe with tightened bearings
+const sign = s => esc(s).replace(/&#39;|’/g, '<span class="ap">’</span>');
+const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+
+// Stall front, 400 x 300 units: canopy 0-80 (stripes to 64, valance below), wall, counter from 206.
+function drawStall(s) {
+  if (s.photo) return `<img src="${esc(s.photo)}" alt="" loading="lazy">`;
+  const { a, b, valance, stripes } = s.canopy, w = 400 / stripes;
+  const col = i => `var(--awn-${i % 2 ? b : a})`;
+  let canopy = '', val = '';
+  for (let i = 0; i < stripes; i++) {
+    const x = i * w;
+    canopy += `<rect x="${x}" y="0" width="${w + .5}" height="65" fill="${col(i)}"/>`;
+    if (valance === 'scallop') val += `<path d="M${x} 64h${w}v2a${w / 2} 13 0 0 1 -${w} 0z" fill="${col(i)}"/>`;
+    if (valance === 'zigzag') val += `<path d="M${x} 64h${w}l-${w / 2} 16z" fill="${col(i)}"/>`;
+  }
+  if (valance === 'flat' || valance === 'tassel') {
+    val = `<rect x="0" y="64" width="400" height="13" fill="var(--awn-${b})"/><rect x="0" y="64" width="400" height="3" fill="var(--awn-${a})"/>`;
+    if (valance === 'tassel') for (let x = w / 2; x < 400; x += w / 2) val += `<path d="M${x} 77v3" stroke="var(--awn-${a})" stroke-width="3"/>`;
+  }
+  const props = {
+    griddle: `<rect x="246" y="190" width="120" height="10" fill="var(--art-iron)"/><rect x="252" y="200" width="6" height="8" fill="var(--art-iron)"/><rect x="354" y="200" width="6" height="8" fill="var(--art-iron)"/>
+      <ellipse cx="274" cy="188" rx="15" ry="4" fill="var(--art-food)"/><ellipse cx="306" cy="188" rx="15" ry="4" fill="var(--art-food)"/><ellipse cx="338" cy="188" rx="15" ry="4" fill="var(--art-food)"/>
+      <path d="M232 160l26 26" stroke="var(--concrete)" stroke-width="3"/>`,
+    pot: `<rect x="262" y="146" width="88" height="60" rx="4" fill="var(--art-iron)"/><rect x="256" y="140" width="100" height="8" rx="3" fill="var(--concrete)"/>
+      <rect x="298" y="132" width="16" height="8" rx="3" fill="var(--concrete)"/><rect x="250" y="160" width="12" height="6" fill="var(--art-iron)"/><rect x="350" y="160" width="12" height="6" fill="var(--art-iron)"/>`,
+    wok: `<path d="M246 170h104a52 34 0 0 1 -104 0z" fill="var(--art-iron)"/><path d="M350 172l40 -12" stroke="var(--art-iron)" stroke-width="6"/>
+      <path d="M262 170q12 -12 24 -2q12 -10 24 0q12 -10 24 2" fill="none" stroke="var(--art-food)" stroke-width="5"/>`,
+    tray: `<rect x="236" y="194" width="140" height="12" fill="var(--concrete)"/><rect x="240" y="166" width="132" height="28" fill="none" stroke="var(--concrete)" stroke-width="2"/>
+      ${[0, 1, 2, 3, 4].map(i => `<path d="M${250 + i * 25} 194a10 9 0 0 1 20 0z" fill="var(--art-food)"/>`).join('')}`
+  };
+  return `<svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+    <rect width="400" height="300" fill="var(--art-wall)"/>
+    <path d="M0 206h400v94h-400z" fill="var(--awn-${a})"/>
+    <path d="M0 214h400v86h-400z" fill="var(--art-iron)" opacity=".35"/>
+    ${[50, 100, 150, 200, 250, 300, 350].map(x => `<path d="M${x} 214v86" stroke="var(--art-iron)" stroke-opacity=".45" stroke-width="2"/>`).join('')}
+    <rect x="0" y="204" width="400" height="10" fill="var(--art-top)"/>
+    ${props[s.prop]}
+    <path d="M320 80v18" stroke="var(--art-iron)" stroke-width="2"/>
+    <path d="M308 106h24l-5 -9h-14z" fill="var(--art-iron)"/>
+    <path class="beam" d="M313 112h14l50 92h-114z"/>
+    <circle class="lamp" cx="320" cy="111" r="6"/>
+    ${canopy}${val}
+  </svg>`;
+}
+
+const ORD = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth'];
+const aisleOf = p => p <= 9 ? 'Along the depot wall' : 'Down the middle';
+const join = l => l.length < 2 ? `${l[0]}` : `${l.slice(0, -1).join(', ')} and ${l.at(-1)}`;
+
+// Cards
+const cards = STALLS.map((s, i) => {
+  const li = document.createElement('li');
+  li.className = 'stall';
+  li.style.setProperty('--i', i);
+  li.innerHTML = `<div class="fold"><div class="fold-in"><div class="body">
+      <div class="front">${drawStall(s)}
+        <div class="board"><h4><button type="button" aria-haspopup="dialog">${sign(s.name)}</button></h4></div>
+      </div>
+      <div class="ground">
+        <p class="meta">${esc(s.cuisine)}, pitch ${s.pitch}</p>
+        <p class="dish"><span>${esc(s.dish)}</span><span class="price">${esc(s.price)}</span></p>
+      </div>
+      <div class="shut-area" aria-hidden="true"><div class="shutter"><p class="plate"><b>Pitch <span class="num">${s.pitch}</span></b><span>${esc(s.name)}, ${esc(s.cuisine)}</span></p></div></div>
+    </div></div></div>`;
+  li.querySelector('button').addEventListener('click', e => openMenu(s, e.currentTarget));
+  $(s.pitch <= 9 ? 'wall' : 'middle').append(li);
+  return li;
+});
+
+// Chips, built from the cuisines in STALLS
+const counts = {};
+STALLS.forEach(s => counts[s.cuisine] = (counts[s.cuisine] || 0) + 1);
+const chip = (value, label, n, aria) =>
+  `<label class="chip"><input type="radio" name="cuisine" value="${esc(value)}" aria-label="${esc(aria)}"${value ? '' : ' checked'}>${esc(label)}<span class="n" aria-hidden="true">${n}</span></label>`;
+$('chips').innerHTML = chip('', 'All stalls', STALLS.length, `All stalls, ${STALLS.length}`) +
+  Object.keys(counts).sort().map(c => chip(c, c, counts[c], `${c}, ${counts[c]} stall${counts[c] > 1 ? 's' : ''}`)).join('');
+document.querySelector('.filter').hidden = false;
+
+let rolledUp = false;
+function apply(cuisine, quiet) {
+  rolledUp = true;
+  cards.forEach(c => c.querySelector('.shutter').style.transition = '');
+  document.documentElement.style.removeProperty('--stagger');
+  const open = [];
+  STALLS.forEach((s, i) => {
+    const shut = !!cuisine && s.cuisine !== cuisine;
+    cards[i].classList.toggle('down', shut);
+    cards[i].classList.toggle('shut', shut);
+    cards[i].inert = shut;
+    if (!shut) open.push(s.pitch);
+  });
+  if (quiet) return; // nothing to announce before anyone has chosen
+  $('live').textContent = cuisine
+    ? `${open.length} ${cuisine} stall${open.length > 1 ? 's' : ''}, at pitch${open.length > 1 ? 'es' : ''} ${join(open)}.`
+    : `Showing all ${STALLS.length} stalls in pitch order, starting at the gate.`;
+}
+$('chips').addEventListener('change', e => apply(e.target.value));
+apply('', true);
+
+// The one ambient moment: shutters roll up in pitch order the first time the stalls come into view.
+if (!reduce.matches && 'IntersectionObserver' in window) {
+  rolledUp = false;
+  cards.forEach(c => { c.classList.add('down'); c.querySelector('.shutter').style.transition = 'none'; });
+  const io = new IntersectionObserver(entries => {
+    if (!entries.some(e => e.isIntersecting)) return;
+    io.disconnect();
+    if (rolledUp) return; // a chip was chosen first; it already set the shutters
+    document.documentElement.style.setProperty('--stagger', '22ms');
+    cards.forEach(c => c.querySelector('.shutter').style.transition = '');
+    requestAnimationFrame(() => requestAnimationFrame(() => { if (!rolledUp) cards.forEach(c => c.classList.remove('down')); }));
+    setTimeout(() => { if (!rolledUp) document.documentElement.style.removeProperty('--stagger'); }, 1000);
+  }, { rootMargin: '0px 0px -15% 0px' });
+  io.observe($('wall'));
+}
+
+// Menu dialog
+const dlg = $('menu');
+let opener = null;
+function openMenu(s, btn) {
+  opener = btn;
+  $('menu-title').innerHTML = sign(s.name);
+  $('menu-meta').textContent = `${s.cuisine}, pitch ${s.pitch}`;
+  $('menu-where').textContent = `${aisleOf(s.pitch)}, ${ORD[(s.pitch - 1) % 9]} from the gate.`;
+  $('menu-list').innerHTML = [[s.dish, s.price], ...s.menu]
+    .map(([item, p]) => `<li><span>${esc(item)}</span><span class="price">${esc(p)}</span></li>`).join('');
+  $('menu-note').textContent = s.diet;
+  dlg.showModal();
+}
+const closeMenu = () => dlg.close();
+$('menu-back').addEventListener('click', closeMenu);
+dlg.addEventListener('click', e => { if (e.target === dlg) closeMenu(); });
+dlg.addEventListener('close', () => opener?.focus());
+</script>
+</body>
+</html>
