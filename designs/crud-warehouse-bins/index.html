@@ -1,0 +1,2124 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aisle 14 racking</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hubot+Sans:wdth,wght@75..125,200..900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* colour: the racking itself, under high-bay LEDs on the night shift */
+    --shed: #0E2B4C;        /* RAL 5010 gentian blue at night shift: page ground */
+    --deck: #173B63;        /* rack back, panels, dialogs */
+    --deck-2: #1E4673;      /* row hover, undo bars, filter pill */
+    --upright: #7FAEE0;     /* lit face of the frames: structure lines, bay numbers */
+    --beam: #EE7A2B;        /* beams and load meters only */
+    --kraft: #C79E6E;       /* carton loads */
+    --kraft-seam: #A9824F;  /* carton seams */
+    --kraft-ink: #3A2A18;   /* text on kraft, 5.6:1 */
+    --timber: #6E5233;      /* pallet deck boards */
+    --label: #E9ECE6;       /* location-label white: text, primary buttons, focus */
+    --muted: #AFC0D2;       /* secondary text, 7.7:1 on shed, 6.1:1 on deck */
+    --hold: #F2C230;        /* floor-marking yellow: on-hold pallets and the dock line only */
+    --over: #FF8577;        /* overload and errors, 4.8:1 on deck */
+    --focus: var(--label);
+    --rule: rgb(175 192 210 / .26);
+    --fill: color-mix(in srgb, var(--upright) 34%, var(--label));
+    --scrim: rgb(4 14 28 / .74);
+    --lift: rgb(2 9 20 / .8);
+
+    /* type: Hubot Sans, one variable family; width carries the role */
+    --font: 'Hubot Sans', system-ui, sans-serif;
+    --wd-code: 75%;       /* printed location labels, licence plates */
+    --wd-body: 100%;
+    --wd-sign: 125%;      /* painted aisle-end signage */
+    --fs-xs: .8125rem;
+    --fs-s: .9375rem;
+    --fs-m: 1.0625rem;
+    --fs-l: 1.375rem;
+    --fs-xl: 1.75rem;
+    --fs-2xl: clamp(2.25rem, 1.5rem + 3vw, 3.75rem);
+    --fs-no: 1.375rem;
+    --w-body: 420;
+    --w-ui: 620;
+    --w-strong: 680;
+    --w-code: 760;
+    --w-sign: 700;
+    --lh-body: 1.5;
+    --lh-sign: 1;
+    --lh-code: 1.1;
+    --tr-code: .02em;
+
+    /* space and shape */
+    --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px;
+    --sp-5: 24px; --sp-6: 32px; --sp-7: 48px; --sp-8: 72px;
+    --gutter: clamp(16px, 2.5vw, 32px);
+    --max: 1280px;
+    --r-pallet: 2px;
+    --r-control: 6px;
+    --r-dialog: 10px;
+
+    /* motion */
+    --dur-press: .12s;
+    --dur-release: .45s;
+    --dur-ui: .3s;
+    --dur-out: .2s;
+    --dur-err: .25s;
+    --dur-fade: .2s;
+    --dur-swap: .35s;
+    --ease-out: cubic-bezier(.16, 1, .3, 1);       /* expo.out */
+    --ease-release: cubic-bezier(.215, .61, .355, 1); /* power3.out */
+    --ease-press: cubic-bezier(.33, 1, .68, 1);    /* power2.out */
+    --ease-swap: cubic-bezier(.65, 0, .35, 1);
+    /* GSAP durations, read by the motion layer (seconds) */
+    --d-chrome: .4s;      /* L1 toolbar items */
+    --d-upright: .6s;     /* L2 uprights rise */
+    --d-beam: .7s;        /* L3 beams draw */
+    --d-lower: .5s;       /* L4 and every landing: the 'lower' ease */
+    --d-count: .45s;      /* totals after a change */
+    --d-indicator: .4s;   /* toolbar bar and filter pill */
+    --d-lift: .25s;       /* pick-up */
+    --d-drag: .15s;       /* pallet follows the pointer */
+    --d-follow: .35s;     /* scanner tag follows the pointer */
+    --d-travel: .7s;      /* tap, keyboard and form moves (Flip) */
+    --d-drop: .3s;        /* drag release into the slot (Flip) */
+    --d-scramble: .6s;    /* bin label decodes to the LPN */
+    --d-return: .45s;     /* refused drop slides home */
+    --d-flash: .6s;       /* refused beam flash */
+    --d-reflow: .6s;      /* CD5 row reflow */
+    --d-dialog: .45s;
+    --d-dialog-out: .25s;
+    --d-undo: .35s;
+    --d-edge: 1.6s;       /* changed-row edge bar */
+
+    /* rack geometry */
+    --bays: 6;
+    --axis: 4.75rem;
+    --bin-h: 5.75rem;
+    --beam-h: 7px;
+    --upright-w: 4px;
+    --toolbar-h: 3.5rem;
+    --undo-h: 0px;
+  }
+  @media (max-width: 599px) {
+    :root { --axis: 1.25rem; --bin-h: 3.25rem; --fs-no: var(--fs-xs); }
+  }
+
+  /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+
+  /* first frame of the load sequence: rack structure only, never text */
+  html.intro .upright { transform: scaleY(0); }
+  html.intro .beam { transform: scaleX(0); }
+  html.intro .pallet__body { opacity: 0; }
+  html.intro [data-chrome] { opacity: .4; }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { color-scheme: dark; -webkit-text-size-adjust: 100%; scroll-padding-top: var(--toolbar-h); scroll-padding-bottom: var(--undo-h); }
+  body {
+    margin: 0; background: var(--shed); color: var(--label);
+    font: var(--w-body) var(--fs-m)/var(--lh-body) var(--font);
+    font-variant-numeric: tabular-nums;
+  }
+  button, input, select { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+  .vh { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .wrap { max-width: var(--max); margin-inline: auto; padding-inline: var(--gutter); }
+  .code, .bin__label, .bays, .pallet__no, .lpn, .c-bin { font-stretch: var(--wd-code); font-weight: var(--w-code); letter-spacing: var(--tr-code); }
+  html.is-dragging, html.is-dragging * { cursor: grabbing !important; user-select: none; }
+
+  /* ---------- heading ---------- */
+  .aisle { padding-top: var(--sp-8); }
+  .head { display: grid; gap: var(--sp-4); padding-bottom: var(--sp-6); }
+  .head h2 {
+    margin: 0; font: var(--w-sign) var(--fs-2xl)/var(--lh-sign) var(--font); font-stretch: var(--wd-sign);
+    font-variant-numeric: normal; letter-spacing: -.01em; text-wrap: balance;
+  }
+  .tally { margin: 0; max-width: 62ch; text-wrap: pretty; }
+
+  /* ---------- toolbar ---------- */
+  .toolbar { position: sticky; top: 0; z-index: 30; background: var(--shed); }
+  .toolbar__in { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-4); min-height: var(--toolbar-h); }
+  .tabs { position: relative; display: flex; margin: 0 0 0 calc(var(--sp-3) * -1); padding: 0; list-style: none; }
+  .tabs a {
+    display: inline-flex; align-items: center; min-height: 44px; padding: 0 var(--sp-3);
+    color: var(--muted); font-weight: var(--w-ui); text-decoration: none;
+    transition: color var(--dur-fade), scale var(--dur-release) var(--ease-release);
+  }
+  .tabs a:hover, .tabs a[aria-current] { color: var(--label); }
+  .tabs a:active { scale: .97; transition-duration: var(--dur-fade), var(--dur-press); }
+  .tabs a:focus-visible { outline-offset: -2px; }
+  html:not(.fx) .tabs a[aria-current] { box-shadow: inset 0 -2px var(--label); }
+  .tabs__ind {
+    position: absolute; left: 0; bottom: 2px; width: 100px; height: 2px; background: var(--label);
+    transform-origin: 0 50%; transform: scaleX(0); display: none; pointer-events: none;
+  }
+  html.fx .tabs__ind { display: block; }
+  .toolbar__edge {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--upright);
+    transform: scaleX(0); transform-origin: 0 50%;
+  }
+
+  /* ---------- buttons ---------- */
+  .btn {
+    --from: left;
+    position: relative; isolation: isolate; overflow: hidden;
+    display: inline-flex; align-items: center; justify-content: center; gap: .5em;
+    min-height: 44px; padding: 0 1.1rem; border: 1.5px solid transparent; border-radius: var(--r-control);
+    background: none; font-weight: var(--w-ui); font-size: var(--fs-s); line-height: 1.2; cursor: pointer;
+    transition: scale var(--dur-release) var(--ease-release), color var(--dur-err) .05s;
+  }
+  .btn::before {
+    content: ''; position: absolute; inset: 0; z-index: -1;
+    transform: scaleX(0); transform-origin: var(--from) 50%;
+    transition: transform var(--dur-out) var(--ease-out);
+  }
+  .btn:active { scale: .97; transition-duration: var(--dur-press), var(--dur-err); transition-timing-function: var(--ease-press), ease; }
+  .btn:focus-visible::before { transform: scaleX(1); }
+  @media (hover: hover) and (pointer: fine) {
+    .btn:hover::before { transform: scaleX(1); transition-duration: var(--dur-ui); }
+  }
+  @media (hover: none) {
+    .btn:active::before { transform: scaleX(1); transition-duration: var(--dur-press); }
+  }
+  .btn--primary { background: var(--label); color: var(--shed); }
+  .btn--primary::before { background: var(--fill); }
+  .btn--ghost { border-color: var(--label); color: var(--label); }
+  .btn--ghost::before { background: var(--label); }
+  .btn--danger { border-color: var(--over); color: var(--over); }
+  .btn--danger::before { background: var(--over); }
+  .btn--ghost:focus-visible, .btn--danger:focus-visible { color: var(--shed); }
+  @media (hover: hover) and (pointer: fine) {
+    .btn--ghost:hover, .btn--danger:hover { color: var(--shed); }
+  }
+  @media (hover: none) {
+    .btn--ghost:active, .btn--danger:active { color: var(--shed); }
+  }
+  .btn[hidden] { display: none; }
+  .btn .sw { display: grid; overflow: hidden; }
+  .btn .sw > span { grid-area: 1 / 1; transition: transform var(--dur-swap) var(--ease-swap); }
+  .btn .sw > span + span { transform: translateY(110%); }
+  .btn.is-done .sw > span:first-child { transform: translateY(-110%); }
+  .btn.is-done .sw > span + span { transform: none; }
+
+  /* HV2: only on Reset and Cancel edit */
+  .link-btn {
+    display: inline-flex; align-items: center; min-height: 44px; padding: 0 2px; border: 0; background: none;
+    color: var(--muted); font-weight: var(--w-ui); cursor: pointer;
+    transition: color var(--dur-fade), scale var(--dur-release) var(--ease-release);
+  }
+  .link-btn > span {
+    background: linear-gradient(currentColor, currentColor) 100% 100% / 0 1.5px no-repeat;
+    padding-bottom: 2px; transition: background-size var(--dur-ui) var(--ease-out);
+  }
+  .link-btn:hover, .link-btn:focus-visible { color: var(--label); }
+  .link-btn:hover > span, .link-btn:focus-visible > span { background-position: 0 100%; background-size: 100% 1.5px; }
+  .link-btn:active { scale: .97; transition-duration: var(--dur-fade), var(--dur-press); }
+  @media (hover: none) { .link-btn:active > span { background-size: 100% 1.5px; } }
+  .link-btn[hidden] { display: none; }
+  .reset .short { display: none; }
+  @media (max-width: 479px) { .reset .long { display: none; } .reset .short { display: inline; } }
+
+  .iconbtn {
+    display: grid; place-items: center; width: 44px; height: 44px; flex: none; padding: 0;
+    border: 0; border-radius: var(--r-control); background: transparent; color: var(--muted); cursor: pointer;
+    transition: background-color var(--dur-fade), color var(--dur-fade), scale var(--dur-release) var(--ease-release);
+  }
+  .iconbtn:hover { background: var(--deck-2); color: var(--label); }
+  .iconbtn:active { scale: .94; transition-duration: var(--dur-fade), var(--dur-fade), var(--dur-press); }
+  .iconbtn svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 2; stroke-linecap: round; fill: none; }
+
+  a.inline { color: var(--label); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  a.inline:hover { text-decoration-thickness: 2px; }
+
+  /* ---------- blocks ---------- */
+  .block { padding-block: var(--sp-6) var(--sp-7); scroll-margin-top: calc(var(--toolbar-h) + var(--sp-2)); }
+  .block + .block { border-top: 1px solid var(--rule); }
+  .block h3 { margin: 0 0 var(--sp-4); font-size: var(--fs-l); font-weight: var(--w-ui); line-height: 1.2; }
+  .block h3:focus { outline: none; }
+  .block h3:focus-visible { outline: 2px solid var(--focus); }
+  #rack { padding-top: var(--sp-5); }
+
+  /* ---------- rack elevation ---------- */
+  .yard { position: relative; isolation: isolate; display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-5) var(--sp-6); }
+  @media (min-width: 1100px) { .yard { grid-template-columns: minmax(0, 1fr) 10.5rem; } }
+  .levels, .bins, .bays, .slots { list-style: none; margin: 0; padding: 0; }
+  .rack__body { position: relative; }
+  .frame { position: absolute; top: 0; bottom: 0; left: var(--axis); right: 0; z-index: 1; pointer-events: none; }
+  .upright {
+    position: absolute; top: 0; bottom: 0; width: var(--upright-w);
+    left: calc(100% / var(--bays) * var(--i)); translate: -50% 0;
+    background: var(--upright); opacity: .75; transform-origin: 50% 100%;  /* 3.7:1 on --deck idle, 4.9:1 lit */
+    transition: opacity var(--dur-err);
+  }
+  .upright.is-x { opacity: 1; }
+  .level { display: grid; grid-template-columns: var(--axis) minmax(0, 1fr); }
+  .axis {
+    display: flex; flex-direction: column; align-items: flex-end; justify-content: flex-end;
+    height: var(--bin-h); padding: 0 var(--sp-3) var(--sp-2) 0; line-height: 1.1;
+  }
+  .axis__l { font: var(--w-sign) var(--fs-l)/1 var(--font); font-stretch: var(--wd-sign); }
+  .axis__r { font-size: var(--fs-xs); color: var(--muted); white-space: nowrap; }
+  @media (max-width: 599px) {
+    .axis { padding: 0 var(--sp-1) var(--sp-1) 0; }
+    .axis__l { font-size: var(--fs-s); }
+    .axis__r { display: none; }
+  }
+  .bins { display: grid; grid-template-columns: repeat(var(--bays), minmax(0, 1fr)); background: var(--deck); }
+  .bin { position: relative; display: grid; grid-template-rows: var(--bin-h) var(--beam-h) auto; min-width: 0; }
+  .bin__slot { position: relative; display: flex; align-items: flex-end; justify-content: center; padding: 10px 12% 0; }
+  .beam { position: relative; display: block; margin-inline: 1px; transform-origin: 0 50%; }
+  .beam::before {
+    content: ''; position: absolute; inset: 0; border-radius: 1px;
+    background: color-mix(in srgb, var(--beam) 22%, var(--shed));
+    box-shadow: inset 0 1.5px var(--beam), inset 0 -1.5px var(--beam);   /* orange lips read as steel; the dark web lets the meter read as load */
+    transition: background-color var(--dur-err);
+  }
+  .beam.is-x::before { background-color: color-mix(in srgb, var(--beam) 45%, var(--shed)); }
+  .beam__meter, .beam__preview { position: absolute; inset: 0; transform: scaleX(0); transform-origin: 0 50%; }
+  .beam__meter { background: var(--beam); }
+  .beam__preview { background: var(--beam); opacity: .7; }
+  .beam__preview.is-over { background: var(--over); opacity: 1; }
+  .bin.is-target { z-index: 1; }   /* an overweight preview runs past the upright, over the next bin */
+  .bin__label {
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 0 .5em; padding: 5px 2px 7px;
+    font-size: var(--fs-xs); line-height: var(--lh-code);
+  }
+  .bin__code { text-decoration: underline 1.5px transparent; text-underline-offset: 3px; transition: text-decoration-color var(--dur-err); }
+  .bin.is-x .bin__code, .bin.is-chosen .bin__code { text-decoration-color: currentColor; }
+  .bin__lp { color: var(--muted); }
+  @media (max-width: 899px) { .bin__lp { display: none; } }
+  @media (max-width: 599px) { .bin__slot { padding: 6px 7% 0; } .bin__label { padding: 4px 0 6px; } }
+  .bays {
+    display: grid; grid-template-columns: repeat(var(--bays), minmax(0, 1fr)); margin-left: var(--axis);
+    border-top: 2px solid var(--muted); padding-top: var(--sp-2); text-align: center;
+    font-size: var(--fs-s); line-height: 1; color: var(--upright);
+  }
+
+  /* drop targets and outlines */
+  .bin__slot::after {
+    content: ''; position: absolute; inset: 6px 6% 0; border: 1.5px dashed var(--label); border-radius: var(--r-pallet);
+    clip-path: inset(0 100% 0 0); transition: clip-path var(--dur-err) var(--ease-out); pointer-events: none;
+  }
+  .bin.is-target .bin__slot::after, .bin.is-chosen .bin__slot::after { clip-path: inset(0); }
+  .bin__target {
+    position: absolute; inset: 6px 6% 0; z-index: 2; display: none; place-items: center; padding: 2px;
+    border: 0; border-radius: var(--r-pallet); background: none; color: var(--label); cursor: pointer;
+    font: var(--w-ui) var(--fs-xs)/1.15 var(--font); text-align: center;
+    transition: scale var(--dur-release) var(--ease-release), background-color var(--dur-fade);
+  }
+  .bin__target::before {
+    content: ''; position: absolute; inset: 0; border: 1.5px dashed currentColor; border-radius: inherit;
+    clip-path: inset(0 100% 0 0); transition: clip-path var(--dur-err) var(--ease-out);
+  }
+  .is-picking .bin.is-empty .bin__target { display: grid; }
+  .bin__target:hover::before { clip-path: inset(0); }
+  html:not(.fx) .bin__target:focus-visible::before { clip-path: inset(0); }
+  .bin__target:hover { background: rgb(233 236 230 / .06); }
+  .bin__target:active { scale: .98; transition-duration: var(--dur-press); }
+  .bin__target[aria-disabled="true"] { color: var(--muted); cursor: not-allowed; }
+  @media (hover: none) { .is-picking .bin.is-empty .bin__target::before { clip-path: inset(0); } }
+  .marker {
+    position: absolute; top: 0; left: 0; z-index: 3; border: 2px dashed var(--label); border-radius: 4px;
+    opacity: 0; pointer-events: none;
+  }
+
+  /* pallets */
+  .pallet {
+    position: relative; z-index: 2; display: block; width: min(100%, 7.5rem); height: 100%; padding: 0;
+    border: 0; border-radius: var(--r-pallet); background: none; color: var(--kraft-ink);
+    cursor: grab; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  }
+  @media (hover: hover) and (pointer: fine) { .pallet { touch-action: none; } }  /* mouse and pen drag; touch keeps page scroll and taps */
+  .pallet:focus-visible { outline-offset: 4px; }
+  .pallet__body {
+    position: relative; display: grid; grid-template-rows: minmax(0, 1fr) 7px; height: 100%;
+    transform-origin: 50% 100%; transition: scale var(--dur-release) var(--ease-release);
+  }
+  .pallet:active:not(.is-drag) .pallet__body { scale: .97; transition-duration: var(--dur-press); transition-timing-function: var(--ease-press); }
+  .pallet__shadow {
+    position: absolute; left: 4%; right: 4%; bottom: -12px; height: 75%; z-index: -1;
+    border-radius: 40%; background: var(--lift); filter: blur(12px); opacity: 0; visibility: hidden;
+  }
+  .pallet__load {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 0;
+    border-radius: var(--r-pallet) var(--r-pallet) 0 0; overflow: hidden;
+    background:
+      linear-gradient(var(--kraft-seam), var(--kraft-seam)) 50% 0 / 1px 50% no-repeat,
+      linear-gradient(var(--kraft-seam), var(--kraft-seam)) 0 50% / 100% 1px no-repeat,
+      linear-gradient(var(--kraft-seam), var(--kraft-seam)) 26% 100% / 1px 50% no-repeat,
+      linear-gradient(var(--kraft-seam), var(--kraft-seam)) 74% 100% / 1px 50% no-repeat,
+      var(--kraft);
+  }
+  .pallet__no, .pallet__kg, .pallet__hold { background: var(--kraft); padding: 0 3px; white-space: nowrap; }
+  .pallet__no { font-size: var(--fs-no); line-height: 1; }
+  .pallet__kg, .pallet__hold { font-size: var(--fs-xs); line-height: 1.15; font-weight: var(--w-ui); }
+  .pallet__hold { display: none; font-weight: var(--w-strong); }
+  .pallet--hold .pallet__hold { display: block; }
+  .pallet__base {
+    background:
+      linear-gradient(var(--timber), var(--timber)) 0 0 / 100% 3px no-repeat,
+      linear-gradient(90deg, var(--timber) 0 12%, transparent 12% 44%, var(--timber) 44% 56%, transparent 56% 88%, var(--timber) 88%);
+  }
+  .pallet--hold .pallet__base { background: repeating-linear-gradient(-45deg, var(--hold) 0 5px, var(--shed) 5px 10px); }
+  .pallet.is-picked .pallet__load { outline: 2px dashed var(--label); outline-offset: 3px; }
+  .pallet.is-linked .pallet__load { box-shadow: 0 0 0 2px var(--shed), 0 0 0 4px var(--label); }
+  @media (max-width: 1099px) and (min-width: 600px) { .pallet--hold .pallet__kg { display: none; } }
+  @media (max-width: 599px) { .pallet__kg, .pallet--hold .pallet__hold { display: none; } .pallet { width: 100%; } }
+
+  /* dock 3 staging lane */
+  .dock { display: flex; flex-direction: column; gap: var(--sp-2); }
+  .lane { position: relative; padding-left: 14px; }
+  .lane::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 8px;
+    background: repeating-linear-gradient(-45deg, var(--hold) 0 6px, var(--shed) 6px 12px);
+  }
+  .slots { display: grid; grid-template-columns: minmax(0, 1fr); background: var(--deck); }
+  .bin--dock .beam::before { background: none; box-shadow: none; border-top: 2px dotted var(--muted); }
+  .bin--dock .beam__meter { display: none; }
+  .dock__title { margin: 0; padding-left: 14px; color: var(--muted); font-size: var(--fs-s); }
+  @media (max-width: 1099px) {
+    .lane { padding: 14px 0 0; margin-left: var(--axis); }
+    .lane::before { right: 0; bottom: auto; width: auto; height: 8px; }
+    .slots { grid-template-columns: repeat(4, calc(100% / var(--bays))); }
+    .dock { flex-direction: column-reverse; }
+    .dock__title { padding-left: var(--axis); }
+  }
+
+  /* readout */
+  .readout { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-3) var(--sp-4); margin-top: var(--sp-5); }
+  .readout__line {
+    flex: 1 1 26rem; display: flex; align-items: center; min-height: 3rem; margin: 0;
+    padding: var(--sp-2) var(--sp-4); background: var(--deck);
+    font-size: var(--fs-s);
+  }
+  .readout__line .code { margin-right: .1em; }
+  .selpanel { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+  .selpanel[hidden] { display: none; }
+
+  /* scanner follower (fine pointer only) */
+  .scanner {
+    position: fixed; left: 0; top: 0; z-index: 60; pointer-events: none; visibility: hidden; opacity: 0;
+    padding: 5px 10px; border-radius: 3px;
+    background: var(--label); color: var(--shed); font-size: var(--fs-xs); font-weight: var(--w-ui); line-height: 1.3;
+    white-space: nowrap;
+  }
+  .scanner__mask { display: block; overflow: hidden; }
+  .scanner__text { display: block; }
+
+  /* ---------- pallet list ---------- */
+  .listbar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--sp-4) var(--sp-5); margin-bottom: var(--sp-5); }
+  .field label, .search label, .sortsel label { font-size: var(--fs-s); font-weight: var(--w-ui); }
+  .search { flex: 1 1 16rem; max-width: 24rem; display: grid; gap: var(--sp-1); }
+  .inbox { position: relative; }
+  .inbox input, .inbox select {
+    width: 100%; min-height: 44px; padding: 0 var(--sp-3); border: 1px solid var(--muted); border-radius: var(--r-control);
+    background: var(--deck); transition: border-color var(--dur-fade);
+  }
+  .inbox input::placeholder { color: var(--muted); opacity: 1; }
+  .inbox:hover input, .inbox:hover select { border-color: var(--label); }
+  .inbox__rule {
+    position: absolute; left: 1px; right: 1px; bottom: 1px; height: 2px; background: var(--label); pointer-events: none;
+    transform: scaleX(0); transform-origin: 0 50%; transition: transform var(--dur-ui) var(--ease-out);
+  }
+  .inbox:focus-within .inbox__rule { transform: scaleX(1); }
+  .inbox--select select { appearance: none; padding-right: 2.5rem; cursor: pointer; }
+  .inbox--select::after {
+    content: ''; position: absolute; right: 16px; top: 50%; width: 8px; height: 8px; pointer-events: none;
+    border-right: 1.5px solid var(--label); border-bottom: 1.5px solid var(--label); transform: translateY(-70%) rotate(45deg);
+  }
+  .search input[type="search"] { padding-right: 48px; }
+  .search input::-webkit-search-cancel-button { display: none; }
+  .search .iconbtn { position: absolute; right: 0; top: 0; transition: opacity var(--dur-fade), background-color var(--dur-fade), color var(--dur-fade), scale var(--dur-release) var(--ease-release); }
+  .search .iconbtn[hidden] { display: grid; opacity: 0; pointer-events: none; visibility: hidden; }
+
+  .filters {
+    position: relative; display: flex; flex-wrap: wrap; gap: var(--sp-1); margin: 0; padding: var(--sp-1);
+    border: 0; border-radius: var(--r-control); background: var(--deck); min-inline-size: 0;
+  }
+  .filters__ind { position: absolute; inset: 0; background: var(--deck-2); border-radius: var(--r-control); display: none; pointer-events: none; }
+  html.fx .filters__ind { display: block; }
+  .chip {
+    position: relative; z-index: 1; display: inline-flex; align-items: center; justify-content: space-between; gap: .5em;
+    min-height: 40px; padding: 0 .55rem 0 .8rem; border-radius: 4px; color: var(--muted);
+    font-size: var(--fs-s); font-weight: var(--w-ui); cursor: pointer; transition: color var(--dur-fade), scale var(--dur-release) var(--ease-release);
+  }
+  .chip:hover { color: var(--label); }
+  .chip:active { scale: .97; transition-duration: var(--dur-fade), var(--dur-press); }
+  .chip input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+  .chip:has(input:checked) { color: var(--label); }
+  html:not(.fx) .chip:has(input:checked) { background: var(--deck-2); }
+  .chip:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .chip__n {
+    min-width: 1.9em; padding: 1px 6px; border-radius: 3px; background: var(--shed); color: var(--label);
+    font-size: var(--fs-xs); text-align: center; transition: background-color var(--dur-fade), color var(--dur-fade);
+  }
+  .chip:has(input:checked) .chip__n { background: var(--label); color: var(--shed); }
+  @media (max-width: 599px) {
+    .filters { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+  }
+  .sortsel { display: none; gap: var(--sp-1); width: 100%; }
+
+  .tablewrap { position: relative; }
+  #rows { overflow: clip; }   /* rows that travel during a reflow slide in under the totals rule, never over the form */
+  .tbl { width: 100%; border-collapse: collapse; }
+  .tbl, .tbl thead, .tbl tbody, .tbl tfoot { display: block; }
+  .tbl tr {
+    position: relative; display: grid; align-items: center; column-gap: var(--sp-4); padding: 0 var(--sp-3);
+    grid-template-columns: 6.5rem minmax(9rem, 1fr) 5.5rem 4rem 7rem 7rem 4.5rem;
+  }
+  .tbl th, .tbl td { min-width: 0; padding: var(--sp-3) 0; text-align: left; font-weight: inherit; }
+  .tbl .num { text-align: right; }
+  .tbl thead th { padding-block: var(--sp-2); color: var(--muted); font-size: var(--fs-s); font-weight: var(--w-ui); }
+  .tbl thead tr { border-bottom: 1px solid var(--muted); }
+  .sort {
+    display: inline-flex; align-items: center; gap: .35em; min-height: 36px; padding: 0; border: 0; background: none;
+    color: inherit; font-weight: var(--w-ui); cursor: pointer; transition: color var(--dur-fade), scale var(--dur-release) var(--ease-release);
+  }
+  .sort:hover, .sort:focus-visible, th[aria-sort] .sort { color: var(--label); }
+  .sort:active { scale: .97; transition-duration: var(--dur-fade), var(--dur-press); }
+  .sort svg { width: 10px; height: 10px; fill: currentColor; opacity: 0; transition: transform var(--dur-ui) var(--ease-press), opacity var(--dur-fade); }
+  .sort:hover svg { opacity: .5; }
+  th[aria-sort] .sort svg { opacity: 1; }
+  th[aria-sort="descending"] .sort svg { transform: rotate(180deg); }
+  .num .sort { flex-direction: row-reverse; }
+  .tbl tbody tr { min-height: 52px; transition: background-color var(--dur-fade); }
+  .tbl tbody tr.row:hover, .tbl tbody tr.row:focus-within { background: var(--deck-2); }
+  .tbl tbody tr.row:has(.lpn:focus-visible) { outline: 2px solid var(--focus); outline-offset: -2px; }
+  .rowrule { position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--rule); transform-origin: 0 50%; pointer-events: none; }
+  .rowedge { position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--hold); transform: scaleY(0); transform-origin: 50% 0; pointer-events: none; }
+  .row.is-new .rowedge { transform: scaleY(1); }
+  .lpn {
+    display: inline-flex; align-items: center; min-height: 44px; padding: 0; border: 0; background: none; cursor: pointer;
+    font-size: var(--fs-m); line-height: 1.1; text-align: left;
+  }
+  .lpn::after { content: ''; position: absolute; inset: 0; }
+  .lpn:focus-visible { outline: none; }
+  .lpn > span { display: inline-block; transition: scale var(--dur-release) var(--ease-release); }
+  .lpn:active > span { scale: .98; transition-duration: var(--dur-press); }
+  .tbl .c-bin { font-weight: var(--w-ui); }
+  .c-prod { overflow-wrap: anywhere; }
+  .holdtag { color: var(--hold); font-weight: var(--w-strong); font-size: var(--fs-s); }
+  .u { display: none; }
+  .tbl tfoot tr { border-top: 1px solid var(--muted); color: var(--label); font-weight: var(--w-ui); }
+  .tbl tfoot th { font-weight: var(--w-strong); }
+  .tbl tr.empty { display: block; padding: var(--sp-5) var(--sp-3); }
+  .tbl tr.empty[hidden] { display: none; }
+  .tbl tr.empty td { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-4); padding: 0; }
+  @media (max-width: 899px) {
+    .sortsel { display: grid; max-width: 24rem; }
+    .tbl thead { display: none; }
+    .tbl tbody tr.row {
+      grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "lpn hold bin" "prod prod kg";
+      column-gap: var(--sp-3); padding: var(--sp-2) var(--sp-3);
+    }
+    .tbl tbody td, .tbl tbody th { padding: 0; }
+    .row .c-lpn { grid-area: lpn; } .row .c-prod { grid-area: prod; font-size: var(--fs-s); color: var(--muted); }
+    .row .c-bin { grid-area: bin; text-align: right; } .row .c-kg { grid-area: kg; font-size: var(--fs-s); text-align: right; } .row .c-hold { grid-area: hold; }
+    .tbl tbody .c-cases, .tbl tbody .c-rec { display: none; }
+    .tbl tbody .c-hold:empty { display: none; }
+    .lpn { min-height: 36px; }
+    .u { display: inline; }
+    .tbl tfoot tr { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-4); padding-block: var(--sp-3); }
+    .tbl tfoot th, .tbl tfoot td { padding: 0; }
+    .tbl tfoot th { flex-basis: 100%; }
+    .tbl tfoot .c-rec, .tbl tfoot .c-bin { display: none; }
+  }
+
+  /* ---------- receive form ---------- */
+  .swaph { display: grid; overflow: hidden; }
+  .swaph > span { grid-area: 1 / 1; transition: transform var(--dur-ui) var(--ease-swap); }
+  .swaph > span + span { transform: translateY(110%); }
+  .is-edit .swaph > span:first-child { transform: translateY(-110%); }
+  .is-edit .swaph > span + span { transform: none; }
+  .form { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--sp-5); max-width: 62rem; }
+  .field { grid-column: span 12; display: grid; gap: var(--sp-1); align-content: start; }
+  @media (min-width: 600px) and (max-width: 899px) { .f-lpn, .f-cases, .f-kg, .f-date { grid-column: span 6; } }
+  @media (min-width: 900px) {
+    .f-lpn, .f-cases, .f-kg, .f-date { grid-column: span 4; }
+    .f-prod, .f-bin { grid-column: span 8; }
+  }
+  .hint { margin: 0; color: var(--muted); font-size: var(--fs-s); }
+  .err { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--dur-err) var(--ease-out); }
+  .err > p { min-height: 0; overflow: hidden; margin: 0; color: var(--over); font-size: var(--fs-s); }
+  .field.is-invalid .err { grid-template-rows: 1fr; }
+  .field.is-invalid input, .field.is-invalid select { border-color: var(--over); }
+  .inbox input[type="date"] { min-width: 0; }
+  .check { grid-column: span 12; position: relative; display: inline-flex; align-items: center; gap: var(--sp-3); min-height: 44px; width: fit-content; cursor: pointer; font-weight: var(--w-ui); }
+  .check input { position: absolute; left: 0; top: 50%; width: 24px; height: 24px; margin: -12px 0 0; opacity: 0; cursor: pointer; }
+  .check__box { display: grid; place-items: center; width: 24px; height: 24px; flex: none; border: 1.5px solid var(--muted); border-radius: 4px; transition: border-color var(--dur-fade), background-color var(--dur-fade); }
+  .check:hover .check__box { border-color: var(--label); }
+  .check input:checked + .check__box { background: var(--label); border-color: var(--label); }
+  .check input:focus-visible + .check__box { outline: 2px solid var(--focus); outline-offset: 3px; }
+  .check__box svg { width: 16px; height: 16px; }
+  .check__box path { fill: none; stroke: var(--shed); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset var(--dur-press) var(--ease-press); }
+  .check input:checked + .check__box path { stroke-dashoffset: 0; transition-duration: var(--dur-ui); }
+  .actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-3) var(--sp-5); }
+  .status { grid-column: 1 / -1; min-height: 1.5em; margin: 0; }
+  .status:empty { display: none; }
+
+  /* ---------- undo bars ---------- */
+  .undos { position: sticky; bottom: 0; z-index: 25; display: grid; gap: var(--sp-2); justify-items: start; }
+  .undos:not(:empty) { padding-block: var(--sp-3); }
+  .undo {
+    display: flex; align-items: center; gap: var(--sp-2); width: min(100%, 36rem);
+    padding: var(--sp-1) var(--sp-1) var(--sp-1) var(--sp-4); border: 1px solid var(--upright);
+    border-radius: var(--r-control); background: var(--deck-2);
+  }
+  .undo p { flex: 1; margin: 0; font-size: var(--fs-s); }
+  .undo .btn { min-height: 40px; }
+
+  /* ---------- dialogs ---------- */
+  dialog {
+    width: min(36rem, calc(100vw - 2 * var(--gutter))); max-height: calc(100dvh - 2rem); padding: 0; border: 0;
+    border-radius: var(--r-dialog); background: var(--deck); color: var(--label); overflow: auto;
+  }
+  dialog::backdrop { background: var(--scrim); }
+  dialog[open]::backdrop { animation: bd var(--dur-ui) ease-out; }
+  dialog.is-closing::backdrop { opacity: 0; transition: opacity var(--dur-err); }
+  @keyframes bd { from { opacity: 0; } }
+  .dlg__in { padding: var(--sp-4) var(--sp-5) var(--sp-5); }
+  .dlg__head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sp-3); margin-right: calc(var(--sp-3) * -1); }
+  .dlg__head h3 { margin: var(--sp-2) 0 0; font-size: var(--fs-xl); line-height: 1.15; font-weight: var(--w-strong); }
+  .dlg__head h3.code { font-weight: var(--w-code); }
+  .dlg__head h3:focus { outline: none; }
+  .dlg__head h3:focus-visible { outline: 2px solid var(--focus); }
+  .dlg p { margin: var(--sp-3) 0 0; }
+  .facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--sp-2) var(--sp-5); margin: var(--sp-4) 0 0; }
+  .facts dt { color: var(--muted); }
+  .facts dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+  .dlg__foot { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-top: var(--sp-5); }
+  .mini { display: flex; align-items: flex-end; gap: var(--sp-4); margin-top: var(--sp-5); }
+  .mini__rack { display: grid; grid-template-columns: repeat(6, 1.4rem); gap: 0 3px; border-bottom: 2px solid var(--muted); }
+  .mini__rack .mini__c { border-bottom: 2px solid var(--beam); margin-bottom: 3px; }
+  .mini__dock { display: grid; grid-template-columns: repeat(4, 1.4rem); gap: 3px; padding-top: 6px; border-top: 3px solid var(--hold); }
+  .mini__c { display: block; height: 1rem; }
+  .mini__dock .mini__c { box-shadow: inset 0 0 0 1px var(--rule); }
+  .mini__c.is-full { background: color-mix(in srgb, var(--kraft) 45%, var(--deck)); }
+  .mini__c.is-this { background: var(--kraft); outline: 2px solid var(--label); outline-offset: 1px; }
+  .mini__cap { color: var(--muted); font-size: var(--fs-xs); }
+  @media (max-width: 599px) {
+    dialog { width: 100%; max-width: 100%; margin: auto 0 0; border-radius: var(--r-dialog) var(--r-dialog) 0 0; max-height: 92dvh; }
+    .dlg__foot .btn { flex: 1 1 auto; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+    .btn:active, .tabs a:active, .chip:active, .sort:active, .link-btn:active, .iconbtn:active,
+    .bin__target:active, .lpn:active > span, .pallet:active .pallet__body { scale: none; }
+  }
+</style>
+</head>
+<body>
+<main>
+<section class="aisle" aria-labelledby="aisle-title">
+  <div class="wrap">
+    <header class="head">
+      <h2 id="aisle-title">Aisle 14 at Sowerby Ridge</h2>
+      <p class="tally" id="tally"></p>
+    </header>
+  </div>
+
+  <div class="sentinel" aria-hidden="true"></div>
+  <div class="toolbar" id="toolbar">
+    <div class="wrap toolbar__in">
+      <nav aria-label="Aisle 14">
+        <ul class="tabs" id="tabs">
+          <li><a href="#rack" data-chrome aria-current="location">Rack</a></li>
+          <li><a href="#pallets" data-chrome>Pallets</a></li>
+          <li><a href="#receive" data-chrome>Receive</a></li>
+          <li aria-hidden="true" class="tabs__ind" id="tabs-ind"></li>
+        </ul>
+      </nav>
+      <button type="button" class="link-btn reset" id="reset" data-chrome aria-label="Reset sample aisle"><span><span class="long">Reset sample aisle</span><span class="short">Reset</span></span></button>
+    </div>
+    <span class="toolbar__edge" id="toolbar-edge" aria-hidden="true"></span>
+  </div>
+
+  <div class="wrap">
+    <div class="block" id="rack">
+      <h3 class="vh" id="rack-title" tabindex="-1">Rack elevation</h3>
+      <div class="yard" id="yard">
+        <div class="rack">
+          <div class="rack__body">
+            <div class="frame" id="frame" aria-hidden="true"></div>
+            <ol class="levels" id="levels" aria-label="Aisle 14 racking, levels from top to bottom"></ol>
+          </div>
+          <ol class="bays" aria-hidden="true"><li>01</li><li>02</li><li>03</li><li>04</li><li>05</li><li>06</li></ol>
+        </div>
+        <div class="dock">
+          <div class="lane"><ol class="slots" id="slots" aria-label="Dock 3, staging lane"></ol></div>
+          <p class="dock__title" aria-hidden="true">Dock 3, staging</p>
+        </div>
+        <span class="marker" id="marker" aria-hidden="true"></span>
+      </div>
+      <div class="readout">
+        <p class="readout__line" id="readout" aria-live="polite" aria-atomic="true"></p>
+        <div class="selpanel" id="selpanel" hidden>
+          <button type="button" class="btn btn--ghost" data-act="details" aria-haspopup="dialog">Open details</button>
+          <button type="button" class="btn btn--ghost" data-act="dock">Send to dock 3</button>
+          <button type="button" class="btn btn--ghost" data-act="putdown">Put it down</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="block" id="pallets">
+      <h3 id="pallets-title" tabindex="-1">Pallets</h3>
+      <div class="listbar">
+        <div class="search">
+          <label for="q">Search pallets</label>
+          <div class="inbox">
+            <input id="q" type="search" placeholder="LPN, product or bin" autocomplete="off" spellcheck="false">
+            <span class="inbox__rule" aria-hidden="true"></span>
+            <button type="button" class="iconbtn" id="q-clear" aria-label="Clear search" hidden><svg viewBox="0 0 18 18" aria-hidden="true"><path d="M4 4l10 10M14 4L4 14"/></svg></button>
+          </div>
+        </div>
+        <fieldset class="filters" id="filters">
+          <legend class="vh">Show</legend>
+          <span class="filters__ind" id="filters-ind" aria-hidden="true"></span>
+          <label class="chip"><input type="radio" name="show" value="all" checked><span>All</span><span class="chip__n" data-count="all"></span></label>
+          <label class="chip"><input type="radio" name="show" value="rack"><span>In racking</span><span class="chip__n" data-count="rack"></span></label>
+          <label class="chip"><input type="radio" name="show" value="dock"><span>At dock 3</span><span class="chip__n" data-count="dock"></span></label>
+          <label class="chip"><input type="radio" name="show" value="hold"><span>On hold</span><span class="chip__n" data-count="hold"></span></label>
+        </fieldset>
+        <div class="sortsel">
+          <label for="sort">Sort by</label>
+          <div class="inbox inbox--select">
+            <select id="sort">
+              <option value="lpn:1">Pallet, lowest LPN first</option>
+              <option value="lpn:-1">Pallet, highest LPN first</option>
+              <option value="product:1">Product, A to Z</option>
+              <option value="product:-1">Product, Z to A</option>
+              <option value="bin:1">Bin, 14-01-A first</option>
+              <option value="bin:-1">Bin, dock 3 first</option>
+              <option value="cases:-1">Cases, most first</option>
+              <option value="cases:1">Cases, fewest first</option>
+              <option value="kg:-1">Weight, heaviest first</option>
+              <option value="kg:1">Weight, lightest first</option>
+              <option value="received:-1">Received, newest first</option>
+              <option value="received:1">Received, oldest first</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="tablewrap">
+        <table class="tbl" role="table" aria-labelledby="pallets-title">
+          <thead role="rowgroup">
+            <tr role="row">
+              <th role="columnheader" scope="col" data-key="lpn"><button type="button" class="sort" data-key="lpn">Pallet<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1l4 6H1z"/></svg></button></th>
+              <th role="columnheader" scope="col" data-key="product"><button type="button" class="sort" data-key="product">Product<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1l4 6H1z"/></svg></button></th>
+              <th role="columnheader" scope="col" data-key="bin"><button type="button" class="sort" data-key="bin">Bin<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1l4 6H1z"/></svg></button></th>
+              <th role="columnheader" scope="col" class="num" data-key="cases"><button type="button" class="sort" data-key="cases">Cases<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1l4 6H1z"/></svg></button></th>
+              <th role="columnheader" scope="col" class="num" data-key="kg"><button type="button" class="sort" data-key="kg">Weight (kg)<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1l4 6H1z"/></svg></button></th>
+              <th role="columnheader" scope="col" data-key="received"><button type="button" class="sort" data-key="received">Received<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1l4 6H1z"/></svg></button></th>
+              <th role="columnheader" scope="col">Hold</th>
+            </tr>
+          </thead>
+          <tbody role="rowgroup" id="rows">
+            <tr class="empty" role="row" id="empty" hidden><td role="cell"><span id="empty-text"></span><button type="button" class="btn btn--ghost" id="empty-btn"></button></td></tr>
+          </tbody>
+          <tfoot role="rowgroup">
+            <tr role="row" class="totals">
+              <th role="rowheader" scope="row" class="c-lpn">Aisle total</th>
+              <td role="cell" class="c-prod"><span class="n" id="t-pallets"></span> <span id="t-pallets-u">pallets</span>, <span class="n" id="t-bins"></span> of 24 bins in use (<span class="n" id="t-pct"></span>%)</td>
+              <td role="cell" class="c-bin"></td>
+              <td role="cell" class="c-cases num"><span class="n" id="t-cases"></span><span class="u"> cases</span></td>
+              <td role="cell" class="c-kg num"><span class="n" id="t-kg"></span><span class="u"> kg</span></td>
+              <td role="cell" class="c-rec"></td>
+              <td role="cell" class="c-hold"><span class="n" id="t-hold"></span><span class="u"> on hold</span></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <div class="block" id="receive">
+      <h3 id="receive-title" tabindex="-1"><span class="swaph"><span id="title-new">Receive a pallet</span><span id="title-edit" aria-hidden="true">Edit</span></span></h3>
+      <form class="form" id="form" novalidate aria-labelledby="receive-title">
+        <div class="field f-lpn" data-f="lpn">
+          <label for="f-lpn">Licence plate</label>
+          <div class="inbox"><input id="f-lpn" name="lpn" autocomplete="off" spellcheck="false" aria-describedby="h-lpn e-lpn"><span class="inbox__rule" aria-hidden="true"></span></div>
+          <p class="hint" id="h-lpn">LP- and six digits, from the label on the wrap.</p>
+          <div class="err"><p id="e-lpn"></p></div>
+        </div>
+        <div class="field f-prod" data-f="product">
+          <label for="f-product">Product</label>
+          <div class="inbox"><input id="f-product" name="product" autocomplete="off" aria-describedby="e-product"><span class="inbox__rule" aria-hidden="true"></span></div>
+          <div class="err"><p id="e-product"></p></div>
+        </div>
+        <div class="field f-cases" data-f="cases">
+          <label for="f-cases">Cases</label>
+          <div class="inbox"><input id="f-cases" name="cases" inputmode="numeric" autocomplete="off" aria-describedby="h-cases e-cases"><span class="inbox__rule" aria-hidden="true"></span></div>
+          <p class="hint" id="h-cases">Whole cases, 1 to 500.</p>
+          <div class="err"><p id="e-cases"></p></div>
+        </div>
+        <div class="field f-kg" data-f="kg">
+          <label for="f-kg">Gross weight (kg)</label>
+          <div class="inbox"><input id="f-kg" name="kg" inputmode="decimal" autocomplete="off" aria-describedby="h-kg e-kg"><span class="inbox__rule" aria-hidden="true"></span></div>
+          <p class="hint" id="h-kg">Pallet included, to 0.1 kg.</p>
+          <div class="err"><p id="e-kg"></p></div>
+        </div>
+        <div class="field f-date" data-f="received">
+          <label for="f-received">Received on</label>
+          <div class="inbox"><input id="f-received" name="received" type="date" min="2025-01-01" aria-describedby="e-received"><span class="inbox__rule" aria-hidden="true"></span></div>
+          <div class="err"><p id="e-received"></p></div>
+        </div>
+        <div class="field f-bin" data-f="bin">
+          <label for="f-bin">Put it in</label>
+          <div class="inbox inbox--select"><select id="f-bin" name="bin" aria-describedby="h-bin e-bin"></select><span class="inbox__rule" aria-hidden="true"></span></div>
+          <p class="hint" id="h-bin"></p>
+          <div class="err"><p id="e-bin"></p></div>
+        </div>
+        <label class="check">
+          <input type="checkbox" name="hold" id="f-hold">
+          <span class="check__box" aria-hidden="true"><svg viewBox="0 0 16 16"><path pathLength="1" d="M3 8.5l3.2 3L13 4.5"/></svg></span>
+          <span>Hold for quality check</span>
+        </label>
+        <div class="actions">
+          <button type="submit" class="btn btn--primary" id="submit"><span class="sw"><span id="submit-a">Receive pallet</span><span id="submit-b" aria-hidden="true">Received</span></span></button>
+          <button type="button" class="link-btn" id="cancel" hidden><span>Cancel edit</span></button>
+        </div>
+        <p class="status" id="status"></p>
+      </form>
+    </div>
+
+    <div class="undos" id="undos" aria-label="Undo"></div>
+  </div>
+</section>
+</main>
+
+<dialog id="dlg-details" aria-labelledby="dd-title" data-lenis-prevent>
+  <div class="dlg__in">
+    <div class="dlg__head">
+      <h3 id="dd-title" class="code" tabindex="-1"></h3>
+      <button type="button" class="iconbtn" data-close aria-label="Close"><svg viewBox="0 0 18 18" aria-hidden="true"><path d="M4 4l10 10M14 4L4 14"/></svg></button>
+    </div>
+    <dl class="facts" id="dd-facts"></dl>
+    <div class="mini" id="dd-mini" aria-hidden="true"></div>
+    <div class="dlg__foot">
+      <button type="button" class="btn btn--primary" data-act="edit">Edit pallet</button>
+      <button type="button" class="btn btn--danger" data-act="remove" aria-haspopup="dialog">Remove pallet</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="dlg-confirm" aria-labelledby="dc-title" aria-describedby="dc-body" data-lenis-prevent>
+  <div class="dlg__in">
+    <div class="dlg__head"><h3 id="dc-title"></h3></div>
+    <p id="dc-body"></p>
+    <div class="dlg__foot">
+      <button type="button" class="btn btn--ghost" id="dc-keep"></button>
+      <button type="button" class="btn btn--danger" id="dc-ok"></button>
+    </div>
+  </div>
+</dialog>
+
+<p class="vh" id="live" aria-live="polite"></p>
+<div class="scanner" id="scanner" aria-hidden="true"><span class="scanner__mask"><span class="scanner__text" id="scanner-text"></span></span></div>
+
+<script defer src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/Flip.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrambleTextPlugin.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/CustomEase.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  'use strict';
+  const root = document.documentElement;
+  root.classList.add('js');
+  if (matchMedia('(prefers-reduced-motion: no-preference)').matches) root.classList.add('intro');
+  const $ = (s, c = document) => c.querySelector(s);
+  const $$ = (s, c = document) => [...c.querySelectorAll(s)];
+  const finePointer = () => matchMedia('(hover: hover) and (pointer: fine)').matches;
+
+  /* ---------- Domain ---------- */
+  // The seeds are dated up to 22 Oct 2026, so the shift date is the real date, never earlier than that.
+  const TODAY = [new Date().toLocaleDateString('en-CA'), '2026-10-22'].sort().at(-1);
+  const MIN_DATE = '2025-01-01';
+  const KEY = 'crud-warehouse-bins:v1';
+  const BAYS = 6;
+  const LEVELS = ['D', 'C', 'B', 'A'];                              // top to bottom
+  const RATING = { D: 8000, C: 10000, B: 10000, A: 12000 };         // per bin, tenths of a kg
+  const DOCK_RATING = 12000, MIN_T = 100, MAX_T = 12000, MAX_CASES = 500;
+  const RACK = LEVELS.flatMap(l => Array.from({ length: BAYS }, (_, i) => `14-${String(i + 1).padStart(2, '0')}-${l}`));
+  const DOCKS = ['D3-1', 'D3-2', 'D3-3', 'D3-4'];
+  const PLACES = [...RACK, ...DOCKS];
+  const isDock = c => c.startsWith('D3-');
+  const levelOf = c => c.slice(-1);
+  const bayOf = c => +c.slice(3, 5);
+  const ratingOf = c => isDock(c) ? DOCK_RATING : RATING[levelOf(c)];
+  const where = c => isDock(c) ? 'dock 3' : c;                     // inside a sentence
+  const whereLong = c => isDock(c) ? `Dock 3, slot ${c.slice(3)}` : c;
+
+  const SEED = [
+    ['LP-004101', 'Engine oil 5W-30, 4 × 5 L', 36, '742.0', '2026-10-02', false, '14-01-A'],
+    ['LP-004118', 'AdBlue 10 L', 60, '655.5', '2026-10-05', false, '14-02-A'],
+    ['LP-004122', 'Screenwash −20 °C, 4 × 5 L', 40, '838.0', '2026-10-06', false, '14-03-A'],
+    ['LP-004127', 'Car batteries type 075', 40, '768.0', '2026-10-07', false, '14-04-A'],
+    ['LP-004130', 'Coolant OAT, 4 × 5 L', 36, '760.4', '2026-10-08', false, '14-05-A'],
+    ['LP-004133', 'Engine oil 10W-40, 205 L drums', 4, '765.0', '2026-10-09', false, '14-06-A'],
+    ['LP-004140', 'Brake fluid DOT 4, 12 × 1 L', 48, '618.2', '2026-10-09', false, '14-01-B'],
+    ['LP-004142', 'Wiper blades, assorted', 120, '186.0', '2026-10-10', false, '14-02-B'],
+    ['LP-004145', 'Brake pads, front axle', 64, '512.8', '2026-10-12', true, '14-03-B'],
+    ['LP-004151', 'Air filters', 90, '214.5', '2026-10-12', false, '14-05-B'],
+    ['LP-004156', 'Oil filters', 80, '288.0', '2026-10-13', false, '14-06-B'],
+    ['LP-004160', 'Spark plugs', 150, '142.6', '2026-10-14', false, '14-01-C'],
+    ['LP-004163', 'De-icer 500 ml, 12 per case', 70, '470.4', '2026-10-14', false, '14-02-C'],
+    ['LP-004168', 'H7 bulbs, twin packs', 200, '96.0', '2026-10-15', false, '14-04-C'],
+    ['LP-004171', 'Antifreeze concentrate, 4 × 5 L', 38, '801.6', '2026-10-16', false, '14-06-C'],
+    ['LP-004175', 'Cabin filters', 110, '165.0', '2026-10-16', false, '14-01-D'],
+    ['LP-004179', 'Microfibre cloths', 160, '132.8', '2026-10-17', false, '14-03-D'],
+    ['LP-004182', 'Brake discs 280 mm, pairs', 56, '694.4', '2026-10-19', true, '14-04-D'],
+    ['LP-004186', 'Tyre shine 500 ml, 12 per case', 64, '402.0', '2026-10-19', false, '14-05-D'],
+    ['LP-004190', 'Summer screenwash, 4 × 5 L', 40, '846.0', '2026-10-21', false, 'D3-1'],
+    ['LP-004193', 'Jump leads', 50, '210.0', '2026-10-21', false, 'D3-2'],
+    ['LP-004197', 'Engine oil 0W-20, 4 × 5 L', 36, '744.0', '2026-10-22', false, 'D3-3'],
+  ];
+
+  /* ---------- Formatting ---------- */
+  const nf0 = new Intl.NumberFormat('en-GB');
+  const nf1 = new Intl.NumberFormat('en-GB', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const kg1 = t => nf1.format(t / 10);
+  const kg = t => `${kg1(t)} kg`;
+  const kgR = t => `${nf0.format(t / 10)} kg`;
+  const df = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  const parseISO = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+  const fmtDate = s => df.format(parseISO(s));
+  const daysBetween = (a, b) => Math.round((parseISO(b) - parseISO(a)) / 864e5);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const plural = (n, one, many) => `${nf0.format(n)} ${n === 1 ? one : many}`;
+
+  /* ---------- Parsers (one per field type) ---------- */
+  const ok = value => ({ ok: true, value }), bad = msg => ({ ok: false, msg });
+  function parseLpn(s) {
+    const v = String(s ?? '').trim().toUpperCase();
+    return /^LP-\d{6}$/.test(v) ? ok(v) : bad('Use LP- and six digits, like LP-004200.');
+  }
+  function parseProduct(s) {
+    const v = String(s ?? '').trim().replace(/\s+/g, ' ');
+    const n = [...v].length;   // characters, not UTF-16 units
+    return n >= 3 && n <= 60 ? ok(v) : bad('Name the product in 3 to 60 characters.');
+  }
+  function parseCases(s) {
+    const v = String(s ?? '').trim();
+    if (!/^\d+$/.test(v)) return bad('Count whole cases, like 48.');
+    const n = Number(v);
+    return n >= 1 && n <= MAX_CASES ? ok(n) : bad('A pallet holds 1 to 500 cases.');
+  }
+  function parseKg(s) {
+    let v = String(s ?? '').trim().replace(/\s*kg$/i, '');
+    if (/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(v)) v = v.replace(/,/g, ''); // 1,200.0 is a thousands comma
+    else v = v.replace(',', '.');                                     // 655,5 is a decimal comma
+    if (!/^\d+(\.\d+)?$/.test(v)) return bad('Enter the gross weight in kg, like 655.5.');
+    if (/\.\d\d*[1-9]/.test(v)) return bad('Weigh to one decimal place at most, like 655.5.');   // 655.50 is fine
+    const [i, d = '0'] = v.split('.');
+    const t = Number(i) * 10 + Number(d[0]);
+    if (t < MIN_T) return bad('A loaded pallet weighs at least 10.0 kg.');
+    if (t > MAX_T) return bad('No bin in this aisle takes more than 1,200 kg.');
+    return ok(t);
+  }
+  function parseDate(v, badInput = false) {
+    if (badInput) return bad('Enter a full date, like 22 Oct 2026.');
+    if (!v) return bad('Enter the date it was received.');
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v);
+    if (!m || parseISO(v).getMonth() + 1 !== Number(m[2])) return bad('Enter a full date, like 22 Oct 2026.');
+    if (v > TODAY) return bad("Received dates can't be in the future.");
+    if (v < MIN_DATE) return bad('This record starts on 1 Jan 2025. Use a later date.');
+    return ok(v);
+  }
+
+  /* ---------- Model: pure functions on a list ---------- */
+  let uidN = 0;
+  const newUid = () => `p${++uidN}`;
+  const seed = () => SEED.map(([lpn, product, cases, w, received, hold, bin], i) =>
+    ({ uid: `s${i + 1}`, lpn, product, cases, tenths: parseKg(w).value, received, hold, bin }));
+  const at = (list, code) => list.find(p => p.bin === code);
+  function sums(list) {
+    const r = { pallets: list.length, racked: 0, dock: 0, hold: 0, cases: 0, t: 0, tRack: 0, tDock: 0, level: { D: 0, C: 0, B: 0, A: 0 } };
+    for (const p of list) {
+      r.cases += p.cases; r.t += p.tenths; if (p.hold) r.hold++;
+      if (isDock(p.bin)) { r.dock++; r.tDock += p.tenths; }
+      else { r.racked++; r.tRack += p.tenths; r.level[levelOf(p.bin)] += p.tenths; }
+    }
+    return r;
+  }
+  // The one move rule: used by drag, keyboard, tap, the form and undo.
+  function canPlace(p, code, list) {
+    const other = list.find(o => o.bin === code && o.uid !== p.uid);
+    if (other) return { ok: false, why: 'occupied', other, msg: `${whereLong(code)} already holds ${other.lpn}.` };
+    if (p.tenths > ratingOf(code)) return { ok: false, why: 'heavy', msg: `${code} takes ${kgR(ratingOf(code))}. ${p.lpn} weighs ${kg(p.tenths)}.` };
+    return { ok: true };
+  }
+  const freeDock = (list, p = { uid: '' }) => DOCKS.find(c => canPlace({ ...p, tenths: 0 }, c, list).ok) || null;
+
+  function validateRecord(raw, list, editUid = null) {
+    const errors = {};
+    const lpn = parseLpn(raw.lpn), product = parseProduct(raw.product), cases = parseCases(raw.cases);
+    const t = parseKg(raw.kg), date = parseDate(raw.received, raw.receivedBad);
+    if (!lpn.ok) errors.lpn = lpn.msg;
+    else if (list.some(p => p.lpn === lpn.value && p.uid !== editUid)) errors.lpn = `${lpn.value} is already in this aisle.`;
+    if (!product.ok) errors.product = product.msg;
+    if (!cases.ok) errors.cases = cases.msg;
+    if (!t.ok) errors.kg = t.msg;
+    if (!date.ok) errors.received = date.msg;
+    const self = { uid: editUid ?? '_new', tenths: t.ok ? t.value : 0 };
+    let bin = null;
+    if (raw.bin === 'DOCK') {
+      const cur = editUid && list.find(p => p.uid === editUid);
+      bin = cur && isDock(cur.bin) ? cur.bin : freeDock(list, self);
+      if (!bin) errors.bin = 'Dock 3 is full. Choose a bin.';
+    } else if (RACK.includes(raw.bin)) {
+      const r = canPlace(self, raw.bin, list);
+      if (r.ok) bin = raw.bin;
+      else errors.bin = r.why === 'heavy'
+        ? `${raw.bin} takes ${kgR(ratingOf(raw.bin))}. Choose a lower level or dock 3.`
+        : `${raw.bin} now holds ${r.other.lpn}. Choose another bin.`;
+    } else errors.bin = 'Choose where the pallet goes.';
+    return { errors, data: { lpn: lpn.value, product: product.value, cases: cases.value, tenths: t.value, received: date.value, hold: !!raw.hold, bin } };
+  }
+  function createPallet(list, data) { const p = { uid: newUid(), ...data }; list.push(p); return p; }
+  function updatePallet(list, uid, data) { return Object.assign(list.find(p => p.uid === uid), data); }
+  function removePallet(list, uid) { const idx = list.findIndex(p => p.uid === uid); return { rec: list.splice(idx, 1)[0], idx }; }
+  function restorePallet(list, rec, idx) {
+    if (list.some(p => p.lpn === rec.lpn)) return { ok: false, drop: true, msg: `${rec.lpn} is already back in this aisle, so there is nothing to undo.` };
+    const p = { ...rec };
+    const r = canPlace(p, p.bin, list);
+    let note = '';
+    if (!r.ok) {
+      const d = freeDock(list, p);
+      if (!d) return { ok: false, msg: `${whereLong(rec.bin)} now holds ${r.other.lpn} and dock 3 is full. Free a bin or a dock slot, then undo.` };
+      note = `${whereLong(rec.bin)} now holds ${r.other.lpn}, so ${p.lpn} went back to dock 3.`;
+      p.bin = d;
+    }
+    list.splice(Math.min(idx, list.length), 0, p);
+    return { ok: true, p, note };
+  }
+
+  /* ---------- Storage: sessionStorage with an in-memory fallback ---------- */
+  function makeStore(getStorage) {
+    let mem = null;
+    return {
+      read() {
+        try { const raw = getStorage().getItem(KEY); if (raw !== null) return JSON.parse(raw); } catch { /* blocked or corrupt */ }
+        return mem === null ? null : JSON.parse(mem);
+      },
+      write(v) { mem = JSON.stringify(v); try { getStorage().setItem(KEY, mem); } catch { /* memory only */ } },
+    };
+  }
+  function sanitize(rows) {
+    if (!Array.isArray(rows)) return null;
+    const out = [];
+    for (const r of rows) {
+      if (!r || typeof r !== 'object' || typeof r.uid !== 'string') continue;
+      const lpn = parseLpn(r.lpn), product = parseProduct(r.product), d = parseDate(r.received);
+      if (!lpn.ok || !product.ok || !d.ok || typeof r.hold !== 'boolean' || !PLACES.includes(r.bin)) continue;
+      if (!Number.isInteger(r.cases) || r.cases < 1 || r.cases > MAX_CASES) continue;
+      if (!Number.isInteger(r.tenths) || r.tenths < MIN_T || r.tenths > MAX_T) continue;
+      if (out.some(p => p.lpn === lpn.value || p.uid === r.uid)) continue;
+      const p = { uid: r.uid, lpn: lpn.value, product: product.value, cases: r.cases, tenths: r.tenths, received: d.value, hold: r.hold, bin: r.bin };
+      if (!canPlace(p, p.bin, out).ok) { const dk = freeDock(out, p); if (!dk) continue; p.bin = dk; } // duplicate bin: later row goes to the dock
+      out.push(p);
+    }
+    return out;
+  }
+  const store = makeStore(() => sessionStorage);
+
+  /* ---------- State ---------- */
+  const S = { pallets: [], sel: null, drag: null, sort: { key: 'lpn', dir: 1 }, filter: 'all', q: '', edit: null, undo: [], canDrag: false };
+  const stored = store.read();
+  S.pallets = (stored && sanitize(stored.pallets)) || seed();
+  uidN = S.pallets.reduce((m, p) => Math.max(m, Number(p.uid.slice(1)) || 0), 0);
+  const save = () => store.write({ v: 1, pallets: S.pallets });
+  const byUid = uid => S.pallets.find(p => p.uid === uid);
+
+  /* ---------- Effects: instant defaults, replaced by the motion layer ---------- */
+  const fx = {
+    capture: () => null,
+    land() {},
+    lift() {},
+    refuse() {},
+    reflow: mutate => mutate(),
+    count(el, to, fmt) { el.dataset.v = to; el.textContent = fmt(to); },
+    meter(m, v) { if (window.gsap) gsap.set(m, { scaleX: v, overwrite: true }); else m.style.transform = `scaleX(${v})`; },
+    dialogIn() {},
+    dialogOut: (dlg, done) => done(),
+    undoIn() {},
+    undoOut: (bar, done) => done(),
+    scrollTo(target, done, center) { target.scrollIntoView({ block: center ? 'center' : 'start' }); if (done) done(); },
+    follow() {},
+    arrive() {},
+    pulse() {},
+    flashRow(tr) { tr.classList.add('is-new'); setTimeout(() => tr.classList.remove('is-new'), 2000); },
+  };
+
+  /* ---------- Announcements and the readout ---------- */
+  const live = $('#live'), readout = $('#readout');
+  let liveT;
+  const announce = t => { clearTimeout(liveT); live.textContent = ''; liveT = setTimeout(() => { live.textContent = t; }, 40); };
+  let base = '', hoverText = '', hoverCode = null;
+  const CODE_RE = /^(14-\d\d-[A-D]|LP-\d{6}|Dock 3, slot \d)/;
+  const paint = () => { const t = hoverText || base; if (readout.textContent !== t) readout.innerHTML = esc(t).replace(CODE_RE, '<span class="code">$1</span>'); };
+  const setBase = t => { base = t; paint(); };
+  const setHover = (t, code = null) => { hoverCode = code; if (t === hoverText) return; hoverText = t; paint(); fx.follow(t); };
+  const idleText = () => !finePointer() ? 'Tap a pallet, then tap an empty bin.'
+    : S.canDrag ? 'Drag a pallet to an empty bin, or select it and choose where it goes.' : 'Select a pallet, then choose an empty bin.';
+  const selText = p => `${p.lpn}, ${p.product}, ${kg(p.tenths)}${p.hold ? ', on hold' : ''}. Choose an empty bin, or put it down.`;
+  function placeText(code) {
+    const p = at(S.pallets, code), carry = S.drag ? S.drag.p : S.sel && byUid(S.sel);
+    if (carry && carry !== p) {
+      if (p) return `${whereLong(code)} already holds ${p.lpn}`;
+      const r = canPlace(carry, code, S.pallets);
+      if (isDock(code)) return `${whereLong(code)}, empty, fits`;
+      return r.ok ? `${code}, empty, takes ${kgR(ratingOf(code))}, fits` : `${code} takes ${kgR(ratingOf(code))}, ${carry.lpn} weighs ${kg(carry.tenths)}`;
+    }
+    if (!p) return isDock(code) ? `${whereLong(code)}, empty` : `${code}, empty, takes ${kgR(ratingOf(code))}`;
+    return `${whereLong(code)}, ${p.lpn}, ${kg(p.tenths)}${p.hold ? ', on hold' : ''}`;
+  }
+
+  /* ---------- Build the rack once ---------- */
+  const binEls = {};
+  const binHtml = code => `
+    <li class="bin${isDock(code) ? ' bin--dock' : ''}" id="bin-${code}" data-bin="${code}">
+      <div class="bin__slot"><span class="vh bin__sr"></span><button type="button" class="bin__target"></button></div>
+      <span class="beam" aria-hidden="true"><span class="beam__meter"></span><span class="beam__preview"></span></span>
+      <span class="bin__label" aria-hidden="true"><span class="bin__code">${isDock(code) ? `Slot ${code.slice(3)}` : code}</span><span class="bin__lp"></span></span>
+    </li>`;
+  $('#levels').innerHTML = LEVELS.map(l => `
+    <li class="level" data-level="${l}">
+      <div class="axis" aria-hidden="true"><span class="axis__l">${l}</span><span class="axis__r">${kgR(RATING[l])}</span></div>
+      <ol class="bins">${RACK.filter(c => levelOf(c) === l).map(binHtml).join('')}</ol>
+    </li>`).join('');
+  $('#slots').innerHTML = DOCKS.map(binHtml).join('');
+  $('#frame').innerHTML = Array.from({ length: BAYS + 1 }, (_, i) => `<span class="upright" style="--i:${i}"></span>`).join('');
+  for (const code of PLACES) binEls[code] = document.getElementById(`bin-${code}`);
+  const yard = $('#yard');
+  const uprights = $$('.upright');
+
+  /* ---------- Rendering ---------- */
+  const palletEls = new Map();
+  const palletLabel = p => `${p.lpn}, ${p.product}, ${kg(p.tenths)}${p.hold ? ', on hold' : ''}, ${isDock(p.bin) ? 'at dock 3' : `bin ${p.bin}`}`;
+  function palletEl(p) {
+    let el = palletEls.get(p.uid);
+    if (!el) {
+      el = document.createElement('button');
+      el.type = 'button'; el.className = 'pallet'; el.dataset.uid = p.uid;
+      el.innerHTML = '<span class="pallet__body"><span class="pallet__shadow"></span><span class="pallet__load" aria-hidden="true"><span class="pallet__no"></span><span class="pallet__kg"></span><span class="pallet__hold">Hold</span></span><span class="pallet__base"></span></span>';
+      palletEls.set(p.uid, el);
+    }
+    el.classList.toggle('pallet--hold', p.hold);
+    $('.pallet__no', el).textContent = p.lpn.slice(-4);
+    $('.pallet__kg', el).textContent = kg(p.tenths);
+    el.setAttribute('aria-label', palletLabel(p));
+    el.setAttribute('aria-pressed', String(S.sel === p.uid));
+    el.classList.toggle('is-picked', S.sel === p.uid);
+    return el;
+  }
+  function renderRack() {
+    const seen = new Set(), sel = S.sel && byUid(S.sel);
+    for (const code of PLACES) {
+      const bin = binEls[code], p = at(S.pallets, code), slot = bin.firstElementChild;
+      bin.classList.toggle('is-empty', !p);
+      if (p) { const el = palletEl(p); if (el.parentNode !== slot) slot.prepend(el); seen.add(p.uid); }
+      $('.bin__sr', bin).textContent = p ? '' : placeText(code).replace(/, fits$/, '');
+      const lp = $('.bin__lp', bin), lpv = p ? p.lpn : '';
+      if (lp.dataset.v !== lpv) { lp.dataset.v = lpv; lp.innerHTML = p ? `LP-<span class="bin__lpd">${p.lpn.slice(3)}</span>` : ''; }
+      if (!isDock(code)) fx.meter($('.beam__meter', bin), p ? Math.min(1, p.tenths / ratingOf(code)) : 0);
+      const tgt = $('.bin__target', bin);
+      if (sel && !p) {
+        const r = canPlace(sel, code, S.pallets);
+        tgt.textContent = r.ok ? 'Move here' : 'Too heavy';
+        tgt.setAttribute('aria-label', r.ok ? `Move ${sel.lpn} here, ${whereLong(code)}` : r.msg);
+        tgt.setAttribute('aria-disabled', String(!r.ok));
+      }
+    }
+    for (const [uid, el] of palletEls) if (!seen.has(uid)) { el.remove(); palletEls.delete(uid); }
+    const s = sums(S.pallets);
+    for (const l of LEVELS) {
+      const lv = $(`.level[data-level="${l}"]`);
+      $('.bins', lv).setAttribute('aria-label', `Level ${l}, each bin takes ${kgR(RATING[l])}, carries ${kg(s.level[l])}`);
+    }
+    yard.classList.toggle('is-picking', !!sel);
+    $('#selpanel').hidden = !sel;
+    $('[data-act="dock"]', $('#selpanel')).hidden = !sel || isDock(sel.bin);
+  }
+
+  const SORTS = { lpn: p => p.lpn, product: p => p.product.toLowerCase(), bin: p => (isDock(p.bin) ? 'z' : '') + p.bin, cases: p => p.cases, kg: p => p.tenths, received: p => p.received };
+  const FILTERS = { all: () => true, rack: p => !isDock(p.bin), dock: p => isDock(p.bin), hold: p => p.hold };
+  const FILTER_NAMES = { all: 'All', rack: 'In racking', dock: 'At dock 3', hold: 'On hold' };
+  const matches = p => FILTERS[S.filter](p) && (!S.q || `${p.lpn} ${p.product} ${p.bin} ${isDock(p.bin) ? 'dock 3' : ''}`.toLowerCase().includes(S.q));
+  const sorted = () => {
+    const f = SORTS[S.sort.key];
+    return [...S.pallets].sort((a, b) => { const x = f(a), y = f(b); return ((x < y ? -1 : x > y ? 1 : 0) * S.sort.dir) || a.lpn.localeCompare(b.lpn); });
+  };
+  const tbody = $('#rows'), emptyRow = $('#empty');
+  const rowEls = new Map();
+  function rowEl(p) {
+    let tr = rowEls.get(p.uid);
+    if (!tr) {
+      tr = document.createElement('tr');
+      tr.className = 'row'; tr.dataset.uid = p.uid; tr.setAttribute('role', 'row');
+      tr.innerHTML = `<th role="rowheader" scope="row" class="c-lpn"><span class="rowrule" aria-hidden="true"></span><span class="rowedge" aria-hidden="true"></span><button type="button" class="lpn" aria-haspopup="dialog"><span></span></button></th><td role="cell" class="c-prod"></td><td role="cell" class="c-bin"></td><td role="cell" class="c-cases num"></td><td role="cell" class="c-kg num"></td><td role="cell" class="c-rec"></td><td role="cell" class="c-hold"></td>`;
+      rowEls.set(p.uid, tr);
+    }
+    $('.lpn > span', tr).textContent = p.lpn;
+    $('.c-prod', tr).textContent = p.product;
+    $('.c-bin', tr).textContent = isDock(p.bin) ? 'Dock 3' : p.bin;
+    $('.c-cases', tr).textContent = nf0.format(p.cases);
+    $('.c-kg', tr).innerHTML = `${kg1(p.tenths)}<span class="u"> kg</span>`;
+    $('.c-rec', tr).textContent = fmtDate(p.received);
+    $('.c-hold', tr).innerHTML = p.hold ? '<span class="holdtag">Hold</span>' : '';
+    return tr;
+  }
+  function renderList(animate) {
+    const list = sorted(), shown = list.filter(matches);
+    const mutate = () => {
+      for (const p of list) { const tr = rowEl(p); tbody.insertBefore(tr, emptyRow); tr.style.display = shown.includes(p) ? '' : 'none'; }
+      for (const [uid, tr] of rowEls) if (!byUid(uid)) { tr.remove(); rowEls.delete(uid); }
+      emptyRow.hidden = shown.length > 0;
+      if (!shown.length) {
+        $('#empty-text').textContent = S.q ? `No pallet matches “${S.q}”.` : { rack: 'No pallet is in the racking.', dock: 'Nothing waits at dock 3.', hold: 'No pallet is on hold.', all: 'The aisle record is empty. Receive a pallet below.' }[S.filter];
+        $('#empty-btn').textContent = S.q ? 'Clear search' : S.filter === 'all' ? 'Receive a pallet' : 'Show all pallets';
+      }
+    };
+    animate ? fx.reflow(mutate, animate === 'sort') : mutate();
+    for (const th of $$('thead th[data-key]')) {
+      if (th.dataset.key === S.sort.key) th.setAttribute('aria-sort', S.sort.dir > 0 ? 'ascending' : 'descending');
+      else th.removeAttribute('aria-sort');
+    }
+    $('#sort').value = `${S.sort.key}:${S.sort.dir}`;
+  }
+  const fmtInt = n => nf0.format(n), fmtT = t => kg1(t);
+  function renderTotals() {
+    const s = sums(S.pallets);
+    fx.count($('#t-pallets'), s.pallets, fmtInt);
+    $('#t-pallets-u').textContent = s.pallets === 1 ? 'pallet' : 'pallets';
+    fx.count($('#t-bins'), s.racked, fmtInt);
+    fx.count($('#t-pct'), Math.round(s.racked / RACK.length * 100), fmtInt);
+    fx.count($('#t-cases'), s.cases, fmtInt);
+    fx.count($('#t-kg'), s.t, fmtT);
+    fx.count($('#t-hold'), s.hold, fmtInt);
+    const counts = { all: s.pallets, rack: s.racked, dock: s.dock, hold: s.hold };
+    for (const el of $$('[data-count]')) {
+      const k = el.dataset.count;
+      fx.count(el, counts[k], fmtInt);
+      el.closest('label').querySelector('input').setAttribute('aria-label', `${FILTER_NAMES[k]}, ${plural(counts[k], 'pallet', 'pallets')}`);
+    }
+    const dockPart = s.dock === 0 ? 'Dock 3 is clear' : `${nf0.format(s.dock)} ${s.dock === 1 ? 'waits' : 'wait'} at dock 3`;
+    const holdPart = s.hold === 0 ? 'none are on hold' : s.hold === 1 ? '1 is on hold' : `${nf0.format(s.hold)} are on hold`;
+    $('#tally').textContent = `${s.racked} of 24 bins ${s.racked === 1 ? 'holds' : 'hold'} a pallet. ${dockPart} and ${holdPart}. `
+      + `The aisle carries ${kg1(s.tRack)} kg${s.dock ? `, and ${kg1(s.tDock)} kg waits at dock 3` : ''}.`;
+  }
+  function render(animate = false) {
+    renderRack();
+    renderList(animate);
+    renderTotals();
+    fillBinOptions();
+  }
+
+  /* ---------- Rack hover, crosshair and linked highlight ---------- */
+  function crosshair(code, on) {
+    const bin = binEls[code];
+    if (!bin) return;
+    bin.classList.toggle('is-x', on);
+    if (isDock(code)) return;
+    for (const b of $$(`.level[data-level="${levelOf(code)}"] .beam`)) b.classList.toggle('is-x', on);
+    uprights[bayOf(code) - 1].classList.toggle('is-x', on);
+    uprights[bayOf(code)].classList.toggle('is-x', on);
+  }
+  let crossCode = null;
+  const setCross = code => { if (crossCode === code) return; if (crossCode) crosshair(crossCode, false); crossCode = code; if (code) crosshair(code, true); };
+  yard.addEventListener('pointerover', e => {
+    if (e.pointerType === 'touch' || S.drag || performance.now() < suppressClick) return;
+    const bin = e.target.closest('.bin'), code = bin && bin.dataset.bin;
+    setCross(e.target.closest('.pallet') ? code : null);
+    if (code !== hoverCode) setHover(code ? placeText(code) : '', code);
+  });
+  yard.addEventListener('pointerleave', () => { if (S.drag) return; setCross(null); setHover(''); });
+  yard.addEventListener('focusin', e => {
+    const bin = e.target.closest('.bin');
+    if (!bin || !e.target.matches(':focus-visible')) return;
+    if (e.target.matches('.pallet')) setCross(bin.dataset.bin);
+    setHover(placeText(bin.dataset.bin), bin.dataset.bin);
+  });
+  yard.addEventListener('focusout', e => { if (!yard.contains(e.relatedTarget)) { setCross(null); setHover(''); } });
+
+  let linked = null;
+  function link(uid) {
+    if (linked === uid) return;
+    unlink();
+    const p = byUid(uid), el = palletEls.get(uid);
+    if (!p || !el) return;
+    linked = uid; el.classList.add('is-linked'); setCross(p.bin);
+    setHover(isDock(p.bin) ? `${p.lpn} waits at dock 3` : `${p.lpn} sits in ${p.bin}`, p.bin);
+  }
+  function unlink() {
+    if (!linked) return;
+    palletEls.get(linked)?.classList.remove('is-linked');
+    linked = null; setCross(null); setHover('');
+  }
+  tbody.addEventListener('pointerover', e => { if (e.pointerType === 'touch') return; const tr = e.target.closest('tr.row'); tr ? link(tr.dataset.uid) : unlink(); });
+  tbody.addEventListener('pointerleave', unlink);
+  tbody.addEventListener('focusin', e => { const tr = e.target.closest('tr.row'); if (tr) link(tr.dataset.uid); });
+  tbody.addEventListener('focusout', e => { if (!tbody.contains(e.relatedTarget)) unlink(); });
+
+  /* ---------- Pick up, move, put down ---------- */
+  let suppressClick = 0;
+  function select(uid) {
+    const prev = S.sel;
+    if (prev === uid) return putDown(false);
+    if (prev) fx.lift(palletEls.get(prev), false);
+    S.sel = uid;
+    renderRack();
+    fx.lift(palletEls.get(uid), true);
+    setBase(selText(byUid(uid)));
+    setHover('', hoverCode);   // the selection text wins until the pointer or focus moves on
+  }
+  function putDown(focusIt = false) {
+    const uid = S.sel;
+    if (!uid) return;
+    const onTarget = !!(document.activeElement && document.activeElement.closest('.bin__target'));
+    S.sel = null;
+    renderRack();
+    const el = palletEls.get(uid);
+    fx.lift(el, false);
+    setBase(idleText());
+    if (el && (focusIt || onTarget)) el.focus({ preventScroll: true });
+  }
+  function tryMove(uid, code, how) {
+    const p = byUid(uid), from = p.bin;
+    if (code === from) { putDown(); return false; }
+    const r = canPlace(p, code, S.pallets);
+    if (!r.ok) {
+      const back = `went back to ${where(from)}`, fits = LEVELS.filter(l => RATING[l] >= p.tenths).reverse();
+      const msg = r.why === 'occupied' ? `${whereLong(code)} already holds ${r.other.lpn}. ${p.lpn} ${back}.`
+        : `${p.lpn} (${kg(p.tenths)}) is too heavy for ${code}, rated ${kgR(ratingOf(code))}. It ${back}. ${fits.length > 1 ? `Levels A to ${fits.at(-1)} take it.` : 'Level A takes it.'}`;
+      fx.refuse(code); setHover('', hoverCode); setBase(msg); return false;
+    }
+    const el = palletEls.get(uid), wasFocused = document.activeElement && yard.contains(document.activeElement);
+    const st = fx.capture(el);
+    p.bin = code; S.sel = null;
+    save(); render(true);
+    if (S.edit === uid) { binSel.value = isDock(code) ? 'DOCK' : code; binHint(); }   // the open edit form follows the move
+    fx.land(el, st, how, from, code, p);
+    if (wasFocused) el.focus({ preventScroll: true });
+    setHover('', code);
+    setBase(`${p.lpn} moved from ${where(from)} to ${where(code)}.`);
+    const tr = rowEls.get(uid); if (tr) fx.flashRow(tr);
+    return true;
+  }
+  yard.addEventListener('click', e => {
+    const pal = e.target.closest('.pallet');
+    if (pal) { if (performance.now() < suppressClick) return; select(pal.dataset.uid); return; }
+    const tgt = e.target.closest('.bin__target');
+    if (tgt && S.sel) tryMove(S.sel, tgt.closest('.bin').dataset.bin, 'tap');
+  });
+  yard.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && S.sel) { e.preventDefault(); putDown(true); return; }
+    const dir = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
+    const from = document.activeElement;
+    if (!dir || !S.sel || !from || !from.closest('.pallet, .bin__target')) return;
+    e.preventDefault();
+    const fr = from.getBoundingClientRect(), cx = fr.left + fr.width / 2, cy = fr.top + fr.height / 2;
+    let best = null, score = Infinity;
+    for (const t of $$('.bin__target', yard)) {
+      if (t === from || t.offsetParent === null) continue;
+      const r = t.getBoundingClientRect(), dx = r.left + r.width / 2 - cx, dy = r.top + r.height / 2 - cy;
+      const along = dx * dir[0] + dy * dir[1], cross = Math.abs(dx * dir[1] + dy * dir[0]);
+      if (along <= 4) continue;
+      const band = cross < (dir[0] ? r.height : r.width) / 2;   // same level or same bay first, so the marker never zigzags
+      const s = (band ? 0 : 1e4) + along + 6 * cross;
+      if (s < score) { score = s; best = t; }
+    }
+    if (best) best.focus();
+  });
+  $('#selpanel').addEventListener('click', e => {
+    const b = e.target.closest('button'), uid = S.sel;
+    if (!b || !uid) return;
+    if (b.dataset.act === 'putdown') putDown(true);
+    else if (b.dataset.act === 'details') openDetails(uid, b);
+    else if (b.dataset.act === 'dock') {
+      const d = freeDock(S.pallets, byUid(uid));
+      if (!d) { setBase('Dock 3 is full. Choose a bin.'); return; }
+      tryMove(uid, d, 'tap');
+      palletEls.get(uid)?.focus({ preventScroll: true });
+    }
+  });
+
+  /* ---------- List controls ---------- */
+  let qT;
+  const q = $('#q'), qClear = $('#q-clear');
+  const countMsg = () => { const n = S.pallets.filter(matches).length; return S.q ? `${plural(n, 'pallet matches', 'pallets match')} “${S.q}”.` : `Showing ${plural(n, 'pallet', 'pallets')}${S.filter === 'all' ? '' : `, ${FILTER_NAMES[S.filter].toLowerCase()}`}.`; };
+  q.addEventListener('input', () => {
+    qClear.hidden = !q.value;
+    clearTimeout(qT);
+    qT = setTimeout(() => { S.q = q.value.trim().toLowerCase(); renderList(true); announce(countMsg()); }, 120);
+  });
+  q.addEventListener('keydown', e => { if (e.key === 'Escape' && q.value) { e.preventDefault(); clearSearch(); } });
+  function clearSearch() { q.value = ''; qClear.hidden = true; S.q = ''; renderList(true); announce(countMsg()); q.focus(); }
+  qClear.addEventListener('click', clearSearch);
+  $('#filters').addEventListener('change', e => { S.filter = e.target.value; renderList(true); announce(countMsg()); });
+  $('#empty-btn').addEventListener('click', () => {
+    if (S.q) return clearSearch();
+    if (S.filter !== 'all') { S.filter = 'all'; $('#filters input[value="all"]').checked = true; $('#filters').dispatchEvent(new Event('change')); renderList(true); return; }
+    goTo($('#receive'), $('#f-lpn'));
+  });
+  $('thead').addEventListener('click', e => {
+    const b = e.target.closest('.sort');
+    if (!b) return;
+    const k = b.dataset.key;
+    S.sort = S.sort.key === k ? { key: k, dir: -S.sort.dir } : { key: k, dir: ['cases', 'kg', 'received'].includes(k) ? -1 : 1 };
+    renderList('sort');
+    announce(`Sorted by ${b.textContent.trim().toLowerCase()}, ${S.sort.dir > 0 ? 'ascending' : 'descending'}.`);
+  });
+  $('#sort').addEventListener('change', e => { const [key, dir] = e.target.value.split(':'); S.sort = { key, dir: Number(dir) }; renderList('sort'); });
+  tbody.addEventListener('click', e => { const b = e.target.closest('.lpn'); if (b) openDetails(b.closest('tr').dataset.uid, b); });
+
+  /* ---------- In-page navigation ---------- */
+  function goTo(target, focusEl, center) {
+    fx.scrollTo(target, () => { if (focusEl) focusEl.focus({ preventScroll: true }); }, center);
+  }
+  document.addEventListener('click', e => {
+    const a = e.target.closest('a[href^="#"]');
+    if (!a) return;
+    const id = decodeURIComponent(a.getAttribute('href').slice(1)), t = document.getElementById(id);
+    if (!t) return;
+    e.preventDefault();
+    if (t.classList.contains('bin')) {
+      const p = at(S.pallets, t.dataset.bin), el = p && palletEls.get(p.uid);
+      goTo(t, el || $('#rack-title'), true);
+      if (el) setTimeout(() => fx.pulse(el), 500);
+    } else goTo(t, $('h3', t));
+  });
+
+  /* ---------- Form ---------- */
+  const form = $('#form'), F = form.elements, binSel = $('#f-bin'), submitBtn = $('#submit');
+  const FIELDS = ['lpn', 'product', 'cases', 'kg', 'received', 'bin'];
+  F.received.max = TODAY;
+  let optKey = '';
+  function fillBinOptions() {
+    const ed = S.edit && byUid(S.edit);
+    const opts = [['DOCK', ed && isDock(ed.bin) ? 'Dock 3 (staging), where it is now' : 'Dock 3 (staging)']];
+    for (const c of RACK) {
+      const o = at(S.pallets, c);
+      if (!o || (ed && o.uid === ed.uid)) opts.push([c, `${c}, takes ${kgR(ratingOf(c))}${ed && ed.bin === c ? ', where it is now' : ''}`]);
+    }
+    const key = opts.map(o => o.join('=')).join('|');
+    if (key === optKey) return;
+    optKey = key;
+    const cur = binSel.value;
+    binSel.innerHTML = opts.map(([v, t]) => `<option value="${v}">${esc(t)}</option>`).join('');
+    binSel.value = opts.some(o => o[0] === cur) ? cur : 'DOCK';
+    binHint();
+  }
+  function binHint() {
+    const v = binSel.value || 'DOCK';
+    for (const b of $$('.bin.is-chosen')) b.classList.remove('is-chosen');
+    if (v === 'DOCK') {
+      const n = DOCKS.filter(c => !at(S.pallets, c)).length;
+      $('#h-bin').textContent = `Dock 3 takes any pallet up to 1,200 kg. ${plural(n, 'slot', 'slots')} of 4 free.`;
+    } else {
+      $('#h-bin').textContent = `${v} takes ${kgR(ratingOf(v))}.`;
+      if (form.contains(document.activeElement) || S.edit) binEls[v]?.classList.add('is-chosen');
+    }
+  }
+  binSel.addEventListener('change', binHint);
+  form.addEventListener('focusout', e => { if (!form.contains(e.relatedTarget) && !S.edit) for (const b of $$('.bin.is-chosen')) b.classList.remove('is-chosen'); });
+  form.addEventListener('focusin', () => binHint());
+  F.lpn.addEventListener('blur', () => { F.lpn.value = F.lpn.value.trim().toUpperCase(); });
+  const nextLpn = () => `LP-${String(S.pallets.reduce((m, p) => Math.max(m, Number(p.lpn.slice(3))), 4199) + 1).padStart(6, '0')}`;
+  function clearForm() {
+    form.reset();
+    F.received.value = TODAY;
+    F.lpn.placeholder = nextLpn();
+    showErrors({});
+    binHint();
+  }
+  function showErrors(errors) {
+    for (const f of FIELDS) {
+      const field = $(`.field[data-f="${f}"]`), input = F[f], msg = errors[f] || '';
+      field.classList.toggle('is-invalid', !!msg);
+      input.setAttribute('aria-invalid', String(!!msg));
+      $(`#e-${f}`).textContent = msg;
+    }
+  }
+  function setMode(uid) {
+    S.edit = uid;
+    const p = uid && byUid(uid);
+    $('#receive').classList.toggle('is-edit', !!p);
+    $('#title-new').setAttribute('aria-hidden', String(!!p));
+    $('#title-edit').setAttribute('aria-hidden', String(!p));
+    if (p) $('#title-edit').textContent = `Edit ${p.lpn}`;
+    $('#submit-a').textContent = p ? 'Save changes' : 'Receive pallet';
+    $('#submit-b').textContent = p ? 'Saved' : 'Received';
+    $('#cancel').hidden = !p;
+    optKey = '';
+    fillBinOptions();
+  }
+  function startEdit(uid) {
+    const p = byUid(uid);
+    if (!p) return;
+    setMode(uid);
+    F.lpn.value = p.lpn; F.product.value = p.product; F.cases.value = p.cases; F.kg.value = kg1(p.tenths).replace(/,/g, '');
+    F.received.value = p.received; F.hold.checked = p.hold; binSel.value = isDock(p.bin) ? 'DOCK' : p.bin;
+    showErrors({}); $('#status').textContent = '';
+    binHint();
+    goTo($('#receive'), F.lpn);
+  }
+  function cancelEdit() {
+    const uid = S.edit;
+    setMode(null); clearForm(); binHint();
+    for (const b of $$('.bin.is-chosen')) b.classList.remove('is-chosen');
+    announce('Edit cancelled. Nothing changed.');
+    const b = rowEls.get(uid) && $('.lpn', rowEls.get(uid));
+    if (b) goTo(rowEls.get(uid), b, true);
+  }
+  $('#cancel').addEventListener('click', cancelEdit);
+  form.addEventListener('keydown', e => { if (e.key === 'Escape' && S.edit) { e.preventDefault(); cancelEdit(); } });
+  let doneT;
+  function doneSwap() { submitBtn.classList.add('is-done'); clearTimeout(doneT); doneT = setTimeout(() => submitBtn.classList.remove('is-done'), 1200); }
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const raw = { lpn: F.lpn.value, product: F.product.value, cases: F.cases.value, kg: F.kg.value, received: F.received.value, receivedBad: F.received.validity.badInput, hold: F.hold.checked, bin: binSel.value };
+    const { errors, data } = validateRecord(raw, S.pallets, S.edit);
+    showErrors(errors);
+    const bad = FIELDS.filter(f => errors[f]);
+    $('#status').textContent = '';
+    if (bad.length) {
+      F[bad[0]].focus();
+      announce(`${plural(bad.length, 'field needs', 'fields need')} a fix. ${errors[bad[0]]}`);
+      return;
+    }
+    if (S.edit) {
+      const p = byUid(S.edit), from = p.bin, el = palletEls.get(p.uid);
+      const st = from !== data.bin ? fx.capture(el) : null;
+      updatePallet(S.pallets, p.uid, data);
+      save(); setMode(null); clearForm(); render(true);
+      if (st) fx.land(palletEls.get(p.uid), st, 'tap', from, p.bin, p);
+      doneSwap();
+      $('#status').textContent = `${p.lpn} saved.`;
+      announce(`${p.lpn} saved.`);
+      const tr = rowEls.get(p.uid);
+      fx.flashRow(tr);
+      goTo(tr, $('.lpn', tr), true);
+    } else {
+      const p = createPallet(S.pallets, data);
+      save(); clearForm(); render(true);
+      fx.arrive(palletEls.get(p.uid));
+      doneSwap();
+      $('#status').innerHTML = `${esc(p.lpn)} received into ${where(p.bin)}. <a class="inline" href="#bin-${p.bin}">Show it in the rack</a>`;
+      announce(`${p.lpn} received into ${where(p.bin)}.`);
+      fx.flashRow(rowEls.get(p.uid));
+      F.lpn.focus();
+    }
+    binHint();
+  });
+
+  /* ---------- Dialogs ---------- */
+  const dDetails = $('#dlg-details'), dConfirm = $('#dlg-confirm');
+  let opener = null, detailsUid = null, confirmOk = null, confirmOpener = null;
+  function openDlg(dlg, focusEl) {
+    dlg.showModal();
+    fx.dialogIn(dlg);
+    focusEl.focus();
+  }
+  function closeDlg(dlg, after) {
+    if (!dlg.open || dlg.classList.contains('is-closing')) return;
+    dlg.classList.add('is-closing');
+    fx.dialogOut(dlg, () => { dlg.classList.remove('is-closing'); dlg.close(); if (after) after(); });
+  }
+  for (const dlg of [dDetails, dConfirm]) {
+    dlg.addEventListener('cancel', e => { e.preventDefault(); closeDlg(dlg, () => restoreFocus(dlg)); });
+    dlg.addEventListener('click', e => { if (e.target === dlg) closeDlg(dlg, () => restoreFocus(dlg)); });
+  }
+  const restoreFocus = dlg => { const o = dlg === dDetails ? opener : confirmOpener; if (o && o.isConnected && o.offsetParent !== null) o.focus(); };
+  function openDetails(uid, from) {
+    const p = byUid(uid);
+    if (!p) return;
+    opener = from; detailsUid = uid;
+    $('#dd-title').textContent = p.lpn;
+    const days = daysBetween(p.received, TODAY);
+    const facts = [
+      ['Product', esc(p.product)],
+      ['Bin', isDock(p.bin) ? `Dock 3, slot ${p.bin.slice(3)}, staging` : `<span class="code">${p.bin}</span>, level ${levelOf(p.bin)}, takes ${kgR(ratingOf(p.bin))}`],
+      ['Cases', nf0.format(p.cases)],
+      ['Gross weight', kg(p.tenths)],
+      ['Received', fmtDate(p.received)],
+      ['Hold', p.hold ? 'Yes, held for a quality check' : 'No'],
+      ['Days in aisle', days === 0 ? 'Received today' : plural(days, 'day', 'days')],
+    ];
+    $('#dd-facts').innerHTML = facts.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
+    const cell = c => `<span class="mini__c${at(S.pallets, c) ? ' is-full' : ''}${c === p.bin ? ' is-this' : ''}"></span>`;
+    $('#dd-mini').innerHTML = `<div><div class="mini__rack">${RACK.map(cell).join('')}</div><span class="mini__cap">Aisle 14</span></div><div><div class="mini__dock">${DOCKS.map(cell).join('')}</div><span class="mini__cap">Dock 3</span></div>`;
+    openDlg(dDetails, $('#dd-title'));
+  }
+  dDetails.addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    if (b.hasAttribute('data-close')) closeDlg(dDetails, () => restoreFocus(dDetails));
+    else if (b.dataset.act === 'edit') { const uid = detailsUid; if (S.sel) putDown(); closeDlg(dDetails, () => startEdit(uid)); }
+    else if (b.dataset.act === 'remove') { const uid = detailsUid; closeDlg(dDetails, () => confirmRemove(uid)); }
+  });
+  function openConfirm({ title, body, keep, okText, onOk, from }) {
+    $('#dc-title').textContent = title; $('#dc-body').textContent = body;
+    $('#dc-keep').textContent = keep; $('#dc-ok').textContent = okText;
+    confirmOk = onOk; confirmOpener = from;
+    openDlg(dConfirm, $('#dc-keep'));
+  }
+  $('#dc-keep').addEventListener('click', () => closeDlg(dConfirm, () => restoreFocus(dConfirm)));
+  $('#dc-ok').addEventListener('click', () => { const f = confirmOk; closeDlg(dConfirm, () => f && f()); });
+  function confirmRemove(uid) {
+    const p = byUid(uid);
+    openConfirm({
+      title: `Remove ${p.lpn} from ${where(p.bin)}?`,
+      body: `Its ${plural(p.cases, 'case', 'cases')} and ${kg(p.tenths)} leave the aisle record. You can undo this.`,
+      keep: 'Keep pallet', okText: 'Remove pallet', from: opener, onOk: () => removeFlow(uid),
+    });
+  }
+
+  /* ---------- Delete and stacked undo ---------- */
+  const undos = $('#undos');
+  const syncUndoH = () => root.style.setProperty('--undo-h', `${undos.offsetHeight}px`);
+  function removeFlow(uid) {
+    if (S.sel === uid) S.sel = null;
+    if (S.edit === uid) { setMode(null); clearForm(); }
+    const { rec, idx } = removePallet(S.pallets, uid);
+    save(); render(true);
+    setBase(idleText());
+    const entry = { rec, idx, bar: document.createElement('div') };
+    entry.bar.className = 'undo';
+    entry.bar.innerHTML = `<p>${esc(rec.lpn)} removed from ${where(rec.bin)}.</p><button type="button" class="btn btn--ghost" data-undo>Undo</button><button type="button" class="iconbtn" data-dismiss aria-label="Dismiss"><svg viewBox="0 0 18 18" aria-hidden="true"><path d="M4 4l10 10M14 4L4 14"/></svg></button>`;
+    S.undo.push(entry);
+    undos.append(entry.bar);
+    if (S.undo.length > 3) dropUndo(S.undo[0], false);
+    fx.undoIn(entry.bar);
+    syncUndoH();
+    announce(`${rec.lpn} removed from ${where(rec.bin)}. Undo is at the bottom of the screen.`);
+    $('[data-undo]', entry.bar).focus({ preventScroll: true });
+  }
+  function dropUndo(entry, animate = true, then) {
+    S.undo = S.undo.filter(u => u !== entry);
+    const done = () => { entry.bar.remove(); syncUndoH(); if (then) then(); };
+    animate ? fx.undoOut(entry.bar, done) : done();
+  }
+  undos.addEventListener('click', e => {
+    const b = e.target.closest('button'), bar = e.target.closest('.undo');
+    const entry = S.undo.find(u => u.bar === bar);
+    if (!b || !entry) return;
+    const nextFocus = () => { const last = S.undo.at(-1); if (last) $('[data-undo]', last.bar).focus({ preventScroll: true }); };
+    if (b.hasAttribute('data-dismiss')) { dropUndo(entry, true, () => { if (S.undo.length) nextFocus(); else $('#pallets-title').focus({ preventScroll: true }); }); return; }
+    const res = restorePallet(S.pallets, entry.rec, entry.idx);
+    if (!res.ok) { announce(res.msg); setBase(res.msg); if (res.drop) dropUndo(entry); return; }
+    const barRect = bar.getBoundingClientRect();
+    save(); render(true);
+    const el = palletEls.get(res.p.uid);
+    fx.land(el, null, 'undo', null, res.p.bin, res.p, barRect);
+    const msg = res.note || `${res.p.lpn} is back in ${where(res.p.bin)}.`;
+    announce(msg); setBase(msg);
+    const tr = rowEls.get(res.p.uid);
+    fx.flashRow(tr);
+    dropUndo(entry, true, () => { if (S.undo.length) nextFocus(); else $('.lpn', tr).focus(); });
+  });
+
+  /* ---------- Reset ---------- */
+  $('#reset').addEventListener('click', e => openConfirm({
+    title: 'Put the sample aisle back?',
+    body: 'Every change in this tab is replaced by the 22 sample pallets.',
+    keep: 'Keep my changes', okText: 'Reset aisle', from: e.currentTarget,
+    onOk: () => {
+      if (S.sel) putDown();
+      setMode(null); clearForm();
+      for (const u of [...S.undo]) dropUndo(u, false);
+      const st = fx.capture([...palletEls.values()]);
+      S.pallets = seed(); uidN = 0;
+      save(); render(true);
+      fx.land(null, st, 'reset');
+      setBase(idleText());
+      announce('Sample aisle restored.');
+      $('#reset').focus();
+    },
+  }));
+
+  /* ---------- HV4: fill enters from the side the pointer came in ---------- */
+  const edgeFrom = e => { const b = e.target.closest('.btn'); if (!b || b.contains(e.relatedTarget)) return; const r = b.getBoundingClientRect(); b.style.setProperty('--from', e.clientX < r.left + r.width / 2 ? 'left' : 'right'); };
+  document.addEventListener('pointerover', edgeFrom);
+  document.addEventListener('pointerout', edgeFrom);
+
+  /* ---------- First render ---------- */
+  clearForm();
+  render(false);
+  setBase(idleText());
+
+  /* ---------- Self-test (#selftest) ---------- */
+  function runSelfTest() {
+    const assert = (c, m) => { if (!c) throw new Error(`Assertion failed: ${m}`); };
+    const realPallets = S.pallets, realUid = uidN, realScroll = fx.scrollTo;
+    fx.scrollTo = (t, done) => done && done();
+    try {
+      assert(parseLpn(' lp-004200 ').value === 'LP-004200', 'LPN uppercases');
+      assert(!parseLpn('LP-4200').ok, 'LPN needs six digits');
+      assert(parseCases('48').value === 48 && !parseCases('4.5').ok && !parseCases('0').ok && !parseCases('501').ok, 'integer cases');
+      assert(parseKg('655.5').value === 6555 && parseKg('655,5').value === 6555 && parseKg(' 655 ').value === 6550, 'decimal accepts dot, comma, spaces');
+      assert(parseKg('1,200').value === 12000 && parseKg('655.50').value === 6555, 'thousands comma, trailing zero');
+      assert(!parseProduct('\u{1F600}a').ok && parseProduct('Ölfilter').ok, 'product length in characters');
+      assert(!parseKg('1.25').ok && !parseKg('abc').ok && !parseKg('0').ok && !parseKg('1200.1').ok, 'decimal rejects');
+      assert(parseDate('2026-10-22').ok && !parseDate('2099-01-01').ok && !parseDate('').ok && !parseDate('2026-10-01', true).ok && !parseDate('2024-12-31').ok && !parseDate('2026-02-30').ok, 'date rules');
+      const L = seed(), s = sums(L);
+      assert(s.pallets === 22 && s.racked === 19 && s.dock === 3 && s.hold === 2, 'seed counts');
+      assert(s.tRack === 92532 && s.tDock === 18000 && s.t === 110532 && s.cases === 1592, 'seed sums in tenths');
+      const p4101 = L.find(p => p.lpn === 'LP-004101'), p4190 = L.find(p => p.lpn === 'LP-004190');
+      assert(canPlace(p4101, '14-03-A', L).why === 'occupied', 'occupied bin refused');
+      assert(canPlace(p4190, '14-02-D', L).why === 'heavy', '846.0 kg refused on level D');
+      assert(canPlace(p4190, '14-05-C', L).ok, '846.0 kg fits level C');
+      assert(freeDock(L) === 'D3-4', 'one dock slot free');
+      const raw = { lpn: 'LP-004200', product: 'Wheel bolts M12', cases: '30', kg: '410,5', received: '2026-10-20', hold: false, bin: 'DOCK' };
+      let v = validateRecord(raw, L);
+      assert(!Object.keys(v.errors).length && v.data.bin === 'D3-4' && v.data.tenths === 4105, 'valid create');
+      const made = createPallet(L, v.data);
+      assert(L.length === 23 && freeDock(L) === null, 'created, dock now full');
+      assert(validateRecord({ ...raw, lpn: 'LP-004201' }, L).errors.bin === 'Dock 3 is full. Choose a bin.', 'dock full refused');
+      assert(validateRecord(raw, L).errors.lpn === 'LP-004200 is already in this aisle.', 'unique LPN');
+      assert(validateRecord({ ...raw, lpn: 'LP-004202', kg: '846', bin: '14-02-D' }, L).errors.bin === '14-02-D takes 800 kg. Choose a lower level or dock 3.', 'cross-field rating');
+      v = validateRecord({ ...raw, product: 'Wheel bolts M14' }, L, made.uid);
+      assert(!Object.keys(v.errors).length && v.data.bin === 'D3-4', 'edit keeps its own dock slot');
+      updatePallet(L, made.uid, v.data);
+      assert(made.product === 'Wheel bolts M14', 'edit saved');
+      // cancel edit through the real form leaves the record unchanged
+      S.pallets = L;
+      const before = JSON.stringify(p4101);
+      startEdit(p4101.uid); F.product.value = 'Changed and cancelled'; cancelEdit();
+      assert(JSON.stringify(p4101) === before && S.edit === null, 'cancel leaves record unchanged');
+      const p4182 = L.find(p => p.lpn === 'LP-004182');
+      const del = removePallet(L, p4182.uid);
+      assert(L.length === 22 && !at(L, '14-04-D'), 'delete frees the bin');
+      let u = restorePallet(L, del.rec, del.idx);
+      assert(u.ok && at(L, '14-04-D').lpn === 'LP-004182' && !u.note, 'undo restores the bin');
+      const del2 = removePallet(L, at(L, '14-04-D').uid);
+      L.find(p => p.lpn === 'LP-004193').bin = '14-04-D';    // someone takes the bin, frees dock slot 2
+      u = restorePallet(L, del2.rec, del2.idx);
+      assert(u.ok && u.p.bin === 'D3-2' && u.note === '14-04-D now holds LP-004193, so LP-004182 went back to dock 3.', 'undo to an occupied bin goes to the dock');
+      assert(seed().length === 22 && sums(seed()).t === 110532, 'reset restores 22');
+      const blocked = makeStore(() => { throw new Error('blocked'); });
+      blocked.write({ v: 1, pallets: [1, 2] });
+      assert(JSON.stringify(blocked.read()) === '{"v":1,"pallets":[1,2]}', 'memory fallback when storage throws');
+      assert(sanitize([{ ...made }, { ...made, uid: 'x9' }, { bad: 1 }]).length === 1, 'corrupt and duplicate rows dropped');
+      console.log('SELFTEST PASS');
+    } catch (err) {
+      console.error('SELFTEST FAIL', err.message);
+    } finally {
+      S.pallets = realPallets; uidN = realUid; fx.scrollTo = realScroll; setMode(null); clearForm(); render(false); setBase(idleText());
+    }
+  }
+  if (location.hash === '#selftest') runSelfTest();
+
+  /* ====================================================================== */
+  /* Motion layer: GSAP + Lenis. Without it the page above works on its own. */
+  /* ====================================================================== */
+  let played = false, released = false;
+  const release = () => { released = true; root.classList.remove('intro'); };
+  const hard = setTimeout(release, 2000);   // libraries slow or blocked: show the finished rack
+  addEventListener('DOMContentLoaded', () => {
+    clearTimeout(hard);
+    if (!(window.gsap && window.ScrollTrigger && window.Flip && window.ScrambleTextPlugin && window.CustomEase && window.Lenis)) {
+      release(); root.classList.remove('js'); return;
+    }
+    gsap.registerPlugin(ScrollTrigger, Flip, ScrambleTextPlugin, CustomEase);
+    CustomEase.create('lower', 'M0,0 C0.25,0.1 0.35,1 0.7,1.1 0.82,1.13 0.9,1 1,1'); // decelerate, sink 2px, settle
+    root.classList.add('fx');
+    const fx0 = { ...fx };
+    const tok = n => parseFloat(getComputedStyle(root).getPropertyValue(n)) || 0;
+    const D = {}; for (const k of ['chrome', 'upright', 'beam', 'lower', 'count', 'indicator', 'lift', 'drag', 'follow', 'travel', 'drop', 'scramble', 'return', 'flash', 'reflow', 'dialog', 'dialog-out', 'undo', 'edge']) D[k] = tok(`--d-${k}`);
+    const toolbar = $('#toolbar'), tabs = $('#tabs'), tabInd = $('#tabs-ind'), links = $$('#tabs a');
+    const filters = $('#filters'), fInd = $('#filters-ind');
+
+    gsap.matchMedia().add({
+      motion: '(prefers-reduced-motion: no-preference)',
+      reduce: '(prefers-reduced-motion: reduce)',
+      fine: '(hover: hover) and (pointer: fine)',
+    }, ctx => {
+      const { motion, fine } = ctx.conditions;
+      const offs = [];
+      const on = (el, type, fn, opt) => { el.addEventListener(type, fn, opt); offs.push(() => el.removeEventListener(type, fn, opt)); };
+      const body = el => el.firstElementChild;
+      const shadowOf = el => el.firstElementChild.firstElementChild;
+      const first = motion && !played && !released;   // libraries later than 2s: the rack is already shown, never replay it
+      played = true;
+      if (!first) release();
+
+      /* Lenis on GSAP's clock */
+      let lenis = null, tick = null;
+      if (motion) {
+        lenis = new Lenis({ lerp: 0.1, smoothWheel: true, autoRaf: false, anchors: false });
+        lenis.on('scroll', ScrollTrigger.update);
+        tick = t => lenis.raf(t * 1000);
+        gsap.ticker.add(tick);
+        gsap.ticker.lagSmoothing(0);
+      }
+      const expoOut = t => (t === 1 ? 1 : 1 - Math.pow(2, -10 * t));
+      fx.scrollTo = (target, done, center) => {
+        if (!lenis) return fx0.scrollTo(target, done, center);
+        const off = center ? -(innerHeight - Math.min(target.offsetHeight, innerHeight)) / 2 : -(toolbar.offsetHeight + 8);
+        lenis.scrollTo(target, { offset: off, duration: 1, easing: expoOut });
+        if (done) done();
+      };
+
+      /* PAGE LOAD (L1 to L5) */
+      if (first) {
+        const start = () => {
+          const beamsUp = [...LEVELS].reverse().flatMap(l => $$(`.level[data-level="${l}"] .beam`));
+          const racked = [...LEVELS].reverse().flatMap(l => RACK.filter(c => levelOf(c) === l)).map(c => at(S.pallets, c)).filter(Boolean).map(p => body(palletEls.get(p.uid)));
+          const docked = DOCKS.map(c => at(S.pallets, c)).filter(Boolean).map(p => body(palletEls.get(p.uid)));
+          const tl = gsap.timeline({ defaults: { ease: 'expo.out' } }), each = .5 / Math.max(1, racked.length - 1);
+          tl.fromTo('[data-chrome]', { y: 6, opacity: .4 }, { y: 0, opacity: 1, duration: D.chrome, stagger: .06, clearProps: 'opacity' }, 0)
+            .fromTo('.upright', { scaleY: 0 }, { scaleY: 1, duration: D.upright, stagger: .05 }, .1)
+            .fromTo(beamsUp, { scaleX: 0 }, { scaleX: 1, duration: D.beam, stagger: i => Math.floor(i / BAYS) * .08 + (i % BAYS) * .025 }, .35)
+            // loads arrive solid (opacity snaps) and sink onto their beams; each beam dips at half the signature's amplitude
+            .fromTo(racked, { y: -40 }, { y: 0, duration: D.lower, ease: 'lower', stagger: each }, .75)
+            .fromTo(docked, { x: -16 }, { x: 0, duration: .5, stagger: .08 }, 1.15);
+          gsap.set([...racked, ...docked], { opacity: 0 });
+          docked.forEach((b, i) => tl.set(b, { opacity: 1 }, 1.15 + i * .08));
+          racked.forEach((b, i) => {
+            const beam = $('.beam', b.closest('.bin'));
+            tl.set(b, { opacity: 1 }, .75 + i * each).fromTo(beam, { y: 0 }, { y: .75, duration: .08, ease: 'power2.out', immediateRender: false }, .75 + i * each + D.lower * .6)
+              .to(beam, { y: 0, duration: .35, ease: 'elastic.out(1,0.5)' }, '>');
+          });
+          root.classList.remove('intro');
+        };
+        Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 1200))]).then(start);
+      }
+
+      /* S1 section spy + N1 sliding indicator */
+      let active = links.find(a => a.hasAttribute('aria-current')) || links[0];
+      const tabX = a => a.offsetLeft + 12, tabW = a => (a.offsetWidth - 24) / 100;
+      const placeTab = (a, d = D.indicator * .875) => gsap.to(tabInd, { x: tabX(a), scaleX: tabW(a), duration: motion ? d : 0, ease: 'power3.out', overwrite: true });
+      gsap.set(tabInd, { x: tabX(active), scaleX: tabW(active) });
+      for (const a of links) {
+        ScrollTrigger.create({
+          trigger: document.getElementById(a.hash.slice(1)), start: 'top 50%', end: 'bottom 50%',
+          onToggle: self => {
+            if (!self.isActive) return;
+            for (const l of links) l.removeAttribute('aria-current');
+            a.setAttribute('aria-current', 'location'); active = a;
+            if (!tabs.contains(document.activeElement) && !tabs.matches(':hover')) placeTab(a, D.indicator);
+          },
+        });
+        if (fine) on(a, 'pointerenter', () => placeTab(a));
+        on(a, 'focus', () => { if (a.matches(':focus-visible')) placeTab(a); });
+        on(a, 'blur', () => placeTab(active));
+      }
+      if (fine) on(tabs, 'pointerleave', () => placeTab(active));
+
+      /* S4 toolbar edge when stuck */
+      ScrollTrigger.create({
+        trigger: '.sentinel', start: 'top top', end: 'max',
+        onToggle: self => { toolbar.classList.toggle('is-stuck', self.isActive); gsap.to('#toolbar-edge', { scaleX: self.isActive ? 1 : 0, duration: motion ? .5 : 0, ease: 'expo.out', overwrite: true }); },
+      });
+
+      /* S2 row rules draw (once) */
+      if (motion) {
+        const rules = $$('.row .rowrule').filter(r => r.offsetParent !== null);
+        gsap.set(rules, { scaleX: 0 });
+        ScrollTrigger.create({
+          trigger: '.tbl', start: 'top 85%', once: true,
+          onEnter: () => gsap.to(rules, { scaleX: 1, duration: D.beam + .1, ease: 'expo.out', stagger: Math.min(.025, 1 / Math.max(1, rules.length)) }),
+        });
+      }
+
+      /* Counts tween after CRUD changes */
+      fx.count = (el, to, fmt) => {
+        const from = Number(el.dataset.v ?? to);
+        el.dataset.v = to;
+        if (el._tw) el._tw.kill();
+        if (!motion || from === to || !Number.isFinite(from)) { el.textContent = fmt(to); return; }
+        const o = { v: from };
+        el._tw = gsap.to(o, { v: to, duration: el.closest('.chip') ? D.count * .67 : D.count, ease: 'power2.out', onUpdate: () => { el.textContent = fmt(Math.round(o.v)); } });
+      };
+
+      /* P2 filter pill (NV4, clip-path so nothing scales) */
+      const chips = $$('.chip', filters);
+      const checkedChip = () => chips.find(c => $('input', c).checked);
+      const placePill = (chip, d = D.indicator) => {
+        const fr = filters.getBoundingClientRect(), r = chip.getBoundingClientRect();
+        gsap.to(fInd, { clipPath: `inset(${r.top - fr.top}px ${fr.right - r.right}px ${fr.bottom - r.bottom}px ${r.left - fr.left}px round 4px)`, duration: motion ? d : 0, ease: 'power3.out', overwrite: true });
+      };
+      placePill(checkedChip(), 0);
+      on(filters, 'change', () => placePill(checkedChip()));
+      for (const c of chips) {
+        if (fine) on(c, 'pointerenter', () => placePill(c, .35));
+        on($('input', c), 'focus', e => { if (e.target.matches(':focus-visible')) placePill(c, .35); });
+      }
+      if (fine) on(filters, 'pointerleave', () => placePill(checkedChip()));
+      on(filters, 'focusout', e => { if (!filters.contains(e.relatedTarget)) placePill(checkedChip()); });
+      const onResize = () => { gsap.set(tabInd, { x: tabX(active), scaleX: tabW(active) }); placePill(checkedChip(), 0); };
+      on(window, 'resize', onResize);
+      document.fonts.ready.then(onResize);
+
+      /* CD5 Flip reflow of rows */
+      fx.reflow = (mutate, sort) => {
+        if (!motion) return mutate();
+        const rows = $$('#rows .row');
+        const was = new Map(rows.map(r => [r, r.style.display === 'none' ? null : r.offsetTop]));
+        const st = Flip.getState(rows);
+        mutate();
+        // rows that would travel more than three rows fade in where they land instead of flying past the others
+        const far = sort ? [] : rows.filter(r => r.isConnected && r.style.display !== 'none' && was.get(r) !== null && Math.abs(r.offsetTop - was.get(r)) > 3 * r.offsetHeight);
+        Flip.from(st, {
+          targets: rows.filter(r => !far.includes(r)),
+          duration: D.reflow, ease: 'power3.inOut', stagger: .01, absoluteOnLeave: true,
+          onEnter: els => gsap.fromTo(els, { opacity: 0 }, { opacity: 1, duration: .4, delay: .15 }),
+          onLeave: els => gsap.to(els, { opacity: 0, duration: .25 }),
+        });
+        if (far.length) gsap.fromTo(far, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: .45, ease: 'expo.out', delay: .15, stagger: .02, overwrite: true });
+      };
+
+      /* MI4-adjacent: one-time edge bar on changed rows */
+      if (motion) fx.flashRow = tr => { if (!tr) return; gsap.fromTo($('.rowedge', tr), { scaleY: 1 }, { scaleY: 0, duration: D.edge, ease: 'power2.in', delay: .2 }); };
+
+      /* Rack: pick-up, landing (signature), refusal */
+      fx.capture = el => (el ? Flip.getState(el) : null);
+      fx.lift = (el, up) => {
+        if (!el || !motion) return;
+        gsap.to(body(el), { scale: up ? 1.04 : 1, duration: up ? D.lift : D.lift + .05, ease: 'power2.out', overwrite: 'auto' });
+        gsap.to(shadowOf(el), { autoAlpha: up ? 1 : 0, duration: D.lift, overwrite: 'auto' });
+      };
+      fx.land = (el, st, how, from, to, p, fromRect) => {
+        if (how === 'reset') {
+          if (motion && st) Flip.from(st, { duration: D.travel, ease: 'power3.inOut', scale: true, stagger: .015, onEnter: els => gsap.fromTo(els, { opacity: 0 }, { opacity: 1, duration: .4 }) });
+          return;
+        }
+        if (!el) return;
+        const b = body(el), sh = shadowOf(el), bin = binEls[to];
+        gsap.killTweensOf([el, b, sh]); gsap.set(el, { x: 0, y: 0 });
+        if (!motion) { gsap.set(b, { rotation: 0, scale: 1, y: 0, opacity: 1 }); gsap.set(sh, { autoAlpha: 0 }); el.style.zIndex = ''; return; }
+        const travel = how === 'drag' ? D.drop : D.travel;
+        el.style.zIndex = 50;
+        const tl = gsap.timeline({ onComplete: () => { el.style.zIndex = ''; } });
+        if (st) tl.add(Flip.from(st, { duration: travel, ease: how === 'drag' ? 'power3.out' : 'power3.inOut', scale: true }), 0);
+        else if (fromRect) {
+          const r = el.getBoundingClientRect();
+          tl.fromTo(el, { x: fromRect.left + 24 - r.left, y: fromRect.top - r.top, opacity: 0 }, { x: 0, y: 0, opacity: 1, duration: travel, ease: 'power3.inOut' }, 0);
+        }
+        tl.to(b, { rotation: 0, scale: 1.04, y: -14, opacity: 1, duration: D.lift, ease: 'power2.out' }, 0)
+          .to(sh, { autoAlpha: 1, duration: D.lift }, 0)
+          .to(b, { y: 0, scale: 1, duration: D.lower, ease: 'lower' }, travel)
+          .to(sh, { autoAlpha: 0, duration: .35 }, travel + .1);
+        const hit = travel + .3;
+        if (!isDock(to)) {
+          const beam = $('.beam', bin), meter = $('.beam__meter', bin), lp = $('.bin__lp', bin), dg = $('.bin__lpd', bin);
+          tl.fromTo(beam, { y: 0 }, { y: 1.5, duration: .1, ease: 'power2.out' }, hit)
+            .to(beam, { y: 0, duration: .45, ease: 'elastic.out(1,0.5)' }, hit + .1)
+            .fromTo(meter, { scaleX: 0 }, { scaleX: Math.min(1, p.tenths / ratingOf(to)), duration: .4, ease: 'expo.out' }, hit);
+          // 'LP-' stays fixed; only the six digits decode. The pallet's aria-label holds the real LPN throughout.
+          if (dg) {
+            dg.textContent = ''; gsap.set(lp, { opacity: 0 });
+            tl.set(lp, { opacity: 1 }, hit).to(dg, { duration: D.scramble, scrambleText: { text: p.lpn.slice(3), chars: '0123456789', speed: .6 } }, hit);
+          }
+        }
+        if (from && !isDock(from)) {
+          const old = $('.beam__meter', binEls[from]);
+          gsap.fromTo(old, { scaleX: Math.min(1, p.tenths / ratingOf(from)) }, { scaleX: 0, duration: .4, ease: 'expo.out', delay: .1 });
+        }
+      };
+      fx.refuse = code => {
+        if (!motion || isDock(code)) return;
+        const prev = $('.beam__preview', binEls[code]);
+        prev.classList.add('is-over');
+        gsap.fromTo(prev, { scaleX: 1, opacity: 1 }, { opacity: 0, duration: D.flash, ease: 'power1.in', overwrite: true, onComplete: () => { gsap.set(prev, { scaleX: 0, clearProps: 'opacity' }); prev.classList.remove('is-over'); } });
+      };
+      fx.arrive = el => {
+        if (!motion || !el) return;
+        const b = body(el);
+        gsap.set(b, { y: -40, opacity: 0 });
+        ScrollTrigger.create({
+          trigger: el, start: 'top bottom', end: 'bottom top',
+          onToggle: self => { if (!self.isActive) return; self.kill(); gsap.set(b, { opacity: 1, delay: .15 }); gsap.to(b, { y: 0, duration: D.lower, ease: 'lower', delay: .15 }); },
+        });
+      };
+      fx.pulse = el => { if (motion && el) gsap.fromTo(body(el), { scale: 1 }, { scale: 1.04, duration: .25, ease: 'power2.out', yoyo: true, repeat: 1 }); };
+
+      /* Keyboard pick-up: the dashed target outline travels between empty bins */
+      const marker = $('#marker');
+      on(yard, 'focusin', e => {
+        const t = e.target.closest('.bin__target');
+        if (!t || !t.matches(':focus-visible')) return;
+        const yr = yard.getBoundingClientRect(), r = t.getBoundingClientRect();
+        const shown = Number(gsap.getProperty(marker, 'opacity')) > 0;
+        gsap.set(marker, { width: r.width + 12, height: r.height + 12 });
+        gsap.to(marker, { x: r.left - yr.left - 6, y: r.top - yr.top - 6, opacity: 1, duration: shown && motion ? .2 : 0, ease: 'power3.out', overwrite: true });
+      });
+      on(yard, 'focusout', e => { if (!(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('.bin__target'))) gsap.to(marker, { opacity: 0, duration: .15, overwrite: true }); });
+
+      /* C1 scanner follower (fine pointer, full motion only) */
+      const tag = $('#scanner'), tagText = $('#scanner-text');
+      let over = false, yr = null, tagW = 0, lastX = 0, lastY = 0, xTo = null, yTo = null;
+      if (fine && motion) {
+        xTo = gsap.quickTo(tag, 'x', { duration: D.follow, ease: 'power3' });
+        yTo = gsap.quickTo(tag, 'y', { duration: D.follow, ease: 'power3' });
+        const place = () => {
+          if (!yr) return;
+          const x = lastX + 16 + tagW > yr.right ? lastX - 16 - tagW : lastX + 16;
+          const y = lastY + 46 > innerHeight ? lastY - 40 : lastY + 16;
+          xTo(x); yTo(y);
+        };
+        const hide = () => { over = false; gsap.to(tag, { autoAlpha: 0, duration: .15, overwrite: 'auto' }); };
+        on(yard, 'pointerenter', e => {
+          if (e.pointerType === 'touch') return;
+          over = true; yr = yard.getBoundingClientRect(); lastX = e.clientX; lastY = e.clientY;
+          gsap.set(tag, { x: lastX + 16, y: lastY + 16 });
+        });
+        on(yard, 'pointermove', e => { if (e.pointerType === 'touch') return; lastX = e.clientX; lastY = e.clientY; place(); });
+        on(yard, 'pointerleave', () => { if (!S.drag) hide(); });
+        on(window, 'blur', hide);
+        on(window, 'scroll', () => { if (over) yr = yard.getBoundingClientRect(); }, { passive: true });
+        fx.follow = text => {
+          if (!over && !S.drag) return;
+          if (!text) { gsap.to(tag, { autoAlpha: 0, duration: .15, overwrite: 'auto' }); return; }
+          if (tagText.textContent !== text) {
+            tagText.textContent = text; tagW = tag.offsetWidth;
+            gsap.fromTo(tagText, { yPercent: 100 }, { yPercent: 0, duration: .25, ease: 'power3.out', overwrite: true });
+            place();
+          }
+          gsap.to(tag, { autoAlpha: 1, duration: .15, overwrite: 'auto' });
+        };
+      }
+
+      /* CD4 drag: pointer events + quickTo (mouse and pen; touch uses tap-to-select) */
+      S.canDrag = true;
+      if (!S.sel) setBase(idleText());
+      let drag = null;
+      const clamp = gsap.utils.clamp;
+      on(yard, 'pointerdown', e => {
+        const el = e.target.closest('.pallet');
+        if (!el || e.button !== 0 || e.pointerType === 'touch' || drag) return;
+        drag = { el, uid: el.dataset.uid, id: e.pointerId, x0: e.clientX, y0: e.clientY, live: false };
+      });
+      const begin = e => {
+        const d = drag, p = byUid(d.uid);
+        if (!p) { drag = null; return; }
+        d.live = true; d.p = p; S.drag = d;
+        if (S.sel && S.sel !== d.uid) putDown();
+        setCross(null);
+        const r0 = d.el.getBoundingClientRect();
+        d.gx = d.x0 - r0.left; d.gy = d.y0 - r0.top;
+        measure(d);
+        if (lenis) lenis.stop();   // the wheel cannot scroll the rack out from under the carried pallet
+        d.el.classList.add('is-drag'); root.classList.add('is-dragging');
+        d.el.style.zIndex = 50;
+        try { d.el.setPointerCapture(d.id); } catch { /* pointer already released */ }
+        if (motion) {
+          d.xTo = gsap.quickTo(d.el, 'x', { duration: D.drag, ease: 'power3' });
+          d.yTo = gsap.quickTo(d.el, 'y', { duration: D.drag, ease: 'power3' });
+          d.rTo = gsap.quickTo(body(d.el), 'rotation', { duration: .2, ease: 'power2.out' });
+          gsap.to(body(d.el), { scale: 1.04, duration: D.lift, ease: 'power2.out', overwrite: 'auto' });
+          gsap.to(shadowOf(d.el), { autoAlpha: 1, duration: D.lift, overwrite: 'auto' });
+        } else {
+          d.xTo = v => gsap.set(d.el, { x: v }); d.yTo = v => gsap.set(d.el, { y: v }); d.rTo = null;
+        }
+        d.lx = e.clientX; d.lt = performance.now();
+      };
+      // Rects are cached in page coordinates on pick-up and on resize, never read per frame.
+      function measure(d) {
+        const sx = scrollX, sy = scrollY, x = Number(gsap.getProperty(d.el, 'x')) || 0, y = Number(gsap.getProperty(d.el, 'y')) || 0;
+        const r0 = d.el.getBoundingClientRect(), yb = yard.getBoundingClientRect();
+        d.home = { l: r0.left + sx - x, t: r0.top + sy - y, w: r0.width, h: r0.height };
+        d.bounds = { l: yb.left + sx, t: yb.top + sy, r: yb.right + sx, b: yb.bottom + sy };
+        d.rects = PLACES.map(c => { const r = binEls[c].getBoundingClientRect(); return { c, l: r.left + sx, t: r.top + sy, r: r.right + sx, b: r.bottom + sy }; });
+      }
+      const setOver = (d, code) => {
+        if (d.over) { binEls[d.over].classList.remove('is-target'); const pv = $('.beam__preview', binEls[d.over]); gsap.to(pv, { scaleX: 0, duration: motion ? .2 : 0, overwrite: true }); pv.classList.remove('is-over'); }
+        d.over = code;
+        if (!code) { setHover('', null); return; }
+        const occ = at(S.pallets, code);
+        if (code === d.p.bin) { setHover(`Back to ${whereLong(code)}`, code); return; }
+        setHover(placeText(code), code);
+        if (occ) return;
+        binEls[code].classList.add('is-target');
+        if (!isDock(code)) {
+          const pv = $('.beam__preview', binEls[code]);
+          pv.classList.toggle('is-over', d.p.tenths > ratingOf(code));
+          gsap.to(pv, { scaleX: Math.min(1.25, d.p.tenths / ratingOf(code)), duration: motion ? .3 : 0, ease: 'expo.out', overwrite: true });
+        }
+      };
+      on(window, 'pointermove', e => {
+        const d = drag;
+        if (!d || e.pointerId !== d.id) return;
+        if (!d.live) { if (Math.hypot(e.clientX - d.x0, e.clientY - d.y0) < 6) return; begin(e); if (!drag) return; }
+        const sx = scrollX, sy = scrollY, px = e.clientX + sx, py = e.clientY + sy;
+        const L = clamp(d.bounds.l, d.bounds.r - d.home.w, px - d.gx), T = clamp(d.bounds.t, d.bounds.b - d.home.h, py - d.gy);
+        d.xTo(L - d.home.l); d.yTo(T - d.home.t);
+        if (d.rTo) {
+          const now = performance.now(), v = (e.clientX - d.lx) / Math.max(8, now - d.lt) * 16;
+          d.lx = e.clientX; d.lt = now;
+          d.rTo(clamp(-8, 8, v * .5));
+          if (d.settle) d.settle.kill();
+          d.settle = gsap.delayedCall(.08, () => d.rTo(0));
+        }
+        const hit = d.rects.find(r => px >= r.l && px <= r.r && py >= r.t && py <= r.b);
+        const code = hit ? hit.c : null;
+        if (code !== d.over) setOver(d, code);
+      });
+      const finish = (d, commit) => {
+        S.drag = null;
+        if (lenis) lenis.start();
+        root.classList.remove('is-dragging'); d.el.classList.remove('is-drag');
+        suppressClick = performance.now() + 400;
+        if (d.settle) d.settle.kill();
+        const code = d.over;
+        if (code) { binEls[code].classList.remove('is-target'); gsap.set($('.beam__preview', binEls[code]), { scaleX: 0, overwrite: true }); }
+        d.over = null;
+        if (commit && code && code !== d.p.bin && tryMove(d.uid, code, 'drag')) return;
+        gsap.to(d.el, { x: 0, y: 0, duration: motion ? D.return : 0, ease: 'power3.out', overwrite: true, onComplete: () => { d.el.style.zIndex = ''; } });
+        const held = S.sel === d.uid && motion;
+        gsap.to(body(d.el), { rotation: 0, scale: held ? 1.04 : 1, duration: motion ? D.return : 0, ease: 'power3.out', overwrite: 'auto' });
+        gsap.to(shadowOf(d.el), { autoAlpha: held ? 1 : 0, duration: motion ? .3 : 0, overwrite: 'auto' });
+      };
+      on(window, 'pointerup', e => { const d = drag; if (!d || e.pointerId !== d.id) return; drag = null; if (d.live) finish(d, true); });
+      on(window, 'pointercancel', e => { const d = drag; if (!d || e.pointerId !== d.id) return; drag = null; if (d.live) finish(d, false); });
+      const abort = () => { const d = drag; if (!d) return; drag = null; if (d.live) { try { d.el.releasePointerCapture(d.id); } catch { /* already released */ } finish(d, false); setHover('', null); } };
+      on(window, 'blur', abort);
+      on(window, 'keydown', e => { if (e.key === 'Escape' && drag && drag.live) { e.preventDefault(); e.stopPropagation(); abort(); } }, true);
+      on(window, 'resize', () => { if (drag && drag.live) measure(drag); });
+
+      /* CD7 dialogs; Lenis stops while one is open */
+      const sheet = () => matchMedia('(max-width: 599px)').matches;
+      fx.dialogIn = dlg => {
+        if (lenis) lenis.stop();
+        if (!motion) return;
+        // opacity, not autoAlpha: focus must land inside the dialog on the first frame
+        gsap.fromTo(dlg, sheet() ? { yPercent: 100, opacity: 1 } : { opacity: 0, y: 12, scale: .98 },
+          { opacity: 1, y: 0, yPercent: 0, scale: 1, duration: D.dialog, ease: 'expo.out', overwrite: true });
+      };
+      fx.dialogOut = (dlg, done) => {
+        if (!motion) return done();
+        gsap.to(dlg, {
+          ...(sheet() ? { yPercent: 100 } : { opacity: 0, y: 8, scale: .99 }),
+          duration: D['dialog-out'], ease: 'power2.in', overwrite: true,
+          onComplete: () => { gsap.set(dlg, { clearProps: 'all' }); if (lenis) lenis.start(); done(); },
+        });
+      };
+
+      /* D3 undo bars */
+      fx.undoIn = bar => { if (motion) gsap.from(bar, { yPercent: 100, opacity: 0, duration: D.undo, ease: 'expo.out' }); };
+      fx.undoOut = (bar, done) => { if (!motion) return done(); gsap.to(bar, { yPercent: 100, opacity: 0, duration: D['dialog-out'], ease: 'power2.in', onComplete: done }); };
+
+      return () => {
+        offs.forEach(f => f());
+        Object.assign(fx, fx0);
+        S.canDrag = false;
+        if (tick) { gsap.ticker.remove(tick); gsap.ticker.lagSmoothing(500, 33); }
+        if (lenis) lenis.destroy();
+        if (xTo) { gsap.killTweensOf(tag); gsap.set(tag, { autoAlpha: 0 }); }
+        gsap.set(marker, { opacity: 0 });
+      };
+    });
+  });
+})();
+</script>
+</body>
+</html>
