@@ -1,0 +1,1304 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What people told us on the sand</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Teko:wght@600..700&family=Sanchez:ital@0;1&display=swap">
+<style>
+  :root {
+    /* Colour: La Puntilla, Pichilemu, under the morning camanchaca */
+    --fog: #D5DCD9;           /* the marine layer; page ground */
+    --salt: #FAFBF8;          /* card faces, dialog, inputs */
+    --neoprene: #1C2630;      /* all text, the swell line, outlines, focus, fills */
+    --lycra-yellow: #E2EE3C;  /* beginner course, lycras 1-15 (fluoro, greener than gold) */
+    --lycra-pink: #FF8FB5;    /* family morning, lycras 16-28 (zinc-stick pink) */
+    --lycra-blue: #5BA8E3;    /* back in the water, lycras 29-40 */
+    --rule-rest: rgb(28 38 48 / .6);  /* input baseline before hover */
+    --veil: rgb(28 38 48 / .62);      /* dialog backdrop */
+
+    /* Type */
+    --f-display: "Teko", "Arial Narrow", "Roboto Condensed", sans-serif;
+    --f-text: "Sanchez", "Rockwell", "Roboto Slab", Georgia, serif;
+    --t-sm: 15px;
+    --t-body: 18px;
+    --t-label: 20px;
+    --t-btn: 22px;
+    --t-quote: clamp(19px, 1.5vw, 22px);
+    --t-name: 26px;
+    --t-option: 26px;
+    --t-result: clamp(30px, 3vw, 40px);
+    --t-note: clamp(36px, 3.6vw, 48px);
+    --t-h2: clamp(40px, 4.6vw, 60px);
+    --t-display: clamp(56px, 6.6vw, 104px);   /* capped so the swell shows in the first view on a 1440x900 laptop */
+    --t-num: clamp(56px, 5vw, 72px);
+
+    /* Space (4px base) */
+    --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px;
+    --s-6: 32px; --s-7: 48px; --s-8: 64px; --s-9: 96px; --s-10: 128px;
+    --gutter: clamp(16px, 4vw, 64px);
+    --tap: 48px;              /* buttons */
+    --tap-sm: 44px;           /* dialog close, text-button hit areas */
+
+    /* The line-up and its swell (read by the script) */
+    --card-w: clamp(272px, 24vw, 340px);
+    --card-gap: calc(var(--gutter) + var(--s-4));   /* wider than the gutter, so the previous card rests fully off screen; and two cards tilted 3deg toward each other never touch */
+    --row-pt: var(--s-7);     /* headroom for cards riding a crest, and for the newcomer's drop */
+    --row-pb: 40px;
+    --ride: 9px;              /* cards ride just above the swell line, so it still shows under their corners in troughs */
+    --swell-amp: 28px;        /* crest height */
+    --swell-h: 120px;         /* the swell's box: the line sits at half height */
+    --swell-len: 2.3;         /* wavelength, in card steps */
+    --tilt-max: 3;            /* degrees, the tilt at the steepest part of the swell */
+
+    /* Shape */
+    --line: 1.5px;
+    --r-card: 4px;
+    --r-option: 8px;
+    --r-btn: 6px;
+
+    /* Motion */
+    --ease-out: cubic-bezier(.215, .61, .355, 1);   /* power3.out */
+    --ease-sweep: cubic-bezier(.35, 0, 0, 1);
+    --ease-swap: cubic-bezier(.65, 0, 0, 1);
+    --ease-spring: cubic-bezier(.34, 1.56, .64, 1);
+    --ease-pop: cubic-bezier(.34, 2, .64, 1);       /* back.out(2) */
+    --d-press: .12s;
+    --d-out: .25s;
+    --d-in: .35s;
+    --d-sweep: .4s;
+    --d-release: .4s;
+  }
+  @media (max-width: 767px) {
+    :root { --card-w: 78vw; --card-gap: calc(var(--gutter) + var(--s-6)); --swell-amp: 18px; --swell-len: 1.4; --row-pt: var(--s-6); }   /* a shorter swell, so the peeking neighbour sits on the face; the wider gap clears the previous card's tilted corner off the left edge */
+  }
+
+  /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+
+  /* Hidden start states exist only when the motion stack loaded */
+  html.js [data-rv] { opacity: 0; }
+
+  html { scrollbar-gutter: stable; scroll-padding-block: var(--s-5); }
+  html:has(dialog.note[open]) { overflow: hidden; background: color-mix(in srgb, var(--neoprene) 62%, var(--fog)); }   /* the page never scrolls behind a note; the reserved scrollbar gutter takes the veil's colour */
+
+  *, *::before, *::after { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    margin: 0;
+    background: var(--fog);
+    color: var(--neoprene);
+    font: 400 var(--t-body)/1.6 var(--f-text);
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible { outline: 2px solid var(--neoprene); outline-offset: 3px; }
+  .vh { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  .surf { position: relative; overflow-x: clip; padding: var(--s-6) 0 var(--s-9); }
+
+  /* Skip link */
+  .skip {
+    position: absolute; top: var(--s-3); left: var(--gutter); z-index: 5;
+    padding: var(--s-2) var(--s-4) var(--s-1);
+    background: var(--neoprene); color: var(--salt);
+    font: 600 var(--t-label)/1.2 var(--f-display); letter-spacing: .01em; text-decoration: none;
+    border-radius: var(--r-btn);
+    clip-path: inset(0 0 100% 0);
+    transition: clip-path var(--d-out) var(--ease-out);
+  }
+  .skip:focus { clip-path: inset(-6px); }
+
+  /* Heading and intro: 7/5, the intro sits on the heading's last line */
+  .head { display: grid; gap: var(--s-5) var(--s-7); padding: 0 var(--gutter); }
+  @media (max-width: 767px) { .surf { padding-top: var(--s-4); } .head { row-gap: var(--s-4); } }   /* with the lycra sentence moved below, the swell lands in the first view of an 844px phone */
+  @media (min-width: 1024px) { .head { grid-template-columns: 7fr 5fr; align-items: end; } }   /* below 1024 the 5fr intro column is too narrow: stacked */
+  .display {
+    margin: 0;
+    font: 700 var(--t-display)/.84 var(--f-display);
+    letter-spacing: -.005em;
+    text-wrap: balance;
+  }
+  .intro { margin: 0; max-width: 56ch; text-wrap: pretty; }
+  @media (min-width: 1024px) { .intro { padding-bottom: .5em; } }
+  .w-mask { padding: .14em .06em 0; margin: -.14em -.06em 0; }   /* SplitText word masks: room for ascenders and tilt */
+
+  /* The line-up: one native scroll-snap row; the script only sets each card's height and tilt from the swell */
+  .lineup { position: relative; margin-top: var(--s-4); }
+  .row {
+    position: relative; z-index: 1;
+    overflow-x: auto; overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--gutter);
+    scrollbar-width: none;
+  }
+  .row::-webkit-scrollbar { display: none; }
+  /* Motion: the endless strip. The row stops scrolling and the script places every card; nothing clips vertically (.surf clips x) */
+  .row.strip { overflow: visible; scroll-snap-type: none; touch-action: pan-y; cursor: grab; user-select: none; -webkit-user-select: none; }
+  .row.strip.is-drag { cursor: grabbing; }
+  .row:focus-visible { outline-offset: -6px; }
+  .track {
+    position: relative;
+    display: flex; gap: var(--card-gap);
+    width: max-content;
+    margin: 0; padding: var(--row-pt) var(--gutter) var(--row-pb);
+    list-style: none;
+  }
+  .track > li { display: flex; flex: none; scroll-snap-align: start; }
+  .swell {
+    position: absolute; left: 0; bottom: calc(var(--row-pb) - var(--ride) - var(--swell-h) / 2);
+    display: block; width: 100%; height: var(--swell-h);
+    pointer-events: none;
+  }
+  .swell path { fill: none; stroke: var(--neoprene); stroke-width: var(--line); vector-effect: non-scaling-stroke; }
+
+  .card {
+    --band: var(--lycra-yellow);
+    display: flex; flex-direction: column;
+    width: var(--card-w);
+    background: var(--salt);
+    border: var(--line) solid var(--neoprene);
+    border-radius: var(--r-card);
+    overflow: hidden;
+    transform-origin: 50% 100%;
+    outline: 1px solid transparent;   /* keeps rotated borders antialiased */
+  }
+  [data-group="yellow"] { --band: var(--lycra-yellow); }
+  [data-group="pink"] { --band: var(--lycra-pink); }
+  [data-group="blue"] { --band: var(--lycra-blue); }
+  /* One frame per card: on keyboard focus of its Read button (which then shows no ring of its own) and on a tap. Pointer hover only levels the card. */
+  .card:has(:focus-visible) { outline: 2px solid var(--neoprene); outline-offset: 3px; }
+  .card .read:focus-visible { outline: none; }
+  @media (hover: none) { .card:active { outline: 2px solid var(--neoprene); outline-offset: 3px; } }
+
+  .band {
+    display: flex; align-items: flex-end; gap: var(--s-3);
+    margin: 0; padding: var(--s-4) var(--s-4) var(--s-3);
+    background: var(--band);
+    border-bottom: var(--line) solid var(--neoprene);
+  }
+  /* Teko has no tabular figures: a fixed two-digit box keeps every label in the same place */
+  .num { flex: none; width: 1.02em; text-align: right; margin-bottom: -.06em; font: 700 var(--t-num)/.8 var(--f-display); }
+  .band__label { max-width: 15ch; font: 600 var(--t-label)/1 var(--f-display); letter-spacing: .01em; }
+  .card__body { display: flex; flex-direction: column; flex: 1; padding: var(--s-5) var(--s-5) var(--s-4); }
+  .quote { margin: 0 0 var(--s-5); }
+  .quote p { margin: 0; font: 400 var(--t-quote)/1.5 var(--f-text); text-wrap: pretty; }
+  .card[data-short] .quote p { font: 400 calc(var(--t-quote) * 1.2)/1.4 var(--f-text); }   /* a one-line note fills its face */
+  .name { margin: auto 0 0; font: 600 var(--t-name)/1 var(--f-display); letter-spacing: .01em; }
+  .meta { margin: var(--s-1) 0 var(--s-4); font: italic 400 var(--t-sm)/1.4 var(--f-text); }
+
+  /* Text buttons and links: HV2 underline sweep, in from the left, out to the right */
+  .read, .ul {
+    color: inherit;
+    /* layer 1 sweeps; layer 2 is the thin rule that is always there, so links never rely on hover */
+    background:
+      linear-gradient(currentColor, currentColor) no-repeat 100% 100% / 0 .1em,
+      linear-gradient(currentColor, currentColor) no-repeat 0 100% / 100% 1px;
+    transition: background-size .3s var(--ease-sweep), transform var(--d-release) var(--ease-spring);
+  }
+  .read {
+    position: relative;
+    align-self: flex-start;
+    border: 0; padding: 0 0 .08em; cursor: pointer; text-align: left;
+    font: 600 var(--t-btn)/1.1 var(--f-display); letter-spacing: .01em;
+  }
+  .read::after { content: ""; position: absolute; inset: calc((var(--tap-sm) - 100%) / -2) calc(-1 * var(--s-1)); }   /* 44px hit area; the underline stays on the text */
+  .ul { text-decoration: none; padding-bottom: .1em; }
+  @media (hover: hover) {
+    .read:hover, .ul:hover { background-position: 0 100%, 0 100%; background-size: 100% .1em, 100% 1px; transition-duration: var(--d-sweep), var(--d-release); }
+  }
+  .read:focus-visible, .ul:focus-visible { background-position: 0 100%, 0 100%; background-size: 100% .1em, 100% 1px; }
+  @media (hover: none) { .read, .ul { background-size: 0 .1em, 100% .1em; } }
+  .read:active, .ul:active { transform: scale(.97); transition-duration: .3s, var(--d-press); }
+  .ul { display: inline-block; }
+
+  /* Buttons: HV4 fill from the entry edge, MI1 press */
+  .btn {
+    --fill: var(--neoprene); --ink: var(--neoprene); --ink-on: var(--salt);
+    position: relative; isolation: isolate; overflow: hidden;
+    display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2);
+    min-height: var(--tap); padding: .2em var(--s-5) 0;   /* Teko sits high in its box */
+    border: var(--line) solid var(--neoprene); border-radius: var(--r-btn);
+    background: transparent; color: var(--ink);
+    font: 600 var(--t-btn)/1 var(--f-display); letter-spacing: .01em;
+    cursor: pointer;
+    transition: color var(--d-out) var(--ease-out), transform var(--d-release) var(--ease-spring);
+  }
+  .btn::before {
+    content: ""; position: absolute; inset: 0; z-index: -1;
+    background: var(--fill);
+    transform: scaleX(0); transform-origin: var(--from, left) center;
+    transition: transform var(--d-out) var(--ease-out);
+  }
+  @media (hover: hover) {
+    .btn:hover { color: var(--ink-on); transition-duration: var(--d-in), var(--d-release); }
+    .btn:hover::before { transform: scaleX(1); transition-duration: var(--d-in); }
+  }
+  .btn:focus-visible { color: var(--ink-on); }
+  .btn:focus-visible::before { transform: scaleX(1); }
+  .btn:active { transform: scale(.97); transition-duration: var(--d-out), var(--d-press); }
+  @media (hover: none) {
+    .btn:active { color: var(--ink-on); }
+    .btn:active::before { transform: scaleX(1); transition-duration: 0s; }
+  }
+  .btn--solid { --fill: var(--salt); --ink: var(--salt); --ink-on: var(--neoprene); background: var(--neoprene); }
+  .btn--icon { width: var(--tap); padding: 0; }
+  .btn svg { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform var(--d-in) var(--ease-out); }
+  @media (hover: hover) {
+    #prev:hover svg { transform: translateX(-4px); }
+    #next:hover svg { transform: translateX(4px); }
+  }
+  #prev:focus-visible svg { transform: translateX(-4px); }
+  #next:focus-visible svg { transform: translateX(4px); }
+  .btn[aria-disabled="true"] { opacity: .6; color: var(--ink); cursor: default; }   /* at an end of the row: no fill, no nudge */
+  .btn[aria-disabled="true"]::before { transform: scaleX(0); }
+  .btn[aria-disabled="true"] svg { transform: none !important; }
+
+  /* MI2 masked label swap; the grid cell keeps the longer label's width */
+  .swap { display: grid; justify-items: center; overflow: hidden; padding-block: .16em; margin-block: -.16em; }
+  .swap > span { grid-area: 1 / 1; display: inline-flex; align-items: center; transition: transform var(--d-in) var(--ease-swap); }
+  .swap > span + span { transform: translateY(120%); }
+  [data-state] .swap > span:first-child { transform: translateY(-120%); }
+  [data-state] .swap > span + span { transform: none; }
+
+  .controls { display: flex; flex-wrap: wrap; gap: var(--s-3); padding: var(--s-2) var(--gutter) 0; }
+  .key { display: none; margin: var(--s-4) 0 0; padding: 0 var(--gutter); max-width: calc(40ch + 2 * var(--gutter)); }
+  @media (max-width: 767px) { .key-wide { display: none; } .key { display: block; } }   /* phones: the lycra sentence moves below the line-up, so the swell lands in the first view */
+
+  /* Add your words: 4/8 */
+  .add { display: grid; gap: var(--s-6) var(--s-7); padding: var(--s-9) var(--gutter) 0; }
+  .add:focus { outline: none; }
+  @media (min-width: 768px) { .add { grid-template-columns: 4fr 8fr; } }
+  .add__title { margin: 0 0 var(--s-4); font: 700 var(--t-h2)/.9 var(--f-display); text-wrap: balance; }
+  .add__intro p { margin: 0; max-width: 34ch; text-wrap: pretty; }
+
+  .form, .fields { display: grid; gap: var(--s-6); }
+  .fields { margin: 0; padding: 0; border: 0; min-width: 0; }
+  .fields:disabled { opacity: .55; }
+  .pair { display: grid; gap: var(--s-6); grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  .field { display: grid; align-content: start; gap: var(--s-2); margin: 0; padding: 0; border: 0; min-width: 0; }
+  .label { padding: 0; font: 600 var(--t-label)/1 var(--f-display); letter-spacing: .01em; }
+  .label i { font: italic 400 var(--t-sm)/1 var(--f-text); letter-spacing: 0; }
+  .input { position: relative; }
+  .input input, .input textarea {
+    display: block; width: 100%;
+    border: 0; border-radius: 0; outline: none;
+    padding: var(--s-3) var(--s-3) var(--s-2);
+    background: var(--salt); color: var(--neoprene);
+    font: 400 var(--t-body)/1.5 var(--f-text);
+  }
+  .input textarea { min-height: 7.6em; resize: vertical; }
+  /* MI4: the baseline is the field; focus grows a 2px rule over it from the left */
+  .rule { position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--rule-rest); transition: background-color .2s; }
+  .rule::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
+    background: var(--neoprene);
+    transform: scaleX(0); transform-origin: left;
+    transition: transform var(--d-in) var(--ease-out);
+  }
+  @media (hover: hover) { .input:hover .rule { background: var(--neoprene); } }
+  [aria-invalid] ~ .rule { background: var(--neoprene); }
+  .input:focus-within .rule::after, [aria-invalid] ~ .rule::after { transform: none; }
+  .input:has(:focus-visible) { outline: 2px solid var(--neoprene); outline-offset: 3px; }   /* the rule is the flourish, this is the indicator */
+  .hint { margin: 0; font: italic 400 var(--t-sm)/1.45 var(--f-text); }
+  .err { margin: 0; display: grid; grid-template-rows: 0fr; visibility: hidden; transition: grid-template-rows var(--d-out) var(--ease-out), visibility var(--d-out); }
+  .err > span { display: flex; align-items: baseline; gap: .45em; min-height: 0; overflow: hidden; font: italic 400 var(--t-sm)/1.45 var(--f-text); }
+  .err > span::before {   /* the mark that tells an error from a hint without colour */
+    content: "!"; display: inline-grid; flex: none; place-items: center; width: 1.25em; height: 1.25em; padding-top: .15em;
+    border-radius: 50%; background: var(--neoprene); color: var(--salt); font: normal 600 1em/1 var(--f-display);
+  }
+  .err.show { grid-template-rows: 1fr; visibility: visible; }
+
+  /* Lesson radios: the lycra swatch fills up on hover, focus and choice */
+  .form { container-type: inline-size; }
+  .options { display: grid; gap: var(--s-3); }   /* one column, or all three side by side: never two and one */
+  @container (min-width: 560px) { .options { grid-template-columns: repeat(3, 1fr); } }
+  .option {
+    position: relative; isolation: isolate; overflow: hidden;
+    display: grid; gap: var(--s-1); align-content: start;
+    min-height: 112px; padding: var(--s-4) var(--s-4) var(--s-7);
+    border: var(--line) solid var(--neoprene); border-radius: var(--r-option);
+    background: var(--salt);
+    cursor: pointer;
+  }
+  .option::before {
+    content: ""; position: absolute; inset: 0; z-index: -1;
+    background: var(--band);
+    transform: scaleY(.25); transform-origin: 50% 100%;
+    transition: transform .3s var(--ease-out);
+  }
+  .option::after {
+    content: ""; position: absolute; inset: var(--s-1);
+    border: 2px solid var(--neoprene); border-radius: var(--s-1);
+    opacity: 0; pointer-events: none;
+  }
+  @media (hover: hover) { .option:hover::before { transform: none; } }
+  .option:has(:focus-visible)::before, .option:has(:checked)::before { transform: none; }
+  .option:has(:focus-visible) { outline: 2px solid var(--neoprene); outline-offset: 3px; }
+  .option:has(:checked)::after { opacity: 1; }
+  .option input { position: absolute; inset: 0; z-index: 1; margin: 0; opacity: 0; cursor: pointer; }
+  .option__name { padding-right: var(--s-6); font: 600 var(--t-option)/1 var(--f-display); letter-spacing: .01em; }   /* clear of the badge */
+  .option__band { font: italic 400 var(--t-sm)/1.35 var(--f-text); }
+  .badge {
+    position: absolute; top: var(--s-3); right: var(--s-3);
+    display: grid; place-items: center;
+    width: var(--s-5); height: var(--s-5); border-radius: 50%;
+    background: var(--neoprene);
+    opacity: 0; transform: scale(.6);
+    transition: transform var(--d-out) var(--ease-pop), opacity .15s;
+  }
+  .badge svg { width: var(--s-4); height: var(--s-4); fill: none; stroke: var(--salt); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .badge path { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset .3s var(--ease-out) .1s; }
+  .option:has(:checked) .badge { opacity: 1; transform: none; }
+  .option:has(:checked) .badge path { stroke-dashoffset: 0; }
+
+  .count { white-space: nowrap; }
+  .submit-row { display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: center; }
+  .nojs { margin: 0; font: italic 400 var(--t-sm)/1.45 var(--f-text); }
+
+  .result { display: grid; gap: var(--s-5); align-content: start; }
+  .result__msg { margin: 0; max-width: 24ch; font: 600 var(--t-result)/1 var(--f-display); text-wrap: balance; }
+  .result__msg:focus { outline: none; }
+  .result__msg span { display: block; margin-top: var(--s-3); font: italic 400 var(--t-body)/1.5 var(--f-text); }
+  .result__actions { display: flex; flex-wrap: wrap; gap: var(--s-5); align-items: center; }
+
+  .foot { margin: 0; padding: var(--s-9) var(--gutter) 0; max-width: calc(60ch + 2 * var(--gutter)); }
+  .foot .ul { font: 600 var(--t-btn)/1.1 var(--f-display); letter-spacing: .01em; }
+
+  /* Note dialog */
+  .note {
+    width: min(620px, 100% - 2 * var(--gutter)); max-height: min(88dvh, 860px);
+    padding: 0; overflow: auto; overscroll-behavior: contain;
+    border: var(--line) solid var(--neoprene); border-radius: var(--r-card);
+    background: var(--salt); color: var(--neoprene);
+  }
+  .note::backdrop { background: var(--veil); }
+  html.js .note::backdrop { opacity: 0; transition: opacity .3s; }
+  html.js .note.is-in::backdrop { opacity: 1; }
+  .note .band { align-items: center; padding-right: var(--s-3); }
+  .note .band__label { max-width: none; flex: 1; }
+  .btn--close { --fill: var(--neoprene); min-height: var(--tap-sm); padding-inline: var(--s-4); }
+  .note__body { padding: var(--s-5) var(--s-6) var(--s-6); }
+  .note__name { margin: 0; font: 700 var(--t-note)/.95 var(--f-display); text-wrap: balance; }
+  .note__from { margin: var(--s-1) 0 var(--s-5); font: italic 400 var(--t-sm)/1.4 var(--f-text); }
+  .note__body > p:not(.note__from) { margin: 0 0 1em; max-width: 60ch; }
+  .facts { display: grid; grid-template-columns: max-content 1fr; gap: var(--s-2) var(--s-5); margin: var(--s-5) 0 0; padding-top: var(--s-5); border-top: var(--line) solid var(--neoprene); }
+  .facts dt { font: 600 var(--t-label)/1.35 var(--f-display); letter-spacing: .01em; }
+  .facts dd { margin: 0; font-size: var(--t-body); line-height: 1.5; }
+  @media (max-width: 599px) {
+    .note { width: 100%; max-width: 100%; max-height: calc(100dvh - var(--s-5)); margin: auto 0 0; border-width: var(--line) 0 0; border-radius: var(--r-option) var(--r-option) 0 0; }
+    .note__body { padding: var(--s-5) var(--s-4) var(--s-6); }
+    .facts { grid-template-columns: 1fr; gap: 0; }
+    .facts dd + dt { margin-top: var(--s-2); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: .01ms !important; transition-delay: 0s !important; scroll-behavior: auto !important; }
+    html.js .note::backdrop { transition: none; }
+    html.js [data-rv] { opacity: 1; }
+    .read, .ul { background-size: 0 .1em, 100% 1px; }
+    .read:hover, .read:focus-visible, .ul:hover, .ul:focus-visible { background-size: 0 .1em, 100% .14em; }
+    #prev svg, #next svg { transform: none !important; }
+  }
+</style>
+</head>
+<body>
+<main>
+<section class="surf" aria-labelledby="surf-title">
+  <a class="skip" href="#add-words">Skip past the line-up</a>
+
+  <header class="head">
+    <h2 class="display" id="surf-title" data-rv>What people told us on the sand</h2>
+    <p class="intro" data-rv>Every lesson ends on the sand, wetsuits half off, and we ask one thing: how was it? These are answers people let us keep.<span class="key-wide"> Beginners wear yellow lycras, families pink, and surfers coming back after years away wear blue.</span></p>
+  </header>
+
+  <div class="lineup" id="lineup">
+    <div class="row" id="row" role="region" aria-label="The line-up, 9 notes" tabindex="0" data-lenis-prevent-horizontal>
+      <ul class="track" id="track" role="list" data-rv>
+        <li><article class="card" data-group="yellow" data-num="7" aria-labelledby="name-7">
+          <p class="band"><span class="num" aria-hidden="true">7</span><span class="band__label"><span class="vh">Number 7, </span>Yellow lycra, beginner course</span></p>
+          <div class="card__body">
+            <blockquote class="quote"><p>“I stood up on the second morning and fell straight off. On the third I rode one all the way to the sand and screamed so loud Nico heard me from the car park.”</p></blockquote>
+            <h3 class="name" id="name-7">Camila Rojas</h3>
+            <p class="meta">Santiago, 3 mornings in January</p>
+            <button class="read" type="button" commandfor="note-7" command="show-modal" data-note="note-7">Read Camila’s whole note</button>
+          </div>
+        </article></li>
+        <li><article class="card" data-group="yellow" data-num="12" aria-labelledby="name-12">
+          <p class="band"><span class="num" aria-hidden="true">12</span><span class="band__label"><span class="vh">Number 12, </span>Yellow lycra, beginner course</span></p>
+          <div class="card__body">
+            <blockquote class="quote"><p>“I’m 54 and was sure I’d hold everyone back. Nobody waited for me because nobody needed to. Same white water, same falls, same grin.”</p></blockquote>
+            <h3 class="name" id="name-12">Tomás Fuenzalida</h3>
+            <p class="meta">Rancagua, 3 mornings in February</p>
+            <button class="read" type="button" commandfor="note-12" command="show-modal" data-note="note-12">Read Tomás’s whole note</button>
+          </div>
+        </article></li>
+        <li><article class="card" data-group="yellow" data-num="3" aria-labelledby="name-3">
+          <p class="band"><span class="num" aria-hidden="true">3</span><span class="band__label"><span class="vh">Number 3, </span>Yellow lycra, beginner course</span></p>
+          <div class="card__body">
+            <blockquote class="quote"><p>“The water is 14 degrees and nobody pretended otherwise. The 4/3, boots and hood made it fine. I booked one lesson and stayed for five.”</p></blockquote>
+            <h3 class="name" id="name-3">Hannah Weber</h3>
+            <p class="meta">Leipzig, 5 mornings in December</p>
+            <button class="read" type="button" commandfor="note-3" command="show-modal" data-note="note-3">Read Hannah’s whole note</button>
+          </div>
+        </article></li>
+        <li><article class="card" data-group="pink" data-num="21" aria-labelledby="name-21">
+          <p class="band"><span class="num" aria-hidden="true">21</span><span class="band__label"><span class="vh">Number 21, </span>Pink lycra, family morning</span></p>
+          <div class="card__body">
+            <blockquote class="quote"><p>“Benja wouldn’t let go of his mum’s hand for the first half hour. By the end he was pushing his own board out and telling Seba which wave was his.”</p></blockquote>
+            <h3 class="name" id="name-21">The Muñoz family</h3>
+            <p class="meta">Talca, a Saturday in January</p>
+            <button class="read" type="button" commandfor="note-21" command="show-modal" data-note="note-21">Read the Muñoz family’s whole note</button>
+          </div>
+        </article></li>
+        <li><article class="card" data-group="pink" data-num="18" aria-labelledby="name-18">
+          <p class="band"><span class="num" aria-hidden="true">18</span><span class="band__label"><span class="vh">Number 18, </span>Pink lycra, family morning</span></p>
+          <div class="card__body">
+            <blockquote class="quote"><p>“We booked so the kids could try it. Lucía caught a wave before either of them and we have not heard the end of it.”</p></blockquote>
+            <h3 class="name" id="name-18">Andrés and Lucía Pérez with Mateo (11)</h3>
+            <p class="meta">Concepción, a Sunday in January</p>
+            <button class="read" type="button" commandfor="note-18" command="show-modal" data-note="note-18">Read the Pérez family’s whole note</button>
+          </div>
+        </article></li>
+        <li><article class="card" data-group="pink" data-num="24" aria-labelledby="name-24">
+          <p class="band"><span class="num" aria-hidden="true">24</span><span class="band__label"><span class="vh">Number 24, </span>Pink lycra, family morning</span></p>
+          <div class="card__body">
+            <blockquote class="quote"><p>“I grew up here and never once went in. I watched from the rocks with a thermos. This summer my granddaughters held the board for me.”</p></blockquote>
+            <h3 class="name" id="name-24">Gloria Sepúlveda with her granddaughters</h3>
+            <p class="meta">Pichilemu, a Wednesday in February</p>
+            <button class="read" type="button" commandfor="note-24" command="show-modal" data-note="note-24">Read Gloria’s whole note</button>
+          </div>
+        </article></li>
+        <li><article class="card" data-group="blue" data-num="31" aria-labelledby="name-31">
+          <p class="band"><span class="num" aria-hidden="true">31</span><span class="band__label"><span class="vh">Number 31, </span>Blue lycra, back in the water</span></p>
+          <div class="card__body">
+            <blockquote class="quote"><p>“Eleven years off a board, two kids, one bad knee. I wanted someone to watch my pop-up and tell me the truth. Seba did. Second session: a green wave, a left, mine.”</p></blockquote>
+            <h3 class="name" id="name-31">Rodrigo Vial</h3>
+            <p class="meta">Viña del Mar, 2 sessions in March</p>
+            <button class="read" type="button" commandfor="note-31" command="show-modal" data-note="note-31">Read Rodrigo’s whole note</button>
+          </div>
+        </article></li>
+        <li><article class="card" data-group="blue" data-num="35" aria-labelledby="name-35">
+          <p class="band"><span class="num" aria-hidden="true">35</span><span class="band__label"><span class="vh">Number 35, </span>Blue lycra, back in the water</span></p>
+          <div class="card__body">
+            <blockquote class="quote"><p>“I used to surf Punta de Lobos and was too proud for lessons. Starting again on a soft-top at La Puntilla was the right kind of embarrassing.”</p></blockquote>
+            <h3 class="name" id="name-35">Fernanda Castro</h3>
+            <p class="meta">Valparaíso, 2 sessions in March</p>
+            <button class="read" type="button" commandfor="note-35" command="show-modal" data-note="note-35">Read Fernanda’s whole note</button>
+          </div>
+        </article></li>
+        <li><article class="card" data-group="blue" data-num="29" aria-labelledby="name-29">
+          <p class="band"><span class="num" aria-hidden="true">29</span><span class="band__label"><span class="vh">Number 29, </span>Blue lycra, back in the water</span></p>
+          <div class="card__body">
+            <blockquote class="quote"><p>“Last time I surfed was Lahinch in 2009. My paddling had gone, my timing hadn’t. They fixed my stance on the sand before we got wet.”</p></blockquote>
+            <h3 class="name" id="name-29">James Carey</h3>
+            <p class="meta">Cork, 1 session in April</p>
+            <button class="read" type="button" commandfor="note-29" command="show-modal" data-note="note-29">Read James’s whole note</button>
+          </div>
+        </article></li>
+      </ul>
+    </div>
+    <svg class="swell" aria-hidden="true" focusable="false"><g><path pathLength="1" d="M0 60H9999"/></g></svg>
+  </div>
+
+  <div class="controls" hidden>
+    <button class="btn btn--icon" id="prev" type="button" aria-label="Previous note" aria-controls="row" data-rv>
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M16 10H4M9 4.5 3.5 10 9 15.5"/></svg>
+    </button>
+    <button class="btn btn--icon" id="next" type="button" aria-label="Next note" aria-controls="row" data-rv>
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h12M11 4.5l5.5 5.5-5.5 5.5"/></svg>
+    </button>
+    <button class="btn" id="pause" type="button" aria-controls="row" data-rv hidden><span class="swap"><span>Pause the line-up</span><span aria-hidden="true">Start the line-up</span></span></button>
+  </div>
+  <p class="key" data-rv>Beginners wear yellow lycras, families pink, and surfers coming back after years away wear blue.</p>
+
+  <div class="add" id="add-words" tabindex="-1">
+    <div class="add__intro">
+      <h3 class="add__title" id="add-title" data-rv>Add your words to the line-up</h3>
+      <p data-rv>Had a lesson with us? Tell the next nervous beginner what it was really like. A sentence is plenty.</p>
+    </div>
+
+    <div>
+      <form class="form" id="note-form" novalidate aria-labelledby="add-title">
+        <fieldset class="fields" id="fields" disabled>
+          <div class="pair">
+            <div class="field">
+              <label class="label" for="f-name">Your first name</label>
+              <div class="input"><input id="f-name" name="first-name" type="text" autocomplete="given-name" required maxlength="40"><span class="rule" aria-hidden="true"></span></div>
+              <p class="err" id="err-name"><span></span></p>
+            </div>
+            <div class="field">
+              <label class="label" for="f-from">Where you came from <i>(optional)</i></label>
+              <div class="input"><input id="f-from" name="from" type="text" autocomplete="address-level2" maxlength="40"><span class="rule" aria-hidden="true"></span></div>
+            </div>
+          </div>
+
+          <fieldset class="field">
+            <legend class="label">Which lesson</legend>
+            <div class="options">
+              <label class="option" data-group="yellow">
+                <input type="radio" name="lesson" value="yellow" required>
+                <span class="option__name">Beginner course</span>
+                <span class="option__band">Yellow lycra, numbers 1 to 15</span>
+                <span class="badge" aria-hidden="true"><svg viewBox="0 0 16 16"><path pathLength="1" d="M3.5 8.5l3 3 6-7"/></svg></span>
+              </label>
+              <label class="option" data-group="pink">
+                <input type="radio" name="lesson" value="pink" required>
+                <span class="option__name">Family morning</span>
+                <span class="option__band">Pink lycra, numbers 16 to 28</span>
+                <span class="badge" aria-hidden="true"><svg viewBox="0 0 16 16"><path pathLength="1" d="M3.5 8.5l3 3 6-7"/></svg></span>
+              </label>
+              <label class="option" data-group="blue">
+                <input type="radio" name="lesson" value="blue" required>
+                <span class="option__name">Back in the water</span>
+                <span class="option__band">Blue lycra, numbers 29 to 40</span>
+                <span class="badge" aria-hidden="true"><svg viewBox="0 0 16 16"><path pathLength="1" d="M3.5 8.5l3 3 6-7"/></svg></span>
+              </label>
+            </div>
+            <p class="err" id="err-lesson"><span></span></p>
+          </fieldset>
+
+          <div class="field">
+            <label class="label" for="f-text">What happened out there</label>
+            <div class="input"><textarea id="f-text" name="text" rows="4" minlength="20" maxlength="240" required data-hint="f-text-hint" aria-describedby="f-text-hint"></textarea><span class="rule" aria-hidden="true"></span></div>
+            <p class="hint" id="f-text-hint">20 to 240 characters. <span class="count" id="count">240 left</span></p>
+            <p class="err" id="err-text"><span></span></p>
+          </div>
+
+          <div class="submit-row">
+            <button class="btn btn--solid" id="submit" type="submit"><span class="swap"><span>Add my note to the line-up</span><span aria-hidden="true">Adding your note</span></span></button>
+          </div>
+        </fieldset>
+        <p class="nojs" id="nojs">Adding a note needs JavaScript.</p>
+      </form>
+
+      <p class="vh" id="form-status" role="status"></p>
+      <div class="result" id="result" hidden>
+        <p class="result__msg" id="result-msg" tabindex="-1"></p>
+        <div class="result__actions">
+          <button class="btn" id="see" type="button">See my note in the line-up</button>
+          <button class="read" id="again" type="button">Write another note</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="foot">Lessons run December to April at La Puntilla, 9:00 and 11:30, with wetsuit, boots and board included. <a class="ul" href="mailto:clases@olamansa.example" target="_blank" rel="noopener">Email the school to book</a></p>
+
+  <div class="notes" id="notes">
+    <dialog class="note" id="note-7" data-group="yellow" aria-labelledby="note-7-name" data-lenis-prevent>
+      <div class="band"><span class="num" aria-hidden="true">7</span><span class="band__label">Yellow lycra, beginner course</span><button class="btn btn--close" type="button" commandfor="note-7" command="close" data-close>Close</button></div>
+      <div class="note__body">
+        <h3 class="note__name" id="note-7-name">Camila Rojas</h3>
+        <p class="note__from">Santiago</p>
+        <p>I stood up on the second morning and fell straight off. On the third I rode one all the way to the sand and screamed so loud Nico heard me from the car park.</p>
+        <p>Nico kept telling me to look at the beach, not at my feet. I forgot every single time until that third morning, and then it all happened at once.</p>
+        <p>My arms were useless for two days afterwards. I’d do it again tomorrow.</p>
+        <dl class="facts"><dt>Lesson</dt><dd>Beginner course, 3 mornings</dd><dt>Date</dt><dd>Thursday 15 January 2026</dd><dt>Conditions</dt><dd>0.7 m at 9 s, light offshore, low tide 08:10</dd><dt>Instructor</dt><dd>Nico</dd></dl>
+      </div>
+    </dialog>
+    <dialog class="note" id="note-12" data-group="yellow" aria-labelledby="note-12-name" data-lenis-prevent>
+      <div class="band"><span class="num" aria-hidden="true">12</span><span class="band__label">Yellow lycra, beginner course</span><button class="btn btn--close" type="button" commandfor="note-12" command="close" data-close>Close</button></div>
+      <div class="note__body">
+        <h3 class="note__name" id="note-12-name">Tomás Fuenzalida</h3>
+        <p class="note__from">Rancagua</p>
+        <p>I’m 54 and was sure I’d hold everyone back. Nobody waited for me because nobody needed to. Same white water, same falls, same grin.</p>
+        <p>Javiera kept me on the inside with the 8'0" and let me take as many waves as my shoulders allowed. By the last morning I was the one telling the twenty-year-olds to paddle harder.</p>
+        <p>My wife has the video. I’ve watched it more than she has.</p>
+        <dl class="facts"><dt>Lesson</dt><dd>Beginner course, 3 mornings</dd><dt>Date</dt><dd>Tuesday 10 February 2026</dd><dt>Conditions</dt><dd>0.6 m at 8 s, glassy, mid tide and rising</dd><dt>Instructor</dt><dd>Javiera</dd></dl>
+      </div>
+    </dialog>
+    <dialog class="note" id="note-3" data-group="yellow" aria-labelledby="note-3-name" data-lenis-prevent>
+      <div class="band"><span class="num" aria-hidden="true">3</span><span class="band__label">Yellow lycra, beginner course</span><button class="btn btn--close" type="button" commandfor="note-3" command="close" data-close>Close</button></div>
+      <div class="note__body">
+        <h3 class="note__name" id="note-3-name">Hannah Weber</h3>
+        <p class="note__from">Leipzig</p>
+        <p>The water is 14 degrees and nobody pretended otherwise. The 4/3, boots and hood made it fine. I booked one lesson and stayed for five.</p>
+        <p>I had read about the Humboldt current and expected to suffer. Seba made me wear the boots even though I said I didn’t need them. I needed them.</p>
+        <p>Every morning the fog sat on the point until about ten, and then the whole beach turned blue.</p>
+        <dl class="facts"><dt>Lesson</dt><dd>Beginner course, 5 mornings</dd><dt>Date</dt><dd>Monday 8 December 2025</dd><dt>Conditions</dt><dd>0.8 m at 10 s, light cross-shore, fog until 10:00</dd><dt>Instructor</dt><dd>Seba</dd></dl>
+      </div>
+    </dialog>
+    <dialog class="note" id="note-21" data-group="pink" aria-labelledby="note-21-name" data-lenis-prevent>
+      <div class="band"><span class="num" aria-hidden="true">21</span><span class="band__label">Pink lycra, family morning</span><button class="btn btn--close" type="button" commandfor="note-21" command="close" data-close>Close</button></div>
+      <div class="note__body">
+        <h3 class="note__name" id="note-21-name">The Muñoz family</h3>
+        <p class="note__from">Talca</p>
+        <p>Benja wouldn’t let go of his mum’s hand for the first half hour. By the end he was pushing his own board out and telling Seba which wave was his.</p>
+        <p>We came for the kids and spent the whole morning in the water with them. Seba put the four of us on two boards and swapped us every few waves, so nobody sat on the sand for long.</p>
+        <dl class="facts"><dt>Lesson</dt><dd>Family morning, 9:00</dd><dt>Date</dt><dd>Saturday 3 January 2026</dd><dt>Conditions</dt><dd>0.5 m at 7 s, light onshore, high tide 10:40</dd><dt>Instructor</dt><dd>Seba</dd></dl>
+      </div>
+    </dialog>
+    <dialog class="note" id="note-18" data-group="pink" aria-labelledby="note-18-name" data-lenis-prevent>
+      <div class="band"><span class="num" aria-hidden="true">18</span><span class="band__label">Pink lycra, family morning</span><button class="btn btn--close" type="button" commandfor="note-18" command="close" data-close>Close</button></div>
+      <div class="note__body">
+        <h3 class="note__name" id="note-18-name">Andrés and Lucía Pérez with Mateo (11)</h3>
+        <p class="note__from">Concepción</p>
+        <p>We booked so the kids could try it. Lucía caught a wave before either of them and we have not heard the end of it.</p>
+        <p>Mateo stood up on his fourth try. His little sister decided she preferred digging a moat around the boards, and has already asked to come back next summer to surf this time.</p>
+        <dl class="facts"><dt>Lesson</dt><dd>Family morning, 11:30</dd><dt>Date</dt><dd>Sunday 18 January 2026</dd><dt>Conditions</dt><dd>0.6 m at 8 s, light offshore, low tide 09:30</dd><dt>Instructor</dt><dd>Javiera</dd></dl>
+      </div>
+    </dialog>
+    <dialog class="note" id="note-24" data-group="pink" aria-labelledby="note-24-name" data-lenis-prevent>
+      <div class="band"><span class="num" aria-hidden="true">24</span><span class="band__label">Pink lycra, family morning</span><button class="btn btn--close" type="button" commandfor="note-24" command="close" data-close>Close</button></div>
+      <div class="note__body">
+        <h3 class="note__name" id="note-24-name">Gloria Sepúlveda with her granddaughters</h3>
+        <p class="note__from">Pichilemu</p>
+        <p>I grew up here and never once went in. I watched from the rocks with a thermos. This summer my granddaughters held the board for me.</p>
+        <p>Javiera didn’t make a fuss about my age. She showed me how to lie on the board and let the white water carry me in, and I did that eleven times.</p>
+        <p>The girls took a photo of me on the board. It’s on my fridge now.</p>
+        <dl class="facts"><dt>Lesson</dt><dd>Family morning, 11:30</dd><dt>Date</dt><dd>Wednesday 25 February 2026</dd><dt>Conditions</dt><dd>0.4 m at 7 s, glassy, low tide 11:05</dd><dt>Instructor</dt><dd>Javiera</dd></dl>
+      </div>
+    </dialog>
+    <dialog class="note" id="note-31" data-group="blue" aria-labelledby="note-31-name" data-lenis-prevent>
+      <div class="band"><span class="num" aria-hidden="true">31</span><span class="band__label">Blue lycra, back in the water</span><button class="btn btn--close" type="button" commandfor="note-31" command="close" data-close>Close</button></div>
+      <div class="note__body">
+        <h3 class="note__name" id="note-31-name">Rodrigo Vial</h3>
+        <p class="note__from">Viña del Mar</p>
+        <p>Eleven years off a board, two kids, one bad knee. I wanted someone to watch my pop-up and tell me the truth. Seba did. Second session: a green wave, a left, mine.</p>
+        <p>On the first session I was late on every pop-up and blamed the board. Seba filmed two waves on his phone, and I stopped blaming the board.</p>
+        <dl class="facts"><dt>Lesson</dt><dd>Back in the water, 2 sessions</dd><dt>Date</dt><dd>Friday 6 March 2026</dd><dt>Conditions</dt><dd>0.9 m at 11 s, light offshore, low tide 08:50</dd><dt>Instructor</dt><dd>Seba</dd></dl>
+      </div>
+    </dialog>
+    <dialog class="note" id="note-35" data-group="blue" aria-labelledby="note-35-name" data-lenis-prevent>
+      <div class="band"><span class="num" aria-hidden="true">35</span><span class="band__label">Blue lycra, back in the water</span><button class="btn btn--close" type="button" commandfor="note-35" command="close" data-close>Close</button></div>
+      <div class="note__body">
+        <h3 class="note__name" id="note-35-name">Fernanda Castro</h3>
+        <p class="note__from">Valparaíso</p>
+        <p>I used to surf Punta de Lobos and was too proud for lessons. Starting again on a soft-top at La Puntilla was the right kind of embarrassing.</p>
+        <p>Nico had me ride the soft-top for a full session before he would talk about anything shorter. I sulked for an hour, then I was laughing on every wave.</p>
+        <dl class="facts"><dt>Lesson</dt><dd>Back in the water, 2 sessions</dd><dt>Date</dt><dd>Saturday 21 March 2026</dd><dt>Conditions</dt><dd>1.0 m at 12 s, moderate offshore, mid tide and falling</dd><dt>Instructor</dt><dd>Nico</dd></dl>
+      </div>
+    </dialog>
+    <dialog class="note" id="note-29" data-group="blue" aria-labelledby="note-29-name" data-lenis-prevent>
+      <div class="band"><span class="num" aria-hidden="true">29</span><span class="band__label">Blue lycra, back in the water</span><button class="btn btn--close" type="button" commandfor="note-29" command="close" data-close>Close</button></div>
+      <div class="note__body">
+        <h3 class="note__name" id="note-29-name">James Carey</h3>
+        <p class="note__from">Cork</p>
+        <p>Last time I surfed was Lahinch in 2009. My paddling had gone, my timing hadn’t. They fixed my stance on the sand before we got wet.</p>
+        <p>Javiera saw that my back foot had crept forward over fifteen years and moved it back in two minutes on the sand. The water felt like home, which is not a compliment.</p>
+        <dl class="facts"><dt>Lesson</dt><dd>Back in the water, 1 session</dd><dt>Date</dt><dd>Thursday 9 April 2026</dd><dt>Conditions</dt><dd>0.8 m at 10 s, light offshore, high tide 09:15</dd><dt>Instructor</dt><dd>Javiera</dd></dl>
+      </div>
+    </dialog>
+  </div>
+
+  <template id="card-tpl">
+    <li><article class="card">
+      <p class="band"><span class="num" aria-hidden="true" data-f="num"></span><span class="band__label"><span class="vh" data-f="sr"></span><span data-f="band"></span></span></p>
+      <div class="card__body">
+        <blockquote class="quote"><p data-f="quoted"></p></blockquote>
+        <h3 class="name" data-f="name"></h3>
+        <p class="meta" data-f="meta"></p>
+        <button class="read" type="button" command="show-modal" data-f="read"></button>
+      </div>
+    </article></li>
+    <dialog class="note" data-lenis-prevent>
+      <div class="band"><span class="num" aria-hidden="true" data-f="num"></span><span class="band__label" data-f="band"></span><button class="btn btn--close" type="button" command="close" data-close>Close</button></div>
+      <div class="note__body">
+        <h3 class="note__name" data-f="name"></h3>
+        <p class="note__from" data-f="from"></p>
+        <p data-f="text"></p>
+        <dl class="facts"><dt>Lesson</dt><dd data-f="lesson"></dd><dt>Added</dt><dd data-f="date"></dd></dl>
+      </div>
+    </dialog>
+  </template>
+</section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/SplitText.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  'use strict';
+  const root = document.documentElement;
+  const libs = !!(window.gsap && window.ScrollTrigger && window.SplitText && window.Lenis);
+  if (libs) root.classList.add('js');   // hidden start states only exist when the motion stack loaded
+
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const css = name => parseFloat(getComputedStyle(root).getPropertyValue(name));
+  const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const clamp = (lo, hi, v) => Math.max(lo, Math.min(hi, v));
+
+  const lineup = $('#lineup'), row = $('#row'), track = $('#track'), form = $('#note-form'), result = $('#result');
+  const prev = $('#prev'), next = $('#next'), F = form.elements;
+  let lenis = null, fx = {}, fresh = null;   // fx: motion hooks set by the motion branch; absent means instant
+
+  const GROUPS = {
+    yellow: { range: [1, 15], band: 'Yellow lycra, beginner course', lesson: 'Beginner course' },
+    pink: { range: [16, 28], band: 'Pink lycra, family morning', lesson: 'Family morning' },
+    blue: { range: [29, 40], band: 'Blue lycra, back in the water', lesson: 'Back in the water' },
+  };
+  // The highest lycra in use in that group + 1; when the top of the range is taken, the lowest free one; null when all are taken.
+  function nextNumber(group, used = $$('.card', track).map(c => +c.dataset.num)) {
+    const [lo, hi] = GROUPS[group].range, size = hi - lo + 1;
+    const top = Math.max(lo - 1, ...used.filter(n => n >= lo && n <= hi));
+    for (let i = 1; i <= size; i++) { const n = lo + (top - lo + i) % size; if (!used.includes(n)) return n; }
+    return null;
+  }
+
+  // ---- Buttons: the HV4 fill grows from, and leaves toward, the edge the pointer crossed
+  const edge = e => {
+    const b = e.target.closest?.('.btn');
+    if (!b || b.contains(e.relatedTarget)) return;
+    const r = b.getBoundingClientRect();
+    b.style.setProperty('--from', e.clientX < r.left + r.width / 2 ? 'left' : 'right');
+  };
+  document.addEventListener('pointerover', edge);
+  document.addEventListener('pointerout', edge);
+
+  // ---- Note dialogs
+  function openNote(dlg) {
+    if (!dlg || dlg.open) return;
+    dlg.showModal();
+    lenis?.stop();
+    fx.open?.(dlg);
+    requestAnimationFrame(() => dlg.classList.add('is-in'));
+  }
+  function closeNote(dlg) {
+    if (!dlg?.open || dlg.dataset.closing) return;
+    dlg.dataset.closing = '1';
+    dlg.classList.remove('is-in');
+    const done = () => { delete dlg.dataset.closing; dlg.close(); };
+    fx.close ? fx.close(dlg, done) : done();
+  }
+  const go = el => {
+    const land = () => el.focus({ preventScroll: true });
+    if (lenis) lenis.scrollTo(el, { offset: -24, duration: 1.1, onComplete: land });
+    else { el.scrollIntoView({ block: 'start' }); land(); }
+  };
+  document.addEventListener('click', e => {
+    const t = e.target;
+    const read = t.closest('[data-note]');
+    if (read) { e.preventDefault(); openNote(document.getElementById(read.dataset.note)); return; }
+    if (t.closest('[data-close]')) { e.preventDefault(); closeNote(t.closest('dialog')); return; }
+    if (t.matches('dialog.note')) { closeNote(t); return; }   // the dialog box itself is only hit through its backdrop
+    const a = t.closest('a[href^="#"]'), to = a && document.getElementById(a.hash.slice(1));
+    if (to) { e.preventDefault(); go(to); }
+  });
+  document.addEventListener('cancel', e => { if (e.target.matches?.('dialog.note')) { e.preventDefault(); closeNote(e.target); } }, true);
+  document.addEventListener('close', e => { if (e.target.matches?.('dialog.note')) { lenis?.start(); fx.drive?.(); } }, true);
+
+  // ---- The row: native scroll-snap everywhere. Previous and Next step one card; repeated clicks add up.
+  $('.controls').hidden = false;
+  const lis = () => [...track.children].filter(li => !li.hidden);
+  const relabel = () => row.setAttribute('aria-label', `The line-up, ${lis().length} notes`);
+  const stepW = () => { const L = lis(); return L.length > 1 ? L[1].offsetLeft - L[0].offsetLeft : row.clientWidth; };
+  const maxLeft = () => row.scrollWidth - row.clientWidth;
+  const ends = () => {   // the endless strip (fx.move) has no ends
+    prev.setAttribute('aria-disabled', String(!fx.move && row.scrollLeft < 4));
+    next.setAttribute('aria-disabled', String(!fx.move && row.scrollLeft > maxLeft() - 4));
+  };
+  const scrollRow = left => fx.scroll ? fx.scroll(left) : row.scrollTo({ left, behavior: reduced() ? 'auto' : 'smooth' });
+  let pend = null, pendT = 0;
+  const move = dir => {
+    const s = stepW();
+    pend = clamp(0, maxLeft(), (Math.round((pend ?? row.scrollLeft) / s) + dir) * s);
+    scrollRow(pend);
+  };
+  prev.addEventListener('click', () => (fx.move || move)(-1));
+  next.addEventListener('click', () => (fx.move || move)(1));
+  row.addEventListener('scroll', () => { ends(); clearTimeout(pendT); pendT = setTimeout(() => { pend = null; }, 150); }, { passive: true });
+  row.addEventListener('wheel', e => { if (e.shiftKey) e.lenisStopPropagation = true; }, { passive: true });   // Shift + wheel scrolls the row natively, not the page
+  addEventListener('resize', ends);
+  ends();
+  // A focused card comes fully into view at the gutter (the browser alone stops once the Read button shows)
+  track.addEventListener('focusin', e => {
+    const li = e.target.closest('li'); if (!li) return;
+    if (fx.focus) { if (e.target.matches(':focus-visible')) fx.focus(li); return; }
+    const g = parseFloat(getComputedStyle(track).paddingLeft), x = li.offsetLeft - row.scrollLeft;
+    if (x >= g - 1 && x + li.offsetWidth <= row.clientWidth - g + 1) return;
+    scrollRow(clamp(0, maxLeft(), li.offsetLeft - g));
+  });
+
+  // ---- Add your words
+  $('#fields').disabled = false;
+  $('#nojs').hidden = true;
+  const ERR = {
+    name: 'Add your first name so people know who said it.',
+    lesson: 'Pick the lesson you took. It decides your lycra colour.',
+    text: 'Write at least 20 characters. One sentence is enough.',
+  };
+  const controls = key => (key === 'lesson' ? [...F.lesson] : [key === 'name' ? F['first-name'] : F.text]);
+  function setError(key, msg) {
+    const box = $('#err-' + key);
+    if (msg) box.firstElementChild.textContent = msg;
+    box.classList.toggle('show', !!msg);
+    for (const el of controls(key)) {
+      msg ? el.setAttribute('aria-invalid', 'true') : el.removeAttribute('aria-invalid');
+      const ids = [el.dataset.hint, msg && box.id].filter(Boolean).join(' ');
+      ids ? el.setAttribute('aria-describedby', ids) : el.removeAttribute('aria-describedby');
+    }
+  }
+  function validate() {
+    const g = F.lesson.value;
+    const errs = {
+      name: !F['first-name'].value.trim() && ERR.name,
+      lesson: !g ? ERR.lesson : nextNumber(g) === null && `Every ${g} lycra is in the line-up already. Pick another lesson.`,
+      text: F.text.value.trim().length < 20 && ERR.text,
+    };
+    for (const k in errs) setError(k, errs[k]);
+    return Object.keys(errs).filter(k => errs[k]);
+  }
+  const count = () => { $('#count').textContent = `${240 - F.text.value.length} left`; };
+  form.addEventListener('input', () => { count(); if (form.dataset.tried) validate(); });
+  form.addEventListener('change', () => { if (form.dataset.tried) validate(); });
+
+  function addCard(n) {
+    const tpl = $('#card-tpl').content.cloneNode(true);
+    const li = tpl.querySelector('li'), card = li.firstElementChild, dlg = tpl.querySelector('dialog');
+    const g = GROUPS[n.group], id = 'note-' + n.num;
+    const val = {
+      num: n.num, sr: `Number ${n.num}, `, band: g.band, quoted: `“${n.text}”`, text: n.text, name: n.name,
+      meta: n.from ? `${n.from}, added today` : 'Added today', from: n.from, read: `Read ${n.name}’s whole note`,
+      lesson: g.lesson, date: new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).replace(',', ''),
+    };
+    $$('[data-f]', tpl).forEach(el => { el.textContent = val[el.dataset.f]; });
+    card.dataset.group = dlg.dataset.group = n.group;
+    card.dataset.num = n.num;
+    if (n.text.length < 90) card.dataset.short = '';
+    $('.name', card).id = 'name-' + n.num;
+    card.setAttribute('aria-labelledby', 'name-' + n.num);
+    dlg.id = id;
+    $('.note__name', dlg).id = id + '-name';
+    dlg.setAttribute('aria-labelledby', id + '-name');
+    $('.note__from', dlg).hidden = !n.from;
+    const read = $('.read', card);
+    read.dataset.note = id;
+    read.setAttribute('commandfor', id);
+    $('[data-close]', dlg).setAttribute('commandfor', id);
+    $('#notes').append(dlg);
+    track.prepend(li);
+    if (fx.hold) fx.hold(li);   // motion: the newcomer waits out of sight until it drops in
+    else { row.scrollLeft = 0; ends(); }
+    relabel();
+    return card;
+  }
+
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    form.dataset.tried = '1';
+    const bad = validate();
+    const status = $('#form-status');
+    status.textContent = '';   // cleared first, so the same message is announced again on a second try
+    if (bad.length) {
+      setTimeout(() => { status.textContent = bad.map(k => $('#err-' + k).textContent).join(' '); }, 60);
+      const k = bad[0];
+      (k === 'lesson' ? ([...F.lesson].find(r => r.checked) || F.lesson[0]) : controls(k)[0]).focus();
+      return;
+    }
+    const n = { name: F['first-name'].value.trim(), from: F.from.value.trim(), group: F.lesson.value, text: F.text.value.trim() };
+    n.num = nextNumber(n.group);
+    setTimeout(() => { status.textContent = 'Adding your note.'; }, 60);
+    fresh = addCard(n);
+    const msg = $('#result-msg');
+    msg.textContent = `Thanks, ${n.name}. You’re lycra ${n.num} in the line-up.`;
+    msg.insertAdjacentHTML('beforeend', '<span>Your note stays on this page only.</span>');
+    const show = () => { form.hidden = true; result.hidden = false; msg.focus(); };
+    fx.submit ? fx.submit(show) : show();
+  });
+
+  $('#see').addEventListener('click', () => {
+    const read = $('.read', fresh);
+    if (fx.reprise) return fx.reprise(fresh, read);
+    row.scrollLeft = 0;
+    lineup.scrollIntoView({ block: 'center' });
+    read.focus({ preventScroll: true });
+  });
+  $('#again').addEventListener('click', () => {
+    form.reset();
+    delete form.dataset.tried;
+    $('#form-status').textContent = '';
+    Object.keys(ERR).forEach(k => setError(k, ''));
+    count();
+    result.hidden = true;
+    form.hidden = false;
+    fx.back?.();
+    F['first-name'].focus();
+  });
+
+  // The swell: unit height at x (up is negative). The crest sits on x0, where a card resting at the gutter has its centre.
+  const wave = (x, x0, lam) => -Math.cos(2 * Math.PI * (x - x0) / lam);
+  // A rigid card on the water. w0, w1, w2: water y under its left corner, centre and right corner; half: half its width.
+  // Tilt follows the water between the corners (capped, scaled by calm); the bottom edge rests on the highest water under it, so no corner sinks through the line.
+  function ride(w0, w1, w2, half, max, calm = 1) {
+    const deg = clamp(-max, max, Math.atan2(w2 - w0, 2 * half) * 180 / Math.PI) * calm, t = Math.tan(deg * Math.PI / 180);
+    return [Math.min(w0 + half * t, w1, w2 - half * t), deg];
+  }
+
+  function runSelfTest() {
+    const ok = (c, m) => { if (!c) throw new Error('SELFTEST FAIL: ' + m); };
+    ok(nextNumber('yellow', [3, 7, 12]) === 13, 'yellow after 3, 7, 12 gives 13');
+    ok(nextNumber('yellow') === 13 && nextNumber('pink') === 25 && nextNumber('blue') === 36, 'the page: yellow 13, pink 25, blue 36');
+    ok(nextNumber('yellow', [1, 15]) === 2, 'top taken: the lowest free number');
+    ok(nextNumber('blue', [29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40]) === null, 'a full group returns null');
+    ok(Math.abs(wave(100, 100, 400) + 1) < 1e-9 && Math.abs(wave(300, 100, 400) - 1) < 1e-9 && Math.abs(wave(200, 100, 400)) < 1e-9, 'crest on the snap line, trough half a wave on');
+    const [yt, dt] = ride(-10, 10, -10, 100, 3), [yc, dc] = ride(10, -10, 10, 100, 3);
+    ok(yt === -10 && dt === 0 && yc === -10 && dc === 0, 'level in a trough (on its corners) and on a crest (on its centre)');
+    const [yf, df] = ride(20, 0, -20, 100, 3), tf = Math.tan(df * Math.PI / 180);
+    ok(Math.abs(df + 3) < 1e-9, 'tilt capped at 3deg on a steep face');
+    ok(yf - 100 * tf <= 20 + 1e-9 && yf + 100 * tf <= -20 + 1e-9 && yf <= 0, 'no corner and no centre below the water');
+    ok(ride(20, 0, -20, 100, 3, 0)[1] === 0, 'calm levels the card');
+    console.log('SELFTEST PASS');
+  }
+  if (location.hash === '#selftest') runSelfTest();
+
+  if (!libs) return;   // CDN blocked: everything stays visible and usable, the row flat
+
+  // ================= Motion =================
+  gsap.registerPlugin(ScrollTrigger, SplitText);
+  const t0 = performance.now();
+  const svg = $('.swell'), g = $('.swell g'), path = $('.swell path');
+  const fonts = Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 1500))]);
+  const tx2 = (el, vars = {}) => {   // TX2: words rise from their masks while a 2deg tilt straightens
+    const sp = SplitText.create(el, { type: 'words', wordsClass: 'w', mask: 'words' });
+    return gsap.fromTo(sp.words, { yPercent: 135, rotation: -2, transformOrigin: '0% 50%' },   // 135, not 100: Teko's ink overflows its .84em line box
+      { yPercent: 0, rotation: 0, duration: .7, ease: 'back.out(1.2)', stagger: { amount: Math.min(sp.words.length * .05, .45) }, ...vars, onComplete: () => sp.revert() });
+  };
+  const shown = (sel, props = 'opacity,transform') => {   // end of a reveal: drop the hidden start state and inline styles, so state CSS (hover, disabled) wins
+    const els = gsap.utils.toArray(sel);
+    els.forEach(el => el.removeAttribute('data-rv'));
+    gsap.set(els, { clearProps: props });
+  };
+  const sheet = () => matchMedia('(max-width: 599px)').matches;   // read when a note opens, so crossing 600px never rebuilds the context
+  let played = false;
+
+  // If the motion branch ever throws, nothing stays hidden: drop html.js and clear the start states
+  const fail = err => { root.classList.remove('js'); gsap.set('[data-rv], .rule, .swell path', { clearProps: 'opacity,transform,strokeDasharray,strokeDashoffset' }); console.error(err); };
+  try {
+  gsap.matchMedia().add({
+    motion: '(prefers-reduced-motion: no-preference)',
+    reduce: '(prefers-reduced-motion: reduce)',
+    fine: '(hover: hover) and (pointer: fine)',
+  }, ctx => {
+    const { motion, fine } = ctx.conditions;
+    if (!motion) {   // the same native row, flat; final states; dialogs open and close at once
+      shown('[data-rv]');
+      fx = {};
+      return () => { fx = {}; };
+    }
+
+    const ac = new AbortController(), on = { signal: ac.signal, passive: true };
+    let live = true;
+
+    // Lenis on GSAP's clock
+    lenis = new Lenis({ lerp: .1, smoothWheel: true, autoRaf: false });
+    if ($('dialog.note[open]')) lenis.stop();   // a re-run must not unlock the page behind an open note
+    lenis.on('scroll', ScrollTrigger.update);
+    const raf = time => lenis.raf(time * 1000);
+    gsap.ticker.add(raf);
+    gsap.ticker.lagSmoothing(0);
+
+    // ---- The signature: an endless line-up drifting over a still swell.
+    // P.off is how far the line-up has travelled. Every card's x wraps around it, so there are no clones and the focus order stays as written.
+    // Each card's height and tilt are read from one sine under its corners; the water never moves.
+    const S = { load: played ? 1 : 0, scroll: 1, set: 0, ex: 0 };   // amplitude factors (L4 rise, S1 scrub, S2 passing set) and the L4 entrance offset
+    const P = { off: 0 }, D = { ts: 0 };                     // travel (px) and the drift's timeScale
+    const DRIFT = 16;                                         // px/s
+    let items = [], A = 0, lam = 1, x0 = 0, tiltMax = 3, mid = 60, lastA = -1;
+    let step = 1, total = 1, gut = 0, half = 1, wrapX = v => v, near = v => v;
+    let lean = 0, vel = 0, lastOff = 0, awake = true, goal = null, waiting = null;   // waiting: a newcomer shown in the DOM but not yet in the ring
+    row.classList.add('strip');
+    row.scrollLeft = 0;
+    function measure() {   // cached once per resize and after a card is added: no rect reads per frame
+      A = css('--swell-amp'); tiltMax = css('--tilt-max'); mid = svg.clientHeight / 2;
+      const W = lineup.clientWidth;
+      items = lis().filter(li => li !== waiting).map((li, i) => ({ el: li.firstElementChild, i, L: li.offsetLeft }));
+      items.forEach(({ el }) => { el._k ??= { calm: 1, drop: 0, to: 1 }; });
+      gut = parseFloat(getComputedStyle(track).paddingLeft); half = items[0].el.offsetWidth / 2;
+      step = items.length > 1 ? items[1].L - items[0].L : W;
+      total = step * items.length;
+      // A card leaves fully past the left edge and comes back fully past the right one.
+      // shortcut: needs total - step >= viewport width (9 cards cover 1600px); with fewer cards, clone the set.
+      wrapX = gsap.utils.wrap(-gut - step, total - gut - step);
+      near = gsap.utils.wrap(-total / 2, total / 2);
+      x0 = gut + half;   // a card resting at the gutter sits on the crest
+      lam = css('--swell-len') * step;
+      let d = '';
+      for (let x = 0; x <= W + 6; x += 6) d += `${x ? 'L' : 'M'}${x} ${wave(x, x0, lam).toFixed(4)}`;
+      path.setAttribute('d', d);   // the water never moves: built here, only its amplitude changes
+      lastA = -1;
+    }
+    function layout() {
+      const a = A * S.load * S.scroll * (1 + S.set);
+      if (a !== lastA) { g.setAttribute('transform', `translate(0 ${mid}) scale(1 ${Math.max(a, .001).toFixed(3)})`); lastA = a; }
+      for (const { el, i, L } of items) {
+        // L4: only cards at or right of the gutter ride in; the one resting off screen to the left stays there, so nothing enters from the left
+        const k = el._k, X = wrapX(i * step - P.off), ex = X > -half ? S.ex : 0, cx = gut + X + half + ex;
+        const [y, deg] = ride(a * wave(cx - half, x0, lam), a * wave(cx, x0, lam), a * wave(cx + half, x0, lam), half, tiltMax, k.calm);
+        el.style.transform = `translate3d(${(gut + X + ex - L).toFixed(2)}px,${(y + k.drop).toFixed(2)}px,0) rotate(${(deg + lean * k.calm).toFixed(3)}deg)`;
+      }
+    }
+    // One clock: drift, the lean that follows the line-up's speed, and the layout. Asleep off screen and in hidden tabs.
+    const tick = (time, dms) => {
+      if (!live || !awake || document.hidden) { lastOff = P.off; return; }
+      const dt = Math.min(dms, 50) / 1000 || 1 / 60;
+      P.off += D.ts * DRIFT * dt;
+      vel += ((P.off - lastOff) / dt - vel) * .25;
+      lastOff = P.off;
+      const want = clamp(-6, 6, -(vel - D.ts * DRIFT) * .004);   // cards lean the way they are pushed, not with the drift
+      lean += (want - lean) * Math.min(1, dt * 6);
+      // S2: page scroll passes a set under the line-up. Its speed lifts the swell's amplitude (the water still never travels), easing back over about 1.2s
+      const sv = lenis.isStopped ? 0 : clamp(0, .6, Math.abs(lenis.velocity) * .02);
+      S.set += (sv - S.set) * Math.min(1, dt * (sv > S.set ? 8 : 2.5));
+      layout();
+    };
+    gsap.ticker.add(tick);
+    addEventListener('resize', measure, on);
+    measure();
+    ScrollTrigger.create({ trigger: lineup, start: 'top bottom', end: 'bottom top', onToggle: s => { awake = s.isActive; } });
+    awake = ScrollTrigger.isInViewport(lineup);
+
+    // Drift eases to a stop under the pointer, with focus in the row, while dragging, with a note open or when paused
+    let paused = false, over = false, within = false, dragging = false, touched = false, touchT = 0, beat = null;
+    const drive = (delay = 0) => {
+      const to = paused || over || within || dragging || touched || $('dialog.note[open]') ? 0 : 1;
+      if (fine) { gsap.to(D, { ts: to, duration: to ? 1 : .4, delay: to ? delay : 0, overwrite: true }); return; }
+      // Touch: no continuous drift. The card at the gutter rests level on the crest for about 6s, then the row glides one step, like boards waiting for a set
+      beat?.kill();
+      beat = to ? gsap.delayedCall(6 + delay, () => { if (live) glide(snap(goal ?? P.off) + step, 1.4, 'power2.inOut'); }) : null;
+    };
+    const hold = () => { D.ts = 0; drive(1.5); };   // after a push the line-up rests, then drifts again
+    fx.drive = drive;
+    const glide = (to, duration = .7, ease = 'power3.inOut') => {
+      goal = to;
+      gsap.to(P, { off: to, duration, ease, overwrite: true, onComplete: () => { goal = null; } });
+      hold();
+    };
+    const snap = v => Math.round(v / step) * step;
+    fx.move = dir => glide(snap(goal ?? P.off) + dir * step);   // Previous and Next: one card, repeated clicks add up
+    fx.focus = li => { const it = items.find(o => o.el === li.firstElementChild); if (it) glide(P.off + near(it.i * step - P.off)); };   // to the gutter, on the crest
+    ends();
+
+    const pause = $('#pause');
+    pause.hidden = false;
+    const label = () => {
+      const [a, b] = pause.querySelectorAll('.swap > span');
+      paused ? pause.dataset.state = 'paused' : delete pause.dataset.state;
+      a.setAttribute('aria-hidden', String(paused)); b.setAttribute('aria-hidden', String(!paused));
+    };
+    pause.addEventListener('click', () => { paused = !paused; label(); drive(); }, { signal: ac.signal });
+
+    // Drag (CD3): pointer events with capture once the pointer has moved 6px, so a tap still reaches the Read button
+    let drag = null, dragged = false;
+    row.addEventListener('pointerdown', e => {
+      if (e.button !== 0 || !e.isPrimary) return;
+      drag = { x: e.clientX, off: P.off, id: e.pointerId };
+      dragged = false;
+      if (e.pointerType !== 'mouse') {   // a finger or pen on the row: hold still while they read, until 6s after the last touch
+        touched = true; drive();
+        clearTimeout(touchT); touchT = setTimeout(() => { touched = false; drive(); }, 6000);
+      }
+    }, on);
+    row.addEventListener('pointermove', e => {
+      if (!drag || e.pointerId !== drag.id) return;
+      const dx = e.clientX - drag.x;
+      if (!dragging) {
+        if (Math.abs(dx) < 6) return;
+        dragging = dragged = true;
+        row.setPointerCapture(e.pointerId);
+        row.classList.add('is-drag');
+        gsap.killTweensOf(P); goal = null;
+        hovered = null; settle(); drive();
+      }
+      P.off = drag.off - dx;
+    }, on);
+    const release = e => {
+      if (e.type === 'lostpointercapture' && e.target !== row) return;   // touch: the card's implicit capture ends when the row takes over; that is not a release
+      if (!drag || e.pointerId !== drag.id) return;
+      drag = null;
+      if (!dragging) return;
+      dragging = false;
+      row.classList.remove('is-drag');
+      glide(snap(P.off + vel * .25), .9, 'power3.out');   // the throw carries on, then rests with a card on the crest
+    };
+    ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(t => row.addEventListener(t, release, on));
+    row.addEventListener('click', e => { if (dragged) { dragged = false; e.stopPropagation(); e.preventDefault(); } }, { capture: true, signal: ac.signal });
+    // Sideways wheel and trackpad swipes push the line-up; vertical wheel is never captured
+    let wheelT = 0;
+    row.addEventListener('wheel', e => {
+      const dx = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.shiftKey ? e.deltaY : 0;
+      if (!dx) return;
+      e.preventDefault();
+      gsap.killTweensOf(P); goal = null;
+      P.off += dx; hold();
+      clearTimeout(wheelT); wheelT = setTimeout(() => glide(snap(P.off), .6, 'power3.out'), 160);
+    }, { signal: ac.signal, passive: false });
+    row.addEventListener('keydown', e => {
+      const d = e.target === row && { ArrowLeft: -1, ArrowRight: 1 }[e.key];
+      if (d) { e.preventDefault(); fx.move(d); }
+    }, { signal: ac.signal });
+
+    // The card you are reading goes level (calm 1 to 0); it keeps its place on the swell, so nothing lifts
+    let hovered = null, focused = null;
+    function settle() {
+      for (const { el } of items) {
+        const to = el === hovered || el === focused ? 0 : 1;
+        if (el._k.to !== to) { el._k.to = to; gsap.to(el._k, { calm: to, duration: .6, ease: to ? 'power2.inOut' : 'power3.out', overwrite: 'auto' }); }
+      }
+    }
+    if (fine) {
+      row.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') { over = true; drive(); } }, on);
+      row.addEventListener('pointerleave', () => { over = false; hovered = null; settle(); drive(); }, on);
+      track.addEventListener('pointerover', e => { if (e.pointerType === 'mouse' && !dragging) { hovered = e.target.closest('.card'); settle(); } }, on);
+    }
+    row.addEventListener('focusin', e => { within = true; focused = e.target.matches(':focus-visible') ? e.target.closest('.card') : null; settle(); drive(); }, on);
+    row.addEventListener('focusout', e => { if (!row.contains(e.relatedTarget)) { within = false; focused = null; settle(); drive(); } }, on);
+
+    // S1: the swell builds as the line-up scrolls in (only visible when the section starts below the fold)
+    gsap.fromTo(S, { scroll: 0 }, { scroll: 1, ease: 'none', scrollTrigger: { trigger: lineup, start: 'top 85%', end: 'top 35%', scrub: true } });
+
+    // ---- Page load (first run only)
+    if (!played) gsap.set(path, { strokeDasharray: 1, strokeDashoffset: 1 });
+    gsap.set('.rule', { scaleX: 0, transformOrigin: '0% 50%' });
+
+    fonts.then(() => live && ctx.add(() => {
+      measure();   // the fonts set the card heights and widths
+      if (played) { shown('[data-rv]:not(#add-title, .add__intro p)'); drive(); }
+      else {
+        played = true;
+        const tl = gsap.timeline();
+        tl.to(path, { strokeDashoffset: 0, autoRound: false, duration: 1, ease: 'power2.inOut', clearProps: 'strokeDasharray,strokeDashoffset' }, 0);   // L1
+        const head = $('#surf-title');
+        shown(head);
+        tl.add(tx2(head, { stagger: { amount: .45 } }), .15);   // L2
+        tl.fromTo('.intro, .key', { opacity: 0 }, { opacity: 1, duration: .5, ease: 'power2.out', onComplete: () => shown('.intro, .key') }, .55);   // L3: a plain fade, so the heading's words are the only text that moves
+        tl.fromTo(S, { ex: innerWidth * .6 }, { ex: 0, duration: 1.4, ease: 'expo.out' }, .7);   // L4: the cards ride in through the swell
+        tl.fromTo(track, { opacity: 0 }, { opacity: 1, duration: .25, ease: 'power2.out', onComplete: () => shown(track, 'opacity') }, .7);
+        tl.fromTo(S, { load: 0 }, { load: 1, duration: 1.2, ease: 'power2.out' }, .8);   // the swell rises under them
+        tl.fromTo('.controls .btn:not([hidden])', { opacity: 0, y: 8 },   // L5: quiet chrome
+          { opacity: 1, y: 0, duration: .5, ease: 'power3.out', stagger: .06, onComplete: () => shown('.controls .btn') }, 1.4);
+        tl.call(drive, null, 1.9);   // L6: the line-up starts drifting
+      }
+      // S3: the form heading's words rise, then the field baselines draw (they are the fields)
+      ScrollTrigger.create({
+        trigger: '#add-words', start: 'top bottom-=60', once: true,   // as soon as any of the form shows, so its heading never sits blank beside visible fields
+        onEnter: () => {
+          const d = Math.max(0, 1.6 - (performance.now() - t0) / 1000);   // in view at load: after the line-up lands
+          const h = $('#add-title');
+          shown(h);
+          tx2(h, { delay: d });
+          gsap.fromTo('.add__intro p', { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: .5, ease: 'power3.out', delay: d + .35, onComplete: () => shown('.add__intro p') });
+          gsap.to('.rule', { scaleX: 1, duration: .8, ease: 'expo.out', stagger: .08, delay: d + .2 });
+        },
+      });
+    })).catch(fail);
+
+    // ---- Dialog (CD7); a bottom sheet under 600px
+    const shut = () => (sheet() ? { y: '100%' } : { opacity: 0, y: 12, scale: .98 });
+    fx.open = dlg => {
+      drive();
+      gsap.fromTo(dlg, shut(), { opacity: 1, y: 0, scale: 1, duration: .45, ease: 'expo.out', clearProps: 'transform,opacity' });
+      tx2($('.note__name', dlg), { delay: .08 });
+    };
+    fx.close = (dlg, done) => gsap.to(dlg, { ...shut(), duration: .3, ease: 'power2.in', onComplete: () => { gsap.set(dlg, { clearProps: 'all' }); done(); } });
+
+    // ---- Form: label swap, then the panels crossfade (MI2)
+    const btn = $('#submit');
+    const relayout = () => { lenis.resize(); ScrollTrigger.refresh(); };
+    fx.submit = show => {
+      btn.dataset.state = 'busy';
+      gsap.timeline()
+        .to(form, { opacity: 0, y: -10, duration: .25, ease: 'power2.in' }, .4)
+        .call(() => { show(); gsap.set(form, { clearProps: 'opacity,transform' }); delete btn.dataset.state; relayout(); })
+        .fromTo(result, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: .4, ease: 'expo.out', clearProps: 'opacity,transform' });
+    };
+    fx.back = () => { relayout(); gsap.fromTo(form, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: .4, ease: 'expo.out', clearProps: 'opacity,transform' }); };
+
+    // ---- The newcomer waits out of sight; the reprise (or the next visit to the line-up) drops it onto the swell at the front
+    let pending = null, reprising = false;
+    fx.hold = li => {
+      if (pending) pending.hidden = false;   // an earlier newcomer nobody went back for just appears
+      pending = li;
+      li.hidden = true;
+      measure();
+    };
+    // Make room without a jump: the ring glides to the front (card 0 at the gutter, so the seam is off screen),
+    // then the newcomer joins one step to the left of it, invisible, and the row slides right to open the gap it drops into.
+    function reveal(li, land) {
+      if (li === pending) pending = null;
+      const card = li.firstElementChild;
+      gsap.set(card, { opacity: 0 });   // opacity, not visibility: focus can land on its Read button while it fades in
+      waiting = li;
+      li.hidden = false;
+      relabel();
+      measure();   // the ring without the newcomer, re-cached for its new DOM offsets
+      relayout();
+      gsap.killTweensOf(P);
+      const front = Math.round(P.off / total) * total, p1 = Math.abs(front - P.off) > 1 ? .5 : 0;
+      goal = front;
+      if (p1) gsap.to(P, { off: front, duration: p1, ease: 'power2.inOut' });
+      hold();
+      gsap.delayedCall(Math.max(p1, .4), () => {
+        if (!live) return;
+        waiting = null;
+        measure();
+        P.off = lastOff = step;   // every card keeps its place; only the one resting off screen left moves to the far right
+        card._k.drop = -56;       // the strip does not clip, so the drop has all the room above the row
+        glide(0, .8, 'power3.inOut');
+        gsap.delayedCall(.35, () => live && land(card));   // the gap is opening at the gutter
+      });
+    }
+    function dropIn(card) {
+      gsap.to(card._k, { drop: 0, duration: .9, ease: 'back.out(1.4)' });
+      gsap.to(card, { opacity: 1, duration: .3, clearProps: 'opacity' });
+      tx2($('.quote p', card), { delay: .25 });
+    }
+    ScrollTrigger.create({
+      trigger: lineup, start: 'top 70%', end: 'bottom 30%',   // well in view, not a sliver at the edge
+      onToggle: self => {
+        if (!self.isActive || !pending || reprising) return;
+        if (!result.hidden && ScrollTrigger.isInViewport(result, .2)) return;   // they are reading "Thanks": the drop waits for "See my note"
+        reveal(pending, dropIn);
+      },
+    });
+    fx.reprise = (card, read) => {
+      const landed = card.parentElement !== pending;
+      reprising = true;
+      const land = () => {
+        reprising = false;
+        landed ? tx2($('.quote p', card)) : dropIn(card);
+        read.focus({ preventScroll: true });
+      };
+      if (landed) { fx.focus(card.parentElement); gsap.delayedCall(.8, land); }   // it already dropped in: bring it back to the front, no second drop
+      else reveal(card.parentElement, land);   // the card drops as the row arrives, at about 0.8s, not after it stops
+      // A composed frame: the whole section from its top when heading, row and controls fit, otherwise the row centred;
+      // never a heading cut through its first line, so a target near the section top snaps to it
+      const docY = el => el.getBoundingClientRect().top + lenis.scroll, s0 = docY($('.surf')), h = lineup.offsetHeight;
+      let y = docY(lineup) + h + 72 <= s0 + innerHeight ? s0 : docY(lineup) - Math.max(24, (innerHeight - h) / 2);
+      if (y - s0 < 140) y = s0;
+      lenis.scrollTo(y, { duration: 1.2 });
+    };
+
+    return () => {
+      live = false;
+      ac.abort();
+      clearTimeout(wheelT); clearTimeout(touchT); beat?.kill();
+      waiting = null;
+      gsap.ticker.remove(raf);
+      gsap.ticker.remove(tick);
+      gsap.ticker.lagSmoothing(500, 33);
+      lenis.destroy();
+      lenis = null;
+      if (pending) { pending.hidden = false; relabel(); }
+      fx = {};
+      pause.hidden = true; paused = false; label();
+      row.classList.remove('strip', 'is-drag');
+      $$('.card', track).forEach(el => { el.style.transform = ''; delete el._k; });
+      track.style.transform = '';
+      g.removeAttribute('transform');
+      path.setAttribute('d', 'M0 60H9999');
+      ends();
+    };
+  });
+  } catch (err) { fail(err); }
+})();
+</script>
+</body>
+</html>
