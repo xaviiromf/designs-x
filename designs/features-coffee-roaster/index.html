@@ -1,0 +1,1319 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tolva Roasters subscription</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rethink+Sans:wght@400..600&family=Stick+No+Bills:wght@700;800&display=swap">
+<style>
+:root {
+  /* Colour: unroasted-bean ground, roast-brown ink, the blue and red of roast-logging software */
+  --green-bean: #CDCEA6;
+  --paper: #F6F6EE;
+  --roast: #2B1B12;
+  --roast-2: #5C4A3D;
+  --stencil-blue: #23449A;
+  --exhaust-red: #B3352B;
+  --foil: #B9773A;
+  --plate-ink: #1A3478; /* a deeper sack blue: 5.7:1 on the jute */
+  --jute: #C9B48A;
+  --jute-light: #D8C7A0;
+  --jute-dark: #B39D74;
+  --bean-green: #86925F;
+  --bean-yellow: #C6AE5E;
+  --bean-cinnamon: #A06A3A;
+  --bean-brown: #6B3F22;
+  --bean-city: #47291A;
+  --chaff: #EFE6C8;
+  --crease: color-mix(in srgb, var(--roast) 55%, transparent);
+  --rule: rgb(43 27 18 / .22);
+  --rule-strong: rgb(43 27 18 / .45);
+  --grid: rgb(43 27 18 / .08);
+  --link-rest: color-mix(in srgb, var(--stencil-blue) 38%, transparent);
+  --ghost-bt: color-mix(in srgb, var(--stencil-blue) 22%, transparent);
+  --ghost-et: color-mix(in srgb, var(--exhaust-red) 22%, transparent);
+  --backdrop: color-mix(in srgb, var(--roast) 55%, transparent);
+
+  /* Type: a perfect fourth from 17px */
+  --font-stencil: 'Stick No Bills', 'Arial Narrow', sans-serif;
+  --font-text: 'Rethink Sans', system-ui, sans-serif;
+  --step--1: .8125rem;
+  --step-0: 1.0625rem;
+  --step-1: 1.375rem;
+  --step-2: 1.8125rem;
+  --step-3: clamp(2rem, 3.2vw, 2.4375rem);
+  --step-4: clamp(3.25rem, 7.5vw, 6.75rem);
+  --step-closing: clamp(2.25rem, 5vw, 4.5rem);
+
+  /* Space */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 72px;
+  --space-9: 112px;
+  --gutter: clamp(16px, 4vw, 56px);
+  --max: 1328px;
+  --panel-w: min(44vw, 640px);
+
+  /* Shape: a radius per kind of thing; one hard shadow, paper objects only */
+  --r-btn: 2px;
+  --r-paper: 3px;
+  --r-plate: 4px;
+  --r-dialog: 6px;
+  --shadow-paper: 1px 1px 0 var(--rule-strong);
+
+  /* Motion */
+  --ease: cubic-bezier(.16, 1, .3, 1);
+  --dur-in: .45s;
+  --dur-out: .3s;
+  --dur-press: .12s;
+  --dur-release: .4s;
+}
+
+/* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+html.lenis, html.lenis body { height: auto; }
+.lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+.lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+.lenis.lenis-smooth iframe { pointer-events: none; }
+
+*, *::before, *::after { box-sizing: border-box; }
+html { background: var(--green-bean); -webkit-text-size-adjust: 100%; }
+html:has(dialog[open]) { overflow: hidden; }
+body {
+  margin: 0;
+  background: var(--green-bean);
+  color: var(--roast);
+  font: 400 var(--step-0)/1.5 var(--font-text);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+}
+p, h2, h3, dl, dd, figure { margin: 0; }
+button { font: inherit; color: inherit; }
+[tabindex="-1"]:focus { outline: none; }
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.wrap { width: min(100% - 2 * var(--gutter), var(--max)); margin-inline: auto; }
+.num { font-weight: 500; font-variant-numeric: tabular-nums; }
+
+/* ---------- Controls ---------- */
+/* I1 / I7: the fill sweeps in from the edge the pointer entered (--from, set by the script) */
+.btn {
+  --btn-bg: var(--stencil-blue); --btn-fg: var(--paper); --btn-fill: var(--roast); --btn-fill-fg: var(--paper);
+  position: relative; isolation: isolate; overflow: hidden;
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 48px; padding: 0 var(--space-5);
+  border: 1.5px solid var(--btn-bg); border-radius: var(--r-btn);
+  background: var(--btn-bg); color: var(--btn-fg);
+  font-weight: 600; line-height: 1.2; text-align: center;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: color var(--dur-out) var(--ease), border-color var(--dur-out) var(--ease), transform var(--dur-release) var(--ease);
+}
+.btn::before {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background: var(--btn-fill);
+  transform: scaleX(0); transform-origin: var(--from, left);
+  transition: transform var(--dur-out) var(--ease);
+}
+.btn-sm { --btn-bg: transparent; --btn-fg: var(--stencil-blue); --btn-fill: var(--stencil-blue); border-color: var(--stencil-blue); min-height: 44px; padding: 0 var(--space-4); }
+@media (hover: hover) {
+  .btn:hover { color: var(--btn-fill-fg); border-color: var(--btn-fill); transition-duration: var(--dur-in), var(--dur-in), var(--dur-release); }
+  .btn:hover::before { transform: scaleX(1); transition-duration: var(--dur-in); }
+}
+.btn:focus-visible { outline: 2px solid var(--stencil-blue); outline-offset: 3px; color: var(--btn-fill-fg); border-color: var(--btn-fill); }
+.btn:focus-visible::before { transform: scaleX(1); transform-origin: left; transition-duration: var(--dur-in); }
+.btn:active { transform: scale(.97); transition-duration: var(--dur-out), var(--dur-out), var(--dur-press); }
+.btn[aria-disabled="true"] { opacity: .4; cursor: default; }
+.btn[aria-disabled="true"]::before { transform: scaleX(0); }
+.btn[aria-disabled="true"]:not(:focus-visible) { color: var(--btn-fg); border-color: var(--btn-bg); }
+.btn-sm[aria-disabled="true"]:not(:focus-visible) { border-color: var(--stencil-blue); }
+.btn[aria-disabled="true"]:active { transform: none; }
+
+/* I2 / I3: the underline enters from the left and leaves to the right; a quiet one is always there */
+.link {
+  position: relative;
+  padding: 0 0 .1em; border: 0; border-radius: 0;
+  color: var(--stencil-blue); font-weight: 600; text-decoration: none; cursor: pointer;
+  background: linear-gradient(currentColor, currentColor) 100% 100% / 0% .07em no-repeat, linear-gradient(var(--link-rest), var(--link-rest)) 0 100% / 100% .07em no-repeat;
+  transition: background-size .4s var(--ease);
+}
+@media (hover: hover) { .link:hover { background-size: 100% .07em, 100% .07em; background-position: 0 100%, 0 100%; } }
+@media (hover: none) { .link { background-size: 100% .07em, 100% .07em; } }
+@media (pointer: coarse) { .link::after { content: ""; position: absolute; inset: -12px -4px; } } /* 44px touch target, same look */
+.link:focus-visible { outline: 2px solid var(--stencil-blue); outline-offset: 3px; background-size: 100% .07em, 100% .07em; background-position: 0 100%, 0 100%; }
+
+/* ---------- Intro ---------- */
+.intro {
+  display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--space-5); row-gap: var(--space-6);
+  align-items: end; padding-block: var(--space-6) var(--space-8);
+}
+.intro-copy { grid-column: 1 / span 8; }
+.wordmark { font-weight: 600; margin-bottom: var(--space-6); }
+.title {
+  font-family: var(--font-stencil); font-weight: 800;
+  font-size: var(--step-4); line-height: .9; letter-spacing: .01em;
+  text-transform: uppercase; /* sack stencils are cut in capitals */
+  margin-bottom: var(--space-5);
+  filter: url(#ink-type); /* the sack plate's sprayed-ink speckle, lighter so the words stay crisp */
+}
+.fx { position: absolute; width: 0; height: 0; overflow: hidden; }
+.lede { font-size: var(--step-1); line-height: 1.4; max-width: 31em; margin-bottom: var(--space-6); }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4) var(--space-6); }
+.plate {
+  grid-column: 10 / -1; position: relative; overflow: hidden; margin: 0;
+  aspect-ratio: 4 / 5; border-radius: var(--r-plate); background: var(--jute); /* a sack tag, not a hero image */
+}
+.plate svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.plate-ink text { font-family: var(--font-stencil); font-weight: 700; fill: var(--plate-ink); text-anchor: middle; }
+
+/* ---------- In the box: index, the row and the roast log share one stage ---------- */
+.box { scroll-margin-top: var(--space-5); }
+.stage { padding-top: var(--space-2); background: var(--green-bean); }
+.idx { position: relative; }
+.idx-scroll { position: relative; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; padding: 6px 6px 0; margin: -6px -6px 0; } /* room for the focus ring inside the clip */
+.idx-scroll::-webkit-scrollbar { display: none; }
+.idx ul { display: flex; gap: var(--space-6); list-style: none; margin: 0; padding: 0 0 var(--space-3); width: max-content; }
+.idx a {
+  display: block; padding-block: var(--space-2);
+  color: var(--roast); font-weight: 600; text-decoration: none; white-space: nowrap;
+  transition: color var(--dur-out) var(--ease);
+}
+.idx a:hover, .idx a:focus-visible { color: var(--stencil-blue); transition-duration: var(--dur-in); }
+.idx a:focus-visible { outline: 2px solid var(--stencil-blue); outline-offset: 2px; }
+.idx-bar { position: absolute; left: 0; bottom: 0; width: 1px; height: 2px; background: var(--stencil-blue); transform-origin: 0 50%; transform: scaleX(0); pointer-events: none; }
+.idx-rule { height: 1px; background: var(--rule-strong); transform-origin: 0 50%; margin-top: -1px; }
+
+/* Native scroll-snap row by default; the pin turns it into a clipped track the scroll slides */
+.row {
+  position: relative; container-type: inline-size;
+  overflow-x: auto; overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory; scroll-padding-inline-start: max(var(--gutter), (100% - var(--max)) / 2);
+  scrollbar-width: thin; scrollbar-color: var(--rule-strong) transparent;
+}
+.row-track {
+  --row-pad: max(var(--gutter), (100cqw - var(--max)) / 2);
+  display: flex; width: max-content; list-style: none; margin: 0; padding: 0 0 0 var(--row-pad);
+}
+.row-track::after { content: ""; flex: 0 0 calc(100cqw - var(--panel-w) - var(--row-pad)); } /* lets the last panel reach the start edge */
+.panel {
+  flex: 0 0 var(--panel-w); scroll-snap-align: start;
+  display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-5);
+  padding: var(--space-6) var(--space-7) var(--space-6) 0;
+}
+.panel + .panel { border-left: 1px solid var(--rule); padding-left: var(--space-6); }
+.panel h3 { font-family: var(--font-stencil); font-weight: 700; font-size: var(--step-3); line-height: 1.05; max-width: 15em; margin-bottom: calc(var(--space-3) - var(--space-5)); }
+.panel p { max-width: 38ch; }
+.pager { display: flex; align-items: center; gap: var(--space-4); padding-bottom: var(--space-5); }
+.count { min-width: 4.5em; text-align: center; color: var(--roast-2); }
+
+/* The pinned stage (992px+ wide, 600px+ tall, no coarse pointer, motion allowed): one screen, panels above, roast log along the bottom.
+   Capped at 980px so on a portrait monitor the panels and the log still read as one instrument. */
+.stage.is-pinned { height: min(100svh, 980px); display: flex; flex-direction: column; }
+.stage.is-pinned .row { flex: 1 1 0; min-height: 0; overflow: clip; scroll-snap-type: none; }
+.stage.is-pinned .row-track { height: 100%; }
+.stage.is-pinned .row-track::after, .stage.is-pinned .pager { display: none; }
+.stage.is-pinned .panel { padding-block: var(--space-5) var(--space-3); }
+.stage.is-pinned #box-lots { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--space-5); row-gap: var(--space-5); align-content: start; align-items: start; }
+.stage.is-pinned #box-lots h3 { grid-column: 1 / -1; margin-bottom: calc(var(--space-3) - var(--space-5)); }
+.stage.is-pinned .bags { flex-wrap: nowrap; gap: var(--space-4); }
+.stage.is-pinned .bag { width: clamp(120px, 10vw, 150px); zoom: var(--bag-k, 1); } /* the whole bag shrinks on short windows; its label never rewraps */
+.stage.is-pinned .log { padding-block: var(--space-2) var(--space-4); }
+.stage.is-pinned .plot { height: clamp(96px, 18svh, 220px); }
+@media (max-height: 859px) { .stage.is-pinned { --bag-k: .85; } }
+@media (max-height: 759px) {
+  /* Laptop windows (1366x768, 1280x800 less the browser frame): a shorter plot, readouts in one row, tighter panels */
+  .stage.is-pinned { --bag-k: .72; }
+  .stage.is-pinned .panel { padding-block: var(--space-4) var(--space-2); gap: var(--space-3); }
+  .stage.is-pinned .panel + .panel { padding-left: var(--space-5); }
+  .stage.is-pinned .panel h3 { margin-bottom: calc(var(--space-2) - var(--space-3)); }
+  .stage.is-pinned .brew { padding: var(--space-3) var(--space-4); }
+  .stage.is-pinned .panel p { max-width: 46ch; }
+  .stage.is-pinned .plot { height: clamp(80px, 14svh, 120px); }
+  .stage.is-pinned .chart { padding-top: 28px; }
+  .stage.is-pinned .log-card { grid-template-columns: minmax(0, 1fr) 21rem; row-gap: var(--space-2); }
+  .stage.is-pinned .log-read { grid-template-columns: 56px minmax(0, 1fr); gap: var(--space-3); }
+  .stage.is-pinned .ro { display: grid; grid-template-columns: repeat(3, auto); justify-content: space-between; gap: var(--space-3); }
+  .stage.is-pinned .ro div { display: grid; gap: 0; padding: 0; border: 0; }
+  .stage.is-pinned .ro dd, .stage.is-pinned .ro .colour dd { min-width: 0; text-align: left; }
+}
+
+.paper { background: var(--paper); border-radius: var(--r-paper); box-shadow: var(--shadow-paper); }
+
+/* I5: bags. Copper foil band on the label; the sheen follows a fine pointer inside the label only */
+.bags { display: flex; flex-wrap: wrap; gap: var(--space-5); }
+.bag {
+  width: clamp(136px, 12vw, 164px);
+  display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-3); justify-items: start;
+  padding: 0; border: 0; background: none; text-align: left; cursor: pointer;
+  transition: transform var(--dur-release) var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+.bag:active { transform: scale(.97); transition-duration: var(--dur-press); }
+.bag:focus-visible { outline: 2px solid var(--stencil-blue); outline-offset: 5px; }
+.bag-body {
+  position: relative; width: 100%; aspect-ratio: 3 / 4;
+  display: flex; flex-direction: column; padding: 30px 10px 12px;
+  background: var(--paper); border-radius: var(--r-paper); box-shadow: var(--shadow-paper);
+}
+.bag-body::before { content: ""; position: absolute; left: 0; right: 0; top: 9px; height: 7px; background: repeating-linear-gradient(90deg, var(--rule) 0 1.5px, transparent 1.5px 4px); }
+.bag-body::after { content: ""; position: absolute; right: 12px; top: 26px; width: 13px; height: 13px; border-radius: 50%; border: 1.5px solid var(--rule-strong); }
+.bag-label {
+  position: relative; isolation: isolate; overflow: hidden; margin-top: auto;
+  display: grid; gap: 1px; padding: 9px 9px 8px;
+  border-top: 3px solid var(--foil);
+  background: var(--roast); color: var(--paper);
+  font-size: var(--step--1); line-height: 1.3;
+}
+.bag-label b { font-size: var(--step-0); font-weight: 600; }
+.bag-label::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: radial-gradient(circle at var(--x, 50%) var(--y, 50%), var(--foil), transparent 65%);
+  mix-blend-mode: screen; opacity: 0; transition: opacity var(--dur-out) var(--ease);
+}
+@media (hover: hover) { .bag:hover .bag-label::before { opacity: .6; } }
+@media (hover: none) { .bag-label::before { opacity: .35; } }
+.bag:focus-visible .bag-label::before { --x: 50%; --y: 50%; opacity: .6; }
+.bag-cta { font-weight: 600; color: var(--stencil-blue); padding-bottom: .1em; background: linear-gradient(currentColor, currentColor) 100% 100% / 0% .07em no-repeat, linear-gradient(var(--link-rest), var(--link-rest)) 0 100% / 100% .07em no-repeat; transition: background-size .4s var(--ease); }
+@media (hover: hover) { .bag:hover .bag-cta { background-size: 100% .07em, 100% .07em; background-position: 0 100%, 0 100%; } }
+@media (hover: none) { .bag-cta { background-size: 100% .07em, 100% .07em; } }
+.bag:focus-visible .bag-cta { background-size: 100% .07em, 100% .07em; background-position: 0 100%, 0 100%; }
+
+.fresh { width: 100%; max-width: 440px; font-size: var(--step--1); line-height: 1.2; }
+.fresh-days { position: relative; height: 1.7em; color: var(--roast-2); }
+.fresh-days span { position: absolute; bottom: 6px; left: calc(var(--d) / 42 * 100%); translate: -50% 0; }
+.fresh-days span:first-child { translate: 0 0; }
+.fresh-days span:last-child { translate: -100% 0; }
+.fresh-bar { position: relative; height: 30px; border: 1px solid var(--rule-strong); border-radius: var(--r-btn); }
+.fresh-band { position: absolute; top: 3px; bottom: 3px; left: calc(7 / 42 * 100%); right: calc(7 / 42 * 100%); display: grid; place-items: center; border: 1.5px solid var(--stencil-blue); background: color-mix(in srgb, var(--paper) 55%, transparent); color: var(--roast); font-weight: 600; white-space: nowrap; }
+.fresh-pins { position: relative; height: 3.6em; }
+.fresh-pins span { position: absolute; top: 0; left: calc(var(--d) / 42 * 100%); height: calc((var(--row) + 1) * 1.7em); display: flex; align-items: flex-end; padding-left: 6px; border-left: 1.5px solid var(--roast); white-space: nowrap; }
+.fresh-pins .end { padding: 0 6px 0 0; border-left: 0; border-right: 1.5px solid var(--roast); translate: -100% 0; }
+
+.brew { width: 100%; max-width: 360px; padding: var(--space-4); }
+.brew b { display: block; font-weight: 600; margin-bottom: var(--space-2); }
+.brew div { display: grid; grid-template-columns: 6.5em 1fr; gap: var(--space-3); padding-block: var(--space-2); border-top: 1px solid var(--rule); font-size: var(--step--1); line-height: 1.45; }
+.brew dt { font-weight: 600; }
+
+/* I8: two layers in one cell; the label swaps under a mask */
+.hold { display: grid; overflow: clip; padding: 6px; margin: -6px; } /* 6px keeps the 5px focus rings inside the mask */
+.hold-a, .hold-b { grid-area: 1 / 1; display: flex; flex-wrap: wrap; align-items: center; align-content: start; gap: var(--space-2) var(--space-5); transition: transform .35s var(--ease), opacity .35s var(--ease), visibility 0s .35s; }
+.hold:not(.is-held) .hold-a, .hold.is-held .hold-b { transition-delay: 0s; }
+.hold-b { transform: translateY(110%); opacity: 0; visibility: hidden; }
+.hold.is-held .hold-a { transform: translateY(-110%); opacity: 0; visibility: hidden; }
+.hold.is-held .hold-b { transform: none; opacity: 1; visibility: visible; }
+.hold-b p { font-weight: 600; flex-basis: 100%; }
+
+/* ---------- Signature: the roast log, printed on the back of the El Mirador lot card ---------- */
+.log { padding-block: var(--space-4); }
+.log-card {
+  display: grid; grid-template-columns: minmax(0, 1fr) 17rem; grid-template-areas: "chart head" "chart read";
+  gap: var(--space-4) var(--space-6); padding: var(--space-3) var(--space-5) var(--space-3) var(--space-4);
+}
+.log-head { grid-area: head; padding-top: var(--space-2); }
+.log-head h3 { font-size: var(--step-0); line-height: 1.25; font-weight: 600; }
+.log-sub { color: var(--roast-2); font-size: var(--step--1); line-height: 1.35; margin-top: 2px; }
+.legend { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-5); font-size: var(--step--1); line-height: 1.3; }
+.legend li::before { content: ""; display: inline-block; width: 26px; vertical-align: middle; margin-right: var(--space-2); border-top: 2.5px solid var(--stencil-blue); }
+.legend .lg-et::before { border-top-style: dashed; border-top-color: var(--exhaust-red); }
+.chart-col { grid-area: chart; min-width: 0; }
+.chart { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: var(--space-3); padding-top: 34px; }
+.yaxis { position: relative; width: 3.6em; font-size: var(--step--1); line-height: 1; text-align: right; color: var(--roast-2); }
+.yaxis span { position: absolute; right: 0; top: calc(var(--y) * 1%); translate: 0 -50%; white-space: nowrap; }
+.plot {
+  position: relative; height: clamp(150px, 18vw, 240px);
+  border-left: 1px solid var(--roast); border-bottom: 1px solid var(--roast);
+  cursor: crosshair; touch-action: pan-y; user-select: none; -webkit-user-select: none;
+  container-type: inline-size; /* the crosshair moves in cqw, so nothing plot-wide slides past the edge and widens the page */
+}
+.plot:focus-visible { outline: 2px solid var(--stencil-blue); outline-offset: 6px; }
+.plot-grid { position: absolute; inset: 0; pointer-events: none; background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size: 100% 20%, calc(100% * 60 / 640) 100%; }
+.curves { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.curves use { fill: none; stroke-linejoin: round; stroke-linecap: round; }
+#bt, #et, #kb { vector-effect: non-scaling-stroke; }
+use.bt { stroke: var(--stencil-blue); stroke-width: 2.5; }
+use.et { stroke: var(--exhaust-red); stroke-width: 2; stroke-dasharray: 7 5; }
+.ghost use.bt { stroke: var(--ghost-bt); }
+.ghost use.et { stroke: var(--ghost-et); }
+.live { position: absolute; inset: 0; clip-path: inset(-12px calc((1 - var(--p, 1)) * 100%) -12px 0); }
+.ev { position: absolute; z-index: 1; width: 0; height: 0; pointer-events: none; left: calc(var(--t) / 640 * 100%); top: calc((240 - var(--v)) / 200 * 100%); }
+.ev-dot, .ev-label { transition: scale .35s var(--ease), opacity .35s var(--ease); }
+.log.is-live .ev:not(.is-on) .ev-label { scale: .6; opacity: 0; } /* labels wait for their tick; no ghost text */
+.log.is-live .ev:not(.is-on) .ev-dot { scale: .7; opacity: .3; }
+.ev-dot { position: absolute; left: -5px; top: -5px; width: 10px; height: 10px; border-radius: 50%; background: var(--paper); border: 2px solid var(--stencil-blue); }
+.ev.fc .ev-dot { background: var(--exhaust-red); border-color: var(--exhaust-red); }
+.ev-label { position: absolute; white-space: nowrap; font-size: var(--step--1); line-height: 1.2; background: var(--paper); padding: 1px 3px; }
+.ev.fc .ev-label { color: var(--exhaust-red); font-weight: 600; }
+.ev-abbr { display: none; }
+.below .ev-label { top: 10px; left: 0; translate: -50% 0; }
+.right .ev-label { top: 3px; left: 26px; } /* clear of the steep BT drop and above the turning point */
+.below-right .ev-label { top: 7px; left: 7px; }
+.above-left .ev-label { bottom: 9px; right: 9px; }
+.cross { position: absolute; left: 0; top: 0; bottom: 0; width: 0; transform: translateX(calc(var(--p, 1) * 100cqw)); pointer-events: none; }
+.cross::before { content: ""; position: absolute; left: -.75px; top: -6px; bottom: 0; width: 1.5px; background: var(--stencil-blue); }
+.cross-dot { position: absolute; left: 0; top: 0; width: 0; height: 100%; transform: translateY(calc(var(--by, .16) * 100%)); }
+.cross-dot::after { content: ""; position: absolute; left: -6.5px; top: -6.5px; width: 13px; height: 13px; border-radius: 50%; background: var(--paper); border: 2.5px solid var(--stencil-blue); }
+.tab {
+  position: absolute; left: 0; bottom: 100%; margin-bottom: 6px;
+  transform: translateX(calc(var(--p, 1) * -100%));
+  padding: 6px 8px 5px; border-radius: var(--r-btn);
+  background: var(--stencil-blue); color: var(--paper);
+  font-size: var(--step--1); line-height: 1;
+}
+.peek { position: absolute; left: 0; top: 0; bottom: 0; width: 0; transform: translateX(calc(var(--q, 0) * 100cqw)); pointer-events: none; opacity: 0; transition: opacity var(--dur-out) var(--ease); }
+.peek::before { content: ""; position: absolute; left: -.5px; top: 0; bottom: 0; width: 1px; background: var(--stencil-blue); opacity: .45; }
+.peek-tab { position: absolute; left: 0; top: 4px; transform: translateX(calc(var(--q, 0) * -100% + (1 - var(--q, 0)) * 6px - var(--q, 0) * 6px)); padding: 3px 6px 2px; border: 1px solid var(--stencil-blue); border-radius: var(--r-btn); background: var(--paper); color: var(--stencil-blue); font-size: var(--step--1); line-height: 1.2; white-space: nowrap; }
+.plot.is-seek { cursor: pointer; }
+.plot.is-peek .peek { opacity: 1; transition-duration: var(--dur-in); }
+.xaxis { grid-column: 2; position: relative; height: 1.9em; font-size: var(--step--1); line-height: 1; color: var(--roast-2); }
+.xaxis span { position: absolute; top: 8px; left: calc(var(--t) / 640 * 100%); translate: -50% 0; }
+.xaxis span:first-child { translate: 0 0; }
+.log-foot { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-1) var(--space-6); margin-top: var(--space-1); }
+.log-help { color: var(--roast-2); font-size: var(--step--1); line-height: 1.4; }
+.ev-key { display: none; }
+
+.log-read { grid-area: read; align-self: end; display: grid; grid-template-columns: 76px minmax(0, 1fr); align-items: center; gap: var(--space-4); }
+.bean { width: 100%; height: auto; overflow: visible; }
+.bean-body { transform-box: fill-box; transform-origin: center; transform: scale(var(--bs, 1.48)); }
+.bean-layer.l0 { fill: var(--bean-green); }
+.bean-layer.l1 { fill: var(--bean-yellow); }
+.bean-layer.l2 { fill: var(--bean-cinnamon); }
+.bean-layer.l3 { fill: var(--bean-brown); }
+.bean-layer.l4 { fill: var(--bean-city); }
+.shade-hi { stop-color: var(--paper); }
+.shade-lo { stop-color: var(--roast); }
+.bean-edge { fill: none; stroke: var(--rule-strong); stroke-width: 2; }
+.crease { fill: none; stroke: var(--crease); stroke-width: 7; stroke-linecap: round; }
+.crease-open { fill: none; stroke: var(--chaff); stroke-width: 3; stroke-linecap: round; transition: clip-path .45s var(--ease); }
+.log.is-live .bean:not(.is-cracked) .crease-open { clip-path: inset(0 0 100% 0); }
+.ro div { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); padding-block: 6px; border-bottom: 1px solid var(--rule); }
+.ro div:first-child { border-top: 1px solid var(--roast); }
+.ro dt { color: var(--roast-2); }
+.ro dd { min-width: 6ch; text-align: right; font-weight: 500; font-variant-numeric: tabular-nums; }
+.ro dt { white-space: nowrap; }
+.ro .big dd { font-size: var(--step-1); line-height: 1.1; }
+.ro .colour dd { min-width: 8ch; }
+
+/* ---------- Closing ---------- */
+.closing {
+  display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--space-5); row-gap: var(--space-5);
+  align-items: end; border-top: 2px solid var(--roast); padding-block: var(--space-7);
+}
+.closing h3 { grid-column: 1 / span 7; font-family: var(--font-stencil); font-weight: 800; font-size: var(--step-closing); line-height: .92; letter-spacing: .01em; text-transform: uppercase; }
+.closing-body { grid-column: 9 / -1; display: grid; gap: var(--space-4); justify-items: start; }
+
+/* ---------- Dialogs (I9, I10) ---------- */
+dialog {
+  width: min(100% - 32px, 640px); max-height: min(100% - 32px, 900px);
+  padding: 0; border: 0; border-radius: var(--r-dialog);
+  background: var(--paper); color: var(--roast);
+  box-shadow: 2px 2px 0 var(--rule-strong);
+  opacity: 0; transform: translateY(12px) scale(.98);
+  transition: opacity var(--dur-out) var(--ease), transform var(--dur-out) var(--ease), overlay var(--dur-out) allow-discrete, display var(--dur-out) allow-discrete;
+}
+dialog[open] { opacity: 1; transform: none; transition-duration: var(--dur-in); }
+@starting-style { dialog[open] { opacity: 0; transform: translateY(12px) scale(.98); } }
+dialog::backdrop { background: var(--backdrop); opacity: 0; transition: opacity var(--dur-out), overlay var(--dur-out) allow-discrete, display var(--dur-out) allow-discrete; }
+dialog[open]::backdrop { opacity: 1; }
+@starting-style { dialog[open]::backdrop { opacity: 0; } }
+.sheet { padding: var(--space-6); }
+.sheet-head { display: flex; justify-content: space-between; align-items: start; gap: var(--space-4); margin-bottom: var(--space-5); }
+.sheet-head h2 { font-size: var(--step-2); line-height: 1.1; font-weight: 600; }
+.sheet-intro { color: var(--roast-2); margin-bottom: var(--space-5); max-width: 46ch; }
+.lot-dl div { display: grid; grid-template-columns: 9em 1fr; gap: var(--space-4); padding-block: var(--space-2); border-top: 1px solid var(--rule); }
+.lot-dl dt { color: var(--roast-2); }
+.mini { margin-top: var(--space-6); display: grid; gap: var(--space-3); }
+.mini-plot { position: relative; height: 140px; border-left: 1px solid var(--roast); border-bottom: 1px solid var(--roast); }
+.mini-live { position: absolute; inset: 0; clip-path: inset(-12px 0 -12px 0); transition: clip-path .9s var(--ease) .1s; }
+@starting-style { dialog[open] .mini-live { clip-path: inset(-12px 100% -12px 0); } }
+.mini figcaption { font-size: var(--step--1); color: var(--roast-2); line-height: 1.4; }
+
+/* I11: the rule draws in blue on focus; errors sit on a reserved line, uncovered by clip-path */
+.field { display: grid; gap: var(--space-1); margin-bottom: var(--space-1); }
+.field label { font-weight: 600; font-size: var(--step--1); transition: color var(--dur-out) var(--ease); }
+.field:focus-within label { color: var(--stencil-blue); }
+.input-wrap { position: relative; }
+.input-wrap::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--stencil-blue); transform: scaleX(0); transform-origin: left; transition: transform var(--dur-out) var(--ease); }
+.input-wrap:focus-within::after { transform: scaleX(1); }
+.input-wrap:has(:focus-visible) { outline: 2px solid var(--stencil-blue); outline-offset: 2px; }
+.field input {
+  width: 100%; min-height: 46px; padding: var(--space-2) 0;
+  border: 0; border-bottom: 1px solid var(--rule-strong); border-radius: 0;
+  background: transparent; color: var(--roast); font: inherit;
+  transition: border-color .2s;
+}
+.field input:hover { border-bottom-color: var(--roast); }
+.field input:focus { outline: none; }
+.field input[aria-invalid="true"] { border-bottom-color: var(--exhaust-red); }
+.err { min-height: 1.5em; font-size: var(--step--1); line-height: 1.5; color: var(--exhaust-red); font-weight: 600; clip-path: inset(0 0 100% 0); transition: clip-path .25s var(--ease); }
+.err.is-shown { clip-path: inset(0); }
+fieldset { border: 0; padding: 0; margin: var(--space-3) 0 var(--space-5); min-width: 0; }
+legend { font-weight: 600; font-size: var(--step--1); padding: 0; margin-bottom: var(--space-2); }
+/* I12: real radios; outline, a check badge and the word "Chosen" mark the choice */
+.opts { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--space-2); }
+.opt {
+  position: relative; display: grid; gap: 2px; padding: var(--space-3);
+  border: 1px solid var(--rule-strong); border-radius: var(--r-btn); cursor: pointer;
+  transition: border-color .2s, box-shadow .2s;
+}
+.opt input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
+.opt-name { font-weight: 600; }
+.opt-hint { font-size: var(--step--1); color: var(--roast-2); }
+.opt:hover { border-color: var(--stencil-blue); }
+.opt:has(:checked) { border-color: var(--stencil-blue); box-shadow: inset 0 0 0 1px var(--stencil-blue); }
+.opt:has(:focus-visible) { outline: 2px solid var(--stencil-blue); outline-offset: 3px; }
+.badge {
+  justify-self: start; margin-top: 6px;
+  display: inline-flex; align-items: center; gap: 3px; padding: 2px 6px 2px 4px;
+  border-radius: 999px; background: var(--stencil-blue); color: var(--paper);
+  font-size: var(--step--1); font-weight: 600; line-height: 1.2;
+  opacity: 0; transform: scale(.6);
+  transition: opacity .25s var(--ease), transform .25s var(--ease);
+}
+.badge svg { width: 11px; height: 11px; }
+.opt:has(:checked) .badge { opacity: 1; transform: none; }
+.fineprint { margin-top: var(--space-4); font-size: var(--step--1); color: var(--roast-2); max-width: 52ch; }
+.done p:first-child { font-size: var(--step-1); line-height: 1.35; font-weight: 600; margin-bottom: var(--space-3); }
+.done-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4) var(--space-6); margin-top: var(--space-6); }
+
+/* ---------- Below desktop ---------- */
+@media (max-width: 991px) {
+  :root { --panel-w: min(62vw, 560px); }
+  .closing h3, .closing-body { grid-column: 1 / -1; }
+  .plate { grid-column: 9 / -1; }
+  .log-card { grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "chart" "read"; row-gap: var(--space-3); padding: var(--space-4); }
+  .log-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: var(--space-2) var(--space-5); padding-top: 0; }
+  .log-read { grid-template-columns: 56px minmax(0, 1fr); }
+  .ro { display: grid; grid-template-columns: repeat(3, auto); justify-content: space-between; gap: var(--space-4); }
+  .ro div, .ro div:first-child { display: grid; gap: 0; padding: 0; border: 0; }
+  .ro dd, .ro .colour dd { min-width: 0; text-align: left; }
+  .ro .big dd { font-size: var(--step-1); }
+}
+@media (max-width: 699px) {
+  :root { --panel-w: 86vw; }
+  .panel { padding: var(--space-5) var(--space-4) var(--space-5) 0; }
+  .panel + .panel { padding-left: var(--space-4); }
+  .log-card { padding: var(--space-4) var(--space-4) var(--space-3) var(--space-3); }
+  .yaxis { width: 2.6em; }
+  .plot { height: 130px; }
+  .ev-full { display: none; }
+  .ev-abbr { display: inline; }
+  .ev-key { display: block; color: var(--roast-2); font-size: var(--step--1); margin-top: var(--space-1); }
+}
+@media (max-width: 599px) {
+  .intro-copy { grid-column: 1 / -1; }
+  .plate { display: none; } /* the tag repeats the lot facts; on a phone the log comes first */
+  .xaxis .odd { display: none; }
+  .actions .btn { width: 100%; }
+  dialog { width: 100%; max-width: none; height: 100dvh; max-height: none; margin: 0; border-radius: 0; }
+  .sheet { padding: var(--space-5) var(--space-4) var(--space-7); }
+  .lot-dl div { grid-template-columns: 7.5em 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: .01ms !important; }
+  dialog, dialog::backdrop { transition-duration: .2s !important; }
+  dialog, dialog[open] { transform: none; }
+  @starting-style { dialog[open] { transform: none; } }
+  .btn:active, .bag:active { transform: none; }
+}
+</style>
+</head>
+<body>
+<main>
+<section class="tolva" aria-labelledby="tolva-title">
+  <!-- Sprayed-ink speckle for the stencil H2 and the sack plate; outside the plate so it still renders when the plate is hidden on phones -->
+  <svg class="fx" aria-hidden="true" focusable="false">
+    <filter id="ink" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="11" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -2.4 1.95" result="m"/>
+      <feComposite in="SourceGraphic" in2="m" operator="in" result="speck"/>
+      <feTurbulence type="fractalNoise" baseFrequency=".04" numOctaves="1" seed="2" result="w"/>
+      <feDisplacementMap in="speck" in2="w" scale="3" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="ink-type" x="-5%" y="-5%" width="110%" height="110%"><!-- lighter speckle for text set at reading size -->
+      <feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="11" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -2.2 2.3" result="m"/>
+      <feComposite in="SourceGraphic" in2="m" operator="in" result="speck"/>
+      <feTurbulence type="fractalNoise" baseFrequency=".04" numOctaves="1" seed="2" result="w"/>
+      <feDisplacementMap in="speck" in2="w" scale="3" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </svg>
+
+  <div class="wrap intro">
+    <div class="intro-copy">
+      <p class="wordmark">Tolva Roasters</p>
+      <h2 id="tolva-title" class="title">What arrives every month</h2>
+      <p class="lede">Two coffees we roasted on Tuesday, in your letterbox by Friday. Each comes with the farm’s details, the price we paid and a recipe written for that lot. £16 a month, UK postage included, pause whenever you like.</p>
+      <div class="actions">
+        <button class="btn" type="button" data-open="subscribe" aria-haspopup="dialog">Start a subscription</button>
+        <a class="link" href="#box">See October’s coffees</a>
+      </div>
+    </div>
+    <figure class="plate">
+      <svg class="plate-sack" viewBox="0 0 400 500" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+        <defs>
+          <pattern id="weave" width="10" height="10" patternUnits="userSpaceOnUse">
+            <rect width="10" height="10" fill="var(--jute)"/>
+            <path d="M0 2.5h5M5 7.5h5" stroke="var(--jute-light)" stroke-width="3.6"/>
+            <path d="M7.5 0v5M2.5 5v5" stroke="var(--jute-dark)" stroke-width="3.6"/>
+          </pattern>
+          <filter id="fibre" x="0" y="0" width="100%" height="100%">
+            <feTurbulence type="fractalNoise" baseFrequency=".012 .35" numOctaves="2" seed="4"/>
+            <feColorMatrix values="0 0 0 0 .17  0 0 0 0 .11  0 0 0 0 .07  0 0 0 .9 -.32"/>
+          </filter>
+        </defs>
+        <rect width="400" height="500" fill="url(#weave)"/>
+        <rect width="400" height="500" filter="url(#fibre)"/>
+      </svg>
+      <svg class="plate-ink" viewBox="0 0 400 500" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="plate-alt">
+        <title id="plate-alt">Stencil print from the sack of this month’s Colombian lot: Tolva Roasters, lot 26-10, Huila, Colombia, 1,750 metres, washed Caturra, 60 kg</title>
+        <g filter="url(#ink)">
+          <path d="M36 44h152m24 0h152M36 456h152m24 0h152M36 44v194m0 24v194M364 44v194m0 24v194" fill="none" stroke="var(--plate-ink)" stroke-width="7"/>
+          <text x="200" y="104" font-size="30" letter-spacing="4">TOLVA ROASTERS</text>
+          <text x="200" y="178" font-size="58" letter-spacing="4">LOT</text>
+          <text x="200" y="262" font-size="96" letter-spacing="2">26-10</text>
+          <text x="200" y="318" font-size="40" letter-spacing="3">HUILA COLOMBIA</text>
+          <text x="200" y="362" font-size="30" letter-spacing="3">WASHED CATURRA</text>
+          <text x="70" y="418" font-size="30" letter-spacing="2" style="text-anchor:start">1,750 M</text>
+          <text x="330" y="418" font-size="30" letter-spacing="2" style="text-anchor:end">60 KG</text>
+        </g>
+      </svg>
+    </figure>
+  </div>
+
+  <div class="box" id="box" tabindex="-1">
+   <div class="stage">
+    <nav class="wrap idx" aria-label="In the box">
+      <div class="idx-scroll" data-lenis-prevent-horizontal>
+        <ul>
+          <li><a href="#box-lots" aria-current="true">Two coffees</a></li>
+          <li><a href="#box-roastday">Roast day</a></li>
+          <li><a href="#box-lotcard">Lot card</a></li>
+          <li><a href="#box-brew">Brew card</a></li>
+          <li><a href="#box-cupping">Cupping</a></li>
+          <li><a href="#box-terms">Your terms</a></li>
+        </ul>
+        <span class="idx-bar" aria-hidden="true"></span>
+      </div>
+      <div class="idx-rule" aria-hidden="true"></div>
+    </nav>
+
+    <div class="row" id="row" data-lenis-prevent-horizontal>
+    <ul class="row-track" aria-label="Box contents, six panels">
+      <li class="panel" id="box-lots">
+        <h3 tabindex="-1">Two coffees, 250&nbsp;g each</h3>
+        <p>One familiar, one a stretch. October brings Finca El Mirador, a washed Caturra from Huila with red apple and panela. It also brings Kebel Aricha, a natural from Yirgacheffe that tastes of blueberry and black tea.</p>
+        <div class="bags">
+          <button class="bag" type="button" data-open="lot" data-lot="mirador" aria-haspopup="dialog">
+            <span class="bag-body" aria-hidden="true"><span class="bag-label"><span>Tolva Roasters</span><b>El Mirador</b><span>Colombia</span><span>Washed</span></span></span>
+            <span class="bag-cta">El Mirador lot card</span>
+          </button>
+          <button class="bag" type="button" data-open="lot" data-lot="kebel" aria-haspopup="dialog">
+            <span class="bag-body" aria-hidden="true"><span class="bag-label"><span>Tolva Roasters</span><b>Kebel Aricha</b><span>Ethiopia</span><span>Natural</span></span></span>
+            <span class="bag-cta">Kebel Aricha lot card</span>
+          </button>
+        </div>
+      </li>
+      <li class="panel" id="box-roastday">
+        <h3 tabindex="-1">Roasted Tuesday, posted Wednesday</h3>
+        <p>We roast subscriptions on the first Tuesday of the month in 12&nbsp;kg batches and post them the next morning. The roast date is printed on every bag. Let it rest a week: it tastes best from day 7 to day 35.</p>
+        <div class="fresh" role="img" aria-label="Freshness: roasted on day 0, arrives on day 3, best from day 7, still good at day 35.">
+          <div class="fresh-days num"><span style="--d:0">Day 0</span><span style="--d:7">7</span><span style="--d:14">14</span><span style="--d:21">21</span><span style="--d:28">28</span><span style="--d:35">35</span><span style="--d:42">42</span></div>
+          <div class="fresh-bar"><span class="fresh-band">Best from day 7</span></div>
+          <div class="fresh-pins"><span style="--d:0;--row:1">Roasted</span><span style="--d:3;--row:0">Arrives</span><span class="end" style="--d:35;--row:0">Still good at day 35</span></div>
+        </div>
+      </li>
+      <li class="panel" id="box-lotcard">
+        <h3 tabindex="-1">A lot card with the price we paid</h3>
+        <p>Farm, producer, altitude, process, harvest month, and what we paid: $7.40 a kilo, free on board, to Luz Dary Ortiz’s growers’ association for El Mirador. The back of the card carries the roast log of your batch.</p>
+        <a class="link" href="#roast-log">See the roast on the back of the card</a>
+      </li>
+      <li class="panel" id="box-brew">
+        <h3 tabindex="-1">A brew card for each lot</h3>
+        <div class="paper brew">
+          <b>How we brew El Mirador</b>
+          <dl>
+            <div><dt>V60</dt><dd>15&nbsp;g coffee, 250&nbsp;g water at 94&nbsp;°C, 2:45 total</dd></div>
+            <div><dt>Espresso</dt><dd>18&nbsp;g in, 40&nbsp;g out, 27 to 30&nbsp;s</dd></div>
+          </dl>
+        </div>
+        <p>Whole beans, or ground for filter, espresso, cafetière or moka.</p>
+        <button class="link" type="button" data-open="subscribe" data-focus="#grind input:checked" aria-haspopup="dialog">Choose a grind</button>
+      </li>
+      <li class="panel" id="box-cupping">
+        <h3 tabindex="-1">First Saturday cupping at the roastery</h3>
+        <p>Taste next month’s coffees before they ship. Saturday 7 November, 10:00 to 11:30, Unit 4, Crane Yard, Bristol. Eight places.</p>
+        <div class="hold">
+          <div class="hold-a"><button class="btn" type="button" data-hold="on">Hold a place</button></div>
+          <div class="hold-b" inert><p>Place held for Saturday 7 November</p><button class="link" type="button" data-hold="off">Release my place</button></div>
+        </div>
+        <p class="sr-only" aria-live="polite" id="hold-status"></p>
+      </li>
+      <li class="panel" id="box-terms">
+        <h3 tabindex="-1">Pause, skip or switch any month</h3>
+        <p>Changes made by the Sunday before roast day go into that roast. No minimum term; cancelling takes one email to <a class="link" href="mailto:hello@tolvaroasters.co.uk" target="_blank" rel="noopener">hello@tolvaroasters.co.uk</a>.</p>
+        <button class="btn" type="button" data-open="subscribe" aria-haspopup="dialog">Start a subscription</button>
+      </li>
+    </ul>
+    </div>
+    <div class="wrap pager">
+      <button class="btn btn-sm" type="button" data-step="-1" aria-controls="row" aria-disabled="true">Previous</button>
+      <p class="count num" id="count" aria-live="polite">1 of 6</p>
+      <button class="btn btn-sm" type="button" data-step="1" aria-controls="row">Next</button>
+    </div>
+
+  <section class="wrap log" id="roast-log" tabindex="-1" aria-labelledby="log-title">
+    <div class="paper log-card">
+      <div class="log-head">
+        <div>
+          <h3 id="log-title">Roast log, batch 26-10-A</h3>
+          <p class="log-sub">Back of the El Mirador lot card. Roasted 6 October, 12&nbsp;kg drum.</p>
+        </div>
+      </div>
+      <div class="chart-col">
+      <div class="chart">
+        <div class="yaxis num" aria-hidden="true">
+          <span style="--y:0">240&nbsp;°C</span><span style="--y:20">200</span><span style="--y:40">160</span><span style="--y:60">120</span><span style="--y:80">80</span><span style="--y:100">40</span>
+        </div>
+        <div class="plot" id="plot" tabindex="0" role="slider" aria-label="Roast log, batch 26-10-A" aria-describedby="log-help" aria-valuemin="0" aria-valuemax="640" aria-valuenow="640" aria-valuetext="10:40, bean 208 °C, city">
+          <div class="plot-grid" aria-hidden="true"></div>
+          <svg class="curves ghost" viewBox="0 0 640 200" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+            <defs>
+              <path id="bt" d="M0 40L2 45.6L4 51L6 56.2L8 61.3L10 66.3L12 71.1L14 75.7L16 80.2L18 84.5L20 88.6L22 92.6L24 96.5L26 100.2L28 103.7L30 107.1L32 110.4L34 113.5L36 116.5L38 119.3L40 122L42 124.5L44 126.9L46 129.1L48 131.3L50 133.2L52 135.1L54 136.8L56 138.4L58 139.8L60 141.1L62 142.3L64 143.4L66 144.4L68 145.2L70 145.9L72 146.5L74 147L76 147.4L78 147.7L80 147.9L82 148L84 148L86 148L88 147.9L90 147.8L92 147.6L94 147.4L96 147.1L98 146.8L100 146.4L102 146L104 145.5L106 145L108 144.4L110 143.8L112 143.1L114 142.4L116 141.6L118 140.8L120 139.9L122 139L124 138.1L126 137.3L128 136.4L130 135.5L132 134.7L134 133.8L136 133L138 132.1L140 131.3L142 130.4L144 129.6L146 128.8L148 128L150 127.2L152 126.4L154 125.6L156 124.8L158 124L160 123.2L162 122.5L164 121.7L166 120.9L168 120.2L170 119.4L172 118.7L174 118L176 117.2L178 116.5L180 115.8L182 115.1L184 114.4L186 113.7L188 113L190 112.3L192 111.7L194 111L196 110.3L198 109.7L200 109L202 108.4L204 107.7L206 107.1L208 106.5L210 105.8L212 105.2L214 104.6L216 104L218 103.4L220 102.8L222 102.2L224 101.7L226 101.1L228 100.5L230 100L232 99.4L234 98.9L236 98.3L238 97.8L240 97.2L242 96.7L244 96.2L246 95.7L248 95.2L250 94.7L252 94.2L254 93.7L256 93.2L258 92.8L260 92.3L262 91.8L264 91.4L266 90.9L268 90.5L270 90.1L272 89.6L274 89.2L276 88.8L278 88.3L280 87.9L282 87.5L284 87.1L286 86.6L288 86.2L290 85.8L292 85.4L294 84.9L296 84.5L298 84.1L300 83.7L302 83.3L304 82.9L306 82.5L308 82L310 81.6L312 81.2L314 80.8L316 80.4L318 80L320 79.6L322 79.2L324 78.8L326 78.4L328 78L330 77.6L332 77.2L334 76.8L336 76.4L338 76L340 75.6L342 75.2L344 74.9L346 74.5L348 74.1L350 73.7L352 73.3L354 72.9L356 72.6L358 72.2L360 71.8L362 71.4L364 71L366 70.7L368 70.3L370 69.9L372 69.5L374 69.2L376 68.8L378 68.4L380 68.1L382 67.7L384 67.3L386 67L388 66.6L390 66.3L392 65.9L394 65.5L396 65.2L398 64.8L400 64.5L402 64.1L404 63.8L406 63.4L408 63.1L410 62.7L412 62.4L414 62L416 61.7L418 61.3L420 61L422 60.7L424 60.3L426 60L428 59.6L430 59.3L432 59L434 58.6L436 58.3L438 58L440 57.6L442 57.3L444 57L446 56.7L448 56.3L450 56L452 55.7L454 55.4L456 55L458 54.7L460 54.4L462 54.1L464 53.8L466 53.5L468 53.1L470 52.8L472 52.5L474 52.2L476 51.9L478 51.6L480 51.3L482 51L484 50.7L486 50.4L488 50.1L490 49.8L492 49.5L494 49.2L496 48.9L498 48.6L500 48.3L502 48L504 47.7L506 47.4L508 47.1L510 46.9L512 46.6L514 46.3L516 46L518 45.7L520 45.4L522 45.2L524 44.9L526 44.6L528 44.3L530 44.1L532 43.8L534 43.5L536 43.2L538 43L540 42.7L542 42.4L544 42.2L546 41.9L548 41.7L550 41.4L552 41.2L554 40.9L556 40.7L558 40.4L560 40.2L562 39.9L564 39.7L566 39.4L568 39.2L570 39L572 38.7L574 38.5L576 38.3L578 38.1L580 37.8L582 37.6L584 37.4L586 37.2L588 37L590 36.7L592 36.5L594 36.3L596 36.1L598 35.9L600 35.7L602 35.5L604 35.3L606 35.1L608 34.9L610 34.7L612 34.5L614 34.3L616 34.1L618 34L620 33.8L622 33.6L624 33.4L626 33.2L628 33.1L630 32.9L632 32.7L634 32.6L636 32.4L638 32.2L640 32.1"/>
+              <path id="et" d="M0 12L2 13.8L4 15.5L6 17.2L8 18.9L10 20.5L12 22.1L14 23.6L16 25.1L18 26.5L20 27.9L22 29.3L24 30.6L26 31.9L28 33.1L30 34.3L32 35.4L34 36.5L36 37.6L38 38.6L40 39.6L42 40.5L44 41.4L46 42.2L48 43L50 43.8L52 44.5L54 45.2L56 45.8L58 46.4L60 46.9L62 47.4L64 47.8L66 48.3L68 48.6L70 48.9L72 49.2L74 49.5L76 49.7L78 49.8L80 49.9L82 50L84 50L86 49.4L88 48.7L90 48.1L92 47.5L94 46.9L96 46.3L98 45.7L100 45.1L102 44.6L104 44L106 43.5L108 42.9L110 42.4L112 41.8L114 41.3L116 40.8L118 40.3L120 39.8L122 39.3L124 38.8L126 38.3L128 37.8L130 37.3L132 36.9L134 36.4L136 35.9L138 35.5L140 35L142 34.6L144 34.2L146 33.7L148 33.3L150 32.9L152 32.5L154 32.1L156 31.7L158 31.3L160 30.9L162 30.5L164 30.2L166 29.8L168 29.4L170 29.1L172 28.7L174 28.3L176 28L178 27.6L180 27.3L182 27L184 26.6L186 26.3L188 26L190 25.7L192 25.4L194 25.1L196 24.7L198 24.4L200 24.2L202 23.9L204 23.6L206 23.3L208 23L210 22.7L212 22.4L214 22.2L216 21.9L218 21.6L220 21.4L222 21.1L224 20.9L226 20.6L228 20.4L230 20.1L232 19.9L234 19.7L236 19.4L238 19.2L240 19L242 18.7L244 18.5L246 18.3L248 18.1L250 17.9L252 17.7L254 17.5L256 17.2L258 17L260 16.8L262 16.7L264 16.5L266 16.3L268 16.1L270 15.9L272 15.7L274 15.5L276 15.3L278 15.2L280 15L282 14.8L284 14.7L286 14.5L288 14.3L290 14.2L292 14L294 13.8L296 13.7L298 13.5L300 13.4L302 13.2L304 13.1L306 12.9L308 12.8L310 12.6L312 12.5L314 12.4L316 12.2L318 12.1L320 12L322 11.8L324 11.7L326 11.6L328 11.4L330 11.3L332 11.2L334 11.1L336 10.9L338 10.8L340 10.7L342 10.6L344 10.5L346 10.4L348 10.3L350 10.1L352 10L354 9.9L356 9.8L358 9.7L360 9.6L362 9.5L364 9.4L366 9.3L368 9.2L370 9.1L372 9L374 8.9L376 8.9L378 8.8L380 8.7L382 8.6L384 8.5L386 8.4L388 8.3L390 8.2L392 8.2L394 8.1L396 8L398 7.9L400 7.8L402 7.8L404 7.7L406 7.6L408 7.5L410 7.5L412 7.4L414 7.3L416 7.2L418 7.2L420 7.1L422 7L424 7L426 6.9L428 6.8L430 6.8L432 6.7L434 6.7L436 6.6L438 6.5L440 6.5L442 6.4L444 6.4L446 6.3L448 6.2L450 6.2L452 6.1L454 6.1L456 6L458 6L460 5.9L462 5.9L464 5.8L466 5.8L468 5.7L470 5.7L472 5.6L474 5.6L476 5.5L478 5.5L480 5.4L482 5.4L484 5.3L486 5.3L488 5.2L490 5.2L492 5.2L494 5.1L496 5.1L498 5L500 5L502 5L504 4.9L506 4.9L508 4.8L510 4.8L512 4.8L514 4.7L516 4.7L518 4.7L520 4.6L522 4.6L524 4.6L526 4.5L528 4.5L530 4.5L532 4.4L534 4.4L536 4.4L538 4.3L540 4.3L542 4.3L544 4.2L546 4.2L548 4.2L550 4.1L552 4.1L554 4.1L556 4.1L558 4L560 4L562 4L564 4L566 3.9L568 3.9L570 3.9L572 3.9L574 3.8L576 3.8L578 3.8L580 3.8L582 3.7L584 3.7L586 3.7L588 3.7L590 3.6L592 3.6L594 3.6L596 3.6L598 3.6L600 3.5L602 3.5L604 3.5L606 3.5L608 3.5L610 3.4L612 3.4L614 3.4L616 3.4L618 3.4L620 3.3L622 3.3L624 3.3L626 3.3L628 3.3L630 3.3L632 3.2L634 3.2L636 3.2L638 3.2L640 3.2"/>
+              <path id="kb" d="M0 42L2 48L4 53.8L6 59.4L8 64.9L10 70.1L12 75.2L14 80.1L16 84.8L18 89.4L20 93.7L22 97.9L24 101.9L26 105.7L28 109.4L30 112.9L32 116.2L34 119.4L36 122.3L38 125.1L40 127.8L42 130.3L44 132.6L46 134.8L48 136.8L50 138.7L52 140.4L54 141.9L56 143.3L58 144.6L60 145.7L62 146.7L64 147.5L66 148.2L68 148.8L70 149.3L72 149.6L74 149.8L76 150L78 150L80 150L82 149.9L84 149.8L86 149.6L88 149.3L90 149L92 148.7L94 148.3L96 147.8L98 147.3L100 146.7L102 146.1L104 145.4L106 144.7L108 143.9L110 143.1L112 142.2L114 141.3L116 140.3L118 139.3L120 138.4L122 137.4L124 136.5L126 135.6L128 134.7L130 133.7L132 132.8L134 131.9L136 131L138 130.2L140 129.3L142 128.4L144 127.5L146 126.7L148 125.8L150 125L152 124.2L154 123.3L156 122.5L158 121.7L160 120.9L162 120.1L164 119.3L166 118.5L168 117.8L170 117L172 116.2L174 115.5L176 114.7L178 114L180 113.3L182 112.5L184 111.8L186 111.1L188 110.4L190 109.7L192 109L194 108.4L196 107.7L198 107L200 106.4L202 105.7L204 105.1L206 104.4L208 103.8L210 103.2L212 102.6L214 102L216 101.4L218 100.8L220 100.2L222 99.6L224 99L226 98.5L228 97.9L230 97.4L232 96.8L234 96.3L236 95.8L238 95.3L240 94.7L242 94.2L244 93.8L246 93.3L248 92.8L250 92.3L252 91.8L254 91.4L256 90.9L258 90.5L260 90L262 89.6L264 89.2L266 88.8L268 88.3L270 87.9L272 87.5L274 87L276 86.6L278 86.2L280 85.8L282 85.4L284 84.9L286 84.5L288 84.1L290 83.7L292 83.3L294 82.9L296 82.4L298 82L300 81.6L302 81.2L304 80.8L306 80.4L308 80L310 79.6L312 79.2L314 78.8L316 78.4L318 78L320 77.6L322 77.2L324 76.8L326 76.4L328 76L330 75.6L332 75.2L334 74.8L336 74.4L338 74L340 73.7L342 73.3L344 72.9L346 72.5L348 72.1L350 71.7L352 71.4L354 71L356 70.6L358 70.2L360 69.8L362 69.5L364 69.1L366 68.7L368 68.4L370 68L372 67.6L374 67.3L376 66.9L378 66.5L380 66.2L382 65.8L384 65.4L386 65.1L388 64.7L390 64.4L392 64L394 63.6L396 63.3L398 62.9L400 62.6L402 62.2L404 61.9L406 61.5L408 61.2L410 60.8L412 60.5L414 60.2L416 59.8L418 59.5L420 59.1L422 58.8L424 58.5L426 58.1L428 57.8L430 57.5L432 57.1L434 56.8L436 56.5L438 56.1L440 55.8L442 55.5L444 55.1L446 54.8L448 54.5L450 54.2L452 53.9L454 53.5L456 53.2L458 52.9L460 52.6L462 52.3L464 52L466 51.6L468 51.3L470 51L472 50.7L474 50.4L476 50.1L478 49.8L480 49.5L482 49.2L484 48.9L486 48.6L488 48.3L490 48L492 47.7L494 47.4L496 47.1L498 46.8L500 46.5L502 46.2L504 45.9L506 45.6L508 45.3L510 45L512 44.8L514 44.5L516 44.2L518 43.9L520 43.6L522 43.4L524 43.1L526 42.8L528 42.6L530 42.3L532 42L534 41.8L536 41.5L538 41.3L540 41L542 40.8L544 40.5L546 40.3L548 40.1L550 39.8L552 39.6L554 39.4L556 39.1L558 38.9L560 38.7L562 38.4L564 38.2L566 38L568 37.8L570 37.6L572 37.4L574 37.2L576 37L578 36.8L580 36.6L582 36.4L584 36.2L586 36L588 35.8L590 35.6L592 35.4L594 35.2L596 35.1"/>
+            </defs>
+            <use class="et" href="#et"/><use class="bt" href="#bt"/>
+          </svg>
+          <div class="live" aria-hidden="true">
+            <svg class="curves" viewBox="0 0 640 200" preserveAspectRatio="none" focusable="false"><use class="et" href="#et"/><use class="bt" href="#bt"/></svg>
+          </div>
+          <div class="ev right" data-t="0" style="--t:0;--v:200" aria-hidden="true"><span class="ev-dot"></span><span class="ev-label num"><span class="ev-full">Charge</span><span class="ev-abbr">CH</span> 200&nbsp;°C</span></div>
+          <div class="ev below" data-t="84" style="--t:84;--v:92" aria-hidden="true"><span class="ev-dot"></span><span class="ev-label num"><span class="ev-full">Turning point</span><span class="ev-abbr">TP</span> 1:24</span></div>
+          <div class="ev below-right" data-t="270" style="--t:270;--v:150" aria-hidden="true"><span class="ev-dot"></span><span class="ev-label num"><span class="ev-full">Dry end</span><span class="ev-abbr">DE</span> 4:30</span></div>
+          <div class="ev below-right fc" data-t="530" style="--t:530;--v:196" aria-hidden="true"><span class="ev-dot"></span><span class="ev-label num"><span class="ev-full">First crack</span><span class="ev-abbr">FC</span> 8:50</span></div>
+          <div class="ev above-left" data-t="640" style="--t:640;--v:208" aria-hidden="true"><span class="ev-dot"></span><span class="ev-label num">Drop 10:40</span></div>
+          <div class="peek" aria-hidden="true"><span class="peek-tab num"></span></div>
+          <div class="cross" aria-hidden="true"><span class="cross-dot"></span><span class="tab num">10:40</span></div>
+        </div>
+        <div class="xaxis num" aria-hidden="true">
+          <span style="--t:0">0:00</span><span class="odd" style="--t:60">1:00</span><span style="--t:120">2:00</span><span class="odd" style="--t:180">3:00</span><span style="--t:240">4:00</span><span class="odd" style="--t:300">5:00</span><span style="--t:360">6:00</span><span class="odd" style="--t:420">7:00</span><span style="--t:480">8:00</span><span class="odd" style="--t:540">9:00</span><span style="--t:600">10:00</span>
+        </div>
+      </div>
+      <p class="ev-key" aria-hidden="true">CH charge, TP turning point, DE dry end, FC first crack.</p>
+      <div class="log-foot">
+        <ul class="legend" aria-hidden="true">
+          <li>Bean temperature (BT)</li>
+          <li class="lg-et">Exhaust (ET)</li>
+        </ul>
+        <p class="log-help" id="log-help">Move along the log, drag or tap it, or use the arrow keys to see any minute.</p>
+      </div>
+      </div>
+
+    <div class="log-read">
+      <svg class="bean" viewBox="-70 -50 340 340" aria-hidden="true" focusable="false">
+        <defs>
+          <path id="bean-shape" d="M100 16C148 16 174 66 174 122C174 182 140 224 98 224C54 224 26 180 26 122C26 64 54 16 100 16Z"/>
+          <radialGradient id="bean-shade" cx="36%" cy="28%" r="78%">
+            <stop class="shade-hi" offset="0" stop-opacity=".32"/>
+            <stop class="shade-hi" offset=".5" stop-opacity="0"/>
+            <stop class="shade-lo" offset="1" stop-opacity=".32"/>
+          </radialGradient>
+        </defs>
+        <g class="bean-body">
+          <g transform="rotate(-16 100 120)">
+            <use class="bean-layer l0" href="#bean-shape"/>
+            <use class="bean-layer l1" href="#bean-shape" data-from="140" data-span="16"/>
+            <use class="bean-layer l2" href="#bean-shape" data-from="160" data-span="14"/>
+            <use class="bean-layer l3" href="#bean-shape" data-from="180" data-span="12"/>
+            <use class="bean-layer l4" href="#bean-shape" data-from="198" data-span="8"/>
+            <use href="#bean-shape" fill="url(#bean-shade)"/>
+            <use class="bean-edge" href="#bean-shape"/>
+            <path class="crease" d="M104 36C82 76 118 102 100 128C84 152 114 184 98 206"/>
+            <path class="crease-open" d="M104 36C82 76 118 102 100 128C84 152 114 184 98 206"/>
+          </g>
+        </g>
+      </svg>
+      <dl class="ro" aria-live="off">
+        <div class="big"><dt>Roast time</dt><dd data-r="time">10:40</dd></div>
+        <div><dt data-r="btk">Bean</dt><dd data-r="bt">208&nbsp;°C</dd></div>
+        <div class="colour"><dt>Colour</dt><dd data-r="colour">City</dd></div>
+      </dl>
+    </div>
+    </div>
+
+    <div class="sr-only"><table>
+      <caption>Roast events, batch 26-10-A</caption>
+      <thead><tr><th scope="col">Event</th><th scope="col">Time</th><th scope="col">Bean temperature</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Charge, the probe reads the hot drum</th><td>0:00</td><td>200&nbsp;°C</td></tr>
+        <tr><th scope="row">Turning point</th><td>1:24</td><td>92&nbsp;°C</td></tr>
+        <tr><th scope="row">Dry end</th><td>4:30</td><td>150&nbsp;°C</td></tr>
+        <tr><th scope="row">First crack</th><td>8:50</td><td>196&nbsp;°C</td></tr>
+        <tr><th scope="row">Drop</th><td>10:40</td><td>208&nbsp;°C</td></tr>
+      </tbody>
+    </table></div>
+    <p class="sr-only" aria-live="polite" id="log-event"></p>
+  </section>
+   </div>
+  </div>
+
+  <div class="wrap closing" id="start">
+    <h3>Next roast: Tuesday 3 November</h3>
+    <div class="closing-body">
+      <p>Order by Sunday 1 November to be in it.</p>
+      <button class="btn" type="button" data-open="subscribe" aria-haspopup="dialog">Start a subscription</button>
+      <p>Questions: <a class="link" href="mailto:hello@tolvaroasters.co.uk" target="_blank" rel="noopener">hello@tolvaroasters.co.uk</a></p>
+    </div>
+  </div>
+
+  <dialog id="subscribe" aria-labelledby="sub-title" data-lenis-prevent>
+    <div class="sheet">
+      <div class="sheet-head">
+        <h2 id="sub-title">Start a subscription</h2>
+        <button class="btn btn-sm" type="button" data-close>Close</button>
+      </div>
+      <form id="sub-form" novalidate>
+        <p class="sheet-intro">Two 250&nbsp;g bags each month for £16, UK postage included.</p>
+        <div class="field">
+          <label for="f-name">Name</label>
+          <div class="input-wrap"><input id="f-name" name="name" autocomplete="name" required></div>
+          <p class="err" id="f-name-err"></p>
+        </div>
+        <div class="field">
+          <label for="f-email">Email</label>
+          <div class="input-wrap"><input id="f-email" name="email" type="email" autocomplete="email" inputmode="email" required></div>
+          <p class="err" id="f-email-err"></p>
+        </div>
+        <div class="field">
+          <label for="f-postcode">Postcode</label>
+          <div class="input-wrap"><input id="f-postcode" name="postcode" autocomplete="postal-code" autocapitalize="characters" required></div>
+          <p class="err" id="f-postcode-err"></p>
+        </div>
+        <fieldset id="grind">
+          <legend>Grind</legend>
+          <div class="opts">
+            <label class="opt"><input type="radio" name="grind" value="Whole bean" checked><span class="opt-name">Whole bean</span><span class="opt-hint">Grind just before brewing</span><span class="badge" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M2 6.5l2.5 2.5L10 3" fill="none" stroke="currentColor" stroke-width="2"/></svg>Chosen</span></label>
+            <label class="opt"><input type="radio" name="grind" value="Filter"><span class="opt-name">Filter</span><span class="opt-hint">V60, Chemex, batch brewer</span><span class="badge" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M2 6.5l2.5 2.5L10 3" fill="none" stroke="currentColor" stroke-width="2"/></svg>Chosen</span></label>
+            <label class="opt"><input type="radio" name="grind" value="Espresso"><span class="opt-name">Espresso</span><span class="opt-hint">Fine, for home machines</span><span class="badge" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M2 6.5l2.5 2.5L10 3" fill="none" stroke="currentColor" stroke-width="2"/></svg>Chosen</span></label>
+            <label class="opt"><input type="radio" name="grind" value="Cafetière"><span class="opt-name">Cafetière</span><span class="opt-hint">Coarse, four-minute steep</span><span class="badge" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M2 6.5l2.5 2.5L10 3" fill="none" stroke="currentColor" stroke-width="2"/></svg>Chosen</span></label>
+            <label class="opt"><input type="radio" name="grind" value="Moka"><span class="opt-name">Moka</span><span class="opt-hint">Medium-fine, stovetop pot</span><span class="badge" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M2 6.5l2.5 2.5L10 3" fill="none" stroke="currentColor" stroke-width="2"/></svg>Chosen</span></label>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>First box</legend>
+          <div class="opts">
+            <label class="opt"><input type="radio" name="box" value="Tuesday 3 November" checked><span class="opt-name">November roast</span><span class="opt-hint">Tue 3 Nov</span><span class="badge" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M2 6.5l2.5 2.5L10 3" fill="none" stroke="currentColor" stroke-width="2"/></svg>Chosen</span></label>
+            <label class="opt"><input type="radio" name="box" value="Tuesday 1 December"><span class="opt-name">December roast</span><span class="opt-hint">Tue 1 Dec</span><span class="badge" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M2 6.5l2.5 2.5L10 3" fill="none" stroke="currentColor" stroke-width="2"/></svg>Chosen</span></label>
+          </div>
+        </fieldset>
+        <button class="btn" type="submit">Start my subscription</button>
+        <p class="fineprint">You pay £16 on each roast day. Pause, skip or cancel by email; changes made by the Sunday before roast day go into that roast.</p>
+      </form>
+      <div class="done" id="sub-done" hidden>
+        <p tabindex="-1">Subscription started.</p>
+        <p data-out="summary">Your first two coffees roast on Tuesday 3 November and post the next morning. Grind: Whole bean.</p>
+        <div class="done-actions">
+          <button class="btn" type="button" data-close>Back to the page</button>
+          <button class="link" type="button" data-change>Change details</button>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="lot" aria-labelledby="lot-mirador-title" data-lenis-prevent>
+    <div class="sheet" data-lot-card="mirador">
+      <div class="sheet-head">
+        <h2 id="lot-mirador-title">Finca El Mirador</h2>
+        <button class="btn btn-sm" type="button" data-close>Close lot card</button>
+      </div>
+      <dl class="lot-dl">
+        <div><dt>Producer</dt><dd>Growers’ association led by Luz Dary Ortiz</dd></div>
+        <div><dt>Region</dt><dd>Huila, Colombia</dd></div>
+        <div><dt>Altitude</dt><dd>1,750 m</dd></div>
+        <div><dt>Variety</dt><dd>Caturra</dd></div>
+        <div><dt>Process</dt><dd>Washed</dd></div>
+        <div><dt>Harvest</dt><dd>June 2026</dd></div>
+        <div><dt>Price paid</dt><dd>$7.40/kg free on board</dd></div>
+        <div><dt>Tasting notes</dt><dd>Red apple, panela, milk chocolate</dd></div>
+      </dl>
+      <figure class="mini">
+        <div class="mini-plot" aria-hidden="true"><div class="mini-live"><svg class="curves" viewBox="0 0 640 200" preserveAspectRatio="none" focusable="false"><use class="bt" href="#bt"/></svg></div></div>
+        <figcaption>Batch 26-10-A, roasted Tuesday 6 October. Turning point 1:24, first crack 8:50, drop at 10:40 and 208&nbsp;°C.</figcaption>
+      </figure>
+    </div>
+    <div class="sheet" data-lot-card="kebel" hidden>
+      <div class="sheet-head">
+        <h2 id="lot-kebel-title">Kebel Aricha</h2>
+        <button class="btn btn-sm" type="button" data-close>Close lot card</button>
+      </div>
+      <dl class="lot-dl">
+        <div><dt>Producer</dt><dd>Kebel Aricha washing station</dd></div>
+        <div><dt>Region</dt><dd>Yirgacheffe, Ethiopia</dd></div>
+        <div><dt>Altitude</dt><dd>2,050 m</dd></div>
+        <div><dt>Variety</dt><dd>Heirloom</dd></div>
+        <div><dt>Process</dt><dd>Natural</dd></div>
+        <div><dt>Harvest</dt><dd>December 2025</dd></div>
+        <div><dt>Price paid</dt><dd>$8.10/kg free on board</dd></div>
+        <div><dt>Tasting notes</dt><dd>Blueberry, black tea, bergamot</dd></div>
+      </dl>
+      <figure class="mini">
+        <div class="mini-plot" aria-hidden="true"><div class="mini-live"><svg class="curves" viewBox="0 0 640 200" preserveAspectRatio="none" focusable="false"><use class="bt" href="#kb"/></svg></div></div>
+        <figcaption>Batch 26-10-B, roasted Tuesday 6 October. Turning point 1:18, first crack 8:30, drop at 9:56 and 205&nbsp;°C.</figcaption>
+      </figure>
+    </div>
+  </dialog>
+</section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  const lib = !!(window.gsap && window.ScrollTrigger && window.Lenis); // CDN blocked: native rows, the log parked at the drop, everything still works
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const env = { motion: false, lenis: null, pin: null }; // pin: the stage's ScrollTrigger while the stage is pinned
+  const behavior = () => (env.motion ? 'smooth' : 'auto');
+
+  /* ---------- Roast log: one time value drives the curve, crosshair, events, bean and readouts ---------- */
+  const log = $('#roast-log'), plot = $('#plot'), bean = $('.bean', log), tab = $('.tab', plot), said = $('#log-event');
+  const peekTab = $('.peek-tab', plot), help = $('#log-help');
+  const END = 640, FC = 530;
+  const EVENTS = { 0: 'Charge', 84: 'Turning point', 270: 'Dry end', 530: 'First crack', 640: 'Drop' };
+  // Where the row rests on each of the six panels, in roast seconds: charge, turning point, dry end, mid-Maillard, first crack, drop.
+  const RESTS_T = [0, 84, 270, 410, 530, 640];
+  const tAt = (f) => { const i = clamp(Math.floor(f), 0, 4); return RESTS_T[i] + (RESTS_T[i + 1] - RESTS_T[i]) * clamp(f - i, 0, 1); }; // panel index -> time
+  const fAt = (t) => { let i = 0; while (i < 4 && t >= RESTS_T[i + 1]) i++; return i + (t - RESTS_T[i]) / (RESTS_T[i + 1] - RESTS_T[i]); }; // time -> panel index
+  const STOPS = [...new Set([0, 60, 120, 180, 240, 300, 360, 420, 480, 540, 600, ...Object.keys(EVENTS).map(Number)])].sort((a, b) => a - b);
+  const COLOURS = ['Green', 'Yellow', 'Cinnamon', 'Brown', 'City'];
+  // The SVG path is the data: one point every 2 s, y = 240 - temperature.
+  const series = (id) => { const n = $('#' + id).getAttribute('d').match(/[\d.]+/g).map(Number), out = []; for (let i = 1; i < n.length; i += 2) out.push(240 - n[i]); return out; };
+  const BT = series('bt');
+  const at = (s, t) => { const i = Math.min(s.length - 2, Math.floor(t / 2)); return s[i] + (s[i + 1] - s[i]) * (t / 2 - i); };
+  const smooth = (a, b, v) => { const k = clamp((v - a) / (b - a), 0, 1); return k * k * (3 - 2 * k); };
+  const mmss = (s) => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+  const layers = $$('.bean-layer[data-from]', bean), evs = $$('.ev', log);
+  const out = Object.fromEntries($$('[data-r]', log).map((el) => [el.dataset.r, el]));
+  const state = { t: END };
+  let goal = END, shown = '';
+
+  function render(next) {
+    const t = state.t = clamp(next, 0, END), bt = at(BT, t);
+    const heat = t < 84 ? 0 : bt; // before the turning point the probe reads the hot drum; the beans are still green
+    let k = 0;
+    layers.forEach((l) => { const o = clamp((heat - l.dataset.from) / l.dataset.span, 0, 1); l.style.opacity = o.toFixed(3); if (o >= .5) k++; });
+    log.style.setProperty('--p', (t / END).toFixed(4));
+    log.style.setProperty('--by', ((240 - bt) / 200).toFixed(4));
+    log.style.setProperty('--bs', (1 + .1 * smooth(270, FC, t) + .38 * smooth(FC, FC + 40, t)).toFixed(4)); // most of the swell is at first crack
+    evs.forEach((e) => e.classList.toggle('is-on', t >= e.dataset.t - .5));
+    bean.classList.toggle('is-cracked', t >= FC - .5);
+    const sec = Math.round(t), deg = Math.round(bt), probe = t < 84, key = `${sec} ${deg} ${k}`;
+    if (key === shown) return; // text is written only when a shown value changes
+    shown = key;
+    const time = mmss(sec);
+    tab.textContent = out.time.textContent = time;
+    out.bt.textContent = deg + ' °C';
+    out.btk.textContent = probe ? 'Probe' : 'Bean'; // at charge the probe reads the hot drum, not the beans
+    out.colour.textContent = COLOURS[k];
+    plot.setAttribute('aria-valuenow', sec);
+    plot.setAttribute('aria-valuetext', `${time}, ${probe ? 'probe' : 'bean'} ${deg} °C, ${COLOURS[k].toLowerCase()}`);
+  }
+  log.classList.add('is-live');
+  render(END);
+
+  // check-flows.mjs loads #selftest: the curve must agree with the events table and the Kebel caption.
+  const runSelfTest = () => {
+    const ok = [[0, 200], [84, 92], [270, 150], [530, 196], [640, 208]].every(([s, v]) => Math.round(at(BT, s)) === v)
+      && Math.round(at(series('kb'), 596)) === 205 && STOPS.length === 15 && STOPS[3] === 120
+      && RESTS_T.every((t, i) => tAt(i) === t && Math.abs(fAt(t) - i) < 1e-9);
+    render(408); const cinnamon = out.colour.textContent === 'Cinnamon';
+    render(0); const probe = out.btk.textContent === 'Probe'; render(END);
+    console.log(ok && cinnamon && probe && out.btk.textContent === 'Bean' && out.colour.textContent === 'City' ? 'SELFTEST PASS' : 'SELFTEST FAIL');
+  };
+  if (location.hash === '#selftest') runSelfTest();
+
+  // While the stage is pinned the scroll owns the log (free = false): a click, tap or key scrolls the page to that
+  // minute instead. Once the pin lets go at the drop, the reader owns it (free = true) until the pin is re-entered.
+  let free = true, manual = false, seeking = false;
+  const go = (t, dur) => {
+    manual = true;
+    goal = clamp(t, 0, END);
+    if (env.motion && dur) gsap.to(state, { t: goal, duration: dur, ease: 'expo.out', overwrite: true, onUpdate: () => render(state.t) });
+    else { if (env.motion) gsap.killTweensOf(state); render(goal); }
+  };
+  const pinY = (p) => env.pin.start + p * (env.pin.end - env.pin.start);
+  const seek = (t, dur) => {
+    if (free) return go(t, dur);
+    goal = clamp(t, 0, END); seeking = true;
+    env.lenis.scrollTo(Math.round(pinY(fAt(goal) / 5)), { duration: 1, onComplete: () => { seeking = false; } });
+  };
+  let rect = null, drag = null;
+  const timeAt = (x) => clamp((x - rect.left) / rect.width, 0, 1) * END;
+  addEventListener('resize', () => { rect = null; });
+  // While pinned, hover only previews (a faint line and a tab) and says what a click will do; nothing changes state.
+  const peek = (t) => {
+    const on = t !== null;
+    plot.classList.toggle('is-peek', on); plot.classList.toggle('is-seek', on);
+    if (!on) return plot.removeAttribute('title');
+    const s = Math.round(t), label = mmss(s);
+    plot.style.setProperty('--q', (t / END).toFixed(4));
+    peekTab.textContent = `${label}, ${Math.round(at(BT, t))} °C`;
+    plot.title = `Click to scroll to ${label}`;
+  };
+  plot.addEventListener('pointerenter', () => { rect = plot.getBoundingClientRect(); });
+  plot.addEventListener('pointerleave', () => peek(null));
+  plot.addEventListener('pointermove', (e) => {
+    rect ??= plot.getBoundingClientRect();
+    if (e.pointerType === 'mouse') { peek(free ? null : timeAt(e.clientX)); return free && go(timeAt(e.clientX), .25); } // I6: a fine pointer sets the crosshair
+    if (!drag || e.pointerId !== drag.id) return;
+    if (!drag.moved && Math.abs(e.clientX - drag.x) > 6) drag.moved = true; // a vertical swipe stays a page scroll
+    if (drag.moved && free) go(timeAt(e.clientX), 0);
+  });
+  plot.addEventListener('pointerdown', (e) => {
+    rect = plot.getBoundingClientRect();
+    if (e.pointerType === 'mouse') { if (!free) seek(timeAt(e.clientX)); return; }
+    drag = { id: e.pointerId, x: e.clientX, moved: false };
+  });
+  const release = (e) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    if (e.type === 'pointerup' && !drag.moved) seek(timeAt(e.clientX), .35); // a tap sets the crosshair
+    drag = null;
+  };
+  plot.addEventListener('pointerup', release);
+  plot.addEventListener('pointercancel', release);
+  plot.addEventListener('keydown', (e) => {
+    const base = free || seeking ? goal : state.t, evTimes = Object.keys(EVENTS).map(Number);
+    const up = STOPS.find((s) => s > base + .5) ?? END, down = STOPS.findLast((s) => s < base - .5) ?? 0;
+    const next = {
+      ArrowRight: up, ArrowUp: up, ArrowLeft: down, ArrowDown: down,
+      PageUp: evTimes.find((s) => s > base + .5) ?? END, PageDown: evTimes.findLast((s) => s < base - .5) ?? 0,
+      Home: 0, End: END,
+    }[e.key];
+    if (next === undefined) return;
+    e.preventDefault();
+    seek(next, .35);
+    said.textContent = EVENTS[next] ?? '';
+  });
+
+  /* ---------- In the box: the row (native snap row, or the pinned track), index with a sliding indicator, pager ---------- */
+  const box = $('#box'), stage = $('.stage'), row = $('#row'), track = $('.row-track'), panels = $$('.panel', row);
+  const links = $$('.idx a'), idxScroll = $('.idx-scroll'), bar = $('.idx-bar'), steps = $$('[data-step]'), count = $('#count');
+  const barState = { x: 0, w: 0 };
+  let rests = [], lx = [], lw = [], cur = 0, hovered = -1, barTween = null, barLive = true, raf = 0;
+  let rowOwns = false; // unpinned: page scroll roasts the batch until the row is first scrolled sideways, then the row owns it
+  const maxX = () => Math.max(0, (env.pin ? track.offsetWidth : row.scrollWidth) - row.clientWidth);
+  const rowX = () => (env.pin ? -gsap.getProperty(track, 'x') : row.scrollLeft);
+  const measureRow = () => {
+    const max = maxX(), o = panels[0].offsetLeft, last = panels.length - 1;
+    // Pinned, the track slides linearly, so each panel gets an even share of the pin; native, each panel's snap point.
+    rests = panels.map((p, i) => (env.pin ? max * i / last : clamp(p.offsetLeft - o, 0, max)));
+    lx = links.map((a) => a.offsetLeft); lw = links.map((a) => a.offsetWidth);
+    if (env.pin) panels.forEach((p) => { if (p.scrollHeight > p.clientHeight + 1) console.warn(`Pinned panel #${p.id} overflows the row by ${p.scrollHeight - p.clientHeight}px`); });
+  };
+  const pos = () => { // fractional panel index from the row's position
+    const x = rowX();
+    let i = 0;
+    while (i < rests.length - 2 && x >= rests[i + 1]) i++;
+    return i + clamp((x - rests[i]) / (rests[i + 1] - rests[i] || 1), 0, 1);
+  };
+  const barAt = (f) => { const i = Math.min(Math.floor(f), links.length - 2), k = f - i; return { x: lx[i] + (lx[i + 1] - lx[i]) * k, w: lw[i] + (lw[i + 1] - lw[i]) * k }; };
+  const paintBar = () => { bar.style.transform = `translateX(${barState.x.toFixed(1)}px) scaleX(${barState.w.toFixed(1)})`; };
+  const moveBar = (to, tween) => {
+    barTween?.kill(); barTween = null;
+    if (tween && env.motion) barTween = gsap.to(barState, { ...to, duration: .45, ease: 'expo.out', onUpdate: paintBar, onComplete: () => { barTween = null; } });
+    else { Object.assign(barState, to); paintBar(); }
+  };
+  const reveal = (a) => { // keep a name in view when the index itself scrolls (current item, or a focused one)
+    if (a.offsetLeft < idxScroll.scrollLeft || a.offsetLeft + a.offsetWidth > idxScroll.scrollLeft + idxScroll.clientWidth) idxScroll.scrollTo({ left: a.offsetLeft - 16, behavior: behavior() });
+  };
+  const sync = () => {
+    raf = 0;
+    const f = pos(), n = Math.round(f);
+    // Native row with motion allowed (touch, narrow, short): each snap is a roast event, last snap = the drop.
+    if (env.motion && !env.pin && !manual && rowOwns) render(tAt(f));
+    if (barLive && hovered < 0 && !barTween) moveBar(barAt(f)); // the indicator rides the row
+    if (n === cur) return;
+    links[cur].removeAttribute('aria-current'); links[n].setAttribute('aria-current', 'true'); cur = n;
+    count.textContent = `${n + 1} of ${panels.length}`;
+    steps[0].setAttribute('aria-disabled', n === 0);
+    steps[1].setAttribute('aria-disabled', n === panels.length - 1);
+    reveal(links[n]);
+  };
+  row.addEventListener('scroll', () => { manual = false; rowOwns = true; raf ||= requestAnimationFrame(sync); }, { passive: true });
+  addEventListener('resize', () => { measureRow(); sync(); });
+  measureRow(); sync();
+  document.fonts.ready.then(() => { measureRow(); sync(); }); // link widths change when the face arrives
+  const goPanel = (i) => {
+    i = clamp(i, 0, panels.length - 1);
+    if (env.pin) env.lenis.scrollTo(Math.round(pinY(rests[i] / (maxX() || 1))), { duration: .8 });
+    else row.scrollTo({ left: rests[i], behavior: behavior() });
+  };
+  steps.forEach((b) => b.addEventListener('click', () => { if (b.getAttribute('aria-disabled') !== 'true') goPanel(cur + +b.dataset.step); }));
+  links.forEach((a, i) => {
+    const show = () => { hovered = i; if (barLive) moveBar({ x: lx[i], w: lw[i] }, true); };
+    const back = () => { hovered = -1; if (barLive) moveBar(barAt(pos()), true); };
+    a.addEventListener('pointerenter', show);
+    a.addEventListener('pointerleave', back);
+    a.addEventListener('focus', () => { reveal(a); if (a.matches(':focus-visible')) show(); });
+    a.addEventListener('blur', back);
+  });
+  // Keyboard focus never lands off screen: a control outside the row's visible box brings its panel in.
+  row.addEventListener('focusin', (e) => {
+    const p = e.target.closest('.panel');
+    if (p) requestAnimationFrame(() => {
+      const t = e.target.getBoundingClientRect(), r = row.getBoundingClientRect();
+      if (t.left < r.left || t.right > r.right) goPanel(panels.indexOf(p));
+    });
+  });
+
+  /* ---------- Anchors: page moves through Lenis when it runs; panels move the row or the pin; focus always follows ---------- */
+  const scrollPage = (el) => (env.lenis ? env.lenis.scrollTo(el, { offset: -24 }) : el.scrollIntoView({ behavior: behavior(), block: 'start' }));
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('a[href^="#"]');
+    const el = a && document.getElementById(a.hash.slice(1));
+    if (!el) return;
+    e.preventDefault();
+    const i = panels.indexOf(el);
+    if (i >= 0) {
+      const r = row.getBoundingClientRect();
+      if (!env.pin && (r.top < 0 || r.bottom > innerHeight)) scrollPage(box);
+      goPanel(i);
+      $('h3', el).focus({ preventScroll: true });
+    } else if (env.pin && (el === box || el === log)) { // the stage: its start, or the drop where the pin lets go
+      env.lenis.scrollTo(Math.round(el === box ? env.pin.start : env.pin.end + 2));
+      el.focus({ preventScroll: true });
+    } else {
+      if (el === log) go(END, 1.6); // arriving at the log by link roasts the batch on the way
+      scrollPage(el); el.focus({ preventScroll: true });
+    }
+  });
+
+  /* ---------- Buttons: the fill enters from the side the pointer came in, and leaves by the side it went out ---------- */
+  const edge = (e) => {
+    const b = e.target.closest?.('.btn');
+    if (!b || b.contains(e.relatedTarget)) return;
+    const r = b.getBoundingClientRect();
+    b.style.setProperty('--from', e.clientX < r.left + r.width / 2 ? 'left' : 'right');
+  };
+  document.addEventListener('pointerover', edge);
+  document.addEventListener('pointerout', edge);
+
+  /* ---------- Dialogs ---------- */
+  let opener = null;
+  const form = $('#sub-form'), done = $('#sub-done');
+  document.addEventListener('click', (e) => {
+    const o = e.target.closest('[data-open]');
+    if (o) {
+      const d = document.getElementById(o.dataset.open);
+      if (o.dataset.lot) {
+        $$('[data-lot-card]', d).forEach((c) => { c.hidden = c.dataset.lotCard !== o.dataset.lot; });
+        d.setAttribute('aria-labelledby', `lot-${o.dataset.lot}-title`);
+      }
+      opener = o;
+      d.showModal();
+      env.lenis?.stop();
+      if (o.dataset.focus) $(o.dataset.focus, d)?.focus();
+      return;
+    }
+    const c = e.target.closest('[data-close]');
+    if (c) c.closest('dialog').close();
+  });
+  $$('dialog').forEach((d) => {
+    let down = null;
+    d.addEventListener('pointerdown', (e) => { down = e.target; });
+    d.addEventListener('click', (e) => { if (e.target === d && down === d) d.close(); }); // backdrop, only when the press started there
+    d.addEventListener('close', () => {
+      if (d.contains(form)) { form.hidden = false; done.hidden = true; } // reopens on the form, values kept
+      env.lenis?.start();
+      opener?.focus({ preventScroll: true });
+      opener = null;
+    });
+  });
+
+  /* ---------- Subscribe form (I11 to I13): nothing is sent ---------- */
+  const rules = {
+    name: (v) => (v.trim() ? '' : 'Enter your name'),
+    email: (v) => (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()) ? '' : 'Enter an email address like name@example.com'),
+    postcode: (v) => (/^[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$/i.test(v.trim()) ? '' : 'Enter a UK postcode, for example BS3 4AB'),
+  };
+  const check = (input) => {
+    const msg = rules[input.name](input.value), err = $('#' + input.id + '-err');
+    err.textContent = msg;
+    err.classList.toggle('is-shown', !!msg);
+    if (msg) { input.setAttribute('aria-invalid', 'true'); input.setAttribute('aria-describedby', err.id); }
+    else { input.removeAttribute('aria-invalid'); input.removeAttribute('aria-describedby'); }
+    return !msg;
+  };
+  const fields = Object.keys(rules).map((n) => form.elements[n]);
+  fields.forEach((f) => f.addEventListener('input', () => { if (f.hasAttribute('aria-invalid')) check(f); }));
+  const swap = (from, to, focusEl) => {
+    const show = () => {
+      from.hidden = true; to.hidden = false; focusEl.focus();
+      if (env.motion) gsap.fromTo(to, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: .35, ease: 'expo.out', clearProps: 'all' });
+    };
+    env.motion ? gsap.to(from, { opacity: 0, duration: .15, onComplete: () => { gsap.set(from, { clearProps: 'all' }); show(); } }) : show();
+  };
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const bad = fields.filter((f) => !check(f));
+    if (bad.length) { bad[0].focus(); return; }
+    $('[data-out="summary"]', done).textContent = `Your first two coffees roast on ${form.elements.box.value} and post the next morning. Grind: ${form.elements.grind.value}.`;
+    swap(form, done, done.firstElementChild);
+  });
+  $('[data-change]', done).addEventListener('click', () => swap(done, form, form.elements.name));
+
+  /* ---------- Cupping place (I8): one masked swap, focus follows ---------- */
+  const hold = $('.hold'), holdA = $('.hold-a', hold), holdB = $('.hold-b', hold);
+  hold.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-hold]');
+    if (!b) return;
+    const held = b.dataset.hold === 'on';
+    hold.classList.toggle('is-held', held);
+    holdA.inert = held; holdB.inert = !held;
+    $('#hold-status').textContent = held ? 'Place held for Saturday 7 November.' : 'Place released.';
+    $('button', held ? holdB : holdA).focus();
+  });
+
+  if (!lib) return;
+
+  /* ---------- Motion: GSAP + Lenis, rebuilt whenever a media condition flips ---------- */
+  gsap.registerPlugin(ScrollTrigger);
+  const fontsIn = Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 2500))]);
+  const WIPE_FROM = 'inset(-12% 100% -12% -2%)', WIPE_TO = 'inset(-12% -2% -12% -2%)';
+  const STILL_HELP = help.textContent, setHelp = (t) => { help.textContent = t; };
+  let introDone = false, closingDone = false, indexDone = false;
+  gsap.matchMedia().add({
+    motion: '(prefers-reduced-motion: no-preference)',
+    reduce: '(prefers-reduced-motion: reduce)',
+    fine: '(hover: hover) and (pointer: fine)',
+    wide: '(min-width: 992px) and (min-height: 600px)',
+    coarse: '(pointer: coarse)',
+  }, (ctx) => {
+    const { motion, fine, wide, coarse } = ctx.conditions;
+    env.motion = motion;
+    if (!motion) {
+      // Reduced motion: native scroll and rows, final states, the log drawn and parked at the drop.
+      free = true; render(END);
+      barLive = true; sync();
+      return;
+    }
+    let alive = true;
+    const offs = [];
+    const on = (el, type, fn) => { el.addEventListener(type, fn); offs.push(() => el.removeEventListener(type, fn)); };
+
+    const lenis = new Lenis({ lerp: .1, smoothWheel: true, autoRaf: false });
+    env.lenis = lenis;
+    lenis.on('scroll', ScrollTrigger.update);
+    const tick = (time) => lenis.raf(time * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
+    if ($('dialog[open]')) lenis.stop();
+
+    // L1 to L3: the H2, then the sack plate, are sprayed through their stencils in six strokes while the ink's overspray
+    // settles (displacement 8 to 3); the lede settles; the buttons only rise, so a call to action never looks disabled.
+    // Starting states are set here, before the timeline waits for fonts, so nothing shows and then blinks out.
+    if (!introDone) gsap.set('.title, .plate-ink', { clipPath: WIPE_FROM });
+    const intro = !introDone && gsap.timeline({ paused: true, defaults: { ease: 'expo.out' }, onComplete: () => { introDone = true; } })
+      .to('.title', { clipPath: WIPE_TO, duration: .7, ease: 'steps(6)' }, 0)
+      .to('.plate-ink', { clipPath: WIPE_TO, duration: .7, ease: 'steps(6)' }, .2)
+      .fromTo('.fx feDisplacementMap', { attr: { scale: 8 } }, { attr: { scale: 3 }, duration: .9, ease: 'power2.out', immediateRender: true }, 0)
+      .fromTo('.lede', { y: 8, opacity: .4 }, { y: 0, opacity: 1, duration: .5 }, .45)
+      .fromTo('.actions > *', { y: 8 }, { y: 0, duration: .5, stagger: .08 }, .53);
+
+    // L4: the index rule draws, then the indicator slides under the current item (on load, or when the index first shows).
+    if (!indexDone) {
+      barLive = false; moveBar({ x: 0, w: 0 });
+      gsap.timeline({
+        paused: true, onComplete: () => { indexDone = true; },
+        scrollTrigger: { trigger: '.idx', start: 'top 92%', once: true, onEnter: (self) => self.animation.delay(introDone ? 0 : .6).play() },
+      })
+        .fromTo('.idx-rule', { scaleX: 0 }, { scaleX: 1, duration: .8, ease: 'expo.out' })
+        .add(() => { barLive = true; moveBar(barAt(pos()), true); }, .45);
+    }
+
+    if (wide && !coarse) {
+      // S2, the signature: the stage pins; one scrubbed timeline slides the six panels and roasts batch 26-10-A
+      // along the bottom. Its length is the track's real overflow; it lets go exactly at the drop, 10:40 and 208 °C.
+      stage.classList.add('is-pinned');
+      free = false; manual = false;
+      // The track slides linearly; the roast clock is piecewise, so each panel rests on a roast event (RESTS_T).
+      const tl = gsap.timeline({
+        defaults: { ease: 'none' },
+        onUpdate: () => { sync(); if (!manual) render(tAt(tl.progress() * 5)); },
+        scrollTrigger: {
+          trigger: stage, pin: true, start: 'top top', end: () => '+=' + Math.round(maxX() * 1.4),
+          scrub: .6, invalidateOnRefresh: true,
+          onRefresh: (self) => { measureRow(); free = self.progress >= 1; },
+          onLeave: () => { free = true; },
+          onEnterBack: () => { free = false; manual = false; gsap.killTweensOf(state); },
+        },
+      })
+        .to(track, { x: () => -maxX() }, 0);
+      env.pin = tl.scrollTrigger;
+      measureRow(); render(0);
+      setHelp('Scrolling roasts the batch. Then move along the log, drag or tap it, or use the arrow keys to see any minute.');
+      offs.push(() => { env.pin = null; stage.classList.remove('is-pinned'); free = true; peek(null); });
+    } else {
+      // Touch, narrow or short windows: the page scroll roasts the batch as the log card passes, until the row is
+      // swiped; then the native snap row is the scrubber (sync renders it, one roast event per panel).
+      free = true; manual = false;
+      const pass = (s) => { if (!manual && !rowOwns) render(s.progress * END); };
+      ScrollTrigger.create({ trigger: log, start: 'clamp(top 85%)', end: 'clamp(bottom 60%)', onUpdate: pass, onRefresh: pass }); // clamped: the drop is reached even when the page ends first
+      setHelp(`Swipe the panels or press Next to roast the batch. ${fine ? 'Then move along the log, drag or tap it' : 'Then drag or tap the log'}, or use the arrow keys, to see any minute.`);
+      sync();
+    }
+
+    // S4: the closing heading opens left to right once, smooth this time, the way the curve is revealed.
+    // The clip starts inside onEnter, so a capture that never scrolls still shows the heading.
+    if (!closingDone) ScrollTrigger.create({
+      trigger: '.closing h3', start: 'clamp(top 85%)', once: true,
+      onEnter: () => gsap.fromTo('.closing h3', { clipPath: WIPE_FROM }, { clipPath: WIPE_TO, duration: .9, ease: 'none', onComplete: () => { closingDone = true; } }),
+    });
+
+    // I5: copper sheen follows a fine pointer across the bag label only.
+    if (fine) $$('.bag').forEach((bag) => {
+      const label = $('.bag-label', bag), p = { x: 50, y: 50 };
+      const paint = () => { label.style.setProperty('--x', p.x.toFixed(1) + '%'); label.style.setProperty('--y', p.y.toFixed(1) + '%'); };
+      const qx = gsap.quickTo(p, 'x', { duration: .4, ease: 'expo.out', onUpdate: paint });
+      const qy = gsap.quickTo(p, 'y', { duration: .4, ease: 'expo.out', onUpdate: paint });
+      let r = null;
+      on(bag, 'pointerenter', () => { r = label.getBoundingClientRect(); });
+      on(bag, 'pointermove', (e) => { if (r) { qx((e.clientX - r.left) / r.width * 100); qy((e.clientY - r.top) / r.height * 100); } });
+      on(bag, 'pointerleave', () => { r = null; });
+      offs.push(() => { label.style.removeProperty('--x'); label.style.removeProperty('--y'); });
+    });
+
+    fontsIn.then(() => {
+      if (!alive) return;
+      lenis.resize();
+      ScrollTrigger.refresh();
+      measureRow(); sync();
+      intro?.play();
+    });
+
+    return () => {
+      alive = false;
+      setHelp(STILL_HELP);
+      offs.forEach((off) => off());
+      gsap.killTweensOf(state);
+      env.lenis = null;
+      gsap.ticker.remove(tick);
+      gsap.ticker.lagSmoothing(500, 33);
+      lenis.destroy();
+      measureRow(); sync();
+    };
+  });
+})();
+</script>
+</body>
+</html>
