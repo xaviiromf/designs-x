@@ -1,0 +1,1732 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>Ropewalk Works: membership plans</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;500;700&family=Zilla+Slab:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* colour: limewashed brick, brown Stockholm tar, and one card-reader LED */
+    --c-ground: #EEF0EC;                 /* limewash */
+    --c-ink: #3A2A1E;                    /* Stockholm tar: 12.0:1 on ground, 12.7:1 on paper */
+    --c-ink-2: #5A4C41;                  /* weathered tar: 7.2:1 on ground, 7.6:1 on paper */
+    --c-access: #50D47E;                 /* 'access granted' green; tar on it 7.2:1. The only colour. */
+    --c-paper: color-mix(in srgb, var(--c-ground) 60%, white);
+    --c-hatch: color-mix(in srgb, var(--c-ink) 22%, transparent);
+    --c-scrim: color-mix(in srgb, var(--c-ink) 55%, transparent);
+
+    /* type */
+    --ff-display: 'Zilla Slab', Rockwell, 'Roboto Slab', Georgia, serif;
+    --ff-body: Chivo, 'Helvetica Neue', Arial, sans-serif;
+    --fs-xs: .8125rem;
+    --fs-s: .9375rem;
+    --fs-m: 1.0625rem;
+    --fs-l: 1.375rem;
+    --fs-xl: 1.875rem;
+    --fs-price: clamp(1.75rem, 12.5cqi, 2.75rem);   /* follows the tag's width (.tag is a size container) */
+    --fs-display: clamp(2.75rem, 5.2vw + 1rem, 3.75rem);
+
+    /* space (4px base) */
+    --sp-1: .25rem; --sp-2: .5rem; --sp-3: .75rem; --sp-4: 1rem; --sp-5: 1.5rem;
+    --sp-6: 2rem; --sp-7: 3rem; --sp-8: 4.5rem; --sp-9: 6.5rem;
+    --gutter: clamp(16px, 4vw, 48px);
+    --max: 1320px;
+    --col-gap: 24px;
+    --tag-gap: 2.5rem;                   /* gap between tags from 1200px; the 'too small' divider is drawn in it */
+
+    /* radii by role, lines */
+    --r-tag: 22px; --r-window: 10px; --r-btn: 6px; --r-pill: 999px;
+    --hole: 18px;
+    --tag-top: .75rem;                   /* air above a tag's frame (none on phones) */
+    --wall: 3px; --part: 1.5px;
+
+    /* motion */
+    --ease-out: cubic-bezier(.16, 1, .3, 1);      /* expo.out: every response and entrance */
+    --ease-inout: cubic-bezier(.87, 0, .13, 1);   /* expo.inOut: reflows and drains */
+    --d-press: .12s;
+    --d-fast: .25s;
+    --d-ring: .3s;
+    --d-swap: .35s;
+    --d-pill: .4s;
+    --d-sweep: .45s;
+    --d-fill: .5s;
+    --d-walk: 1s;                        /* the flood running the 96 m Walk from the front door */
+    --d-drain: .25s;
+    --d-step: .045s;                     /* flood delay per room, by walking distance */
+    --d-hours: .6s;
+    --d-count: .8s;
+    --d-flip: .8s;
+    --d-intent: .16s;                    /* hover intent before a tag previews */
+  }
+
+  /* Lenis rules, inlined verbatim from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent], .lenis [data-lenis-prevent-wheel], .lenis [data-lenis-prevent-touch],
+  .lenis [data-lenis-prevent-vertical], .lenis [data-lenis-prevent-horizontal] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+  .lenis.lenis-autoToggle { transition-property: overflow; transition-duration: 1ms; transition-behavior: allow-discrete; }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; scrollbar-gutter: stable; }   /* no shift when Lenis clips overflow under the dialog */
+  body {
+    margin: 0;
+    background: var(--c-ground);
+    color: var(--c-ink);
+    font: 400 var(--fs-m)/1.55 var(--ff-body);
+    overflow-x: clip;
+  }
+  h2, h3, p, ul, figure, fieldset { margin: 0; }
+  ul { padding: 0; list-style: none; }
+  button, input, select { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--c-ink); outline-offset: 3px; }
+  [tabindex="-1"]:focus { outline: none; }
+  [hidden] { display: none !important; }
+
+  .rw { max-width: calc(var(--max) + 2 * var(--gutter)); margin-inline: auto; padding: 0 var(--gutter) var(--sp-9); }
+
+  /* ---------- HV2 underline sweep: in from the left, out to the right ---------- */
+  .ul {
+    color: inherit;
+    text-decoration: none;
+    background: linear-gradient(currentColor, currentColor) 100% 100% / 0 .07em no-repeat;
+    padding-bottom: .1em;
+    transition: background-size var(--d-sweep) var(--ease-out);
+  }
+  .ul:hover, .ul:focus-visible, .ul[aria-current="true"] { background-position: 0 100%; background-size: 100% .07em; }
+  @media (hover: none) { .ul { background-size: 100% .07em; } }
+  /* links in rows of their own get a 24px target (WCAG 2.5.8); the underline stays .1em under the text */
+  .bar__nav .ul, .plan__back, .tag__see { display: inline-block; line-height: 1.2; padding-top: .375rem; }
+
+  /* ---------- top bar ---------- */
+  .bar {
+    display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between;
+    gap: var(--sp-2) var(--sp-6);
+    padding-block: var(--sp-5) var(--sp-6);
+  }
+  .wordmark { font: 700 1.5rem/1 var(--ff-display); letter-spacing: -.005em; }
+  .bar__right { display: grid; justify-items: start; gap: var(--sp-1); }
+  .bar__nav ul { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-5); font-weight: 500; }
+  .bar__hours { font-size: var(--fs-s); color: var(--c-ink-2); }
+
+  /* ---------- intro ---------- */
+  .intro {
+    display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--col-gap); row-gap: var(--sp-6);
+    padding-bottom: var(--sp-7);
+  }
+  .intro__copy { grid-column: 1 / -1; display: grid; gap: var(--sp-5); }
+  .rw-title {
+    font: 700 var(--fs-display)/.95 var(--ff-display);
+    letter-spacing: -.02em;
+    text-wrap: balance;
+  }
+  .lede { max-width: 64ch; }
+  .vat-note { display: none; }
+  @media (max-width: 599px) {   /* phones: the lede keeps two sentences; what prices include moves under the plan */
+    .lede__vat { display: none; }
+    .vat-note { display: block; order: 2; font-size: var(--fs-s); color: var(--c-ink-2); }   /* after the plan, so it never parts a tag from the building */
+    .legend { display: grid; grid-template-columns: repeat(3, auto); justify-content: start; gap: var(--sp-1) var(--sp-3); }
+    .legend__more { display: none; }
+  }
+  /* first frame of the load sequence; the inline script sets html.intro before first paint and
+     removes it once GSAP holds the same states (or after 2s if the libraries never arrive) */
+  html.intro [data-chrome] { opacity: 0; }
+  @media (min-width: 992px) { html.intro .room, html.intro .floor__wall { clip-path: inset(0 100% 0 0); } }
+  .controls { grid-column: 1 / -1; display: grid; gap: var(--sp-5); align-content: end; }
+
+  /* ---------- NV4 segmented radio groups with one sliding pill ---------- */
+  .seg { border: 0; padding: 0; min-width: 0; }
+  .seg legend { padding: 0; margin-bottom: var(--sp-2); font-size: var(--fs-s); font-weight: 500; color: var(--c-ink-2); }
+  .seg__track {
+    position: relative; display: flex;
+    padding: 3px; border: var(--part) solid var(--c-ink); border-radius: var(--r-pill);
+  }
+  .seg__opt, .seg__ghost > span {
+    flex: 1 1 0; display: grid; place-items: center;
+    min-height: 2.5rem; padding: 0 var(--sp-3);
+    border-radius: var(--r-pill);
+    font-size: var(--fs-s); font-weight: 500; line-height: 1; white-space: nowrap;
+  }
+  .seg--auto .seg__opt, .seg--auto .seg__ghost > span { flex: 1 1 auto; }
+  .seg__opt { position: relative; cursor: pointer; }
+  .seg__opt input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+  .seg__opt:has(input:checked) span { text-decoration: underline 2px; text-underline-offset: .3em; }
+  .seg.is-holding .seg__opt span { text-decoration: none; }   /* L4: the opening pill is the only selected cue */
+  .seg__opt:has(input:focus-visible) { outline: 2px solid var(--c-ink); outline-offset: 3px; }
+  .seg__pill {
+    position: absolute; inset: 3px; display: flex;
+    background: var(--c-ink); color: var(--c-ground);
+    clip-path: inset(0 100% 0 0 round var(--r-pill));
+    transition: clip-path var(--d-pill) var(--ease-out);
+    pointer-events: none;
+  }
+  .seg__ghost { display: contents; }
+  /* without the script the checked option carries the pill itself */
+  .seg:not(.is-live) .seg__opt:has(input:checked) { background: var(--c-ink); color: var(--c-ground); }
+  .seg:not(.is-live) .seg__pill { display: none; }
+
+  /* ---------- the spine: tags, plan, rooms ---------- */
+  .spine { display: flex; flex-direction: column; gap: var(--sp-8); }
+  #plans { order: 1; }
+  .plan { order: 2; }
+  .rooms { order: 3; }
+
+  /* ---------- floor plan ---------- */
+  .plan { display: grid; gap: var(--sp-3); background: var(--c-ground); }
+  .plan__head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--sp-2) var(--sp-5); }
+  .plan__title { font-family: var(--ff-display); font-weight: 700; font-size: var(--fs-l); line-height: 1.15; }
+  .legend { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-4); font-size: var(--fs-xs); }
+  .legend li { display: flex; align-items: center; gap: .4rem; }
+  .legend li::before { content: ''; width: 1.5rem; height: .875rem; outline: 1px solid var(--c-ink); outline-offset: -1px; }
+  .legend__open::before { background: var(--c-access); }
+  .legend__book::before { background: repeating-linear-gradient(90deg, var(--c-access) 0 4px, var(--c-ground) 4px 7px); }
+  .legend__locked::before { background: repeating-linear-gradient(-45deg, var(--c-hatch) 0 1px, var(--c-ground) 1px 5px); }
+
+  .floor {
+    position: relative; display: grid; isolation: isolate;
+    grid-template-columns: repeat(24, minmax(0, 1fr));
+    grid-template-rows: minmax(3.75rem, auto) 2rem minmax(3.75rem, auto);
+    padding: var(--wall);
+  }
+  .floor__wall { position: absolute; z-index: 3; inset: 0; border: var(--wall) solid var(--c-ink); pointer-events: none; }
+  .room {
+    --row: 1; --t: 0; --r: 0; --b: 0; --l: 0;
+    position: relative; grid-column: var(--at); grid-row: var(--row);
+    padding: .375rem .5rem; min-width: 0;
+    font-size: var(--fs-xs); line-height: 1.25;
+  }
+  .room::after {                                 /* partitions: drawn above every fill so walls never thin out */
+    content: ''; position: absolute; z-index: 2; pointer-events: none;
+    inset: calc(var(--part) / -2); border: var(--part) solid var(--c-ink);
+  }
+  .room[data-side="n"] { --row: 1; --t: 1; }   /* door on the Walk side (south): fills up from the bottom */
+  .room[data-side="w"] { --row: 2; --r: 1; }   /* the Walk: fills east from the front door */
+  .room[data-side="s"] { --row: 3; --b: 1; }   /* door on the north wall: fills down from the top */
+  .room::before {                                /* hatch = locked to this fob */
+    content: ''; position: absolute; inset: 0;
+    background: repeating-linear-gradient(-45deg, var(--c-hatch) 0 1px, transparent 1px 7px);
+  }
+  .fill {
+    position: absolute; inset: 0;
+    background: var(--c-access);
+    clip-path: inset(
+      calc(var(--t) * (1 - var(--fill, 0)) * 100%) calc(var(--r) * (1 - var(--fill, 0)) * 100%)
+      calc(var(--b) * (1 - var(--fill, 0)) * 100%) calc(var(--l) * (1 - var(--fill, 0)) * 100%));
+  }
+  .room--meet .fill { background: repeating-linear-gradient(90deg, var(--c-access) 0 5px, var(--c-ground) 5px 9px); }
+  .room__label { position: relative; display: grid; justify-items: start; }
+  .room__label .nm { font-weight: 500; }
+  .room--meet .room__label { margin-left: -.2em; }
+  .room--meet .room__label > span { background: var(--c-ground); padding-inline: .2em; }
+  .room__label .cm { display: none; }
+  .room--walk { display: flex; align-items: center; padding-left: 1.5rem; }
+  .room--walk .room__label { display: flex; gap: var(--sp-6); }
+  .room--walk .nm { font-weight: 700; }
+
+  /* door symbol: a leaf and its quarter swing; hinge bottom-left, wall along the bottom */
+  .door {
+    --door: 12px;
+    position: absolute; width: var(--door); height: var(--door);
+    border: 1px solid; border-bottom: 0; border-top-right-radius: 100%;
+    /* leaf in tar; the swing arc fades as the leaf closes, so a shut door is a leaf lying in the wall */
+    border-color: color-mix(in srgb, var(--c-ink) calc(100% - var(--swing, 0) * 100% / 90), transparent) color-mix(in srgb, var(--c-ink) calc(100% - var(--swing, 0) * 100% / 90), transparent) transparent var(--c-ink);
+    left: .5rem; bottom: 0;
+    /* --swing (0 open, 90 shut) turns the leaf about its hinge (bottom-left) in the glyph's own frame, whatever its resting rotate */
+    transform: translate(calc(var(--door) / -2), calc(var(--door) / 2)) rotate(calc(var(--swing, 0) * 1deg)) translate(calc(var(--door) / 2), calc(var(--door) / -2));
+  }
+  .room[data-side="s"] .door { bottom: auto; top: 0; left: auto; right: .5rem; rotate: 180deg; }
+  .room[data-side="w"] .door { bottom: auto; top: calc(50% - var(--door) / 2); left: 0; rotate: 90deg; }
+
+  /* meeting rooms: inset ring and hourly rate shown when the plan switches to rooms (S2) or a row is hovered */
+  .ring {
+    position: absolute; inset: 4px; border: 2px solid var(--c-ink);
+    clip-path: inset(0 100% 0 0);
+    transition: clip-path var(--d-fill) var(--ease-out) calc(var(--i, 0) * .06s);
+  }
+  .rate { position: absolute; left: .5rem; bottom: .3rem; overflow: hidden; font-weight: 700; }
+  .rate > span { display: block; background: var(--c-ground); padding-inline: .2em; translate: 0 110%; transition: translate var(--d-fill) var(--ease-out) calc(var(--i, 0) * .06s); }
+  .plan.is-rooms .ring { clip-path: inset(0); }
+  .plan.is-rooms .rate > span { translate: 0 0; }
+  .room.is-pulse .ring { clip-path: inset(0); border-width: 3px; transition-delay: 0s; }
+
+  .plan__foot { display: grid; gap: var(--sp-3); }
+  .caption { font-size: var(--fs-s); line-height: 1.45; min-height: 2.9em; overflow: hidden; }
+  .plan__let { font-size: var(--fs-xs); color: var(--c-ink-2); }
+  .caption__in { display: block; }
+  /* the week as a calendar: one column per day, the day running down from 00 to 24, one shared scale */
+  .hours { --bar-h: 4.5rem; display: grid; grid-template-columns: 2.25ch repeat(7, minmax(0, 1fr)); column-gap: .375rem; padding-bottom: .4rem; font-size: var(--fs-xs); line-height: 1.2; }
+  .hours__scale { position: relative; height: var(--bar-h); margin-top: calc(1.2em + .25rem); color: var(--c-ink-2); }
+  .hours__scale > span { position: absolute; right: 0; top: calc(var(--h) / 24 * 100%); translate: 0 -50%; line-height: 1; }
+  .day { display: grid; gap: .25rem; }
+  .bar7 {
+    position: relative; height: var(--bar-h);
+    background:
+      linear-gradient(var(--c-ink) 0 0) 0 calc(8 / 24 * var(--bar-h)) / 5px 1px no-repeat,
+      linear-gradient(var(--c-ink) 0 0) 0 calc(19 / 24 * var(--bar-h)) / 5px 1px no-repeat,
+      repeating-linear-gradient(-45deg, var(--c-hatch) 0 1px, var(--c-ground) 1px 5px);
+    outline: 1px solid var(--c-ink); outline-offset: -1px;
+  }
+  .bar7__fill {   /* grows out from the 08:00 tick, the hour the front desk opens */
+    position: absolute; inset: 0; background: var(--c-access);
+    clip-path: inset(calc(var(--from, 8) / 24 * 100%) 0 calc((24 - var(--to, 8)) / 24 * 100%) 0);
+  }
+  .plan__say { display: grid; gap: var(--sp-1); align-content: start; }
+  .plan__chosen { display: flex; align-items: center; gap: .4rem; font-size: var(--fs-s); }
+  .plan__chosen .badge { position: static; width: 18px; height: 18px; transform: none; opacity: 1; flex: none; outline: 1.5px solid transparent; outline-offset: -1.5px; transition: background-color var(--d-fast) var(--ease-out), outline-color var(--d-fast) var(--ease-out); }
+  .plan__chosen .badge svg { transition: opacity var(--d-fast) var(--ease-out); }
+  /* S2 and the trial: the building shows a booking or a day fob, not yours, so the check cross-fades to an unlit tar ring */
+  .plan.is-other .plan__chosen .badge { background-color: transparent; outline-color: var(--c-ink); }
+  .plan.is-other .plan__chosen .badge svg { opacity: 0; }
+  .plan__note { font-size: var(--fs-xs); color: var(--c-ink-2); }
+  .plan__back { justify-self: start; font-weight: 500; grid-column: 1 / -1; }
+  @media (min-width: 992px) { .plan:not(.is-inspect) .plan__back { display: none !important; } }
+  @media (hover: none) { .plan.is-inspect .plan__back { display: block; } }   /* touch: a tapped tag's doors always have a way back */
+
+  /* ---------- fob tags ---------- */
+  /* under 1200px the tags stack in cost order (one column on phones, two or three on tablets), then the
+     'too small' divider across the full row, then the tags that do not fit; Flip moves them when the order changes */
+  .plans { position: relative; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr)); gap: var(--sp-5) var(--col-gap); }
+  .tag { position: relative; z-index: 1; container-type: inline-size; display: flex; flex-direction: column; padding-top: var(--tag-top); transition: opacity var(--d-ring) var(--ease-out); }
+  .tag.is-small { z-index: 0; }   /* too-small tags pass behind during the reflow */
+  .tag__frame {
+    position: relative; flex: 1; display: flex; flex-direction: column;
+    --shoulder: 2.75rem;                         /* where the tapered top meets the full width: the window's top edge */
+    background: var(--c-ink); border-radius: var(--r-tag);
+    padding: var(--shoulder) .5rem .5rem;
+    /* key-tag silhouette: a narrow top carrying the ring hole, shoulders cut down to the window */
+    clip-path: polygon(18% 0, 82% 0, 100% var(--shoulder), 100% 100%, 0 100%, 0 var(--shoulder));
+    -webkit-mask: radial-gradient(circle at 50% 1.375rem, #0000 calc(var(--hole) / 2 - .5px), #000 calc(var(--hole) / 2));
+    mask: radial-gradient(circle at 50% 1.375rem, #0000 calc(var(--hole) / 2 - .5px), #000 calc(var(--hole) / 2));
+  }
+  .tag__frame::before {   /* too small: the plastic greys out, the paper insert keeps full-contrast text */
+    content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    background: var(--c-ground); opacity: 0; transition: opacity var(--d-ring) var(--ease-out);
+  }
+  .tag.is-small .tag__frame::before { opacity: .6; }
+  .tag__window {
+    position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column; gap: var(--sp-3);
+    background: var(--c-paper); border-radius: var(--r-window);
+    padding: var(--sp-4);
+  }
+  .tag__window::after {                        /* the 2px ring that answers hover and focus */
+    content: ''; position: absolute; inset: 5px; pointer-events: none;
+    border: 2px solid var(--c-ink); border-radius: 6px;
+    clip-path: circle(0% at 50% 0%);
+    transition: clip-path var(--d-ring) var(--ease-out);
+  }
+  .tag:has(:focus-visible) .tag__window::after { clip-path: circle(150% at 50% 0%); }
+  @media (hover: hover) { .tag:hover .tag__window::after { clip-path: circle(150% at 50% 0%); } }
+  .tag__name { font: 700 var(--fs-l)/1.1 var(--ff-display); }
+  .tag__desc { font-size: var(--fs-s); line-height: 1.45; color: var(--c-ink-2); }
+  .tag__money { display: grid; gap: var(--sp-1); }
+  .tag__price { display: flex; flex-wrap: nowrap; align-items: baseline; column-gap: .4rem; font: 700 var(--fs-price)/1 var(--ff-display); letter-spacing: -.01em; font-variant-numeric: lining-nums proportional-nums; }
+  /* counted figures: while a count runs the script holds the span's min-width (in ch), so proportional digits never shove the line about */
+  [data-price], [data-each], [data-total] { display: inline-block; }
+  .row__seats, .row__price, .hours, .total { font-variant-numeric: tabular-nums; }
+  .tag__per { font: 400 var(--fs-s)/1.35 var(--ff-body); letter-spacing: 0; }
+  .tag__bill, .tag__pp { font-size: var(--fs-s); line-height: 1.35; }
+  .tag__pp { color: var(--c-ink-2); }
+  .tag__facts { display: grid; gap: var(--sp-2); font-size: var(--fs-s); line-height: 1.4; }
+  .tag__facts b { font-weight: 700; }
+  .tag__act { margin-top: auto; display: grid; gap: var(--sp-3); padding-top: var(--sp-2); }
+  .tag__see { justify-self: start; font-size: var(--fs-s); font-weight: 500; }
+  .tag__see, .plan__back { display: none; }
+
+  .key { position: absolute; z-index: 1; top: calc(var(--tag-top) + 1.375rem - 21px);   /* bow ring (cy 21) concentric with the hole */ left: calc(50% - 24px); width: 96px; height: 40px; overflow: visible; pointer-events: none; }
+  .key use { fill: none; stroke: var(--c-ground); stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+  .badge {
+    position: absolute; top: calc(var(--tag-top) + 1.375rem - 12px); left: calc(50% - 12px);
+    width: 24px; height: 24px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: var(--c-access); color: var(--c-ink);
+    transform: scale(0); opacity: 0;
+  }
+  .tag.is-chosen .badge { transform: none; opacity: 1; }
+
+  .divider { grid-column: 1 / -1; font-size: var(--fs-s); font-weight: 500; color: var(--c-ink-2); line-height: 1.35; border-top: 1px solid var(--c-ink); padding-top: var(--sp-2); }
+  .divider.is-empty { display: none; }
+
+  /* MI2 masked label swap: two labels share one cell, the button keeps its width */
+  .swap { display: inline-grid; overflow: hidden; vertical-align: top; }
+  .swap > * { grid-area: 1 / 1; padding-block: .12em; transition: translate var(--d-swap) var(--ease-out); }
+  .swap > :last-child { translate: 0 105%; }
+  .is-yearly .tag__bill .swap > :first-child { translate: 0 -105%; }
+  .is-yearly .tag__bill .swap > :last-child { translate: 0 0; }
+
+  /* ---------- buttons: HV4 fill from the entry edge, MI1 press ---------- */
+  .btn {
+    position: relative; isolation: isolate; overflow: hidden;
+    display: inline-grid; place-items: center;
+    min-height: 2.75rem; padding: 0 var(--sp-4);
+    border: 2px solid var(--c-ink); border-radius: var(--r-btn);
+    background: transparent; color: var(--c-ink);
+    font-size: var(--fs-s); font-weight: 500; line-height: 1.2; text-align: center;
+    cursor: pointer;
+    transition: color var(--d-ring) var(--ease-out), scale var(--d-pill) var(--ease-out);
+  }
+  .btn::before {
+    content: ''; position: absolute; inset: 0; z-index: -1;
+    background: var(--c-ink);
+    transform: scaleX(0); transform-origin: var(--from, left) 50%;
+    transition: transform var(--d-ring) var(--ease-out);
+  }
+  @media (hover: hover) {
+    .btn:not(:disabled):hover { color: var(--c-ground); }
+    .btn:not(:disabled):hover::before { transform: scaleX(1); transition-duration: var(--d-sweep); }
+  }
+  .btn:focus-visible { color: var(--c-ground); }
+  .btn:focus-visible::before { transform: scaleX(1); transform-origin: left 50%; }
+  .btn:not(:disabled):active { scale: .97; transition-duration: var(--d-ring), var(--d-press); }
+  .btn[aria-pressed="true"]:not(:disabled) { color: var(--c-ground); }
+  .btn[aria-pressed="true"]:not(:disabled)::before { transform: scaleX(1); }
+  .btn[aria-pressed="true"]:not(:disabled) .swap > :first-child { translate: 0 -105%; }
+  .btn[aria-pressed="true"]:not(:disabled) .swap > :last-child { translate: 0 0; }
+  .btn:disabled { cursor: not-allowed; border-style: dashed; }
+  /* form submits: filled means 'commit' in forms (on tags, filled means 'chosen'); hover wipes limewash in from the entry edge */
+  .btn--strong { font-weight: 700; background: var(--c-ink); color: var(--c-ground); }
+  .btn--strong::before { background: var(--c-ground); }
+  @media (hover: hover) { .btn--strong:not(:disabled):hover { color: var(--c-ink); } }
+  .btn--strong:focus-visible { color: var(--c-ink); }
+
+  /* ---------- meeting rooms ---------- */
+  .rooms { display: grid; gap: var(--sp-5) var(--col-gap); grid-template-columns: repeat(12, minmax(0, 1fr)); }
+  .rooms__intro { grid-column: 1 / -1; display: grid; gap: var(--sp-3); align-content: start; }
+  .rooms__intro h3, .trial__intro h3 { font: 700 var(--fs-xl)/1.1 var(--ff-display); letter-spacing: -.01em; }
+  .rooms__list { grid-column: 1 / -1; }
+  .rooms__list li { position: relative; }
+  .rule { position: absolute; left: 0; right: 0; top: 0; height: 1px; background: var(--c-ink); transform-origin: 0 50%; transition: transform var(--d-fill) var(--ease-out) calc(var(--i, 0) * .06s); }
+  .rooms.is-waiting .rule { transform: scaleX(0); }   /* S3: drawn once, with the rooms' rings on the stage (S2), or as the list scrolls in elsewhere */
+  .rule--end { top: auto; bottom: 0; }
+  .row {
+    appearance: none; width: 100%; margin: 0; border: 0; background: none; cursor: pointer; text-align: left;
+    display: grid; align-items: baseline; gap: var(--sp-1) var(--sp-4);
+    grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name seats" "kit price" "act act";
+    padding: var(--sp-4) 0;
+    transition: scale var(--d-pill) var(--ease-out);
+  }
+  .row:active { scale: .99; transition-duration: var(--d-press); }
+  .row__name { grid-area: name; font: 700 var(--fs-l)/1.15 var(--ff-display); }
+  .row__seats { grid-area: seats; font-size: var(--fs-s); }
+  .row__kit { grid-area: kit; font-size: var(--fs-s); color: var(--c-ink-2); }
+  .row__price { grid-area: price; font-size: var(--fs-s); font-weight: 700; }
+  .row__act { grid-area: act; justify-self: start; display: inline-grid; overflow: hidden; font-size: var(--fs-s); font-weight: 500; }
+  .row__act > span, .row__act::after {
+    grid-area: 1 / 1; padding-bottom: .15em;
+    text-decoration: underline 1.5px; text-underline-offset: .2em;
+    transition: translate var(--d-pill) var(--ease-out);
+  }
+  .row__act::after { content: attr(data-text) / ""; translate: 0 105%; }
+  @media (hover: hover) and (pointer: fine) {
+    .row:hover .row__act > span { translate: 0 -105%; }
+    .row:hover .row__act::after { translate: 0 0; }
+  }
+  .row:focus-visible .row__act > span { translate: 0 -105%; }
+  .row:focus-visible .row__act::after { translate: 0 0; }
+
+  /* ---------- trial ---------- */
+  .trial { display: grid; gap: var(--sp-6) var(--col-gap); grid-template-columns: repeat(12, minmax(0, 1fr)); padding-top: var(--sp-9); }
+  .trial__intro { grid-column: 1 / -1; display: grid; gap: var(--sp-3); align-content: start; }
+  .trial__panel { grid-column: 1 / -1; }
+  .fields { display: grid; gap: var(--sp-3) var(--col-gap); grid-template-columns: minmax(0, 1fr); }
+  .field { display: grid; gap: var(--sp-1); align-content: start; min-width: 0; border: 0; padding: 0; margin: 0; }
+  .field > label, .field > legend { padding: 0; font-size: var(--fs-s); font-weight: 500; color: var(--c-ink-2); transition: color var(--d-fast) var(--ease-out); }
+  .field:focus-within > label, .field:focus-within > legend, .field.is-invalid > label, .field.is-invalid > legend { color: var(--c-ink); }
+  .ctl { position: relative; }
+  .ctl input, .ctl select {
+    display: block; width: 100%; min-width: 0; min-height: 2.75rem; margin: 0;
+    padding: .55rem .75rem;
+    background: var(--c-paper); color: var(--c-ink);
+    border: 0; border-bottom: var(--part) solid var(--c-ink-2); border-radius: var(--r-btn) var(--r-btn) 0 0;
+    font-size: var(--fs-m);
+  }
+  .ctl select {
+    appearance: none; padding-right: 2.25rem; cursor: pointer;
+    background-image: linear-gradient(45deg, transparent 50%, var(--c-ink) 50%), linear-gradient(-45deg, transparent 50%, var(--c-ink) 50%);
+    background-position: calc(100% - 1.15rem) 55%, calc(100% - .8rem) 55%;
+    background-size: .35rem .35rem; background-repeat: no-repeat;
+  }
+  .ctl::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; pointer-events: none;
+    background: var(--c-ink); transform: scaleX(0); transform-origin: left 50%;
+    transition: transform var(--d-swap) var(--ease-out);
+  }
+  .ctl:focus-within::after, .field.is-invalid .ctl::after { transform: none; }
+  .err {
+    min-height: 1.35em; padding-top: 2px; font-size: var(--fs-s); line-height: 1.35; font-weight: 700;
+    clip-path: inset(0 0 100% 0); opacity: 0;
+    transition: clip-path var(--d-fast) var(--ease-out), opacity var(--d-fast) var(--ease-out);
+  }
+  .field.is-invalid .err { clip-path: inset(0); opacity: 1; }
+  .form-foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-4) var(--sp-5); margin-top: var(--sp-3); }
+  .result { display: grid; gap: var(--sp-4); justify-items: start; padding: var(--sp-5); background: var(--c-paper); border-top: 2px solid var(--c-ink); }
+  .sheet .result { padding-inline: 0; }
+  .result p { max-width: 52ch; font-size: var(--fs-m); }
+  .result__actions { display: flex; flex-wrap: wrap; gap: var(--sp-3); }
+  .closing { font-size: var(--fs-s); }
+  .closing a { font-weight: 700; }
+
+  /* ---------- booking dialog (CD7) ---------- */
+  .sheet {
+    width: min(34rem, calc(100% - 2 * var(--gutter))); max-height: calc(100dvh - 2rem);
+    padding: 0; border: 2px solid var(--c-ink); border-radius: var(--r-window);
+    background: var(--c-paper); color: var(--c-ink);
+    overflow: auto;
+  }
+  .sheet::backdrop { background: var(--c-scrim); }
+  .sheet[open]::backdrop { animation: fade var(--d-ring) var(--ease-out); }
+  .sheet.is-closing::backdrop { opacity: 0; transition: opacity var(--d-ring) var(--ease-out); }
+  @keyframes fade { from { opacity: 0; } }
+  .sheet__in { display: grid; gap: var(--sp-4); padding: var(--sp-5); }
+  .sheet__head { display: flex; align-items: start; justify-content: space-between; gap: var(--sp-4); }
+  .sheet__head > div { min-width: 0; }
+  .sheet__head .btn { flex: none; }
+  .sheet__head h3 { font: 700 var(--fs-xl)/1.1 var(--ff-display); }
+  .sheet__meta { font-size: var(--fs-s); color: var(--c-ink-2); margin-top: var(--sp-1); }
+  .sheet .fields { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .sheet .field--wide { grid-column: 1 / -1; }
+  .total { font-size: var(--fs-m); }
+  .total b { font: 700 var(--fs-l) var(--ff-display); }
+  @media (max-width: 599px) {
+    .sheet { width: 100%; max-width: 100%; margin: auto 0 0; border-radius: var(--r-window) var(--r-window) 0 0; border-bottom: 0; }
+  }
+  @media (max-width: 399px) {   /* 320 to 399px: one column, and four lengths still fit one track */
+    .sheet__in { padding: var(--sp-4); }
+    .sheet .fields { grid-template-columns: minmax(0, 1fr); }
+    .sheet .seg__opt, .sheet .seg__ghost > span { padding-inline: var(--sp-1); }
+  }
+
+  /* ---------- CU1 room follower (fine pointer, wide) ---------- */
+  .follow {
+    position: fixed; left: 0; top: 0; z-index: 30; pointer-events: none;
+    max-width: 17rem; padding: .375rem .625rem;
+    background: var(--c-ink); color: var(--c-ground); border-radius: var(--r-btn);
+    font-size: var(--fs-xs); font-weight: 500; line-height: 1.3;
+    opacity: 0; visibility: hidden;
+  }
+  .follow__mask { display: block; overflow: hidden; }
+  .follow__text { display: block; }
+
+  /* ---------- breakpoints ---------- */
+  /* the hours fact rides on the 'Opens' line where tags are short (phones, compact stage) and on its own line elsewhere */
+  .tag__when { display: none; }
+  @media (max-width: 639px) {   /* phones: shorter tags, so a reorder reads within a screen or two */
+    .tag__desc, .tag__hrs { display: none; }
+    .tag__when { display: inline; }
+    .tag__frame { --shoulder: 2.25rem; }
+    .tag__window { padding: var(--sp-3); gap: var(--sp-2); }
+    .tag__facts { gap: var(--sp-1); }
+    .tag__act { padding-top: var(--sp-1); }
+    .tag { --tag-top: 0px; }
+    .tag__money { gap: 2px; }
+    .plan { gap: var(--sp-2); }
+    /* first screen: the hero tightens so the first tag's price (and, from 844px tall, its Choose button) clears the reach strip */
+    :root { --fs-display: clamp(2.25rem, 10vw, 2.75rem); }
+    .bar { padding-block: var(--sp-4); }
+    .intro { row-gap: var(--sp-4); padding-bottom: var(--sp-5); }
+    .intro__copy { gap: var(--sp-3); }
+    .controls { gap: var(--sp-3); }
+  }
+  @media (min-width: 360px) and (max-width: 639px) {   /* legends beside their tracks (below 360px the billing labels need the full width) */
+    .controls .seg { display: flex; align-items: center; gap: var(--sp-3); }
+    .controls .seg legend { float: left; flex: none; width: 4.25rem; margin: 0; line-height: 1.25; }   /* float: an ordinary flex item beside its track */
+    .controls .seg__track { flex: 1; min-width: 0; }
+  }
+  @media (min-width: 640px) {
+    .tag__desc { min-height: calc(3 * 1.45em); }   /* prices line up across a row of tags */
+    .fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  /* narrow: the plan transposes to 24 rows x 3 columns, west end (front door) at the top */
+  @media (max-width: 991px) {
+    .spine { gap: var(--sp-4); }
+    .rooms { margin-top: var(--sp-6); }
+    /* sized on the small viewport (svh, browser bars showing) so the whole building, caption and hours fit one screen */
+    .floor { grid-template-columns: minmax(0, 1fr) 2.5rem minmax(0, 1fr); grid-template-rows: repeat(24, minmax(0, 1fr)); height: clamp(22rem, 58svh, 30rem); }
+    .plan__head { display: contents; }   /* title, floor, chosen line, caption and hours, then the key */
+    .legend { order: 1; }   /* the key straight under the drawing, then the note, then what changes and the way back */
+    .plan__foot { order: 3; }
+    .hours { --bar-h: 3.5rem; }   /* 08 and 19 ticks a clear line apart; a weekday band reads at a glance */
+    .day__more { display: none; }   /* day initials */
+    .room[data-side="n"] { padding-right: .9rem; }   /* labels clear the door glyph on the Walk wall */
+    .room[data-side="s"] { padding-left: .9rem; }
+    .room { grid-row: var(--at); grid-column: var(--row); padding: .15rem .4rem; }
+    .room[data-side="n"] { --t: 0; --l: 1; }  /* north column: door on its east wall, fills from the right */
+    .room[data-side="w"] { --r: 0; --b: 1; }  /* the Walk: fills down from the front door at the top */
+    .room[data-side="s"] { --b: 0; --r: 1; }  /* south column: door on its west wall, fills from the left */
+    .room__label { display: block; }
+    .room__label .cm { display: inline; }
+    .room--meet .room__label { display: inline-block; margin-left: 0; background: var(--c-ground); padding-inline: .2em; }
+    .room--meet .room__label > span { background: none; padding: 0; }
+    .room--walk { padding: 1.4rem 0 .5rem; justify-content: center; align-items: start; }
+    .room--walk .room__label { writing-mode: vertical-rl; gap: var(--sp-4); }
+    .walk__more { display: none; }
+    .room[data-side="n"] .door { left: auto; right: 0; bottom: auto; top: .25rem; rotate: -90deg; }
+    .room[data-side="s"] .door { top: auto; right: auto; left: 0; bottom: .25rem; rotate: 90deg; }
+    .room[data-side="w"] .door { top: 0; left: calc(50% - var(--door) / 2); rotate: 180deg; }
+    .rate, .ring { display: none; }
+  }
+
+  @media (min-width: 992px) {
+    .bar { padding-block: var(--sp-4) var(--sp-5); }
+    .bar__right { justify-items: end; }
+    .intro__copy { grid-column: 1 / span 7; }
+    /* beside the heading, the legend's cap line on the heading's first cap line */
+    .controls { grid-column: 9 / -1; align-self: start; align-content: start; margin-top: calc(var(--fs-display) * .16); }
+    .plan { order: 0; }
+    .intro { padding-bottom: var(--sp-5); }
+    #plans { margin-top: calc(var(--sp-6) - var(--sp-8)); }   /* tags sit close under the plan they change */
+    .plan__note { display: none; }
+    .door { --door: 14px; }
+    .plan__foot { grid-template-columns: minmax(0, 1fr) minmax(20rem, 27rem); gap: var(--sp-6); align-items: start; }
+    .rooms__intro { grid-column: 1 / span 4; }
+    .rooms__list { grid-column: 5 / -1; }
+    .row { grid-template-columns: minmax(8rem, 1.1fr) 4.5rem minmax(0, 1.5fr) 6.5rem 8.5rem; grid-template-areas: "name seats kit price act"; }
+    .row__act { justify-self: end; }
+    .trial__intro { grid-column: 1 / span 5; }
+    .trial__panel { grid-column: 7 / -1; }
+  }
+
+  @media (min-width: 1200px) {
+    .plans { grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: stretch; column-gap: var(--tag-gap); }
+    /* the divider takes no track: it is a rule in the gap before the first tag that does not fit, so the row spans the measure */
+    .divider {
+      position: absolute; grid-row: 1; grid-column: var(--div-col, 6); top: 0; bottom: 0; left: calc(-1 * var(--tag-gap)); width: var(--tag-gap);
+      display: flex; justify-content: center; padding: 3.25rem 0 0; border: 0;
+      background: linear-gradient(var(--c-ink), var(--c-ink)) 50% 0 / 1px 100% no-repeat;
+      font-size: var(--fs-xs); font-weight: 400;
+    }
+    .divider > span { writing-mode: vertical-rl; background: var(--c-ground); padding-block: var(--sp-2); }
+  }
+
+  /* reach strip: off the stage the full plan is not beside the tags, so an unlabelled copy of the building (walls,
+     hatch and fills, built by the script) rides along the bottom of the tag list and pours the moment you choose.
+     It takes no height of its own and hides once the full plan is on screen; it links to the labelled plan. */
+  .reach {
+    display: none; grid-column: 1 / -1; position: sticky; bottom: 0; z-index: 4; height: 0; margin-top: calc(-1 * var(--sp-5));
+    color: inherit; text-decoration: none;
+    transition: opacity var(--d-ring) var(--ease-out), visibility 0s;
+  }
+  .reach.is-off { opacity: 0; visibility: hidden; pointer-events: none; transition-delay: 0s, var(--d-ring); }
+  .reach__in {
+    position: absolute; left: calc(-1 * var(--gutter)); right: calc(-1 * var(--gutter)); bottom: 0;
+    display: grid; gap: var(--sp-1);
+    padding: var(--sp-2) var(--gutter) calc(var(--sp-2) + env(safe-area-inset-bottom));
+    background: var(--c-ground); border-top: 1px solid var(--c-ink);
+  }
+  .reach__head { display: flex; justify-content: space-between; gap: var(--sp-3); font-size: var(--fs-xs); line-height: 1.3; }
+  .reach__go { font-weight: 500; white-space: nowrap; }
+  .reach:hover .ul, .reach:focus-visible .ul { background-position: 0 100%; background-size: 100% .07em; }
+  .reach:focus-visible { outline: none; }
+  .reach:focus-visible .reach__in { outline: 2px solid var(--c-ink); outline-offset: -5px; }
+  .floor.floor--strip { height: 3.25rem; grid-template-columns: repeat(24, minmax(0, 1fr)); grid-template-rows: 1fr .625rem 1fr; padding: 2px; }
+  .floor--strip .floor__wall { border-width: 2px; }
+  .floor--strip .room { grid-column: var(--at); grid-row: var(--row); padding: 0; }
+  .floor--strip .room::after { border-width: 1px; inset: -.5px; }
+  .floor--strip .room[data-side="n"] { --t: 1; --r: 0; --b: 0; --l: 0; }
+  .floor--strip .room[data-side="w"] { --t: 0; --r: 1; --b: 0; --l: 0; }
+  .floor--strip .room[data-side="s"] { --t: 0; --r: 0; --b: 1; --l: 0; }
+
+  /* off the stage the plan is not sticky (on phones it sits after the tags), so tags link to it and it links back */
+  @media (max-width: 1199px), (max-height: 719px) {
+    .tag__see { display: inline-block; }
+    .plan__back { display: block; justify-self: start; }
+    .reach { display: block; }
+    html { scroll-padding-bottom: calc(var(--reach-h, 7rem) + var(--sp-2)); }   /* focus never lands under the strip (measured) */
+  }
+  /* from 992px the plan is above the tags, so the strip takes its own height after the last row and rests there */
+  @media (min-width: 992px) and (max-width: 1199px), (min-width: 992px) and (max-height: 719px) {
+    .reach { height: auto; margin: 0; }
+    .reach__in { position: relative; left: auto; right: auto; margin-inline: calc(-1 * var(--gutter)); }
+  }
+  @media (min-width: 1200px) and (min-height: 720px) and (hover: none) {   /* touch on the stage: the link is the visible cue that tags show doors */
+    .tag__see { display: inline-block; }
+  }
+
+  /* compact stage (1440x900 and 1536x864 windows, 1366x768 with a short toolbar): a lower plan, shorter tags,
+     so the stuck plan and a whole row of tags with their Choose buttons share the screen */
+  @media (min-width: 1200px) and (min-height: 720px) and (max-height: 879px) {
+    .floor { grid-template-rows: minmax(2.75rem, auto) 1.5rem minmax(2.75rem, auto); }
+    .hours { --bar-h: 3rem; }
+    .caption { min-height: 1.45em; }
+    .tag__desc, .tag__hrs { display: none; }
+    .tag__when { display: inline; }
+  }
+
+  /* stage: the plan stays on screen while you scroll the tags and rooms under it. It sticks with its
+     title and legend scrolled off (--plan-cut), so the stuck part is the floor, the chosen line and the hours;
+     --plan-h is that stuck height, and native focus scrolling and anchors keep clear of it. */
+  @media (min-width: 1200px) and (min-height: 720px) {
+    html { scroll-padding-top: calc(var(--plan-h, 16rem) + var(--sp-4)); }
+    .plan { position: sticky; top: calc(-1 * var(--plan-cut, 0px)); z-index: 5; padding-block: var(--sp-3); margin-block: calc(-1 * var(--sp-3)); border-bottom: 1px solid var(--c-ink); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0s !important; transition-delay: 0s !important; animation-duration: 0s !important; }
+    .ul { background-size: 100% .07em; }
+    .sheet::backdrop, .sheet.is-closing::backdrop { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<main>
+<section class="rw" aria-labelledby="rw-title">
+
+  <header class="bar">
+    <p class="wordmark" data-chrome>Ropewalk Works</p>
+    <div class="bar__right">
+      <nav class="bar__nav" aria-label="Membership">
+        <ul>
+          <li><a class="ul" href="#plans" data-chrome>Plans</a></li>
+          <li><a class="ul" href="#rooms" data-chrome>Meeting rooms</a></li>
+          <li><a class="ul" href="#trial" data-chrome>Try a day free</a></li>
+        </ul>
+      </nav>
+      <p class="bar__hours" data-chrome>Front desk staffed weekdays 08:00 to 19:00</p>
+    </div>
+  </header>
+
+  <div class="intro">
+    <div class="intro__copy">
+      <h2 id="rw-title" class="rw-title">Choose which doors your fob opens.</h2>
+      <p class="lede">Every membership comes on a key fob. Pick a plan and the floor plan shows each door it opens, and the hours it opens them.<span class="lede__vat"> Prices include VAT, Wi-Fi, filter coffee and 200 printed pages a month.</span></p>
+    </div>
+    <div class="controls">
+      <fieldset class="seg" data-seg>
+        <legend>Desks needed</legend>
+        <div class="seg__track">
+          <label class="seg__opt"><input type="radio" name="desks" value="1" checked><span>1</span></label>
+          <label class="seg__opt"><input type="radio" name="desks" value="2"><span>2</span></label>
+          <label class="seg__opt"><input type="radio" name="desks" value="3"><span>3</span></label>
+          <label class="seg__opt"><input type="radio" name="desks" value="4"><span>4</span></label>
+          <label class="seg__opt"><input type="radio" name="desks" value="5"><span>5</span></label>
+          <label class="seg__opt"><input type="radio" name="desks" value="6"><span>6</span></label>
+          <span class="seg__pill" aria-hidden="true"><span class="seg__ghost"></span></span>
+        </div>
+      </fieldset>
+      <fieldset class="seg seg--auto" data-seg>
+        <legend>Pay</legend>
+        <div class="seg__track">
+          <label class="seg__opt"><input type="radio" name="billing" value="monthly" checked><span>Monthly</span></label>
+          <label class="seg__opt"><input type="radio" name="billing" value="yearly"><span>Yearly, save 10%</span></label>
+          <span class="seg__pill" aria-hidden="true"><span class="seg__ghost"></span></span>
+        </div>
+      </fieldset>
+    </div>
+  </div>
+
+  <div class="spine">
+
+    <figure id="floor-plan" class="plan" tabindex="-1" aria-labelledby="plan-title">
+      <div class="plan__head">
+        <p id="plan-title" class="plan__title">What the <span data-plan-name>Hot desk</span> fob opens</p>
+        <ul class="legend" aria-label="Key">
+          <li class="legend__open">Open with your fob</li>
+          <li class="legend__book"><span>Bookable<span class="legend__more"> with your hours</span></span></li>
+          <li class="legend__locked">Locked</li>
+        </ul>
+      </div>
+      <div class="floor" role="img" aria-label="Ground floor of the 96 m ropewalk. The Walk runs east from the front door. North side: front desk, café and kitchen, phone booths, meeting rooms Bowline and Clove Hitch, Studios 1 to 4, meeting room Reef. South side: bikes and showers, lockers, the Quiet Bay, Studios 5 to 8, meeting room Sheet Bend.">
+        <div class="room room--walk" data-side="w" data-room="walk" data-name="The Walk" data-pos="0" style="--at: 1 / -1; --fill: 1"><span class="fill"></span><span class="door"></span><span class="room__label"><span class="nm">Front door</span><span>The Walk: 60 hot desks<span class="walk__more"> along the 96 m floor where rope was laid until 1961</span></span></span></div>
+
+        <div class="room" data-side="n" data-room="fd" data-name="Front desk" data-pos="1" style="--at: 1 / span 2; --fill: 1"><span class="fill"></span><span class="door"></span><span class="room__label"><span class="nm">Front desk</span></span></div>
+        <div class="room" data-side="n" data-room="cafe" data-name="Café and kitchen" data-pos="9" style="--at: 3 / span 5; --fill: 1"><span class="fill"></span><span class="door"></span><span class="room__label"><span class="nm">Café and kitchen</span></span></div>
+        <div class="room" data-side="n" data-room="booths" data-name="Phone booths" data-pos="29" style="--at: 8 / span 2; --fill: 1"><span class="fill"></span><span class="door"></span><span class="room__label"><span class="nm">Phone booths</span></span></div>
+        <div class="room room--meet" data-side="n" data-room="bowline" data-name="Bowline" data-seats="4" data-pos="37" style="--at: 10 / span 2; --fill: 1; --i: 0"><span class="fill"></span><span class="door"></span><span class="ring"></span><span class="room__label"><span class="nm">Bowline</span><span class="st"><span class="cm">, </span>4 seats</span></span><span class="rate"><span>£22 an hour</span></span></div>
+        <div class="room room--meet" data-side="n" data-room="clove" data-name="Clove Hitch" data-seats="6" data-pos="45" style="--at: 12 / span 2; --fill: 1; --i: 1"><span class="fill"></span><span class="door"></span><span class="ring"></span><span class="room__label"><span class="nm">Clove Hitch</span><span class="st"><span class="cm">, </span>6 seats</span></span><span class="rate"><span>£30 an hour</span></span></div>
+        <div class="room" data-side="n" data-room="st1" data-name="Studio 1" data-seats="2" data-pos="53" style="--at: 14 / span 2"><span class="fill"></span><span class="door"></span><span class="room__label"><span class="nm">Studio 1</span><span class="st"><span class="cm">, </span>2 seats</span></span></div>
+        <div class="room" data-side="n" data-room="st2" data-name="Studio 2" data-seats="2" data-pos="61" style="--at: 16 / span 2"><span class="fill"></span><span class="door"></span><span class="room__label"><span class="nm">Studio 2</span><span class="st"><span class="cm">, </span>2 seats</span></span></div>
+        <div class="room" data-side="n" data-room="st3" data-name="Studio 3" data-seats="2" data-pos="69" style="--at: 18 / span 2"><span class="fill"></span><span class="door"></span><span class="room__label"><span class="nm">Studio 3</span><span class="st"><span class="cm">, </span>2 seats</span></span></div>
+        <div class="room" data-side="n" data-room="st4" data-name="Studio 4" data-seats="2" data-pos="77" style="--at: 20 / span 2"><span class="fill"></span><span class="door"></span><span class="room__label"><span class="nm">Studio 4</span><span class="st"><span class="cm">, </span>2 seats</span></span></div>
+        <div class="room room--meet" data-side="n" data-room="reef" data-name="Reef" data-seats="10" data-pos="85" style="--at: 22 / span 3; --fill: 1; --i: 2"><span class="fill"></span><span class="door"></span><span class="ring"></span><span class="room__label"><span class="nm">Reef</span><span class="st"><span class="cm">, </span>10 seats</span></span><span class="rate"><span>£44 an hour</span></span></div>
+
+        <div class="room" data-side="s" data-room="bikes" data-name="Bikes and showers" data-pos="11" style="--at: 1 / span 3; --fill: 1"><span class="fill"></span><span class="door"></span><span class="room__label"><span class="nm">Bikes and showers</span></span></div>
+        <div class="room" data-side="s" data-room="lockers" data-name="Lockers" data-pos="19" style="--at: 4 / span 2"><span class="fill"></span><span class="door"></span><span class="room__label"><span class="nm">Lockers</span></span></div>
+        <div class="room" data-side="s" data-room="qb" data-name="Quiet Bay" data-seats="24" data-pos="43" style="--at: 6 / span 6"><span class="fill"></span><span class="door"></span><span class="room__label"><span class="nm">Quiet Bay</span><span class="st"><span class="cm">, </span>24 fixed desks</span></span></div>
+        <div class="room" data-side="s" data-room="st5" data-name="Studio 5" data-seats="4" data-pos="51" style="--at: 12 / span 2"><span class="fill"></span><span class="door"></span><span class="room__label"><span class="nm">Studio 5</span><span class="st"><span class="cm">, </span>4 seats</span></span></div>
+        <div class="room" data-side="s" data-room="st6" data-name="Studio 6" data-seats="4" data-pos="59" style="--at: 14 / span 2"><span class="fill"></span><span class="door"></span><span class="room__label"><span class="nm">Studio 6</span><span class="st"><span class="cm">, </span>4 seats</span></span></div>
+        <div class="room" data-side="s" data-room="st7" data-name="Studio 7" data-seats="4" data-pos="67" style="--at: 16 / span 2"><span class="fill"></span><span class="door"></span><span class="room__label"><span class="nm">Studio 7</span><span class="st"><span class="cm">, </span>4 seats</span></span></div>
+        <div class="room" data-side="s" data-room="st8" data-name="Studio 8" data-seats="6" data-pos="79" style="--at: 18 / span 3"><span class="fill"></span><span class="door"></span><span class="room__label"><span class="nm">Studio 8</span><span class="st"><span class="cm">, </span>6 seats</span></span></div>
+        <div class="room room--meet" data-side="s" data-room="sheet" data-name="Sheet Bend" data-seats="14" data-pos="95" style="--at: 21 / span 4; --fill: 1; --i: 3"><span class="fill"></span><span class="door"></span><span class="ring"></span><span class="room__label"><span class="nm">Sheet Bend</span><span class="st"><span class="cm">, </span>14 seats</span></span><span class="rate"><span>£58 an hour</span></span></div>
+        <span class="floor__wall" aria-hidden="true"></span>
+      </div>
+      <figcaption class="plan__foot">
+        <div class="plan__say">
+          <p class="plan__chosen"><span class="badge" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6.5l2.6 2.5L10 3.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>Chosen: <b data-chosen-name>Hot desk</b></span></p>
+          <p class="caption" aria-live="polite"><span class="caption__in">Hot desk fob: opens 5 spaces on weekdays, 08:00 to 19:00, and books all 4 meeting rooms.</span></p>
+          <p class="plan__let">Studios 3, 6 and 8 are available with a studio plan; the other five are let to members.</p>
+        </div>
+        <div class="hours" role="img" aria-label="Each day runs midnight to midnight. Hours this fob opens doors: Monday to Friday, 08:00 to 19:00; closed to this fob at weekends.">
+          <span class="hours__scale" aria-hidden="true"><span style="--h: 8">08</span><span style="--h: 19">19</span></span>
+          <span class="day"><span>M<span class="day__more">on</span></span><span class="bar7"><span class="bar7__fill" style="--from: 8; --to: 19"></span></span></span>
+          <span class="day"><span>T<span class="day__more">ue</span></span><span class="bar7"><span class="bar7__fill" style="--from: 8; --to: 19"></span></span></span>
+          <span class="day"><span>W<span class="day__more">ed</span></span><span class="bar7"><span class="bar7__fill" style="--from: 8; --to: 19"></span></span></span>
+          <span class="day"><span>T<span class="day__more">hu</span></span><span class="bar7"><span class="bar7__fill" style="--from: 8; --to: 19"></span></span></span>
+          <span class="day"><span>F<span class="day__more">ri</span></span><span class="bar7"><span class="bar7__fill" style="--from: 8; --to: 19"></span></span></span>
+          <span class="day"><span>S<span class="day__more">at</span></span><span class="bar7"><span class="bar7__fill" style="--from: 8; --to: 8"></span></span></span>
+          <span class="day"><span>S<span class="day__more">un</span></span><span class="bar7"><span class="bar7__fill" style="--from: 8; --to: 8"></span></span></span>
+        </div>
+        <p class="plan__note">The ropewalk is 96 m long. Rope was laid along the Walk until 1961.</p>
+        <a class="ul plan__back" href="#plans">Back to plans</a>
+      </figcaption>
+    </figure>
+
+    <section id="plans" class="plans" aria-label="Plans" tabindex="-1">
+      <article class="tag is-chosen" data-plan="hot" aria-labelledby="t-hot">
+        <div class="tag__frame"><div class="tag__window">
+          <h3 id="t-hot" class="tag__name">Hot desk</h3>
+          <p class="tag__desc">Any free desk on the Walk. Bring a laptop, sit where you like.</p>
+          <div class="tag__money">
+            <p class="tag__price"><span data-price>£165</span> <span class="tag__per">a month</span></p>
+            <p class="tag__bill"><span class="swap"><span>Billed monthly</span><span data-billed>£1,782 billed yearly</span></span></p>
+            <p class="tag__pp"><span data-each></span><span data-pp></span></p>
+          </div>
+          <ul class="tag__facts" role="list">
+            <li><b>Opens</b> the front desk, café and kitchen, the Walk, phone booths, bikes and showers<span class="tag__when">, weekdays 08:00 to 19:00</span>.</li>
+            <li class="tag__hrs">Weekdays, 08:00 to 19:00</li>
+            <li data-hours>4 meeting-room hours a month</li>
+          </ul>
+          <div class="tag__act">
+            <button class="btn" type="button" data-choose aria-pressed="true"><span class="swap"><span data-label>Choose Hot desk</span><span aria-hidden="true">Chosen</span></span></button>
+            <a class="ul tag__see" href="#floor-plan" data-see>See its doors on the plan</a>
+          </div>
+        </div></div>
+        <span class="badge" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6.5l2.6 2.5L10 3.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      </article>
+
+      <article class="tag" data-plan="fixed" aria-labelledby="t-fixed">
+        <div class="tag__frame"><div class="tag__window">
+          <h3 id="t-fixed" class="tag__name">Fixed desk</h3>
+          <p class="tag__desc">Your own desk in the Quiet Bay, with a 27-inch monitor and a locker.</p>
+          <div class="tag__money">
+            <p class="tag__price"><span data-price>£260</span> <span class="tag__per">a month</span></p>
+            <p class="tag__bill"><span class="swap"><span>Billed monthly</span><span data-billed>£2,808 billed yearly</span></span></p>
+            <p class="tag__pp"><span data-each></span><span data-pp></span></p>
+          </div>
+          <ul class="tag__facts" role="list">
+            <li><b>Opens</b> everything Hot desk does, plus the Quiet Bay and lockers<span class="tag__when">, any hour</span>.</li>
+            <li class="tag__hrs">Any hour, every day</li>
+            <li data-hours>8 meeting-room hours a month</li>
+          </ul>
+          <div class="tag__act">
+            <button class="btn" type="button" data-choose aria-pressed="false"><span class="swap"><span data-label>Choose Fixed desk</span><span aria-hidden="true">Chosen</span></span></button>
+            <a class="ul tag__see" href="#floor-plan" data-see>See its doors on the plan</a>
+          </div>
+        </div></div>
+        <span class="badge" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6.5l2.6 2.5L10 3.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      </article>
+
+      <article class="tag" data-plan="s2" aria-labelledby="t-s2">
+        <svg class="key" viewBox="0 0 96 40" aria-hidden="true"><use href="#key"/></svg>
+        <div class="tag__frame"><div class="tag__window">
+          <h3 id="t-s2" class="tag__name">Studio for 2</h3>
+          <p class="tag__desc">Studio 3: two desks under the north rooflight, 9 m².</p>
+          <div class="tag__money">
+            <p class="tag__price"><span data-price>£720</span> <span class="tag__per">a month</span></p>
+            <p class="tag__bill"><span class="swap"><span>Billed monthly</span><span data-billed>£7,776 billed yearly</span></span></p>
+            <p class="tag__pp"><span data-each></span><span data-pp></span></p>
+          </div>
+          <ul class="tag__facts" role="list">
+            <li><b>Opens</b> Studio 3 with its own key and post slot, plus everything Hot desk does<span class="tag__when">, any hour</span>.</li>
+            <li class="tag__hrs">Any hour, every day</li>
+            <li data-hours>16 meeting-room hours a month</li>
+          </ul>
+          <div class="tag__act">
+            <button class="btn" type="button" data-choose aria-pressed="false"><span class="swap"><span data-label>Choose Studio for 2</span><span aria-hidden="true">Chosen</span></span></button>
+            <a class="ul tag__see" href="#floor-plan" data-see>See its doors on the plan</a>
+          </div>
+        </div></div>
+        <span class="badge" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6.5l2.6 2.5L10 3.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      </article>
+
+      <article class="tag" data-plan="s4" aria-labelledby="t-s4">
+        <svg class="key" viewBox="0 0 96 40" aria-hidden="true"><use href="#key"/></svg>
+        <div class="tag__frame"><div class="tag__window">
+          <h3 id="t-s4" class="tag__name">Studio for 4</h3>
+          <p class="tag__desc">Studio 6: four desks and a pin-up wall, 16 m², south side.</p>
+          <div class="tag__money">
+            <p class="tag__price"><span data-price>£1,280</span> <span class="tag__per">a month</span></p>
+            <p class="tag__bill"><span class="swap"><span>Billed monthly</span><span data-billed>£13,824 billed yearly</span></span></p>
+            <p class="tag__pp"><span data-each></span><span data-pp></span></p>
+          </div>
+          <ul class="tag__facts" role="list">
+            <li><b>Opens</b> Studio 6 with its own key and post slot, plus everything Hot desk does<span class="tag__when">, any hour</span>.</li>
+            <li class="tag__hrs">Any hour, every day</li>
+            <li data-hours>24 meeting-room hours a month</li>
+          </ul>
+          <div class="tag__act">
+            <button class="btn" type="button" data-choose aria-pressed="false"><span class="swap"><span data-label>Choose Studio for 4</span><span aria-hidden="true">Chosen</span></span></button>
+            <a class="ul tag__see" href="#floor-plan" data-see>See its doors on the plan</a>
+          </div>
+        </div></div>
+        <span class="badge" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6.5l2.6 2.5L10 3.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      </article>
+
+      <article class="tag" data-plan="s6" aria-labelledby="t-s6">
+        <svg class="key" viewBox="0 0 96 40" aria-hidden="true"><use href="#key"/></svg>
+        <div class="tag__frame"><div class="tag__window">
+          <h3 id="t-s6" class="tag__name">Studio for 6</h3>
+          <p class="tag__desc">Studio 8: six desks and its own sink, 24 m², next to Sheet Bend.</p>
+          <div class="tag__money">
+            <p class="tag__price"><span data-price>£1,790</span> <span class="tag__per">a month</span></p>
+            <p class="tag__bill"><span class="swap"><span>Billed monthly</span><span data-billed>£19,332 billed yearly</span></span></p>
+            <p class="tag__pp"><span data-each></span><span data-pp></span></p>
+          </div>
+          <ul class="tag__facts" role="list">
+            <li><b>Opens</b> Studio 8 with its own key and post slot, plus everything Hot desk does<span class="tag__when">, any hour</span>.</li>
+            <li class="tag__hrs">Any hour, every day</li>
+            <li data-hours>32 meeting-room hours a month</li>
+          </ul>
+          <div class="tag__act">
+            <button class="btn" type="button" data-choose aria-pressed="false"><span class="swap"><span data-label>Choose Studio for 6</span><span aria-hidden="true">Chosen</span></span></button>
+            <a class="ul tag__see" href="#floor-plan" data-see>See its doors on the plan</a>
+          </div>
+        </div></div>
+        <span class="badge" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6.5l2.6 2.5L10 3.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      </article>
+
+      <p class="divider is-empty" data-divider></p>
+    </section>
+    <p class="vat-note">Prices include VAT, Wi-Fi, filter coffee and 200 printed pages a month.</p>
+
+    <section id="rooms" class="rooms" aria-labelledby="rooms-title">
+      <div class="rooms__intro">
+        <h3 id="rooms-title" tabindex="-1">Meeting rooms by the hour</h3>
+        <p>Members spend their included hours first. Anyone can book; you don't need a membership.</p>
+      </div>
+      <ul class="rooms__list" role="list">
+        <li style="--i: 0"><span class="rule" aria-hidden="true"></span><button class="row" type="button" data-room="bowline"><span class="row__name">Bowline</span><span class="row__seats">4 seats</span><span class="row__kit">TV screen</span><span class="row__price">£22 an hour</span><span class="row__act" data-text="Book Bowline"><span>Book Bowline</span></span></button></li>
+        <li style="--i: 1"><span class="rule" aria-hidden="true"></span><button class="row" type="button" data-room="clove"><span class="row__name">Clove Hitch</span><span class="row__seats">6 seats</span><span class="row__kit">Screen and whiteboard wall</span><span class="row__price">£30 an hour</span><span class="row__act" data-text="Book Clove Hitch"><span>Book Clove Hitch</span></span></button></li>
+        <li style="--i: 2"><span class="rule" aria-hidden="true"></span><button class="row" type="button" data-room="reef"><span class="row__name">Reef</span><span class="row__seats">10 seats</span><span class="row__kit">Projector</span><span class="row__price">£44 an hour</span><span class="row__act" data-text="Book Reef"><span>Book Reef</span></span></button></li>
+        <li style="--i: 3"><span class="rule" aria-hidden="true"></span><button class="row" type="button" data-room="sheet"><span class="row__name">Sheet Bend</span><span class="row__seats">14 seats</span><span class="row__kit">Boardroom table and video-call kit</span><span class="row__price">£58 an hour</span><span class="row__act" data-text="Book Sheet Bend"><span>Book Sheet Bend</span></span></button><span class="rule rule--end" aria-hidden="true"></span></li>
+      </ul>
+    </section>
+  </div>
+
+  <section id="trial" class="trial" aria-labelledby="trial-title">
+    <div class="trial__intro">
+      <h3 id="trial-title" tabindex="-1">Try a day free</h3>
+      <p>Spend a weekday on the Walk before you choose. We lend you a day fob for the day.</p>
+      <p class="closing">Questions about studios? Call <a class="ul" href="tel:+441632960412" target="_blank" rel="noopener">01632 960 412</a>.</p>
+    </div>
+    <div class="trial__panel">
+      <form id="trial-form" class="trial__form" novalidate>
+        <div class="fields">
+          <div class="field" data-field="name">
+            <label for="tr-name">Name</label>
+            <span class="ctl"><input id="tr-name" name="name" autocomplete="name" aria-describedby="tr-name-err"></span>
+            <p class="err" id="tr-name-err"></p>
+          </div>
+          <div class="field" data-field="email">
+            <label for="tr-email">Email</label>
+            <span class="ctl"><input id="tr-email" name="email" type="email" autocomplete="email" aria-describedby="tr-email-err"></span>
+            <p class="err" id="tr-email-err"></p>
+          </div>
+          <div class="field" data-field="day">
+            <label for="tr-day">Day</label>
+            <span class="ctl"><input id="tr-day" name="day" type="date" aria-describedby="tr-day-err"></span>
+            <p class="err" id="tr-day-err"></p>
+          </div>
+          <div class="field" data-field="plan">
+            <label for="tr-plan">Plan you are considering</label>
+            <span class="ctl"><select id="tr-plan" name="plan">
+              <option value="hot">Hot desk</option>
+              <option value="fixed">Fixed desk</option>
+              <option value="s2">Studio for 2</option>
+              <option value="s4">Studio for 4</option>
+              <option value="s6">Studio for 6</option>
+            </select></span>
+          </div>
+        </div>
+        <div class="form-foot"><button class="btn btn--strong" type="submit">Book my free day</button></div>
+      </form>
+      <div class="result" id="trial-result" hidden>
+        <p id="trial-msg" tabindex="-1"></p>
+        <button class="btn" type="button" data-trial-again>Change the booking</button>
+      </div>
+    </div>
+  </section>
+</section>
+</main>
+
+<dialog id="book" class="sheet" aria-labelledby="book-title" data-lenis-prevent>
+  <div class="sheet__in">
+    <div class="sheet__head">
+      <div>
+        <h3 id="book-title">Book Reef</h3>
+        <p class="sheet__meta" data-book-meta>10 seats, projector, £44 an hour</p>
+      </div>
+      <button class="btn" type="button" data-close>Close</button>
+    </div>
+    <form id="book-form" novalidate>
+      <div class="fields">
+        <div class="field" data-field="date">
+          <label for="bk-date">Date</label>
+          <span class="ctl"><input id="bk-date" name="date" type="date" aria-describedby="bk-date-err"></span>
+          <p class="err" id="bk-date-err"></p>
+        </div>
+        <div class="field" data-field="start">
+          <label for="bk-start">Start</label>
+          <span class="ctl"><select id="bk-start" name="start" aria-describedby="bk-start-err">
+            <option value="8">08:00</option><option value="9">09:00</option><option value="10" selected>10:00</option>
+            <option value="11">11:00</option><option value="12">12:00</option><option value="13">13:00</option>
+            <option value="14">14:00</option><option value="15">15:00</option><option value="16">16:00</option>
+            <option value="17">17:00</option><option value="18">18:00</option>
+          </select></span>
+          <p class="err" id="bk-start-err"></p>
+        </div>
+        <fieldset class="field field--wide seg" data-field="len" data-seg aria-describedby="bk-len-err">
+          <legend>Length</legend>
+          <div class="seg__track">
+            <label class="seg__opt"><input type="radio" name="len" value="1"><span>1 hour</span></label>
+            <label class="seg__opt"><input type="radio" name="len" value="2" checked><span>2 hours</span></label>
+            <label class="seg__opt"><input type="radio" name="len" value="3"><span>3 hours</span></label>
+            <label class="seg__opt"><input type="radio" name="len" value="4"><span>4 hours</span></label>
+            <span class="seg__pill" aria-hidden="true"><span class="seg__ghost"></span></span>
+          </div>
+          <p class="err" id="bk-len-err"></p>
+        </fieldset>
+        <div class="field field--wide" data-field="email">
+          <label for="bk-email">Email for the door code</label>
+          <span class="ctl"><input id="bk-email" name="email" type="email" autocomplete="email" aria-describedby="bk-email-err"></span>
+          <p class="err" id="bk-email-err"></p>
+        </div>
+      </div>
+      <div class="form-foot">
+        <p class="total" aria-live="polite"><b data-total>£88</b> <span data-total-len>for 2 hours</span></p>
+        <button class="btn btn--strong" type="submit" data-book-submit>Book Reef for 2 hours</button>
+      </div>
+    </form>
+    <div class="result" id="book-result" hidden>
+      <p id="book-msg" tabindex="-1"></p>
+      <div class="result__actions">
+        <button class="btn" type="button" data-book-again>Book another time</button>
+        <button class="btn" type="button" data-close>Done</button>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<div class="follow" aria-hidden="true"><span class="follow__mask"><span class="follow__text"></span></span></div>
+
+<svg width="0" height="0" style="position: absolute" aria-hidden="true">
+  <defs>
+    <!-- split ring through the tag's hole, and the studio's own brass key -->
+    <g id="key"><circle cx="24" cy="21" r="11"/><circle cx="40.5" cy="24" r="5.5"/><path d="M46 24H79M50 21v6M70 24v5h3v-3h3v3h3v-5"/></g>
+  </defs>
+</svg>
+
+<script defer src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/Flip.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  'use strict';
+  const root = document.documentElement;
+  root.classList.add('js');
+  const intro = matchMedia('(prefers-reduced-motion: no-preference)').matches;
+  if (intro) root.classList.add('intro');
+  const $ = (s, c = document) => c.querySelector(s);
+  const $$ = (s, c = document) => [...c.querySelectorAll(s)];
+  const tok = n => parseFloat(getComputedStyle(root).getPropertyValue(n));
+  const T = {
+    fill: tok('--d-fill'), walk: tok('--d-walk'), drain: tok('--d-drain'), step: tok('--d-step'), hours: tok('--d-hours'),
+    flip: tok('--d-flip'), count: tok('--d-count'), swap: tok('--d-swap'), intent: tok('--d-intent') * 1000,
+  };
+
+  /* ---------- Data ---------- */
+  const PLANS = {
+    hot:   { name: 'Hot desk',     pp: 16500,     mh: 4,  adds: [],                hrs: 'day' },
+    fixed: { name: 'Fixed desk',   pp: 26000,     mh: 8,  adds: ['qb', 'lockers'], hrs: 'any' },
+    s2:    { name: 'Studio for 2', price: 72000,  mh: 16, adds: ['st3'], seats: 2, hrs: 'any' },
+    s4:    { name: 'Studio for 4', price: 128000, mh: 24, adds: ['st6'], seats: 4, hrs: 'any' },
+    s6:    { name: 'Studio for 6', price: 179000, mh: 32, adds: ['st8'], seats: 6, hrs: 'any' },
+  };
+  const SHARED = ['walk', 'fd', 'cafe', 'booths', 'bikes'];
+  const MEET = ['bowline', 'clove', 'reef', 'sheet'];
+  const RATE = { bowline: 2200, clove: 3000, reef: 4400, sheet: 5800 };
+  const KIT = { bowline: 'TV screen', clove: 'screen and whiteboard wall', reef: 'projector', sheet: 'boardroom table and video-call kit' };
+  const HOURS = { day: [[8, 19], [8, 19], [8, 19], [8, 19], [8, 19], null, null], any: Array(7).fill([0, 24]), rooms: Array(7).fill([8, 19]) };
+  const HOURS_TEXT = { day: 'Monday to Friday, 08:00 to 19:00; closed to this fob at weekends.', any: 'every day, at any hour.', rooms: 'every day, 08:00 to 19:00.' };
+  const FREE_STUDIO = { st3: 's2', st6: 's4', st8: 's6' };
+  const IN_TEXT = { qb: 'the Quiet Bay', lockers: 'lockers' };
+
+  /* ---------- Money and dates ---------- */
+  const gbp0 = new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP', minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  const gbp2 = new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const money = (pence, pennies = pence % 100 !== 0) => (pennies ? gbp2 : gbp0).format(pence / 100);
+  const dayFmt = new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const parseDay = v => {   // local date from <input type=date>, never a UTC parse
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v || '');
+    if (!m) return null;
+    const d = new Date(+m[1], m[2] - 1, +m[3]);
+    return d.getMonth() === m[2] - 1 ? d : null;
+  };
+  const today = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
+  const addDays = (d, k) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + k);
+  const isWeekday = d => d.getDay() % 6 !== 0;
+  const hh = h => String(h).padStart(2, '0') + ':00';
+  const emailOk = v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+  const hoursWord = n => n === 1 ? '1 hour' : `${n} hours`;
+
+  function quote(id, n, yearly) {
+    const p = PLANS[id];
+    const month = Math.round((p.pp ? p.pp * n : p.price) * (yearly ? 0.9 : 1));
+    return { fits: !p.seats || p.seats >= n, month, each: Math.round(month / n), billed: month * 12, hours: p.pp ? p.mh * n : p.mh };
+  }
+  function order(n) {   // plans that fit, cheapest monthly total first; then the ones too small
+    const ids = Object.keys(PLANS), q = id => quote(id, n, false);
+    return { fit: ids.filter(id => q(id).fits).sort((a, b) => q(a).month - q(b).month), small: ids.filter(id => !q(id).fits) };
+  }
+
+  /* ---------- DOM ---------- */
+  const planEl = $('#floor-plan'), floor = $('.floor'), plansEl = $('#plans'), divider = $('[data-divider]');
+  const capIn = $('.caption__in'), hoursEl = $('.hours'), bars = $$('.bar7__fill'), planName = $('[data-plan-name]');
+  const trialPlan = $('#tr-plan'), chosenName = $('[data-chosen-name]'), planTitle = $('#plan-title');
+  // reach strip: an unlabelled copy of the floor that rides under the tags off the stage; every fill drives both floors
+  const strip = floor.cloneNode(true);
+  strip.className = 'floor floor--strip'; strip.removeAttribute('role'); strip.removeAttribute('aria-label');
+  $$('.room__label, .door, .ring, .rate', strip).forEach(el => el.remove());
+  const reachEl = document.createElement('a');
+  reachEl.className = 'reach'; reachEl.href = '#floor-plan';
+  reachEl.innerHTML = '<span class="reach__in"><span class="reach__head"><span class="reach__what"></span><span class="ul reach__go">See the full plan</span></span></span>';
+  $('.reach__in', reachEl).append(strip);
+  strip.setAttribute('aria-hidden', 'true');
+  const reachWhat = $('.reach__what', reachEl);
+  const ROOMS = Object.fromEntries($$('.room', floor).map(el => [el.dataset.room, {
+    el, fill: [$('.fill', el), $(`[data-room="${el.dataset.room}"] .fill`, strip)], door: $('.door', el), name: el.dataset.name, seats: +el.dataset.seats || 0, pos: +el.dataset.pos,
+  }]));
+  const TAG = Object.fromEntries($$('.tag').map(el => [el.dataset.plan, {
+    el, price: $('[data-price]', el), billed: $('[data-billed]', el), each: $('[data-each]', el), pp: $('[data-pp]', el), ppLine: $('.tag__pp', el),
+    hours: $('[data-hours]', el), btn: $('[data-choose]', el), label: $('[data-label]', el), badge: $('.badge', el),
+  }]));
+  const roomRef = id => IN_TEXT[id] || ROOMS[id].name;
+  const list = a => a.length < 2 ? a.join('') : `${a.slice(0, -1).join(', ')} and ${a.at(-1)}`;
+
+  /* ---------- State ---------- */
+  // shown: what the plan shows now; poured: the last chosen plan the building has flooded for (a commit pours once)
+  const S = { n: 1, yearly: false, chosen: 'hot', preview: null, inspect: null, mode: 'plan', shown: 'hot', poured: 'hot', ready: true, holdPills: intro };
+  // modes: 'plan' (your fob), 'rooms' (S2, a meeting-room booking), 'trial' (a free day's fob, or the plan picked in the trial form)
+  const wanted = () => S.mode === 'rooms' ? 'rooms' : S.preview || (S.mode === 'trial' ? 'day' : S.inspect || S.chosen);
+  const litOf = id => new Set(!id ? [] : id === 'rooms' ? ['walk', 'fd', ...MEET] : id === 'day' ? SHARED : [...SHARED, ...MEET, ...PLANS[id].adds]);
+  const hoursKey = id => id === 'rooms' || id === 'day' ? id : PLANS[id].hrs;
+
+  function caption(id) {
+    if (id === 'day') return 'A day fob opens the front desk, café, the Walk, phone booths, bikes and showers on the day you pick.';
+    if (id === 'rooms') return 'Meeting rooms: four to book by the hour. A booking opens the front desk, the Walk and your room, 08:00 to 19:00.';
+    const p = PLANS[id], meet = `books all ${MEET.length} meeting rooms`;
+    if (p.seats) return `${p.name} fob: opens ${roomRef(p.adds[0])} and ${SHARED.length} shared spaces at any hour, and ${meet}.`;
+    const count = SHARED.length + p.adds.length;
+    return p.hrs === 'day'
+      ? `${p.name} fob: opens ${count} spaces on weekdays, 08:00 to 19:00, and ${meet}.`
+      : `${p.name} fob: opens ${count} spaces at any hour and ${meet}.`;
+  }
+  function diffCaption(from, to) {   // while previewing: what changes against the chosen plan
+    const a = PLANS[from], b = PLANS[to], parts = [];
+    const added = b.adds.filter(r => !a.adds.includes(r)), dropped = a.adds.filter(r => !b.adds.includes(r));
+    if (added.length) parts.push(`adds ${list(added.map(roomRef))}${b.seats ? ' with its own key' : ''}`);
+    if (dropped.length) parts.push(`drops ${list(dropped.map(roomRef))}`);
+    if (a.hrs !== b.hrs) parts.push(b.hrs === 'any' ? 'opens at any hour' : 'opens on weekdays, 08:00 to 19:00, only');
+    return `${b.name} ${parts.length > 1 ? `${parts.slice(0, -1).join(', ')}, and ${parts.at(-1)}` : parts[0]}.`;
+  }
+  function followText(id) {
+    const r = ROOMS[id], shown = S.shown || wanted(), lit = litOf(shown).has(id);
+    const who = shown === 'rooms' ? 'a booking' : shown === 'day' ? 'a day fob' : `the ${PLANS[shown].name} fob`;
+    const seats = r.seats ? `, ${r.seats} ${id === 'qb' ? 'fixed desks' : 'seats'}` : '';
+    if (RATE[id] && shown !== 'day') return shown === 'rooms' ? `${r.name}${seats}, ${money(RATE[id])} an hour.` : `${r.name}${seats}. Book with your hours.`;
+    if (lit) return `${r.name}${seats}. Open with ${who}.`;
+    if (id.startsWith('st')) return FREE_STUDIO[id] ? `${r.name}${seats}. Free now; comes with ${PLANS[FREE_STUDIO[id]].name}.` : `${r.name}${seats}. Let to another member.`;
+    return `${r.name}${seats}. Locked for ${who}.`;
+  }
+
+  /* ---------- Effects: instant by default; the motion layer below swaps in animated versions ---------- */
+  const fx = {
+    count(el, to) { el._v = to; el.textContent = money(to); },
+    caption(el, text) { el.textContent = text; },
+    flood(to, hrs) { paintPlan(to, hrs); },
+    reflow(apply) { apply(); },
+    badge() {},
+    swap(from, to, focusEl) { from.hidden = true; to.hidden = false; focusEl?.focus(); },
+    dialogIn() {},
+    dialogOut(d, done) { done(); },
+    lock() {},
+    scrollTo(t) { t.scrollIntoView({ block: 'start' }); },
+    follow() {},
+  };
+  const FX0 = { ...fx };
+
+  function paintPlan(lit, hrs) {
+    for (const [id, r] of Object.entries(ROOMS)) { r.fill.forEach(f => f.style.setProperty('--fill', lit.has(id) ? 1 : 0)); r.door.style.setProperty('--swing', lit.has(id) ? 0 : 90); }
+    bars.forEach((b, i) => { const h = hrs[i] || [8, 8]; b.style.setProperty('--from', h[0]); b.style.setProperty('--to', h[1]); });
+  }
+  const paintFor = id => paintPlan(litOf(id), id ? HOURS[hoursKey(id)] : []);
+
+  let capText = capIn.textContent;
+  function syncPlan() {
+    const want = wanted();
+    const plan = !!PLANS[want];
+    planEl.classList.toggle('is-rooms', want === 'rooms');
+    planEl.classList.toggle('is-other', !plan);
+    planEl.classList.toggle('is-inspect', !!S.inspect);
+    planName.parentNode.firstChild.textContent = plan ? 'What the ' : 'What a ';
+    planName.textContent = plan ? PLANS[want].name : want === 'rooms' ? 'meeting-room booking' : 'day fob';
+    planName.nextSibling.textContent = plan ? ' fob opens' : ' opens';
+    reachWhat.textContent = planTitle.textContent;
+    const cap = !plan || want === S.chosen ? caption(want) : diffCaption(S.chosen, want);
+    if (cap !== capText) { capText = cap; fx.caption(capIn, cap); }
+    hoursEl.setAttribute('aria-label', `Each day runs midnight to midnight. Hours ${want === 'rooms' ? 'meeting rooms can be booked' : 'this fob opens doors'}: ${HOURS_TEXT[hoursKey(want)]}`);
+    // a newly chosen plan pours from the front door the first time the building shows it (on Choose, or when an
+    // off-screen plan scrolls back in); anything else (preview, rooms mode and back) is a diff
+    const commit = want === S.chosen && want !== S.poured;
+    if (S.ready && (want !== S.shown || commit)) {
+      fx.flood(litOf(want), HOURS[hoursKey(want)], commit);
+      S.shown = want;
+      if (commit) S.poured = want;
+    }
+    fx.follow();
+  }
+
+  function renderTags(animate) {
+    for (const [id, p] of Object.entries(PLANS)) {
+      const t = TAG[id], q = quote(id, S.n, S.yearly);
+      t.el.classList.toggle('is-small', !q.fits);
+      fx.count(t.price, q.month, animate);
+      t.billed.textContent = `${money(q.billed)} billed yearly`;
+      if (!q.fits) { t.each.textContent = ''; t.each._v = null; t.pp.textContent = `Seats ${p.seats}, too small for ${S.n} of you`; }
+      else if (S.n === 1) { t.each.textContent = ''; t.each._v = null; t.pp.textContent = p.seats ? `The whole studio, ${money(Math.round(q.month / p.seats))} a desk for ${p.seats}` : ''; }
+      else { fx.count(t.each, q.each, animate && t.each._v != null); t.pp.textContent = ` each for ${S.n} of you`; }
+      t.ppLine.hidden = !t.pp.textContent;
+      t.hours.textContent = `${q.hours} meeting-room hours a month`;
+      t.btn.disabled = !q.fits;
+      t.label.textContent = q.fits ? `Choose ${p.name}` : `Seats ${p.seats}`;
+      if (!q.fits) t.btn.setAttribute('aria-label', `${p.name}, seats ${p.seats}: too small for ${S.n} of you`);
+    }
+    plansEl.classList.toggle('is-yearly', S.yearly);
+  }
+  function applyOrder() {
+    const { fit, small } = order(S.n);
+    [...fit.map(id => TAG[id].el), divider, ...small.map(id => TAG[id].el), reachEl].forEach(el => plansEl.append(el));
+    plansEl.style.setProperty('--div-col', fit.length + 1);   // from 1200px the divider is a rule in the gap before this column
+    divider.classList.toggle('is-empty', !small.length);
+    divider.innerHTML = small.length ? `<span>Too small for ${S.n} of you</span>` : '';
+  }
+  function renderChosen() {
+    for (const [id, t] of Object.entries(TAG)) {
+      t.el.classList.toggle('is-chosen', id === S.chosen);
+      t.btn.setAttribute('aria-pressed', String(id === S.chosen));
+      if (!t.btn.disabled) id === S.chosen ? t.btn.setAttribute('aria-label', `${PLANS[id].name}, chosen`) : t.btn.removeAttribute('aria-label');
+    }
+    chosenName.textContent = PLANS[S.chosen].name;
+    trialPlan.value = S.chosen;
+  }
+
+  /* ---------- NV4 sliding pill (plain JS + CSS transition on clip-path) ---------- */
+  const segs = $$('[data-seg]').map(fs => {
+    const track = $('.seg__track', fs), pill = $('.seg__pill', fs), opts = $$('.seg__opt', fs);
+    $('.seg__ghost', fs).innerHTML = opts.map(o => `<span>${o.textContent.trim()}</span>`).join('');
+    fs.classList.add('is-live');
+    const clipAt = (l, r) => { pill.style.clipPath = `inset(0 ${r}px 0 ${l}px round 999px)`; };
+    const place = o => { const p = pill.getBoundingClientRect(), b = o.getBoundingClientRect(); if (p.width) clipAt(b.left - p.left, p.right - b.right); };
+    const rest = () => { fs.classList.remove('is-holding'); place(opts.find(o => $('input', o).checked)); };
+    fs.addEventListener('pointerover', e => { const o = e.target.closest('.seg__opt'); if (o && e.pointerType === 'mouse') place(o); });
+    fs.addEventListener('pointerleave', rest);
+    fs.addEventListener('change', rest);
+    fs.addEventListener('focusin', e => { if (e.target.matches(':focus-visible')) place(e.target.closest('.seg__opt')); });
+    fs.addEventListener('focusout', rest);
+    const snap = () => { pill.style.transition = 'none'; rest(); pill.getBoundingClientRect(); pill.style.transition = ''; };
+    new ResizeObserver(() => { if (!S.holdPills) snap(); }).observe(track);   // layout changes move the pill without travel
+    const collapse = () => {   // L4 first frame: a zero-width pill at the checked option's centre
+      const o = opts.find(x => $('input', x).checked), p = pill.getBoundingClientRect(), b = o.getBoundingClientRect();
+      const c = (b.left - p.left + b.width / 2) / p.width * 100;   // percent, so a late font swap cannot skew it
+      fs.classList.add('is-holding');
+      pill.style.transition = 'none'; pill.style.clipPath = `inset(0 ${100 - c}% 0 ${c}% round 999px)`;
+      pill.getBoundingClientRect(); pill.style.transition = '';
+    };
+    const open = g => {   // L4: from the centre of the checked option out to its edges (GSAP, so captures end settled)
+      const o = opts.find(x => $('input', x).checked), p = pill.getBoundingClientRect(), b = o.getBoundingClientRect();
+      const l = b.left - p.left, r = p.right - b.right, c = l + b.width / 2;
+      fs.classList.remove('is-holding');
+      pill.style.transition = 'none';
+      g.fromTo(pill, { clipPath: `inset(0px ${p.width - c}px 0px ${c}px round 999px)` }, {
+        clipPath: `inset(0px ${r}px 0px ${l}px round 999px)`, duration: 0.5, ease: 'expo.out',
+        onComplete: snap,   // re-measure: fonts may have swapped mid-tween
+      });
+    };
+    return { fs, rest, collapse, open, snap };
+  });
+
+  /* ---------- Render everything instantly from state ---------- */
+  function renderAll() {
+    applyOrder(); renderTags(false); renderChosen();
+    S.shown = S.ready ? wanted() : null;
+    S.poured = S.ready ? S.chosen : null;
+    paintFor(S.shown);
+    capText = null; syncPlan();
+    segs.forEach(s => s.rest());
+  }
+
+  /* ---------- Controls ---------- */
+  document.addEventListener('change', e => {
+    const t = e.target;
+    if (t.name === 'desks') {
+      S.n = +t.value; fx.reflow(() => { applyOrder(); renderTags(true); });
+      if (!quote(S.chosen, S.n).fits) choose(order(S.n).fit[0]); else renderChosen();
+    }
+    if (t.name === 'billing') { S.yearly = t.value === 'yearly'; renderTags(true); renderChosen(); }
+    if (t.name === 'len' || t.name === 'start') bookTotal(true);
+  });
+
+  function choose(id) {
+    const prev = S.chosen;
+    clearTimeout(intent);
+    S.chosen = id; S.preview = null; S.inspect = null;
+    renderChosen(); if (prev !== id) fx.badge(TAG[id].badge); syncPlan();
+  }
+  // touch on wide screens (no hover): tapping a tag's body previews its doors, tapping it again goes back
+  let ptr = 'mouse';
+  plansEl.addEventListener('pointerdown', e => { ptr = e.pointerType; });
+  plansEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-choose]');
+    if (b && !b.disabled) return choose(b.closest('.tag').dataset.plan);
+    const id = e.target.closest('.tag')?.dataset.plan;
+    if (id && ptr !== 'mouse' && !narrow.matches && !e.target.closest('a, button')) {
+      S.inspect = S.inspect === id || id === S.chosen ? null : id; syncPlan();
+    }
+  });
+
+  // SIG preview: hover or focus a tag (after a short intent delay) to see its doors; leave the group to go back.
+  // Below 992px the plan sits after the stacked tags, so there is no preview: 'See its doors on the plan' takes you there.
+  const narrow = matchMedia('(max-width: 991px)');
+  let intent, hoverId = null;
+  const ask = id => { clearTimeout(intent); intent = setTimeout(() => { S.preview = id; syncPlan(); }, T.intent); };
+  const drop = () => { clearTimeout(intent); hoverId = null; if (S.preview) { S.preview = null; syncPlan(); } };
+  plansEl.addEventListener('pointerover', e => {
+    if (e.pointerType === 'touch' || narrow.matches) return;
+    const id = e.target.closest('.tag')?.dataset.plan;
+    if (id && id !== hoverId) { hoverId = id; ask(id); }
+  });
+  plansEl.addEventListener('pointerleave', e => { if (e.pointerType !== 'touch' && !narrow.matches) drop(); });
+  plansEl.addEventListener('focusin', e => { const id = e.target.closest('.tag')?.dataset.plan; if (id && !narrow.matches && e.target.matches(':focus-visible')) ask(id); });
+  plansEl.addEventListener('focusout', e => { if (!narrow.matches && !plansEl.contains(e.relatedTarget)) drop(); });
+  narrow.addEventListener('change', drop);
+
+  // reading order follows the drawing: below 992px the plan is drawn after the tags, so it moves there in the DOM too
+  const placePlan = () => narrow.matches ? plansEl.after(planEl) : plansEl.before(planEl);
+  placePlan(); narrow.addEventListener('change', placePlan);
+  // the reach strip steps aside once the labelled plan is on screen (or nearly: it never covers the last tag's button)
+  // (below 992px the plan follows the tags; from 992px it is above them and the strip rests in its own slot after the last row)
+  new IntersectionObserver(([en]) => reachEl.classList.toggle('is-off', en.isIntersecting), { rootMargin: '0px 0px 120px 0px' }).observe(planEl);
+  new ResizeObserver(([en]) => root.style.setProperty('--reach-h', en.target.offsetHeight + 'px')).observe($('.reach__in', reachEl));
+
+  // trial form on the stage: the plan you consider previews against your chosen fob while the select has focus
+  const trialPeek = () => { if (S.mode === 'trial') { S.preview = trialPlan.value; syncPlan(); } };
+  trialPlan.addEventListener('focus', trialPeek);
+  trialPlan.addEventListener('change', trialPeek);
+  trialPlan.addEventListener('blur', () => { if (S.mode === 'trial' && S.preview) { S.preview = null; syncPlan(); } });
+
+  // HV4: the fill enters from the edge the pointer came in by, and leaves by the edge it goes out of
+  const edge = (e, b) => { const r = b.getBoundingClientRect(); b.style.setProperty('--from', e.clientX < r.left + r.width / 2 ? 'left' : 'right'); };
+  document.addEventListener('pointerover', e => { const b = e.target.closest('.btn'); if (b && !b.contains(e.relatedTarget)) edge(e, b); });
+  document.addEventListener('pointerout', e => { const b = e.target.closest('.btn'); if (b && !b.contains(e.relatedTarget)) edge(e, b); });
+
+  /* ---------- NV6 anchors (eased by Lenis when motion is on) and section spy ---------- */
+  const FOCUS = { rooms: $('#rooms-title'), trial: $('#trial-title') };   // #plans and #floor-plan take focus themselves
+  document.addEventListener('click', e => {
+    const a = e.target.closest('a[href^="#"]');
+    const t = a && document.getElementById(a.getAttribute('href').slice(1));
+    if (!t) return;
+    e.preventDefault();
+    if (a.hasAttribute('data-see')) { S.inspect = a.closest('.tag').dataset.plan; syncPlan(); }
+    if (a.classList.contains('plan__back') && S.inspect) { S.inspect = null; syncPlan(); }
+    (FOCUS[t.id] || t).focus({ preventScroll: true });   // focus first, so it never waits on the glide
+    fx.scrollTo(t);
+  });
+  const navLinks = $$('.bar__nav a');
+  const spy = new IntersectionObserver(es => es.forEach(en => {
+    if (en.isIntersecting) navLinks.forEach(a => a.setAttribute('aria-current', String(a.hash === '#' + en.target.id)));
+  }), { rootMargin: '-40% 0px -55% 0px' });
+  navLinks.forEach(a => spy.observe(document.getElementById(a.hash.slice(1))));
+  new ResizeObserver(() => {   // the sticky plan hides its title and legend: --plan-cut is how far, --plan-h what stays
+    const cut = Math.max(0, floor.getBoundingClientRect().top - planEl.getBoundingClientRect().top - 12);
+    root.style.setProperty('--plan-cut', cut + 'px');
+    root.style.setProperty('--plan-h', planEl.offsetHeight - cut + 'px');
+  }).observe(planEl);
+
+  // meeting-room rows outline their room on the sticky plan
+  $$('.row').forEach(r => {
+    const on = v => ROOMS[r.dataset.room].el.classList.toggle('is-pulse', v);
+    r.addEventListener('pointerenter', () => on(true));
+    r.addEventListener('pointerleave', () => on(false));
+    r.addEventListener('focus', () => on(true));
+    r.addEventListener('blur', () => on(false));
+  });
+
+  /* ---------- Forms: inline errors (MI4) ---------- */
+  function showErrors(form, errs) {
+    let first = null;
+    $$('[data-field]', form).forEach(f => {
+      const msg = errs[f.dataset.field], err = $('.err', f);
+      f.classList.toggle('is-invalid', !!msg);
+      if (msg) err.textContent = msg;
+      $$('input, select', f).forEach(i => msg ? i.setAttribute('aria-invalid', 'true') : i.removeAttribute('aria-invalid'));
+      if (msg && !first) first = $('input:checked', f) || $('input, select', f);
+    });
+    first?.focus();
+    return !first;
+  }
+
+  /* ---------- Booking dialog (CD7) ---------- */
+  const dlg = $('#book'), bookForm = $('#book-form'), bookResult = $('#book-result'), bkDate = $('#bk-date');
+  let room = 'reef', opener = null;
+  function bookTotal(animate) {
+    const len = +$('input[name="len"]:checked', bookForm).value, name = ROOMS[room].name;
+    fx.count($('[data-total]'), RATE[room] * len, animate);
+    $('[data-total-len]').textContent = `for ${hoursWord(len)}`;
+    $('[data-book-submit]').textContent = `Book ${name} for ${hoursWord(len)}`;
+  }
+  function openBooking(row) {
+    opener = row; room = row.dataset.room;
+    const r = ROOMS[room];
+    $('#book-title').textContent = `Book ${r.name}`;
+    $('[data-book-meta]').textContent = `${r.seats} seats, ${KIT[room]}, ${money(RATE[room])} an hour`;
+    showErrors(bookForm, {});
+    bookForm.hidden = false; bookResult.hidden = true;
+    bookTotal(false);
+    dlg.showModal(); fx.lock(true); fx.dialogIn(dlg, row);
+    segs.forEach(s => s.rest());
+  }
+  function closeBooking() {
+    if (!dlg.open || dlg.classList.contains('is-closing')) return;
+    dlg.classList.add('is-closing');
+    fx.dialogOut(dlg, () => { dlg.classList.remove('is-closing'); dlg.close(); });
+  }
+  $('#rooms').addEventListener('click', e => { const r = e.target.closest('.row'); if (r) openBooking(r); });
+  dlg.addEventListener('cancel', e => { e.preventDefault(); closeBooking(); });
+  dlg.addEventListener('close', () => { fx.lock(false); opener?.focus(); });
+  dlg.addEventListener('click', e => { if (e.target === dlg || e.target.closest('[data-close]')) closeBooking(); });   // the dialog element itself is only hit on its backdrop
+  bookForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const d = parseDay(bkDate.value), start = +$('#bk-start').value, len = +$('input[name="len"]:checked', bookForm).value;
+    const email = $('#bk-email').value, name = ROOMS[room].name, errs = {};
+    if (!d) errs.date = 'Choose a day.';
+    else if (d < today()) errs.date = 'Choose a day from today onwards.';
+    else if (+d === +today() && start <= new Date().getHours()) errs.start = 'That start time has passed. Choose a later one or another day.';
+    if (start + len > 19) errs.len = `${name} closes at 19:00. Choose an earlier start or fewer hours.`;
+    if (!emailOk(email)) errs.email = 'Enter an email address like name@example.com.';
+    if (!showErrors(bookForm, errs)) return;
+    $('#book-msg').textContent = `${name} is booked for ${dayFmt.format(d)}, ${hh(start)} to ${hh(start + len)}. The door code arrives by email an hour before.`;
+    fx.swap(bookForm, bookResult, $('#book-msg'));
+  });
+  $('[data-book-again]').addEventListener('click', () => fx.swap(bookResult, bookForm, bkDate));
+
+  /* ---------- Trial day form ---------- */
+  const trialForm = $('#trial-form'), trialResult = $('#trial-result'), trDay = $('#tr-day');
+  trialForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const d = parseDay(trDay.value), errs = {};
+    if (!$('#tr-name').value.trim()) errs.name = 'Enter your name.';
+    if (!emailOk($('#tr-email').value)) errs.email = 'Enter an email address like name@example.com.';
+    if (!d) errs.day = 'Choose a weekday for your free day.';
+    else if (d < today()) errs.day = 'Choose a day from today onwards.';
+    else if (!isWeekday(d)) errs.day = 'Choose a weekday; the front desk is closed at weekends.';
+    if (!showErrors(trialForm, errs)) return;
+    $('#trial-msg').textContent = `Your free day is ${dayFmt.format(d)}. Collect a day fob at the front desk from 08:00 and bring photo ID.`;
+    fx.swap(trialForm, trialResult, $('#trial-msg'));
+  });
+  $('[data-trial-again]').addEventListener('click', () => fx.swap(trialResult, trialForm, $('#tr-name')));
+
+  // sensible defaults: tomorrow for a room, the next weekday for a free day
+  const t0 = today();
+  bkDate.min = trDay.min = iso(t0);
+  bkDate.value = iso(addDays(t0, 1));
+  let wd = addDays(t0, 1); while (!isWeekday(wd)) wd = addDays(wd, 1);
+  trDay.value = iso(wd);
+
+  renderAll();
+  // a link with a hash: the browser jumped before the sticky plan's height (scroll-padding-top) settled, so land again
+  const target = location.hash.length > 1 && document.getElementById(location.hash.slice(1));
+  if (target) Promise.all([document.fonts.ready, new Promise(r => addEventListener('load', r, { once: true }))])
+    .then(() => requestAnimationFrame(() => requestAnimationFrame(() => target.scrollIntoView({ block: 'start' }))));
+  if (intro) { S.ready = false; S.shown = null; S.poured = null; paintFor(null); segs.slice(0, 2).forEach(s => s.collapse()); }
+
+  /* ---------- Self-test (#selftest) ---------- */
+  function runSelfTest() {
+    const ok = (c, m) => { if (!c) throw new Error('SELFTEST FAIL: ' + m); };
+    ok(money(quote('hot', 1, true).billed) === '£1,782' && money(quote('hot', 1, true).month) === '£148.50', 'hot yearly');
+    ok(money(quote('hot', 3, false).month) === '£495' && money(quote('fixed', 3, false).month) === '£780', 'per-person totals');
+    ok(money(quote('s4', 3, false).each) === '£426.67' && money(quote('s6', 6, false).each) === '£298.33', 'studio per person');
+    ok(money(quote('s6', 1, true).billed) === '£19,332', 's6 yearly billed');
+    ok(!quote('s2', 3, false).fits && quote('s4', 4, false).fits, 'studio fits');
+    ok(order(3).fit.join() === 'hot,fixed,s4,s6' && order(3).small.join() === 's2', 'order at 3');
+    ok(order(6).fit.join() === 'hot,fixed,s6' && order(1).fit.join() === 'hot,fixed,s2,s4,s6', 'order at 6 and 1');
+    ok(diffCaption('hot', 'fixed') === 'Fixed desk adds the Quiet Bay and lockers, and opens at any hour.', 'diff caption');
+    ok(diffCaption('fixed', 's4') === 'Studio for 4 adds Studio 6 with its own key, and drops the Quiet Bay and lockers.', 'studio diff');
+    ok(caption('s4') === 'Studio for 4 fob: opens Studio 6 and 5 shared spaces at any hour, and books all 4 meeting rooms.', 'studio caption');
+    ok(dayFmt.format(new Date(2026, 9, 29)) === 'Thursday 29 October', 'date format');
+    ok(!isWeekday(parseDay('2026-10-31')) && isWeekday(parseDay('2026-11-03')) && parseDay('2026-02-30') === null, 'local weekdays');
+    console.log('SELFTEST PASS');
+  }
+  if (location.hash === '#selftest') runSelfTest();
+
+  /* ====================================================================
+     Motion layer: GSAP + Lenis. If the CDN is blocked, everything above
+     still works with instant state changes.
+     ==================================================================== */
+  let played = false;   // the load sequence runs once, on the first match only
+  const release = () => {
+    if (played) return;
+    played = true; S.ready = true; S.holdPills = false;
+    root.classList.remove('intro');
+    renderAll();
+  };
+  const hard = setTimeout(release, 2000);   // libraries slow or blocked: show the finished page
+  addEventListener('DOMContentLoaded', () => {
+  clearTimeout(hard);
+  if (!(window.gsap && window.ScrollTrigger && window.Flip && window.Lenis)) { release(); root.classList.remove('js'); return; }
+  gsap.registerPlugin(ScrollTrigger, Flip);
+
+  gsap.matchMedia().add({
+    motion: '(prefers-reduced-motion: no-preference)',
+    reduce: '(prefers-reduced-motion: reduce)',
+    fine: '(hover: hover) and (pointer: fine)',
+    wide: '(min-width: 992px)',
+    stage: '(min-width: 1200px) and (min-height: 720px)',
+  }, ctx => {
+    const { motion, fine, wide, stage } = ctx.conditions;
+    let alive = true;
+    const first = !played && motion;
+    played = true;
+    S.mode = 'plan';
+    if (!first) { S.ready = true; S.holdPills = false; renderAll(); root.classList.remove('intro'); }
+
+    // S2: on the sticky plan, reaching the room list turns the building into a map of bookable rooms.
+    // S3: the rules above the room rows draw once, as the list itself comes into view (never waiting on S2)
+    const roomsEl = $('#rooms');
+    if (motion && !roomsEl.classList.contains('is-drawn')) roomsEl.classList.add('is-waiting');
+    const drawRules = () => roomsEl.classList.replace('is-waiting', 'is-drawn');
+    if (motion) ScrollTrigger.create({ trigger: '.rooms__list', start: 'top 88%', once: true, onEnter: drawRules });
+    if (stage) ScrollTrigger.create({
+      trigger: '#rooms', start: 'top 60%',
+      onEnter: () => { S.mode = 'rooms'; syncPlan(); },
+      onLeaveBack: () => { S.mode = 'plan'; syncPlan(); },
+    });
+    // the trial form at the foot of the page: the stuck plan shows what a free day's fob opens
+    if (stage) ScrollTrigger.create({
+      trigger: '#trial', start: 'top 60%',
+      onEnter: () => { S.mode = 'trial'; S.preview = document.activeElement === trialPlan ? trialPlan.value : null; syncPlan(); },
+      onLeaveBack: () => { S.mode = 'rooms'; S.preview = null; syncPlan(); },
+    });
+
+    if (!motion) return () => { alive = false; };
+
+    // One clock: Lenis runs from GSAP's ticker
+    const lenis = new Lenis({ autoRaf: false, lerp: 0.1, smoothWheel: true });
+    lenis.on('scroll', ScrollTrigger.update);
+    const tick = time => lenis.raf(time * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
+    const ac = new AbortController(), on = { signal: ac.signal };
+
+    fx.scrollTo = t => {
+      const y = t.getBoundingClientRect().top + scrollY - (parseFloat(getComputedStyle(root).scrollPaddingTop) || 0);
+      lenis.scrollTo(y, { duration: Math.min(1.3, 0.65 + Math.abs(y - scrollY) / 4000) });
+    };
+    fx.lock = stop => (stop ? lenis.stop() : lenis.start());
+
+    // SC13-style count, used only where a number really changes (desks, billing, booking length). Display prices use
+    // proportional figures, so while the count runs the span holds the wider of its two ends as a min-width in ch.
+    const chOf = el => { const p = document.createElement('span'); p.style.cssText = 'position:absolute;visibility:hidden;width:10ch'; el.append(p); const w = p.offsetWidth / 10; p.remove(); return w; };
+    fx.count = (el, to, animate) => {
+      const from = el._shown ?? el._v;
+      el._v = to; el._tw?.kill(); el.style.minWidth = '';
+      if (!animate || from == null || from === to) { el._shown = to; el.textContent = money(to); return; }
+      const o = { v: from }, pennies = to % 100 !== 0;
+      const wide = Math.max(...[to, from].map(v => { el.textContent = money(v, pennies); return el.getBoundingClientRect().width; }));
+      el.style.minWidth = (wide / chOf(el)).toFixed(2) + 'ch';
+      el._tw = gsap.to(o, {
+        v: to, duration: T.count, ease: 'expo.out',
+        onUpdate: () => { el._shown = Math.round(o.v); el.textContent = money(el._shown, pennies); },
+        onComplete: () => { el.style.minWidth = ''; },
+      });
+    };
+
+    // TR1 caption roll; opacity only, so the live region keeps announcing
+    let capTl;
+    fx.caption = (el, text) => {
+      capTl?.kill();
+      capTl = gsap.timeline()
+        .to(el, { yPercent: -100, opacity: 0, duration: 0.15, ease: 'power2.in' })
+        .add(() => { el.textContent = text; })
+        .fromTo(el, { yPercent: 100, opacity: 0 }, { yPercent: 0, opacity: 1, duration: T.swap, ease: 'expo.out' });
+    };
+
+    // SIG: the fob flood. Every room fills from its own door (the .fill clip-path insets from the door wall).
+    // Commit (first load, Choose, or a narrow plan catching up): the fob is read again at the front door. Whatever is lit
+    // drains back to its doors (0.25s expo.inOut), then the flood runs east along the Walk (power2.inOut, --d-walk) and
+    // each room the fob opens fills as the flood passes its door (data-pos: metres along the 96 m Walk), so the order is
+    // walking distance. Preview is a diff: rooms both plans open stay lit, the rest drain or fill by walking rank (TR3).
+    // One timeline per interaction; each starts from what is on screen, so an interrupted flood never leaves a room half full.
+    let floodTl;
+    const reach = p => T.walk * (p < 0.5 ? Math.sqrt(p / 2) : 1 - Math.sqrt((1 - p) / 2));   // when power2.inOut reaches p
+    const level = id => parseFloat(getComputedStyle(ROOMS[id].fill[0]).getPropertyValue('--fill')) || 0;
+    const fillRoom = (tl, id, on, at, dur, ease) => {
+      const { fill, door } = ROOMS[id];
+      tl.to(door, { '--swing': on ? 0 : 90, duration: on ? 0.4 : T.drain, ease: on ? 'expo.out' : 'expo.inOut' }, Math.max(0, at - (on ? 0.06 : 0)))
+        .to(fill, { '--fill': on ? 1 : 0, duration: dur || (on ? T.fill : T.drain), ease: ease || (on ? 'expo.out' : 'expo.inOut') }, at);
+    };
+    const days = (tl, hrs, at) => bars.forEach((b, i) => {   // each day grows out from the 08:00 tick
+      const h = hrs[i] || [8, 8];
+      tl.to(b, { '--from': h[0], '--to': h[1], duration: T.hours, ease: 'expo.out' }, at + i * 0.03);
+    });
+    fx.flood = (to, hrs, commit) => {
+      floodTl?.kill();
+      const tl = floodTl = gsap.timeline(), ids = Object.keys(ROOMS);
+      if (commit) {
+        // the building never goes blank: the Walk (and rooms the new fob does not open) drain, the Walk pours east from the
+        // front door again, and rooms that stay open dip to 30% and re-flood from their door as the flood passes it
+        const lit = ids.filter(id => level(id) > 0.01), drain = lit.filter(id => id === 'walk' || !to.has(id));
+        const lead = drain.length ? T.drain : 0;
+        drain.forEach(id => fillRoom(tl, id, false, 0));
+        fillRoom(tl, 'walk', true, lead, T.walk, 'power2.inOut');
+        [...to].filter(id => id !== 'walk').forEach(id => {
+          const at = lead + reach(Math.min(1, ROOMS[id].pos / 96));
+          if (level(id) > 0.99) {   // stays open: dips toward its door and re-floods as the flood head passes it
+            const { fill, door } = ROOMS[id], dip = Math.max(0, at - 0.12);
+            tl.to(fill, { '--fill': 0.3, duration: at - dip, ease: 'power2.in' }, dip).to(fill, { '--fill': 1, duration: T.fill, ease: 'expo.out' }, at)
+              .to(door, { '--swing': 90, duration: at - dip, ease: 'power2.in' }, dip).to(door, { '--swing': 0, duration: 0.2, ease: 'expo.out' }, at);
+          } else fillRoom(tl, id, true, at);
+        });
+        tl.to(bars, { '--from': 8, '--to': 8, duration: Math.min(0.12, lead), ease: 'power2.in' }, 0);   // the week empties to the 08:00 tick, then pours too
+        days(tl, hrs, lead);
+        return;
+      }
+      const out = ids.filter(id => !to.has(id) && level(id) > 0.01);
+      const inn = ids.filter(id => to.has(id) && level(id) < 0.99).sort((a, b) => ROOMS[a].pos - ROOMS[b].pos);
+      out.forEach(id => fillRoom(tl, id, false, 0));
+      const lead = out.length ? T.drain * 0.4 : 0;
+      inn.forEach((id, i) => fillRoom(tl, id, true, lead + i * T.step, id === 'walk' ? T.walk : 0));
+      days(tl, hrs, lead);
+    };
+
+    // CD5 Flip reflow: translate only (tags keep one size), a tiny stagger reads as one move
+    let flipTl;
+    fx.reflow = apply => {
+      flipTl?.progress(1);
+      const state = Flip.getState([...Object.values(TAG).map(t => t.el), divider]);
+      apply();
+      flipTl = Flip.from(state, {
+        duration: T.flip, ease: 'expo.inOut', stagger: 0.02,
+        onEnter: els => gsap.fromTo(els, { opacity: 0 }, { opacity: 1, duration: 0.3, delay: T.flip * 0.5 }),
+      });
+    };
+
+    // MI3 badge pop in the ring hole
+    fx.badge = el => gsap.fromTo(el, { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.25, ease: 'back.out(2)', clearProps: 'transform,opacity' });
+
+    // TR1 masked swap between a form and its result
+    fx.swap = (from, to, focusEl) => {
+      gsap.timeline()
+        .to(from, { opacity: 0, y: -8, duration: 0.15, ease: 'power2.in' })
+        .add(() => { from.hidden = true; gsap.set(from, { clearProps: 'all' }); to.hidden = false; focusEl?.focus({ preventScroll: true }); })
+        .fromTo(to, { clipPath: 'inset(0% 0% 100% 0%)', y: 16 }, { clipPath: 'inset(0% 0% 0% 0%)', y: 0, duration: T.swap, ease: 'expo.out', clearProps: 'all' });
+    };
+
+    // CD7 dialog: scale out of the clicked row; a bottom sheet on phones
+    const sheet = () => matchMedia('(max-width: 599px)').matches;
+    fx.dialogIn = (d, row) => {
+      if (sheet()) { gsap.fromTo(d, { yPercent: 100 }, { yPercent: 0, duration: 0.45, ease: 'expo.out', clearProps: 'transform' }); return; }
+      const r = row.getBoundingClientRect(), p = d.getBoundingClientRect();
+      gsap.fromTo(d, { opacity: 0, y: 12, scale: 0.98, transformOrigin: `${r.left + r.width / 2 - p.left}px ${r.top + r.height / 2 - p.top}px` },
+        { opacity: 1, y: 0, scale: 1, duration: 0.45, ease: 'expo.out', clearProps: 'all' });
+    };
+    fx.dialogOut = (d, done) => gsap.to(d, {
+      ...(sheet() ? { yPercent: 100 } : { opacity: 0, y: 8, scale: 0.98 }),
+      duration: 0.3, ease: 'expo.inOut', onComplete: () => { done(); gsap.set(d, { clearProps: 'all' }); },
+    });
+
+    // L2 LD8 quiet chrome; L4 pills open out from the checked option
+    if (first) {
+      gsap.fromTo($$('[data-chrome]'), { y: 6, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.4, ease: 'expo.out', stagger: 0.06, delay: 0.1 });
+      gsap.delayedCall(0.55, () => { S.holdPills = false; segs.slice(0, 2).forEach(s => s.open(gsap)); });
+    }
+
+    // L3 wall draw (wide) and L5 first pour, at 0.8s everywhere: below 992px it runs along the reach strip under the tags
+    const rooms = Object.values(ROOMS).map(r => r.el), wall = $('.floor__wall');
+    if (first && wide) {
+      const byPos = (i, el) => Math.floor(el.dataset.pos / 4) * 0.035;   // one step per 4 m column
+      gsap.fromTo(rooms, { clipPath: 'inset(-2px 100% -2px -2px)' }, { clipPath: 'inset(-2px -2px -2px -2px)', duration: 0.7, ease: 'expo.out', stagger: byPos, delay: 0.3, clearProps: 'clipPath' });
+      gsap.fromTo(wall, { clipPath: 'inset(0% 100% 0% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: 1.4, ease: 'expo.out', delay: 0.3, clearProps: 'clipPath' });
+    }
+    if (first) gsap.delayedCall(0.8, () => { S.ready = true; syncPlan(); });
+    // S4 narrow: the full plan arrives already poured (the strip showed the pour); as it scrolls in, the doors the chosen
+    // fob opens swing open in walking order, again only if the choice changed since the plan was last seen
+    if (!wide) {
+      let seen = null;
+      ScrollTrigger.create({
+        trigger: planEl, start: 'top 90%', end: 'bottom 10%',
+        onToggle: self => {
+          if (!self.isActive || !S.ready || seen === S.chosen || S.shown !== S.chosen) return;
+          seen = S.chosen;
+          const doors = [...litOf(S.chosen)].sort((a, b) => ROOMS[a].pos - ROOMS[b].pos).map(id => ROOMS[id].door);
+          gsap.fromTo(doors, { '--swing': 90 }, { '--swing': 0, duration: 0.4, ease: 'expo.out', stagger: 0.07, overwrite: 'auto' });
+        },
+      });
+    }
+
+    // I9 CU1 follower over the plan (fine pointer, wide only); the native cursor stays
+    if (fine && wide) {
+      const fol = $('.follow'), txt = $('.follow__text');
+      const qx = gsap.quickTo(fol, 'x', { duration: 0.35, ease: 'expo.out' }), qy = gsap.quickTo(fol, 'y', { duration: 0.35, ease: 'expo.out' });
+      let cur = null, showing = false, rollTl;
+      const at = e => [e.clientX > innerWidth - fol.offsetWidth - 48 ? e.clientX - fol.offsetWidth - 14 : e.clientX + 16, e.clientY + 18];
+      const roll = (text, dir) => {
+        rollTl?.kill();
+        if (!dir) { gsap.set(txt, { yPercent: 0 }); txt.textContent = text; return; }
+        rollTl = gsap.timeline().to(txt, { yPercent: -100 * dir, duration: 0.12, ease: 'power2.in' })
+          .add(() => { txt.textContent = text; })
+          .fromTo(txt, { yPercent: 100 * dir }, { yPercent: 0, duration: 0.3, ease: 'expo.out' });
+      };
+      const hide = () => { if (!showing) return; showing = false; cur = null; gsap.to(fol, { autoAlpha: 0, duration: 0.2, overwrite: 'auto' }); };
+      floor.addEventListener('pointermove', e => {
+        if (e.pointerType !== 'mouse') return;
+        const id = e.target.closest('.room')?.dataset.room;
+        if (id && id !== cur) { roll(followText(id), cur ? (ROOMS[id].pos < ROOMS[cur].pos ? -1 : 1) : 0); cur = id; }
+        const [x, y] = at(e);
+        if (!showing) { showing = true; gsap.set(fol, { x, y }); gsap.to(fol, { autoAlpha: 1, duration: 0.2, overwrite: 'auto' }); }
+        qx(x); qy(y);
+      }, on);
+      floor.addEventListener('pointerleave', hide, on);
+      document.documentElement.addEventListener('mouseleave', hide, on);
+      fx.follow = () => { if (cur) txt.textContent = followText(cur); };
+    }
+
+    return () => {
+      alive = false;
+      ac.abort();
+      roomsEl.classList.remove('is-waiting');
+      gsap.ticker.remove(tick);
+      gsap.ticker.lagSmoothing(500, 33);
+      lenis.destroy();
+      flipTl?.progress(1); capTl?.kill(); floodTl?.progress(1);
+      Object.assign(fx, FX0);
+      S.ready = true;
+    };
+  });
+  root.classList.remove('intro');   // GSAP now holds every first-frame state inline
+  // the ticker never ran (virtual-time capture, a tab opened in the background): jump to the finished page
+  setTimeout(() => {
+    if (gsap.ticker.frame > 10) return;
+    S.ready = true; S.holdPills = false;
+    gsap.globalTimeline.getChildren(false, true, true).forEach(t => t.progress(1));
+    renderAll(); segs.forEach(s => s.snap());
+  }, 2500);
+  });
+})();
+</script>
+</body>
+</html>
