@@ -1,0 +1,686 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Saltmarsh Road Community Clinic team</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ysabeau+Infant:wght@300..700&amp;display=swap">
+<style>
+:root {
+  --c-wall: #F1E0DA;   /* plaster-pink corridor paint */
+  --c-board: #FFFCFA;  /* wipe-clean rota board */
+  --c-ink: #2A1F33;    /* aubergine chart ink: 15.3:1 board, 12.2:1 wall, 12.1:1 mark */
+  --c-pencil: #66596B; /* mauve-grey pencil: 6.4:1 board, 5.1:1 wall, 5.1:1 mark */
+  --c-accent: #8E1F4C; /* raspberry: links, focus, call button. 8.4:1 board, 6.7:1 wall */
+  --c-mark: #C8F169;   /* fluoro-lime highlighter, fill only */
+  --c-tip: #A9D94A;    /* felt-tip end of the column, fill only */
+  --c-rule: #F1E4DF;   /* row separators only */
+  --c-line: color-mix(in srgb, var(--c-accent) 55%, var(--c-board)); /* resting underline on names and the phone link */
+  --c-stub: color-mix(in srgb, var(--c-mark) 70%, var(--c-board));  /* uncapped-pen stub under each day label */
+  --shadow-card: 0 1px 2px rgb(42 31 51 / .14), 0 20px 48px -12px rgb(42 31 51 / .34);
+
+  --f-sans: 'Ysabeau Infant', 'Trebuchet MS', system-ui, sans-serif;
+  --fs-xs: .875rem;
+  --fs-s: .9375rem;
+  --fs-m: 1.0625rem;
+  --fs-intro: 1.1875rem;
+  --fs-l: 1.3125rem;
+  --fs-xl: clamp(2.125rem, 1.5rem + 2.8vw, 3.5rem);
+
+  --s1: .25rem; --s2: .5rem; --s3: .75rem; --s4: 1rem; --s5: 1.5rem;
+  --s6: 2rem; --s7: 3rem; --s8: 4.5rem; --s9: 6rem;
+
+  --r-mark: 3px; --r-tile: 10px; --r-card: 14px;
+  --tile: 44px;
+  --row-pad: var(--s3);
+
+  --ease-out: cubic-bezier(.22,1,.36,1);
+  --ease-sheet: cubic-bezier(.16,1,.3,1);
+  --ease-press: cubic-bezier(.34,1.56,.64,1);
+  --ease-pen: cubic-bezier(.3,.15,.25,1); /* even pen speed through each cell */
+  --stagger: 45ms;
+
+  /* the one grid template shared by the picker, the intro and every row */
+  --cols: repeat(7, minmax(0, 1fr));
+}
+@media (min-width: 700px) {
+  :root { --tile: 52px; --row-pad: var(--s4); --cols: 4.25rem minmax(0, 1fr) 21rem; }
+}
+@media (min-width: 1024px) {
+  :root { --cols: 4.25rem minmax(14rem, 1.1fr) minmax(0, 1fr) 25.5rem; }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-padding-top: 7.5rem; } /* keeps focused rows clear of the sticky picker */
+body {
+  margin: 0; background: var(--c-wall); color: var(--c-ink);
+  font: 400 var(--fs-m)/1.55 var(--f-sans);
+  font-variant-numeric: lining-nums;
+  padding: var(--s6) 0;
+}
+@media (min-width: 700px) { body { padding: var(--s8) var(--s4); } }
+h2, h3, p, ul { margin: 0; }
+ul { padding: 0; list-style: none; }
+button { font: inherit; color: inherit; }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+.team {
+  --row-ink: var(--c-ink); --tile-bg: var(--c-ink); --tile-ink: var(--c-board);
+  --n: 0; --on: 0;
+  max-width: 72rem; margin: 0 auto; background: var(--c-board);
+  padding: var(--s6) var(--s4);
+}
+@media (min-width: 700px) { .team { padding: var(--s7) var(--s5); border-radius: var(--r-card); } }
+@media (min-width: 1024px) { .team { padding: var(--s8) var(--s7) var(--s7); } }
+
+/* header: title and lede on the left, practical notes above the day columns */
+.intro-main { max-width: 60ch; }
+.team h2 { font-size: var(--fs-xl); font-weight: 600; letter-spacing: -.02em; line-height: 1.05; max-width: 15ch; }
+.lede { margin-top: var(--s5); font-size: var(--fs-intro); font-weight: 300; line-height: 1.5; }
+.aside { margin-top: var(--s5); max-width: 60ch; }
+.aside p + p { margin-top: var(--s3); color: var(--c-pencil); font-size: var(--fs-s); line-height: 1.45; }
+@media (min-width: 1024px) {
+  .intro { display: grid; grid-template-columns: var(--cols); }
+  .intro-main { grid-column: 1 / 4; padding-right: var(--s7); }
+  .aside { grid-column: 4; align-self: end; margin-top: 0; }
+}
+
+a { color: var(--c-accent); }
+.tel { white-space: nowrap; }
+.tel, .name {
+  text-decoration: none; font-weight: 500;
+  /* layer 1: the sweep; layer 2: the thin resting underline */
+  background:
+    linear-gradient(var(--c-accent), var(--c-accent)) no-repeat 100% 100% / 0 .1em,
+    linear-gradient(var(--c-line), var(--c-line)) no-repeat 0 100% / 100% 1px;
+}
+.name { border: 0; padding: 0 0 .1em; cursor: pointer; text-align: left; color: var(--row-ink); font-size: var(--fs-m); line-height: 1.3; }
+/* the whole name-and-role block is the tap target */
+.name::after { content: ""; position: absolute; inset: 0; }
+@media (hover: hover) and (pointer: fine) {
+  .tel:hover, .name:hover { background-position: 0 100%, 0 100%; background-size: 100% .1em, 100% 1px; }
+}
+.tel:focus-visible, .name:focus-visible { background-size: 100% .1em, 100% 1px; }
+:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; border-radius: 2px; }
+
+/* the shared grid */
+.pick, .row { display: grid; grid-template-columns: var(--cols); }
+.days, .wk { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.all { grid-column: 1; }
+.days { grid-column: 2 / -1; }
+@media (min-width: 700px) { .all { grid-column: 1 / -2; justify-self: start; } .days { grid-column: -2; } }
+@media (min-width: 1024px) { .all { grid-column: 1 / 4; } .days { grid-column: 4; } }
+
+/* picker = column-header row */
+fieldset {
+  position: sticky; top: 0; z-index: 2;
+  margin: var(--s7) calc(-1 * var(--s4)) 0; padding: var(--s3) var(--s4) 0;
+  border: 0; border-bottom: 2px solid var(--c-ink);
+  background: var(--c-board);
+}
+@media (min-width: 700px) { fieldset { margin-inline: calc(-1 * var(--s5)); padding-inline: var(--s5); } }
+@media (min-width: 1024px) { fieldset { margin-inline: calc(-1 * var(--s7)); padding-inline: var(--s7); } }
+legend { float: left; width: 100%; font-size: var(--fs-m); font-weight: 500; color: var(--c-ink); margin-bottom: var(--s2); }
+.pick { clear: both; }
+.pick label {
+  position: relative; z-index: 1;
+  display: grid; place-items: center; min-height: 2.75rem; padding: 0 var(--s1);
+  border-radius: var(--r-mark) var(--r-mark) 0 0;
+  font-size: var(--fs-xs); font-weight: 500; color: var(--c-pencil); cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+/* unselected days read as tabs: a lime stub, like an uncapped pen */
+.days label:not(:has(:checked)) { background: linear-gradient(var(--c-stub), var(--c-stub)) no-repeat 50% 100% / calc(100% - var(--s3)) 3px; }
+.pick input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
+.pick label:has(:checked) { color: var(--c-ink); font-weight: 700; }
+.pick label:has(:focus-visible) { outline: 2px solid var(--c-accent); outline-offset: 2px; }
+.all { justify-items: start; padding-inline: 0 !important; }
+.all:has(:checked) { text-decoration: underline 2px var(--c-ink); text-underline-offset: .3em; }
+@media (max-width: 699px) { .all .wk-word { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; } }
+@media (min-width: 700px) {
+  .pick label { font-size: var(--fs-m); }
+  .all { padding-inline: var(--s3) !important; }
+}
+.days { position: relative; }
+/* the highlighter cap: slides along the header to the chosen day */
+.cap {
+  position: absolute; inset: 0 auto 0 0; width: calc(100% / 6);
+  background: var(--c-mark); border-radius: var(--r-mark) var(--r-mark) 0 0;
+  transform-origin: bottom;
+  translate: calc(var(--n) * 100%) 0; scale: 1 var(--on);
+}
+
+/* the day's practical answer, right under the picker */
+.say { display: grid; margin-block: var(--s4) 0; max-width: 60ch; font-size: var(--fs-intro); line-height: 1.5; font-weight: 500; }
+.say span { grid-area: 1 / 1; visibility: hidden; opacity: 0; }
+
+/* board */
+.group { font-size: var(--fs-l); font-weight: 500; line-height: 1.3; padding: var(--s6) 0 var(--s2); }
+.row {
+  padding: var(--row-pad) 0; border-bottom: 1px solid var(--c-rule);
+  grid-template-rows: auto auto; row-gap: var(--s2); color: var(--row-ink);
+}
+.people > .row:last-child { border-bottom: 0; }
+.tile {
+  grid-column: 1; grid-row: 1 / -1; align-self: start;
+  width: var(--tile); aspect-ratio: 1; display: grid; place-items: center;
+  border-radius: var(--r-tile); border: 1.5px solid var(--row-ink);
+  background: var(--tile-bg); color: var(--tile-ink);
+  font-weight: 600; font-size: var(--fs-s); letter-spacing: .02em;
+}
+.who { position: relative; grid-column: 2 / -1; grid-row: 1; padding-left: var(--s3); display: grid; justify-items: start; align-content: start; min-width: 0; }
+.role, .about { font-size: var(--fs-s); line-height: 1.4; }
+.role { color: var(--c-pencil); }
+.offnote { display: block; min-height: 1.4em; } /* reserved so rows never grow when a day is picked */
+.offnote::before { content: none; }
+.about { display: none; }
+.wk { grid-column: 2 / -1; grid-row: 2; }
+.wk > li { position: relative; isolation: isolate; display: grid; place-items: center; min-height: 2rem; font-size: var(--fs-xs); line-height: 1.2; white-space: nowrap; }
+.wk > li:not(.in) { color: var(--c-pencil); }
+/* the column fill: one cell per row, drawn top-down, each row a beat after the one above */
+.wk > li::before {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background: var(--c-mark); border-radius: var(--r-mark);
+  transform: scaleY(var(--fill, 0)); transform-origin: top;
+}
+.people:last-of-type > .row:last-child .wk > li::before { background: linear-gradient(to bottom, var(--c-mark) calc(100% - .6rem), var(--c-tip)); }
+@media (min-width: 700px) {
+  .row { grid-template-rows: auto; align-items: center; }
+  .who { grid-column: 2; padding: 0 var(--s4) 0 0; }
+  .name { font-size: var(--fs-l); }
+  .wk { grid-column: -2; grid-row: 1; align-self: stretch; }
+  .wk > li { font-size: var(--fs-m); }
+  /* fills reach through the row padding and the rule, so a group reads as one stroke */
+  .wk > li::before { inset: calc(-1 * var(--row-pad)) 0 calc(-1 * var(--row-pad) - 1px); border-radius: 0; }
+  .people > .row:first-child .wk > li::before { border-radius: var(--r-mark) var(--r-mark) 0 0; }
+  .people > .row:last-child .wk > li::before { border-radius: 0 0 var(--r-mark) var(--r-mark); }
+}
+@media (min-width: 1024px) {
+  .about { display: block; grid-column: 3; padding-right: var(--s5); max-width: 34ch; color: var(--row-ink); }
+}
+
+/* person cards: non-modal popovers, no scrim */
+.card {
+  width: min(30rem, calc(100% - 2 * var(--s4))); padding: var(--s5);
+  border: 0; border-radius: var(--r-card); background: var(--c-board); color: var(--c-ink);
+  box-shadow: var(--shadow-card);
+}
+.card-head { display: flex; gap: var(--s4); align-items: center; margin-bottom: var(--s4); }
+.card-head .tile { --tile-bg: var(--c-ink); --tile-ink: var(--c-board); --row-ink: var(--c-ink); width: 56px; }
+.card h3 { font-size: var(--fs-l); font-weight: 500; line-height: 1.25; }
+.card p + p { margin-top: var(--s2); }
+.card-actions { display: grid; gap: var(--s2); margin-top: var(--s5); }
+.call, .back {
+  display: inline-flex; align-items: center; justify-content: center; min-height: 2.75rem; padding: 0 var(--s5);
+  font-weight: 600; text-decoration: none; cursor: pointer;
+}
+.call {
+  position: relative; isolation: isolate; overflow: hidden;
+  border-radius: 999px; background: var(--c-accent); color: var(--c-board);
+}
+.call::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; background: var(--c-ink);
+  transform: scaleX(0); transform-origin: right;
+}
+.back { border: 1.5px solid var(--c-pencil); border-radius: var(--r-tile); background: none; }
+@media (hover: hover) and (pointer: fine) {
+  .call:hover::before { transform: scaleX(1); transform-origin: left; }
+  .back:hover { border-color: var(--c-ink); background: var(--c-wall); }
+  .pick label:not(:has(:checked)):hover { background-color: var(--c-wall); color: var(--c-ink); }
+}
+.call:active::before { transform: scaleX(1); transform-origin: left; }
+.back:active { border-color: var(--c-ink); background: var(--c-wall); }
+@media (max-width: 699px) {
+  .card {
+    width: 100%; max-width: none; margin: auto 0 0; inset: auto 0 0 0;
+    border-radius: var(--r-card) var(--r-card) 0 0; padding-bottom: var(--s6);
+  }
+}
+
+/* day states (generated from the rota) */
+.team:has(#d-mon:checked) { --n: 0; --on: 1; }
+.team:has(#d-mon:checked) .wk > li:nth-child(1),
+.team:has(#d-tue:checked) .wk > li:nth-child(2),
+.team:has(#d-wed:checked) .wk > li:nth-child(3),
+.team:has(#d-thu:checked) .wk > li:nth-child(4),
+.team:has(#d-fri:checked) .wk > li:nth-child(5),
+.team:has(#d-sat:checked) .wk > li:nth-child(6) {
+  font-weight: 600;
+  --fill: 1; --fill-t: .22s; --fill-e: var(--ease-pen); --fill-d: calc(.12s + var(--i) * var(--stagger));
+}
+.team:has(#d-mon:checked) .off-mon,
+.team:has(#d-tue:checked) .off-tue,
+.team:has(#d-wed:checked) .off-wed,
+.team:has(#d-thu:checked) .off-thu,
+.team:has(#d-fri:checked) .off-fri,
+.team:has(#d-sat:checked) .off-sat { --row-ink: var(--c-pencil); --tile-bg: transparent; --tile-ink: var(--c-pencil); }
+.team:has(#d-mon:checked) .off-mon .offnote::before { content: "Off Monday"; }
+.team:has(#d-tue:checked) { --n: 1; --on: 1; }
+.team:has(#d-tue:checked) .off-tue .offnote::before { content: "Off Tuesday"; }
+.team:has(#d-wed:checked) { --n: 2; --on: 1; }
+.team:has(#d-wed:checked) .off-wed .offnote::before { content: "Off Wednesday"; }
+.team:has(#d-thu:checked) { --n: 3; --on: 1; }
+.team:has(#d-thu:checked) .off-thu .offnote::before { content: "Off Thursday"; }
+.team:has(#d-fri:checked) { --n: 4; --on: 1; }
+.team:has(#d-fri:checked) .off-fri .offnote::before { content: "Off Friday"; }
+.team:has(#d-sat:checked) { --n: 5; --on: 1; }
+.team:has(#d-sat:checked) .off-sat .offnote::before { content: "Off Saturday"; }
+.team:has(#d-all:checked) .say [data-d="all"],
+.team:has(#d-mon:checked) .say [data-d="mon"],
+.team:has(#d-tue:checked) .say [data-d="tue"],
+.team:has(#d-wed:checked) .say [data-d="wed"],
+.team:has(#d-thu:checked) .say [data-d="thu"],
+.team:has(#d-fri:checked) .say [data-d="fri"],
+.team:has(#d-sat:checked) .say [data-d="sat"] { visibility: visible; opacity: 1; transform: none; transition: opacity .45s var(--ease-sheet) .1s, transform .45s var(--ease-sheet) .1s, visibility 0s; }
+
+/* motion: transitions only when the person has not asked for less */
+@media (prefers-reduced-motion: no-preference) {
+  .cap { transition: translate .4s var(--ease-out), scale .4s var(--ease-out); }
+  /* back to All week: the cap drops first, then moves home unseen */
+  .team:has(#d-all:checked) .cap { transition: scale .15s ease-in, translate 0s .15s; }
+  /* fill in: per-row delay from --i; clear: .15s, no delay */
+  .wk > li::before { transition: transform var(--fill-t, .15s) var(--fill-e, ease-in) var(--fill-d, 0s); }
+  .say span { transform: translateY(.5em); transition: opacity .15s, transform .15s, visibility 0s .15s; }
+  .role, .tile, .about { transition: color .25s ease, border-color .25s ease, background-color .25s ease; }
+  .tel, .name { transition: background-size .4s cubic-bezier(.35,0,0,1), color .25s ease; }
+  .pick label { transition: background-color .15s, transform .35s var(--ease-press); }
+  .pick label:active, .call:active, .back:active { transform: scale(.96); transition: transform .12s ease-out; }
+  .call, .back { transition: transform .35s var(--ease-press), border-color .15s, background-color .15s; }
+  .call::before { transition: transform .25s ease-in; }
+  .call:hover::before { transition: transform .35s var(--ease-out); }
+  .card {
+    opacity: 0; transform: translateY(12px) scale(.98);
+    transition: opacity .2s ease-in, transform .2s ease-in, display .2s allow-discrete, overlay .2s allow-discrete;
+  }
+  .card:popover-open { opacity: 1; transform: none; transition-duration: .4s; transition-timing-function: var(--ease-sheet); }
+  @starting-style { .card:popover-open { opacity: 0; transform: translateY(12px) scale(.98); } }
+}
+@media (prefers-reduced-motion: no-preference) and (max-width: 699px) {
+  .card { transform: translateY(24px); }
+  @starting-style { .card:popover-open { transform: translateY(24px); } }
+}
+@media (prefers-reduced-motion: reduce) {
+  .say span { transition: none !important; }
+  .card { opacity: 0; transition: opacity .15s, display .15s allow-discrete, overlay .15s allow-discrete; }
+  .card:popover-open { opacity: 1; }
+  @starting-style { .card:popover-open { opacity: 0; } }
+}
+</style>
+</head>
+<body>
+<main>
+  <section class="team" aria-labelledby="team-h">
+    <div class="intro">
+      <div class="intro-main">
+        <h2 id="team-h">Who you’ll see at Saltmarsh Road</h2>
+        <p class="lede">Fourteen of us run this clinic, most of us part-time. Choose a name to see what that person can help with, then ask for them by name when you book.</p>
+      </div>
+      <div class="aside">
+        <p class="book">Book or change an appointment: <a class="tel" href="tel:+441632960412" target="_blank" rel="noopener">01632 960 412</a> (lines open at 8 am)</p>
+        <p>Hours are in 12-hour time, so 1–8 means 1 pm to 8 pm. A dot means not in that day.</p>
+        <p>Need an interpreter or a longer appointment? Say so when you call. Interpreters are free.</p>
+      </div>
+    </div>
+
+    <fieldset>
+      <legend>Pick a day to see who is in <span class="vh">(changes the board below)</span></legend>
+      <div class="pick">
+        <label class="all"><input type="radio" name="day" id="d-all" checked><span>All<span class="wk-word"> week</span></span></label>
+        <div class="days">
+          <span class="cap" aria-hidden="true"></span>
+          <label><input type="radio" name="day" id="d-mon"><span aria-hidden="true">Mon</span><span class="vh">Monday</span></label>
+          <label><input type="radio" name="day" id="d-tue"><span aria-hidden="true">Tue</span><span class="vh">Tuesday</span></label>
+          <label><input type="radio" name="day" id="d-wed"><span aria-hidden="true">Wed</span><span class="vh">Wednesday</span></label>
+          <label><input type="radio" name="day" id="d-thu"><span aria-hidden="true">Thu</span><span class="vh">Thursday</span></label>
+          <label><input type="radio" name="day" id="d-fri"><span aria-hidden="true">Fri</span><span class="vh">Friday</span></label>
+          <label><input type="radio" name="day" id="d-sat"><span aria-hidden="true">Sat</span><span class="vh">Saturday</span></label>
+        </div>
+      </div>
+    </fieldset>
+
+    <p class="say" aria-live="polite">
+        <span data-d="all">Open 8 am to 6 pm on weekdays, until 8 pm on Tuesdays and Thursdays, and 9 to 12 on Saturdays for walk-ins.</span>
+        <span data-d="mon">Call at 8 for same-day appointments with Bernadette or Dr Okafor.</span>
+        <span data-d="tue">Late clinic until 8 pm with Dr Zieliński and Joel, and Danny on the desk.</span>
+        <span data-d="wed">Baby clinic with Lena, drop in from 1 to 4 pm, no appointment needed.</span>
+        <span data-d="thu">Late clinic until 8 pm with Dr Reyes and Marcus, and Danny on the desk.</span>
+        <span data-d="fri">Medication reviews with Wei in the morning. Prescriptions requested by noon are ready on Monday.</span>
+        <span data-d="sat">Walk-in from 9 to 12 with Dr Reyes and Joel, and Danny on the desk. Seen in order of arrival.</span>
+      </p>
+
+    <div class="board">
+      <h3 class="group">Doctors</h3>
+      <ul class="people">
+        <li class="row off-wed off-sat" style="--i:0">
+          <span class="tile" aria-hidden="true">AO</span>
+          <div class="who">
+            <button class="name" type="button" popovertarget="p-okafor">Dr Amara Okafor</button>
+            <span class="role">GP partner<span class="offnote"></span></span>
+          </div>
+          <p class="about">Diabetes and heart checks, menopause and long-term conditions</p>
+          <ul class="wk"><li class="in"><span class="vh">Monday 8 am to 6 pm</span><span aria-hidden="true">8–6</span></li><li class="in"><span class="vh">Tuesday 8 am to 1 pm</span><span aria-hidden="true">8–1</span></li><li><span class="vh">Wednesday, not in</span><span aria-hidden="true">·</span></li><li class="in"><span class="vh">Thursday 8 am to 6 pm</span><span aria-hidden="true">8–6</span></li><li class="in"><span class="vh">Friday 8 am to 1 pm</span><span aria-hidden="true">8–1</span></li><li><span class="vh">Saturday, not in</span><span aria-hidden="true">·</span></li></ul>
+        </li>
+        <li class="row off-thu off-sat" style="--i:1">
+          <span class="tile" aria-hidden="true">PZ</span>
+          <div class="who">
+            <button class="name" type="button" popovertarget="p-zielinski">Dr Piotr Zieliński</button>
+            <span class="role">GP<span class="offnote"></span></span>
+          </div>
+          <p class="about">Children’s health, asthma and men’s health</p>
+          <ul class="wk"><li class="in"><span class="vh">Monday 1 pm to 6 pm</span><span aria-hidden="true">1–6</span></li><li class="in"><span class="vh">Tuesday 1 pm to 8 pm</span><span aria-hidden="true">1–8</span></li><li class="in"><span class="vh">Wednesday 8 am to 6 pm</span><span aria-hidden="true">8–6</span></li><li><span class="vh">Thursday, not in</span><span aria-hidden="true">·</span></li><li class="in"><span class="vh">Friday 8 am to 6 pm</span><span aria-hidden="true">8–6</span></li><li><span class="vh">Saturday, not in</span><span aria-hidden="true">·</span></li></ul>
+        </li>
+        <li class="row off-mon off-fri" style="--i:2">
+          <span class="tile" aria-hidden="true">HR</span>
+          <div class="who">
+            <button class="name" type="button" popovertarget="p-reyes">Dr Hannah Reyes</button>
+            <span class="role">GP<span class="offnote"></span></span>
+          </div>
+          <p class="about">Contraception, sexual health and first appointments about mental health</p>
+          <ul class="wk"><li><span class="vh">Monday, not in</span><span aria-hidden="true">·</span></li><li class="in"><span class="vh">Tuesday 8 am to 6 pm</span><span aria-hidden="true">8–6</span></li><li class="in"><span class="vh">Wednesday 8 am to 1 pm</span><span aria-hidden="true">8–1</span></li><li class="in"><span class="vh">Thursday 1 pm to 8 pm</span><span aria-hidden="true">1–8</span></li><li><span class="vh">Friday, not in</span><span aria-hidden="true">·</span></li><li class="in"><span class="vh">Saturday 9 am to 12 noon</span><span aria-hidden="true">9–12</span></li></ul>
+        </li>
+        <li class="row off-wed off-fri off-sat" style="--i:3">
+          <span class="tile" aria-hidden="true">FH</span>
+          <div class="who">
+            <button class="name" type="button" popovertarget="p-haidari">Dr Farid Haidari</button>
+            <span class="role">GP in training<span class="offnote"></span></span>
+          </div>
+          <p class="about">General appointments and follow-ups, supervised by Dr Okafor</p>
+          <ul class="wk"><li class="in"><span class="vh">Monday 8 am to 6 pm</span><span aria-hidden="true">8–6</span></li><li class="in"><span class="vh">Tuesday 8 am to 1 pm</span><span aria-hidden="true">8–1</span></li><li><span class="vh">Wednesday, not in</span><span aria-hidden="true">·</span></li><li class="in"><span class="vh">Thursday 8 am to 1 pm</span><span aria-hidden="true">8–1</span></li><li><span class="vh">Friday, not in</span><span aria-hidden="true">·</span></li><li><span class="vh">Saturday, not in</span><span aria-hidden="true">·</span></li></ul>
+        </li>
+      </ul>
+      <h3 class="group">Nurses and health checks</h3>
+      <ul class="people">
+        <li class="row off-thu off-sat" style="--i:4">
+          <span class="tile" aria-hidden="true">BQ</span>
+          <div class="who">
+            <button class="name" type="button" popovertarget="p-quigley">Bernadette Quigley</button>
+            <span class="role">Advanced nurse practitioner<span class="offnote"></span></span>
+          </div>
+          <p class="about">Same-day minor illness; she can prescribe</p>
+          <ul class="wk"><li class="in"><span class="vh">Monday 8 am to 6 pm</span><span aria-hidden="true">8–6</span></li><li class="in"><span class="vh">Tuesday 8 am to 6 pm</span><span aria-hidden="true">8–6</span></li><li class="in"><span class="vh">Wednesday 8 am to 1 pm</span><span aria-hidden="true">8–1</span></li><li><span class="vh">Thursday, not in</span><span aria-hidden="true">·</span></li><li class="in"><span class="vh">Friday 8 am to 6 pm</span><span aria-hidden="true">8–6</span></li><li><span class="vh">Saturday, not in</span><span aria-hidden="true">·</span></li></ul>
+        </li>
+        <li class="row off-mon off-fri" style="--i:5">
+          <span class="tile" aria-hidden="true">JM</span>
+          <div class="who">
+            <button class="name" type="button" popovertarget="p-mensah">Joel Mensah</button>
+            <span class="role">Practice nurse<span class="offnote"></span></span>
+          </div>
+          <p class="about">Smear tests, travel jabs and wound care</p>
+          <ul class="wk"><li><span class="vh">Monday, not in</span><span aria-hidden="true">·</span></li><li class="in"><span class="vh">Tuesday 1 pm to 8 pm</span><span aria-hidden="true">1–8</span></li><li class="in"><span class="vh">Wednesday 8 am to 6 pm</span><span aria-hidden="true">8–6</span></li><li class="in"><span class="vh">Thursday 8 am to 6 pm</span><span aria-hidden="true">8–6</span></li><li><span class="vh">Friday, not in</span><span aria-hidden="true">·</span></li><li class="in"><span class="vh">Saturday 9 am to 12 noon</span><span aria-hidden="true">9–12</span></li></ul>
+        </li>
+        <li class="row off-wed off-sat" style="--i:6">
+          <span class="tile" aria-hidden="true">KS</span>
+          <div class="who">
+            <button class="name" type="button" popovertarget="p-sundaram">Kavitha Sundaram</button>
+            <span class="role">Healthcare assistant<span class="offnote"></span></span>
+          </div>
+          <p class="about">Blood tests, blood pressure and health checks</p>
+          <ul class="wk"><li class="in"><span class="vh">Monday 8 am to 1 pm</span><span aria-hidden="true">8–1</span></li><li class="in"><span class="vh">Tuesday 8 am to 1 pm</span><span aria-hidden="true">8–1</span></li><li><span class="vh">Wednesday, not in</span><span aria-hidden="true">·</span></li><li class="in"><span class="vh">Thursday 8 am to 6 pm</span><span aria-hidden="true">8–6</span></li><li class="in"><span class="vh">Friday 8 am to 6 pm</span><span aria-hidden="true">8–6</span></li><li><span class="vh">Saturday, not in</span><span aria-hidden="true">·</span></li></ul>
+        </li>
+      </ul>
+      <h3 class="group">Pregnancy and new babies</h3>
+      <ul class="people">
+        <li class="row off-tue off-thu off-sat" style="--i:7">
+          <span class="tile" aria-hidden="true">RA</span>
+          <div class="who">
+            <button class="name" type="button" popovertarget="p-abiodun">Ruth Abiodun</button>
+            <span class="role">Community midwife<span class="offnote"></span></span>
+          </div>
+          <p class="about">Antenatal appointments and checks after the birth</p>
+          <ul class="wk"><li class="in"><span class="vh">Monday 1 pm to 6 pm</span><span aria-hidden="true">1–6</span></li><li><span class="vh">Tuesday, not in</span><span aria-hidden="true">·</span></li><li class="in"><span class="vh">Wednesday 8 am to 6 pm</span><span aria-hidden="true">8–6</span></li><li><span class="vh">Thursday, not in</span><span aria-hidden="true">·</span></li><li class="in"><span class="vh">Friday 8 am to 1 pm</span><span aria-hidden="true">8–1</span></li><li><span class="vh">Saturday, not in</span><span aria-hidden="true">·</span></li></ul>
+        </li>
+        <li class="row off-mon off-thu off-fri off-sat" style="--i:8">
+          <span class="tile" aria-hidden="true">LF</span>
+          <div class="who">
+            <button class="name" type="button" popovertarget="p-fischer">Lena Fischer</button>
+            <span class="role">Health visitor<span class="offnote"></span></span>
+          </div>
+          <p class="about">The baby clinic, feeding and sleep</p>
+          <ul class="wk"><li><span class="vh">Monday, not in</span><span aria-hidden="true">·</span></li><li class="in"><span class="vh">Tuesday 8 am to 1 pm</span><span aria-hidden="true">8–1</span></li><li class="in"><span class="vh">Wednesday 8 am to 6 pm</span><span aria-hidden="true">8–6</span></li><li><span class="vh">Thursday, not in</span><span aria-hidden="true">·</span></li><li><span class="vh">Friday, not in</span><span aria-hidden="true">·</span></li><li><span class="vh">Saturday, not in</span><span aria-hidden="true">·</span></li></ul>
+        </li>
+      </ul>
+      <h3 class="group">Mental health and community support</h3>
+      <ul class="people">
+        <li class="row off-mon off-wed off-sat" style="--i:9">
+          <span class="tile" aria-hidden="true">MB</span>
+          <div class="who">
+            <button class="name" type="button" popovertarget="p-bell">Marcus Bell</button>
+            <span class="role">Mental health practitioner<span class="offnote"></span></span>
+          </div>
+          <p class="about">Anxiety, low mood and short courses of talking therapy</p>
+          <ul class="wk"><li><span class="vh">Monday, not in</span><span aria-hidden="true">·</span></li><li class="in"><span class="vh">Tuesday 8 am to 6 pm</span><span aria-hidden="true">8–6</span></li><li><span class="vh">Wednesday, not in</span><span aria-hidden="true">·</span></li><li class="in"><span class="vh">Thursday 1 pm to 8 pm</span><span aria-hidden="true">1–8</span></li><li class="in"><span class="vh">Friday 8 am to 6 pm</span><span aria-hidden="true">8–6</span></li><li><span class="vh">Saturday, not in</span><span aria-hidden="true">·</span></li></ul>
+        </li>
+        <li class="row off-tue off-fri off-sat" style="--i:10">
+          <span class="tile" aria-hidden="true">NS</span>
+          <div class="who">
+            <button class="name" type="button" popovertarget="p-saleh">Noor Saleh</button>
+            <span class="role">Social prescriber<span class="offnote"></span></span>
+          </div>
+          <p class="about">Housing, debt advice and local groups</p>
+          <ul class="wk"><li class="in"><span class="vh">Monday 8 am to 6 pm</span><span aria-hidden="true">8–6</span></li><li><span class="vh">Tuesday, not in</span><span aria-hidden="true">·</span></li><li class="in"><span class="vh">Wednesday 8 am to 1 pm</span><span aria-hidden="true">8–1</span></li><li class="in"><span class="vh">Thursday 8 am to 6 pm</span><span aria-hidden="true">8–6</span></li><li><span class="vh">Friday, not in</span><span aria-hidden="true">·</span></li><li><span class="vh">Saturday, not in</span><span aria-hidden="true">·</span></li></ul>
+        </li>
+      </ul>
+      <h3 class="group">Medicines</h3>
+      <ul class="people">
+        <li class="row off-mon off-wed off-sat" style="--i:11">
+          <span class="tile" aria-hidden="true">WC</span>
+          <div class="who">
+            <button class="name" type="button" popovertarget="p-chen">Wei Chen</button>
+            <span class="role">Clinical pharmacist<span class="offnote"></span></span>
+          </div>
+          <p class="about">Medication reviews and repeat prescriptions</p>
+          <ul class="wk"><li><span class="vh">Monday, not in</span><span aria-hidden="true">·</span></li><li class="in"><span class="vh">Tuesday 8 am to 6 pm</span><span aria-hidden="true">8–6</span></li><li><span class="vh">Wednesday, not in</span><span aria-hidden="true">·</span></li><li class="in"><span class="vh">Thursday 8 am to 6 pm</span><span aria-hidden="true">8–6</span></li><li class="in"><span class="vh">Friday 8 am to 1 pm</span><span aria-hidden="true">8–1</span></li><li><span class="vh">Saturday, not in</span><span aria-hidden="true">·</span></li></ul>
+        </li>
+      </ul>
+      <h3 class="group">Front desk</h3>
+      <ul class="people">
+        <li class="row off-fri off-sat" style="--i:12">
+          <span class="tile" aria-hidden="true">BG</span>
+          <div class="who">
+            <button class="name" type="button" popovertarget="p-gallagher">Bev Gallagher</button>
+            <span class="role">Practice manager<span class="offnote"></span></span>
+          </div>
+          <p class="about">Registering, complaints and your records</p>
+          <ul class="wk"><li class="in"><span class="vh">Monday 8 am to 6 pm</span><span aria-hidden="true">8–6</span></li><li class="in"><span class="vh">Tuesday 8 am to 6 pm</span><span aria-hidden="true">8–6</span></li><li class="in"><span class="vh">Wednesday 8 am to 6 pm</span><span aria-hidden="true">8–6</span></li><li class="in"><span class="vh">Thursday 8 am to 6 pm</span><span aria-hidden="true">8–6</span></li><li><span class="vh">Friday, not in</span><span aria-hidden="true">·</span></li><li><span class="vh">Saturday, not in</span><span aria-hidden="true">·</span></li></ul>
+        </li>
+        <li class="row off-wed" style="--i:13">
+          <span class="tile" aria-hidden="true">DO</span>
+          <div class="who">
+            <button class="name" type="button" popovertarget="p-ortiz">Danny Ortiz</button>
+            <span class="role">Receptionist and care navigator<span class="offnote"></span></span>
+          </div>
+          <p class="about">Booking, changing appointments and finding the right person to see</p>
+          <ul class="wk"><li class="in"><span class="vh">Monday 1 pm to 6 pm</span><span aria-hidden="true">1–6</span></li><li class="in"><span class="vh">Tuesday 1 pm to 8 pm</span><span aria-hidden="true">1–8</span></li><li><span class="vh">Wednesday, not in</span><span aria-hidden="true">·</span></li><li class="in"><span class="vh">Thursday 1 pm to 8 pm</span><span aria-hidden="true">1–8</span></li><li class="in"><span class="vh">Friday 8 am to 6 pm</span><span aria-hidden="true">8–6</span></li><li class="in"><span class="vh">Saturday 9 am to 12 noon</span><span aria-hidden="true">9–12</span></li></ul>
+        </li>
+      </ul>
+    </div>
+
+
+  <div class="card" id="p-okafor" popover role="group" aria-labelledby="p-okafor-h">
+    <div class="card-head">
+      <span class="tile" aria-hidden="true">AO</span>
+      <div><h3 id="p-okafor-h">Dr Amara Okafor</h3><p class="role">GP partner</p></div>
+    </div>
+    <p>Ask her about diabetes and heart checks, menopause and long-term conditions.</p>
+    <p>In on Monday and Thursday all day, Tuesday and Friday mornings.</p>
+    <p>Speaks English and Igbo.</p>
+    <div class="card-actions">
+      <a class="call" href="tel:+441632960412" target="_blank" rel="noopener">Call to book with Dr Okafor</a>
+      <button class="back" type="button" popovertarget="p-okafor" popovertargetaction="hide" autofocus>Back to the team</button>
+    </div>
+  </div>
+  <div class="card" id="p-zielinski" popover role="group" aria-labelledby="p-zielinski-h">
+    <div class="card-head">
+      <span class="tile" aria-hidden="true">PZ</span>
+      <div><h3 id="p-zielinski-h">Dr Piotr Zieliński</h3><p class="role">GP</p></div>
+    </div>
+    <p>Ask him about children’s health, asthma and men’s health.</p>
+    <p>In on Monday afternoon, Tuesday from 1 to 8 pm, Wednesday and Friday all day.</p>
+    <p>Speaks English and Polish.</p>
+    <div class="card-actions">
+      <a class="call" href="tel:+441632960412" target="_blank" rel="noopener">Call to book with Dr Zieliński</a>
+      <button class="back" type="button" popovertarget="p-zielinski" popovertargetaction="hide" autofocus>Back to the team</button>
+    </div>
+  </div>
+  <div class="card" id="p-reyes" popover role="group" aria-labelledby="p-reyes-h">
+    <div class="card-head">
+      <span class="tile" aria-hidden="true">HR</span>
+      <div><h3 id="p-reyes-h">Dr Hannah Reyes</h3><p class="role">GP</p></div>
+    </div>
+    <p>Ask her about contraception, sexual health and first appointments about mental health.</p>
+    <p>In on Tuesday all day, Wednesday morning, Thursday from 1 to 8 pm, Saturday for the walk-in from 9 to 12.</p>
+    <p>Speaks English and Spanish.</p>
+    <div class="card-actions">
+      <a class="call" href="tel:+441632960412" target="_blank" rel="noopener">Call to book with Dr Reyes</a>
+      <button class="back" type="button" popovertarget="p-reyes" popovertargetaction="hide" autofocus>Back to the team</button>
+    </div>
+  </div>
+  <div class="card" id="p-haidari" popover role="group" aria-labelledby="p-haidari-h">
+    <div class="card-head">
+      <span class="tile" aria-hidden="true">FH</span>
+      <div><h3 id="p-haidari-h">Dr Farid Haidari</h3><p class="role">GP in training, supervised by Dr Okafor</p></div>
+    </div>
+    <p>Ask him about general appointments and follow-ups.</p>
+    <p>In on Monday all day, Tuesday and Thursday mornings.</p>
+    <p>Speaks English, Dari and Pashto.</p>
+    <div class="card-actions">
+      <a class="call" href="tel:+441632960412" target="_blank" rel="noopener">Call to book with Dr Haidari</a>
+      <button class="back" type="button" popovertarget="p-haidari" popovertargetaction="hide" autofocus>Back to the team</button>
+    </div>
+  </div>
+  <div class="card" id="p-quigley" popover role="group" aria-labelledby="p-quigley-h">
+    <div class="card-head">
+      <span class="tile" aria-hidden="true">BQ</span>
+      <div><h3 id="p-quigley-h">Bernadette Quigley</h3><p class="role">Advanced nurse practitioner</p></div>
+    </div>
+    <p>Ask her about same-day minor illness; she can prescribe.</p>
+    <p>In on Monday, Tuesday and Friday all day, Wednesday morning.</p>
+    <p>Speaks English.</p>
+    <div class="card-actions">
+      <a class="call" href="tel:+441632960412" target="_blank" rel="noopener">Call to book with Bernadette</a>
+      <button class="back" type="button" popovertarget="p-quigley" popovertargetaction="hide" autofocus>Back to the team</button>
+    </div>
+  </div>
+  <div class="card" id="p-mensah" popover role="group" aria-labelledby="p-mensah-h">
+    <div class="card-head">
+      <span class="tile" aria-hidden="true">JM</span>
+      <div><h3 id="p-mensah-h">Joel Mensah</h3><p class="role">Practice nurse</p></div>
+    </div>
+    <p>Ask him about smear tests, travel jabs and wound care.</p>
+    <p>In on Tuesday from 1 to 8 pm, Wednesday and Thursday all day, Saturday for the walk-in from 9 to 12.</p>
+    <p>Speaks English.</p>
+    <div class="card-actions">
+      <a class="call" href="tel:+441632960412" target="_blank" rel="noopener">Call to book with Joel</a>
+      <button class="back" type="button" popovertarget="p-mensah" popovertargetaction="hide" autofocus>Back to the team</button>
+    </div>
+  </div>
+  <div class="card" id="p-sundaram" popover role="group" aria-labelledby="p-sundaram-h">
+    <div class="card-head">
+      <span class="tile" aria-hidden="true">KS</span>
+      <div><h3 id="p-sundaram-h">Kavitha Sundaram</h3><p class="role">Healthcare assistant</p></div>
+    </div>
+    <p>Ask her about blood tests, blood pressure and health checks.</p>
+    <p>In on Monday and Tuesday mornings, Thursday and Friday all day.</p>
+    <p>Speaks English and Tamil.</p>
+    <div class="card-actions">
+      <a class="call" href="tel:+441632960412" target="_blank" rel="noopener">Call to book with Kavitha</a>
+      <button class="back" type="button" popovertarget="p-sundaram" popovertargetaction="hide" autofocus>Back to the team</button>
+    </div>
+  </div>
+  <div class="card" id="p-abiodun" popover role="group" aria-labelledby="p-abiodun-h">
+    <div class="card-head">
+      <span class="tile" aria-hidden="true">RA</span>
+      <div><h3 id="p-abiodun-h">Ruth Abiodun</h3><p class="role">Community midwife</p></div>
+    </div>
+    <p>Ask her about antenatal appointments and checks after the birth.</p>
+    <p>In on Monday afternoon, Wednesday all day, Friday morning.</p>
+    <p>Speaks English and Yoruba.</p>
+    <div class="card-actions">
+      <a class="call" href="tel:+441632960412" target="_blank" rel="noopener">Call to book with Ruth</a>
+      <button class="back" type="button" popovertarget="p-abiodun" popovertargetaction="hide" autofocus>Back to the team</button>
+    </div>
+  </div>
+  <div class="card" id="p-fischer" popover role="group" aria-labelledby="p-fischer-h">
+    <div class="card-head">
+      <span class="tile" aria-hidden="true">LF</span>
+      <div><h3 id="p-fischer-h">Lena Fischer</h3><p class="role">Health visitor</p></div>
+    </div>
+    <p>Ask her about the baby clinic, feeding and sleep.</p>
+    <p>In on Tuesday morning, Wednesday all day.</p>
+    <p>Speaks English and German.</p>
+    <div class="card-actions">
+      <a class="call" href="tel:+441632960412" target="_blank" rel="noopener">Call to book with Lena</a>
+      <button class="back" type="button" popovertarget="p-fischer" popovertargetaction="hide" autofocus>Back to the team</button>
+    </div>
+  </div>
+  <div class="card" id="p-bell" popover role="group" aria-labelledby="p-bell-h">
+    <div class="card-head">
+      <span class="tile" aria-hidden="true">MB</span>
+      <div><h3 id="p-bell-h">Marcus Bell</h3><p class="role">Mental health practitioner</p></div>
+    </div>
+    <p>Ask him about anxiety, low mood and short courses of talking therapy.</p>
+    <p>In on Tuesday and Friday all day, Thursday from 1 to 8 pm.</p>
+    <p>Speaks English.</p>
+    <div class="card-actions">
+      <a class="call" href="tel:+441632960412" target="_blank" rel="noopener">Call to book with Marcus</a>
+      <button class="back" type="button" popovertarget="p-bell" popovertargetaction="hide" autofocus>Back to the team</button>
+    </div>
+  </div>
+  <div class="card" id="p-saleh" popover role="group" aria-labelledby="p-saleh-h">
+    <div class="card-head">
+      <span class="tile" aria-hidden="true">NS</span>
+      <div><h3 id="p-saleh-h">Noor Saleh</h3><p class="role">Social prescriber</p></div>
+    </div>
+    <p>Ask her about housing, debt advice and local groups.</p>
+    <p>In on Monday and Thursday all day, Wednesday morning.</p>
+    <p>Speaks English and Arabic.</p>
+    <div class="card-actions">
+      <a class="call" href="tel:+441632960412" target="_blank" rel="noopener">Call to book with Noor</a>
+      <button class="back" type="button" popovertarget="p-saleh" popovertargetaction="hide" autofocus>Back to the team</button>
+    </div>
+  </div>
+  <div class="card" id="p-chen" popover role="group" aria-labelledby="p-chen-h">
+    <div class="card-head">
+      <span class="tile" aria-hidden="true">WC</span>
+      <div><h3 id="p-chen-h">Wei Chen</h3><p class="role">Clinical pharmacist</p></div>
+    </div>
+    <p>Ask him about medication reviews and repeat prescriptions.</p>
+    <p>In on Tuesday and Thursday all day, Friday morning.</p>
+    <p>Speaks English, Mandarin and Cantonese.</p>
+    <div class="card-actions">
+      <a class="call" href="tel:+441632960412" target="_blank" rel="noopener">Call to book with Wei</a>
+      <button class="back" type="button" popovertarget="p-chen" popovertargetaction="hide" autofocus>Back to the team</button>
+    </div>
+  </div>
+  <div class="card" id="p-gallagher" popover role="group" aria-labelledby="p-gallagher-h">
+    <div class="card-head">
+      <span class="tile" aria-hidden="true">BG</span>
+      <div><h3 id="p-gallagher-h">Bev Gallagher</h3><p class="role">Practice manager</p></div>
+    </div>
+    <p>Ask her about registering, complaints and your records.</p>
+    <p>In on Monday, Tuesday, Wednesday and Thursday all day.</p>
+    <p>Speaks English.</p>
+    <div class="card-actions">
+      <a class="call" href="tel:+441632960412" target="_blank" rel="noopener">Call and ask for Bev</a>
+      <button class="back" type="button" popovertarget="p-gallagher" popovertargetaction="hide" autofocus>Back to the team</button>
+    </div>
+  </div>
+  <div class="card" id="p-ortiz" popover role="group" aria-labelledby="p-ortiz-h">
+    <div class="card-head">
+      <span class="tile" aria-hidden="true">DO</span>
+      <div><h3 id="p-ortiz-h">Danny Ortiz</h3><p class="role">Receptionist and care navigator</p></div>
+    </div>
+    <p>Ask him about booking, changing appointments and finding the right person to see.</p>
+    <p>In on Monday afternoon, Tuesday and Thursday from 1 to 8 pm, Friday all day, Saturday for the walk-in from 9 to 12.</p>
+    <p>Speaks English and Spanish.</p>
+    <div class="card-actions">
+      <a class="call" href="tel:+441632960412" target="_blank" rel="noopener">Call and ask for Danny</a>
+      <button class="back" type="button" popovertarget="p-ortiz" popovertargetaction="hide" autofocus>Back to the team</button>
+    </div>
+  </div>
+  </section>
+</main>
+</body>
+</html>
