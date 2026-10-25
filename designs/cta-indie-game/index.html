@@ -1,0 +1,1154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Wishlist Noctiluca</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Handjet:ELGR,ELSH,wght@1..2,0..16,100..900&family=Host+Grotesk:wght@300..800&display=swap">
+<style>
+  :root {
+    /* Colour: a harbour at night, plankton light, one boat lamp */
+    --night: #0A1C26;       /* harbour water; page ground */
+    --pool: #17394A;        /* lattice dots, dialog surface; decorative only (1.43:1) */
+    --foam: #E4EFEA;        /* text (14.8:1 on night) */
+    --kelp: #93ADA4;        /* secondary text, input and button outlines (7.3:1) */
+    --spark: #7CDDF2;       /* Noctiluca light: sparks, focus rings, hover labels only */
+    --lamp: #FFC86B;        /* boat lamp: only the Wishlist button */
+    --bloom: #FF9C8F;       /* errors only (8.6:1) */
+    --grid-line: var(--pool);
+    --glow-1: rgba(124, 221, 242, .18);   /* the four light steps the canvas reads */
+    --glow-2: rgba(124, 221, 242, .38);
+    --glow-3: rgba(124, 221, 242, .62);
+    --glow-4: rgba(124, 221, 242, .9);
+    --mark-rest: #1E4A5C;   /* the risen name's resting glow (1.8:1 on night; aria-hidden decoration) */
+    --lamp-glow: #FFEFCC;   /* the lamp turned up: Wishlist hover (night text on it 15.3:1) */
+    --scrim: rgb(10 28 38 / .78);
+    --grid-raised: #1F4558;  /* lattice dots on the dialog's pool ground */
+    --grain-a: .06;          /* film grain over the water, never over text or fields */
+
+    /* Type */
+    --font-display: "Handjet", "Arial Narrow", sans-serif;
+    --font-text: "Host Grotesk", system-ui, sans-serif;
+    --modules: "ELSH" 2, "ELGR" 1;   /* square Handjet modules, one per board cell */
+    --t-small: 13px;
+    --t-body: 17px;
+    --t-lede: 22.5px;
+    --t-h3: 30px;
+    --t-h2: clamp(48px, 7.4vw, 108px);
+    --lh-body: 1.55;
+    --lh-lede: 1.45;
+
+    /* Space: the board. Every step is a whole or half 12px cell (approximate on phones, where the cell is 8px). */
+    --cell: 12px;
+    --s1: 6px; --s2: 12px; --s3: 24px; --s4: 36px;
+    --s5: 48px; --s6: 72px; --s7: 96px; --s8: 144px;
+    --notch: 4px;           /* pixel corner on buttons */
+    --tap: 48px;            /* button and field height */
+    --hit: 44px;            /* minimum target for text actions and the checkbox row */
+    --max-w: 1296px;        /* content width, 108 cells */
+
+    /* Motion (CSS transitions and the script read these) */
+    --d-press: .12s;
+    --d-release: .45s;
+    --d-fill-in: .45s;
+    --d-fill-out: .35s;
+    --d-strip: .32s;
+    --d-row: .3s;
+    --d-dim: .25s;
+    --d-err: .25s;
+    --d-tick: .3s;
+    --d-pop: .25s;
+    --d-line: .4s;
+    --d-backdrop: .3s;
+    --d-dlg-in: .55s;
+    --d-dlg-out: .35s;
+    --d-clip: .6s;
+    --d-rules: .8s;
+    --d-wake: 1.4s;          /* opening wake across the first screen */
+    --d-mark-wake: 1.2s;     /* the one crossing over the dormant name */
+    --d-grain: .8s;
+    --d-burst: .3s;
+    --half-water: .15s;      /* light half-life in open water */
+    --half-mark: .45s;       /* light half-life on the letter cells */
+    --ease-out: cubic-bezier(.16, 1, .3, 1);      /* expo.out */
+    --ease-line: cubic-bezier(.65, 0, .35, 1);
+    --ease-tick: cubic-bezier(.25, .46, .45, .94); /* power2.out */
+  }
+  @media (max-width: 599px) {
+    :root { --cell: 8px; --t-body: 16px; }
+  }
+
+  /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+
+  /* Hidden only when the script runs, and only until the load sequence takes over. */
+  html.js:not(.go) [data-rv] { opacity: 0; }
+  html.js:not(.go) .h2 { visibility: hidden; }
+  html.js:not(.go) .actions .btn { clip-path: inset(0 100% 0 0); }
+  @media (prefers-reduced-motion: reduce) {
+    html.js:not(.go) [data-rv] { opacity: 1; }
+    html.js:not(.go) .h2 { visibility: visible; }
+    html.js:not(.go) .actions .btn { clip-path: none; }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { background: var(--night); }
+  body {
+    margin: 0;
+    background: var(--night);
+    color: var(--foam);
+    font: 400 var(--t-body)/var(--lh-body) var(--font-text);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  :focus-visible { outline: 2px solid var(--spark); outline-offset: 3px; }
+  ::selection { background: var(--spark); color: var(--night); }
+  .vh {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+  }
+
+  /* ---------- The board ---------- */
+  .cta {
+    position: relative;
+    overflow: clip;
+    isolation: isolate;
+    padding-block: var(--s7) 0;   /* the wordmark band is the bottom edge */
+    padding-inline: max(var(--s3), (100% - var(--max-w)) / 2);
+    padding-inline: round(down, max(var(--s3), (100% - var(--max-w)) / 2), var(--cell));
+    background: var(--night) radial-gradient(circle, var(--grid-line) 0 1px, transparent 1.5px) 0 0 / var(--cell) var(--cell);
+  }
+  .water {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .grain {
+    position: absolute; inset: -128px;
+    z-index: 0;
+    pointer-events: none;
+    opacity: var(--grain-a);
+    animation: grain var(--d-grain) steps(4) infinite;
+  }
+  .is-away .grain { animation-play-state: paused; }
+  @keyframes grain { to { transform: translate(-128px, 96px); } }
+  .wrap { position: relative; z-index: 1; container-type: inline-size; }
+
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 960px) {
+    .layout {
+      grid-template-columns: round(down, 100cqw * 7 / 12, var(--cell)) minmax(0, 1fr);
+      grid-template-rows: auto 1fr auto;
+      column-gap: round(down, 100cqw / 12, var(--cell));
+      min-height: calc(100svh - var(--s7) - var(--s4));
+    }
+    .copy { grid-column: 1; grid-row: 1; }
+    .studio { grid-column: 1; grid-row: 3; }
+    .panel { grid-column: 2; grid-row: 1 / 4; align-self: start; }
+  }
+
+  /* ---------- Copy ---------- */
+  .h2 {
+    margin: 0;
+    font: 700 var(--t-h2)/1 var(--font-display);
+    font-variation-settings: var(--modules);
+    letter-spacing: 0;
+    text-wrap: balance;
+  }
+  .lede {
+    margin: var(--s4) 0 0;
+    max-width: 52ch;
+    font-size: var(--t-lede);
+    line-height: var(--lh-lede);
+  }
+  .note {
+    margin: var(--s4) 0 0;
+    max-width: 56ch;
+    color: var(--kelp);
+  }
+  .actions {
+    display: flex; flex-wrap: wrap; gap: var(--s2);
+    margin-top: var(--s5);
+  }
+  .hint { margin: var(--s3) 0 0; color: var(--kelp); }
+  .studio { margin: var(--s2) 0 0; max-width: 56ch; }
+
+  /* ---------- Buttons: pixel-cornered tiles ---------- */
+  .btn, .demo {
+    --corners: polygon(0 var(--notch), var(--notch) var(--notch), var(--notch) 0, calc(100% - var(--notch)) 0, calc(100% - var(--notch)) var(--notch), 100% var(--notch), 100% calc(100% - var(--notch)), calc(100% - var(--notch)) calc(100% - var(--notch)), calc(100% - var(--notch)) 100%, var(--notch) 100%, var(--notch) calc(100% - var(--notch)), 0 calc(100% - var(--notch)));
+  }
+  .btn {
+    display: inline-block;
+    padding: 0; border: 0; background: none;
+    color: inherit; text-decoration: none;
+    font: 600 var(--t-body)/1.2 var(--font-text);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .face { display: block; padding: var(--bw); background: var(--rim); clip-path: var(--corners); }
+  .inner {
+    position: relative;
+    display: flex; align-items: center;
+    min-height: calc(var(--tap) - 2 * var(--bw));
+    padding: 0 var(--s3);
+    background: var(--ground);
+    clip-path: var(--corners);
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .fill {
+    position: absolute; left: 0; top: 0; width: 0; height: 0;
+    z-index: -1;
+    background: var(--fill);
+    transform: scale(0);
+    pointer-events: none;
+  }
+  .label { position: relative; color: var(--ink); }
+  .btn-lamp { --bw: 0px; --rim: var(--lamp); --ground: var(--lamp); --fill: var(--lamp-glow); --ink: var(--night); }
+  .btn-line { --bw: 2px; --rim: var(--kelp); --ground: var(--night); --fill: var(--pool); --ink: var(--foam); }
+  .btn-line.is-hot { --ink: var(--spark); }
+  /* Colour changes are instant everywhere; only the GSAP fill square moves. Without the motion layer
+     (reduced motion, blocked CDN) the fill is a plain colour swap. */
+  html:not(.fx) .btn:hover .inner, html:not(.fx) .btn:focus-visible .inner { background: var(--fill); }
+  html:not(.fx) .btn-line:hover, html:not(.fx) .btn-line:focus-visible { --ink: var(--spark); }
+  /* Touch: :active, plus .is-tap from the press handler where :active is unreliable. */
+  @media (hover: none) {
+    .btn:active .inner, .btn.is-tap .inner { background: var(--fill); }
+    .btn-line:active, .btn-line.is-tap { --ink: var(--spark); }
+  }
+
+  /* ---------- Underlined text actions (HV2) ---------- */
+  .u {
+    position: relative;
+    display: inline-block;
+    min-width: var(--hit);
+    padding: 10px 0;
+    border: 0;
+    color: var(--foam);
+    font: inherit; line-height: 1.4;
+    text-decoration: none;
+    cursor: pointer;
+    background: linear-gradient(var(--kelp), var(--kelp)) 0 100% / 100% 1px no-repeat content-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* The spark line sweeps with transform: scaleX from the entry side, back toward the exit side. */
+  .u::after {
+    content: "";
+    position: absolute; left: 0; right: 0; bottom: 10px;
+    height: 2px;
+    background: var(--spark);
+    transform: scaleX(0);
+    transform-origin: var(--ux, 0%) 50%;
+    transition: transform var(--d-line) var(--ease-line);
+  }
+  .u.is-on::after { transform: scaleX(1); }
+  html:not(.fx) .u:hover, html:not(.fx) .u:focus-visible { color: var(--spark); }
+  html:not(.fx) .u:hover::after, html:not(.fx) .u:focus-visible::after { transform: scaleX(1); transition: none; }
+  @media (hover: none) {
+    .u:active, .u.is-tap { color: var(--spark); }
+    .u:active::after, .u.is-tap::after { transform: scaleX(1); transition: none; }
+  }
+
+  /* ---------- The tray ---------- */
+  .panel {
+    position: relative;
+    margin-top: var(--s6);
+    padding: var(--s3) 0 var(--s3) var(--s3);
+  }
+  @media (min-width: 960px) { .panel { margin-top: 0; } }
+  .rule { position: absolute; background: var(--kelp); transform-origin: 0 0; }
+  .rule-top { left: 0; right: 0; top: 0; height: 2px; }
+  .rule-left { left: 0; top: 0; bottom: 0; width: 2px; }
+  .rule-mid { position: relative; display: block; height: 2px; margin: var(--s4) 0 var(--s3) calc(-1 * var(--s3)); }
+  .panel h3, .done h3 {
+    margin: 0;
+    font: 600 var(--t-h3)/1.15 var(--font-text);
+    letter-spacing: -.01em;
+    max-width: 40ch;
+  }
+  .facts {
+    display: grid;
+    gap: var(--s1);
+    margin: var(--s3) 0 0;
+  }
+  .facts > div { display: grid; grid-template-columns: 7.5em minmax(0, 1fr); gap: var(--s2); }
+  .facts dt { font-weight: 600; }
+  .facts dd { margin: 0; font-variant-numeric: tabular-nums; }
+  @media (max-width: 599px) {
+    .panel { padding-left: var(--s2); }
+    .rule-mid { margin-left: calc(-1 * var(--s2)); }
+    .facts > div { grid-template-columns: 6.5em minmax(0, 1fr); }
+  }
+
+  /* ---------- Launch email ---------- */
+  .swap { display: grid; }
+  .swap > * { grid-area: 1 / 1; align-self: start; }
+  .swap > .is-off { visibility: hidden; }
+  .lbl { display: block; margin-top: var(--s3); font-weight: 600; }
+  .field { margin-top: var(--s1); }
+  .field input {
+    display: block;
+    width: 100%; height: var(--tap);
+    padding: 0 var(--s2);
+    border: 2px solid var(--kelp);
+    border-radius: 0;
+    background: var(--night);
+    color: var(--foam);
+    font: inherit;
+    appearance: none;
+  }
+  .field input:hover { border-color: var(--foam); }
+  .field input:focus { border-color: var(--spark); }
+  .field input:focus:not(:focus-visible) { outline: none; } /* keyboard focus keeps the spark outline as well */
+  .strip { clip-path: inset(0 100% 0 0); }
+  .field .strip { margin-top: 3px; transition: clip-path var(--d-strip) steps(16, end); }
+  .field input:focus + .strip { clip-path: inset(0); }
+  .err {
+    min-height: calc(var(--t-small) * 1.45);
+    margin: var(--s1) 0 0;
+    color: var(--bloom);
+    font-size: var(--t-small); line-height: 1.45; font-weight: 500;
+    opacity: 0;
+    clip-path: inset(0 100% 0 0);
+    transition: clip-path var(--d-err) var(--ease-out), opacity var(--d-err);
+  }
+  .err.is-on { opacity: 1; clip-path: inset(0); }
+  .check {
+    position: relative;
+    display: flex; gap: var(--s2); align-items: flex-start;
+    min-height: var(--hit);
+    margin-top: var(--s1);
+    padding: 10px 0;
+    cursor: pointer;
+  }
+  .check input {
+    flex: none;
+    width: var(--s3); height: var(--s3);
+    margin: 0;
+    border: 2px solid var(--kelp);
+    border-radius: 0;
+    background: var(--night);
+    appearance: none;
+    cursor: pointer;
+  }
+  .check:hover input { border-color: var(--foam); }
+  .check input:checked { border-color: var(--spark); background: var(--spark); }
+  .check svg {
+    position: absolute; left: 0; top: 10px; width: var(--s3); height: var(--s3); pointer-events: none;
+    clip-path: inset(0 100% 0 0);   /* the tick is uncovered left to right, so it reads as drawn */
+    transition: clip-path var(--d-tick) var(--ease-tick);
+  }
+  .check path { fill: none; stroke: var(--night); stroke-width: 2.5; stroke-linecap: square; }
+  .check input:checked + svg { clip-path: inset(0); }
+  .check span { padding-top: 0; }
+  .form-hint { margin: var(--s1) 0 0; color: var(--kelp); font-size: var(--t-small); line-height: 1.45; max-width: 40ch; }
+  .launch .btn { margin-top: var(--s3); }
+  .done p { margin: var(--s2) 0 0; max-width: 40ch; }
+  .done b { font-weight: 600; overflow-wrap: anywhere; }
+  .done .u { margin-top: var(--s1); }
+  .done h3:focus { outline: none; } /* focus lands here only to announce the result; it is not a control */
+
+  /* ---------- Wordmark band (the canvas draws it in cells; the text is the no-JS fallback) ---------- */
+  /* 110vw wide and centred on the section, so the word bleeds off both sides and its feet off the bottom. */
+  .mark {
+    width: 110vw;
+    margin: var(--s6) 0 -.05em calc(50% - 55vw);
+    color: var(--pool);
+    font: 800 calc(110vw / 3.32)/.8 var(--font-display);
+    font-variation-settings: var(--modules);
+    text-transform: uppercase;
+    white-space: nowrap;
+    user-select: none;
+  }
+  .is-drawn .mark { margin-bottom: 0; overflow: hidden; color: transparent; } /* the script sets its height in whole cells */
+  @media (max-width: 599px) {
+    .mark { font-size: calc(110vw / 1.79); }
+    .mark span { display: block; }
+  }
+
+  /* ---------- Demo dialog ---------- */
+  .demo {
+    width: min(560px, 100% - 2 * var(--s3));
+    max-width: none;
+    margin: auto;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--foam);
+    max-height: calc(100dvh - 2 * var(--s3));
+    overflow-y: auto;
+    overscroll-behavior: contain;   /* short viewports scroll inside the dialog; the page stays still */
+    --notch: var(--cell);   /* a bigger tile, the same stepped corner */
+  }
+  .demo::backdrop { background: var(--scrim); }
+  .demo[open]::backdrop { animation: scrim-in var(--d-backdrop) linear both; }
+  .demo.is-closing::backdrop { animation: scrim-out var(--d-dlg-out) linear both; }
+  @keyframes scrim-in { from { opacity: 0; } }
+  @keyframes scrim-out { to { opacity: 0; } }
+  .dlg-rim { padding: 2px; background: var(--kelp); clip-path: var(--corners); }
+  .dlg {
+    padding: var(--s4);
+    clip-path: var(--corners);
+    background: var(--pool) radial-gradient(circle, var(--grid-raised) 0 1px, transparent 1.5px) 0 0 / var(--cell) var(--cell);
+  }
+  .dlg-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s3); }
+  .dlg h2 { margin: 0; font: 600 var(--t-h3)/1.15 var(--font-text); letter-spacing: -.01em; }
+  .dlg-intro { margin: var(--s2) 0 var(--s3); max-width: 46ch; }
+  .stores { list-style: none; margin: 0; padding: 0; }
+  .stores li + li { border-top: 2px solid var(--night); }
+  .store {
+    position: relative;
+    display: block;
+    padding: var(--s3) 0 calc(var(--s3) + 4px);
+    color: var(--foam);
+    text-decoration: none;
+    transition: opacity var(--d-dim);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .store-name { display: block; font: 600 var(--t-lede)/1.25 var(--font-text); }
+  .store-meta { display: block; margin-top: 2px; color: var(--kelp); font-variant-numeric: tabular-nums; }
+  .strip, .store::before {
+    display: block;
+    height: 6px;
+    background: radial-gradient(circle, var(--spark) 0 2px, transparent 2.5px) 0 0 / var(--cell) 100% repeat-x;
+  }
+  .store .strip, .store::before { position: absolute; left: 0; right: 0; bottom: 0; }
+  .store .strip { transition: clip-path var(--d-row) steps(10, end); }
+  /* The resting strip at 30% steps in with each row as the dialog opens, so the rows read as tiles. */
+  .store::before { content: ""; opacity: .3; }
+  .demo[open] .store::before { animation: strip-in var(--d-row) steps(10, end) .3s both; }
+  .demo[open] li + li .store::before { animation-delay: .35s; }
+  @keyframes strip-in { from { clip-path: inset(0 100% 0 0); } }
+  .store:hover .strip, .store:focus-visible .strip, .store:active .strip, .store.is-tap .strip { clip-path: inset(0); }
+  @media (hover: hover) {
+    .stores:has(.store:hover) .store:not(:hover) { opacity: .45; }
+  }
+  .stores:has(.store:focus-visible) .store:not(:focus-visible) { opacity: .45; }
+  @media (hover: none) { .store:active .strip, .store.is-tap .strip { transition: none; } }
+
+  /* ---------- Narrow screens ---------- */
+  @media (max-width: 599px) {
+    .cta { padding-top: var(--s6); }
+    .actions { display: grid; }
+    .actions .inner, .launch .inner { justify-content: center; }
+    .launch .btn { display: block; }
+    .panel h3, .done h3, .dlg h2 { font-size: var(--t-lede); }
+    .dlg { padding: var(--s3); }
+    .lede { font-size: var(--t-body); line-height: 1.5; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0s !important; }
+    .grain { animation: none; }
+    .demo[open]::backdrop, .demo.is-closing::backdrop, .demo[open] .store::before { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<section class="cta" aria-labelledby="cta-title">
+  <canvas class="water" aria-hidden="true"></canvas>
+  <div class="grain" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="layout">
+      <div class="copy">
+        <h2 class="h2" id="cta-title">Wishlist Noctiluca, then play the first bay tonight.</h2>
+        <p class="lede" data-rv>Noctiluca is a puzzle game about a harbour at night. The water only lights up where something moves, so every push of your boat shows you a little more of the currents. The free demo is Bay One: 24 puzzles, about an hour.</p>
+        <div class="actions">
+          <a class="btn btn-lamp" href="https://store.steampowered.com/" target="_blank" rel="noopener"><span class="face"><span class="inner"><span class="fill"></span><span class="label">Wishlist on Steam<span class="vh"> (opens in a new tab)</span></span></span></span></a>
+          <button class="btn btn-line" id="demo-open" type="button" aria-haspopup="dialog" aria-controls="demo"><span class="face"><span class="inner"><span class="fill"></span><span class="label">Play the free demo</span></span></span></button>
+        </div>
+        <p class="hint" id="hint" data-rv hidden></p>
+        <p class="note" data-rv>The full game comes out in spring 2027 for Windows, macOS and Linux, and it plays on Steam Deck. When you wishlist it, Steam emails you on launch day and shows Noctiluca to more players.</p>
+      </div>
+
+      <div class="panel" id="panel">
+        <span class="rule rule-top" aria-hidden="true"></span>
+        <span class="rule rule-left" aria-hidden="true"></span>
+        <h3 data-rv>In the demo</h3>
+        <dl class="facts">
+          <div data-rv><dt>Puzzles</dt><dd>24, all of Bay One</dd></div>
+          <div data-rv><dt>Playtime</dt><dd>About an hour</dd></div>
+          <div data-rv><dt>Your save</dt><dd>Carries into the full game</dd></div>
+          <div data-rv><dt>Controls</dt><dd>Keyboard, mouse or controller</dd></div>
+          <div data-rv><dt>Languages</dt><dd>English, Spanish, Portuguese</dd></div>
+        </dl>
+        <span class="rule rule-mid" aria-hidden="true"></span>
+        <div class="swap">
+          <form class="launch" id="launch" aria-labelledby="launch-title">
+            <h3 id="launch-title" data-rv>Get an email on launch day</h3>
+            <label class="lbl" for="email" data-rv>Email address</label>
+            <div class="field" data-rv>
+              <input id="email" name="email" type="email" autocomplete="email" spellcheck="false" required>
+              <span class="strip" aria-hidden="true"></span>
+            </div>
+            <p class="err" id="email-err" aria-live="polite"></p>
+            <label class="check" data-rv>
+              <input type="checkbox" name="playtest">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12.5l4 4 8-9"/></svg>
+              <span>Also invite me to the Bay Two playtest in March 2027</span>
+            </label>
+            <p class="form-hint" data-rv>One email at launch, and one for the playtest if you tick the box. Nothing else.</p>
+            <button class="btn btn-line" id="launch-submit" type="submit" data-rv><span class="face"><span class="inner"><span class="fill"></span><span class="label">Email me on launch day</span></span></span></button>
+          </form>
+          <div class="done is-off" id="done" inert>
+            <h3 id="done-title" tabindex="-1">You're on the list.</h3>
+            <p>We'll email <b id="done-mail">ana@example.com</b> on launch day.</p>
+            <p id="done-play" hidden>We'll send your Bay Two playtest invite in March.</p>
+            <button class="u" id="again" type="button">Use a different email</button>
+          </div>
+        </div>
+      </div>
+
+      <p class="studio" data-rv>Noctiluca is made by Lowwater, two people in Hobart.<br><a class="u" href="https://discord.com/" target="_blank" rel="noopener">Talk to us on Discord<span class="vh"> (opens in a new tab)</span></a></p>
+    </div>
+    <p class="mark" aria-hidden="true">Nocti<span>luca</span></p>
+  </div>
+</section>
+
+<dialog class="demo" id="demo" aria-labelledby="demo-title" data-lenis-prevent>
+  <div class="dlg-rim"><div class="dlg">
+    <div class="dlg-head" data-row>
+      <h2 id="demo-title">Play the free demo</h2>
+      <button class="u" id="demo-close" type="button">Close</button>
+    </div>
+    <p class="dlg-intro" data-row>Bay One is free on both stores. Your demo save carries into the full game on the same store.</p>
+    <ul class="stores">
+      <li data-row><a class="store" href="https://store.steampowered.com/" target="_blank" rel="noopener"><span class="store-name">Get the demo on Steam</span><span class="store-meta">Windows, macOS, Linux, Steam Deck. 412 MB</span><span class="vh"> (opens in a new tab)</span><span class="strip" aria-hidden="true"></span></a></li>
+      <li data-row><a class="store" href="https://itch.io/" target="_blank" rel="noopener"><span class="store-name">Get the demo on itch.io</span><span class="store-meta">Windows, macOS, Linux. DRM-free download, 398 MB</span><span class="vh"> (opens in a new tab)</span><span class="strip" aria-hidden="true"></span></a></li>
+    </ul>
+  </div></div>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/SplitText.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  const root = document.documentElement;
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const lib = !!(window.gsap && window.ScrollTrigger && window.SplitText && window.Lenis);
+  if (lib) root.classList.add('js'); // CDN blocked: no class, everything is visible and still works
+
+  const sec = $('.cta'), canvas = $('.water'), hint = $('#hint'), panel = $('#panel');
+  const form = $('#launch'), email = $('#email'), err = $('#email-err'), submit = $('#launch-submit');
+  const done = $('#done'), doneTitle = $('#done-title'), doneMail = $('#done-mail'), donePlay = $('#done-play'), again = $('#again');
+  const dlg = $('#demo'), openBtn = $('#demo-open'), closeBtn = $('#demo-close');
+  let lenis = null, fx = null; // fx: hooks set by the motion branch; null means instant
+
+  /* ---------- Launch email (works without the libraries) ---------- */
+  form.noValidate = true;
+  const check = () => {
+    const v = email.value.trim();
+    if (!v) return 'Enter your email address, like ana@example.com.';
+    if (!/^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(v)) return 'This address needs an @ and a domain, like ana@example.com.';
+    return '';
+  };
+  const showError = (msg) => {
+    err.textContent = msg; // cleared too, so assistive tech never finds a stale message
+    err.classList.toggle('is-on', !!msg);
+    if (msg) { email.setAttribute('aria-invalid', 'true'); email.setAttribute('aria-describedby', 'email-err'); }
+    else { email.removeAttribute('aria-invalid'); email.removeAttribute('aria-describedby'); }
+  };
+  const swap = (toDone) => {
+    const from = toDone ? form : done, to = toDone ? done : form;
+    const finish = () => {
+      from.classList.add('is-off'); from.inert = true;
+      to.classList.remove('is-off'); to.inert = false;
+      (toDone ? doneTitle : email).focus();
+      if (toDone) fx?.success(); // the water answers from the confirmation and carries down to the name
+    };
+    fx ? fx.swap(from, to, toDone, finish) : finish();
+  };
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const msg = check();
+    showError(msg);
+    if (msg) { email.focus(); return; }
+    doneMail.textContent = email.value.trim();
+    donePlay.hidden = !form.elements.playtest.checked;
+    swap(true);
+  });
+  email.addEventListener('input', () => { if (email.hasAttribute('aria-invalid') && !check()) showError(''); });
+  again.addEventListener('click', () => { if (!done.classList.contains('is-off')) swap(false); });
+
+  /* ---------- Demo dialog ---------- */
+  let closing = false, downOn = null;
+  // Recover from any close, even one the browser forces (a second Escape is not cancelable) mid-tween.
+  const settle = () => { closing = false; dlg.classList.remove('is-closing'); fx?.dialogReset(); };
+  openBtn.addEventListener('click', () => {
+    if (dlg.open) return;
+    settle();
+    dlg.showModal();
+    lenis?.stop();
+    fx?.dialogIn(openBtn);
+  });
+  const closeDialog = () => {
+    if (!dlg.open || closing) return;
+    closing = true;
+    const end = () => { closing = false; dlg.classList.remove('is-closing'); dlg.close(); openBtn.focus(); };
+    if (fx) { dlg.classList.add('is-closing'); fx.dialogOut(openBtn, end); } else end();
+  };
+  closeBtn.addEventListener('click', closeDialog);
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); closeDialog(); });
+  // Close on a backdrop click only when the press also started on the backdrop (not a text selection overshoot).
+  dlg.addEventListener('pointerdown', (e) => { downOn = e.target; });
+  dlg.addEventListener('click', (e) => { if (e.target === dlg && downOn === dlg) closeDialog(); });
+  dlg.addEventListener('close', () => { settle(); lenis?.start(); });
+
+  if (!lib) return;
+
+  /* ---------- The water: a lattice of plankton that sparks where something moves (CU5) ---------- */
+  const read = (n) => getComputedStyle(root).getPropertyValue(n).trim();
+  const mark = $('.mark');
+  const water = (() => {
+    const g = canvas.getContext('2d');
+    const WORD = 'NOCTILUCA';
+    let BLEED = 2; // the word is laid from column -2 to cols + 2 (-1 to cols + 1 on phones), so both edges crop it
+    let W = 0, H = 0, cell = 12, cols = 0, rows = 0, hw = .15, hm = .45, glow = [], rest = '';
+    let heat = new Float32Array(0), ink = new Uint8Array(0);
+    let mask = new Uint8Array(0), span = 0, bandRows = 0, top = 0, lead = 3, L = [], edges = [], prog = 1, off = 0;
+
+    function build(p = prog) {
+      prog = p;
+      cell = parseFloat(read('--cell')) || 12;
+      hw = parseFloat(read('--half-water')) || .15;
+      hm = parseFloat(read('--half-mark')) || .45;
+      glow = [1, 2, 3, 4].map((i) => read(`--glow-${i}`));
+      rest = read('--mark-rest');
+      W = sec.offsetWidth;
+      cols = Math.ceil(W / cell);
+      BLEED = cell < 12 ? 1 : 2; // phones: one cell, so the L of LUCA keeps its stem
+
+      // The name is cells, not text: Handjet 800 sampled at 4x4 per cell, letter by letter, each letter's ink
+      // snapped to whole cells, the cap height on whole rows, each line sized on its own to fill the full section
+      // plus two cells each side. Phones (8px cells) stack it as NOCTI / LUCA, night / light; LUCA is shorter
+      // as a word, so it comes out taller, and both lines still crop at the edges.
+      const S = 4, FACE = read('--font-display'), o = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+      o.font = `800 100px ${FACE}`;
+      const asc = o.measureText(WORD).actualBoundingBoxAscent;
+      const glyph = (ch) => { const m = o.measureText(ch); return { ch, l: m.actualBoundingBoxLeft, w: m.actualBoundingBoxLeft + m.actualBoundingBoxRight }; };
+      const lines = (cell < 12 ? ['NOCTI', 'LUCA'] : [WORD]).map((t) => [...t].map(glyph));
+      const gap = 2;
+      const widthOf = (line, em) => line.map((q) => Math.max(1, Math.round(q.w * em / 100)));
+      const total = (ws) => ws.reduce((a, b) => a + b, 0) + gap * (ws.length - 1);
+      span = cols + 2 * BLEED;
+      let y = 0;
+      L = lines.map((line) => {
+        let cap = 400, em = 0;
+        do { cap--; em = cap / asc * 100; } while (cap > 5 && total(widthOf(line, em)) > span);
+        const l = { line, cap, em, y };
+        y += cap + lead;
+        return l;
+      });
+      bandRows = y - lead;
+      const cap = L[L.length - 1].cap;
+      // The band reserves its height above the bottom edge, minus the feet of the last line that bleed off it:
+      // about half the bottom stroke (8% of the cap; one row on phones), so L and U keep enough foot to read.
+      const crop = cell < 12 ? 1 : Math.max(1, Math.round(cap * .08));
+      mark.style.height = (bandRows - crop) * cell + 'px';
+
+      H = sec.offsetHeight;
+      rows = Math.ceil(H / cell);
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+      g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      heat = new Float32Array(cols * rows); ink = new Uint8Array(cols * rows);
+      top = Math.floor(H / cell) + crop - bandRows; // counted up from the bottom edge, so the crop is exact
+
+      o.canvas.width = span * S; o.canvas.height = bandRows * S;
+      o.fillStyle = '#fff';
+      L.forEach(({ line, cap, em, y }) => {
+        o.font = `800 ${em * S}px ${FACE}`;
+        const ws = widthOf(line, em), gaps = line.length - 1, spare = span - total(ws);
+        const base = (y + cap) * S;
+        let x = 0;
+        line.forEach((q, i) => {
+          o.setTransform(ws[i] / (q.w * em / 100), 0, 0, 1, x * S, 0); // snap each letter's ink to whole cells
+          o.fillText(q.ch, q.l * em / 100 * S, base);
+          x += ws[i] + gap + Math.floor(spare / gaps) + (i < spare % gaps ? 1 : 0);
+        });
+      });
+      const px = o.getImageData(0, 0, span * S, bandRows * S).data, need = S * S * 255 * .45, stride = span * S;
+      mask = new Uint8Array(span * bandRows);
+      for (let cy = 0; cy < bandRows; cy++) {
+        for (let cx = 0; cx < span; cx++) {
+          let a = 0;
+          for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) a += px[((cy * S + y) * stride + cx * S + x) * 4 + 3];
+          if (a > need) mask[cy * span + cx] = 1;
+        }
+      }
+      // The rising edge: the top ink cell of every column, per line.
+      edges = [];
+      for (const { cap, y } of L) {
+        for (let cx = 0; cx < span; cx++) {
+          for (let cy = y; cy < y + cap; cy++) if (mask[cy * span + cx]) { edges.push(cy * span + cx); break; }
+        }
+      }
+      off = -1;
+      rise(prog, 0);
+    }
+
+    // The name rises one whole row at a time: p 0 is fully below the edge, p 1 is risen.
+    // e > 0 lights the letters' top edge as it climbs.
+    function rise(p, e) {
+      prog = p;
+      const o = Math.round((1 - p) * bandRows);
+      if (o === off) return false;
+      off = o;
+      ink.fill(0);
+      for (let cy = 0; cy < bandRows; cy++) {
+        const r = top + cy + off;
+        if (r < 0 || r >= rows) continue;
+        for (let cx = 0; cx < span; cx++) {
+          const c = cx - BLEED;
+          if (c >= 0 && c < cols && mask[cy * span + cx]) ink[r * cols + c] = 1;
+        }
+      }
+      if (e) edges.forEach((k) => {
+        const r = top + Math.floor(k / span) + off, c = k % span - BLEED;
+        if (r >= 0 && r < rows && c >= 0 && c < cols && heat[r * cols + c] < e) heat[r * cols + c] = e;
+      });
+      return true;
+    }
+
+    // Water lets go in a 0.15s half-life; a letter cell holds three times longer.
+    function step(dt) {
+      const kw = Math.pow(.5, dt / hw), km = Math.pow(.5, dt / hm);
+      let alive = false;
+      for (let i = 0; i < heat.length; i++) {
+        const h = heat[i];
+        if (!h) continue;
+        let n = h * (ink[i] ? km : kw);
+        if (n < .04) n = 0; else alive = true;
+        heat[i] = n;
+      }
+      return alive;
+    }
+
+    // Flat square cells, one per lattice point: the resting name first, then four light steps over it.
+    function draw() {
+      g.clearRect(0, 0, W, H);
+      const s = cell - 2;
+      g.fillStyle = rest;
+      for (let r = 0, i = 0; r < rows; r++) for (let c = 0; c < cols; c++, i++) if (ink[i]) g.fillRect(c * cell + 1, r * cell + 1, s, s);
+      for (let r = 0, i = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++, i++) {
+          const h = heat[i];
+          if (h < .06) continue;
+          g.fillStyle = glow[h > .75 ? 3 : h > .5 ? 2 : h > .25 ? 1 : 0];
+          g.fillRect(c * cell + 1, r * cell + 1, s, s);
+        }
+      }
+    }
+
+    // Chebyshev falloff: the wake is a square around each disturbance, stepped like the board.
+    const lift = (r, c, d, R, k = 1) => { const v = k * (1 - d / (R + 1)), i = r * cols + c; if (v > heat[i]) heat[i] = v; };
+    function stamp(x, y, R) {
+      const fx = x / cell - .5, fy = y / cell - .5, n = Math.ceil(R);
+      for (let r = Math.max(0, Math.round(fy) - n); r <= Math.min(rows - 1, Math.round(fy) + n); r++) {
+        for (let c = Math.max(0, Math.round(fx) - n); c <= Math.min(cols - 1, Math.round(fx) + n); c++) {
+          const d = Math.max(Math.abs(c - fx), Math.abs(r - fy));
+          if (d <= R) lift(r, c, d, R);
+        }
+      }
+    }
+    // A wake around a rectangle: a focused control disturbs the water along its edges, never under its text.
+    function ring(x0, y0, x1, y1, R) {
+      const c0 = x0 / cell - .5, c1 = x1 / cell - .5, r0 = y0 / cell - .5, r1 = y1 / cell - .5, n = Math.ceil(R);
+      for (let r = Math.max(0, Math.floor(r0) - n); r <= Math.min(rows - 1, Math.ceil(r1) + n); r++) {
+        for (let c = Math.max(0, Math.floor(c0) - n); c <= Math.min(cols - 1, Math.ceil(c1) + n); c++) {
+          const d = Math.max(c0 - c, 0, c - c1, r0 - r, 0, r - r1);
+          if (d > .5 && d <= R) lift(r, c, d, R);
+        }
+      }
+    }
+    // A path stamped every half cell, so a fast hand leaves a continuous trail.
+    function trail(x0, y0, x1, y1, R) {
+      const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / (cell * .5)));
+      for (let k = 1; k <= n; k++) stamp(x0 + (x1 - x0) * k / n, y0 + (y1 - y0) * k / n, R);
+    }
+    // Bow wave: scrolling pushes the water at the viewport's leading edge. Every row the edge swept since the
+    // last frame lights across the full width at heat h, with one half-lit row either side.
+    function sweep(ya, yb, h) {
+      const ra = Math.floor(Math.min(ya, yb) / cell) - 1, rb = Math.floor(Math.max(ya, yb) / cell) + 1;
+      for (let r = Math.max(0, ra); r <= Math.min(rows - 1, rb); r++) {
+        const k = r === ra || r === rb ? .5 : 1;
+        for (let c = 0; c < cols; c++) lift(r, c, 0, 1, h * k);
+      }
+    }
+    const clear = () => g.clearRect(0, 0, W, H);
+    return {
+      build, rise, step, draw, stamp, ring, trail, sweep, clear,
+      get cell() { return cell; },
+      // Each line of the name in section px, where it sits now.
+      get bands() { return L.map(({ cap, y }) => [(top + off + y) * cell, (top + off + y + cap) * cell]); }
+    };
+  })();
+
+  // MD4: one 128px noise tile, made once; no image file.
+  const grain = $('.grain'), tile = document.createElement('canvas');
+  tile.width = tile.height = 128;
+  const tg = tile.getContext('2d'), noise = tg.createImageData(128, 128);
+  for (let i = 0; i < noise.data.length; i += 4) noise.data[i] = noise.data[i + 1] = noise.data[i + 2] = Math.random() * 255, noise.data[i + 3] = 255;
+  tg.putImageData(noise, 0, 0);
+  grain.style.backgroundImage = `url(${tile.toDataURL()})`;
+
+  /* ---------- Motion ---------- */
+  gsap.registerPlugin(ScrollTrigger, SplitText);
+  const fontsReady = Promise.race([
+    Promise.all([document.fonts.ready, document.fonts.load(`800 100px "Handjet"`), document.fonts.load(`700 100px "Handjet"`)]).then(() => 'fonts', () => 'fonts'),
+    new Promise((r) => setTimeout(() => r('timeout'), 1500))
+  ]);
+  let played = false, nameLit = false;
+  // Start the opening only on a visible page: with lagSmoothing(0), a timeline started in a background tab
+  // would jump to its end on return, and the visitor would miss the wake that teaches the mechanic.
+  const visible = new Promise((r) => {
+    if (document.visibilityState === 'visible') return r();
+    const f = () => { if (document.visibilityState === 'visible') { document.removeEventListener('visibilitychange', f); r(); } };
+    document.addEventListener('visibilitychange', f);
+  });
+
+  const mm = gsap.matchMedia();
+  mm.add({
+    motion: '(prefers-reduced-motion: no-preference)',
+    reduce: '(prefers-reduced-motion: reduce)',
+    fine: '(hover: hover) and (pointer: fine)',
+    wide: '(min-width: 992px)'
+  }, (ctx) => {
+    const { motion, fine } = ctx.conditions;
+    let dead = false, ready = false, lastW = 0, lastH = 0, st = null;
+    const off = [];
+    const on = (el, type, fn, opt) => { el.addEventListener(type, fn, opt); off.push(() => el.removeEventListener(type, fn, opt)); };
+
+    // Rebuild the field whenever the section changes size (cells, DPR, wordmark mask).
+    const rebuild = () => {
+      const w = sec.offsetWidth, h = sec.offsetHeight;
+      if (!ready || (w === lastW && h === lastH)) return;
+      water.build(motion ? (st ? st.progress : 0) : 1);
+      lastW = sec.offsetWidth; lastH = sec.offsetHeight; // build sets the band height; don't rebuild for that
+      water.draw();
+      if (st) ScrollTrigger.refresh();
+    };
+    const ro = new ResizeObserver(rebuild);
+    ro.observe(sec);
+    off.push(() => ro.disconnect());
+    const start = (how) => {
+      ready = true; sec.classList.add('is-drawn'); rebuild();
+      if (motion) {
+        // TX11 in cells: the name rises into place one row at a time as the page ends. Its climbing top edge
+        // lights, brighter on a fast flick; when it has fully surfaced, one wave writes it (lightName).
+        st = ScrollTrigger.create({
+          trigger: mark, start: 'top bottom', end: 'bottom bottom', scrub: true,
+          onUpdate: (self) => {
+            const e = gsap.utils.clamp(.4, .95, .62 * (.7 + Math.abs(self.getVelocity()) / 2500));
+            if (water.rise(self.progress, e)) wake();
+            if (self.progress > .97) lightName();
+          }
+        });
+        if (water.rise(st.progress, 0)) water.draw();
+        if (st.progress > .97) lightName();
+      }
+      if (how === 'timeout') document.fonts.ready.then(() => { if (!dead) { lastW = 0; rebuild(); } });
+    };
+
+    if (!motion) {
+      // Reduced motion: final states, native scroll, a still lattice and the name risen at its resting glow.
+      root.classList.add('go');
+      fontsReady.then((how) => { if (!dead) start(how); });
+      return () => { dead = true; off.forEach((f) => f()); water.clear(); sec.classList.remove('is-drawn'); mark.style.height = ''; };
+    }
+
+    const T = Object.fromEntries(['press', 'release', 'fill-in', 'fill-out', 'backdrop', 'dlg-in', 'dlg-out', 'clip', 'rules', 'wake', 'mark-wake', 'burst', 'pop']
+      .map((k) => [k, parseFloat(read(`--d-${k}`))]));
+
+    root.classList.add('fx');
+    hint.textContent = fine ? 'Move through the water to light it.' : 'Drag through the water to light it.';
+    hint.hidden = false;
+
+    // Lenis on GSAP's clock. Touch keeps native scrolling.
+    lenis = new Lenis({ lerp: .1, smoothWheel: true, autoRaf: false, anchors: true });
+    lenis.on('scroll', ScrollTrigger.update);
+    const tick = (t) => lenis.raf(t * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
+
+    /* The light loop runs only while something is lit, and sleeps off screen. */
+    let awake = false, inView = true, dy = 0, lastY = window.scrollY, ptr = null;
+    const frame = (t, dms) => {
+      if (dy) { // SC10 as a bow wave: scrolling pushes the water at the viewport's leading edge
+        const r = sec.getBoundingClientRect();
+        if (ptr) disturb(ptr[0] - r.left, ptr[1] - r.top, 3); // the water moves under a still hand: a trail
+        if (Math.abs(dy) > 2) {
+          const edge = (dy > 0 ? innerHeight : 0) - r.top;
+          water.sweep(edge - dy, edge, gsap.utils.clamp(.2, .9, Math.abs(dy) / 40));
+        }
+        dy = 0;
+      }
+      const alive = water.step(Math.min(dms, 100) / 1000);
+      water.draw();
+      if (!alive) sleep();
+    };
+    const wake = () => { if (awake || !inView || !ready) return; awake = true; gsap.ticker.add(frame); };
+    const sleep = () => { if (!awake) return; awake = false; gsap.ticker.remove(frame); };
+    const io = new IntersectionObserver(([e]) => { inView = e.isIntersecting; sec.classList.toggle('is-away', !inView); inView ? wake() : sleep(); });
+    io.observe(sec);
+    off.push(() => io.disconnect());
+
+    const local = (e) => { const r = sec.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+    let last = null, lastT = 0;
+    const disturb = (x, y, base) => {
+      const now = performance.now();
+      if (last && now - lastT < 120) {
+        const speed = Math.hypot(x - last[0], y - last[1]) / Math.max(1, now - lastT); // px per ms
+        water.trail(last[0], last[1], x, y, Math.min(5, base + speed * 1.5));
+      } else water.stamp(x, y, base);
+      last = [x, y]; lastT = now;
+      wake();
+    };
+    const burst = (x, y, R) => {
+      const p = { r: 0 };
+      gsap.to(p, { r: R, duration: T.burst, ease: 'power2.out', onUpdate: () => { water.stamp(x, y, p.r); wake(); } });
+    };
+    const haloAt = (el, R) => {
+      const a = el.getBoundingClientRect(), r = sec.getBoundingClientRect(), p = { r: 0 };
+      gsap.to(p, { r: R, duration: T.burst, ease: 'power2.out', onUpdate: () => { water.ring(a.left - r.left, a.top - r.top, a.right - r.left, a.bottom - r.top, p.r); wake(); } });
+    };
+    // A virtual boat crossing the water (the opening wake and the crossing over the name).
+    const crossing = (dur, path, R, onX) => {
+      const p = { t: 0 };
+      let prev = null;
+      return gsap.to(p, {
+        t: 1, duration: dur, ease: 'power1.inOut',
+        onUpdate: () => {
+          const [x, y] = path(p.t);
+          if (prev) water.trail(prev[0], prev[1], x, y, R);
+          else water.stamp(x, y, R);
+          prev = [x, y];
+          onX?.(x, y);
+          wake();
+        }
+      });
+    };
+
+    if (fine) {
+      on(sec, 'pointermove', (e) => { if (e.pointerType === 'touch') return; ptr = [e.clientX, e.clientY]; disturb(...local(e), 3); });
+      on(sec, 'pointerleave', () => { last = null; ptr = null; });
+    }
+    on(sec, 'touchstart', (e) => { const [x, y] = local(e.touches[0]); burst(x, y, 4); last = [x, y]; lastT = performance.now(); }, { passive: true });
+    on(sec, 'touchmove', (e) => disturb(...local(e.touches[0]), 3), { passive: true });
+    on(window, 'scroll', () => { const y = window.scrollY; dy += y - lastY; lastY = y; if (dy) wake(); }, { passive: true });
+    // Keyboard focus disturbs the water around the control. Text fields have their own cell strip, and the
+    // confirmation heading takes focus only to be read.
+    on(sec, 'focusin', (e) => { if (e.target.matches(':focus-visible:not([type=email]):not([tabindex="-1"])')) haloAt(e.target, 3); });
+
+    /* ---------- Interactive items ---------- */
+    const btns = $$('.btn'), us = $$('.u'), stores = $$('.store'), box = $('.check input');
+
+    // MI1 press and release
+    const press = (el, s) => {
+      on(el, 'pointerdown', (e) => {
+        if (e.pointerType === 'touch') el.classList.add('is-tap'); // the touch fill, where :active does not apply
+        gsap.to(el, { scale: s, duration: T.press, ease: 'power2.out', overwrite: 'auto' });
+      });
+      const up = () => { el.classList.remove('is-tap'); gsap.to(el, { scale: 1, duration: T.release, ease: 'power3.out', overwrite: 'auto' }); };
+      ['pointerup', 'pointerleave', 'pointercancel'].forEach((t) => on(el, t, up));
+    };
+    btns.forEach((b) => press(b, .96));
+    stores.forEach((s) => press(s, .985));
+    us.forEach((u) => press(u, u.closest('.studio') ? .98 : .96));
+
+    // HV4: light grows from the entry point as a square, the board's own geometry, and leaves toward the exit.
+    btns.forEach((btn) => {
+      const inner = $('.inner', btn), fill = $('.fill', btn);
+      let hover = false, focus = false;
+      const at = (e) => { const r = inner.getBoundingClientRect(); return [gsap.utils.clamp(0, r.width, e.clientX - r.left), gsap.utils.clamp(0, r.height, e.clientY - r.top)]; };
+      const place = (x, y) => { const r = inner.getBoundingClientRect(), s = 2 * Math.max(r.width, r.height); gsap.set(fill, { width: s, height: s, x: x - s / 2, y: y - s / 2 }); };
+      const grow = (x, y) => {
+        if (gsap.getProperty(fill, 'scale') < .05) place(x, y);
+        gsap.to(fill, { scale: 1, duration: T['fill-in'], ease: 'power3.out', overwrite: true });
+        btn.classList.add('is-hot');
+      };
+      const shrink = (x, y) => {
+        if (hover || focus) return;
+        if (gsap.getProperty(fill, 'scale') > .95) place(x, y);
+        gsap.to(fill, { scale: 0, duration: T['fill-out'], ease: 'power3.in', overwrite: true });
+        btn.classList.remove('is-hot');
+      };
+      on(btn, 'pointerenter', (e) => { if (e.pointerType === 'touch') return; hover = true; grow(...at(e)); });
+      on(btn, 'pointerleave', (e) => { if (!hover) return; hover = false; shrink(...at(e)); });
+      on(btn, 'focus', () => { if (!btn.matches(':focus-visible')) return; focus = true; grow(0, inner.offsetHeight / 2); });
+      on(btn, 'blur', () => { if (!focus) return; focus = false; shrink(inner.offsetWidth, inner.offsetHeight / 2); });
+    });
+
+    // HV2 directional underline: in from the entry side, out toward the exit side.
+    us.forEach((el) => {
+      let hover = false, focus = false;
+      const side = (e) => { const r = el.getBoundingClientRect(); return e.clientX < r.left + r.width / 2 ? '0%' : '100%'; };
+      const set = (x, lit) => { el.style.setProperty('--ux', x); el.classList.toggle('is-on', lit); };
+      on(el, 'pointerenter', (e) => { if (e.pointerType === 'touch') return; hover = true; set(side(e), true); });
+      on(el, 'pointerleave', (e) => { if (!hover) return; hover = false; if (!focus) set(side(e), false); });
+      on(el, 'focus', () => { if (!el.matches(':focus-visible')) return; focus = true; set('0%', true); });
+      on(el, 'blur', () => { if (!focus) return; focus = false; if (!hover) set('100%', false); });
+    });
+
+    // MI3 checkbox pop (the tick draws in CSS).
+    on(box, 'change', () => { if (box.checked) gsap.fromTo(box, { scale: .9 }, { scale: 1, duration: T.pop, ease: 'back.out(2)' }); });
+
+    /* ---------- Hooks for the plain-JS flows ---------- */
+    const rows = $$('[data-row]', dlg);
+    const fromButton = (btn) => {
+      const d = dlg.getBoundingClientRect(), b = btn.getBoundingClientRect();
+      const ix = Math.max(0, (d.width - b.width) / 2), iy = Math.max(0, (d.height - b.height) / 2);
+      return { x: b.left + b.width / 2 - (d.left + d.width / 2), y: b.top + b.height / 2 - (d.top + d.height / 2), clipPath: `inset(${iy}px ${ix}px ${iy}px ${ix}px)` };
+    };
+    fx = {
+      // Form success fires the signature: a burst from the confirmation, a boat down to the name, the name lit.
+      success() { ctx.add(() => {
+        const a = doneTitle.getBoundingClientRect(), r = sec.getBoundingClientRect();
+        const x0 = a.left - r.left + Math.min(a.width, 240) / 2, y0 = a.top - r.top + a.height / 2;
+        burst(x0, y0, 5);
+        const [[by]] = water.bands, x1 = sec.offsetWidth * .5, c = water.cell;
+        gsap.delayedCall(.15, () => crossing(.9, (t) => [x0 + (x1 - x0) * t + Math.sin(t * Math.PI * 3) * 2 * c, y0 + (by - y0) * t], 3)
+          .eventCallback('onComplete', () => nameWake()));
+      }); },
+      dialogReset() { gsap.killTweensOf([dlg, ...rows]); gsap.set([dlg, ...rows], { clearProps: 'all' }); },
+      dialogIn(btn) { // CD7: the panel opens out of the button that asked for it
+        gsap.fromTo(dlg, fromButton(btn), { x: 0, y: 0, clipPath: 'inset(0px 0px 0px 0px)', duration: T['dlg-in'], ease: 'expo.out', overwrite: true });
+        gsap.fromTo(rows, { y: 10, opacity: 0 }, { y: 0, opacity: 1, duration: .4, ease: 'expo.out', stagger: .05, delay: .1, overwrite: true });
+      },
+      dialogOut(btn, end) {
+        gsap.to(rows, { opacity: 0, duration: T['dlg-out'] * .8, ease: 'power2.in', overwrite: true });
+        gsap.to(dlg, { ...fromButton(btn), duration: T['dlg-out'], ease: 'expo.in', overwrite: true,
+          onComplete: () => { gsap.set([dlg, ...rows], { clearProps: 'all' }); end(); } });
+      },
+      swap(from, to, toDone, finish) {
+        gsap.to(from, { opacity: 0, duration: .2, ease: 'power1.out', overwrite: true, onComplete: () => {
+          finish();
+          gsap.set(from, { clearProps: 'opacity' });
+          if (!toDone) { gsap.fromTo(to, { opacity: 0 }, { opacity: 1, duration: .3, clearProps: 'opacity' }); return; }
+          const split = SplitText.create($$(':scope > h3, :scope > p:not([hidden])', to), { type: 'lines', mask: 'lines', linesClass: 'line' });
+          gsap.timeline({ onComplete: () => split.revert() })
+            .from(split.lines, { yPercent: 110, duration: .6, ease: 'expo.out', stagger: .06 })
+            .from(again, { opacity: 0, y: 8, duration: .4, ease: 'expo.out', clearProps: 'all' }, .18);
+        } });
+      }
+    };
+
+    /* ---------- Load sequence and scroll moments ---------- */
+    const h2 = $('.h2'), soft = $$('.copy [data-rv], .studio'), cta = $$('.actions .btn');
+    const rules = $$('.rule'), bits = $$('.panel [data-rv]');
+
+    // The payoff: the name is dormant in the water. The first time it is mostly in view, after the opening,
+    // one slanted wave front crosses each line of it, and the letter points hold the light three times longer
+    // than the water, so the whole name is written left to right and fades back.
+    const nameWake = () => ctx.add(() => {
+      const W = sec.offsetWidth;
+      water.bands.forEach((_, n) => {
+        const p = { t: 0 };
+        gsap.to(p, { t: 1, duration: T['mark-wake'], ease: 'power1.inOut', delay: n * .3,
+          onUpdate: () => { // read the band each update: the name may still be rising
+            const [y0, y1] = water.bands[n], lean = (y1 - y0) * .25, x = W * (-.1 + 1.2 * p.t);
+            water.trail(x + lean, y0, x - lean, y1, 2); wake();
+          } });
+      });
+    });
+    let nameDue = false;
+    const lightName = () => {
+      if (nameLit) return;
+      if (!played) { nameDue = true; return; }
+      nameLit = true; nameWake();
+    };
+
+    Promise.all([fontsReady, visible]).then(([how]) => ctx.add(() => {
+      if (dead) return;
+      start(how);
+      if (played) { root.classList.add('go'); return; }
+
+      // L1-L4: the opening boat crosses the headline, and each line is uncovered exactly where the water
+      // lights, in whole cells. As it leaves the headline, the rest surfaces.
+      const split = SplitText.create(h2, { type: 'lines', linesClass: 'line' });
+      const r = sec.getBoundingClientRect(), W = r.width, c = water.cell;
+      const L = split.lines.map((el) => {
+        const a = el.getBoundingClientRect(), t = document.createRange();
+        t.selectNodeContents(el);
+        return { el, x: a.left - r.left, w: a.width, end: t.getBoundingClientRect().right - r.left, y: a.top - r.top + a.height * .6 };
+      });
+      const x0 = L[0].x, x1 = Math.max(...L.map((l) => l.end)), y0 = L[0].y, y1 = L[L.length - 1].y;
+      const uncover = (x) => L.forEach((l) => {
+        const shown = Math.max(0, Math.floor((x - l.x) / c) * c);
+        l.el.style.clipPath = `inset(-25% ${Math.max(0, l.w - shown)}px -25% -4px)`;
+      });
+      uncover(-Infinity);
+      gsap.set(h2, { visibility: 'visible' });
+      gsap.set(soft, { opacity: 0 });
+      gsap.set(cta, { clipPath: 'inset(0% 100% 0% 0%)' });
+      gsap.set(bits, { clipPath: 'inset(0% 100% 0% 0%)' });
+      gsap.set(rules, { scaleX: (i, el) => el.classList.contains('rule-left') ? 1 : 0, scaleY: (i, el) => el.classList.contains('rule-left') ? 0 : 1 });
+      root.classList.add('go');
+
+      let rest = false;
+      const surfaceRest = () => {
+        rest = true;
+        gsap.to(soft, { opacity: 1, duration: .45, ease: 'steps(3)', stagger: .06 });
+        gsap.to(cta, { clipPath: 'inset(0% 0% 0% 0%)', duration: T.clip, ease: 'expo.out', stagger: .08, clearProps: 'clipPath' });
+      };
+      const path = (t) => {
+        const x = W * (-.1 + 1.2 * t), k = gsap.utils.clamp(0, 1, (x - x0) / (x1 - x0)); // line 1, dipping to the last line
+        return [x, y0 + (y1 - y0) * k + Math.sin(t * Math.PI * 2) * 2 * c];
+      };
+      const tl = gsap.timeline({ onComplete: () => { split.revert(); played = true; if (nameDue) lightName(); } });
+      tl.add(crossing(T.wake, path, 3, (x) => { uncover(x); if (!rest && x > x1) surfaceRest(); }), .15)
+        .add(() => { if (!rest) surfaceRest(); }, .15 + T.wake);
+
+      // L5 / S3: the tray's rules draw in at load on wide screens, on entering view on narrow ones. A boat runs
+      // down the left rule and each row is uncovered in eight whole steps as the wake passes it.
+      ScrollTrigger.create({
+        trigger: panel, start: 'top 85%', once: true,
+        onEnter: () => ctx.add(() => {
+          const r = sec.getBoundingClientRect(), pr = panel.getBoundingClientRect(), x = pr.left - r.left + 1;
+          const left = bits.map((el) => ({ el, y: el.getBoundingClientRect().top - r.top + 6 }));
+          gsap.timeline({ delay: Math.max(0, .95 - tl.time()) })
+            .to(rules, { scaleX: 1, scaleY: 1, duration: T.rules, ease: 'expo.inOut' }, 0)
+            .add(crossing(T.rules + .3, (t) => [x, pr.top - r.top + pr.height * t], 3, (_, y) => {
+              while (left.length && left[0].y <= y) {
+                gsap.to(left.shift().el, { clipPath: 'inset(0% 0% 0% 0%)', duration: .4, ease: 'steps(8)', clearProps: 'clipPath' });
+              }
+            }), .1)
+            .add(() => left.splice(0).forEach(({ el }) => gsap.set(el, { clearProps: 'clipPath' })));
+        })
+      });
+    }));
+
+    return () => {
+      dead = true;
+      off.forEach((f) => f());
+      sleep();
+      fx = null;
+      gsap.ticker.remove(tick);
+      gsap.ticker.lagSmoothing(500, 33);
+      lenis.destroy(); lenis = null;
+      gsap.killTweensOf([...btns, ...us, ...stores, box, ...$$('.fill')]);
+      gsap.set([...btns, ...us, ...stores, box, ...$$('.fill')], { clearProps: 'all' });
+      btns.forEach((b) => b.classList.remove('is-hot'));
+      us.forEach((u) => u.classList.remove('is-on'));
+      root.classList.remove('fx');
+      hint.hidden = true;
+      water.clear();
+      sec.classList.remove('is-drawn');
+      mark.style.height = '';
+    };
+  });
+})();
+</script>
+</body>
+</html>
