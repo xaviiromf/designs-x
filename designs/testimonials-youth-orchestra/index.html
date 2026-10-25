@@ -1,0 +1,1174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Why they come back on Saturday mornings</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bona+Nova:ital,wght@0,400;0,700;1,400&family=Gantari:wght@100..900&display=swap">
+<style>
+  :root {
+    color-scheme: dark;
+    /* Colour: one concert night in Fernlea School hall */
+    --velvet: #3D1F24;      /* house lights at half: seat velvet; intro, interval and page ground */
+    --shade: #24161A;       /* the same velvet with the lights down: the stage */
+    --paper: #F2F1EC;       /* cool white music paper: the desks; text, focus and the primary fill on the dark grounds */
+    --ink: #1C1719;         /* score black: everything printed on paper */
+    --graphite: #3F3739;    /* secondary text on paper: 10.2:1 lit, 4.8:1 on the dimmed centre desk */
+    --pencil: #2945B4;      /* the conductor's blue pencil, only ever on paper: active letter, timer rule, focus there */
+    --horsehair: #C9BBA6;   /* bow-hair grey: secondary text on the dark grounds */
+    --stand: #54464A;       /* music-stand metal: ledges, lamp hoods, the stage front */
+    --stand-lit: #8A7B7F;   /* the same metal caught by its own lamp: the lit hood only */
+    --lamp: 255 214 165;    /* tungsten as RGB channels; only inside the lamp glow */
+    --rule-rest: rgb(201 187 166 / .6);   /* field rules and idle borders on dark (3.8:1 on velvet) */
+    --rule-ink: rgb(28 23 25 / .55);      /* group brackets on the paper strip */
+    --wash: rgb(242 241 236 / .14);       /* quiet fills on dark (Pause, seat stepper) */
+    /* Paper brightness follows the lighting: house lights light the paper, the dark stage dims it (--dark is tweened by the script) */
+    --dim-house: .82;       /* lamp off, house lights up */
+    --dim-stage: .58;       /* centre desk, lamp off, lights down: ink 5.7:1, graphite 4.8:1 */
+    --dim-side: .34;        /* every other desk once the lights are down: the arc recedes into the dark */
+    --dim: calc(var(--dim-house) - (var(--dim-house) - var(--dim-stage)) * var(--dark, 0));
+    --dim-off: calc(var(--dim-house) - (var(--dim-house) - var(--dim-side)) * var(--dark, 0));
+    --pre: .7;              /* a desk pre-glowing under the pointer or a letter (never below --dim) */
+
+    /* Type: Bona Nova for the score, Gantari for the hall */
+    --font-score: "Bona Nova", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --font-hall: "Gantari", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+    --t-xl: clamp(2.75rem, 1.6rem + 4.6vw, 5.75rem);    /* H2, Bona 400 */
+    --t-l: clamp(2rem, 1.4rem + 2.4vw, 3.25rem);        /* H3, Bona 400 */
+    --t-quote: clamp(1.3rem, 1.05rem + 1vw, 1.75rem);   /* quotes, Bona italic */
+    --t-held: clamp(1.5rem, 1.2rem + 1vw, 2rem);        /* confirmation heading, Bona */
+    --t-mark: 1.125rem;     /* rehearsal letters, Bona 700 */
+    --t-m: 1.0625rem;       /* names, Gantari 650 */
+    --t-s: 1.0625rem;       /* body and inputs, Gantari 400 */
+    --t-xs: .9375rem;       /* roles, labels, buttons */
+    --t-xxs: .875rem;       /* bracket labels, hint, errors */
+    --t-step: 1.375rem;     /* the stepper's minus and plus glyphs */
+    --t-note: 1.125rem;     /* works in the programme, Bona italic */
+    --t-err: 1rem;          /* form errors, Bona italic */
+
+    /* Space */
+    --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px;
+    --sp-6: 32px; --sp-7: 48px; --sp-8: 72px; --sp-9: 112px; --sp-10: 168px;
+    --gutter: clamp(16px, 4vw, 64px);
+    --measure: 60ch;
+
+    /* The arc (read by the script on resize) */
+    --arc-r: 700px;         /* distance from the podium (pivot) to the desk ledges */
+    --arc-step: 15deg;      /* angle between neighbouring desks */
+    --desk-w: min(34rem, 100% - 96px);
+    --lamp-room: 104px;     /* headroom above the desks for the hood and its glow */
+    --peek: 210px;          /* how much of the stage shows under the intro */
+
+    /* Shape */
+    --r-desk: 3px;
+    --ledge-h: 6px;
+    --box: 44px;            /* buttons and every touch target */
+    --mark-box: 44px;       /* rehearsal-letter boxes; 40px below 380px so seven fit */
+    --mark-gap: 2px;        /* between boxes in a group */
+    --grp-gap: 6px;         /* extra space between groups */
+    --strip-pad: 8px;       /* the paper strip around the letters */
+    --mark-sm: 30px;        /* the letter printed on each desk */
+    --hood-w: 72px; --hood-h: 13px;
+    --shaft-w: 3px; --shaft-h: 210px;   /* the stand's shaft, from the ledge toward the podium */
+    --check: 22px;
+    --fol-dx: 18px; --fol-dy: 16px;
+    --chip-pad: 6px 12px 7px;
+
+    /* Motion: one family, expo */
+    --ease-out: cubic-bezier(.16, 1, .3, 1);       /* expo.out */
+    --ease-sweep: cubic-bezier(.35, 0, 0, 1);      /* HV2 underline */
+    --d-press: .12s; --d-release: .4s;
+    --d-fill-in: .4s; --d-fill-out: .3s;
+    --d-sweep: .45s; --d-ring: .25s; --d-swap: .35s;
+    --d-lamp-on: .35s; --d-lamp-off: .2s;
+    --d-rule: .35s; --d-hint: .3s; --d-tint: .2s; --d-err: .25s; --d-tick: .3s;
+  }
+  @media (max-width: 379px) { :root { --mark-box: 40px; --strip-pad: 6px; } }
+  @media (min-width: 600px) { :root { --desk-w: min(34rem, 100% - 56px); } }
+  @media (min-width: 768px) { :root { --arc-r: 1250px; --arc-step: 15deg; } }
+  @media (min-width: 992px) { :root { --arc-r: 1500px; --arc-step: 14deg; } }
+
+  /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--velvet); color: var(--paper);
+    font: 400 var(--t-s)/1.55 var(--font-hall);
+    -webkit-font-smoothing: antialiased;
+  }
+  h2, h3, h4, p, figure, blockquote, dl, dd, ol, ul { margin: 0; }
+  button, input { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--paper); outline-offset: 3px; }
+  .vh { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .wrap { width: min(100% - 2 * var(--gutter), 82rem); margin-inline: auto; }
+
+  /* ---------- Bands: each paints its own lighting until the script takes over ---------- */
+  .band { position: relative; }
+  .house, .concert { background: var(--velvet); }
+  .stage-band { background: var(--shade); }
+  .backdrop, .houselights { display: none; }
+  html.js .band { background: none; }
+  html.js .backdrop, html.js .houselights { display: block; position: fixed; inset: 0; z-index: -1; background: var(--shade); opacity: 0; pointer-events: none; }
+  /* House lights still up as the page opens; they settle to half on load */
+  html.js .houselights { background: radial-gradient(120% 90% at 50% -10%, rgb(var(--lamp) / .16), rgb(var(--lamp) / 0) 70%); opacity: 1; }
+
+  /* ---------- House: intro ---------- */
+  .house { min-height: calc(100svh - var(--peek)); display: flex; padding-block: var(--sp-8) var(--sp-7); }
+  .house__grid { display: flex; flex-direction: column; justify-content: space-between; gap: var(--sp-8); }
+  .house__main { display: grid; gap: var(--sp-6); }
+  .org { font-weight: 650; font-size: var(--t-xs); letter-spacing: .01em; }
+  .title {
+    font: 400 var(--t-xl)/.98 var(--font-score); letter-spacing: -.01em;
+    max-width: 13ch; text-wrap: balance;
+  }
+  .title .ln-mask { padding-bottom: .1em; margin-bottom: -.1em; }   /* room for descenders inside the line masks */
+  .lede { max-width: 36ch; margin-bottom: var(--sp-5); }
+  @media (min-width: 992px) {
+    .house__main { grid-template-columns: repeat(12, 1fr); column-gap: var(--sp-6); }
+    .title { grid-column: 1 / 8; align-self: end; }
+    .house__aside { grid-column: 9 / 13; align-self: end; padding-bottom: .55em; }
+  }
+
+  /* ---------- Links: HV2 sweep over a quiet rest rule ---------- */
+  .link { position: relative; display: inline-block; color: var(--paper); text-decoration: none; font-weight: 600; padding-bottom: .14em; }   /* inline-block: a 26px+ target (WCAG 2.5.8) */
+  .link::before, .link::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; }
+  /* HV2: the sweep enters from the left and leaves to the right */
+  .link::before {
+    z-index: 1; height: .07em; min-height: 1.5px; background: currentColor;
+    transform: scaleX(0); transform-origin: right; transition: transform var(--d-sweep) var(--ease-sweep);
+  }
+  .link::after { height: 1px; background: var(--horsehair); transform: scaleX(var(--u, 1)); transform-origin: left; }
+  @media (hover: hover) { .link:hover::before { transform: none; transform-origin: left; } }
+  .link:focus-visible::before { transform: none; transform-origin: left; }
+  .link:focus-visible { outline-offset: 4px; }
+  html.js .org, html.js .lede, html.js .title { opacity: 0; }
+  html.js #skip { opacity: .6; --u: 0; }
+
+  /* ---------- The stage ---------- */
+  .stage-band { padding-block: var(--sp-8) var(--sp-9); overflow-x: clip; }
+  @media (min-width: 992px) { .stage-band { padding-bottom: var(--sp-8); } }
+  /* The stage floor ends at the band: lower desks are cut there, the lamp glow may still rise above it */
+  html.js .stage-band { clip-path: inset(-120px 0 0 0); }
+  /* The stage front: a lip at the clip line, so the stand shafts and anything else cut there end on a real edge */
+  html.js .stage-band::after { content: ""; position: absolute; z-index: 45; left: max(var(--gutter), 50% - 45rem); right: max(var(--gutter), 50% - 45rem); bottom: 0; height: var(--ledge-h); background: var(--stand); }
+  .stage { position: relative; padding-bottom: var(--sp-3); }
+  .stage:focus-visible { outline: none; }
+  /* Inset focus ring drawn above the desks, which would otherwise cover an outline */
+  .stage::after { content: ""; position: absolute; inset: 0; z-index: 40; pointer-events: none; border: 2px solid var(--paper); opacity: 0; transition: opacity var(--d-hint) var(--ease-out); }
+  .stage:focus-visible::after { opacity: 1; }
+  /* Under the stage, outside its ring, where the band always has room */
+  .hint {
+    position: absolute; top: calc(100% + var(--sp-3)); left: 0; right: 0; text-align: center;
+    font-size: var(--t-xxs); color: var(--horsehair);
+    opacity: 0; transition: opacity var(--d-hint) var(--ease-out); pointer-events: none;
+  }
+  .stage:focus-visible .hint { opacity: 1; }
+
+  .arc { list-style: none; padding: 0; display: grid; gap: var(--sp-7); width: min(100% - 2 * var(--gutter), 38rem); margin-inline: auto; }
+  /* A part on its stand: cool paper, a lamp hood clipped to the top, the stand's lip along the bottom */
+  .desk { container-type: inline-size; position: relative; color: var(--ink); }
+  .desk::after {
+    content: ""; position: absolute; z-index: 1; opacity: var(--hood, 1); top: calc(-1 * var(--hood-h)); left: 50%; width: var(--hood-w); height: var(--hood-h); translate: -50% 0;
+    background:
+      linear-gradient(var(--stand), var(--stand)) top / 100% 4px no-repeat,
+      linear-gradient(var(--stand), var(--stand)) bottom / 2px 9px no-repeat;
+    border-radius: 2px;
+  }
+  /* The lamp's glow: warm light that blooms upward from the hood, on the dark, never on the paper */
+  .desk::before {
+    content: ""; position: absolute; z-index: -1; left: -15%; right: -15%; bottom: calc(100% - var(--sp-2)); height: var(--lamp-room); pointer-events: none;
+    background: radial-gradient(ellipse 34% 100% at 50% 100%, rgb(var(--lamp) / .5), rgb(var(--lamp) / .14) 55%, rgb(var(--lamp) / 0) 100%);
+    opacity: 0; transform: scaleY(.6); transform-origin: 50% 100%;
+    transition: opacity var(--d-lamp-off) var(--ease-out), transform var(--d-lamp-off) var(--ease-out);
+  }
+  /* The source: the hood bar caught in its own light (above .desk::after) */
+  .desk__body::before {
+    content: ""; position: absolute; top: calc(-1 * var(--hood-h)); left: 50%; width: var(--hood-w); height: 4px; translate: -50% 0; pointer-events: none;
+    background: var(--stand-lit); border-radius: 2px; opacity: 0; transition: opacity var(--d-lamp-off) var(--ease-out);
+  }
+  .desk.is-lit::before { opacity: 1; transform: none; transition-duration: var(--d-lamp-on); }
+  .desk.is-lit .desk__body::before { opacity: 1; transition-duration: var(--d-lamp-on); }
+  /* With the script, a desk is dim paper until its lamp is on. Only the paper dims: the stand metal stays readable in the dark. */
+  html.js .desk__body { filter: brightness(var(--dim-off)); transition: filter var(--d-lamp-off) var(--ease-out); }
+  html.js .is-active .desk__body { filter: brightness(var(--dim)); }
+  html.js .is-pre .desk__body { filter: brightness(max(var(--pre), var(--dim))); transition-duration: var(--d-ring); }
+  /* The stand: a shaft from the ledge toward the podium, so the pivot below the stage shows in every lean */
+  .desk__stand { display: none; }
+  html.js .desk__stand { display: block; position: absolute; top: 100%; left: 50%; width: var(--shaft-w); height: var(--shaft-h); translate: -50% 0; background: var(--stand); opacity: var(--lg, 1); pointer-events: none; }
+  html.js .is-lit .desk__body { filter: brightness(1); transition-duration: var(--d-lamp-on); }
+  .desk__body {
+    position: relative; z-index: 2; display: flex; flex-direction: column; gap: var(--sp-5); height: 100%;
+    background: var(--paper); border-radius: var(--r-desk);
+    padding: var(--sp-5) var(--sp-5) calc(var(--sp-5) + var(--ledge-h));
+  }
+  @container (min-width: 28rem) { .desk__body { padding: var(--sp-6) var(--sp-6) calc(var(--sp-6) + var(--ledge-h)); } }
+  .desk__body::after { content: ""; position: absolute; left: -4px; right: -4px; bottom: 0; height: var(--ledge-h); background: var(--stand); border-radius: 1px; opacity: var(--lg, 1); }
+  html.js .desk__mark { opacity: var(--m, 1); }
+  .desk__mark {
+    display: grid; place-items: center; width: var(--mark-sm); height: var(--mark-sm);
+    border: 1.5px solid var(--ink); font: 700 var(--t-xxs)/1 var(--font-score);
+  }
+  .desk__quote { font: italic 400 var(--t-quote)/1.32 var(--font-score); max-width: 34ch; text-wrap: pretty; }
+  .desk__quote p { text-indent: -.38em; }
+  .desk__who { display: grid; gap: var(--sp-4); margin-top: auto; }   /* spare height (desks share the tallest one's) falls between the words and the name */
+  .desk__name { display: block; font-weight: 650; font-size: var(--t-m); line-height: 1.3; }
+  .desk__role { display: block; font-size: var(--t-xs); color: var(--graphite); line-height: 1.45; }
+  .desk__facts { display: grid; gap: var(--sp-3); font-size: var(--t-xs); line-height: 1.45; }
+  .desk__facts dt { color: var(--graphite); }
+  @container (min-width: 28rem) { .desk__facts { grid-template-columns: 1fr 1fr; gap: var(--sp-5); } }
+  /* Narrow desks: each fact on one line, so the lit desk and the controls fit a pinned phone screen */
+  @container (max-width: 27.99rem) { .desk__facts div { display: flex; flex-wrap: wrap; column-gap: .5em; } }
+
+  /* With the script: the seven desks share one grid cell and the arc places them */
+  html.js .arc {
+    width: auto; gap: 0; grid-template-columns: var(--desk-w); justify-content: center;
+    padding-top: var(--lamp-room); padding-bottom: var(--sp-8);
+    touch-action: pan-y; cursor: grab;
+  }
+  html.js .arc:active { cursor: grabbing; }
+  html.js .desk:not(.is-active), html.js .arc.is-drag { user-select: none; -webkit-user-select: none; }
+  html.js .desk { grid-area: 1 / 1; transform-origin: 50% 100%; will-change: transform; pointer-events: none; }
+  html.js .desk.is-active, html.js .desk.is-prev, html.js .desk.is-next { pointer-events: auto; }
+  html.js .desk.is-prev, html.js .desk.is-next { cursor: pointer; }
+
+  /* ---------- Controls ---------- */
+  /* One paper object carries all navigation; Pause is the single quiet pill beside it (below it on phones) */
+  .controls {
+    position: relative; z-index: 30; margin-top: var(--sp-6);
+    display: flex; flex-direction: column; align-items: center; gap: var(--sp-4);
+  }
+  @media (min-width: 768px) {
+    .controls { flex-direction: row; justify-content: center; align-items: flex-start; gap: var(--sp-5); }
+    .controls > .btn { margin-top: var(--strip-pad); }
+  }
+
+  /* The conductor's score on the podium: a paper strip with Previous and Next at its ends and boxed rehearsal letters between.
+     Phones: the letters fill the strip and the two ends share a row under the brackets. */
+  .score {
+    position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2) var(--sp-2);
+    padding: var(--strip-pad); background: var(--paper); color: var(--ink); border-radius: var(--r-desk);
+  }
+  .score .letters { grid-column: 1 / -1; grid-row: 1; }
+  @media (min-width: 768px) {
+    .score { display: flex; align-items: flex-start; gap: calc(var(--grp-gap) + var(--mark-gap)); }
+  }
+  .letters {
+    display: grid; column-gap: var(--mark-gap); row-gap: var(--sp-4);   /* room for the rest bar under the boxes */
+    grid-template-columns: repeat(3, var(--mark-box)) var(--grp-gap) repeat(2, var(--mark-box)) var(--grp-gap) repeat(2, var(--mark-box));
+  }
+  .letter:nth-child(4) { grid-column: 5; } .letter:nth-child(6) { grid-column: 8; }
+  .letter {
+    position: relative; width: var(--mark-box); height: var(--mark-box); padding: 0;
+    display: grid; place-items: center; cursor: pointer;
+    background: none; border: 1.5px solid var(--ink); border-radius: 0;
+    font: 700 var(--t-mark)/1 var(--font-score);
+    transition: border-color var(--d-tint), color var(--d-tint), box-shadow var(--d-tint), transform var(--d-release) var(--ease-out);
+  }
+  .letter:focus-visible { outline-color: var(--pencil); outline-offset: 2px; }
+  /* Circled in blue pencil */
+  .letter[aria-current] { border-color: var(--pencil); color: var(--pencil); box-shadow: inset 0 0 0 1px var(--pencil); }
+  /* TR2 as a multi-measure rest: a thick pencil bar between two serifs, from the active box to the strip's end.
+     The script sets --run-x and --run-w per voice, and tweens --t (the count) and --o (left, or right to clear forward). */
+  .score::before, .score::after { content: ""; position: absolute; left: var(--run-x, 0); width: var(--run-w, 0); pointer-events: none; }
+  .score::before {
+    top: calc(var(--strip-pad) + var(--mark-box) + 7px); height: 3px; background: var(--pencil);
+    transform: scaleX(var(--t, 0)); transform-origin: var(--o, left);
+  }
+  .score::after { top: calc(var(--strip-pad) + var(--mark-box) + 4px); height: 9px; border-inline: 1px solid var(--pencil); opacity: clamp(0, var(--t, 0) * 60, 1); }
+  .letter::after {
+    content: ""; position: absolute; inset: 4px; border: 1px solid var(--graphite);
+    transform: scale(.8); opacity: 0; transition: transform var(--d-ring) var(--ease-out), opacity var(--d-ring) var(--ease-out);
+  }
+  @media (hover: hover) { .letter:hover::after { transform: scale(1); opacity: 1; } }
+  .letter:focus-visible::after { transform: scale(1); opacity: 1; }
+  .letter:active { transform: scale(.94); transition-duration: var(--d-press); }
+  .bracket {
+    grid-row: 2; position: relative; padding-top: var(--sp-3); text-align: center;
+    font-size: var(--t-xxs); font-weight: 500; line-height: 1.2; color: var(--graphite); transition: color var(--d-ring) var(--ease-out);
+  }
+  .bracket.is-tint { color: var(--ink); }
+  .bracket::before { content: ""; position: absolute; top: 0; left: 3px; right: 3px; height: 6px; border: 1px solid var(--rule-ink); border-top: 0; transition: border-color var(--d-ring) var(--ease-out); }
+  .bracket.is-tint::before { border-color: var(--pencil); border-width: 0 2px 2px; }
+  .b-players { grid-column: 1 / 4; } .b-parents { grid-column: 5 / 7; } .b-patrons { grid-column: 8 / 10; }
+
+  /* ---------- Buttons: HV4 fill from the entry edge, MI1 press ---------- */
+  .btn {
+    --fill: var(--paper); --on-fill: var(--ink);
+    position: relative; isolation: isolate; overflow: hidden;
+    display: inline-grid; place-items: center; min-height: var(--box); padding: 0 var(--sp-5);
+    border: 1.5px solid var(--rule-rest); border-radius: 999px; background: none; color: var(--paper);
+    font-weight: 600; font-size: var(--t-xs); font-stretch: normal; line-height: 1; cursor: pointer;
+    transition: color var(--d-fill-out) var(--ease-out), border-color var(--d-fill-out), transform var(--d-release) var(--ease-out);
+  }
+  .btn::before {
+    content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--fill);
+    transform: scaleX(0); transform-origin: var(--from, left);
+    transition: transform var(--d-fill-out) var(--ease-out);
+  }
+  @media (hover: hover) {
+    .btn:hover { color: var(--on-fill); border-color: var(--fill); transition-duration: var(--d-fill-in); }
+    .btn:hover::before { transform: scaleX(1); transition-duration: var(--d-fill-in); }
+  }
+  .btn:focus-visible { color: var(--on-fill); border-color: var(--fill); }
+  .btn:focus-visible::before { transform: scaleX(1); transform-origin: left; }
+  .btn:active { transform: scale(.97); transition-duration: var(--d-press); }
+  .btn:active::before { transform: scaleX(1); transition: none; }
+  .btn--quiet { --fill: var(--wash); --on-fill: var(--paper); }
+  .btn--fill { --fill: var(--ink); --on-fill: var(--paper); background: var(--paper); border-color: var(--paper); color: var(--velvet); }
+  .btn--ink { --fill: var(--ink); --on-fill: var(--paper); border-color: var(--ink); color: var(--ink); }
+  .btn--ink:focus-visible { outline-color: var(--pencil); }
+  /* Previous and Next as the score's end boxes: square like the letters, ink on paper */
+  .btn--end { border-radius: 0; min-height: var(--mark-box); padding-inline: var(--sp-3); }
+  .btn--step { width: var(--box); padding: 0; font-size: var(--t-step); font-weight: 500; }
+  .btn[aria-disabled="true"] { opacity: .4; cursor: default; transition: opacity var(--d-tint); }
+  .btn[aria-disabled="true"]::before { display: none; }
+  .btn[aria-disabled="true"]:hover { color: var(--paper); border-color: var(--rule-rest); }
+
+  /* MI2: masked label swap, width reserved by stacking both labels */
+  .swap { display: inline-grid; overflow: hidden; padding-block: .2em; }
+  .swap > span { grid-area: 1 / 1; text-align: center; transition: transform var(--d-swap) var(--ease-out); }
+  .swap > span + span { transform: translateY(110%); }
+  [data-state="play"] .swap > span:first-child, [data-state="done"] .swap > span:first-child { transform: translateY(-110%); }
+  [data-state="play"] .swap > span + span, [data-state="done"] .swap > span + span { transform: none; }
+
+  /* CU1: names the neighbour a click will bring in */
+  .follower { position: fixed; top: 0; left: 0; z-index: 50; pointer-events: none; visibility: hidden; opacity: 0; }
+  .follower span {
+    display: block; white-space: nowrap; padding: var(--chip-pad); border-radius: 999px;
+    background: var(--ink); color: var(--paper); font-weight: 600; font-size: var(--t-xxs); line-height: 1.2;
+    translate: var(--fol-dx) var(--fol-dy);
+  }
+  .follower[data-side="left"] span { translate: calc(-100% - var(--fol-dx)) var(--fol-dy); }
+
+  /* ---------- Concert: lights up for the interval ---------- */
+  .concert { padding-block: var(--sp-9); }
+  .concert__grid { display: grid; gap: var(--sp-8) var(--sp-6); grid-template-areas: "info" "book" "patron"; }
+  .concert__info { grid-area: info; display: grid; gap: var(--sp-5); align-content: start; }
+  .concert__book { grid-area: book; display: grid; align-items: start; }
+  .concert__patron { grid-area: patron; display: grid; gap: var(--sp-4); align-content: start; max-width: 30rem; padding-top: var(--sp-5); border-top: 1px solid var(--rule-rest); }
+  @media (min-width: 992px) {
+    .concert__grid { grid-template-columns: repeat(12, 1fr); grid-template-areas: "info info info info info . book book book book book book" "patron patron patron patron patron . book book book book book book"; }
+  }
+  .h3 { font: 400 var(--t-l)/1.04 var(--font-score); max-width: 12ch; }
+  .h3:focus { outline: none; }
+  .h3:focus-visible { outline: 2px solid var(--paper); outline-offset: 6px; }
+  .concert p, .programme { max-width: var(--measure); }
+  .programme { list-style: none; padding: 0; display: grid; gap: var(--sp-2); }
+  .programme li { display: grid; }
+  .programme b { font-weight: 650; }
+  .programme i { font: italic 400 var(--t-note)/1.4 var(--font-score); color: var(--horsehair); }
+  .links { display: flex; flex-wrap: wrap; gap: var(--sp-3) var(--sp-6); }
+
+  /* Form */
+  .hold, .held { grid-area: 1 / 1; }
+  .hold { display: grid; gap: var(--sp-3); align-content: start; max-width: 32rem; }
+  .field { display: grid; gap: var(--sp-1); }
+  .field > label { font-weight: 600; font-size: var(--t-xs); }
+  .ctl { position: relative; display: block; }
+  .ctl::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--paper);
+    transform: scaleX(0); transform-origin: left; transition: transform var(--d-rule) var(--ease-out);
+  }
+  .ctl:focus-within::after, .field[data-invalid] .ctl::after { transform: scaleX(1); }
+  .ctl input {
+    display: block; width: 100%; min-height: var(--box); padding: var(--sp-2) 0; border: 0; border-bottom: 1px solid var(--rule-rest);
+    border-radius: 0; background: none; font-size: var(--t-s); caret-color: var(--paper); transition: border-color var(--d-tint);
+  }
+  .ctl input:focus { outline: none; }
+  @media (hover: hover) { .ctl:hover input { border-color: var(--horsehair); } }
+  .err {
+    min-height: 1.5em; font: italic 400 var(--t-err)/1.5 var(--font-score); color: var(--paper);
+    opacity: 0; transform: translateY(4px); transition: opacity var(--d-err) var(--ease-out), transform var(--d-err) var(--ease-out);
+  }
+  .err:not(:empty) { opacity: 1; transform: none; }
+  .stepper { display: flex; align-items: center; gap: var(--sp-3); }
+  /* Neither face has tabular figures, so the seats value sits in a fixed 3ch field */
+  .ctl--seats input {
+    width: 3ch; text-align: center; font-weight: 650; font-size: var(--t-m); -moz-appearance: textfield; appearance: textfield;
+  }
+  .ctl--seats input::-webkit-inner-spin-button, .ctl--seats input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  .seats-field { margin-bottom: var(--sp-3); }
+
+  .check { position: relative; display: flex; align-items: center; gap: var(--sp-3); min-height: var(--box); cursor: pointer; margin-bottom: var(--sp-5); }
+  .check input {
+    appearance: none; -webkit-appearance: none; flex: none; margin: 0; width: var(--check); height: var(--check);
+    border: 1.5px solid var(--horsehair); border-radius: 0; background: none; cursor: pointer; transition: border-color var(--d-tint);
+  }
+  @media (hover: hover) { .check:hover input { border-color: var(--paper); } }
+  .check svg { position: absolute; left: 0; top: 50%; width: var(--check); height: var(--check); translate: 0 -50%; pointer-events: none; }
+  .check path { fill: none; stroke: var(--paper); stroke-width: 2.4; stroke-linecap: square; stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset var(--d-tick) var(--ease-out); }
+  .check input:checked + svg path { stroke-dashoffset: 0; }
+  .hold .btn--fill { justify-self: start; padding-inline: var(--sp-6); }
+
+  /* The confirmation is a paper slip, so its focus is blue pencil */
+  .held {
+    display: grid; gap: var(--sp-4); align-content: start; max-width: 32rem;
+    padding: var(--sp-6); background: var(--paper); color: var(--ink); border-radius: var(--r-desk);
+  }
+  .held h4 { font: 400 var(--t-held)/1.15 var(--font-score); }
+  .held h4:focus { outline: none; }
+  .held h4:focus-visible { outline: 2px solid var(--pencil); outline-offset: 6px; }
+  .held .btn { justify-self: start; margin-top: var(--sp-3); }
+
+  /* ---------- Reduced motion: final states, instant changes ---------- */
+  @media (prefers-reduced-motion: reduce) {
+    html.js .org, html.js .lede, html.js .title, html.js #skip { opacity: 1; }
+    html.js #skip { --u: 1; }
+    html.js .houselights { opacity: 0; }
+    .btn, .btn::before, .letter, .letter::after, .swap > span, .ctl::after, .err, .check path, .desk, .desk::before, .desk__body, .desk__body::before, .hint, .link::before, .stage::after, .bracket, .bracket::before, .ctl input, .check input { transition: none !important; }
+    .btn:active, .letter:active { transform: none; }
+    .letter:hover::after, .letter:focus-visible::after { transform: none; }
+  }
+  @media (hover: none) { .link::before { transform: none; } }
+  /* Phones: the pinned stage centres its visible content, and once the lights are up there is no long empty floor */
+  /* and the lit desk sits low enough that its whole lamp glow is on screen */
+  @media (max-width: 767px) { html.js .stage-band { padding-block: 0 var(--sp-7); } html.js .arc { padding-bottom: var(--sp-6); } .controls { margin-top: var(--sp-4); } }
+  /* Short phones: the lit desk and the controls fit one screen */
+  @media (max-width: 600px) and (max-height: 760px) {
+    :root { --lamp-room: 32px; --t-quote: 1.1875rem; }
+    .desk__body { gap: var(--sp-3); padding: var(--sp-4) var(--sp-4) calc(var(--sp-4) + var(--ledge-h)); }
+    .desk__who { gap: var(--sp-3); }
+    .desk__facts { gap: var(--sp-2); }
+    .controls { margin-top: var(--sp-3); row-gap: var(--sp-3); }
+    html.js .stage-band { padding-block: var(--sp-5) var(--sp-7); }
+    html.js .arc { padding-bottom: var(--sp-5); }
+  }
+  /* Short laptop screens: less lamp room and top padding, so the pinned stage keeps the brackets in view */
+  @media (min-width: 601px) and (max-height: 800px) {
+    :root { --lamp-room: 48px; --t-quote: 1.4375rem; }
+    html.js .stage-band { padding-block: var(--sp-3) var(--sp-6); }
+    html.js .arc { padding-bottom: var(--sp-7); }
+    .desk__body { gap: var(--sp-4); }
+  }
+  @media (max-width: 600px) and (max-height: 680px) {
+    :root { --t-quote: 1.125rem; --lamp-room: 24px; }
+    html.js .stage-band { padding-block: var(--sp-5) var(--sp-6); }
+    .desk__body, .desk__who { gap: var(--sp-2); }
+    .controls { margin-top: var(--sp-2); gap: var(--sp-2); }
+    .score { row-gap: var(--sp-1); }
+  }
+</style>
+</head>
+<body>
+<div class="backdrop" aria-hidden="true"></div>
+<div class="houselights" aria-hidden="true"></div>
+<main>
+<section class="yo" aria-labelledby="yo-title">
+
+  <header class="band house">
+    <div class="wrap house__grid">
+      <p class="org">Fernlea Youth Orchestra</p>
+      <div class="house__main">
+        <h2 class="title" id="yo-title">Why they come back on Saturday mornings</h2>
+        <div class="house__aside">
+          <p class="lede">Every Saturday since 1987: 72 players aged 11&nbsp;to&nbsp;19, no audition fee, instruments lent free. Three players, two parents and two patrons on what that has meant.</p>
+          <a class="link" id="skip" href="#concert">Skip to the winter concert</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="band stage-band" id="voices">
+    <div class="stage" id="stage" tabindex="-1">
+      <p class="hint" id="stage-hint" hidden>Left and right arrows change the voice</p>
+      <ol class="arc" id="arc" aria-label="Seven voices">
+        <li class="desk" data-name="Mira Okafor" data-short="second violin">
+          <figure class="desk__body">
+            <span class="desk__mark" aria-hidden="true">A</span>
+            <blockquote class="desk__quote"><p>“I joined on a borrowed violin that buzzed on the G string. Now I lead the seconds, and in the Dvořák finale we count fourteen bars of rest, then the section comes in on my breath.”</p></blockquote>
+            <figcaption class="desk__who">
+              <span><span class="desk__name">Mira Okafor</span><span class="desk__role">16, second violin, fourth season</span></span>
+              <dl class="desk__facts">
+                <div><dt>Sits</dt><dd>Second violins, front desk</dd></div>
+                <div><dt>Her passage</dt><dd>Dvořák, Symphony No. 8, finale</dd></div>
+              </dl>
+            </figcaption>
+          </figure>
+          <span class="desk__stand" aria-hidden="true"></span>
+        </li>
+        <li class="desk" data-name="Tomas Reyes" data-short="percussion">
+          <figure class="desk__body">
+            <span class="desk__mark" aria-hidden="true">B</span>
+            <blockquote class="desk__quote"><p>“I thought percussion meant drums. In my first rehearsal I had one triangle note, and Ms Adeyemi stopped seventy people until I put it exactly on the beat. I have never practised anything that hard.”</p></blockquote>
+            <figcaption class="desk__who">
+              <span><span class="desk__name">Tomas Reyes</span><span class="desk__role">13, percussion, first season</span></span>
+              <dl class="desk__facts">
+                <div><dt>Sits</dt><dd>Back row, triangle and cymbals</dd></div>
+                <div><dt>His passage</dt><dd>Brahms, Symphony No. 4, third movement</dd></div>
+              </dl>
+            </figcaption>
+          </figure>
+          <span class="desk__stand" aria-hidden="true"></span>
+        </li>
+        <li class="desk" data-name="Hana Lindqvist" data-short="principal horn">
+          <figure class="desk__body">
+            <span class="desk__mark" aria-hidden="true">C</span>
+            <blockquote class="desk__quote"><p>“A horn cracks in front of everyone. Here it cracks in front of seventy friends who have all cracked too. Next year I audition for conservatoire with the solo from Tchaikovsky 5.”</p></blockquote>
+            <figcaption class="desk__who">
+              <span><span class="desk__name">Hana Lindqvist</span><span class="desk__role">18, principal horn, seventh season</span></span>
+              <dl class="desk__facts">
+                <div><dt>Sits</dt><dd>Horns, first chair</dd></div>
+                <div><dt>Her passage</dt><dd>Tchaikovsky, Symphony No. 5, second movement solo</dd></div>
+              </dl>
+            </figcaption>
+          </figure>
+          <span class="desk__stand" aria-hidden="true"></span>
+        </li>
+        <li class="desk" data-name="Grace Mensah" data-short="parent of a cellist">
+          <figure class="desk__body">
+            <span class="desk__mark" aria-hidden="true">D</span>
+            <blockquote class="desk__quote"><p>“Saturday used to be the day Kofi stayed in his room. Now he leaves at 8:40 with a cello on his back, and the car home is full of other people’s children arguing about bowings.”</p></blockquote>
+            <figcaption class="desk__who">
+              <span><span class="desk__name">Grace Mensah</span><span class="desk__role">Parent of a cellist</span></span>
+              <dl class="desk__facts">
+                <div><dt>Sits</dt><dd>Row F, seat 12</dd></div>
+              </dl>
+            </figcaption>
+          </figure>
+          <span class="desk__stand" aria-hidden="true"></span>
+        </li>
+        <li class="desk" data-name="David Hartley" data-short="parent of two violinists">
+          <figure class="desk__body">
+            <span class="desk__mark" aria-hidden="true">E</span>
+            <blockquote class="desk__quote"><p>“We could not have bought two full-size violins. The orchestra lent them, and the loan library re-haired both bows before the spring concert without being asked, then sent them home in new cases.”</p></blockquote>
+            <figcaption class="desk__who">
+              <span><span class="desk__name">David Hartley</span><span class="desk__role">Parent of two violinists</span></span>
+              <dl class="desk__facts">
+                <div><dt>Sits</dt><dd>Row C, on the aisle</dd></div>
+              </dl>
+            </figcaption>
+          </figure>
+          <span class="desk__stand" aria-hidden="true"></span>
+        </li>
+        <li class="desk" data-name="Ruth Abernethy" data-short="patron">
+          <figure class="desk__body">
+            <span class="desk__mark" aria-hidden="true">F</span>
+            <blockquote class="desk__quote"><p>“I have never met the players who sat in my chair, but I have heard every one of them at the winter concert, and I can always tell which one it is.”</p></blockquote>
+            <figcaption class="desk__who">
+              <span><span class="desk__name">Ruth Abernethy</span><span class="desk__role">Patron since 2014</span></span>
+              <dl class="desk__facts">
+                <div><dt>Sponsors</dt><dd>The third chair of the cellos</dd></div>
+              </dl>
+            </figcaption>
+          </figure>
+          <span class="desk__stand" aria-hidden="true"></span>
+        </li>
+        <li class="desk" data-name="Sam Patel" data-short="patron">
+          <figure class="desk__body">
+            <span class="desk__mark" aria-hidden="true">G</span>
+            <blockquote class="desk__quote"><p>“We pay for the minibus. Last March it came back from the regional festival with a trophy on the dashboard and thirty-one teenagers singing the Shostakovich, badly, all the way up the M6.”</p></blockquote>
+            <figcaption class="desk__who">
+              <span><span class="desk__name">Sam Patel</span><span class="desk__role">Patel and Daughters Pharmacy, patron since 2019</span></span>
+              <dl class="desk__facts">
+                <div><dt>Pays for</dt><dd>The minibus to the regional festival</dd></div>
+              </dl>
+            </figcaption>
+          </figure>
+          <span class="desk__stand" aria-hidden="true"></span>
+        </li>
+      </ol>
+
+      <div class="controls" hidden>
+        <div class="score">
+        <button type="button" class="btn btn--ink btn--end" id="prev">Previous</button>
+        <div class="letters" role="group" aria-label="Voices">
+          <button type="button" class="letter" aria-label="Voice A: Mira Okafor, player">A</button>
+          <button type="button" class="letter" aria-label="Voice B: Tomas Reyes, player">B</button>
+          <button type="button" class="letter" aria-label="Voice C: Hana Lindqvist, player">C</button>
+          <button type="button" class="letter" aria-label="Voice D: Grace Mensah, parent">D</button>
+          <button type="button" class="letter" aria-label="Voice E: David Hartley, parent">E</button>
+          <button type="button" class="letter" aria-label="Voice F: Ruth Abernethy, patron">F</button>
+          <button type="button" class="letter" aria-label="Voice G: Sam Patel, patron">G</button>
+          <span class="bracket b-players" aria-hidden="true">Players</span>
+          <span class="bracket b-parents" aria-hidden="true">Parents</span>
+          <span class="bracket b-patrons" aria-hidden="true">Patrons</span>
+        </div>
+        <button type="button" class="btn btn--ink btn--end" id="next">Next</button>
+        </div>
+        <button type="button" class="btn btn--quiet" id="auto" data-state="pause" aria-label="Pause the voices"><span class="swap" aria-hidden="true"><span>Pause</span><span>Play</span></span></button>
+      </div>
+      <p class="vh" id="now" aria-live="polite"></p>
+    </div>
+  </div>
+
+  <div class="band concert" id="concert">
+    <div class="wrap concert__grid">
+      <div class="concert__info">
+        <h3 class="h3" id="concert-title" tabindex="-1">Hear them on 12&nbsp;December</h3>
+        <p>Saturday 12 December 2026, 7 pm, Fernlea School hall.</p>
+        <ul class="programme" aria-label="Programme">
+          <li><b>Shostakovich</b><i>Festive Overture</i></li>
+          <li><b>Tchaikovsky</b><i>Symphony No. 5</i></li>
+        </ul>
+        <p>Seats are free; we ask for a donation at the door.</p>
+      </div>
+
+      <div class="concert__book">
+        <form class="hold" id="hold" novalidate aria-label="Hold seats for 12 December">
+          <div class="field">
+            <label for="f-name">Your name</label>
+            <span class="ctl"><input id="f-name" name="name" type="text" autocomplete="name" required aria-describedby="name-err"></span>
+            <p class="err" id="name-err" aria-live="polite"></p>
+          </div>
+          <div class="field">
+            <label for="f-email">Email</label>
+            <span class="ctl"><input id="f-email" name="email" type="email" autocomplete="email" required aria-describedby="email-err"></span>
+            <p class="err" id="email-err" aria-live="polite"></p>
+          </div>
+          <div class="field seats-field">
+            <label for="f-seats">Seats</label>
+            <div class="stepper">
+              <button type="button" class="btn btn--quiet btn--step" id="less" aria-label="Fewer seats">−</button>
+              <span class="ctl ctl--seats"><input id="f-seats" name="seats" type="number" min="1" max="6" value="2" inputmode="numeric"></span>
+              <button type="button" class="btn btn--quiet btn--step" id="more" aria-label="More seats">+</button>
+            </div>
+            <p class="vh" id="seats-now" aria-live="polite"></p>
+          </div>
+          <label class="check">
+            <input type="checkbox" name="sponsor">
+            <svg viewBox="0 0 22 22" aria-hidden="true"><path pathLength="1" d="M5 11.5l4 4 8-9"/></svg>
+            <span>Tell me about sponsoring a chair</span>
+          </label>
+          <button type="submit" class="btn btn--fill" id="submit"><span class="swap"><span>Hold my seats</span><span aria-hidden="true">Seats held</span></span></button>
+        </form>
+
+        <div class="held" id="held" hidden>
+          <h4 id="held-title" tabindex="-1">2 seats held for Saturday 12 December, 7 pm</h4>
+          <p id="held-text">Ask at the door under your name.</p>
+          <p id="held-sponsor" hidden>We will also send you the chair sponsorship letter.</p>
+          <button type="button" class="btn btn--ink" id="change">Change the booking</button>
+        </div>
+      </div>
+
+      <div class="concert__patron">
+        <p>Sponsor a chair: £180 pays a year of lessons and a lent instrument for one player.</p>
+        <p class="links">
+          <a class="link" href="mailto:patrons@fernlea-youth-orchestra.example" target="_blank" rel="noopener">Write to the patrons’ desk</a>
+          <a class="link" id="back" href="#voices">Back to the voices</a>
+        </p>
+      </div>
+    </div>
+  </div>
+
+</section>
+</main>
+<div class="follower" id="follower" aria-hidden="true"><span></span></div>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/SplitText.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/Observer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  'use strict';
+  const root = document.documentElement;
+  const libs = !!(window.gsap && window.ScrollTrigger && window.SplitText && window.Observer && window.Lenis);
+  if (libs) root.classList.add('js');   // hidden start states and the arc exist only when the motion stack loaded
+
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  let lenis = null, fx = {};   // set by the motion branch; absent means native scroll and instant changes
+
+  // ---- The arc, as pure functions (checked by runSelfTest)
+  const N = 7, LETTERS = 'ABCDEFG';   // one per desk in the markup
+  const wrap = v => v - N * Math.floor((v + N / 2) / N);   // same as gsap.utils.wrap(-3.5, 3.5, v)
+  const mod = v => ((v % N) + N) % N;
+  const timerFor = words => Math.max(9, words * .35);       // seconds a voice holds the stage
+  // A desk at signed distance d from the centre, on a circle of radius R around a pivot below the stage.
+  // Below spread 1 the desks sit in a full-size stack, each lifted 16px and turned 3° to alternate sides,
+  // so the hood tips fan out above the top desk.
+  function place(d, spread, R, step, k = 1) {
+    const a = Math.abs(d), th = d * step * spread;
+    const face = Math.min(1, Math.max(0, (1.75 - a) * 4));   // past 1.5 places only the stand silhouette and hood remain
+    const reach = 1.7 + (1 - spread);                         // the stack shows two places each side; the open arc only one
+    return {
+      x: R * Math.sin(th),
+      y: R * (1 - Math.cos(th)) + (1 - spread) * -a * 16,
+      rotation: th * 180 / Math.PI * k + (1 - spread) * d * 3,
+      scale: 1 - .22 * Math.min(a, 3) * spread,
+      opacity: Math.min(1, Math.max(0, (reach - a) * 2)),      // open arc: full at |d| 1, gone by 1.7, well above the stage floor
+      zIndex: Math.round(20 - a * 4),
+      content: (1 - .86 * Math.min(a, 1)) * face,
+      ledge: face,
+    };
+  }
+
+  function runSelfTest(extra = []) {
+    const ok = (c, m) => { if (!c) throw new Error('SELFTEST FAIL: ' + m); };
+    ok(wrap(6 - 0) === -1 && wrap(0 - 6) === 1 && wrap(3) === 3 && wrap(-3) === -3, 'wrap distances');
+    const p = place(0, 1, 1500, .24);
+    ok(p.x === 0 && p.rotation === 0 && p.y === 0 && p.scale === 1 && p.content === 1, 'centre desk is upright at the pivot top');
+    ok(place(1, 1, 1500, .24).x > 0 && place(-1, 1, 1500, .24).rotation < 0, 'neighbours fall either side');
+    ok(place(1, 1, 1500, .24).content < .3 && place(1, 1, 1500, .24).scale < .9, 'neighbours shrink and fade');
+    ok(place(1, 1, 1500, .24).opacity === 1 && place(1.7, 1, 1500, .24).opacity === 0 && place(2, 1, 1500, .24).opacity === 0, 'second ring is gone in the open arc');
+    ok(place(2, 0, 1500, .24).opacity === 1 && place(2, 0, 1500, .24).y === -32 && place(2, 0, 1500, .24).scale === 1, 'the stack shows two hood tips each side');
+    ok(place(2, 1, 1500, .24).content === 0 && place(2, 1, 1500, .24).ledge === 0 && place(1, 1, 1500, .24).ledge === 1, 'two places out shows no words and no ledge');
+    ok(place(1, 0, 1500, .24).y < 0 && place(1, 0, 1500, .24).x === 0, 'stacked desks peek above the top one');
+    ok(mod(Math.round(6 + 1)) === 0, 'Next from G reaches A');
+    ok(timerFor(10) === 9 && Math.abs(timerFor(40) - 14) < 1e-9, 'timer floor of 9s, .35s a word');
+    const words = [...document.querySelectorAll('.desk__quote')].map(q => q.textContent.trim().split(/\s+/).length);
+    const ratio = Math.max(...words) / Math.min(...words);
+    if (ratio > 1.25) console.warn(`SELFTEST WARN: quote lengths ${Math.min(...words)} to ${Math.max(...words)} words (ratio ${ratio.toFixed(2)} > 1.25) leave a long pause between the shorter quotes and their names`);
+    extra.forEach(([c, m]) => ok(c, m));
+    console.log('SELFTEST PASS');
+  }
+  let tested = location.hash !== '#selftest';   // runs once: with the motion stack it waits for the scroll triggers
+
+  // ---- HV4: fills grow from, and leave toward, the edge the pointer crossed
+  const edge = e => {
+    const b = e.target.closest?.('.btn');
+    if (!b || b.contains(e.relatedTarget)) return;
+    const r = b.getBoundingClientRect();
+    b.style.setProperty('--from', e.clientX < r.left + r.width / 2 ? 'left' : 'right');
+  };
+  document.addEventListener('pointerover', edge);
+  document.addEventListener('pointerout', edge);
+
+  // ---- In-page links: scroll, then move focus to the destination
+  const goTo = (target, focusEl) => {
+    const land = () => focusEl.focus({ preventScroll: true });
+    if (lenis) lenis.scrollTo(target, { duration: 1.2, onComplete: land });
+    else { target.scrollIntoView({ block: 'start' }); land(); }
+  };
+  $('#skip').addEventListener('click', e => { e.preventDefault(); goTo($('#concert'), $('#concert-title')); });
+  // With the pinned stage, 'the voices' means the point where the arc is fully open
+  $('#back').addEventListener('click', e => { e.preventDefault(); goTo(fx.stageY ? fx.stageY() : $('#voices'), $('#stage')); });
+
+  // ---- Hold seats (works without the libraries)
+  const form = $('#hold'), F = form.elements, held = $('#held'), submit = $('#submit');
+  const less = $('#less'), more = $('#more');
+  const ERR = { name: 'Add your name so we can find your seats at the door.', email: 'Add an email like name@example.com.' };
+  const VALID = { name: v => v.trim().length > 0, email: v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()) };
+  const check = k => {
+    const ok = VALID[k](F[k].value);
+    $('#' + k + '-err').textContent = ok ? '' : ERR[k];
+    ok ? F[k].removeAttribute('aria-invalid') : F[k].setAttribute('aria-invalid', 'true');
+    F[k].closest('.field').toggleAttribute('data-invalid', !ok);
+    return ok;
+  };
+  const seats = (n = +F.seats.value) => {
+    n = Math.round(n);
+    n = Math.min(6, Math.max(1, Number.isNaN(n) ? 2 : n));
+    F.seats.value = n;
+    less.setAttribute('aria-disabled', String(n <= 1));
+    more.setAttribute('aria-disabled', String(n >= 6));
+    return n;
+  };
+  seats();
+  const say = n => { $('#seats-now').textContent = `${n} ${n === 1 ? 'seat' : 'seats'}`; };
+  less.addEventListener('click', () => say(seats(+F.seats.value - 1)));
+  more.addEventListener('click', () => say(seats(+F.seats.value + 1)));
+  F.seats.addEventListener('change', () => seats());
+  ['name', 'email'].forEach(k => F[k].addEventListener('input', () => form.dataset.tried && check(k)));
+
+  let busy = false;
+  const swapLabel = (btn, on) => {
+    btn.dataset.state = on ? 'done' : '';
+    const [a, b] = btn.querySelectorAll('.swap > span');
+    a.toggleAttribute('aria-hidden', on); b.toggleAttribute('aria-hidden', !on);
+  };
+  function showHeld() {
+    const n = seats(), name = F.name.value.trim(), email = F.email.value.trim();
+    $('#held-title').textContent = `${n} ${n === 1 ? 'seat' : 'seats'} held for Saturday 12 December, 7 pm`;
+    $('#held-text').textContent = `Ask at the door under the name ${name}. We will email the programme to ${email} the week before.`;
+    $('#held-sponsor').hidden = !F.sponsor.checked;
+    form.hidden = true;
+    held.hidden = false;
+    $('#held-title').focus();
+  }
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    if (busy) return;
+    form.dataset.tried = '1';
+    const bad = ['name', 'email'].filter(k => !check(k));
+    if (bad.length) { F[bad[0]].focus(); return; }
+    swapLabel(submit, true);
+    if (fx.held) { busy = true; fx.held(showHeld, () => { busy = false; }); } else showHeld();
+  });
+  $('#change').addEventListener('click', () => {
+    if (busy) return;
+    const back = () => { held.hidden = true; form.hidden = false; swapLabel(submit, false); F.name.focus(); };
+    if (fx.back) { busy = true; fx.back(back, () => { busy = false; }); } else back();
+  });
+
+  if (!libs) { if (!tested) runSelfTest(); return; }   // CDN blocked: the voices stay a readable list and the form still works
+
+  // ================= Motion =================
+  gsap.registerPlugin(ScrollTrigger, SplitText, Observer);
+  const stage = $('#stage'), arc = $('#arc'), desks = $$('.desk', arc);
+  const letters = $$('.letter'), brackets = $$('.bracket');
+  const prev = $('#prev'), next = $('#next'), toggle = $('#auto'), live = $('#now');
+  const fol = $('#follower'), folText = $('span', fol), backdrop = $('.backdrop'), score = $('.score');
+  const parts = desks.map(d => [$('.desk__quote', d), $('.desk__who', d)]);
+  const V = desks.map(d => ({ name: d.dataset.name, short: d.dataset.short, words: $('blockquote', d).textContent.trim().split(/\s+/).length }));
+  // State that survives a matchMedia rebuild
+  const S = { target: 0, index: 0, stopped: false, done: false, auto: 0, hover: false, dark: false, offstage: false };
+  const pos = { v: 0 }, fan = { v: 0 }, K = desks.map(() => ({ v: 1 }));
+  const fontsIn = Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 1200))]);
+  let played = false;
+
+  Object.entries({ role: 'region', 'aria-roledescription': 'carousel', 'aria-label': 'Seven voices', tabindex: '0', 'aria-describedby': 'stage-hint' })
+    .forEach(([k, v]) => stage.setAttribute(k, v));
+  arc.removeAttribute('aria-label');
+  $('.controls').hidden = false;
+  $('#stage-hint').hidden = false;
+
+  function mark(i) {   // which desk is on, and everything that names it
+    S.index = i;
+    desks.forEach((d, k) => {
+      const dd = wrap(k - i);
+      d.classList.toggle('is-active', dd === 0);
+      d.classList.toggle('is-prev', dd === -1);
+      d.classList.toggle('is-next', dd === 1);
+      d.setAttribute('aria-hidden', String(dd !== 0));
+    });
+    letters.forEach((b, k) => k === i ? b.setAttribute('aria-current', 'true') : b.removeAttribute('aria-current'));
+    prev.setAttribute('aria-label', 'Previous voice: ' + V[mod(i - 1)].name);
+    next.setAttribute('aria-label', 'Next voice: ' + V[mod(i + 1)].name);
+  }
+  const syncToggle = () => {
+    const off = S.stopped || S.done;
+    toggle.dataset.state = off ? 'play' : 'pause';
+    toggle.setAttribute('aria-label', off ? 'Play the voices' : 'Pause the voices');
+  };
+
+  gsap.matchMedia().add({
+    motion: '(prefers-reduced-motion: no-preference)',
+    reduce: '(prefers-reduced-motion: reduce)',
+    fine: '(hover: hover) and (pointer: fine)',
+  }, ctx => {
+    const { motion, fine } = ctx.conditions;
+    S.dark = false;   // the triggers below set it again (onEnter fires at creation when the stage is already passed)
+    const ac = new AbortController(), sig = { signal: ac.signal };
+    let R, STEP, PAD, tween, nudged = false, timer, pinST, lockUntil = 0, hovered = null, folOn = false, tick = null;
+
+    // Lenis on GSAP's clock; reduced motion keeps native scroll
+    if (motion) {
+      lenis = new Lenis({ lerp: .1, smoothWheel: true, autoRaf: false, anchors: false });   // links run through goTo so focus follows
+      lenis.on('scroll', ScrollTrigger.update);
+      tick = time => lenis.raf(time * 1000);
+      gsap.ticker.add(tick);
+      gsap.ticker.lagSmoothing(0);
+    }
+
+    // ---- The conductor's arc: transforms only, from R and step cached on resize
+    const measure = () => {
+      const cs = getComputedStyle(root);
+      R = parseFloat(cs.getPropertyValue('--arc-r'));
+      STEP = parseFloat(cs.getPropertyValue('--arc-step')) * Math.PI / 180;
+      PAD = parseFloat(cs.getPropertyValue('--strip-pad'));
+      rest();
+    };
+    // TR2: the rest bar runs from the active box's left edge to the strip's inner right edge
+    const rest = () => {
+      const x = letters[S.index].offsetLeft;
+      score.style.setProperty('--run-x', x + 'px');
+      score.style.setProperty('--run-w', score.clientWidth - PAD - x + 'px');
+    };
+    const layout = () => {
+      for (let i = 0; i < N; i++) {
+        const d = wrap(i - pos.v), a = Math.abs(d), h = (1 - K[i].v) / .45;   // h: how far a hovered neighbour has leaned in (0 to 1)
+        let { content, ledge, ...t } = place(d, fan.v, R, STEP, K[i].v);
+        let text = content;
+        if (R < 1000) {   // phones: neighbours show their stand and rehearsal letter, not their words
+          text = Math.max(0, 1 - 1.4 * a);   // mid-swing both desks keep a trace of their words
+          content = Math.max(.4 * ledge, content);   // its letter stays at 40%, so each wedge reads as a lettered stand
+        }
+        text += (.75 - text) * h;
+        content += (.75 - content) * h;
+        parts[i][0].style.opacity = parts[i][1].style.opacity = text;
+        desks[i].style.setProperty('--m', content);
+        desks[i].style.setProperty('--lg', ledge);
+        desks[i].style.setProperty('--hood', Math.max(fan.v, 1 - a));   // stacked desks show one hood; the rest arrive as the arc opens
+        gsap.set(desks[i], t);
+      }
+    };
+    measure();
+    window.addEventListener('resize', () => { measure(); layout(); }, sig);
+
+    // A lamp lights only once the house is dark, the arc is fully open and the desk has landed.
+    // The lit lamp is also the timer's cue: the count runs only while a lamp is on.
+    const lit = () => desks[S.index].classList.contains('is-lit');
+    const lampsOff = () => { desks.forEach(d => d.classList.remove('is-lit')); run(); };
+    const lampOn = () => {
+      if (lit() || !S.dark || (motion && !(fan.v >= .999 && Math.abs(pos.v - S.target) < .02))) return;
+      desks[S.index].classList.add('is-lit');
+      run();
+    };
+
+    // CU1 follower and the neighbour's lean back toward upright (fine pointers)
+    const folX = motion ? gsap.quickTo(fol, 'x', { duration: .35, ease: 'expo.out' }) : x => gsap.set(fol, { x });
+    const folY = motion ? gsap.quickTo(fol, 'y', { duration: .35, ease: 'expo.out' }) : y => gsap.set(fol, { y });
+    const hideFol = () => {
+      if (!folOn) return;
+      folOn = false;
+      motion ? gsap.to(fol, { autoAlpha: 0, scale: .8, duration: .2, ease: 'expo.out', overwrite: 'auto' }) : gsap.set(fol, { autoAlpha: 0 });
+    };
+    const lean = (desk, on) => {   // pre-glow its paper; with motion, also turn 45% back toward upright and lift its text
+      desk.classList.toggle('is-pre', on);
+      if (motion) gsap.to(K[desks.indexOf(desk)], { v: on ? .55 : 1, duration: .4, ease: 'expo.out', onUpdate: layout, overwrite: 'auto' });
+    };
+    const unhover = () => { if (hovered) lean(hovered, false); hovered = null; hideFol(); };
+
+    // ---- TR2: the active letter's pencil rule counts the voice out, then the next one comes in
+    function run() { timer && (lit() && !S.hover && !S.stopped && !S.done && !S.offstage ? timer.play() : timer.pause()); }
+    const clearRules = () => {   // the bar runs out forward: it wipes away toward the next entry, never rewinds
+      score.style.setProperty('--o', 'right');
+      gsap.to(score, { '--t': 0, duration: motion ? .3 : 0, ease: 'expo.out', overwrite: true });
+    };
+    const stop = () => {   // a stopped timer clears its rule rather than leaving a stale stub
+      S.stopped = true; syncToggle();
+      timer?.kill(); timer = null;
+      clearRules();
+    };
+    function buildTimer() {
+      timer?.kill(); timer = null;
+      clearRules();
+      if (!motion) return;
+      rest();
+      score.style.setProperty('--o', 'left');
+      timer = gsap.fromTo(score, { '--t': 0 }, {
+        '--t': 1, duration: timerFor(V[S.index].words), ease: 'none', paused: true, overwrite: true,
+        onComplete: () => { if (++S.auto >= N) S.done = true; syncToggle(); step(1, 'auto'); },
+      });
+      run();
+    }
+
+    // ---- CD2: one input, one voice. A new input retargets the swing at once.
+    function go(target, how) {
+      S.target = target;
+      nudged = false;
+      mark(mod(Math.round(target)));
+      if (how !== 'auto') live.textContent = `Voice ${LETTERS[S.index]} of ${N}: ${V[S.index].name}, ${V[S.index].short}`;
+      lampsOff();
+      unhover();
+      brackets.forEach(b => b.classList.remove('is-tint'));
+      if (motion) {
+        const swinging = tween?.isActive();
+        tween?.kill();
+        const upd = () => { layout(); lampOn(); };   // the lamp warms as the desk lands (lampOn checks the distance)
+        if (swinging) {   // retarget mid-swing: no second upbeat
+          tween = gsap.to(pos, { v: target, duration: .6, ease: 'expo.out', onUpdate: upd });
+        } else {          // the conductor's upbeat: a small counter-swing, then the swing through
+          const dir = Math.sign(target - pos.v) || 1;
+          tween = gsap.timeline({ onUpdate: upd })
+            .to(pos, { v: pos.v - .08 * dir, duration: .16, ease: 'expo.out' })
+            .to(pos, { v: target, duration: .9, ease: 'power3.out' });   // the one non-expo ease: expo.out lands too early to feel a heavy stand travel
+        }
+      } else { pos.v = target; layout(); lampOn(); }
+      buildTimer();
+    }
+    const step = (dir, how) => go(S.target + dir, how);
+    const jump = i => go(S.target + wrap(i - S.target), 'jump');
+    const gated = dir => {   // wheel and drag: one step per gesture
+      const now = performance.now();
+      if (now < lockUntil) return;
+      lockUntil = now + 600;
+      step(dir, 'gesture');
+    };
+
+    mark(S.index);
+    pos.v = S.target;
+    fan.v = motion ? 0 : 1;
+    layout();
+    buildTimer();
+    syncToggle();
+    toggle.hidden = !motion;
+
+    prev.addEventListener('click', () => step(-1), sig);
+    next.addEventListener('click', () => step(1), sig);
+    letters.forEach((b, i) => {
+      b.addEventListener('click', () => jump(i), sig);
+      // HV7-style link: a letter under the pointer or focus pre-glows its desk when that desk is visible,
+      // otherwise it darkens the letter's group bracket
+      const br = brackets[i < 3 ? 0 : i < 5 ? 1 : 2];
+      ['pointerenter', 'focus'].forEach(t => b.addEventListener(t, () => {
+        const d = wrap(i - S.index);
+        if (Math.abs(d) <= 1) return desks[i].classList.add('is-pre');
+        br.classList.add('is-tint');
+        // the orchestra looks toward the letter: the arc leans 0.12 of a place that way
+        if (!motion || tween?.isActive()) return;
+        nudged = true;
+        tween = gsap.to(pos, { v: S.target + .12 * Math.sign(d), duration: .35, ease: 'expo.out', onUpdate: layout });
+      }, sig));
+      ['pointerleave', 'blur'].forEach(t => b.addEventListener(t, () => {
+        br.classList.remove('is-tint');
+        if (desks[i] !== hovered) desks[i].classList.remove('is-pre');
+        if (!nudged) return;
+        nudged = false;
+        tween = gsap.to(pos, { v: S.target, duration: .35, ease: 'expo.out', onUpdate: layout });
+      }, sig));
+    });
+    toggle.addEventListener('click', () => {
+      if (!(S.stopped || S.done)) return stop();
+      Object.assign(S, { stopped: false, done: false, auto: 0 });
+      syncToggle();
+      buildTimer();
+    }, sig);
+
+    stage.addEventListener('keydown', e => {
+      const k = e.key;
+      if (k === 'ArrowRight') step(1, 'key');
+      else if (k === 'ArrowLeft') step(-1, 'key');
+      else if (k === 'Home') jump(0);
+      else if (k === 'End') jump(N - 1);
+      else return;
+      e.preventDefault();
+    }, sig);
+    // Keyboard focus arriving in the stage stops auto-advance (WCAG 2.2.2); Play restarts it.
+    // Pointer and touch focus do not: their steps already restart the count on the new voice.
+    stage.addEventListener('focusin', e => {
+      if (!e.target.matches(':focus-visible')) return;
+      // A keyboard user tabbing in early lands where the lights are down and the arc is open
+      // and one tabbing back from the form lands on the open arc rather than under it
+      const open = pinST && pinST.start + (pinST.end - pinST.start) * .9;
+      if (open && lenis && (scrollY < open || scrollY > pinST.end)) lenis.scrollTo(open, { immediate: true, force: true });
+      if (stage.contains(e.relatedTarget) || e.target === toggle || S.stopped) return;
+      stop();
+    }, sig);
+    arc.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') { S.hover = true; run(); } }, sig);
+    arc.addEventListener('pointerleave', () => { S.hover = false; run(); unhover(); }, sig);
+
+    // Horizontal trackpad steps; vertical wheel always scrolls the page
+    stage.addEventListener('wheel', e => {
+      if (Math.abs(e.deltaX) <= Math.abs(e.deltaY) || Math.abs(e.deltaX) <= 12) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const now = performance.now();
+      if (now < lockUntil) { lockUntil = Math.max(lockUntil, now + 200); return; }   // inertia keeps the lock closed
+      gated(Math.sign(e.deltaX));
+    }, { passive: false, signal: ac.signal });
+
+    Observer.create({ target: arc, type: 'touch,pointer', dragMinimum: 10, tolerance: 40, lockAxis: true,
+      onDragStart: () => { arc.classList.add('is-drag'); getSelection()?.removeAllRanges(); },
+      onDragEnd: () => arc.classList.remove('is-drag'),
+      onLeft: () => gated(1), onRight: () => gated(-1) });
+
+    // A click or tap on a neighbour, or anywhere on the stage beside the centre desk, steps toward that side
+    arc.addEventListener('click', e => {
+      if (performance.now() < lockUntil) return;
+      const d = e.target.closest('.is-prev, .is-next');
+      if (d) return step(d.classList.contains('is-next') ? 1 : -1, 'pointer');
+      const r = desks[S.index].getBoundingClientRect();
+      if (e.clientX > r.right) step(1, 'pointer');
+      else if (e.clientX < r.left) step(-1, 'pointer');
+    }, sig);
+
+    if (fine) {
+      arc.addEventListener('pointermove', e => {
+        const d = e.target.closest('.is-prev, .is-next');
+        if (d !== hovered) {
+          if (hovered) lean(hovered, false);
+          hovered = d;
+          if (d) lean(d, true);
+        }
+        if (!d) return hideFol();
+        const isNext = d.classList.contains('is-next');
+        folText.textContent = (isNext ? 'Next: ' : 'Previous: ') + d.dataset.name;
+        fol.dataset.side = isNext ? 'right' : 'left';   // on the outer side, never over the voice being read
+        // kept on screen: the anchor stops a chip's width (plus offset and gutter) from the edge
+        const room = folText.offsetWidth + 18 + 16;
+        const x = isNext ? Math.min(e.clientX, innerWidth - room) : Math.max(e.clientX, room);
+        if (!folOn) {
+          folOn = true;
+          gsap.set(fol, { x, y: e.clientY });
+          motion ? gsap.fromTo(fol, { autoAlpha: 0, scale: .8 }, { autoAlpha: 1, scale: 1, duration: .25, ease: 'expo.out', overwrite: 'auto' })
+                 : gsap.set(fol, { autoAlpha: 1 });
+        }
+        folX(x); folY(e.clientY);
+      }, sig);
+      document.addEventListener('mouseout', e => { if (!e.relatedTarget) unhover(); }, sig);
+    }
+
+    // ---- Scroll: the stage holds (pinned), the lights go down, the stack opens in the dark,
+    // and the first lamp warms on as the arc reaches full spread. Lights come up as the concert enters.
+    const light = dark => {
+      S.dark = dark;
+      dark ? lampOn() : lampsOff();
+      const v = dark ? 1 : 0, dur = motion ? .7 : 0;   // SC9 as one opacity layer; --dark shows the stage-front lip
+      gsap.to(backdrop, { opacity: v, duration: dur, ease: 'expo.inOut', overwrite: 'auto' });
+      gsap.to(root, { '--dark': v, duration: dur, ease: 'expo.inOut', overwrite: 'auto' });
+    };
+    if (motion) {
+      const tl = gsap.timeline({ scrollTrigger: { trigger: '#voices', start: () => innerWidth < 768 ? 'center 53%' : 'center center', end: '+=55%', pin: true, scrub: true, anticipatePin: 1,
+        onEnter: () => light(true), onLeaveBack: () => light(false) } })
+        .fromTo(fan, { v: 0 }, { v: 1, duration: .7, ease: 'none', onUpdate: () => { layout(); fan.v >= .999 ? lampOn() : lampsOff(); } }, .15)
+        .to({}, { duration: .15 });
+      pinST = tl.scrollTrigger;
+    } else {
+      ScrollTrigger.create({ trigger: '#voices', start: 'top 60%', onEnter: () => light(true), onLeaveBack: () => light(false) });
+    }
+    // Created after the pin, so its start includes the pin spacing
+    const upST = ScrollTrigger.create({ trigger: '#concert', start: 'top 75%', onEnter: () => light(false), onLeaveBack: () => light(true) });
+    // The timer sleeps whenever the stage is mostly off screen
+    ScrollTrigger.create({ trigger: '#voices', start: 'top bottom', end: 'bottom 30%', onToggle: self => { S.offstage = !self.isActive; run(); } });
+    if (!tested) {
+      tested = true;
+      ScrollTrigger.refresh();
+      runSelfTest(pinST ? [[upST.start > pinST.end, `lights up (${Math.round(upST.start)}) after the pin ends (${Math.round(pinST.end)})`]] : []);
+    }
+
+    // ---- Page load: the house lights settle to half while the words come up in order
+    if (motion && !played) {
+      gsap.timeline()
+        .fromTo('.houselights', { opacity: 1 }, { opacity: 0, duration: 1.2, ease: 'expo.inOut' }, 0)   // the hall dims from above
+        .fromTo('.org', { autoAlpha: 0, y: 6 }, { autoAlpha: 1, y: 0, duration: .5, ease: 'expo.out' }, 0)
+        .fromTo('.lede', { opacity: 0 }, { opacity: 1, duration: .8, ease: 'expo.out' }, .45)
+        .fromTo('#skip', { opacity: .6, '--u': 0 }, { opacity: 1, '--u': 1, duration: .5, ease: 'expo.out' }, .7);
+      const t0 = performance.now();
+      let rose = false;
+      fontsIn.then(() => ctx.add(() => {   // ctx.add records the split, so it reverts with the context
+        SplitText.create('.title', { type: 'lines', mask: 'lines', linesClass: 'ln', autoSplit: true,
+          onSplit: self => {
+            gsap.set('.title', { opacity: 1 });
+            if (rose) return;   // a re-split on resize keeps the lines at rest
+            rose = true;
+            return gsap.from(self.lines, { yPercent: 110, duration: 1, ease: 'expo.out', stagger: .06, delay: Math.max(0, .1 - (performance.now() - t0) / 1000) });
+          } });
+      }));
+    } else {
+      gsap.set('.org, .lede, .title, #skip', { opacity: 1, visibility: 'inherit' });
+      gsap.set('#skip', { '--u': 1 });
+      gsap.set('.houselights', { opacity: 0 });
+    }
+    played = true;
+
+    // ---- Form motion: label swap, form out, confirmation wiped in; and back
+    fx = motion ? {
+      stageY: () => pinST.end,
+      held: (show, done) => gsap.timeline({ onComplete: done })
+        .to(form, { opacity: 0, duration: .3, ease: 'expo.inOut' }, .3)
+        .add(() => { show(); gsap.set(form, { opacity: 1 }); })
+        .fromTo(held, { clipPath: 'inset(0 0 100% 0)' }, { clipPath: 'inset(0 0 0% 0)', duration: .7, ease: 'expo.inOut', clearProps: 'clipPath' }),
+      back: (back, done) => gsap.timeline({ onComplete: done })
+        .to(held, { clipPath: 'inset(0 0 100% 0)', duration: .5, ease: 'expo.inOut' })
+        .add(() => { gsap.set(held, { clearProps: 'clipPath' }); back(); })
+        .fromTo(form, { opacity: 0 }, { opacity: 1, duration: .3, ease: 'expo.out' }),
+    } : {};
+
+    return () => {
+      // Reverting the pin resets the scroll to the top; keep the reader where they were
+      const y = scrollY;
+      requestAnimationFrame(() => scrollTo(0, y));
+      ac.abort();
+      tween?.kill();
+      timer?.kill();
+      gsap.set(fol, { autoAlpha: 0 });
+      if (lenis) { gsap.ticker.remove(tick); gsap.ticker.lagSmoothing(500, 33); lenis.destroy(); lenis = null; }
+      fx = {};
+    };
+  });
+})();
+</script>
+</body>
+</html>
