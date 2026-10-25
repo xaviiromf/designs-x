@@ -1,0 +1,1226 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kelham Tape Rooms booking</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zalando+Sans:wdth,wght@75..125,400..700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* colour: a control room lined with olive hessian, one cream tape-box label */
+    --hessian: #262A1E;   /* page ground: the acoustic wall cloth */
+    --baffle: #333828;    /* raised surface: the form well and the meter face (chalk 9.8:1, grille 5.1:1, rec 4.8:1) */
+    --chalk: #E9E8DF;     /* text, focus ring, armed field rule, lit selection LEDs, meter scale (11.9:1 on hessian) */
+    --grille: #A8AA96;    /* secondary text, field rules, reel flange and hub (6.2:1 on hessian) */
+    --rec: #FF7D66;       /* in the red: field errors and the meter's 0 to +3 zone (5.9:1 on hessian, 4.8:1 on baffle) */
+    --lamp: #FFB547;      /* the lit Rec LED and its glow only (8.3:1 on hessian, graphics) */
+    --label: #EFE4CC;     /* the tape-box label, the page's one warm paper surface */
+    --ink: #262A1E;       /* text on the label (11.6:1) */
+    --ink-soft: #5C5A4A;  /* printed captions on the label (5.5:1 on label) */
+    --tape: #9A7652;      /* oxide tape pack on the reel (3.6:1 on hessian, graphics only) */
+    --tape-core: #7A5C40;
+    --tape-edge: #BC976C;
+    --rule: color-mix(in srgb, var(--grille) 42%, transparent); /* grille at 42%: idle hairlines between rows */
+
+    /* type: one family in three widths, like the legends on a tape machine */
+    --font-panel: 'Zalando Sans', 'Helvetica Neue', Arial, sans-serif;
+    --font-text: 'Zalando Sans', 'Helvetica Neue', Arial, sans-serif;
+    --w-panel: 125%;      /* studio name, H2, label title */
+    --w-body: 100%;
+    --w-legend: 85%;      /* field labels, legends, LED captions */
+    --fs-xs: 0.8125rem;   /* 13px LED captions */
+    --fs-sm: 0.9375rem;   /* 15px labels, legends, hints, details */
+    --fs-base: 1.0625rem; /* 17px body and inputs */
+    --fs-md: 1.25rem;     /* 20px channel values, rate names, studio name */
+    --fs-lg: clamp(1.375rem, 1.05rem + 1.2vw, 2rem);
+    --fs-xl: clamp(1.75rem, 1.1rem + 2.4vw, 3rem);
+    --lh-tight: 1.14;
+    --lh-body: 1.55;
+
+    /* spacing, 4px base */
+    --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px;
+    --s-6: 32px; --s-7: 48px; --s-8: 72px; --s-9: 112px;
+    --gutter: clamp(16px, 4vw, 56px);
+    --max: 1328px;
+    --well-pad: clamp(16px, 3.4vw, 32px);
+    --reel: clamp(84px, 64px + 2.4vw, 112px);  /* the send reel's diameter */
+    --vu: clamp(96px, 84px + 2vw, 120px);      /* the header meter's width */
+
+    /* shape: caps 3px, label 2px, fields and well square, the reel round */
+    --radius-cap: 3px;
+    --radius-label: 2px;
+    --focus: 3px solid var(--chalk);
+
+    /* motion */
+    --ease-out: cubic-bezier(.16, 1, .3, 1);          /* expo.out */
+    --ease-in: cubic-bezier(.55, .055, .675, .19);    /* power3.in */
+    --ease-follow: cubic-bezier(.215, .61, .355, 1);  /* power3.out */
+    --ease-inout: cubic-bezier(.65, 0, .35, 1);       /* power3.inOut, the well's height */
+    --ease-swap: cubic-bezier(.65, 0, 0, 1);
+    --ease-sweep: cubic-bezier(.35, 0, 0, 1);
+    --ease-pop: cubic-bezier(.34, 1.9, .64, 1);       /* about back.out(2) */
+    --ease-release: cubic-bezier(.34, 1.56, .64, 1);
+    --dur-press: .12s;
+    --dur-release: .4s;
+    --dur-hover: .2s;
+    --dur-arm: .3s;
+    --dur-swap: .35s;
+    --dur-sweep: .45s;
+    --dur-msg: .25s;
+    --dur-fade: .25s;     /* form out */
+    --dur-open: .7s;      /* label reveal */
+    --dur-close: .45s;    /* label close */
+    --dur-fit: .6s;       /* the well's height follows the panel */
+    --t-hold: 1s;         /* pointer hold to fill the reel */
+    --t-key: .35s;        /* keyboard and submit path */
+    --t-rewind: .25s;     /* released early: the pack drains */
+    --t-spinback: .4s;    /* released early: the spokes run back */
+  }
+
+  /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+
+  /* Hidden starting states: only when the motion layer loaded, only with motion allowed. */
+  @media (prefers-reduced-motion: no-preference) {
+    html.js:not(.in-load) [data-rv] { opacity: 0; }
+    html.js:not(.in-load) #quote-title, html.js:not(.in-load) .intro { visibility: hidden; }
+    html.js:not(.in-well) .well { clip-path: inset(0 0 100% 0); }
+    html.js:not(.in-rules) .ctl { --d: 0; }
+    html.js:not(.in-rates) .rate { --d: 0; }
+    html.js:not(.in-rates) .rate-in { transform: translateY(101%); }
+    html.js:not(.in-send) .reel .rim { stroke-dashoffset: 1; }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--hessian);
+    color: var(--chalk);
+    font-family: var(--font-text);
+    font-stretch: var(--w-body);
+    font-size: var(--fs-base);
+    line-height: var(--lh-body);
+    font-weight: 400;
+  }
+  h2, h3, p, dl, dd, ul, fieldset, address { margin: 0; padding: 0; }
+  ul { list-style: none; }
+  address { font-style: normal; }
+  fieldset { border: 0; min-width: 0; }
+  button, input, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  .sr {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+  }
+
+  /* ---------- layout ---------- */
+  .kt { padding: var(--s-8) var(--gutter) var(--s-9); }
+  .grid, .pair { display: grid; gap: var(--s-7); }
+  .grid { max-width: var(--max); margin: 0 auto; }
+  /* The aside and the well share their own grid, so the sticky aside stops where the form ends. */
+  @media (min-width: 992px) {
+    .grid { row-gap: var(--s-9); }
+    .pair { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--s-5); }
+    .aside { grid-column: 1 / 6; }
+    .well { grid-column: 7 / 13; }
+  }
+  @media (min-width: 992px) and (min-height: 740px) {
+    .aside { position: sticky; top: var(--s-7); align-self: start; }
+  }
+
+  /* ---------- aside: name and meter, heading, intro, channels ---------- */
+  .head { display: flex; justify-content: space-between; align-items: flex-end; gap: var(--s-4); max-width: 46ch; }  /* the meter lines up with the intro's measure */
+  .studio-name {
+    font-family: var(--font-panel);
+    font-stretch: var(--w-panel);
+    font-size: var(--fs-md);
+    font-weight: 500;
+    line-height: 1.2;
+    color: var(--grille);
+  }
+
+  /* the VU meter: a real VU scale (-20 to +3, spaced by voltage), red from 0 */
+  .vu { flex: none; display: block; width: var(--vu); height: auto; }
+  .vu-face { fill: var(--baffle); stroke: var(--rule); }
+  .vu-arc, .vu-tick { fill: none; stroke: var(--chalk); stroke-width: .9; }
+  .vu-red { fill: none; stroke: var(--rec); stroke-width: 3; }
+  .vu-tick.vu-over { stroke: var(--rec); }
+  .vu text { fill: var(--chalk); font-size: 7.5px; font-stretch: var(--w-legend); font-weight: 600; text-anchor: middle; dominant-baseline: middle; }
+  .vu text.vu-over { fill: var(--rec); }
+  .vu .vu-legend { fill: var(--grille); font-size: 10px; }
+  .vu-needle { stroke: var(--chalk); stroke-width: 1.2; stroke-linecap: round; }
+
+  #quote-title {
+    margin-top: var(--s-5);
+    font-family: var(--font-panel);
+    font-stretch: var(--w-panel);
+    font-size: var(--fs-xl);
+    font-weight: 500;
+    line-height: var(--lh-tight);
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+  /* masks from SplitText: room for descenders */
+  .ln-line-mask { padding-bottom: .12em; margin-bottom: -.12em; }
+  .intro { margin-top: var(--s-5); max-width: 46ch; }
+
+  .channels { margin-top: var(--s-7); display: grid; gap: var(--s-5); }
+  .ch { display: grid; gap: var(--s-1); }
+  .ch dt, .legend {
+    font-stretch: var(--w-legend);
+    font-weight: 600;
+    font-size: var(--fs-sm);
+    letter-spacing: .01em;
+    color: var(--grille);
+  }
+  .ch dd { display: grid; gap: var(--s-1); justify-items: start; }
+  .ch .val { font-size: var(--fs-md); line-height: 1.35; }
+  .note { font-size: var(--fs-sm); color: var(--grille); max-width: 46ch; }
+  .ch address { font-size: var(--fs-md); line-height: 1.35; }
+  .ch dd .note + .ln { margin-top: var(--s-1); }
+
+  /* HV2: underline sweeps in from the left, out to the right; a resting hairline stays */
+  .ln {
+    color: var(--chalk);
+    text-decoration: none;
+    overflow-wrap: anywhere;
+    padding-bottom: .1em;
+    background:
+      linear-gradient(currentColor, currentColor) 100% 100% / 0 .07em no-repeat,
+      linear-gradient(var(--rule), var(--rule)) 0 100% / 100% 1px no-repeat;
+    transition: background-size var(--dur-sweep) var(--ease-sweep), background-position 0s var(--dur-sweep);
+  }
+  .ln:hover, .ln:focus-visible {
+    background-position: 0 100%, 0 100%;
+    background-size: 100% .07em, 100% 1px;
+    transition: background-size var(--dur-sweep) var(--ease-sweep);
+  }
+  .ln:focus-visible { outline: var(--focus); outline-offset: 3px; border-radius: 1px; }
+  @media (hover: none) { .ln { background-size: 100% .07em, 100% 1px; } }
+
+  /* ---------- the form well: form and label share one cell ---------- */
+  .well {
+    position: relative;
+    background: var(--baffle);
+    padding: var(--well-pad);
+    scroll-margin-top: var(--s-5);
+    align-self: start;
+    display: grid;
+  }
+  .well > .form, .well > .tapebox { grid-area: 1 / 1; }
+  .well > [inert] { visibility: hidden; }
+  .form { display: grid; gap: var(--s-6); transition: opacity var(--dur-fade) linear; }
+  .form.is-out { opacity: 0; }
+  .row2 { display: grid; gap: var(--s-6) var(--s-5); }
+  @media (min-width: 560px) { .row2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .row-date { display: grid; grid-template-columns: minmax(0, 1fr) 7.5rem; gap: 0 var(--s-5); align-items: start; }
+
+  .field { display: grid; align-content: start; }
+  .field > label, .field > legend {
+    font-stretch: var(--w-legend);
+    font-weight: 600;
+    font-size: var(--fs-sm);
+    letter-spacing: .01em;
+    color: var(--grille);
+    padding: 0;
+    transition: color var(--dur-hover);
+  }
+  .field:focus-within > label, .field:focus-within > legend { color: var(--chalk); }
+  .hint { font-size: var(--fs-sm); color: var(--grille); max-width: 60ch; margin-top: 2px; }
+
+  /* field rule: base (draws in on load, SC16), armed (focus, MI4) */
+  .ctl { position: relative; }
+  .ctl::before, .ctl::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: 0;
+    transform-origin: left center; pointer-events: none;
+  }
+  .ctl::before { height: 1px; background: var(--grille); transform: scaleX(var(--d, 1)); transition: background-color var(--dur-hover); }
+  .ctl::after { height: 3px; background: var(--chalk); transform: scaleX(0); transition: transform var(--dur-arm) var(--ease-follow); }
+  .ctl:hover::before { background: var(--chalk); }
+  .ctl:focus-within::after { transform: scaleX(1); }
+  .bad .ctl::before, .bad .ctl::after { background: var(--rec); }
+
+  .ctl input, .ctl textarea {
+    display: block; width: 100%;
+    background: transparent; border: 0; border-radius: 0;
+    color: var(--chalk);
+    font-size: var(--fs-base);
+    line-height: 1.4;
+    padding: var(--s-2) 0 var(--s-2);
+    outline: none;
+    color-scheme: dark;
+    -webkit-appearance: none; appearance: none;
+  }
+  .ctl input { min-height: 44px; }
+  .ctl input[type=number] { -moz-appearance: textfield; }
+  .ctl textarea { resize: vertical; min-height: 7.5rem; }
+  .ctl input::-webkit-calendar-picker-indicator { opacity: .8; cursor: pointer; }
+
+  /* error message: opens with grid rows 0fr to 1fr, never shakes */
+  .msg {
+    display: grid; grid-template-rows: 0fr; visibility: hidden;
+    color: var(--rec); font-size: var(--fs-sm);
+    transition: grid-template-rows var(--dur-msg) var(--ease-out), visibility 0s var(--dur-msg);
+  }
+  .msg > p { overflow: hidden; min-height: 0; }
+  .msg > p::before { content: ''; display: block; height: 6px; }
+  .bad .msg, .msg.bad { grid-template-rows: 1fr; visibility: visible; transition: grid-template-rows var(--dur-msg) var(--ease-out); }
+  .row-date > .msg { grid-column: 1 / -1; }
+
+  /* console push-button caps (real radios) */
+  .caps { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-3); }
+  .cap {
+    position: relative;
+    display: grid; grid-template-columns: auto 1fr; align-items: center; align-content: start; column-gap: var(--s-2);
+    min-height: 44px;
+    padding: var(--s-2) var(--s-4) var(--s-2) var(--s-3);
+    background: var(--hessian);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-cap);
+    cursor: pointer;
+    transition: border-color var(--dur-hover), transform var(--dur-release) var(--ease-release);
+  }
+  .cap input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+  .cap-t { font-weight: 500; }
+  .cap-t::after { content: attr(data-t); display: block; height: 0; overflow: hidden; visibility: hidden; font-weight: 600; } /* reserves the 600 width */
+  .cap-x { grid-column: 2; font-size: var(--fs-sm); color: var(--grille); line-height: 1.35; }
+  .caps-room .cap { flex: 1 1 10.5rem; align-items: start; padding-block: var(--s-3); }
+  .caps-room .led { margin-top: .5em; }
+  .cap:hover { border-color: var(--grille); }
+  .cap:has(input:checked) { border-color: var(--chalk); }
+  .cap:has(input:checked) .cap-t { font-weight: 600; }
+  .cap:has(input:focus-visible) { outline: var(--focus); outline-offset: 2px; }
+  .bad .cap { border-color: color-mix(in srgb, var(--rec) 60%, transparent); }
+
+  .led {
+    position: relative; width: 10px; height: 10px; border-radius: 50%;
+    background: var(--baffle); box-shadow: inset 0 0 0 1px var(--grille);
+  }
+  .led::after {
+    content: ''; position: absolute; inset: 0; border-radius: 50%;
+    background: var(--chalk);
+    box-shadow: 0 0 7px 1px color-mix(in srgb, var(--chalk) 50%, transparent);
+    opacity: 0; transform: scale(.6);
+    transition: opacity var(--dur-hover), transform .25s var(--ease-pop);
+  }
+  @media (hover: hover) { .cap:hover input:not(:checked) ~ .led::after { opacity: .35; } }
+  .cap input:checked ~ .led::after { opacity: 1; transform: scale(1); }
+
+  /* MI4 checkbox: the tick draws */
+  .check { position: relative; }
+  .check input { position: absolute; left: 0; top: 0; width: 44px; height: 44px; margin: 0; opacity: 0; cursor: pointer; z-index: 1; scroll-margin-block: 96px; }
+  .check label { display: flex; align-items: flex-start; gap: var(--s-3); cursor: pointer; }
+  .box {
+    flex: none; width: 24px; height: 24px; margin: 10px 0 10px 10px;
+    border: 1px solid var(--grille); border-radius: var(--radius-cap);
+    display: grid; place-items: center;
+    transition: border-color var(--dur-hover);
+  }
+  .box svg { width: 16px; height: 16px; fill: none; stroke: var(--chalk); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .box path { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset .3s var(--ease-follow); }
+  .check input:checked ~ label .box path { stroke-dashoffset: 0; }
+  .check input:checked ~ label .box, .check:hover .box { border-color: var(--chalk); }
+  .check input:focus-visible ~ label .box { outline: var(--focus); outline-offset: 3px; }
+  .check-t { padding-top: 10px; font-weight: 500; min-height: 44px; }
+  .check .hint { margin: -6px 0 0 calc(34px + var(--s-3)); }
+
+  /* ---------- the send key: a tape transport ---------- */
+  .send-row { display: grid; gap: var(--s-3); padding-top: var(--s-2); }
+  .send {
+    position: relative;
+    display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; column-gap: var(--s-4);
+    width: 100%; min-height: calc(var(--reel) + 2 * var(--s-3));
+    padding: var(--s-3) var(--s-5) var(--s-3) var(--s-3);
+    background: var(--hessian); color: var(--chalk);
+    border: 1px solid var(--grille); border-radius: var(--radius-cap);
+    text-align: left;
+    touch-action: manipulation;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: border-color var(--dur-hover), transform var(--dur-press) var(--ease-follow);
+  }
+  .send:hover, .send.is-holding { border-color: var(--chalk); }
+  .send:focus-visible { outline: var(--focus); outline-offset: 3px; }
+  @media (prefers-reduced-motion: no-preference) { .send.is-holding { transform: scale(.985); } }
+
+  /* the tape leaves the top of the pack and runs across the key to a guide roller */
+  .tape-path {
+    position: absolute; z-index: 0; height: 1px; pointer-events: none;
+    top: calc(var(--s-3) + var(--reel) * 4 / 60);
+    left: calc(var(--s-3) + var(--reel) / 2);
+    right: calc(var(--s-5) + 6px);
+    background: color-mix(in srgb, var(--grille) 55%, transparent);
+  }
+  .tape-path::after {
+    content: ''; position: absolute; right: -6px; top: -3px; width: 7px; height: 7px; border-radius: 50%;
+    border: 1px solid var(--grille); background: var(--hessian);
+  }
+  .send > :not(.tape-path) { position: relative; z-index: 1; }
+
+  .reel { width: var(--reel); height: var(--reel); display: block; overflow: visible; }
+  .reel .plate { fill: var(--grille); fill-rule: evenodd; opacity: .5; transition: fill var(--dur-hover); }
+  .reel .rim { fill: none; stroke: var(--grille); stroke-width: 1.25; stroke-dasharray: 1; stroke-dashoffset: 0; transition: stroke var(--dur-hover); }
+  .reel .pack { fill: none; stroke-width: 17; }
+  .reel .hub { fill: var(--grille); }
+  .reel .slot { fill: var(--hessian); }
+  @media (hover: hover) { .send:hover .reel .plate { fill: var(--chalk); } .send:hover .reel .rim { stroke: var(--chalk); } }
+  .send:focus-visible .reel .plate { fill: var(--chalk); }
+
+  /* MI2: three labels, each in its own mask, so a two-line label never shares one with a one-line label */
+  .send-label { display: grid; font-size: var(--fs-md); font-weight: 600; line-height: 1.25; }
+  .send-label > span { grid-area: 1 / 1; align-self: center; overflow: clip; }
+  .send-label > span > span { display: block; transition: transform var(--dur-swap) var(--ease-swap); }
+  .send-label > span + span > span { transform: translateY(110%); }
+  .send.is-holding .send-label > span:first-child > span,
+  .send.is-full .send-label > span > span { transform: translateY(-110%); }
+  .send.is-holding:not(.is-full) .send-label > span:nth-child(2) > span,
+  .send.is-full .send-label > span:nth-child(3) > span { transform: none; }
+  @media (max-width: 440px) { .send-label, .tapebox .tb-studio { font-size: var(--fs-base); } }
+
+  .rec { display: grid; justify-items: center; gap: 6px; font-stretch: var(--w-legend); font-weight: 600; font-size: var(--fs-xs); color: var(--grille); }
+  .rec .led { width: 12px; height: 12px; }
+  .rec .led::after { background: var(--lamp); box-shadow: 0 0 10px 2px color-mix(in srgb, var(--lamp) 60%, transparent); }
+  @media (hover: hover) { .send:hover .rec .led::after { opacity: .35; } }
+  .send:focus-visible .rec .led::after { opacity: .35; }   /* record ready */
+  .send.is-full .rec .led::after { opacity: 1; transform: scale(1); }
+  .send.is-full .rec { color: var(--chalk); }
+  @keyframes ready { 0%, 100% { opacity: 0; } 35%, 65% { opacity: .35; } }
+  .send.ready .rec .led::after { animation: ready .7s ease-in-out 1; }
+
+  .status { font-size: var(--fs-sm); color: var(--grille); min-height: 1.55em; }
+  .status.is-error { color: var(--rec); }
+
+  /* ---------- the result: a printed tape-box label, filled in ---------- */
+  .tapebox {
+    align-self: end;
+    background: var(--label); color: var(--ink);
+    border-radius: var(--radius-label);
+    padding: var(--s-4) var(--well-pad) var(--s-6);
+    clip-path: inset(0 0 100% 0);
+    transition: clip-path var(--dur-close) var(--ease-in);
+  }
+  .tapebox.is-open { clip-path: inset(0); transition: clip-path var(--dur-open) var(--ease-out); }
+  .tb-strip {
+    display: flex; justify-content: space-between; align-items: baseline; gap: var(--s-3);
+    padding-bottom: var(--s-2); border-bottom: 2px solid var(--ink);
+    font-stretch: var(--w-legend); font-weight: 600; font-size: var(--fs-sm); color: var(--ink-soft);
+  }
+  .tb-strip > :last-child { white-space: nowrap; }
+  .tb-studio { font-family: var(--font-panel); font-stretch: var(--w-panel); font-weight: 500; font-size: var(--fs-md); line-height: 1.2; color: var(--ink); }
+  #result-title {
+    margin-top: var(--s-4);
+    font-family: var(--font-panel); font-stretch: var(--w-panel);
+    font-size: var(--fs-lg); font-weight: 500; line-height: 1.2;
+  }
+  #result-title:focus { outline: none; }
+  #result-title:focus-visible { outline: 3px solid var(--ink); outline-offset: 4px; }
+
+  .tb-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: var(--s-3); border-top: 1px solid color-mix(in srgb, var(--ink) 45%, transparent); }
+  .tb-cell { position: relative; display: grid; align-content: start; padding: var(--s-2) var(--s-3) var(--s-2) 0; min-width: 0; }
+  .tb-cell:nth-child(2n) { padding-left: var(--s-3); }
+  .tb-tape { grid-column: 1 / -1; }
+  .tb-cell::after, .tb-cell:nth-child(2n)::before { content: ''; position: absolute; background: color-mix(in srgb, var(--ink) 45%, transparent); }
+  .tb-cell::after { left: 0; right: 0; bottom: 0; height: 1px; transform: scaleX(0); transform-origin: left center; transition: transform .6s var(--ease-out); }
+  .tb-cell:nth-child(2n)::before { left: 0; top: 0; bottom: 0; width: 1px; transform: scaleY(0); transform-origin: top center; transition: transform .5s var(--ease-out); }
+  .tb-cell dt { font-stretch: var(--w-legend); font-weight: 600; font-size: var(--fs-xs); letter-spacing: .01em; color: var(--ink-soft); }
+  .tb-cell dd { position: relative; top: -2px; font-weight: 500; line-height: 1.35; min-height: 1.35em; overflow-wrap: anywhere; }
+  .tb-boxes { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-4); margin-top: var(--s-1); font-size: var(--fs-sm); color: var(--ink-soft); }
+  .tb-boxes li { display: flex; align-items: center; gap: 6px; }
+  .tb-boxes li.on { color: var(--ink); font-weight: 500; }
+  .tb-box { width: 16px; height: 16px; border: 1px solid var(--ink-soft); border-radius: 1px; display: grid; place-items: center; }
+  .tb-box svg { width: 14px; height: 14px; fill: none; stroke: var(--ink); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; overflow: visible; }
+  .tb-box path { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset .3s var(--ease-follow); }
+  .tb-notes { margin-top: var(--s-4); border: 1.5px solid var(--ink); padding: var(--s-2) var(--s-3) var(--s-3); }
+  .tb-notes-h { font-stretch: var(--w-legend); font-weight: 600; font-size: var(--fs-xs); color: var(--ink-soft); }
+  .tb-est { font-size: var(--fs-md); font-weight: 600; line-height: 1.3; }
+  .tb-reply { margin-top: var(--s-1); max-width: 46ch; overflow-wrap: anywhere; }
+  .tb-actions { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: var(--s-5); }
+
+  /* reveal: rules draw, rows rise, ticks draw, each a step after the last */
+  .tb-cell > *, .tb-notes > *, .tb-actions > * { opacity: 0; transform: translateY(.6em); transition: opacity .3s, transform .5s var(--ease-out); }
+  .is-open .tb-cell::after { transform: scaleX(1); transition-delay: calc(.2s + var(--i) * .05s); }
+  .is-open .tb-cell:nth-child(2n)::before { transform: scaleY(1); transition-delay: calc(.25s + var(--i) * .05s); }
+  .is-open .tb-cell > *, .is-open .tb-notes > *, .is-open .tb-actions > * { opacity: 1; transform: none; transition-delay: calc(.25s + var(--i) * .05s); }
+  .is-open .tb-boxes li.on path { stroke-dashoffset: 0; transition-delay: calc(.6s + var(--j) * .05s); }
+
+  /* HV4: fill from the entry edge, MI1 press */
+  .fill {
+    position: relative; isolation: isolate; overflow: hidden;
+    min-height: 44px; padding: var(--s-2) var(--s-4);
+    background: transparent; color: var(--ink);
+    border: 1px solid var(--ink); border-radius: var(--radius-cap);
+    font-weight: 600;
+    transition: color .25s, transform var(--dur-release) var(--ease-release);
+  }
+  .fill::before {
+    content: ''; position: absolute; inset: 0; z-index: -1;
+    background: var(--ink);
+    transform: scaleX(0); transform-origin: var(--from, left) center;
+    transition: transform .25s var(--ease-out);
+  }
+  .fill:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+  @media (hover: hover) {
+    .fill:hover { color: var(--label); }
+    .fill:hover::before { transform: scaleX(1); transition-duration: .35s; }
+  }
+  .fill:active { color: var(--label); }
+  .fill:active::before { transform: scaleX(1); }
+
+  /* ---------- day rates ---------- */
+  .rates h3 { font-size: var(--fs-lg); font-weight: 600; line-height: 1.2; }
+  .rates-list { margin-top: var(--s-5); }
+  .rate {
+    position: relative; display: block; width: 100%;
+    padding: var(--s-4) 0; margin: 0;
+    background: none; border: 0; text-align: left; color: var(--chalk);
+    transition: color .35s, transform var(--dur-release) var(--ease-release);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .rate::before, .rate::after {
+    content: ''; position: absolute; left: 0; right: 0; top: 0; transform-origin: left center;
+  }
+  .rate::before { height: 1px; background: var(--rule); transform: scaleX(var(--d, 1)); }
+  .rate::after { height: 2px; background: var(--chalk); transform: scaleX(0); transition: transform .4s var(--ease-out); }
+  .rate:focus-visible::after { transform: scaleX(1); }
+  .rate:focus-visible { outline: var(--focus); outline-offset: 3px; }
+  .rates-list li:last-child .rate { box-shadow: inset 0 -1px 0 var(--rule); }
+  .rate-mask { display: block; overflow: clip; }
+  .rate-in {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name price" "detail detail";
+    column-gap: var(--s-4); row-gap: 2px; align-items: baseline;
+  }
+  .rate-name { grid-area: name; font-size: var(--fs-md); font-weight: 500; line-height: 1.3; }
+  .rate-detail { grid-area: detail; font-size: var(--fs-sm); color: var(--grille); transition: color .35s; }
+  .rate:focus-visible .rate-detail { color: var(--chalk); }
+  .rate-price { grid-area: price; font-size: var(--fs-md); font-weight: 600; justify-items: end; text-align: right; }
+  .rate-price > span + span { font-weight: 500; }
+  /* MI2 on the price (rate rows only) */
+  .swap { display: inline-grid; overflow: clip; vertical-align: top; }
+  .swap > span { grid-area: 1 / 1; transition: transform var(--dur-swap) var(--ease-swap); }
+  .swap > span + span { transform: translateY(105%); }
+  .rate:focus-visible .rate-price > span:first-child { transform: translateY(-105%); }
+  .rate:focus-visible .rate-price > span + span { transform: none; }
+  @media (min-width: 720px) {
+    .rate-in { grid-template-columns: minmax(0, 5fr) minmax(0, 4fr) minmax(0, 3fr); grid-template-areas: "name detail price"; }
+    .rate-detail { font-size: var(--fs-base); }
+  }
+  /* HV7 as a colour switch: the other rows step back to grille (opacity would drop them below AA) */
+  @media (hover: hover) {
+    .rate:hover::after { transform: scaleX(1); }
+    .rate:hover .rate-detail { color: var(--chalk); }
+    .rate:hover .rate-price > span:first-child { transform: translateY(-105%); }
+    .rate:hover .rate-price > span + span { transform: none; }
+    .rates-list:has(.rate:hover) .rate:not(:hover) { color: var(--grille); }
+  }
+  /* touch has no hover, so the rows say what a tap does */
+  @media (hover: none) { .rate-detail::after { content: '. Tap to choose.'; } }
+  .rates-list:has(.rate:focus-visible) .rate:not(:focus-visible) { color: var(--grille); }
+  .rates-foot { margin-top: var(--s-4); font-size: var(--fs-sm); color: var(--grille); }
+
+  /* MI1 presses (movement only when motion is allowed) */
+  @media (prefers-reduced-motion: no-preference) {
+    .fill:active, .cap:active { transform: scale(.96); transition-duration: .25s, var(--dur-press); }
+    .rate:active { transform: scale(.985); transition-duration: .35s, var(--dur-press); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0s !important; transition-delay: 0s !important; animation: none !important; }
+    .ln { background-size: 100% .07em, 100% 1px; }
+  }
+
+  @media (max-width: 380px) {
+    .send { column-gap: var(--s-3); padding-right: var(--s-3); }
+    .tape-path { right: calc(var(--s-3) + 6px); }
+  }
+</style>
+</head>
+<body>
+<main>
+  <section class="kt" id="enquiry-section" aria-labelledby="quote-title">
+    <div class="grid">
+     <div class="pair">
+
+      <div class="aside">
+        <div class="head">
+          <p class="studio-name" data-rv>Kelham Tape Rooms</p>
+          <svg class="vu" data-rv viewBox="0 0 120 64" aria-hidden="true">
+            <rect class="vu-face" x=".5" y=".5" width="119" height="63" rx="3"/>
+            <path class="vu-arc" d="M21.36 39.21A52 52 0 0 1 75.92 24.5"/>
+            <path class="vu-red" d="M76.23 23.54A53 53 0 0 1 99.39 38.54"/>
+            <path class="vu-tick" d="M21.36 39.21L16.15 34.52M32.3 29.99L28.57 24.07M39.98 26.01L38.44 22.32M47.26 23.59L45.54 16.8M56.79 22.1L56.55 18.11M62.53 22.06L62.72 18.07M68.92 22.77L69.6 18.83M75.92 24.5L78.06 17.83"/>
+            <path class="vu-tick vu-over" d="M83.41 27.57L85.21 23.99M91.12 32.34L93.52 29.14M98.64 39.21L103.85 34.52"/>
+            <text x="11.7" y="30.51">20</text>
+            <text x="25.38" y="18.99">10</text>
+            <text x="44.07" y="10.98">5</text>
+            <text x="79.9" y="12.12">0</text>
+            <text x="108.3" y="30.51" class="vu-over">3</text>
+            <text class="vu-legend" x="60" y="50">VU</text>
+            <line class="vu-needle" x1="60" y1="74" x2="60" y2="16" transform="rotate(-48 60 74)"/>
+          </svg>
+        </div>
+        <h2 id="quote-title">Book days on the 24-track</h2>
+        <p class="intro">Send the dates you have in mind and a few lines about the songs. We reply the same working day with free days and a quote. Nothing is booked until you confirm.</p>
+
+        <dl class="channels">
+          <div class="ch" data-rv>
+            <dt>Email</dt>
+            <dd><a class="ln val" href="mailto:bookings@kelhamtaperooms.co.uk" target="_blank" rel="noopener">bookings@<wbr>kelhamtaperooms.co.uk</a></dd>
+          </div>
+          <div class="ch" data-rv>
+            <dt>Phone</dt>
+            <dd>
+              <a class="ln val" href="tel:+441144960732" target="_blank" rel="noopener">0114 496 0732</a>
+              <span class="note">Answered 10:00 to 18:00, Monday to Saturday</span>
+            </dd>
+          </div>
+          <div class="ch" data-rv>
+            <dt>Find us</dt>
+            <dd>
+              <address>Unit 4, Alma Yard<br>22 Green Lane<br>Sheffield S3 8SQ</address>
+              <p class="note">Load in through the roller door on Alma Street. Two van spaces in the yard; ring when you arrive.</p>
+              <a class="ln" href="https://www.openstreetmap.org/?mlat=53.3917&amp;mlon=-1.4738#map=18/53.3917/-1.4738" target="_blank" rel="noopener">Open in OpenStreetMap<span class="sr"> (opens in a new tab)</span></a>
+            </dd>
+          </div>
+        </dl>
+      </div>
+
+      <div class="well" id="enquiry">
+        <form class="form" id="enquiry-form" aria-labelledby="quote-title" novalidate>
+          <div class="row2">
+            <div class="field" data-field="name">
+              <label for="f-name">Your name</label>
+              <div class="ctl"><input id="f-name" name="name" type="text" autocomplete="name" required aria-describedby="name-err"></div>
+              <div class="msg" id="name-err"><p></p></div>
+            </div>
+            <div class="field" data-field="email">
+              <label for="f-email">Email</label>
+              <div class="ctl"><input id="f-email" name="email" type="email" autocomplete="email" inputmode="email" spellcheck="false" required aria-describedby="email-err"></div>
+              <div class="msg" id="email-err"><p></p></div>
+            </div>
+          </div>
+
+          <div class="row2">
+            <div class="field" data-field="phone">
+              <label for="f-phone">Phone (optional)</label>
+              <div class="ctl"><input id="f-phone" name="phone" type="tel" autocomplete="tel" aria-describedby="phone-err"></div>
+              <div class="msg" id="phone-err"><p></p></div>
+            </div>
+            <div class="field" data-field="project">
+              <label for="f-project">Band or project (optional)</label>
+              <div class="ctl"><input id="f-project" name="project" type="text" autocomplete="off"></div>
+            </div>
+          </div>
+
+          <fieldset class="field" data-field="session">
+            <legend>What do you need?</legend>
+            <div class="caps">
+              <label class="cap"><input type="radio" name="session" value="tracking" required aria-describedby="session-err"><span class="led" aria-hidden="true"></span><span class="cap-t" data-t="Tracking">Tracking</span></label>
+              <label class="cap"><input type="radio" name="session" value="overdubs" required aria-describedby="session-err"><span class="led" aria-hidden="true"></span><span class="cap-t" data-t="Overdubs">Overdubs</span></label>
+              <label class="cap"><input type="radio" name="session" value="mixing" required aria-describedby="session-err"><span class="led" aria-hidden="true"></span><span class="cap-t" data-t="Mixing your files">Mixing your files</span></label>
+            </div>
+            <div class="msg" id="session-err"><p></p></div>
+          </fieldset>
+
+          <fieldset class="field" data-field="room" id="room-choice">
+            <legend>Which room?</legend>
+            <div class="caps caps-room">
+              <label class="cap"><input type="radio" name="room" value="live" required aria-describedby="room-err"><span class="led" aria-hidden="true"></span><span class="cap-t" data-t="Live room">Live room</span><span class="cap-x">7.8 × 6.2 m, fits a five-piece playing together</span></label>
+              <label class="cap"><input type="radio" name="room" value="booth" required aria-describedby="room-err"><span class="led" aria-hidden="true"></span><span class="cap-t" data-t="Vocal booth">Vocal booth</span><span class="cap-x">2.4 × 2.1 m, dry</span></label>
+              <label class="cap"><input type="radio" name="room" value="control" required aria-describedby="room-err"><span class="led" aria-hidden="true"></span><span class="cap-t" data-t="Control room only">Control room only</span><span class="cap-x">For mixing</span></label>
+            </div>
+            <div class="msg" id="room-err"><p></p></div>
+          </fieldset>
+
+          <div class="row-date">
+            <div class="field" data-field="first">
+              <label for="f-first">First day</label>
+              <div class="ctl"><input id="f-first" name="first" type="date" required aria-describedby="first-err"></div>
+              <div class="msg" id="first-err"><p></p></div>
+            </div>
+            <div class="field" data-field="days">
+              <label for="f-days">Days</label>
+              <div class="ctl"><input id="f-days" name="days" type="number" min="1" max="14" step="1" inputmode="numeric" required aria-describedby="days-err"></div>
+            </div>
+            <div class="msg" id="days-err"><p></p></div>
+          </div>
+
+          <div class="check">
+            <input type="checkbox" id="f-tape" name="tape" aria-describedby="tape-hint">
+            <label for="f-tape"><span class="box" aria-hidden="true"><svg viewBox="0 0 16 16"><path pathLength="1" d="M3.2 8.6l3.1 3.1 6.5-7.4"/></svg></span><span class="check-t">Record to 2-inch tape</span></label>
+            <p class="hint" id="tape-hint">Our 24-track machine runs at 15 ips. Adds £60 a day for tape stock, and you keep the reels.</p>
+          </div>
+
+          <div class="field" data-field="songs">
+            <label for="f-songs">About the songs</label>
+            <p class="hint" id="songs-hint">How many songs, who is playing, any records you want it to sound like.</p>
+            <div class="ctl"><textarea id="f-songs" name="songs" rows="4" required aria-describedby="songs-hint songs-err"></textarea></div>
+            <div class="msg" id="songs-err"><p></p></div>
+          </div>
+
+          <div class="send-row">
+            <button type="submit" class="send" id="send" aria-describedby="send-status">
+              <span class="tape-path" aria-hidden="true"></span>
+              <svg class="reel" viewBox="-30 -30 60 60" aria-hidden="true">
+                <defs>
+                  <radialGradient id="pack-shade" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="scale(26)">
+                    <stop offset="0" style="stop-color: var(--tape-core)"/>
+                    <stop offset=".78" style="stop-color: var(--tape)"/>
+                    <stop offset=".95" style="stop-color: var(--tape-edge)"/>
+                    <stop offset="1" style="stop-color: var(--tape)"/>
+                  </radialGradient>
+                </defs>
+                <g class="wind"><path class="plate" d="M28 0A28 28 0 1 0 -28 0A28 28 0 1 0 28 0ZM4.5 -11.13L9.37 -23.18A25 25 0 0 1 24.76 3.48L11.88 1.67A12 12 0 0 0 4.5 -11.13ZM7.39 9.46L15.39 19.7A25 25 0 0 1 -15.39 19.7L-7.39 9.46A12 12 0 0 0 7.39 9.46ZM-11.88 1.67L-24.76 3.48A25 25 0 0 1 -9.37 -23.18L-4.5 -11.13A12 12 0 0 0 -11.88 1.67Z"/></g>
+                <circle class="rim" r="28" pathLength="1" transform="rotate(-90)"/>
+                <circle class="pack" r="17.5" stroke="url(#pack-shade)" stroke-dasharray="109.96" stroke-dashoffset="109.96" transform="rotate(-90)"/>
+                <g class="wind">
+                  <circle class="hub" r="9"/>
+                  <rect class="slot" x="3" y="-1.3" width="4.6" height="2.6" rx="1.3"/>
+                  <rect class="slot" x="3" y="-1.3" width="4.6" height="2.6" rx="1.3" transform="rotate(120)"/>
+                  <rect class="slot" x="3" y="-1.3" width="4.6" height="2.6" rx="1.3" transform="rotate(240)"/>
+                  <circle class="slot" r="1.6"/>
+                </g>
+              </svg>
+              <span class="send-label"><span><span>Hold to send enquiry</span></span><span aria-hidden="true"><span>Keep holding</span></span><span aria-hidden="true"><span>Recorded</span></span></span>
+              <span class="rec" aria-hidden="true"><span class="led"></span>Rec</span>
+            </button>
+            <p class="status" id="send-status" role="status">Hold until the reel is full, or press Enter.</p>
+          </div>
+        </form>
+
+        <section class="tapebox" id="result" aria-labelledby="result-title" inert aria-hidden="true">
+          <div class="tb-strip" aria-hidden="true"><span class="tb-studio">Kelham Tape Rooms</span><span>Reel 1 of 1</span></div>
+          <h3 id="result-title" tabindex="-1">Enquiry sent</h3>
+          <dl class="tb-grid">
+            <div class="tb-cell" style="--i:0"><dt>Artist</dt><dd data-k="name"></dd></div>
+            <div class="tb-cell" style="--i:1"><dt>Project</dt><dd data-k="project"></dd></div>
+            <div class="tb-cell" style="--i:2"><dt>Session</dt><dd data-k="session"></dd></div>
+            <div class="tb-cell" style="--i:3"><dt>Room</dt><dd data-k="room"></dd></div>
+            <div class="tb-cell" style="--i:4"><dt>First day</dt><dd data-k="first"></dd></div>
+            <div class="tb-cell" style="--i:5"><dt>Days</dt><dd data-k="days"></dd></div>
+            <div class="tb-cell tb-tape" style="--i:6"><dt>Tape</dt><dd>
+              <span class="sr" data-k="tape"></span>
+              <ul class="tb-boxes" aria-hidden="true">
+                <li data-tape="1" style="--j:0"><span class="tb-box"><svg viewBox="0 0 16 16"><path pathLength="1" d="M3.2 8.6l3.1 3.1 6.5-7.4"/></svg></span>2-inch</li>
+                <li data-tape="1" style="--j:1"><span class="tb-box"><svg viewBox="0 0 16 16"><path pathLength="1" d="M3.2 8.6l3.1 3.1 6.5-7.4"/></svg></span>24-track</li>
+                <li data-tape="1" style="--j:2"><span class="tb-box"><svg viewBox="0 0 16 16"><path pathLength="1" d="M3.2 8.6l3.1 3.1 6.5-7.4"/></svg></span>15 ips</li>
+                <li data-tape="1" style="--j:3"><span class="tb-box"><svg viewBox="0 0 16 16"><path pathLength="1" d="M3.2 8.6l3.1 3.1 6.5-7.4"/></svg></span>NAB</li>
+                <li data-tape="0" style="--j:0"><span class="tb-box"><svg viewBox="0 0 16 16"><path pathLength="1" d="M3.2 8.6l3.1 3.1 6.5-7.4"/></svg></span>No tape</li>
+              </ul>
+            </dd></div>
+          </dl>
+          <div class="tb-notes" style="--i:7">
+            <p class="tb-notes-h">Notes</p>
+            <p class="tb-est" data-k="estimate"></p>
+            <p class="tb-reply" data-k="reply"></p>
+          </div>
+          <div class="tb-actions" style="--i:8">
+            <button type="button" class="fill" id="edit">Edit enquiry</button>
+            <button type="button" class="fill" id="restart">Start a new enquiry</button>
+          </div>
+        </section>
+        <p class="sr" id="sent-live" role="status"></p>
+      </div>
+     </div>
+
+      <section class="rates" id="rates" aria-labelledby="rates-title">
+        <h3 id="rates-title">Day rates</h3>
+        <ul class="rates-list">
+          <li><button type="button" class="rate" data-room="live"><span class="rate-mask"><span class="rate-in">
+            <span class="rate-name"><span class="sr">Choose </span>Live room with control room</span>
+            <span class="rate-detail">10-hour day, engineer included</span>
+            <span class="rate-price swap"><span>£420</span><span aria-hidden="true">Choose</span></span>
+          </span></span></button></li>
+          <li><button type="button" class="rate" data-room="booth"><span class="rate-mask"><span class="rate-in">
+            <span class="rate-name"><span class="sr">Choose </span>Vocal booth with control room</span>
+            <span class="rate-detail">10-hour day, engineer included</span>
+            <span class="rate-price swap"><span>£260</span><span aria-hidden="true">Choose</span></span>
+          </span></span></button></li>
+          <li><button type="button" class="rate" data-room="control"><span class="rate-mask"><span class="rate-in">
+            <span class="rate-name"><span class="sr">Choose </span>Control room only, mixing</span>
+            <span class="rate-detail">10-hour day, engineer included</span>
+            <span class="rate-price swap"><span>£300</span><span aria-hidden="true">Choose</span></span>
+          </span></span></button></li>
+        </ul>
+        <p class="rates-foot">Prices before VAT. 2-inch tape stock £60 a day.</p>
+      </section>
+
+    </div>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/SplitText.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  /* ====================================================================
+     Plain layer: validation, the hold-to-send reel and meter, the in-page result.
+     Works without the CDN; the motion layer at the bottom only adds.
+     ==================================================================== */
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const root = document.documentElement;
+  const RM = matchMedia('(prefers-reduced-motion: reduce)');
+  const css = name => parseFloat(getComputedStyle(root).getPropertyValue(name)) || 0;   // seconds
+  const wait = s => new Promise(r => setTimeout(r, RM.matches ? 0 : s * 1000));
+  const expoOut = t => (t >= 1 ? 1 : 1 - Math.pow(2, -10 * t));
+  const inOut = t => (t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);   // power3.inOut
+
+  const form = $('#enquiry-form'), send = $('#send'), status = $('#send-status');
+  const well = $('#enquiry'), box = $('#result'), title = $('#result-title'), live = $('#sent-live');
+  const pack = $('.reel .pack'), winds = $$('.reel .wind'), needle = $('.vu-needle');
+
+  const RATES = { live: 420, booth: 260, control: 300 }, TAPE_DAY = 60;
+  const ROOMS = { live: 'Live room', booth: 'Vocal booth', control: 'Control room only' };
+  const SESSIONS = { tracking: 'Tracking', overdubs: 'Overdubs', mixing: 'Mixing your files' };
+  const DAY = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const IDLE = 'Hold until the reel is full, or press Enter.';
+
+  // Shared with the motion layer (null and no-ops when it is absent).
+  const M = { lenis: null, onHold: () => {} };
+
+  /* ---------- dates, money, reply time ---------- */
+  const pad = n => String(n).padStart(2, '0');
+  const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const tomorrow = (now = new Date()) => new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  const parseDay = v => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v || '');
+    if (!m) return null;
+    const d = new Date(+m[1], +m[2] - 1, +m[3]);
+    return d.getMonth() === +m[2] - 1 ? d : null;
+  };
+  const fmtDay = d => `${DAY[d.getDay()].slice(0, 3)} ${d.getDate()} ${MON[d.getMonth()]} ${d.getFullYear()}`;
+  const estimate = (room, days, tape) => (RATES[room] + (tape ? TAPE_DAY : 0)) * days;
+  const money = n => '£' + n.toLocaleString('en-GB');
+  // Replies go out 10:00 to 18:00, Monday to Saturday; anything after 17:00 waits for the next working morning.
+  function replyText(email, now = new Date()) {
+    if (now.getDay() !== 0 && now.getHours() < 17) return `We'll reply to ${email} by 18:00 today.`;
+    const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    while (next.getDay() === 0) next.setDate(next.getDate() + 1);
+    return `We'll reply to ${email} by 12:00 on ${DAY[next.getDay()]}.`;
+  }
+
+  /* ---------- the transport: reel, spokes and the header VU needle ----------
+     p is the fill (0 to 1). The pack is a dashed ring, offset C * (1 - p), ease none.
+     The spokes come up to speed like a capstan: 540deg * p^2 (power1.in).
+     The needle reads the recording level: rest (-20 VU) to 0 VU with the fill.  */
+  const C = 2 * Math.PI * 17.5, SPIN = 540;
+  const vuDeg = db => -48 + 96 * (10 ** (db / 20) - .1) / (10 ** (3 / 20) - .1);   // VU scale is spaced by voltage
+  const VU_REST = vuDeg(-20), VU_ZERO = vuDeg(0);
+  const dashAt = p => C * (1 - p), spinAt = p => SPIN * p * p, needleAt = p => VU_REST + (VU_ZERO - VU_REST) * p;
+  const T_HOLD = css('--t-hold') || 1;
+
+  const S = { p: 0, spin: 0, vu: VU_REST };
+  let state = 'idle';   // idle | holding | sending | sent | returning
+  function draw() {
+    pack.setAttribute('stroke-dashoffset', dashAt(S.p).toFixed(2));
+    const rot = RM.matches ? '' : `rotate(${S.spin.toFixed(2)})`;
+    winds.forEach(g => g.setAttribute('transform', rot));
+    needle.setAttribute('transform', `rotate(${Math.max(S.vu, VU_REST - 3).toFixed(2)} 60 74)`);   // the peg stops it below -20
+  }
+  // Short-lived loops, one per channel of S; nothing runs between holds.
+  const raf = {};
+  const stop = (...keys) => keys.forEach(k => { cancelAnimationFrame(raf[k]); raf[k] = 0; });
+  function tween(key, to, secs, ease, done, each) {
+    stop(key);
+    const from = S[key], t0 = performance.now();
+    const step = now => {
+      const k = secs > 0 ? Math.min(1, (now - t0) / (secs * 1000)) : 1;
+      S[key] = from + (to - from) * ease(k);
+      each && each();
+      draw();
+      if (k < 1) raf[key] = requestAnimationFrame(step); else { raf[key] = 0; done && done(); }
+    };
+    raf[key] = requestAnimationFrame(step);
+  }
+  const linear = k => k, quadOut = k => 1 - (1 - k) * (1 - k);
+  const quick = s => (RM.matches ? 0 : s);
+  function wind(secs, done) {
+    stop('spin', 'vu');
+    tween('p', 1, (1 - S.p) * secs, linear, done, () => { S.spin = spinAt(S.p); S.vu = needleAt(S.p); });
+  }
+  function resetReel() {
+    stop('p', 'spin');
+    S.p = 0; S.spin = 0; draw();
+    tween('vu', VU_REST, quick(.4), quadOut);
+    send.classList.remove('is-full', 'is-holding');
+  }
+
+  /* ---------- validation ---------- */
+  const RULES = {
+    name:  { name: 'Your name', msg: 'Enter your name so we know who to reply to.', ok: v => v.trim() !== '' },
+    email: { name: 'Email', msg: 'Enter an email address like name@example.com.', ok: v => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim()) },
+    phone: { name: 'Phone', msg: 'Use digits, spaces and + only.', ok: v => /^[\d +]*$/.test(v.trim()) },
+    session: { name: 'What do you need?', msg: 'Choose a session type.', ok: v => v in SESSIONS },
+    room:  { name: 'Which room?', msg: 'Choose a room.', ok: v => v in ROOMS },
+    first: { name: 'First day', msg: 'Pick a date from tomorrow onwards.', ok: v => { const d = parseDay(v); return !!d && d >= tomorrow(); } },
+    days:  { name: 'Days', msg: 'Book between 1 and 14 days. For longer, say so below.', ok: v => /^\d{1,2}$/.test(v.trim()) && +v >= 1 && +v <= 14 },
+    songs: { name: 'About the songs', msg: 'Add a few words about the songs, at least 10 characters.', ok: v => v.trim().length >= 10 },
+  };
+  const KEYS = Object.keys(RULES);
+  const touched = new Set();
+  const fieldOf = k => $(`[data-field="${k}"]`);
+  const value = k => form.elements[k].value;
+
+  function check(k) {
+    const good = RULES[k].ok(value(k));
+    fieldOf(k).classList.toggle('bad', !good);
+    const msg = $(`#${k}-err`);
+    msg.classList.toggle('bad', !good);   // days' message sits outside its field, so it carries the class itself
+    if (!good) msg.firstElementChild.textContent = RULES[k].msg;
+    const inputs = form.elements[k] instanceof RadioNodeList ? [...form.elements[k]] : [form.elements[k]];
+    inputs.forEach(i => (good ? i.removeAttribute('aria-invalid') : i.setAttribute('aria-invalid', 'true')));
+    return good;
+  }
+  function checkAll() { KEYS.forEach(k => touched.add(k)); return KEYS.filter(k => !check(k)); }
+  function say(text, error) { status.textContent = text; status.classList.toggle('is-error', !!error); }
+  function sayErrors(bad) {
+    const n = bad.length;
+    say(`${n} field${n > 1 ? 's need' : ' needs'} fixing: ${bad.map(k => RULES[k].name.replace(/\?$/, '')).join(', ')}.`, true);
+  }
+  function focusField(k) {
+    const el = form.elements[k];
+    const target = el instanceof RadioNodeList ? [...el].find(r => r.checked) || el[0] : el;
+    target.focus({ preventScroll: true });
+    bringIntoView(fieldOf(k));
+  }
+  // Once touched, a field is checked again on blur and as it changes; the status line follows.
+  const keyOf = el => (el.name in RULES ? el.name : null);
+  form.addEventListener('focusout', e => { const k = keyOf(e.target); if (k && e.target.type !== 'radio') { touched.add(k); check(k); refreshStatus(); } });
+  form.addEventListener('input', e => { const k = keyOf(e.target); if (k && touched.has(k)) { check(k); refreshStatus(); } });
+  form.addEventListener('change', e => { const k = keyOf(e.target); if (k && (touched.has(k) || e.target.type === 'radio')) { touched.add(k); check(k); refreshStatus(); } });
+  function refreshStatus() {
+    if (!status.classList.contains('is-error')) return;
+    const bad = KEYS.filter(k => fieldOf(k).classList.contains('bad') || $(`#${k}-err`).classList.contains('bad'));
+    bad.length ? sayErrors(bad) : say(IDLE);
+  }
+
+  /* ---------- hold to send ---------- */
+  // An invalid press shows the errors at once, but the messages push the key down under a finger that
+  // is still down, so the tap's click can land on another field. That click is swallowed wherever it
+  // lands, and only then does focus go to the first bad field (and the page scroll to it).
+  let pending = null;
+  const settle = () => { if (pending) { const k = pending; pending = null; focusField(k); } };
+  document.addEventListener('click', e => { if (pending) { e.preventDefault(); e.stopPropagation(); settle(); } }, true);
+  send.addEventListener('pointerdown', e => {
+    if (e.button !== 0 || state !== 'idle') return;
+    const bad = checkAll();
+    if (bad.length) { sayErrors(bad); pending = bad[0]; return; }   // nothing records until the form is right
+    state = 'holding';
+    try { send.setPointerCapture(e.pointerId); } catch (_) { /* pointer already gone */ }
+    send.classList.add('is-holding');
+    say('Recording. Keep holding until the reel is full.');
+    M.onHold();
+    wind(T_HOLD, commit);
+  });
+  const release = () => {
+    if (pending) { setTimeout(settle, 600); return; }   // normally the swallowed click settles first
+    if (state !== 'holding') return;
+    state = 'idle';
+    send.classList.remove('is-holding');
+    say('Released early. Hold until the reel is full.');
+    tween('p', 0, css('--t-rewind'), quadOut);                  // the pack drains
+    tween('spin', 0, quick(css('--t-spinback')), quadOut);      // the spokes run back
+    tween('vu', VU_REST, quick(.4), quadOut);                    // the needle drops to rest
+  };
+  send.addEventListener('pointerup', release);
+  send.addEventListener('pointercancel', release);
+  send.addEventListener('contextmenu', e => e.preventDefault());
+  // A real pointer's click belongs to the hold. Enter, Space, .click() (detail 0) and synthetic clicks
+  // from assistive tech or voice control (no pointerType) go through submit.
+  send.addEventListener('click', e => { if (e.detail > 0 && e.pointerType) e.preventDefault(); });
+
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    if (state !== 'idle') return;
+    const bad = checkAll();
+    if (bad.length) { sayErrors(bad); focusField(bad[0]); return; }
+    state = 'sending';
+    say('Sending your enquiry.');
+    M.onHold();
+    wind(css('--t-key'), commit);
+  });
+
+  /* ---------- the tape-box label ---------- */
+  function fillLabel() {
+    const v = Object.fromEntries(new FormData(form));
+    const days = +v.days, tape = !!v.tape;
+    const set = (k, t) => { $(`[data-k="${k}"]`, box).textContent = t; };
+    set('name', v.name.trim());
+    set('project', v.project.trim() || 'Not given');
+    set('session', SESSIONS[v.session]);
+    set('room', ROOMS[v.room]);
+    set('first', fmtDay(parseDay(v.first)));
+    set('days', String(days));
+    set('tape', tape ? '2-inch, 24-track, 15 ips, NAB' : 'No tape');
+    $$('.tb-boxes li', box).forEach(li => li.classList.toggle('on', li.dataset.tape === (tape ? '1' : '0')));
+    set('estimate', `Estimate ${money(estimate(v.room, days, tape))} before VAT`);
+    set('reply', replyText(v.email.trim()));
+  }
+  const panel = (el, on) => { el.inert = !on; on ? el.removeAttribute('aria-hidden') : el.setAttribute('aria-hidden', 'true'); };
+
+  // The well keeps its height while one panel swaps for the other, then follows the new one.
+  // With toLabel, the page scrolls with it so the label glides up to the top of the view.
+  function fit(change, toLabel) {
+    const h0 = well.offsetHeight;
+    change();
+    const h1 = well.offsetHeight;
+    let y = null;
+    if (toLabel) {
+      const top = box.getBoundingClientRect().top;   // where the label will sit once the well has shrunk
+      if (top < 0 || top > innerHeight * .6) y = scrollY + top - 24;
+    }
+    const secs = quick(css('--dur-fit'));
+    if (y !== null) {
+      if (M.lenis) { M.lenis.resize(); M.lenis.scrollTo(y, { duration: secs || .01, easing: inOut, force: true }); }
+      else scrollTo({ top: y, behavior: secs ? 'smooth' : 'auto' });
+    }
+    if (!secs || h0 === h1) return Promise.resolve(M.lenis && M.lenis.resize());
+    well.style.overflow = 'clip';
+    const a = well.animate([{ height: h0 + 'px' }, { height: h1 + 'px' }], { duration: secs * 1000, easing: 'cubic-bezier(.65, 0, .35, 1)' });
+    return a.finished.catch(() => {}).then(() => { well.style.overflow = ''; M.lenis && M.lenis.resize(); });
+  }
+
+  async function commit() {
+    state = 'sent';
+    send.classList.add('is-full');          // the Rec LED lights amber; the label swaps to "Recorded"
+    send.classList.remove('is-holding');
+    fillLabel();
+    say('Recorded.');
+    await wait(.15);
+    form.classList.add('is-out');
+    await wait(css('--dur-fade'));
+    panel(form, false);
+    box.style.alignSelf = 'end';            // revealed where the send key was
+    panel(box, true);
+    void box.offsetWidth;
+    box.classList.add('is-open');
+    title.focus({ preventScroll: true });
+    await wait(css('--dur-open'));
+    await fit(() => { form.hidden = true; }, true);
+    live.textContent = `Enquiry sent. ${$('[data-k="estimate"]', box).textContent}. ${$('[data-k="reply"]', box).textContent}`;
+  }
+  async function back(reset) {
+    if (state !== 'sent') return;
+    state = 'returning';
+    live.textContent = '';
+    box.style.alignSelf = 'start';          // the label holds its place while the well grows under it
+    await fit(() => { form.hidden = false; }, false);
+    box.classList.remove('is-open');
+    await wait(css('--dur-close'));
+    panel(box, false);
+    if (reset) {
+      form.reset();
+      touched.clear();
+      KEYS.forEach(k => { fieldOf(k).classList.remove('bad'); $(`#${k}-err`).classList.remove('bad'); });
+      $$('[aria-invalid]', form).forEach(i => i.removeAttribute('aria-invalid'));
+    }
+    resetReel();
+    say(IDLE);
+    panel(form, true);
+    void form.offsetWidth;
+    form.classList.remove('is-out');
+    state = 'idle';
+    $('#f-name').focus({ preventScroll: true });
+    bringIntoView(well);
+  }
+  $('#edit').addEventListener('click', () => back(false));
+  $('#restart').addEventListener('click', () => back(true));
+
+  /* ---------- scrolling into view (Lenis when present) ---------- */
+  function bringIntoView(el) {
+    const r = el.getBoundingClientRect();
+    if (r.top >= 0 && r.top < innerHeight * .6) return;
+    if (M.lenis) { M.lenis.resize(); M.lenis.scrollTo(el, { offset: -24, duration: 1.1, easing: expoOut }); }
+    else el.scrollIntoView({ block: 'start', behavior: RM.matches ? 'auto' : 'smooth' });
+  }
+
+  /* ---------- day-rate rows fill in the room ---------- */
+  $$('.rate').forEach(b => b.addEventListener('click', async () => {
+    if (state === 'sent') await back(false);
+    if (state !== 'idle') return;
+    const room = form.querySelector(`input[name=room][value=${b.dataset.room}]`);
+    room.checked = true;
+    if (b.dataset.room === 'control') form.querySelector('input[name=session][value=mixing]').checked = true;
+    ['room', 'session'].forEach(k => { if (touched.has(k)) check(k); });
+    refreshStatus();
+    room.focus({ preventScroll: true });
+    const target = $('#room-choice');
+    if (M.lenis) M.lenis.scrollTo(target, { offset: -16, duration: 1.1, easing: expoOut });
+    else target.scrollIntoView({ block: 'start', behavior: RM.matches ? 'auto' : 'smooth' });
+  }));
+
+  /* ---------- HV4: the fill enters from the side the pointer came in ---------- */
+  $$('.fill').forEach(b => ['pointerenter', 'pointerleave'].forEach(type => b.addEventListener(type, e => {
+    const r = b.getBoundingClientRect();
+    b.style.setProperty('--from', e.clientX < r.left + r.width / 2 ? 'left' : 'right');
+  })));
+
+  $('#f-first').min = iso(tomorrow());
+  draw();
+
+  /* ---------- self-test: open with #selftest ---------- */
+  function runSelfTest() {
+    const near = (a, b) => Math.abs(a - b) <= 1e-6 * Math.max(1, Math.abs(b));
+    const sat = new Date(2026, 9, 24, 17, 30), tue = new Date(2026, 9, 27, 10, 0);
+    const results = {
+      'invalid email rejected': !RULES.email.ok('ana@studio') && RULES.email.ok('ana@example.com'),
+      'yesterday and today rejected': !RULES.first.ok(iso(new Date(Date.now() - 864e5))) && !RULES.first.ok(iso(new Date())),
+      'tomorrow accepted': RULES.first.ok(iso(tomorrow())),
+      'days 0 and 15 rejected': !RULES.days.ok('0') && !RULES.days.ok('15') && RULES.days.ok('1') && RULES.days.ok('14'),
+      '9-character message rejected': !RULES.songs.ok('123456789') && RULES.songs.ok('1234567890'),
+      'phone allows digits, spaces and +': RULES.phone.ok('') && RULES.phone.ok('+44 114 496 0732') && !RULES.phone.ok('0114-496'),
+      'estimate live, 3 days, tape = 1440': estimate('live', 3, true) === 1440 && estimate('booth', 2, false) === 520,
+      'Saturday 17:30 reply says Monday': sat.getDay() === 6 && /by 12:00 on Monday\.$/.test(replyText('a@b.co', sat)),
+      'Tuesday 10:00 reply says today': /by 18:00 today\.$/.test(replyText('a@b.co', tue)),
+      'date label format': fmtDay(new Date(2026, 10, 16)) === 'Mon 16 Nov 2026',
+      'pack dash: full circumference empty, 0 full': near(dashAt(0), C) && near(dashAt(1), 0) && near(+pack.getAttribute('stroke-dasharray'), +C.toFixed(2)),
+      'spokes come up to speed through 540deg': near(spinAt(1), 540) && spinAt(1) - spinAt(.9) > spinAt(.1) - spinAt(0),
+      'needle: rest at -20 VU (-48deg), full reel at 0 VU': near(VU_REST, -48) && near(needleAt(1), VU_ZERO) && VU_ZERO > 17 && VU_ZERO < 18.5,
+      'empty form flags 7 fields': (() => { const bad = KEYS.filter(k => !RULES[k].ok('')); return bad.length === 7 && !bad.includes('phone'); })(),
+    };
+    const failed = Object.keys(results).filter(k => !results[k]);
+    console.log(failed.length ? `SELFTEST FAIL: ${failed.join('; ')}` : `SELFTEST PASS (${Object.keys(results).length} checks)`);
+  }
+  if (location.hash === '#selftest') runSelfTest();
+
+  /* ====================================================================
+     Motion layer: GSAP + ScrollTrigger + SplitText + Lenis.
+     ==================================================================== */
+  if (!(window.gsap && window.ScrollTrigger && window.SplitText && window.Lenis)) return;
+  root.classList.add('js');
+  gsap.registerPlugin(ScrollTrigger, SplitText);
+  const IN = ['in-load', 'in-well', 'in-rules', 'in-rates', 'in-send'];
+  const t0 = performance.now();
+  const after = s => Math.max(0, s - (performance.now() - t0) / 1000);   // keep the load score's offsets
+  const rim = $('.reel .rim');
+
+  gsap.matchMedia().add({
+    motion: '(prefers-reduced-motion: no-preference)',
+    reduce: '(prefers-reduced-motion: reduce)',
+    fine: '(hover: hover) and (pointer: fine)',
+    wide: '(min-width: 992px)'
+  }, ctx => {
+    const { motion, fine } = ctx.conditions;
+    if (!motion) { root.classList.add(...IN); return; }   // final states, native scroll, needle at rest
+
+    const lenis = new Lenis({ lerp: .1, smoothWheel: true, autoRaf: false, anchors: false });
+    M.lenis = lenis;
+    lenis.on('scroll', ScrollTrigger.update);
+    const tick = time => lenis.raf(time * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
+    // This section has no menu or dialog. If an adapter adds one: lenis.stop() on open, lenis.start() on close.
+
+    M.onHold = () => gsap.killTweensOf(S);   // the hold owns the needle
+
+    /* LOAD: name and meter, the well opens like a panel, then the words run on line by line */
+    const first = !root.classList.contains('in-load');
+    if (first) {
+      gsap.fromTo('.head > *', { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: .4, ease: 'expo.out', stagger: .08, delay: after(0) });
+      gsap.fromTo(well, { clipPath: 'inset(0% 0% 100% 0%)' }, {
+        clipPath: 'inset(0% 0% 0% 0%)', duration: .9, ease: 'expo.out', delay: after(.3),
+        onComplete: () => { gsap.set(well, { clearProps: 'clipPath' }); root.classList.add('in-well'); }
+      });
+    }
+    const failsafe = setTimeout(() => root.classList.add(...IN.slice(0, 2)), 3000);   // never leave the heading hidden
+    // The load score plays once; a later re-run of this context (crossing 992px) keeps everything in place.
+    if (first) Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 1000))]).then(() => ctx.add(() => {
+      const lines = (el, at, stagger, duration) => {
+        let once = true;
+        SplitText.create(el, {
+          type: 'lines', mask: 'lines', autoSplit: true,
+          onSplit(self) {
+            gsap.set(el, { visibility: 'visible' });
+            const tw = gsap.from(self.lines, { yPercent: 110, duration, ease: 'expo.out', stagger, delay: once ? after(at) : 0 });
+            once = false;
+            return tw;
+          }
+        });
+      };
+      try {
+        lines('#quote-title', .15, .08, 1);
+        lines('.intro', .4, .04, .8);
+      } catch (_) { root.classList.add('in-load'); }
+      // Channels: each label and value rises inside its own clip, a masked line without splitting the links.
+      gsap.set('.ch', { opacity: 1 });
+      gsap.fromTo('.ch dt, .ch dd > *', { yPercent: 100, clipPath: 'inset(-100% 0% 100% 0%)' }, {
+        yPercent: 0, clipPath: 'inset(0% 0% 0% 0%)', duration: .6, ease: 'expo.out', stagger: .03, delay: after(.55),
+        clearProps: 'transform,clipPath', onComplete: () => root.classList.add('in-load')
+      });
+      // Meter calibration: one kick to -3 VU, then the needle falls back to its peg.
+      gsap.timeline({ delay: after(1.05) })
+        .to(S, { vu: vuDeg(-3), duration: .35, ease: 'power2.out', onUpdate: draw })
+        .to(S, { vu: VU_REST, duration: .9, ease: 'elastic.out(1, 0.5)', onUpdate: draw });
+    }));
+
+    /* SCROLL 1, SC16: each field's rule draws from the left once the well has opened */
+    ScrollTrigger.batch('.ctl', {
+      start: 'top 94%', once: true,
+      onEnter: els => gsap.to(els, { '--d': 1, duration: .7, ease: 'expo.out', stagger: .05, delay: after(.75) })
+    });
+
+    /* SCROLL 2: the transport arms. The flange draws round and the Rec LED blinks once: record ready. */
+    ScrollTrigger.create({
+      trigger: '.send-row', start: 'top 85%', once: true,
+      onEnter: () => {
+        gsap.fromTo(rim, { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: .8, ease: 'expo.out', onComplete: () => { gsap.set(rim, { clearProps: 'strokeDashoffset' }); root.classList.add('in-send'); } });
+        send.classList.add('ready');
+      }
+    });
+    const unready = () => send.classList.remove('ready');
+    send.addEventListener('animationend', unready);
+
+    /* SCROLL 3: day rates, each rule first, then its row rises from its mask */
+    ScrollTrigger.create({
+      trigger: '.rates-list', start: 'top 85%', once: true,
+      onEnter: () => {
+        gsap.to('.rate', { '--d': 1, duration: .9, ease: 'expo.out', stagger: .1 });
+        gsap.to('.rate-in', { y: 0, duration: .8, ease: 'expo.out', stagger: .1, delay: .15, onComplete: () => root.classList.add('in-rates') });
+      }
+    });
+
+    /* HOVER and FOCUS on the send key: the meter twitches as the input is armed (-18 VU and back) */
+    const twitch = () => {
+      if (state !== 'idle' || S.p > 0 || raf.vu) return;
+      gsap.killTweensOf(S);
+      gsap.timeline({ defaults: { onUpdate: draw } })
+        .to(S, { vu: vuDeg(-18), duration: .12, ease: 'power2.out' })
+        .to(S, { vu: VU_REST, duration: .28, ease: 'power2.inOut' });
+    };
+    const onEnter = e => { if (fine && e.pointerType === 'mouse') twitch(); };
+    const onFocus = () => { if (send.matches(':focus-visible')) twitch(); };
+    send.addEventListener('pointerenter', onEnter);
+    send.addEventListener('focus', onFocus);
+
+    return () => {
+      clearTimeout(failsafe);
+      send.removeEventListener('animationend', unready);
+      send.removeEventListener('pointerenter', onEnter);
+      send.removeEventListener('focus', onFocus);
+      M.onHold = () => {};
+      M.lenis = null;
+      gsap.ticker.remove(tick);
+      gsap.ticker.lagSmoothing(500, 33);
+      lenis.destroy();
+      root.classList.add(...IN);
+      gsap.killTweensOf([S, well, rim, '.ctl', '.rate', '.rate-in', '.ch dt', '.ch dd > *']);
+      if (state === 'idle') { S.vu = VU_REST; draw(); }
+      gsap.set([well, rim, ...$$('.ctl, .rate, .rate-in, [data-rv], .ch dt, .ch dd > *')], { clearProps: 'all' });
+    };
+  });
+})();
+</script>
+</body>
+</html>
