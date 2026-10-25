@@ -1,0 +1,1048 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Viña Herrera harvest weekend</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Faustina:ital,wght@0,400..700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* colour: a pressing-shed wall stained with must, the vines, one Cinsault accent */
+    --wall: #ECE6EA;       /* ground: pale lilac-grey shed wall (must 12.5:1, cinsault 7.2:1) */
+    --paper: #F7F4F6;      /* the plan sheet, fields, chips, panels */
+    --must: #3A1838;       /* ink */
+    --cinsault: #7A2E5E;   /* the one accent: your share on the plan, primary fills, focus, errors, chosen chip */
+    --leaf: #6F7F4C;       /* vines on the plan, chip borders, field hover rule; graphics only (3.5:1 on wall, 4.0:1 on paper) */
+    --ink-soft: #5E5560;   /* labels, hints, row details (5.8:1 on wall, 6.5:1 on paper) */
+    --rule: color-mix(in srgb, var(--must) 22%, transparent);
+    --edge: color-mix(in srgb, var(--must) 55%, var(--paper));     /* field borders (3.6:1 on paper) */
+    --tint: color-mix(in srgb, var(--cinsault) 14%, var(--paper)); /* chosen chip */
+    --yard: color-mix(in srgb, var(--must) 8%, var(--paper));      /* the shed's footprint on the plan */
+    --scrim: rgb(58 24 56 / .5);
+
+    /* type: Faustina only */
+    --font-text: "Faustina", Georgia, "Times New Roman", serif;
+    --fs-xs: .875rem;   /* hints, errors, row details, the plan key */
+    --fs-s: 1rem;       /* rows, labels, buttons */
+    --fs-m: 1.125rem;   /* body, the live sentence */
+    --fs-l: 1.5rem;     /* h3, the family paragraph */
+    --fs-xxl: clamp(2.75rem, 1.6rem + 4.6vw, 4.5rem);  /* h2 under 992px */
+    --fs-xxl-side: 3.25rem;                            /* h2 beside the plan, from 992px */
+    --fs-plan: 15px;    /* block names painted on the plan */
+
+    /* spacing, 4-based */
+    --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px;
+    --s6: 32px; --s7: 48px; --s8: 72px; --s9: 112px;
+    --gutter: clamp(16px, 5vw, 72px);
+    --max: 1280px;
+    --col-gap: 24px;
+
+    /* shape: each radius means one thing */
+    --r-field: 4px;     /* inputs and chips */
+    --r-pill: 999px;    /* actions */
+    --focus: 2px solid var(--cinsault);
+
+    /* motion: CSS curves and durations; the script reads the --t- values (seconds) */
+    --ease-out: cubic-bezier(.16, 1, .3, 1);        /* expo.out */
+    --ease-follow: cubic-bezier(.215, .61, .355, 1); /* power3.out */
+    --ease-sweep: cubic-bezier(.35, 0, 0, 1);        /* HV2 underline */
+    --ease-pop: cubic-bezier(.34, 1.8, .64, 1);      /* about back.out(2), radio dot */
+    --dur-xs: .12s; --dur-s: .25s; --dur-m: .45s;
+    --t-walk: .9; --t-walk-dot: .055; --t-walk-max: 2.4; --t-cut: .3; --t-plant: .5; --t-spread: .9;
+    --t-dialog: .6; --t-dialog-out: .35; --t-done: .7; --t-done-out: .35;
+  }
+  @media (max-width: 639px) { :root { --fs-plan: 14px; } }
+
+  /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { background: var(--wall); -webkit-text-size-adjust: 100%; scrollbar-gutter: stable; }
+  html:has(dialog[open]) { overflow: clip; }   /* the page stays put behind the dialog, with or without Lenis */
+  body { margin: 0; background: var(--wall); color: var(--must); font: 400 var(--fs-m)/1.6 var(--font-text); }
+  h2, h3, h4, p, ul, ol, fieldset, legend, figure { margin: 0; padding: 0; }
+  ul, ol { list-style: none; }
+  fieldset { border: 0; min-width: 0; }
+  button, input, select { font: inherit; color: inherit; }
+  :focus-visible { outline: var(--focus); outline-offset: 3px; }
+  [tabindex="-1"]:focus { outline: none; }
+  .tnum { font-variant-numeric: lining-nums tabular-nums; }
+
+  .harvest { padding-block: var(--s8) var(--s9); overflow-x: clip; }
+  .wrap { max-width: var(--max); margin-inline: auto; padding-inline: var(--gutter); }
+  h3 { font: 600 var(--fs-l)/1.2 var(--font-text); }
+  h4 { font: 600 var(--fs-m)/1.3 var(--font-text); }
+  [id] { scroll-margin-top: var(--s5); }
+
+  /* ---------- links and buttons ---------- */
+  /* HV2: a resting hairline, and an ink underline that enters from the left and leaves to the right */
+  .ul {
+    position: relative; display: inline-block; padding: 0 0 .12em; border: 0; background: none;
+    color: var(--must); text-decoration: none; cursor: pointer; font-weight: 600;
+  }
+  .ul::before, .ul::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; pointer-events: none; }
+  .ul::before { height: 1px; background: var(--rule); }
+  .ul::after {
+    height: max(1.5px, .07em); background: currentColor;
+    transform: scaleX(0); transform-origin: right; transition: transform var(--dur-m) var(--ease-sweep);
+  }
+  .ul:hover::after, .ul:focus-visible::after { transform: scaleX(1); transform-origin: left; }
+  @media (hover: none) { .ul::after { transform: scaleX(1); } }
+  button.ul { font-size: var(--fs-s); line-height: 1.5; }
+
+  /* HV4: a fill sweeps in from the edge the pointer entered, and leaves by the edge it left */
+  .fill { position: relative; isolation: isolate; overflow: hidden; }
+  .fill::before {
+    content: ""; position: absolute; inset: 0; z-index: -1; background: var(--fill-bg);
+    transform: scaleX(0); transform-origin: var(--from, left); transition: transform .35s var(--ease-out);
+  }
+  .fill:hover::before, .fill:focus-visible::before { transform: scaleX(1); transition-duration: var(--dur-m); }
+
+  /* MI1: press and release */
+  .press { transition: transform .4s var(--ease-follow), color .2s; }
+  .press:active { transform: scale(.97); transition: transform var(--dur-xs), color .2s; }
+
+  .btn-line {
+    --fill-bg: var(--cinsault);
+    display: inline-flex; align-items: center; min-height: 48px; padding: 0 var(--s5);
+    border: 1.5px solid var(--cinsault); border-radius: var(--r-pill);
+    color: var(--must); font: 600 var(--fs-s)/1 var(--font-text); text-decoration: none;
+  }
+  .btn-line:hover, .btn-line:focus-visible { color: var(--wall); }
+
+  /* ---------- intro ---------- */
+  .intro h2 { font-weight: 700; font-size: var(--fs-xxl); line-height: .98; letter-spacing: -.01em; max-width: 12.5em; text-wrap: balance; }
+  .ln-mask { padding-bottom: .1em; margin-bottom: -.1em; }
+  .lead { max-width: 56ch; margin-top: var(--s5); }
+  .actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s4) var(--s6); margin-top: var(--s6); }
+
+  /* ---------- sign-up band: the plan, the form, the six blocks ---------- */
+  /* under 992px the two columns dissolve: intro, heading, plan, form, rows */
+  .signup { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s6); }
+  .col-a, .col-b { display: contents; }
+  .plan { order: 1; } .stage { order: 2; } .blocks { order: 3; }
+  .signup-head { margin-top: var(--s5); }
+  .signup-head p { margin-top: var(--s3); max-width: 40ch; }
+  @media (min-width: 992px) {
+    /* the plan opens the section on the left; the words that explain it and the form sit beside it */
+    .signup { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--col-gap); align-items: start; }
+    .col-a, .col-b { display: grid; gap: var(--s6); align-content: start; }
+    .col-a { grid-area: 1 / 1 / 2 / 9; }
+    .col-b { grid-area: 1 / 9 / 2 / 13; padding-left: var(--s4); }
+    .intro h2 { font-size: var(--fs-xxl-side); }
+    .intro .lead { font-size: var(--fs-s); margin-top: var(--s4); }
+    .intro .actions { margin-top: var(--s5); }
+    .to-day { display: none !important; }
+    .plan-box { margin-top: 0 !important; }
+    .signup-head { margin-top: var(--s3); }
+    .blocks { margin-top: var(--s3); }
+  }
+
+  /* the planting plan */
+  .plan-box { position: relative; aspect-ratio: 450 / 340; margin-top: var(--s6); border: 1px solid var(--must); background: var(--paper); }
+  .plan-box svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: manipulation; }
+  .blk { fill: transparent; stroke: none; }
+  .dots { transition: opacity .4s var(--ease-out); }
+  .dots.dim { opacity: .38; }   /* blocks you will not pick step back */
+  .dots circle { fill: var(--paper); stroke: var(--leaf); stroke-width: calc(var(--u, 1) * 1.25px); pointer-events: none; }
+  .shed { fill: var(--yard); stroke: var(--must); stroke-width: calc(var(--u, 1) * 1px); pointer-events: none; }
+  .walk { fill: none; stroke: var(--cinsault); stroke-width: calc(var(--u, 1) * 2.5px); stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 0; pointer-events: none; }
+  .cut circle, .head { fill: var(--cinsault); stroke: var(--paper); stroke-width: calc(var(--u, 1) * 1px); pointer-events: none; }
+  .hl {
+    fill: none; stroke: var(--cinsault); stroke-width: calc(var(--u, 1) * 1.5px); stroke-dasharray: 1; stroke-dashoffset: 0;
+    pointer-events: none; opacity: 0; transition: opacity .2s;
+  }
+  .hl.on { opacity: 1; }
+  .names { position: absolute; inset: 0; pointer-events: none; }
+  .name {
+    position: absolute; transform: translateY(-50%); padding: 0 5px 0 3px; background: var(--paper);
+    font: 600 var(--fs-plan)/1.15 var(--font-text); white-space: nowrap;
+  }
+  .name.end { transform: translate(-100%, -50%); padding: 0 3px 0 5px; }
+  .name.shed-name { transform: translate(-50%, -50%); background: none; font-weight: 400; font-style: italic; }
+  /* a highlighted block's plate opens a second line with its reading, revealed left to right */
+  .name.on { z-index: 1; }
+  .name .x {
+    position: absolute; top: 100%; left: 0; padding: 0 5px 1px 3px; background: inherit; white-space: nowrap;
+    font-weight: 500; font-variant-numeric: lining-nums tabular-nums;
+    clip-path: inset(0 100% 0 0); transition: clip-path .2s var(--ease-out);
+  }
+  .name.end .x, .name.flip .x { left: auto; right: 0; padding: 0 3px 1px 5px; }
+  .name .x i { font-weight: 400; }
+  .name.on .x { clip-path: inset(0); transition-duration: .35s; }
+  /* where your share enters the block: a tag above the plan, on the line the walk starts from */
+  .tags { position: absolute; inset: 0; pointer-events: none; }
+  .tag {
+    position: absolute; bottom: calc(100% + 9px); padding-left: 1px; transform: translateX(-1px);
+    font: italic 400 var(--fs-xs)/1.2 var(--font-text); color: var(--cinsault); white-space: nowrap;
+  }
+  .tag::after { content: ""; position: absolute; left: 0; top: calc(100% + 1px); width: 2px; height: 9px; background: var(--cinsault); }
+  .tag.flip { transform: translateX(calc(-100% + 1px)); padding: 0 1px 0 0; }
+  .tag.flip::after { left: auto; right: 0; }
+
+  .yours { margin-top: var(--s4); max-width: 52ch; font-size: var(--fs-m); line-height: 1.5; text-wrap: balance; }
+  .yours b { font-weight: 600; }
+  .key { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s5); margin-top: var(--s3); font-size: var(--fs-xs); color: var(--ink-soft); }
+  .key span { display: inline-flex; align-items: center; gap: var(--s2); }
+  .key svg { flex: none; width: 28px; height: 12px; overflow: visible; }
+
+  /* the six blocks */
+  .blocks h3 { margin-bottom: var(--s4); }
+  .rows { border-bottom: 1px solid var(--rule); }
+  .rows li, .slots li { position: relative; }
+  .rows li::before, .slots li::before {
+    content: ""; position: absolute; inset: 0 0 auto; height: 1px; background: var(--rule);
+    transform: scaleX(var(--d, 1)); transform-origin: left;
+  }
+  .row {
+    position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px var(--s4); align-items: baseline;
+    width: 100%; min-height: 56px; padding: var(--s3) var(--s2) var(--s3) 0; border: 0; background: none;
+    font-size: var(--fs-s); line-height: 1.35; text-align: left; cursor: pointer;
+  }
+  .row:focus-visible { outline-offset: 0; }
+  /* phones: a small copy of the plan stays at the top of the rows and outlines the block being read */
+  .mini { position: sticky; top: 0; z-index: 2; padding-block: var(--s2); margin-bottom: var(--s2); background: var(--wall); }
+  .mini svg { display: block; height: 96px; width: auto; aspect-ratio: 450 / 340; border: 1px solid var(--must); background: var(--paper); }
+  .mini circle { fill: var(--leaf); opacity: .7; }
+  .mini .hl { stroke-width: 10px; }
+  @media (min-width: 992px) { .mini { display: none; } }
+  .row::after {   /* HV2 marker: the block under the pointer */
+    content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--cinsault);
+    transform: scaleX(0); transform-origin: right; transition: transform .4s var(--ease-sweep);
+  }
+  .row.hot::after { transform: scaleX(1); transform-origin: left; }
+  .r-name { font-weight: 600; }
+  .r-brix, .r-when { text-align: right; font-variant-numeric: lining-nums tabular-nums; }
+  .r-brix { font-weight: 500; }
+  .r-brix small, .r-meta, .r-when { font-size: var(--fs-xs); color: var(--ink-soft); }
+  .r-meta { text-wrap: pretty; }
+  .r-brix small { font-style: italic; font-weight: 400; }
+
+  /* ---------- the form ---------- */
+  .stage { display: grid; }
+  .stage > * { grid-area: 1 / 1; align-self: start; }
+  form { display: grid; gap: var(--s4); }
+  .pair { display: grid; gap: var(--s4) var(--s5); }
+  @media (min-width: 640px) and (max-width: 991px) { .pair { grid-template-columns: 1fr 1fr; } }
+  .field > label, legend { display: block; margin-bottom: var(--s2); font-size: var(--fs-s); font-weight: 600; color: var(--ink-soft); transition: color .2s; }
+  .field:focus-within > label, fieldset:focus-within > legend { color: var(--must); }
+  .ctl { position: relative; display: block; }
+  .ctl input, .ctl select {
+    display: block; width: 100%; min-height: 48px; padding: var(--s2) var(--s4); appearance: none;
+    border: 1px solid var(--edge); border-radius: var(--r-field); background: var(--paper); font-size: var(--fs-s);
+  }
+  .ctl select { padding-right: var(--s7); cursor: pointer; }
+  .ctl [aria-invalid="true"] { border-color: var(--cinsault); }
+  .ctl::before, .ctl::after { content: ""; position: absolute; left: 1px; right: 1px; bottom: 0; pointer-events: none; }
+  .ctl::before { height: 1px; background: var(--leaf); opacity: 0; transition: opacity .2s; }
+  .ctl:hover::before { opacity: 1; }
+  .ctl::after { height: 2px; background: var(--cinsault); transform: scaleX(0); transform-origin: left; transition: transform var(--dur-s) var(--ease-out); }
+  .ctl:focus-within::after { transform: scaleX(1); }
+  .chev { position: absolute; right: var(--s4); top: 50%; width: 12px; height: 8px; margin-top: -4px; fill: none; stroke: var(--must); stroke-width: 1.6; pointer-events: none; }
+  .sel { max-width: 16rem; }
+  .f-hint { margin-top: var(--s1); font-size: var(--fs-xs); color: var(--ink-soft); }
+  /* one reserved line per field: the error is revealed in place by clip and opacity, never by changing height */
+  .msg {
+    min-height: 1.45em; margin-top: var(--s1); font-size: var(--fs-xs); line-height: 1.45; color: var(--cinsault); font-weight: 500;
+    clip-path: inset(-.2em 100% -.2em 0); opacity: 0; transition: clip-path var(--dur-s) var(--ease-out), opacity var(--dur-s);
+  }
+  .msg.on { clip-path: inset(-.2em 0 -.2em 0); opacity: 1; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: var(--s3); }
+  .chip {
+    position: relative; isolation: isolate; display: flex; align-items: center; gap: var(--s3); min-height: 48px; padding: var(--s2) var(--s4);
+    border: 1px solid var(--leaf); border-radius: var(--r-field); background: var(--paper); font-size: var(--fs-s); cursor: pointer;
+  }
+  @media (max-width: 479px) { .chip { flex: 1 1 100%; } }
+  .chip::after {   /* the Cinsault border fades in over the leaf one */
+    content: ""; position: absolute; inset: -1px; border: 1px solid var(--cinsault); border-radius: inherit;
+    opacity: 0; transition: opacity .2s; pointer-events: none;
+  }
+  .chip:hover::after, .chip:has(:checked)::after, .chip:has([aria-invalid="true"])::after { opacity: 1; }
+  .chip::before {
+    content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--tint);
+    clip-path: inset(0 100% 0 0); transition: clip-path .35s var(--ease-out);
+  }
+  .chip input { position: absolute; width: 1px; height: 1px; opacity: 0; margin: 0; }
+  .chip:has(:checked)::before { clip-path: inset(0); }
+  .chip:has(:focus-visible) { outline: var(--focus); outline-offset: 3px; }
+  .dot { display: grid; place-items: center; flex: none; width: 18px; height: 18px; border: 1.5px solid var(--must); border-radius: 50%; background: var(--paper); }
+  .dot::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--cinsault); transform: scale(0); transition: transform .35s var(--ease-pop); }
+  .chip:has(:checked) .dot::after { transform: scale(1); }
+  .chip .tnum { font-weight: 500; }
+
+  .check { display: flex; align-items: center; gap: var(--s3); min-height: 44px; font-size: var(--fs-s); line-height: 1.45; cursor: pointer; margin-bottom: var(--s2); }
+  .check input { position: absolute; width: 1px; height: 1px; opacity: 0; margin: 0; }
+  .box {
+    display: grid; place-items: center; flex: none; width: 22px; height: 22px; border: 1.5px solid var(--must);
+    border-radius: var(--r-field); background: var(--paper); transition: background-color .2s, border-color .2s;
+  }
+  .box svg { width: 16px; height: 16px; }
+  .box path { fill: none; stroke: var(--paper); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset .3s var(--ease-out); }
+  .check:hover .box { border-color: var(--cinsault); }
+  .check:has(:checked) .box { border-color: var(--cinsault); background: var(--cinsault); }
+  .check:has(:checked) .box path { stroke-dashoffset: 0; }
+  .check:has(:focus-visible) .box { outline: var(--focus); outline-offset: 3px; }
+  .check:has(:disabled) { opacity: .55; cursor: default; }
+
+  .submit {
+    --fill-bg: var(--must);
+    justify-self: start; display: inline-flex; align-items: center; justify-content: center; min-height: 52px;
+    padding: 0 var(--s7); border: 0; border-radius: var(--r-pill); background: var(--cinsault); color: var(--wall);
+    font: 600 var(--fs-s)/1 var(--font-text); cursor: pointer;
+  }
+  @media (max-width: 479px) { .submit { justify-self: stretch; } }
+
+  .done { position: relative; z-index: 1; padding: var(--s6); background: var(--paper); border-top: 4px solid var(--cinsault); }
+  .done h4 { font-size: var(--fs-l); line-height: 1.2; }
+  .done p { margin-top: var(--s3); max-width: 46ch; }
+  .done-links { display: grid; gap: var(--s2); margin-block: var(--s5); }
+  .done .ul { font-size: var(--fs-s); }
+
+  /* ---------- the weekend ---------- */
+  .weekend { margin-top: var(--s9); }
+  .about { max-width: 40ch; margin-top: var(--s4); font-size: var(--fs-l); line-height: 1.45; }
+  .days { display: grid; gap: var(--s6); margin-top: var(--s7); }
+  .day h4 { margin-bottom: var(--s3); }
+  .slots { border-bottom: 1px solid var(--rule); }
+  .slots li { display: grid; grid-template-columns: 3.25em minmax(0, 1fr); gap: var(--s4); padding: var(--s3) 0; font-size: var(--fs-s); line-height: 1.45; }
+  .slots time { font-weight: 500; text-align: right; font-variant-numeric: lining-nums tabular-nums; }
+  .weekend > .ul { margin-top: var(--s5); }
+  @media (min-width: 640px) { .days { grid-template-columns: 1fr 1fr; column-gap: var(--s7); } }
+  @media (min-width: 1200px) {
+    .weekend { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-rows: auto auto 1fr; column-gap: var(--col-gap); align-items: start; }
+    .weekend > h3 { grid-area: 1 / 1 / 2 / 6; }
+    .weekend > .about { grid-area: 2 / 1 / 3 / 6; }
+    .days { grid-area: 1 / 6 / 4 / 13; margin: 0 0 0 var(--s6); column-gap: var(--s6); }
+    .weekend > .ul { grid-area: 3 / 1 / 4 / 6; justify-self: start; align-self: start; }
+  }
+
+  /* ---------- dialog ---------- */
+  .bring { width: min(36rem, calc(100vw - 2 * var(--s4))); max-height: calc(100dvh - 2 * var(--s4)); padding: 0; border: 0; background: transparent; color: var(--must); }
+  .bring::backdrop { background: var(--scrim); transition: opacity .3s; }
+  .bring.out::backdrop { opacity: 0; }
+  @starting-style { .bring[open]::backdrop { opacity: 0; } }
+  .bring-panel { max-height: inherit; overflow: auto; padding: var(--s6); background: var(--paper); border-top: 4px solid var(--cinsault); }
+  .bring-cols { display: grid; gap: var(--s5); margin-block: var(--s5) var(--s6); }
+  .bring-cols h4 { font-size: var(--fs-s); margin-bottom: var(--s2); }
+  .bring-cols ul { display: grid; gap: var(--s1); font-size: var(--fs-s); line-height: 1.45; }
+  @media (min-width: 560px) { .bring-cols { grid-template-columns: 1fr 1fr; } }
+
+  /* hidden starting state: only when the libraries loaded, motion is allowed and the load has not played */
+  @media (prefers-reduced-motion: no-preference) {
+    html.js:not(.played) #harvest-title { visibility: hidden; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after, ::backdrop { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+    .press:active { transform: none; }
+  }
+</style>
+</head>
+<body>
+<section class="harvest" id="harvest" aria-labelledby="harvest-title">
+  <div class="wrap">
+    <div class="signup">
+     <div class="col-b">
+      <header class="intro">
+        <h2 id="harvest-title">Pick old vines with us on 13 and 14 March</h2>
+        <p class="lead">The Herrera family farms 4.2 hectares of dry-farmed bush vines in Guarilihue, in the Itata Valley. The Cinsault is ready a week early this year. We need sixty pairs of hands each day, and we feed everyone who comes.</p>
+        <p class="actions">
+          <a class="btn-line fill press to-day" href="#signup" data-focus="#place [name=day]:checked">Choose your day</a>
+          <a class="ul press" href="#weekend">See the weekend</a>
+        </p>
+      </header>
+
+      <div class="signup-head" id="signup">
+        <h3 id="signup-title" tabindex="-1">Save your place</h3>
+        <p>Saturday has <span class="tnum" data-left="sat">22</span> places left, Sunday <span class="tnum" data-left="sun">9</span>. Choose a day and how many of you, and the plan shows the vines you will cut. Children over 12 can pick with an adult.</p>
+      </div>
+
+
+      <div class="stage">
+        <form id="place" novalidate aria-labelledby="signup-title">
+          <fieldset>
+            <legend>Which day</legend>
+            <div class="chips">
+              <label class="chip"><input type="radio" name="day" value="sat" checked required aria-describedby="e-day"><span class="dot" aria-hidden="true"></span><span>Saturday 13, <span class="tnum" data-left="sat">22</span> left</span></label>
+              <label class="chip"><input type="radio" name="day" value="sun" required aria-describedby="e-day"><span class="dot" aria-hidden="true"></span><span>Sunday 14, <span class="tnum" data-left="sun">9</span> left</span></label>
+              <label class="chip"><input type="radio" name="day" value="both" required aria-describedby="e-day"><span class="dot" aria-hidden="true"></span><span>Both days</span></label>
+            </div>
+            <p class="msg" id="e-day"></p>
+          </fieldset>
+          <div class="field">
+            <label for="f-party">How many of you</label>
+            <span class="ctl sel">
+              <select id="f-party" name="party" required aria-describedby="e-party">
+                <option value="1">Just me</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+              </select>
+              <svg class="chev" viewBox="0 0 12 8" aria-hidden="true"><path d="M1 1.5l5 5 5-5"/></svg>
+            </span>
+            <p class="msg" id="e-party"></p>
+          </div>
+          <div class="pair">
+            <div class="field">
+              <label for="f-name">Your name</label>
+              <span class="ctl"><input id="f-name" name="name" type="text" autocomplete="name" required aria-describedby="e-name"></span>
+              <p class="msg" id="e-name"></p>
+            </div>
+            <div class="field">
+              <label for="f-email">Email</label>
+              <span class="ctl"><input id="f-email" name="email" type="email" autocomplete="email" required aria-describedby="h-email e-email"></span>
+              <p class="f-hint" id="h-email">We send the Friday weather call here.</p>
+              <p class="msg" id="e-email"></p>
+            </div>
+          </div>
+          <label class="check"><input type="checkbox" name="cot"><span class="box" aria-hidden="true"><svg viewBox="0 0 16 16"><path pathLength="1" d="M3.5 8.5l3 3 6-7"/></svg></span><span>We need a cot in the shed on Saturday night</span></label>
+          <button class="submit fill press" type="submit" id="submit">Save my place</button>
+        </form>
+        <div class="done" id="done" hidden>
+          <h4 id="done-title" tabindex="-1">Your place is saved</h4>
+          <p id="done-what"></p>
+          <p id="done-cot" hidden>A cot in the shearing shed is kept for you on Saturday night.</p>
+          <ul class="done-links" role="list">
+            <li><a class="ul" href="https://www.google.com/maps/search/?api=1&amp;query=Guarilihue%2C+Coelemu" target="_blank" rel="noopener">Open directions in Google Maps</a></li>
+            <li><a class="ul" id="wa" href="https://wa.me/56955501234?text=Hola%2C%20I%20saved%20a%20place%20for%20the%20harvest." target="_blank" rel="noopener">Message the family on WhatsApp</a></li>
+          </ul>
+          <button class="ul press" type="button" id="change">Change my booking</button>
+        </div>
+      </div>
+
+     </div>
+     <div class="col-a">
+      <figure class="plan">
+        <div class="plan-box">
+          <svg id="plan" viewBox="0 0 450 340" role="img" aria-label="Planting plan of Viña Herrera: 1,344 dots, one for every 20 bush vines, in six blocks. El Alto and Los Quillayes along the top, Don Lalo, La Higuera and El Bajo across the middle, La Cruz along the bottom with the shed in its corner. Your share is described below the plan."></svg>
+          <div class="names" aria-hidden="true"></div>
+          <div class="tags" aria-hidden="true"></div>
+        </div>
+        <figcaption>
+          <p class="yours" id="yours" aria-live="polite"></p>
+          <p class="key">
+            <span><svg viewBox="0 0 28 12" aria-hidden="true"><circle cx="6" cy="6" r="4" fill="none" stroke="#6F7F4C" style="stroke: var(--leaf)" stroke-width="1.25"/></svg>One dot is 20 vines</span>
+            <span><svg viewBox="0 0 28 12" aria-hidden="true"><path d="M2 6h24" stroke="#7A2E5E" style="stroke: var(--cinsault)" stroke-width="2"/><circle cx="6" cy="6" r="4.4" fill="#7A2E5E" style="fill: var(--cinsault)"/><circle cx="22" cy="6" r="4.4" fill="#7A2E5E" style="fill: var(--cinsault)"/></svg>Your share, walked from the row end</span>
+          </p>
+        </figcaption>
+      </figure>
+
+      <div class="blocks">
+        <h3 id="blocks-title">Six blocks, read this morning</h3>
+        <div class="mini" aria-hidden="true"><svg viewBox="0 0 450 340"></svg></div>
+        <ul class="rows" role="list" aria-labelledby="blocks-title"></ul>
+      </div>
+     </div>
+    </div>
+
+    <div class="weekend" id="weekend">
+      <h3 id="weekend-title" tabindex="-1">How the weekend goes</h3>
+      <p class="about">We are three generations and six blocks of bush vines, with no wires and no irrigation. Last March forty-one people came, from Concepción, Chillán, Santiago and two from Lyon, and we picked it all in two days.</p>
+      <button class="ul press" type="button" id="bring-btn" aria-haspopup="dialog">What to bring</button>
+      <div class="days">
+        <div class="day">
+          <h4>Saturday 13 March</h4>
+          <ol class="slots" role="list">
+            <li><time datetime="2027-03-13T07:00">7:00</time><span>Coffee and secateurs at the shed</span></li>
+            <li><time datetime="2027-03-13T07:30">7:30</time><span>Los Quillayes, the 1958 Cinsault</span></li>
+            <li><time datetime="2027-03-13T10:00">10:00</time><span>La Higuera</span></li>
+            <li><time datetime="2027-03-13T12:30">12:30</time><span>We stop before the heat</span></li>
+            <li><time datetime="2027-03-13T13:30">13:30</time><span>Lunch under the fig tree</span></li>
+            <li><time datetime="2027-03-13T17:00">17:00</time><span>Sorting table and the first press, if you want to stay</span></li>
+          </ol>
+        </div>
+        <div class="day">
+          <h4>Sunday 14 March</h4>
+          <ol class="slots" role="list">
+            <li><time datetime="2027-03-14T07:30">7:30</time><span>El Alto, the 1890s País</span></li>
+            <li><time datetime="2027-03-14T10:00">10:00</time><span>Don Lalo, then El Bajo</span></li>
+            <li><time datetime="2027-03-14T13:30">13:30</time><span>Lunch with last year's wine</span></li>
+            <li><time datetime="2027-03-14T16:00">16:00</time><span>Lift to the Coelemu bus</span></li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <dialog class="bring" id="bring" aria-labelledby="bring-title">
+    <div class="bring-panel" data-lenis-prevent>
+      <h3 id="bring-title" tabindex="-1">What to bring</h3>
+      <div class="bring-cols">
+        <div>
+          <h4>Bring</h4>
+          <ul role="list"><li>Closed shoes</li><li>A hat</li><li>Long sleeves</li><li>Gloves, if you have them</li></ul>
+        </div>
+        <div>
+          <h4>We provide</h4>
+          <ul role="list"><li>Secateurs and crates</li><li>Water, and lunch both days</li><li>A cot in the shearing shed on Saturday night: 12 cots, ask on the form</li></ul>
+        </div>
+      </div>
+      <button class="ul press" type="button" data-close>Close</button>
+    </div>
+  </dialog>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/SplitText.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  const root = document.documentElement;
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const T = n => parseFloat(getComputedStyle(root).getPropertyValue('--t-' + n)) || 0;
+  const NS = 'http://www.w3.org/2000/svg';
+
+  /* ---------- the vineyard: one table; the plan, rows, sentence and form read from it ---------- */
+  const DATA = {
+    plantingSquare: 1.25,   // metres between head-trained vines, both ways
+    vinesPerHa: 6400,       // 10,000 m² / 1.25² m²
+    vinesPerDot: 20,
+    vinesPerPicker: 240,    // one morning: about seven 18 kg crates at half a kilo a vine
+    strip: 4                // dots across the strip a party works back and forth, downhill from the row end
+  };
+  const BLOCKS = [
+    { id: 'lq', name: 'Los Quillayes', variety: 'Cinsault', planted: '1958', ha: .8, brix: 23.8, when: 'Saturday 7:30', label: [449, 125, 'end'] },
+    { id: 'lh', name: 'La Higuera', variety: 'Cinsault', planted: '1972', ha: .6, brix: 23.1, when: 'Saturday 10:00', label: [141, 265] },
+    { id: 'ea', name: 'El Alto', variety: 'País', planted: 'in the 1890s', ha: .9, brix: 22.4, when: 'Sunday 7:30', label: [231, 115, 'end'] },
+    { id: 'dl', name: 'Don Lalo', variety: 'País', planted: '1931', ha: .5, brix: 22.9, when: 'Sunday 10:00', label: [1, 255] },
+    { id: 'eb', name: 'El Bajo', variety: 'Moscatel de Alejandría', planted: '1965', ha: .7, brix: 21.6, when: 'Sunday 11:30', label: [281, 265] },
+    { id: 'lc', name: 'La Cruz', variety: 'Semillón', planted: '1980', ha: .7, brix: 20.9, when: 'Not ready', note: 'the family picks it on 20 March', plate: 'not ready, picked 20 March', label: [1, 305] }
+  ];
+  const DAYS = {
+    sat: { name: 'Saturday', date: 'Saturday 13 March', first: 'lq', hours: '7:30\u00a0to\u00a012:30' },   // no-break spaces keep a time range on one line
+    sun: { name: 'Sunday', date: 'Sunday 14 March', first: 'ea', hours: '7:30\u00a0to\u00a013:30' }
+  };
+  const LEFT = { sat: 22, sun: 9 };
+  const ix = id => BLOCKS.findIndex(b => b.id === id);
+
+  // The plan: a 45 x 34 grid of 10-unit squares (one dot each, 20 vines). Blocks are separated by one-dot lanes
+  // whose centre lines are below; the shed yard takes the south-east corner. The lines were set so every block
+  // gets exactly ha x vinesPerHa / vinesPerDot dots (the self-test asserts it).
+  const LINE = {
+    north: [[0, 121.5], [450, 134.5]], south: [[0, 267.5], [450, 279.5]],
+    upper: [[252.5, 0], [234.5, 140]], west: [[116.5, 0], [134.5, 340]], east: [[266.5, 0], [274.5, 340]]
+  };
+  const YARD = [340, 290];   // shed yard: x > 340 and y > 290
+  const yAt = ([[x0, y0], [x1, y1]], x) => y0 + (y1 - y0) * (x - x0) / (x1 - x0);
+  const xAt = ([[x0, y0], [x1, y1]], y) => x0 + (x1 - x0) * (y - y0) / (y1 - y0);
+  function blockAt(x, y) {
+    const n = yAt(LINE.north, x), s = yAt(LINE.south, x);
+    if (y < n - 5) { const t = xAt(LINE.upper, y); return x < t - 5 ? 'ea' : x > t + 5 ? 'lq' : null; }
+    if (y > n + 5 && y < s - 5) {
+      const w = xAt(LINE.west, y), e = xAt(LINE.east, y);
+      return x < w - 5 ? 'dl' : x > e + 5 ? 'eb' : x > w + 5 && x < e - 5 ? 'lh' : null;
+    }
+    if (y > s + 5 && !(x > YARD[0] && y > YARD[1])) return 'lc';
+    return null;
+  }
+  const DOTS = [];
+  for (let j = 0; j < 34; j++) for (let i = 0; i < 45; i++) {
+    const x = 5 + 10 * i, y = 5 + 10 * j, id = blockAt(x, y);
+    if (id) DOTS.push({ i, j, x, y, k: ix(id) });
+  }
+  const ofBlock = k => DOTS.filter(d => d.k === k);
+
+  // Block outlines run along the lane centre lines, so they sit half a dot clear of the vines.
+  const cross = ([[a, b], [c, d]], [[e, f], [g, h]]) => {
+    const den = (a - c) * (f - h) - (b - d) * (e - g), t = ((a - e) * (f - h) - (b - f) * (e - g)) / den;
+    return [+(a + t * (c - a)).toFixed(1), +(b + t * (d - b)).toFixed(1)];
+  };
+  const EDGE = { top: [[0, 0], [450, 0]], left: [[0, 0], [0, 340]], right: [[450, 0], [450, 340]] };
+  const X = (p, q) => cross(LINE[p] || EDGE[p], LINE[q] || EDGE[q]);
+  const POLY = {
+    ea: [[0, 0], X('upper', 'top'), X('upper', 'north'), X('north', 'left')],
+    lq: [X('upper', 'top'), [450, 0], X('north', 'right'), X('upper', 'north')],
+    dl: [X('north', 'left'), X('west', 'north'), X('west', 'south'), X('south', 'left')],
+    lh: [X('west', 'north'), X('east', 'north'), X('east', 'south'), X('west', 'south')],
+    eb: [X('east', 'north'), X('north', 'right'), X('south', 'right'), X('east', 'south')],
+    lc: [X('south', 'left'), X('south', 'right'), [450, YARD[1]], YARD, [YARD[0], 340], [0, 340]]
+  };
+
+  // Your share: whole dots, a strip DATA.strip wide, back and forth down the rows from the block's row end.
+  const dotsFor = n => n * DATA.vinesPerPicker / DATA.vinesPerDot;
+  function strip(k, n) {
+    const rows = new Map();
+    ofBlock(k).forEach(d => { if (!rows.has(d.j)) rows.set(d.j, []); rows.get(d.j).push(d); });
+    const out = [], need = dotsFor(n), js = [...rows.keys()].sort((a, b) => a - b);
+    const i0 = Math.min(...rows.get(js[0]).map(d => d.i));   // the strip keeps the columns of the row end
+    js.forEach((j, r) => {
+      if (out.length >= need) return;
+      const s = rows.get(j).filter(d => d.i >= i0 && d.i < i0 + DATA.strip).sort((a, b) => a.i - b.i);
+      out.push(...(r % 2 ? s.reverse() : s));
+    });
+    return out.slice(0, need);
+  }
+  const daysOf = v => (v === 'both' ? ['sat', 'sun'] : v ? [v] : []);
+  function sentence(day, n) {
+    const who = n === 1 ? 'You pick' : `You and ${n - 1} other${n > 2 ? 's' : ''} pick`, v = n * DATA.vinesPerPicker;
+    if (day === 'both') return `${who} about ${v} vines each morning: Los Quillayes on Saturday and El Alto on Sunday, from 7:30.`;
+    const d = DAYS[day];
+    return `${who} about ${v} vines in ${BLOCKS[ix(d.first)].name}, ${d.name} ${d.hours}.`;
+  }
+
+  /* ---------- build the plan and the rows ---------- */
+  const svg = $('#plan'), planBox = $('.plan-box');
+  svg.innerHTML =
+    `<g>${BLOCKS.map((b, k) => `<polygon class="blk" data-b="${k}" points="${POLY[b.id].join(' ')}"/>`).join('')}</g>` +
+    `<rect class="shed" x="352" y="302" width="86" height="26"/>` +
+    BLOCKS.map((b, k) => `<g class="dots" data-b="${k}">${ofBlock(k).map(d => `<circle cx="${d.x}" cy="${d.y}" r="3"/>`).join('')}</g>`).join('') +
+    '<g class="shares"></g><polygon class="hl" pathLength="1" points="0,0"/>';
+  const groups = $$('.dots', svg), hl = $('.hl', svg), sharesG = $('.shares', svg), tagsEl = $('.tags');
+  BLOCKS.forEach((b, k) => ofBlock(k).forEach((d, i) => { d.el = groups[k].children[i]; }));
+  const BASE = DOTS.map(d => d.el);
+
+  $('.names').innerHTML = BLOCKS.map(b => `<span class="name${b.label[2] ? ' end' : ''}" style="left:${b.label[0] / 4.5}%;top:${b.label[1] / 3.4}%">${b.name}` +
+    `<span class="x">${b.brix.toFixed(1)} <i>°Brix</i>, ${b.plate || b.when}</span></span>`).join('') +
+    `<span class="name shed-name" style="left:${395 / 4.5}%;top:${315 / 3.4}%">Shed</span>`;
+  const nameEls = $$('.name:not(.shed-name)');
+  // Vines under a painted name are knocked out whole, so a name plate never cuts a dot in half.
+  function clearNames() {
+    const pr = svg.getBoundingClientRect(), s = 450 / (pr.width || 450), r = 3.6;
+    // a reading line that would run past the plan's right edge is anchored to the plate's right edge instead
+    nameEls.forEach(n => { n.classList.remove('flip'); n.classList.toggle('flip', n.lastChild.getBoundingClientRect().right > pr.right); });
+    const boxes = nameEls.map(n => { const b = n.getBoundingClientRect(); return [(b.left - pr.left) * s, (b.top - pr.top) * s, (b.right - pr.left) * s, (b.bottom - pr.top) * s]; });
+    DOTS.forEach(d => { d.el.style.visibility = boxes.some(([a, t, c, e]) => d.x + r > a && d.x - r < c && d.y + r > t && d.y - r < e) ? 'hidden' : ''; });
+  }
+  // Strokes stay about 1px at any plan width.
+  new ResizeObserver(() => { planBox.style.setProperty('--u', 450 / (planBox.clientWidth || 450)); clearNames(); }).observe(planBox);
+  document.fonts.ready.then(clearNames);
+
+  const rowsEl = $('.rows');
+  rowsEl.innerHTML = BLOCKS.map((b, k) =>
+    `<li><button type="button" class="row" data-b="${k}" aria-pressed="false"><span class="r-name">${b.name}</span>` +
+    `<span class="r-brix">${b.brix.toFixed(1)} <small>°Brix</small></span><span class="r-meta">${b.variety}, planted ${b.planted}, ${b.ha} ha${b.note ? '; ' + b.note : ''}</span>` +
+    `<span class="r-when">${b.when}</span></button></li>`).join('');
+  const rows = $$('.row', rowsEl);
+
+  /* ---------- motion helpers (instant without GSAP or under reduced motion) ---------- */
+  let M = false, lenis = null;
+  const G = () => M && !!window.gsap;
+  const S = { booked: { sat: 0, sun: 0 }, hl: null, pinned: null, end: null };
+  const center = el => { const r = el.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; };
+  // A circle centred on point p (viewport coordinates), in el's own coordinates, with the radius that covers el.
+  const circleIn = (el, p) => { const r = el.getBoundingClientRect(), x = p[0] - r.left, y = p[1] - r.top; return [x, y, Math.hypot(Math.max(Math.abs(x), Math.abs(r.width - x)), Math.max(Math.abs(y), Math.abs(r.height - y))) + 2]; };
+  const circ = (x, y, R) => `circle(${R}px at ${x}px ${y}px)`;
+
+  /* ---------- the signature: your rows ---------- */
+  const yoursEl = $('#yours');
+  let shareTl = null, capTl = null, pending = null;
+  // The walk runs at an even pace with a soft start and stop (sine.inOut). sine.inOut reaches progress f at
+  // time acos(1 - 2f) / pi of its duration, so each vine is cut as the line reaches it.
+  const atSine = f => Math.acos(1 - 2 * Math.min(1, Math.max(0, f))) / Math.PI;
+  const walkDur = n => Math.min(T('walk-max'), Math.max(T('walk'), n * T('walk-dot')));
+  // The point at fraction f of a part's polyline, for the head dot that leads the line.
+  function pointAt(p, f) {
+    const i = p.cum.findIndex(c => c >= f * p.L);
+    if (i <= 0) return p.pts[0];
+    const a = p.pts[i - 1], b = p.pts[i], t = (f * p.L - p.cum[i - 1]) / ((p.cum[i] - p.cum[i - 1]) || 1);
+    return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+  }
+  const tagText = (d, who) => (who ? `${who}, ${DAYS[d].name} ` : `${DAYS[d].name}, `) + DAYS[d].hours.split(/\s/)[0];
+  function setSentence(text, animate) {
+    capTl && capTl.kill();
+    if (!animate) { yoursEl.textContent = text; if (window.gsap) gsap.set(yoursEl, { opacity: 1 }); return; }
+    capTl = gsap.timeline().to(yoursEl, { opacity: 0, duration: .12, ease: 'power1.in' })
+      .call(() => { yoursEl.textContent = text; }).to(yoursEl, { opacity: 1, duration: .25, ease: 'power1.out' });
+  }
+  function buildShare(day, n) {
+    const g = document.createElementNS(NS, 'g');
+    const parts = daysOf(day).map(d => {
+      const k = ix(DAYS[d].first), ds = strip(k, n), pts = [[ds[0].x, 0], ...ds.map(v => [v.x, v.y])];
+      let L = 0;
+      const cum = pts.map((p, i) => (L += i ? Math.hypot(p[0] - pts[i - 1][0], p[1] - pts[i - 1][1]) : 0));
+      const path = document.createElementNS(NS, 'path');
+      path.setAttribute('class', 'walk'); path.setAttribute('pathLength', '1');
+      path.setAttribute('d', 'M' + pts.map(p => p.join(' ')).join('L'));
+      const cut = document.createElementNS(NS, 'g');
+      cut.setAttribute('class', 'cut');
+      cut.innerHTML = ds.map(v => `<circle cx="${v.x}" cy="${v.y}" r="3.5"/>`).join('');
+      g.append(path, cut);
+      const head = document.createElementNS(NS, 'circle');
+      head.setAttribute('class', 'head'); head.setAttribute('r', '4.5'); head.setAttribute('opacity', '0');
+      g.append(head);
+      const tag = document.createElement('span');
+      tag.className = 'tag' + (ds[0].x > 300 ? ' flip' : '');
+      tag.style.left = ds[0].x / 4.5 + '%';
+      tag.textContent = tagText(d);
+      return { d, k, path, head, tag, pts, cum, L, cuts: [...cut.children], at: cum.slice(1).map(c => c / L) };
+    });
+    return { g, parts };
+  }
+  // Draw the share for the form's current day and party. Every change redraws it from the row end.
+  function drawShare(animate = true) {
+    const day = F.day.value || 'sat', n = +F.party.value || 1;
+    pending && pending();
+    shareTl && shareTl.progress(1).kill();
+    const old = [...sharesG.children, ...tagsEl.children], { g, parts } = buildShare(day, n);
+    sharesG.append(g);
+    tagsEl.append(...parts.map(p => p.tag));
+    const ks = parts.map(p => p.k);
+    groups.forEach((gr, k) => gr.classList.toggle('dim', !ks.includes(k)));
+    S.parts = parts;
+    S.end = parts.at(-1).cuts.at(-1);
+    const text = sentence(day, n);
+    if (!G() || !animate) { old.forEach(o => o.remove()); setSentence(text, false); return; }
+    gsap.set(parts.flatMap(p => p.cuts), { scale: 0, transformOrigin: '50% 50%' });
+    gsap.set(parts.map(p => p.path), { strokeDashoffset: 1 });
+    gsap.set(parts.map(p => p.tag), { opacity: 0, y: 6 });
+    const tl = shareTl = gsap.timeline({ onComplete: () => old.forEach(o => o.remove()) });
+    if (old.length) tl.to(old, { opacity: 0, duration: .2, ease: 'power1.out' }, 0);
+    let t0 = .1;
+    parts.forEach(p => {   // both days: the second walk starts where the first one ends
+      const w = walkDur(p.cuts.length), pr = { f: 0 }, put = () => { const [x, y] = pointAt(p, pr.f); p.head.setAttribute('cx', x); p.head.setAttribute('cy', y); };
+      tl.to(p.tag, { opacity: 1, y: 0, duration: .5, ease: 'expo.out' }, t0 - .05)
+        .set(p.head, { attr: { opacity: 1 } }, t0)
+        .to(p.path, { strokeDashoffset: 0, duration: w, ease: 'sine.inOut' }, t0)
+        .to(pr, { f: 1, duration: w, ease: 'sine.inOut', onStart: put, onUpdate: put }, t0)
+        .to(p.cuts, { scale: 1, duration: T('cut'), ease: 'back.out(1.6)', stagger: i => atSine(p.at[i]) * w }, t0)
+        .to(p.head, { attr: { opacity: 0 }, duration: .2 }, t0 + w);
+      t0 += w;
+    });
+    setSentence(text, true);
+  }
+
+  // A block is highlighted by hovering it or its row (mouse), focusing its row (keyboard), tapping it or its row
+  // (touch), or, on phones, scrolling its row through the middle of the screen. The plan outlines the block and
+  // opens its name plate to the reading; the small plan above the rows outlines it too; the row draws its rule.
+  const mini = $('.mini svg');
+  mini.innerHTML = DOTS.map(d => `<circle cx="${d.x}" cy="${d.y}" r="2.6"/>`).join('') + '<polygon class="hl" pathLength="1" points="0,0"/>';
+  const hls = [hl, $('.hl', mini)];
+  function setHL(k) {
+    if (k === S.hl) return;
+    S.hl = k;
+    rows.forEach((r, i) => r.classList.toggle('hot', i === k));
+    nameEls.forEach((n, i) => n.classList.toggle('on', i === k));
+    if (k == null) return hls.forEach(h => h.classList.remove('on'));
+    hls.forEach(h => { h.setAttribute('points', POLY[BLOCKS[k].id].join(' ')); h.classList.add('on'); });
+    if (G()) gsap.fromTo(hls, { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: .45, ease: 'expo.out', overwrite: true });
+  }
+  function pin(k) {   // a click or tap keeps a block highlighted; the same one again lets it go
+    S.pinned = S.pinned === k ? null : k;
+    rows.forEach((r, i) => r.setAttribute('aria-pressed', i === S.pinned));
+    S.hl = undefined;
+    setHL(S.pinned);
+  }
+  const fineMQ = '(hover: hover) and (pointer: fine)';
+  svg.addEventListener('pointerover', e => { const p = e.target.closest('.blk'); if (p && e.pointerType === 'mouse') setHL(+p.dataset.b); });
+  svg.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') setHL(S.pinned); });
+  rowsEl.addEventListener('pointerover', e => { const r = e.target.closest('.row'); if (r && e.pointerType === 'mouse') setHL(+r.dataset.b); });
+  rowsEl.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') setHL(S.pinned); });
+  rowsEl.addEventListener('focusin', e => setHL(+e.target.closest('.row').dataset.b));
+  rowsEl.addEventListener('focusout', e => { if (!rowsEl.contains(e.relatedTarget)) setHL(S.pinned); });
+  rowsEl.addEventListener('click', e => { const r = e.target.closest('.row'); if (r) pin(+r.dataset.b); });
+  svg.addEventListener('click', e => {   // touch and pen; a mouse already highlights by hovering
+    const p = e.target.closest('.blk');
+    if (p && !matchMedia(fineMQ).matches) pin(+p.dataset.b);
+  });
+
+  /* ---------- HV4: remember which edge the pointer crossed ---------- */
+  const edge = (e, el) => { const r = el.getBoundingClientRect(); el.style.setProperty('--from', e.clientX < r.left + r.width / 2 ? 'left' : 'right'); };
+  document.addEventListener('pointerover', e => { const f = e.target.closest('.fill'); if (f && !f.contains(e.relatedTarget)) edge(e, f); });
+  document.addEventListener('pointerout', e => { const f = e.target.closest('.fill'); if (f && !f.contains(e.relatedTarget)) edge(e, f); });
+
+  /* ---------- in-page links: glide through Lenis, then move focus ---------- */
+  const expo = t => (t === 1 ? 1 : 1 - Math.pow(2, -10 * t));
+  function go(target, then) {
+    if (lenis) {
+      const dist = Math.abs(target.getBoundingClientRect().top);
+      lenis.scrollTo(target, { offset: -24, duration: Math.min(1.3, .65 + dist / 4000), easing: expo, onComplete: then });
+    } else { target.scrollIntoView({ block: 'start' }); then && then(); }
+  }
+  document.addEventListener('click', e => {
+    const a = e.target.closest('a[href^="#"]');
+    const t = a && document.getElementById(a.getAttribute('href').slice(1));
+    if (!t) return;
+    e.preventDefault();
+    const f = (a.dataset.focus && $(a.dataset.focus)) || (t.matches('[tabindex="-1"]') ? t : $('[tabindex="-1"]', t));
+    go(t, () => f && f.focus({ preventScroll: true }));
+  });
+
+  /* ---------- CD7: "What to bring" opens as a circle from its button ---------- */
+  const dlg = $('#bring'), panel = $('.bring-panel'), bringBtn = $('#bring-btn');
+  let closing = false;
+  bringBtn.addEventListener('click', () => {
+    dlg.showModal();
+    lenis && lenis.stop();
+    $('#bring-title').focus();
+    if (!G()) return;
+    const [x, y, R] = circleIn(panel, center(bringBtn));
+    gsap.fromTo(panel, { clipPath: circ(x, y, 0) }, { clipPath: circ(x, y, R), duration: T('dialog'), ease: 'expo.out', clearProps: 'clipPath' });
+    gsap.fromTo(panel.children, { opacity: 0 }, { opacity: 1, duration: .35, delay: .2, ease: 'power1.out', clearProps: 'opacity' });
+  });
+  function closeBring() {
+    if (!dlg.open || closing) return;
+    const fin = () => { dlg.classList.remove('out'); dlg.close(); lenis && lenis.start(); bringBtn.focus(); closing = false; };
+    if (!G()) return fin();
+    closing = true;
+    dlg.classList.add('out');
+    const [x, y, R] = circleIn(panel, center(bringBtn));
+    gsap.fromTo(panel, { clipPath: circ(x, y, R) }, { clipPath: circ(x, y, 0), duration: T('dialog-out'), ease: 'power3.out',
+      onComplete: () => { fin(); gsap.set(panel, { clearProps: 'clipPath' }); } });
+  }
+  dlg.addEventListener('cancel', e => { e.preventDefault(); closeBring(); });
+  dlg.addEventListener('click', e => { if (e.target === dlg) closeBring(); });
+  $('[data-close]', dlg).addEventListener('click', closeBring);
+
+  /* ---------- the form ---------- */
+  const form = $('#place'), F = form.elements, done = $('#done'), stage = $('.stage');
+  const left = d => LEFT[d] - S.booked[d];
+  const renderCounts = () => $$('[data-left]').forEach(el => { el.textContent = left(el.dataset.left); });
+  const OTHER = { sat: 'Sunday', sun: 'Saturday' };
+  const RULES = {
+    day: () => (F.day.value ? '' : 'Choose a day.'),
+    party: () => {
+      const d = F.day.value, short = daysOf(d).find(x => left(x) < +F.party.value);
+      if (!short) return '';
+      return d === 'both'
+        ? `Both days needs a place on ${DAYS[short].name}, and ${DAYS[short].name} has ${left(short)}; choose fewer people or ${OTHER[short]} only.`
+        : `${DAYS[short].name} has ${left(short)} places; choose fewer people or ${OTHER[short]}.`;
+    },
+    name: () => (F.name.value.trim() ? '' : 'Add your name so we can write it on your crate tag.'),
+    email: () => (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(F.email.value.trim()) ? '' : 'Enter an email like ana@correo.cl.')
+  };
+  const controls = k => (k === 'day' ? $$('[name="day"]', form) : [F[k]]);
+  function setErr(k, msg) {
+    const m = $('#e-' + k);
+    controls(k).forEach(c => (msg ? c.setAttribute('aria-invalid', 'true') : c.removeAttribute('aria-invalid')));
+    m.textContent = msg;
+    m.classList.toggle('on', !!msg);
+    return !!msg;
+  }
+  const shown = k => $('#e-' + k).classList.contains('on');
+  form.addEventListener('input', () => { for (const k in RULES) if (shown(k)) setErr(k, RULES[k]()); });
+  form.addEventListener('change', e => {
+    for (const k in RULES) if (shown(k)) setErr(k, RULES[k]());
+    if (e.target.name === 'day' || e.target.name === 'party') drawShare();
+    if (e.target.name === 'day') { F.cot.disabled = F.day.value === 'sun'; if (F.cot.disabled) F.cot.checked = false; }   // cots are for Saturday night
+  });
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const bad = Object.keys(RULES).filter(k => setErr(k, RULES[k]()));
+    if (bad.length) return (bad[0] === 'day' ? $('[name="day"]', form) : F[bad[0]]).focus();
+    book();
+  });
+
+  function book() {
+    const n = +F.party.value, d = F.day.value, first = F.name.value.trim().split(/\s+/)[0];
+    daysOf(d).forEach(x => { S.booked[x] = n; });
+    renderCounts();
+    const when = d === 'both' ? 'Saturday 13 and Sunday 14 March' : DAYS[d].date;
+    const meet = { sat: 'Coffee and secateurs at the shed at 7:00.', sun: 'Meet at the shed by 7:15; we start in El Alto at 7:30.',
+      both: 'Coffee and secateurs at the shed at 7:00 on Saturday; on Sunday we start in El Alto at 7:30.' }[d];
+    $('#done-title').textContent = `${n === 1 ? 'Your place is' : 'Your places are'} saved, ${first}`;
+    $('#done-what').textContent = `${when}, ${n === 1 ? '1 person' : n + ' people'}. ${meet}`;
+    $('#done-cot').hidden = !F.cot.checked || d === 'sun';
+    $('#wa').href = 'https://wa.me/56955501234?text=' + encodeURIComponent(`Hola, I saved ${n === 1 ? 'a place' : n + ' places'} for the harvest on ${when}. ${first}`);
+    const title = $('#done-title');
+    stage.style.minHeight = stage.offsetHeight + 'px';   // the panel opens inside the form's height, so the page never jumps
+    done.hidden = false;
+    shareTl && shareTl.progress(1);
+    retag(first);
+    if (!G()) { form.hidden = true; return title.focus(); }
+    // your rows become yours: each cut vine pulses once in path order before the confirmation opens
+    S.parts.forEach(p => gsap.to(p.cuts, { keyframes: { scale: [1, 1.35, 1] }, duration: .4, ease: 'power1.inOut', stagger: i => p.at[i] * .5 }));
+    if (stage.getBoundingClientRect().top < 0 && lenis) lenis.scrollTo(stage, { offset: -24, duration: .8, easing: expo });
+    // The confirmation opens as a circle from the last vine of your share on the plan.
+    const [x, y, R] = circleIn(done, center(S.end));
+    gsap.to(form, { autoAlpha: 0, duration: .25, ease: 'power1.out' });
+    gsap.fromTo(done, { clipPath: circ(x, y, 0) }, { clipPath: circ(x, y, R), duration: T('done'), ease: 'expo.out', delay: .3,
+      onComplete: () => { form.hidden = true; gsap.set(form, { clearProps: 'opacity,visibility' }); gsap.set(done, { clearProps: 'clipPath' }); } });
+    title.focus({ preventScroll: true });
+  }
+  // The tag over each walk reads "Saturday, 7:30", and "Ana, Saturday 7:30" once the place is saved.
+  function retag(who) {
+    S.parts.forEach(p => {
+      const text = tagText(p.d, who);
+      if (!G()) { p.tag.textContent = text; return; }
+      gsap.timeline().to(p.tag, { opacity: 0, duration: .2, ease: 'power1.in' }).call(() => { p.tag.textContent = text; })
+        .fromTo(p.tag, { y: 4 }, { opacity: 1, y: 0, duration: .35, ease: 'expo.out' });
+    });
+  }
+  $('#change').addEventListener('click', () => {
+    S.booked = { sat: 0, sun: 0 };
+    renderCounts();
+    retag();
+    if (window.gsap) gsap.killTweensOf([form, done]);
+    form.hidden = false;
+    stage.style.minHeight = '';
+    if (!G()) { done.hidden = true; return F.name.focus(); }
+    const [x, y, R] = circleIn(done, center(S.end));
+    // opacity only, with visibility forced back first: focus() fails on a visibility:hidden field
+    gsap.fromTo(form, { opacity: 0, visibility: 'visible' }, { opacity: 1, duration: .3, delay: .1, ease: 'power1.out', clearProps: 'opacity,visibility' });
+    gsap.fromTo(done, { clipPath: circ(x, y, R) }, { clipPath: circ(x, y, 0), duration: T('done-out'), ease: 'power3.in',
+      onComplete: () => { done.hidden = true; gsap.set(done, { clearProps: 'clipPath' }); } });
+    F.name.focus({ preventScroll: true });
+  });
+
+  /* ---------- first render ---------- */
+  drawShare(false);
+
+  function runSelfTest() {
+    const ok = (c, m) => { if (!c) throw new Error('SELFTEST FAIL: ' + m); };
+    ok(Math.abs(BLOCKS.reduce((s, b) => s + b.ha, 0) - 4.2) < 1e-9, 'blocks add up to 4.2 ha');
+    ok(Math.round(1e4 / DATA.plantingSquare ** 2) === DATA.vinesPerHa, 'vines per hectare follow the planting square');
+    BLOCKS.forEach((b, k) => ok(ofBlock(k).length * DATA.vinesPerDot === Math.round(b.ha * DATA.vinesPerHa), `dots in ${b.name} add up to its vines`));
+    ok(DOTS.length * DATA.vinesPerDot === 4.2 * DATA.vinesPerHa, 'the plan holds 26,880 vines');
+    ok(DATA.vinesPerPicker % DATA.vinesPerDot === 0 && dotsFor(1) === 12, 'a picker is whole dots');
+    [1, 2, 3, 4].forEach(n => ['lq', 'ea'].forEach(id => {
+      const s = strip(ix(id), n);
+      ok(s.length * DATA.vinesPerDot === n * DATA.vinesPerPicker && s.every(d => d.el.style.visibility !== 'hidden'), `share of ${n} in ${id} fits, clear of names`);
+    }));
+    ok(new Date(2027, 2, 13).getDay() === 6 && new Date(2027, 2, 14).getDay() === 0, '13 and 14 March 2027 are a Saturday and a Sunday');
+    ok(sentence('sat', 1) === 'You pick about 240 vines in Los Quillayes, Saturday 7:30\u00a0to\u00a012:30.', 'sentence, Saturday alone');
+    ok(sentence('sat', 2) === 'You and 1 other pick about 480 vines in Los Quillayes, Saturday 7:30\u00a0to\u00a012:30.', 'sentence, Saturday for two');
+    ok(tagText('sat') === 'Saturday, 7:30' && tagText('sun', 'Ana') === 'Ana, Sunday 7:30', 'tags');
+    ok(Math.abs(atSine(.5) - .5) < 1e-9 && atSine(0) === 0 && Math.abs(atSine(1) - 1) < 1e-9 && walkDur(12) === T('walk') && walkDur(48) === T('walk-max'), 'walk timing');
+    $$('.row')[2].click();
+    ok(S.pinned === 2 && rows[2].getAttribute('aria-pressed') === 'true' && nameEls[2].classList.contains('on') && hl.classList.contains('on'), 'a row tap pins its block');
+    $$('.row')[2].click();
+    ok(S.pinned === null && !hl.classList.contains('on'), 'a second tap lets it go');
+    ok(sentence('both', 4) === 'You and 3 others pick about 960 vines each morning: Los Quillayes on Saturday and El Alto on Sunday, from 7:30.', 'sentence, both days');
+    ok(yoursEl.textContent === sentence('sat', 1) && sharesG.lastElementChild.querySelectorAll('.walk').length === 1, 'default: Saturday, just me');
+    F.name.value = 'Ana Riquelme'; F.email.value = 'ana@correo.cl'; $('[value="both"]', form).checked = true; F.party.value = '2';
+    form.dispatchEvent(new Event('change'));
+    $('[value="both"]', form).dispatchEvent(new Event('change', { bubbles: true }));
+    ok(sharesG.lastElementChild.querySelectorAll('.walk').length === 2 && sharesG.lastElementChild.querySelectorAll('.cut circle').length === 48 && !groups[0].classList.contains('dim') && !groups[2].classList.contains('dim') && groups[1].classList.contains('dim'), 'both days draws two shares');
+    form.requestSubmit();
+    ok(!done.hidden && $('#done-title').textContent === 'Your places are saved, Ana', 'confirmation');
+    ok(left('sat') === 20 && left('sun') === 7 && $('[data-left="sun"]').textContent === '7', 'both counts drop by the party');
+    $('#change').click();
+    ok(!form.hidden && left('sat') === 22 && left('sun') === 9, 'change my booking restores the counts');
+    $('[value="sun"]', form).checked = true; F.cot.checked = true;
+    $('[value="sun"]', form).dispatchEvent(new Event('change', { bubbles: true }));
+    ok(F.cot.disabled && !F.cot.checked, 'no cot for Sunday only');
+    $('[value="both"]', form).checked = true;
+    $('[value="both"]', form).dispatchEvent(new Event('change', { bubbles: true }));
+    ok(!F.cot.disabled, 'cot back for both days');
+    S.booked.sun = 7; F.party.value = '3';
+    ok(RULES.party() === 'Both days needs a place on Sunday, and Sunday has 2; choose fewer people or Saturday only.', 'both days checked against Sunday');
+    S.booked = { sat: 20, sun: 0 };
+    ok(RULES.party() === 'Both days needs a place on Saturday, and Saturday has 2; choose fewer people or Sunday only.', 'both days checked against Saturday');
+    $('[value="sun"]', form).checked = true; S.booked = { sat: 0, sun: 7 };
+    ok(RULES.party() === 'Sunday has 2 places; choose fewer people or Saturday.', 'one day checked');
+    S.booked = { sat: 0, sun: 0 }; F.email.value = 'ana';
+    form.requestSubmit();
+    ok(F.email.getAttribute('aria-invalid') === 'true' && $('#e-email').textContent === 'Enter an email like ana@correo.cl.', 'email error');
+    console.log('SELFTEST PASS');
+  }
+  if (location.hash === '#selftest') document.fonts.ready.then(() => { clearNames(); runSelfTest(); });
+
+  /* ====================================================================
+     Motion layer: GSAP + Lenis. If the CDN is blocked, everything above
+     still works with instant state changes.
+     ==================================================================== */
+  if (!(window.gsap && window.ScrollTrigger && window.SplitText && window.Lenis)) return;
+  root.classList.add('js');
+  gsap.registerPlugin(ScrollTrigger, SplitText);
+  gsap.set(BASE, { transformOrigin: '50% 50%' });
+
+  const LEADS = ['.lead', '.actions > *'];
+  function settle() {   // final states, no motion
+    pending && pending();
+    gsap.set(LEADS, { opacity: 1, y: 0 });
+    gsap.set(BASE, { scale: 1 });
+    gsap.set(nameEls, { opacity: 1 });
+    drawShare(false);
+    gsap.set($$('.walk', svg), { strokeDashoffset: 0 });
+    gsap.set($$('.cut circle', svg), { scale: 1 });
+    root.classList.add('played');
+  }
+
+  gsap.matchMedia().add({
+    motion: '(prefers-reduced-motion: no-preference)',
+    reduce: '(prefers-reduced-motion: reduce)',
+    fine: fineMQ,
+    wide: '(min-width: 992px)'
+  }, ctx => {
+    const { motion, wide } = ctx.conditions;
+    M = motion;
+    if (!motion) { settle(); return; }
+
+    lenis = new Lenis({ lerp: .1, smoothWheel: true, autoRaf: false, anchors: false });
+    lenis.on('scroll', ScrollTrigger.update);
+    const tick = time => lenis.raf(time * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
+
+    let split = null, intro = null, plantST = null;
+    if (!root.classList.contains('played')) {
+      // TR3: the vineyard plants itself from the south-west corner, then your share is walked from the row end.
+      const far = Math.max(...DOTS.map(d => Math.hypot(d.x, 340 - d.y)));
+      const spread = T('spread') * (wide ? 1 : .8);
+      const plant = gsap.timeline({ paused: true, defaults: { ease: 'expo.out' } })
+        .to(BASE, { scale: 1, duration: T('plant'), stagger: i => Math.hypot(DOTS[i].x, 340 - DOTS[i].y) / far * spread }, 0)
+        .to(nameEls, { opacity: 1, duration: .4, stagger: .05, ease: 'power1.out' }, spread * .9)
+        .call(() => { pending = null; drawShare(true); }, null, spread + .05);
+      gsap.set(BASE, { scale: 0 });
+      gsap.set(nameEls, { opacity: 0 });
+      gsap.set([...sharesG.children, ...tagsEl.children], { opacity: 0 });
+      groups.forEach(gr => gr.classList.remove('dim'));
+      gsap.set(LEADS, { opacity: 0, y: 16 });
+      gsap.set(yoursEl, { opacity: 0 });
+      pending = () => { pending = null; plantST && plantST.kill(); plant.progress(1, true).kill(); gsap.set(BASE, { scale: 1 }); gsap.set(nameEls, { opacity: 1 }); };
+      const planInView = planBox.getBoundingClientRect().top < innerHeight * .85;
+      // Phones: the plan is below the fold, so it plants itself as it scrolls in.
+      if (!planInView) plantST = ScrollTrigger.create({ trigger: planBox, start: 'top 85%', once: true, onEnter: () => plant.play() });
+
+      const ready = Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 1200))]);
+      ready.then(() => ctx.add(() => {
+        try {
+          const h2 = $('#harvest-title');
+          split = SplitText.create(h2, { type: 'lines', mask: 'lines', linesClass: 'ln' });
+          gsap.set(h2, { visibility: 'visible' });
+          intro = gsap.timeline({ defaults: { ease: 'expo.out' }, onComplete: () => root.classList.add('played') })
+            .from(split.lines, { yPercent: 110, duration: 1, stagger: .08, onComplete: () => { split.revert(); split = null; } }, 0)
+            .to(LEADS, { opacity: 1, y: 0, duration: .8, stagger: .06 }, .25);
+          if (planInView) intro.add(() => plant.play(), .2);
+          ScrollTrigger.refresh();
+        } catch (err) {   // never leave the headline hidden
+          console.warn(err);
+          intro && intro.progress(1);
+          settle();
+        }
+      }));
+      // Belt and braces: if the intro never got going, show the headline.
+      setTimeout(() => { if (!root.classList.contains('played')) { intro ? intro.progress(1) : gsap.set(LEADS, { opacity: 1, y: 0 }); gsap.set('#harvest-title', { visibility: 'visible' }); root.classList.add('played'); } }, 4500);
+    }
+
+    // SC16: row and slot rules draw from the left as they arrive.
+    const ruleLis = $$('.rows li, .slots li');
+    gsap.set(ruleLis, { '--d': 0 });
+    ScrollTrigger.batch(ruleLis, {
+      start: 'top 88%', once: true,
+      onEnter: els => gsap.to(els, { '--d': 1, duration: .9, ease: 'expo.out', stagger: .06 })
+    });
+
+    return () => {
+      M = false;
+      shareTl && shareTl.progress(1).kill();
+      capTl && capTl.kill();
+      plantST && plantST.kill();
+      split && split.revert();
+      gsap.ticker.remove(tick);
+      gsap.ticker.lagSmoothing(500, 33);
+      lenis.destroy();
+      lenis = null;
+      gsap.set(ruleLis, { '--d': 1 });
+      settle();
+    };
+  });
+
+  // Phones have no hover: as each row passes the middle of the screen, the small plan above the rows outlines its block.
+  gsap.matchMedia().add('(max-width: 991px)', () => {
+    const sts = rows.map((r, k) => ScrollTrigger.create({
+      trigger: r, start: 'top 55%', end: 'bottom 45%',
+      onToggle: self => (self.isActive ? setHL(k) : S.hl === k && setHL(S.pinned))
+    }));
+    return () => { sts.forEach(t => t.kill()); setHL(S.pinned); };
+  });
+})();
+</script>
+</body>
+</html>
