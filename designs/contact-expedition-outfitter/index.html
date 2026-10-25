@@ -1,0 +1,1467 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hinlopen trip planner</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400..700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* colour: the morning ice chart, with the page as pale sea and fields as land */
+    --ground: #E0ECF5;     /* page ground: the pale sea of the chart */
+    --land: #FFFFFF;       /* chart land, fields, rows, chips, inner focus gap */
+    --ink: #22272B;        /* text, coast, primary button, focus ring (12.6:1 on ground, 15.1:1 on land) */
+    --ink-2: #4F5A63;      /* secondary text (5.9:1 on ground, 7.1:1 on land) */
+    --fjord: #24567A;      /* water lettering and inline links only (6.5:1 on ground, 4.7:1 on sea) */
+    --night: #13263A;      /* the direct-channels band */
+    --on-night: #E0ECF5;   /* text on night (12.8:1) */
+    --ice-blue: #A9CCEB;   /* rules on night when a row is active (9.2:1) */
+    --fault: #A8261B;      /* validation errors only, always with text and icon (5.9:1 on ground, 7.1:1 on land) */
+    --rule: rgb(34 39 43 / .3);
+    --rule-strong: rgb(34 39 43 / .62);   /* field and chip edges, at least 3:1 */
+    --tint: color-mix(in srgb, var(--ink) 6%, var(--land));   /* hover and focus ground of chips and stepper buttons */
+    /* chart data: WMO sea-ice classes, never used as UI accents */
+    --ice-fast: #9AA3AB;   /* fast ice */
+    --ice-vcd: #E3442F;    /* very close drift 9-10/10 */
+    --ice-cd: #F28C28;     /* close drift 7-8/10 */
+    --ice-od: #F2D33A;     /* open drift 4-6/10 */
+    --ice-vod: #9BD6A3;    /* very open drift 1-3/10 */
+    --ice-ow: #A9CCEB;     /* open water, also the chart sea */
+
+    --font: "Familjen Grotesk", "Helvetica Neue", Arial, sans-serif;
+    --fs-xs: .8125rem;   /* 13: chart lettering, legend, counters */
+    --fs-sm: .9375rem;   /* 15: hints, errors, meta */
+    --fs-md: 1.0625rem;  /* 17: body, inputs */
+    --fs-lg: 1.3125rem;  /* 21: lede, route names, channel values */
+    --fs-xl: 1.75rem;    /* 28: step legends, h3 */
+    --fs-2xl: clamp(2.5rem, 1.6rem + 3.6vw, 5.25rem); /* 40-84: h2 */
+
+    --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px;
+    --sp-6: 32px; --sp-7: 48px; --sp-8: 72px; --sp-9: 112px;
+    --gutter: 16px;
+    --max: 1360px;
+
+    --r-plate: 0; --r-row: 6px; --r-chip: 999px; --r-btn: 4px;
+
+    --t-fast: .2s;      /* tints, borders */
+    --t-mid: .3s;       /* reveals, previews, roll */
+    --t-sweep: .45s;    /* underline and fill sweeps, rail fill, release */
+    --t-press: .12s;
+    --ease-sweep: cubic-bezier(.35, 0, 0, 1);
+    --ease-out: cubic-bezier(.215, .61, .355, 1);   /* power3.out */
+    --ease-step: cubic-bezier(.25, .46, .45, .94);  /* power1.out */
+  }
+  @media (min-width: 600px) { :root { --gutter: 24px; } }
+
+  /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-padding-top: calc(var(--chart-h, 0px) + var(--sp-3)); } /* --chart-h is set by the script while the chart is sticky on phones */
+  body { margin: 0; background: var(--ground); color: var(--ink); font: 400 var(--fs-md)/1.5 var(--font); -webkit-font-smoothing: antialiased; }
+  h2, h3, p, ol, ul, dl, dd, fieldset { margin: 0; }
+  button, input, textarea { font: inherit; color: inherit; }
+  .sr { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  [tabindex="-1"]:focus { outline: none; }
+
+  /* focus: 3px ink ring with a 2px land gap, on every interactive item */
+  :where(a, button, [role="spinbutton"], textarea, input:not([type="radio"]):not([type="checkbox"])):focus-visible,
+  .opt:has(input:focus-visible), .chip:has(input:focus-visible), .check:has(input:focus-visible) .box {
+    outline: 3px solid var(--ink); outline-offset: 2px; box-shadow: 0 0 0 2px var(--land);
+  }
+
+  .wrap { max-width: var(--max); margin-inline: auto; padding-inline: var(--gutter); }
+  .enq { padding-top: var(--sp-8); }
+  .grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--sp-5); row-gap: var(--sp-7); padding-bottom: var(--sp-9); }
+  .opening { grid-column: 1 / 7; grid-row: 1; }
+  .planner { grid-column: 1 / 7; grid-row: 2; scroll-margin-top: var(--sp-4); }
+  .chart { grid-column: 8 / 13; grid-row: 1 / 3; align-self: start; position: sticky; top: 24px; max-height: calc(100svh - 48px);
+    display: flex; flex-direction: column; gap: var(--sp-3); margin: 0; }
+  @media (min-width: 1280px) { .chart { grid-column: 7 / 13; } }
+  @media (min-width: 992px) and (max-width: 1279px) { .opening, .planner { grid-column: 1 / 8; } }
+  @media (min-width: 992px) { .planner { min-height: calc(100svh - 48px); } } /* keeps the sticky chart whole beside a short step */
+
+  /* ---------- opening ---------- */
+  .opening h2 { font-size: var(--fs-2xl); font-weight: 700; line-height: .98; letter-spacing: -.025em; max-width: 14ch; text-wrap: balance; }
+  .opening h2 .ln-mask { padding-bottom: .1em; margin-bottom: -.1em; }
+  .lede { margin-top: var(--sp-5); font-size: var(--fs-lg); line-height: 1.45; max-width: 34em; }
+  .opening-links { margin-top: var(--sp-6); display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-4) var(--sp-6); }
+
+  /* ---------- links and buttons ---------- */
+  .lk { color: var(--fjord); text-decoration: none; padding-bottom: .12em;
+    background: linear-gradient(currentColor, currentColor) 100% 100% / 0 .07em no-repeat;
+    transition: background-size var(--t-sweep) var(--ease-sweep); }
+  .lk:hover, .lk:focus-visible { background-position: 0 100%; background-size: 100% .07em; }
+  .tbtn { background: none; border: 0; padding: var(--sp-3) var(--sp-1); cursor: pointer; font-weight: 500; color: var(--ink); border-radius: var(--r-btn);
+    transition: transform var(--t-sweep) var(--ease-out); }
+  .tbtn > .u { padding-bottom: .12em; background: linear-gradient(currentColor, currentColor) 100% 100% / 0 .07em no-repeat;
+    transition: background-size var(--t-sweep) var(--ease-sweep); }
+  .tbtn:hover > .u, .tbtn:focus-visible > .u { background-position: 0 100%; background-size: 100% .07em; }
+  .tbtn:active { transform: scale(.975); transition-duration: var(--t-press); }
+  @media (hover: none) { .lk, .tbtn > .u { background-size: 100% .07em; } }
+
+  .btn { position: relative; isolation: isolate; overflow: hidden; display: inline-flex; align-items: center; justify-content: center;
+    min-height: 48px; padding: 0 var(--sp-5); border: 1.5px solid var(--ink); border-radius: var(--r-btn);
+    background: var(--ink); color: var(--land); font-weight: 500; line-height: 1.1; text-decoration: none; cursor: pointer;
+    transition: transform var(--t-sweep) var(--ease-out), color var(--t-mid) var(--ease-sweep); }
+  .btn::before { content: ""; position: absolute; inset: 0; z-index: -1; background: var(--land);
+    transform: scaleX(0); transform-origin: var(--from, left); transition: transform var(--t-mid) var(--ease-sweep); }
+  .btn:focus-visible { color: var(--ink); }
+  .btn:focus-visible::before { transform: scaleX(1); }
+  @media (hover: hover) and (pointer: fine) {
+    .btn:hover { color: var(--ink); }
+    .btn:hover::before { transform: scaleX(1); transition-duration: var(--t-sweep); }
+  }
+  .btn:active { transform: scale(.975); transition-duration: var(--t-press); }
+
+  /* masked label roll (MI2): the ::after reserves the longest label */
+  .roll { display: inline-grid; overflow: hidden; vertical-align: top; }
+  .roll > *, .roll::after { grid-area: 1 / 1; }
+  .roll::after { content: attr(data-longest); visibility: hidden; height: 0; }
+
+  /* ---------- chart ---------- */
+  .plate { position: relative; flex: 1 1 auto; min-height: 0; width: 100%; aspect-ratio: 750 / 780; background: var(--ice-ow);
+    border: 1px solid var(--ink); border-radius: var(--r-plate); overflow: hidden; }
+  .map { position: absolute; inset: 0; width: 100%; height: 100%; display: block; --k: .8; font-family: var(--font); }
+  /* each region is stroked in its own colour so neighbours meet without anti-aliasing seams */
+  .map .ice use { stroke-width: calc(1px / var(--k)); stroke-linejoin: round; }
+  .map .c-F { fill: var(--ice-fast); stroke: var(--ice-fast); } .map .c-V { fill: var(--ice-vcd); stroke: var(--ice-vcd); } .map .c-C { fill: var(--ice-cd); stroke: var(--ice-cd); }
+  .map .c-O { fill: var(--ice-od); stroke: var(--ice-od); } .map .c-L { fill: var(--ice-vod); stroke: var(--ice-vod); } .map .c-W { fill: var(--ice-ow); stroke: var(--ice-ow); }
+  .map .hit use { fill: none; pointer-events: fill; }
+  .map .land { fill: var(--land); pointer-events: fill; }
+  .map .coast-u, .map .coast path { fill: none; stroke: var(--ink); stroke-width: calc(1px / var(--k)); stroke-linejoin: round; pointer-events: none; }
+  .map .grat line { stroke: var(--ink); stroke-opacity: .25; stroke-width: calc(1px / var(--k)); }
+  .map .grat, .map .lbls, .map .routes, .map .scale, .map .ghost, .map .pick { pointer-events: none; }
+  .map text { font-size: calc(13px / var(--k)); fill: var(--ink); paint-order: stroke; stroke: var(--land); stroke-width: calc(3px / var(--k)); stroke-linejoin: round; }
+  .map .grat text { fill: var(--ink-2); }
+  .map .land-n { font-weight: 500; }
+  .map .water { fill: var(--fjord); }
+  .map .place { fill: var(--ink); stroke: var(--land); stroke-width: calc(1px / var(--k)); r: calc(3px / var(--k)); }
+  .map .pick { fill: none; stroke: var(--ink); stroke-width: calc(1.5px / var(--k)); opacity: 0; transition: opacity var(--t-fast); }
+  .map .pick.on { opacity: 1; }
+  .map .ghost { fill: none; stroke: var(--ink); stroke-width: calc(2px / var(--k)); stroke-linejoin: round;
+    stroke-dasharray: calc(5px / var(--k)) calc(4px / var(--k)); opacity: 0; transition: opacity var(--t-mid); }
+  .map .ghost.on { opacity: .5; }
+  .map .route path { fill: none; stroke-linejoin: round; stroke-linecap: round; }
+  .map .route .casing { stroke: var(--land); stroke-width: calc(5px / var(--k)); }
+  .map .route .line { stroke: var(--ink); stroke-width: calc(2px / var(--k)); }
+  .map .route .blk-c { stroke: var(--land); stroke-width: calc(9px / var(--k)); }
+  .map .route .blk-h { stroke: var(--ink); stroke-width: calc(9px / var(--k)); stroke-linecap: butt;
+    stroke-dasharray: calc(2.5px / var(--k)) calc(2.5px / var(--k)); }
+  .map .route .dot { fill: var(--land); stroke: var(--ink); stroke-width: calc(1.5px / var(--k)); r: calc(4px / var(--k)); transform-box: fill-box; transform-origin: center; }
+  .map .scale line, .map .scale path { stroke: var(--ink); stroke-width: calc(1.5px / var(--k)); fill: none; }
+  .map .scale text { stroke: none; }
+
+  .key { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-1) var(--sp-4);
+    font-size: var(--fs-xs); line-height: 1.3; color: var(--ink); }
+  .key li, .kbtn { display: flex; align-items: center; gap: var(--sp-2); padding: 2px 4px; margin-inline: -4px; border-radius: var(--r-btn); transition: background-color var(--t-fast); }
+  .key li:has(.kbtn) { padding: 0; margin: 0; }
+  .kbtn { width: 100%; min-height: 24px; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+  .key li.on .kbtn { background: var(--land); }
+  @media (hover: hover) and (pointer: fine) { .kbtn:hover { background: var(--land); } }
+  .map .ice > g { transition: opacity var(--t-fast), filter var(--t-fast); }
+  .map .ice > g.dim { opacity: .6; filter: saturate(.3) brightness(1.12); }   /* month preview: these regions change (open water too, so not opacity alone) */
+  .map .ice > g.mute { opacity: .25; } /* legend reading: every other class */
+  .sw { flex: none; width: 22px; height: 12px; border: 1px solid var(--rule); transform-origin: left center; }
+  .sw.c-F { background: var(--ice-fast); } .sw.c-V { background: var(--ice-vcd); } .sw.c-C { background: var(--ice-cd); }
+  .sw.c-O { background: var(--ice-od); } .sw.c-L { background: var(--ice-vod); } .sw.c-W { background: var(--ice-ow); }
+  .sw.k-route { height: 0; border: 0; border-top: 2px solid var(--ink); }
+  .sw.k-blk { border: 0; background: repeating-linear-gradient(90deg, var(--ink) 0 2.5px, var(--land) 2.5px 5px); }
+  .chart figcaption { font-size: var(--fs-xs); line-height: 1.4; color: var(--ink-2); max-width: 62ch; }
+  .chart figcaption strong { color: var(--ink); font-weight: 500; }
+  .pickline { font-size: var(--fs-xs); line-height: 1.4; min-height: 2.8em; color: var(--ink); max-width: 62ch; } /* two lines reserved: a legend reading never resizes the chart */
+  .verdict { display: none; font-size: var(--fs-sm); font-weight: 500; line-height: 1.4; }
+
+  /* ---------- planner ---------- */
+  .rail { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--sp-2); margin-bottom: var(--sp-6); }
+  .rail-btn { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 0 0 var(--sp-2); cursor: pointer; border-radius: var(--r-btn); color: var(--ink);
+    transition: transform var(--t-sweep) var(--ease-out); }
+  .rail-btn:active:not(:disabled) { transform: scale(.975); transition-duration: var(--t-press); }
+  .rail-btn:disabled { cursor: default; color: var(--ink-2); }
+  .rail-btn[aria-current] { cursor: default; }
+  .seg { display: block; height: 3px; background: var(--rule); overflow: hidden; margin-bottom: var(--sp-2); }
+  .seg i { display: block; height: 100%; background: var(--ink); transform: scaleX(0); transform-origin: left; transition: transform var(--t-sweep) var(--ease-step); }
+  .is-done .seg i, [aria-current] .seg i { transform: scaleX(1); }
+  .rail-name { font-size: var(--fs-sm); font-weight: 500; }
+  .rail-name .n { font-variant-numeric: tabular-nums; margin-right: .35em; }
+  .is-done .rail-name .u { padding-bottom: .1em; background: linear-gradient(currentColor, currentColor) 100% 100% / 0 .07em no-repeat; transition: background-size var(--t-sweep) var(--ease-sweep); }
+  .is-done:hover .rail-name .u, .is-done:focus-visible .rail-name .u { background-position: 0 100%; background-size: 100% .07em; }
+  @media (hover: none) { .is-done .rail-name .u { background-size: 100% .07em; } }
+  .rail-status { display: none; font-size: var(--fs-sm); font-weight: 500; margin: calc(-1 * var(--sp-4)) 0 var(--sp-5); }
+
+  .body { display: grid; position: relative; }
+  .body > form, .body > .result { grid-area: 1 / 1; min-width: 0; }
+  .steps { display: grid; position: relative; } /* the leaving step is taken out of flow here */
+  .step { grid-area: 1 / 1; min-width: 0; border: 0; padding: 0; }
+  html:not(.js) .step + .step { margin-top: var(--sp-8); grid-area: auto; }
+  html:not(.js) .steps { display: block; }
+  html.js .step { display: none; }
+  html.js .step.is-active, html.js .step.is-leaving { display: block; }
+  legend { padding: 0; font-size: var(--fs-xl); font-weight: 700; letter-spacing: -.01em; line-height: 1.15; margin-bottom: var(--sp-5); }
+  .hint { font-size: var(--fs-sm); color: var(--ink-2); max-width: 62ch; }
+  .sub { font-size: var(--fs-sm); font-weight: 500; margin: var(--sp-6) 0 var(--sp-2); }
+
+  .opts { display: grid; gap: var(--sp-2); }
+  .opt { position: relative; display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: var(--sp-4); align-items: center;
+    padding: var(--sp-3) var(--sp-4); background: var(--land); border: 1px solid var(--rule); border-radius: var(--r-row); cursor: pointer;
+    transition: border-color var(--t-fast), outline-color var(--t-fast); outline: 2px solid transparent; outline-offset: -1px; }
+  .opt input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+  @media (hover: hover) and (pointer: fine) { .opt:hover { border-color: var(--rule-strong); } }
+  .opt:has(input:checked) { outline-color: var(--ink); border-color: var(--ink); }
+  .opt-name { display: block; font-size: var(--fs-lg); font-weight: 500; line-height: 1.25; }
+  .opt-meta { display: block; font-size: var(--fs-sm); color: var(--ink-2); line-height: 1.4; margin-top: 2px; }
+  .glyph-w { position: relative; width: 56px; height: 40px; }
+  .glyph { display: block; width: 56px; height: 40px; overflow: visible; }
+  .glyph path { fill: none; stroke-linejoin: round; stroke-linecap: round; }
+  .glyph .g0 { stroke: var(--rule); stroke-width: 1.5; }
+  .glyph .g1 { stroke: var(--ink); stroke-width: 2; opacity: 0; transition: opacity var(--t-fast); }
+  .opt:hover .glyph .g1, .opt:has(input:focus-visible) .glyph .g1, .opt:has(input:checked) .glyph .g1 { opacity: 1; }
+  .glyph .q { stroke: var(--ink-2); stroke-width: 1.5; stroke-dasharray: 2 3; }
+  .ring { width: 22px; height: 22px; border: 1.5px solid var(--ink); border-radius: 50%; position: relative; justify-self: center; }
+  .opt--plain { grid-template-columns: 22px minmax(0, 1fr); }
+  .badge { position: absolute; width: 20px; height: 20px; border-radius: 50%; background: var(--ink); display: grid; place-items: center; opacity: 0; transform: scale(.6); }
+  .badge svg { width: 14px; height: 14px; fill: none; stroke: var(--land); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .glyph-w .badge { top: -8px; right: -10px; }
+  .ring .badge { inset: -1.5px; width: 22px; height: 22px; }
+  :checked ~ * .badge, :checked ~ .badge, .chip:has(:checked) .badge { opacity: 1; transform: none; }
+
+  .itin { list-style: none; padding: 0; font-size: var(--fs-sm); columns: 2 14em; column-gap: var(--sp-6); }
+  .itin li { break-inside: avoid; padding: 3px 0; border-top: 1px solid var(--rule); }
+
+  .chips { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+  .chip { position: relative; display: inline-flex; align-items: center; min-height: 44px; padding: 0 var(--sp-5); background: var(--land);
+    border: 1px solid var(--rule-strong); border-radius: var(--r-chip); font-weight: 500; cursor: pointer; outline: 2px solid transparent; outline-offset: -1px;
+    transition: background-color var(--t-fast), outline-color var(--t-fast); }
+  .chip input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+  @media (hover: hover) and (pointer: fine) { .chip:hover { background: var(--tint); } }
+  .chip:has(input:focus-visible) { background: var(--tint); }
+  .chip:has(input:checked) { outline-color: var(--ink); border-color: var(--ink); }
+  .chip.is-out { border-style: dashed; }
+  @media (min-width: 992px) {
+    .chips { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+    .chip { justify-content: center; padding: 0 2px; font-size: var(--fs-sm); }
+  }
+  .chip .badge { top: -7px; right: -5px; width: 18px; height: 18px; }
+  .chip .badge svg { width: 12px; height: 12px; }
+  .mdetail { margin-top: var(--sp-3); font-size: var(--fs-sm); min-height: 1.5em; }
+  .seasonline { font-size: var(--fs-sm); color: var(--ink-2); margin-top: var(--sp-1); }
+
+  .reveal { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .25s var(--ease-out); }
+  .reveal > * { overflow: hidden; min-height: 0; }
+  .reveal.on { grid-template-rows: 1fr; }
+  .note { font-size: var(--fs-sm); line-height: 1.45; }
+  .note > div > p { display: flex; gap: var(--sp-2); align-items: flex-start; margin-top: var(--sp-4); padding: var(--sp-3) var(--sp-4); background: var(--land); border: 1.5px dashed var(--rule-strong); border-radius: var(--r-row); }
+  .note svg { flex: none; width: 16px; height: 16px; margin-top: 2px; fill: none; stroke: var(--ink); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .note .tag { font-weight: 500; }
+
+  .flex { margin-top: var(--sp-5); }
+  .check { display: flex; gap: var(--sp-3); align-items: flex-start; cursor: pointer; position: relative; padding: var(--sp-1) 0; }
+  .check input { position: absolute; opacity: 0; width: 22px; height: 22px; margin: 0; cursor: pointer; }
+  .check .box { flex: none; width: 22px; height: 22px; border: 1.5px solid var(--rule-strong); border-radius: 3px; background: var(--land); display: grid; place-items: center; transition: border-color var(--t-fast), background-color var(--t-fast); }
+  @media (hover: hover) and (pointer: fine) { .check:hover .box { border-color: var(--ink); } }
+  .check .box svg { width: 16px; height: 16px; fill: none; stroke: var(--land); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .check .box path { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset var(--t-mid) var(--ease-out); }
+  .check input:checked + .box { background: var(--ink); border-color: var(--ink); }
+  .check input:checked + .box path { stroke-dashoffset: 0; }
+  .checks { display: grid; gap: var(--sp-2); }
+
+  .sum { position: relative; overflow: hidden; margin-top: var(--sp-5); padding: var(--sp-4) var(--sp-5); background: var(--land); border-radius: var(--r-row); }
+  .sum-old { position: absolute; top: var(--sp-4); left: var(--sp-5); right: var(--sp-5); }
+  .sum .ln { overflow: hidden; }
+  .sum .ln > span { display: block; padding-bottom: .08em; }
+  .sum .ln + .ln { margin-top: var(--sp-2); }
+  .sum .head { font-weight: 700; }
+  .sum .ln > .it { display: flex; gap: var(--sp-2); align-items: baseline; font-size: var(--fs-sm); }
+  .sum .it .sw { transform: translateY(1px); }
+  .sum .stage { font-size: var(--fs-sm); color: var(--ink-2); }
+  .sum p.it { font-size: var(--fs-sm); }
+
+  .group-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-3) var(--sp-5); margin-bottom: var(--sp-6); }
+  .group-row .lbl { font-weight: 500; }
+  .stepper { display: inline-flex; align-items: center; gap: var(--sp-1); }
+  .sbtn { width: 44px; height: 44px; border: 1.5px solid var(--ink); border-radius: var(--r-btn); background: var(--land); cursor: pointer; display: grid; place-items: center;
+    transition: transform var(--t-sweep) var(--ease-out), background-color var(--t-fast); }
+  .sbtn svg { width: 16px; height: 16px; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+  @media (hover: hover) and (pointer: fine) { .sbtn:hover:not(:disabled) { background: var(--tint); } }
+  .sbtn:active:not(:disabled) { transform: scale(.94); transition-duration: var(--t-press); }
+  .sbtn:disabled { border-color: var(--rule); color: var(--ink-2); cursor: not-allowed; }
+  .spin { min-width: 56px; height: 44px; display: grid; place-items: center; font-size: var(--fs-lg); font-weight: 500; font-variant-numeric: tabular-nums; border-radius: var(--r-btn); }
+  .digits { display: grid; overflow: hidden; height: 1.3em; line-height: 1.3; }
+  .digits > span { grid-area: 1 / 1; }
+  .group-note { flex-basis: 100%; }
+  .bear { margin-top: var(--sp-5); font-size: var(--fs-sm); color: var(--ink-2); }
+
+  .fields { display: grid; gap: var(--sp-5); }
+  .fields-2 { display: grid; gap: var(--sp-5); grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); }
+  .field label { display: block; font-weight: 500; margin-bottom: var(--sp-2); transition: color var(--t-fast); }
+  .field .opt-l { font-weight: 400; color: var(--ink-2); }
+  .ctl { position: relative; }
+  .ctl input, .ctl textarea { display: block; width: 100%; min-height: 48px; padding: var(--sp-3) 40px var(--sp-3) var(--sp-3); background: var(--land);
+    border: 0; border-bottom: 1px solid var(--rule-strong); border-radius: var(--r-row) var(--r-row) 0 0; transition: border-color var(--t-fast); }
+  .ctl textarea { min-height: 128px; resize: vertical; border-radius: var(--r-row); border: 1px solid var(--rule-strong); line-height: 1.5; }
+  @media (hover: hover) and (pointer: fine) { .ctl input:hover, .ctl textarea:hover { border-color: var(--ink); } }
+  .ctl .bar { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--ink); transform: scaleX(0); transform-origin: left; transition: transform var(--t-mid) var(--ease-out); pointer-events: none; }
+  .ctl :focus + .bar, .is-invalid .bar { transform: scaleX(1); }
+  .is-invalid .bar { background: var(--fault); }
+  .is-invalid .ctl input, .is-invalid .ctl textarea { border-color: var(--fault); }
+  .ctl .ok { position: absolute; right: 12px; top: 16px; width: 18px; height: 18px; fill: none; stroke: var(--ink); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+  .ctl .ok path { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset var(--t-mid) var(--ease-out); }
+  .is-valid .ctl .ok path { stroke-dashoffset: 0; }
+  .count { font-size: var(--fs-xs); color: var(--ink-2); margin-top: var(--sp-1); }
+  .err { color: var(--fault); font-size: var(--fs-sm); }
+  .err p { display: flex; gap: var(--sp-2); align-items: flex-start; padding-top: var(--sp-2); }
+  .err svg { flex: none; width: 16px; height: 16px; margin-top: 2px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .gerr { margin-top: var(--sp-2); }
+
+  .review { display: grid; }
+  .review > div { display: grid; grid-template-columns: 7rem minmax(0, 1fr) auto; gap: var(--sp-2) var(--sp-4); align-items: baseline; padding: var(--sp-3) 0; border-top: 1px solid var(--rule); }
+  .review > div:last-child { border-bottom: 1px solid var(--rule); }
+  .review dt { font-weight: 500; }
+  .review dd:last-child { justify-self: end; }
+  .review .tbtn { padding-block: var(--sp-1); }
+
+  .nav { display: flex; align-items: center; gap: var(--sp-4); margin-top: var(--sp-7); }
+  .nav .btn { margin-left: auto; }
+  html:not(.js) .nav .js-only { display: none; }
+  .nav [hidden] { display: none; }
+
+  .result { padding: var(--sp-6) var(--sp-5); background: var(--land); border-radius: var(--r-row); align-self: start; }
+  .result[hidden] { display: none; }
+  .result h3 { font-size: var(--fs-xl); font-weight: 700; letter-spacing: -.01em; line-height: 1.15; }
+  .result h3 .ln-mask { padding-bottom: .1em; margin-bottom: -.1em; }
+  .result .ref { margin-top: var(--sp-2); color: var(--ink-2); }
+  .result .ref strong { color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
+  .result .msg { margin-top: var(--sp-4); max-width: 52ch; }
+  .result .actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-3) var(--sp-5); margin-top: var(--sp-6); }
+
+  /* ---------- direct channels ---------- */
+  .direct { background: var(--night); color: var(--on-night); padding: var(--sp-8) 0 var(--sp-9); scroll-margin-top: 0; }
+  .direct h3 { font-size: var(--fs-xl); font-weight: 700; letter-spacing: -.01em; line-height: 1.15; }
+  .direct h3 .ln-mask { padding-bottom: .1em; margin-bottom: -.1em; }
+  .direct .intro { margin-top: var(--sp-2); max-width: 52ch; }
+  .direct :focus-visible { outline-color: var(--on-night); box-shadow: 0 0 0 2px var(--night); }
+  .direct .lk { color: var(--on-night); }
+  .chan { list-style: none; padding: 0; margin-top: var(--sp-7); }
+  .row { position: relative; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--sp-5); row-gap: var(--sp-1); align-items: baseline; padding: var(--sp-5) 0; }
+  .row:last-child { border-bottom: 1px solid rgb(224 236 245 / .3); }
+  .rule { position: absolute; top: 0; left: 0; right: 0; height: 1px; background: rgb(224 236 245 / .3); transform-origin: left; }
+  .rule::after { content: ""; position: absolute; inset: 0; background: var(--ice-blue); transform: scaleX(0); transform-origin: var(--from, left); transition: transform var(--t-sweep) var(--ease-sweep); }
+  .row.on .rule::after, .row:focus-within .rule::after { transform: scaleX(1); }
+  .row:active .rule::after { transform: scaleX(1); transition-duration: 0s; }
+  .row .k { grid-column: 1 / 3; font-weight: 500; }
+  .row .v { grid-column: 3 / 8; font-size: var(--fs-lg); overflow-wrap: anywhere; justify-self: start; }
+  .row .v.addr { font-style: normal; font-size: var(--fs-md); }
+  .row .rn { grid-column: 8 / 11; font-size: var(--fs-sm); color: rgb(224 236 245 / .82); }
+  .row .act { grid-column: 11 / 13; justify-self: end; display: flex; gap: var(--sp-4); align-items: baseline; }
+  .copy { background: none; border: 1.5px solid rgb(224 236 245 / .6); color: var(--on-night); border-radius: var(--r-btn); min-height: 40px; padding: 0 var(--sp-4); cursor: pointer; font-weight: 500;
+    transition: transform var(--t-sweep) var(--ease-out), border-color var(--t-fast); }
+  @media (hover: hover) and (pointer: fine) { .copy:hover { border-color: var(--on-night); } }
+  .copy:active { transform: scale(.975); transition-duration: var(--t-press); }
+
+  /* ---------- below 992px: one column, chart sticky on steps 1-2 only ---------- */
+  @media (max-width: 991px) {
+    .grid { grid-template-columns: minmax(0, 1fr); row-gap: var(--sp-6); }
+    .opening, .chart, .planner { grid-column: 1; grid-row: auto; }
+    /* plate and key side by side, so the sticky chart stays short */
+    .chart { position: static; max-height: none; display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: var(--sp-3); row-gap: var(--sp-2); align-items: start; }
+    .plate { flex: none; width: min(34svh * 750 / 780, 100vw - 2 * var(--gutter) - 12rem - var(--sp-3)); height: auto; aspect-ratio: 750 / 780; justify-self: start; }
+    .key { display: flex; flex-direction: column; gap: 3px; }
+    .chart figcaption, .pickline, .verdict { grid-column: 1 / -1; }
+    /* once a month is picked, the verdict replaces the chart hint; a region reading still takes its place */
+    .chart.has-verdict .verdict { display: block; }
+    .chart.has-verdict .pickline:not(.is-reading), .chart.has-verdict .pickline.is-reading + .verdict { display: none; }
+    .grid[data-step="1"] .chart, .grid[data-step="2"] .chart { position: sticky; top: 0; z-index: 3; background: var(--ground); padding: var(--sp-2) 0 var(--sp-3); margin-top: calc(-1 * var(--sp-2)); border-bottom: 1px solid var(--rule); }
+    .row .k { grid-column: 1 / -1; }
+    .row .v { grid-column: 1 / 9; }
+    .row .rn { grid-column: 1 / 9; }
+    .row .act { grid-column: 9 / 13; grid-row: 2 / 4; align-self: center; }
+  }
+  @media (max-width: 599px) {
+    .rail { gap: 6px; margin-bottom: var(--sp-5); }
+    .rail-btn { padding: 10px 0 12px; min-height: 24px; }
+    .seg { margin: 0; }
+    .rail-name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    .rail-status { display: block; margin-top: calc(-1 * var(--sp-3)); }
+    .key .kx { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    .key .sw { width: 18px; }
+    .map .minor { display: none; }
+    .map .north { transform: translateX(40px); }   /* clear of the larger "50 km" */
+    .map .lbl-na { transform: translateX(72px); }  /* clear of Hinlopenstretet */
+    .map .lbl-sf { transform: translate(64px, 44px); } /* off the sail route */
+    .map text { font-size: calc(11px / var(--k)); }
+    .chips { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .chip { justify-content: center; padding: 0 2px; font-size: var(--fs-sm); }
+    .plate { width: min(28svh * 750 / 780, 100vw - 2 * var(--gutter) - 6.5rem - var(--sp-3)); }
+    .nav .btn { flex: 1 1 auto; }
+    .review > div { grid-template-columns: minmax(0, 1fr) auto; }
+    .review dt { grid-column: 1 / -1; }
+    .row .v, .row .rn { grid-column: 1 / -1; }
+    .row .act { grid-column: 1 / -1; grid-row: auto; justify-self: start; margin-top: var(--sp-2); }
+    .itin { columns: 1; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0s !important; transition-delay: 0s !important; }
+    .lk, .tbtn > .u, .is-done .rail-name .u { background-size: 100% .07em; }
+  }
+</style>
+</head>
+<body>
+
+<section class="enq" aria-labelledby="enq-title">
+  <div class="wrap grid" id="grid">
+
+    <div class="opening">
+      <h2 id="enq-title">Pick a route and a month. We’ll tell you what the ice allows.</h2>
+      <p class="lede">Ski crossings, snowmobile trips and sailing circuits from Longyearbyen, March to September. Send us your plan and a guide replies within two working days with dates, a kit list and a price.</p>
+      <p class="opening-links">
+        <a class="btn" href="#planner" data-go="planner">Start the planner</a>
+        <a class="lk" href="#direct" data-go="direct">Call or email instead</a>
+      </p>
+    </div>
+
+    <figure class="chart" id="chart">
+      <div class="plate">
+        <svg class="map" viewBox="0 0 750 780" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Chart of Svalbard with typical sea ice in April.">
+          <defs>
+<path id="r-adventfjorden" d="M183 505L182 498L177 492L177 484L175 477L181 471L180 463L185 457L186 450L192 450L197 448L202 448L207 446L214 451L217 459L217 468L224 474L231 479L232 488L234 496L238 503L231 507L225 510L218 508L211 508L205 502L197 501L191 505Z"/>
+<path id="r-isfjorden" d="M186 450L185 457L180 463L181 471L175 477L177 484L177 492L182 498L183 505L180 507L178 510L175 509L172 510L167 501L157 498L159 488L155 479L151 471L149 462L145 453L137 449L137 445L139 441L141 438L145 435L156 437L164 446L175 451Z"/>
+<path id="r-isfjordmouth" d="M137 449L145 453L149 462L151 471L155 479L159 488L157 498L167 501L172 510L170 515L167 518L163 520L161 524L147 519L132 515L116 513L102 522L87 527L72 526L60 537L45 539L50 533L59 531L63 525L66 517L69 510L73 503L71 495L71 487L79 480L90 482L98 477L108 474L114 466L124 464L133 458Z"/>
+<path id="r-billefjorden" d="M285 419L275 422L265 424L254 421L244 426L232 423L222 428L218 440L207 446L207 434L209 423L202 413L205 401L204 389L202 378L198 367L204 356L213 358L223 353L232 352L242 351L245 352L247 355L251 356L255 358L262 361L264 369L268 375L270 382L275 387L276 394L278 402L284 406L284 409L283 412L283 416Z"/>
+<path id="r-tempelfjorden" d="M244 506L242 505L241 505L239 504L238 503L234 496L232 488L231 479L224 474L217 468L217 459L214 451L207 446L218 440L222 428L232 423L244 426L254 421L265 424L275 422L285 419L290 423L292 430L292 437L293 444L288 453L280 459L273 467L271 477L261 481L252 487L251 497Z"/>
+<path id="r-nordfjorden" d="M204 356L198 367L202 378L204 389L205 401L202 413L209 423L207 434L207 446L202 448L197 448L192 450L186 450L175 451L164 446L156 437L145 435L141 425L140 414L140 402L143 392L148 380L160 374L166 363L167 351L177 348L186 348L196 349Z"/>
+<path id="r-vanmijen" d="M197 599L197 588L190 579L193 567L187 558L185 546L181 536L173 528L161 524L163 520L167 518L170 515L172 510L175 509L178 510L180 507L183 505L191 505L197 501L205 502L211 508L218 508L225 510L231 507L238 503L239 504L241 505L242 505L244 506L244 513L242 521L247 527L248 535L254 540L259 545L261 553L263 560L263 565L260 569L262 573L262 578L257 582L251 586L250 592L244 597L232 596L220 596L209 600Z"/>
+<path id="r-bellsund" d="M45 539L60 537L72 526L87 527L102 522L116 513L132 515L147 519L161 524L173 528L181 536L185 546L187 558L193 567L190 579L197 588L197 599L191 606L182 610L174 615L165 618L156 615L149 608L145 599L140 591L130 589L123 583L116 576L107 571L98 571L89 567L79 568L70 564L62 559L52 558L46 551L38 545L40 544L42 543L44 541Z"/>
+<path id="r-hornsund" d="M145 685L146 676L151 668L148 659L153 651L155 641L153 632L157 623L165 618L174 615L182 610L191 606L197 599L209 600L220 596L232 596L244 597L253 606L259 618L263 631L265 644L265 658L271 670L268 684L267 697L261 706L250 708L242 713L235 721L226 725L216 727L205 729L196 725L187 722L185 713L178 708L171 704L168 696L160 691L152 689Z"/>
+<path id="r-kongsfjorden" d="M155 333L160 335L164 340L167 345L167 351L166 363L160 374L148 380L143 392L136 401L125 405L115 402L103 403L93 403L82 406L73 400L62 402L52 402L42 400L33 395L29 386L23 376L13 373L13 363L10 354L17 342L28 335L35 324L38 311L49 304L61 303L73 299L85 296L90 305L99 311L106 319L114 325L125 327L135 326L144 333Z"/>
+<path id="r-forlandsundet" d="M143 392L140 402L140 414L141 425L145 435L141 438L139 441L137 445L137 449L133 458L124 464L114 466L108 474L98 477L90 482L79 480L71 487L75 477L74 466L71 454L77 444L76 432L75 421L67 412L62 402L73 400L82 406L93 403L103 403L115 402L125 405L136 401Z"/>
+<path id="r-wijdefjorden" d="M242 351L232 352L223 353L213 358L204 356L196 349L186 348L177 348L167 351L167 345L164 340L160 335L155 333L158 319L167 308L168 293L178 282L182 269L186 256L191 242L196 229L206 231L211 240L219 246L221 256L229 261L239 261L249 261L255 269L256 279L257 290L258 300L256 311L260 322L255 333L252 345Z"/>
+<path id="r-woodfjorden" d="M196 229L191 242L186 256L182 269L178 282L168 293L167 308L158 319L155 333L144 333L135 326L125 327L114 325L106 319L99 311L90 305L85 296L85 288L85 280L85 272L84 264L96 258L109 259L115 247L126 239L135 230L148 228L152 215L163 208L167 218L176 223L186 223L195 228Z"/>
+<path id="r-westsouth" d="M-320 789L-320 688L-297 681L-274 673L-253 660L-232 649L-208 643L-185 636L-162 627L-142 613L-118 609L-96 599L-72 594L-50 586L-27 577L-7 563L16 555L38 545L46 551L52 558L62 559L70 564L79 568L89 567L98 571L107 571L116 576L123 583L130 589L140 591L145 599L149 608L156 615L165 618L157 623L153 632L155 641L153 651L148 659L151 668L146 676L145 685L116 693L87 699L60 712L31 720L4 732L-25 741L-55 745L-84 751L-113 760L-143 765L-172 770L-201 775L-231 779L-261 781L-291 784Z"/>
+<path id="r-westcoast" d="M71 487L71 495L73 503L69 510L66 517L63 525L59 531L50 533L45 539L44 541L42 543L40 544L38 545L16 555L-7 563L-27 577L-50 586L-72 594L-96 599L-118 609L-142 613L-162 627L-185 636L-208 643L-232 649L-253 660L-274 673L-297 681L-320 688L-320 377L-299 374L-279 372L-258 375L-237 376L-217 376L-196 376L-175 373L-155 371L-134 367L-113 365L-92 366L-72 368L-52 363L-31 359L-10 357L10 354L13 363L13 373L23 376L29 386L33 395L42 400L52 402L62 402L67 412L75 421L76 432L77 444L71 454L74 466L75 477Z"/>
+<path id="r-northwest" d="M84 264L85 272L85 280L85 288L85 296L73 299L61 303L49 304L38 311L35 324L28 335L17 342L10 354L-10 357L-31 359L-52 363L-72 368L-92 366L-113 365L-134 367L-155 371L-175 373L-196 376L-217 376L-237 376L-258 375L-279 372L-299 374L-320 377L-320 118L-301 126L-281 130L-260 133L-241 139L-220 137L-199 134L-179 140L-158 141L-138 144L-118 145L-98 150L-78 156L-58 159L-37 161L-17 160L4 158L13 159L19 166L25 172L31 179L31 188L37 195L40 203L44 211L51 217L59 219L64 227L67 235L70 243L72 251L78 257Z"/>
+<path id="r-northcoastwest" d="M132 104L136 119L130 132L133 146L138 159L150 168L152 183L155 197L163 208L152 215L148 228L135 230L126 239L115 247L109 259L96 258L84 264L78 257L72 251L70 243L67 235L64 227L59 219L51 217L44 211L40 203L37 195L31 188L31 179L25 172L19 166L13 159L21 156L30 153L39 153L46 148L54 144L62 139L71 138L78 132L87 131L95 126L99 117L107 113L116 112L124 109Z"/>
+<path id="r-northcoast" d="M276 148L267 160L257 170L241 172L230 183L227 198L216 208L209 221L195 228L186 223L176 223L167 218L163 208L155 197L152 183L150 168L138 159L133 146L130 132L136 119L132 104L138 93L148 86L155 76L161 65L171 73L185 75L194 85L198 97L210 97L223 98L235 99L247 101L251 107L253 114L259 118L264 123L269 129L269 136L274 141Z"/>
+<path id="r-hinlopennorth" d="M368 208L364 215L356 219L349 224L342 228L334 230L329 236L323 242L314 244L308 249L301 253L294 257L286 259L279 264L272 268L263 267L255 269L249 261L239 261L229 261L221 256L219 246L211 240L206 231L196 229L195 228L209 221L216 208L227 198L230 183L241 172L257 170L267 160L276 148L289 154L298 164L306 176L318 184L329 192L340 202L353 209Z"/>
+<path id="r-hinlopen" d="M345 313L339 325L329 335L318 342L305 348L295 358L281 358L268 361L255 358L251 356L247 355L245 352L242 351L252 345L255 333L260 322L256 311L258 300L257 290L256 279L255 269L263 267L272 268L279 264L286 259L294 257L301 253L308 249L314 244L323 242L329 236L334 230L342 228L349 224L356 219L364 215L368 208L372 209L377 209L382 208L386 211L381 224L372 235L360 244L356 258L356 273L358 287L353 301Z"/>
+<path id="r-hinlopensouth" d="M284 406L278 402L276 394L275 387L270 382L268 375L264 369L262 361L255 358L268 361L281 358L295 358L305 348L318 342L329 335L339 325L345 313L351 320L355 327L355 336L360 344L366 351L368 360L364 369L368 378L357 383L351 394L340 400L328 397L318 403L308 409L296 403Z"/>
+<path id="r-sjuoyane" d="M385 -9L381 5L382 18L383 32L386 45L392 58L393 71L393 85L398 98L402 111L403 125L402 138L400 152L406 164L407 178L408 191L409 205L403 203L397 204L392 208L386 211L382 208L377 209L372 209L368 208L353 209L340 202L329 192L318 184L306 176L298 164L289 154L276 148L274 141L269 136L269 129L264 123L259 118L253 114L251 107L247 101L257 96L268 92L277 85L284 76L293 68L304 64L314 60L326 58L335 51L342 43L352 37L361 30L368 21L375 11L382 2Z"/>
+<path id="r-northna" d="M481 -320L860 -320L838 -285L813 -252L790 -218L770 -182L748 -148L726 -114L703 -79L681 -45L657 -12L635 23L609 55L581 85L563 122L539 156L513 188L489 221L483 223L477 223L471 222L465 221L457 220L450 219L443 218L436 217L430 213L424 208L417 204L409 205L408 191L407 178L406 164L400 152L402 138L403 125L402 111L398 98L393 85L393 71L392 58L386 45L383 32L382 18L381 5L385 -9L390 -29L390 -49L392 -70L397 -90L403 -110L411 -129L415 -149L421 -168L429 -187L437 -206L443 -225L450 -245L459 -263L468 -281L477 -300Z"/>
+<path id="r-farnorth" d="M109 -320L481 -320L477 -300L468 -281L459 -263L450 -245L443 -225L437 -206L429 -187L421 -168L415 -149L411 -129L403 -110L397 -90L392 -70L390 -49L390 -29L385 -9L382 2L375 11L368 21L361 30L352 37L342 43L335 51L326 58L314 60L304 64L293 68L284 76L277 85L268 92L257 96L247 101L235 99L223 98L210 97L198 97L194 85L185 75L171 73L161 65L160 41L162 16L162 -8L159 -32L159 -57L160 -81L156 -106L150 -129L146 -154L140 -177L138 -202L136 -226L129 -250L126 -274L115 -296Z"/>
+<path id="r-farnorthwest" d="M-320 -320L109 -320L115 -296L126 -274L129 -250L136 -226L138 -202L140 -177L146 -154L150 -129L156 -106L160 -81L159 -57L159 -32L162 -8L162 16L160 41L161 65L155 76L148 86L138 93L132 104L124 109L116 112L107 113L99 117L95 126L87 131L78 132L71 138L62 139L54 144L46 148L39 153L30 153L21 156L13 159L4 158L-17 160L-37 161L-58 159L-78 156L-98 150L-118 145L-138 144L-158 141L-179 140L-199 134L-220 137L-241 139L-260 133L-281 130L-301 126L-320 118Z"/>
+<path id="r-kvitoya" d="M860 -320L1070 -320L1070 394L1038 390L1007 382L976 375L946 365L914 360L884 350L852 349L820 345L789 336L757 332L726 327L695 316L664 312L632 309L600 304L569 300L562 287L558 273L552 259L538 252L527 242L515 234L505 223L489 221L513 188L539 156L563 122L581 85L609 55L635 23L657 -12L681 -45L703 -79L726 -114L748 -148L770 -182L790 -218L813 -252L838 -285Z"/>
+<path id="r-olgastretet" d="M465 221L471 222L477 223L483 223L489 221L505 223L515 234L527 242L538 252L552 259L558 273L562 287L569 300L564 308L555 312L555 321L550 328L547 336L541 343L534 348L527 353L528 361L527 370L527 378L524 386L517 392L513 400L511 409L511 418L499 414L486 411L473 407L465 396L453 389L439 391L427 386L418 376L417 365L418 355L421 345L421 335L423 324L423 314L429 305L434 296L442 289L446 279L450 270L458 262L461 252L465 242L467 232Z"/>
+<path id="r-kkl" d="M1070 394L1070 694L1053 687L1036 684L1018 680L1000 677L982 673L966 665L948 661L930 662L912 660L894 654L876 654L858 651L841 646L824 640L806 636L790 627L773 616L757 604L738 597L720 588L701 582L683 572L665 562L650 549L631 541L612 534L595 523L578 512L560 503L542 494L525 482L511 467L505 455L505 442L511 431L511 418L511 409L513 400L517 392L524 386L527 378L527 370L528 361L527 353L534 348L541 343L547 336L550 328L555 321L555 312L564 308L569 300L600 304L632 309L664 312L695 316L726 327L757 332L789 336L820 345L852 349L884 350L914 360L946 365L976 375L1007 382L1038 390Z"/>
+<path id="r-barentsoyaeast" d="M392 391L399 388L407 387L411 380L418 376L427 386L439 391L453 389L465 396L473 407L486 411L499 414L511 418L511 431L505 442L505 455L511 467L504 472L495 473L487 475L479 478L476 487L468 493L461 498L451 499L447 486L449 472L438 466L430 455L422 445L413 437L404 427L391 426L393 417L395 408L391 400Z"/>
+<path id="r-freemansundet" d="M344 503L345 492L341 481L335 472L328 463L337 460L347 458L355 451L357 441L364 434L373 432L382 428L391 426L404 427L413 437L422 445L430 455L438 466L449 472L447 486L451 499L449 506L447 514L443 520L441 528L435 533L426 534L421 541L419 549L409 542L402 533L391 530L379 530L370 524L360 519L352 512Z"/>
+<path id="r-storfjordbays" d="M263 560L261 553L259 545L254 540L248 535L247 527L242 521L244 513L244 506L251 497L252 487L261 481L271 477L273 467L280 459L288 453L293 444L302 448L310 453L319 458L328 463L335 472L341 481L345 492L344 503L332 506L321 512L307 514L299 525L285 527L276 537L271 549Z"/>
+<path id="r-storfjorden" d="M262 578L262 573L260 569L263 565L263 560L271 549L276 537L285 527L299 525L307 514L321 512L332 506L344 503L352 512L360 519L370 524L379 530L391 530L402 533L409 542L419 549L418 559L419 569L416 578L417 588L408 596L399 602L388 610L376 608L362 602L349 596L335 588L320 590L305 584L290 588L275 584Z"/>
+<path id="r-storfjordsouth" d="M267 697L268 684L271 670L265 658L265 644L263 631L259 618L253 606L244 597L250 592L251 586L257 582L262 578L275 584L290 588L305 584L320 590L335 588L349 596L362 602L376 608L373 616L370 623L368 631L365 639L361 646L353 649L349 656L344 662L336 667L330 672L327 680L325 689L323 697L327 705L326 714L320 720L312 719L304 719L299 713L294 706L287 705L280 702L274 698Z"/>
+<path id="r-edgeoyaeast" d="M417 588L416 578L419 569L418 559L419 549L421 541L426 534L435 533L441 528L443 520L447 514L449 506L451 499L461 498L468 493L476 487L479 478L487 475L495 473L504 472L511 467L525 482L542 494L560 503L578 512L595 523L612 534L631 541L650 549L665 562L683 572L701 582L720 588L738 597L757 604L773 616L790 627L770 625L751 624L731 625L711 628L691 627L671 632L651 632L632 627L612 632L592 631L572 635L554 642L534 645L514 644L494 643L474 639L465 635L461 625L454 619L448 611L442 603L436 595L427 590Z"/>
+<path id="r-hopen" d="M1070 694L1070 1100L442 1100L438 1085L440 1070L441 1055L443 1040L442 1026L442 1011L442 995L437 981L436 966L433 951L429 937L421 924L417 910L414 895L406 882L402 868L408 853L413 839L412 824L414 808L418 794L421 779L422 764L427 750L433 735L433 720L442 707L448 693L455 679L457 664L466 652L474 639L494 643L514 644L534 645L554 642L572 635L592 631L612 632L632 627L651 632L671 632L691 627L711 628L731 625L751 624L770 625L790 627L806 636L824 640L841 646L858 651L876 654L894 654L912 660L930 662L948 661L966 665L982 673L1000 677L1018 680L1036 684L1053 687Z"/>
+<path id="r-edgeoyasouth" d="M320 720L326 714L327 705L323 697L325 689L327 680L330 672L336 667L344 662L349 656L353 649L361 646L365 639L368 631L370 623L373 616L376 608L388 610L399 602L408 596L417 588L427 590L436 595L442 603L448 611L454 619L461 625L465 635L474 639L466 652L457 664L455 679L448 693L442 707L433 720L433 735L427 750L422 764L421 779L418 794L414 808L412 824L413 839L408 853L402 868L396 859L391 849L387 839L387 828L379 820L375 810L370 801L361 794L357 784L350 776L347 766L344 755L335 748L328 740L322 731Z"/>
+<path id="r-sorkapp" d="M442 1100L146 1100L142 1076L141 1053L145 1029L143 1005L149 982L155 959L155 935L159 911L161 887L169 865L174 842L179 818L185 796L191 772L194 749L196 725L205 729L216 727L226 725L235 721L242 713L250 708L261 706L267 697L274 698L280 702L287 705L294 706L299 713L304 719L312 719L320 720L322 731L328 740L335 748L344 755L347 766L350 776L357 784L361 794L370 801L375 810L379 820L387 828L387 839L391 849L396 859L402 868L406 882L414 895L417 910L421 924L429 937L433 951L436 966L437 981L442 995L442 1011L442 1026L443 1040L441 1055L440 1070L438 1085Z"/>
+<path id="r-bjornoya" d="M146 1100L-320 1100L-320 789L-291 784L-261 781L-231 779L-201 775L-172 770L-143 765L-113 760L-84 751L-55 745L-25 741L4 732L31 720L60 712L87 699L116 693L145 685L152 689L160 691L168 696L171 704L178 708L185 713L187 722L196 725L194 749L191 772L185 796L179 818L174 842L169 865L161 887L159 911L155 935L155 959L149 982L143 1005L145 1029L141 1053L142 1076Z"/>
+<path id="r-erikeriksen" d="M368 378L364 369L368 360L366 351L360 344L355 336L355 327L351 320L345 313L353 301L358 287L356 273L356 258L360 244L372 235L381 224L386 211L392 208L397 204L403 203L409 205L417 204L424 208L430 213L436 217L443 218L450 219L457 220L465 221L467 232L465 242L461 252L458 262L450 270L446 279L442 289L434 296L429 305L423 314L423 324L421 335L421 345L418 355L417 365L418 376L411 380L407 387L399 388L392 391L385 389L378 387L373 382Z"/>
+<path id="r-heleysundet" d="M293 444L292 437L292 430L290 423L285 419L283 416L283 412L284 409L284 406L296 403L308 409L318 403L328 397L340 400L351 394L357 383L368 378L373 382L378 387L385 389L392 391L391 400L395 408L393 417L391 426L382 428L373 432L364 434L357 441L355 451L347 458L337 460L328 463L319 458L310 453L302 448Z"/>
+            <g id="landshapes">
+<path data-n="spitsbergen" d="M226 740L223 740L219 739L219 736L216 734L214 731L215 728L214 726L214 723L213 719L211 715L209 711L204 709L201 706L202 701L202 697L200 693L200 690L198 687L196 684L196 680L194 677L193 674L194 671L193 668L195 668L198 668L200 670L202 669L204 667L206 666L208 665L211 665L213 664L215 663L216 662L218 661L220 661L222 661L224 660L226 660L224 658L221 657L219 658L216 659L215 657L212 657L209 655L209 653L207 655L204 656L201 655L199 656L196 654L194 652L191 651L188 651L188 646L186 641L184 635L185 630L183 625L178 622L175 618L170 615L171 611L169 607L165 605L165 600L165 596L164 592L161 589L161 585L163 583L163 580L162 578L164 575L163 573L161 571L161 568L158 567L161 571L165 572L169 574L172 577L175 573L180 572L184 573L188 575L186 573L185 570L184 567L185 564L182 564L180 562L177 562L175 561L182 558L188 555L195 553L203 554L209 550L216 549L220 543L227 540L223 541L219 543L215 541L212 539L208 538L204 536L202 532L200 528L196 530L192 529L188 529L184 531L183 536L179 539L175 542L170 541L167 539L164 536L162 532L159 529L159 524L155 521L150 520L147 518L148 515L147 512L148 510L146 508L144 505L141 505L139 504L138 501L141 500L143 500L145 499L148 498L150 496L153 497L155 496L157 494L160 493L162 491L166 490L168 492L172 492L174 490L177 490L179 488L181 485L181 483L181 480L183 478L186 477L186 474L188 472L191 473L193 473L194 474L194 475L194 476L194 478L195 478L197 479L198 479L199 478L200 477L201 476L202 475L202 474L203 473L204 472L205 471L206 470L208 469L208 468L209 467L211 467L213 466L214 466L215 465L218 465L221 464L222 461L223 459L226 459L229 458L231 459L233 461L235 460L237 460L238 458L239 457L241 457L242 457L244 457L245 456L245 454L247 452L249 451L250 448L249 446L247 444L249 442L248 440L246 438L244 439L242 439L240 440L240 443L239 445L237 446L235 447L234 446L232 447L231 447L230 447L229 447L228 447L227 446L226 445L227 444L227 442L227 441L227 439L227 437L227 435L228 434L228 432L228 430L228 429L228 427L226 425L226 424L227 422L229 421L230 420L231 419L232 417L233 416L234 414L234 413L234 411L234 409L236 408L235 406L233 405L232 404L230 404L228 404L226 404L224 404L223 404L223 405L223 406L223 407L222 408L221 409L221 410L219 410L218 411L220 414L222 416L222 419L223 422L221 424L219 426L217 429L217 432L217 434L216 435L215 436L213 437L212 438L213 440L211 441L209 441L208 439L206 439L205 436L206 434L205 433L203 432L201 432L199 434L197 430L199 427L196 425L194 422L193 419L194 416L195 413L196 410L195 412L193 413L194 416L192 418L191 420L189 422L189 424L187 426L185 426L184 426L183 424L181 424L179 424L178 425L176 424L175 423L175 426L172 428L173 430L173 433L173 436L171 438L169 439L166 440L164 439L162 440L159 440L158 442L156 442L153 442L151 442L150 444L147 445L144 445L142 447L139 448L137 451L135 452L133 454L133 458L134 461L133 464L131 466L128 467L126 469L125 472L123 474L120 474L118 474L117 473L117 471L116 470L116 469L117 467L116 466L115 465L113 462L111 459L112 455L114 452L115 449L117 446L115 443L114 440L117 438L120 437L123 438L127 439L128 437L130 434L132 431L136 431L134 427L131 423L129 420L125 418L120 416L116 419L112 419L108 417L104 415L103 411L100 408L95 407L92 404L93 400L90 397L90 393L89 390L88 388L87 385L86 382L83 384L80 383L79 379L76 378L76 376L77 375L78 373L77 371L76 370L74 369L73 368L72 366L74 367L76 367L77 369L79 371L81 369L84 370L86 369L88 369L87 372L89 374L91 377L94 377L96 378L98 379L101 378L103 378L105 378L106 377L107 378L108 379L109 380L110 381L111 381L112 381L111 379L109 378L109 376L108 375L107 373L106 371L107 369L106 368L105 367L103 366L102 366L101 364L100 363L99 361L97 361L96 360L95 358L93 356L91 357L89 355L89 353L87 352L84 352L82 353L81 351L82 349L83 348L83 347L82 346L80 345L79 344L79 342L81 340L84 337L86 335L88 333L86 330L87 326L89 324L91 321L88 322L86 320L83 321L82 323L81 325L79 327L77 329L75 330L72 327L69 323L70 319L69 315L67 311L68 307L66 303L63 300L63 297L63 294L61 292L59 289L60 286L58 283L57 280L58 278L60 278L61 278L63 277L64 278L66 279L68 279L69 279L70 281L70 278L70 276L67 275L66 273L64 272L63 271L60 270L58 270L56 267L57 263L55 259L52 257L51 253L53 250L54 246L51 243L52 241L53 239L55 237L58 238L60 237L61 234L64 235L66 234L68 236L70 236L73 236L75 238L76 240L78 242L80 243L81 246L81 244L83 244L85 243L86 243L87 241L87 239L89 239L90 237L91 241L93 244L95 248L94 252L96 255L98 259L98 263L96 267L95 262L99 259L101 255L103 252L104 247L107 244L109 240L109 236L112 237L115 235L117 233L120 234L124 233L126 234L128 231L132 231L133 234L134 236L136 238L139 239L140 241L141 244L141 247L142 249L143 255L141 261L141 266L142 272L142 278L146 283L148 289L153 293L154 289L157 285L160 282L161 278L159 274L157 270L157 265L158 261L158 255L162 250L164 245L165 240L166 234L164 229L160 225L158 219L162 218L165 220L167 222L170 222L174 224L174 227L178 227L181 228L183 232L186 234L190 235L193 237L195 241L197 244L196 248L196 252L197 261L201 269L202 278L205 287L206 296L205 305L205 314L205 323L206 323L207 324L207 325L208 325L209 324L210 324L211 324L212 324L213 315L215 307L214 298L217 289L214 281L211 273L209 264L211 255L211 250L207 246L208 241L207 236L208 232L207 227L206 222L208 218L210 216L212 214L213 212L213 209L214 207L216 206L216 203L217 201L218 204L220 206L222 209L225 209L228 211L230 213L233 214L236 213L237 217L241 218L244 217L248 219L248 222L249 225L249 229L251 231L251 236L253 241L251 246L252 251L254 255L255 260L256 265L256 270L257 269L259 269L260 269L262 269L263 269L265 269L266 268L268 267L268 270L269 273L271 276L274 277L272 279L273 282L271 285L271 288L269 292L266 295L268 298L268 302L267 306L269 310L273 311L275 315L278 317L280 321L279 325L279 329L283 330L284 334L284 338L284 342L289 342L293 346L293 351L297 354L298 359L302 361L305 364L308 368L312 371L318 371L321 375L322 380L324 384L326 388L327 393L329 398L330 401L328 404L329 407L327 410L330 412L330 415L333 417L335 420L331 421L327 424L323 424L319 427L316 431L317 436L313 439L311 443L311 447L309 452L305 455L304 460L302 465L304 469L300 472L298 477L295 481L295 485L296 490L298 493L295 498L290 498L291 503L289 507L286 509L283 512L279 514L277 517L279 521L278 525L277 529L278 533L274 537L271 542L270 548L268 554L268 560L267 566L267 572L271 578L269 583L266 589L265 595L263 601L261 607L257 612L256 618L251 623L252 629L248 634L249 640L249 646L245 651L245 657L241 662L239 668L235 672L233 678L233 684L232 690L233 695L232 701L234 707L235 713L234 716L231 719L232 723L231 726L228 729L225 732Z"/>
+<path data-n="nordaustlandet" d="M266 173L270 170L272 165L276 163L279 160L283 158L287 157L290 153L293 150L297 148L299 146L301 142L302 139L306 140L310 138L314 138L317 140L321 140L325 140L328 137L330 133L333 132L337 131L341 132L344 135L347 139L351 140L355 139L360 138L362 142L367 143L370 146L371 150L372 145L376 143L380 143L385 142L389 141L393 140L397 142L401 143L404 145L409 146L413 147L417 149L421 152L422 156L427 158L431 161L433 163L435 165L439 166L441 169L444 170L447 172L449 175L452 177L453 180L456 180L459 180L462 181L461 184L461 187L462 190L464 192L467 193L470 194L473 191L477 192L478 188L478 184L481 182L484 180L489 182L493 184L497 188L498 193L501 197L506 198L511 199L514 203L517 208L521 211L523 216L526 221L532 222L536 225L540 229L544 233L543 237L542 242L541 246L537 250L533 252L530 257L531 262L529 267L526 271L521 274L516 274L511 278L505 278L501 282L499 288L496 293L491 295L484 295L478 294L472 296L465 297L461 302L457 307L452 311L447 309L441 307L436 310L431 309L426 311L422 315L417 316L413 320L408 318L403 319L399 314L394 314L389 315L384 314L379 314L374 315L370 313L366 311L364 307L360 305L356 306L351 305L347 303L344 300L343 297L342 294L341 290L339 288L335 289L332 287L329 285L327 282L324 281L320 280L318 276L317 272L314 270L313 266L312 263L308 261L314 263L320 265L326 264L332 264L336 259L342 256L348 256L354 254L348 253L342 256L336 253L330 252L324 249L319 246L313 243L308 240L305 237L303 234L300 231L299 226L297 223L294 220L289 220L286 218L285 214L283 211L282 208L278 207L276 205L276 201L277 198L275 195L276 192L275 189L273 186L272 183L269 181L267 179Z"/>
+<path data-n="edgeoya" d="M357 480L362 479L364 475L368 472L372 471L375 475L380 476L384 474L389 473L393 473L397 474L400 477L404 479L408 481L410 485L414 486L419 486L422 489L425 491L429 492L433 493L436 495L439 498L440 503L440 507L443 511L445 516L451 516L454 520L456 526L454 531L454 536L458 540L457 545L458 550L459 555L457 559L462 562L464 567L465 572L464 578L462 582L460 585L456 589L456 593L455 598L451 601L447 603L446 608L444 612L440 614L437 618L434 621L431 624L426 626L422 626L419 630L415 631L412 629L411 625L407 624L405 621L402 620L398 619L395 620L392 616L388 615L387 611L386 607L384 604L385 600L382 596L383 593L379 590L376 588L376 584L375 580L376 576L373 573L372 568L368 567L364 564L361 560L358 556L359 551L360 546L361 542L361 537L362 533L363 529L367 526L367 522L366 518L363 516L359 514L356 511L356 507L357 503L360 501L359 497L362 494L359 491L359 487Z"/>
+<path data-n="barentsoya" d="M368 393L376 394L383 398L390 401L398 402L401 411L405 420L408 430L408 440L404 446L402 452L398 458L395 465L390 464L384 464L379 464L374 462L369 462L365 459L360 457L357 453L358 445L356 438L354 430L353 423L355 415L360 408Z"/>
+<path data-n="forland" d="M46 375L53 380L56 387L62 392L67 398L72 405L77 412L81 420L85 428L88 435L89 443L93 451L97 458L96 463L95 469L94 474L93 480L90 476L86 473L84 469L81 465L76 456L73 446L67 437L64 428L61 418L56 409L53 399L49 390L49 386L46 383Z"/>
+<path data-n="wilhelmoya" d="M335 342L341 342L347 345L351 349L356 353L356 357L358 362L358 367L357 372L353 369L348 368L343 366L338 368L335 361L334 355Z"/>
+<path data-n="kvitoya" d="M661 180L666 183L673 184L679 185L685 185L687 188L688 191L688 194L688 198L683 201L678 202L672 203L667 201L665 196L664 190Z"/>
+<path data-n="hopen" d="M478 698L479 705L482 713L486 720L487 728L486 732L488 735L486 739L484 743L481 736L478 730L477 724L475 717L475 712L477 707Z"/>
+<path data-n="kkl" d="M535 383L542 383L549 384L556 387L562 390L566 393L570 395L573 400L577 402L572 402L568 401L564 404L559 405L555 402L552 397L547 395L541 393L538 391L538 388Z"/>
+<path data-n="sjuoyane" d="M338 93L342 94L345 97L348 100L353 101L351 103L348 103L347 106L345 108L342 107L339 104L335 104L332 102L333 99L336 98Z"/>
+            </g>
+            <mask id="seamask" maskUnits="userSpaceOnUse" x="-320" y="-320" width="1390" height="1420">
+              <rect x="-320" y="-320" width="1390" height="1420" fill="#fff"/>
+              <use href="#landshapes" fill="#000"/>
+            </mask>
+          </defs>
+          <g class="ice" mask="url(#seamask)"><g data-r="adventfjorden"><use href="#r-adventfjorden" class="c-L"/></g><g data-r="isfjorden"><use href="#r-isfjorden" class="c-W"/></g><g data-r="isfjordmouth"><use href="#r-isfjordmouth" class="c-W"/></g><g data-r="billefjorden"><use href="#r-billefjorden" class="c-F"/></g><g data-r="tempelfjorden"><use href="#r-tempelfjorden" class="c-F"/></g><g data-r="nordfjorden"><use href="#r-nordfjorden" class="c-F"/></g><g data-r="vanmijen"><use href="#r-vanmijen" class="c-F"/></g><g data-r="bellsund"><use href="#r-bellsund" class="c-W"/></g><g data-r="hornsund"><use href="#r-hornsund" class="c-L"/></g><g data-r="kongsfjorden"><use href="#r-kongsfjorden" class="c-L"/></g><g data-r="forlandsundet"><use href="#r-forlandsundet" class="c-W"/></g><g data-r="wijdefjorden"><use href="#r-wijdefjorden" class="c-F"/></g><g data-r="woodfjorden"><use href="#r-woodfjorden" class="c-F"/></g><g data-r="westsouth"><use href="#r-westsouth" class="c-W"/></g><g data-r="westcoast"><use href="#r-westcoast" class="c-W"/></g><g data-r="northwest"><use href="#r-northwest" class="c-L"/></g><g data-r="northcoastwest"><use href="#r-northcoastwest" class="c-O"/></g><g data-r="northcoast"><use href="#r-northcoast" class="c-O"/></g><g data-r="hinlopennorth"><use href="#r-hinlopennorth" class="c-V"/></g><g data-r="hinlopen"><use href="#r-hinlopen" class="c-V"/></g><g data-r="hinlopensouth"><use href="#r-hinlopensouth" class="c-V"/></g><g data-r="sjuoyane"><use href="#r-sjuoyane" class="c-V"/></g><g data-r="northna"><use href="#r-northna" class="c-V"/></g><g data-r="farnorth"><use href="#r-farnorth" class="c-V"/></g><g data-r="farnorthwest"><use href="#r-farnorthwest" class="c-C"/></g><g data-r="kvitoya"><use href="#r-kvitoya" class="c-V"/></g><g data-r="olgastretet"><use href="#r-olgastretet" class="c-V"/></g><g data-r="kkl"><use href="#r-kkl" class="c-V"/></g><g data-r="barentsoyaeast"><use href="#r-barentsoyaeast" class="c-V"/></g><g data-r="freemansundet"><use href="#r-freemansundet" class="c-V"/></g><g data-r="storfjordbays"><use href="#r-storfjordbays" class="c-F"/></g><g data-r="storfjorden"><use href="#r-storfjorden" class="c-C"/></g><g data-r="storfjordsouth"><use href="#r-storfjordsouth" class="c-C"/></g><g data-r="edgeoyaeast"><use href="#r-edgeoyaeast" class="c-V"/></g><g data-r="hopen"><use href="#r-hopen" class="c-C"/></g><g data-r="edgeoyasouth"><use href="#r-edgeoyasouth" class="c-C"/></g><g data-r="sorkapp"><use href="#r-sorkapp" class="c-O"/></g><g data-r="bjornoya"><use href="#r-bjornoya" class="c-W"/></g><g data-r="erikeriksen"><use href="#r-erikeriksen" class="c-V"/></g><g data-r="heleysundet"><use href="#r-heleysundet" class="c-V"/></g></g>
+          <use class="pick" href="#r-isfjorden"/>
+          <g class="hit"><use href="#r-adventfjorden" data-r="adventfjorden"/><use href="#r-isfjorden" data-r="isfjorden"/><use href="#r-isfjordmouth" data-r="isfjordmouth"/><use href="#r-billefjorden" data-r="billefjorden"/><use href="#r-tempelfjorden" data-r="tempelfjorden"/><use href="#r-nordfjorden" data-r="nordfjorden"/><use href="#r-vanmijen" data-r="vanmijen"/><use href="#r-bellsund" data-r="bellsund"/><use href="#r-hornsund" data-r="hornsund"/><use href="#r-kongsfjorden" data-r="kongsfjorden"/><use href="#r-forlandsundet" data-r="forlandsundet"/><use href="#r-wijdefjorden" data-r="wijdefjorden"/><use href="#r-woodfjorden" data-r="woodfjorden"/><use href="#r-westsouth" data-r="westsouth"/><use href="#r-westcoast" data-r="westcoast"/><use href="#r-northwest" data-r="northwest"/><use href="#r-northcoastwest" data-r="northcoastwest"/><use href="#r-northcoast" data-r="northcoast"/><use href="#r-hinlopennorth" data-r="hinlopennorth"/><use href="#r-hinlopen" data-r="hinlopen"/><use href="#r-hinlopensouth" data-r="hinlopensouth"/><use href="#r-sjuoyane" data-r="sjuoyane"/><use href="#r-northna" data-r="northna"/><use href="#r-farnorth" data-r="farnorth"/><use href="#r-farnorthwest" data-r="farnorthwest"/><use href="#r-kvitoya" data-r="kvitoya"/><use href="#r-olgastretet" data-r="olgastretet"/><use href="#r-kkl" data-r="kkl"/><use href="#r-barentsoyaeast" data-r="barentsoyaeast"/><use href="#r-freemansundet" data-r="freemansundet"/><use href="#r-storfjordbays" data-r="storfjordbays"/><use href="#r-storfjorden" data-r="storfjorden"/><use href="#r-storfjordsouth" data-r="storfjordsouth"/><use href="#r-edgeoyaeast" data-r="edgeoyaeast"/><use href="#r-hopen" data-r="hopen"/><use href="#r-edgeoyasouth" data-r="edgeoyasouth"/><use href="#r-sorkapp" data-r="sorkapp"/><use href="#r-bjornoya" data-r="bjornoya"/><use href="#r-erikeriksen" data-r="erikeriksen"/><use href="#r-heleysundet" data-r="heleysundet"/></g>
+          <use class="land" href="#landshapes"/>
+          <use class="coast-u" href="#landshapes"/>
+          <g class="coast"></g>
+          <g class="grat">
+            <line x1="-320" x2="1070" y1="60" y2="60"/><line x1="-320" x2="1070" y1="210" y2="210"/><line x1="-320" x2="1070" y1="360" y2="360"/>
+            <line x1="-320" x2="1070" y1="510" y2="510"/><line x1="-320" x2="1070" y1="660" y2="660"/>
+            <line y1="-320" y2="1100" x1="29.9" x2="29.9"/><line y1="-320" y2="1100" x1="179.4" x2="179.4"/><line y1="-320" y2="1100" x1="329" x2="329"/>
+            <line y1="-320" y2="1100" x1="478.5" x2="478.5"/><line y1="-320" y2="1100" x1="628" x2="628"/>
+            <g class="minor" text-anchor="end"><text x="744" y="54">81°N</text><text x="744" y="204">80°N</text><text x="744" y="354">79°N</text><text x="744" y="504">78°N</text><text x="744" y="654">77°N</text></g>
+            <text x="184" y="772" class="minor">15°E</text><text x="334" y="772" class="minor">20°E</text><text x="483" y="772" class="minor">25°E</text><text x="633" y="772" class="minor">30°E</text>
+          </g>
+          <path class="ghost" d=""/>
+          <g class="routes"></g>
+          <g class="lbls">
+            <text class="land-n" x="214" y="582" text-anchor="middle">Spitsbergen</text>
+            <text class="land-n lbl-na" x="418" y="232" text-anchor="middle">Nordaustlandet</text>
+            <text class="land-n minor" x="410" y="560" text-anchor="middle">Edgeøya</text>
+            <text class="land-n minor" x="381" y="430" text-anchor="middle">Barentsøya</text>
+            <text class="land-n minor" x="674" y="160" text-anchor="middle">Kvitøya</text>
+            <text class="land-n minor" x="502" y="722">Hopen</text>
+            <text class="land-n minor" x="568" y="366" text-anchor="middle">Kong Karls Land</text>
+            <text class="land-n minor" x="342" y="80" text-anchor="middle">Sjuøyane</text>
+            <circle class="place" r="3" cx="198.3" cy="476.6"/><text x="205" y="492">Longyearbyen</text>
+            <circle class="place" r="3" cx="87.6" cy="371.3"/><text x="95" y="368">Ny-Ålesund</text>
+            <text class="water minor" x="155" y="462" text-anchor="middle">Isfjorden</text>
+            <text class="water lbl-sf" x="326" y="640" text-anchor="middle">Storfjorden</text>
+            <g transform="rotate(65 290 278)"><text class="water" x="290" y="278" text-anchor="middle">Hinlopenstretet</text></g>
+            <text class="water minor" x="30" y="615">Greenland Sea</text>
+            <text class="water minor" x="560" y="684" text-anchor="middle">Barents Sea</text>
+            <text class="water minor" x="96" y="40">Arctic Ocean</text>
+          </g>
+          <g class="scale">
+            <path d="M24 756v-6M91.6 756v-6"/><line x1="24" y1="756" x2="91.6" y2="756"/>
+            <text x="24" y="744">50 km</text>
+            <g class="north"><line x1="116" y1="766" x2="116" y2="738"/><text x="116" y="732" text-anchor="middle">N</text></g>
+          </g>
+        </svg>
+      </div>
+      <ul class="key" aria-label="Ice classes. Pick one to see where it lies.">
+        <li data-c="F"><button type="button" class="kbtn" aria-describedby="pickline"><span class="sw c-F"></span>Fast ice</button></li>
+        <li data-c="V"><button type="button" class="kbtn" aria-describedby="pickline"><span class="sw c-V"></span><span><span class="kx">Very close drift, </span>9–10/10</span></button></li>
+        <li data-c="C"><button type="button" class="kbtn" aria-describedby="pickline"><span class="sw c-C"></span><span><span class="kx">Close drift, </span>7–8/10</span></button></li>
+        <li data-c="O"><button type="button" class="kbtn" aria-describedby="pickline"><span class="sw c-O"></span><span><span class="kx">Open drift, </span>4–6/10</span></button></li>
+        <li data-c="L"><button type="button" class="kbtn" aria-describedby="pickline"><span class="sw c-L"></span><span><span class="kx">Very open drift, </span>1–3/10</span></button></li>
+        <li data-c="W"><button type="button" class="kbtn" aria-describedby="pickline"><span class="sw c-W"></span>Open water</button></li>
+        <li><span class="sw k-route"></span>Your route</li>
+        <li><span class="sw k-blk"></span><span>Blocked<span class="kx"> by ice</span></span></li>
+      </ul>
+      <figcaption><strong id="cap-month">Typical sea ice in April</strong>, not a forecast. Every trip is checked against that morning’s ice chart before we leave.</figcaption>
+      <p class="pickline" id="pickline">Point at the sea or a legend row, or tap one, to read the ice.</p>
+      <p class="verdict" id="verdict" aria-hidden="true"><span class="roll"><span class="t"></span></span></p>
+    </figure>
+
+    <div class="planner" id="planner">
+      <ol class="rail" aria-label="Planner steps">
+        <li><button type="button" class="rail-btn" data-to="1"><span class="seg"><i></i></span><span class="rail-name"><span class="n">1</span><span class="u">Route</span></span><span class="sr rail-sr"></span></button></li>
+        <li><button type="button" class="rail-btn" data-to="2"><span class="seg"><i></i></span><span class="rail-name"><span class="n">2</span><span class="u">Month</span></span><span class="sr rail-sr"></span></button></li>
+        <li><button type="button" class="rail-btn" data-to="3"><span class="seg"><i></i></span><span class="rail-name"><span class="n">3</span><span class="u">Group</span></span><span class="sr rail-sr"></span></button></li>
+        <li><button type="button" class="rail-btn" data-to="4"><span class="seg"><i></i></span><span class="rail-name"><span class="n">4</span><span class="u">You</span></span><span class="sr rail-sr"></span></button></li>
+        <li><button type="button" class="rail-btn" data-to="5"><span class="seg"><i></i></span><span class="rail-name"><span class="n">5</span><span class="u">Check</span></span><span class="sr rail-sr"></span></button></li>
+      </ol>
+      <p class="rail-status" id="rail-status" aria-hidden="true">Step 1 of 5: Route</p>
+      <p class="sr" aria-live="polite" id="step-live"></p>
+
+      <div class="body">
+        <form id="plan" aria-label="Trip-planning enquiry">
+          <div class="steps">
+
+            <fieldset class="step is-active" data-step="1" aria-describedby="e-route">
+              <legend tabindex="-1">Where do you want to go?</legend>
+              <div class="opts">
+                <label class="opt" data-route="ski"><input type="radio" name="route" value="ski" required>
+                  <span class="glyph-w"><svg class="glyph" viewBox="0 0 56 40" aria-hidden="true"><path class="g0"/><path class="g1"/></svg><span class="badge" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M4 8.2l2.6 2.6L12 5.4"/></svg></span></span>
+                  <span><span class="opt-name">Isfjorden to Ny-Ålesund on skis</span><span class="opt-meta">10 days, 190 km pulling a pulk, March to May</span></span></label>
+                <label class="opt" data-route="sled"><input type="radio" name="route" value="sled" required>
+                  <span class="glyph-w"><svg class="glyph" viewBox="0 0 56 40" aria-hidden="true"><path class="g0"/><path class="g1"/></svg><span class="badge" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M4 8.2l2.6 2.6L12 5.4"/></svg></span></span>
+                  <span><span class="opt-name">East coast by snowmobile</span><span class="opt-meta">4 days, 320 km, March to May</span></span></label>
+                <label class="opt" data-route="cap"><input type="radio" name="route" value="cap" required>
+                  <span class="glyph-w"><svg class="glyph" viewBox="0 0 56 40" aria-hidden="true"><path class="g0"/><path class="g1"/></svg><span class="badge" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M4 8.2l2.6 2.6L12 5.4"/></svg></span></span>
+                  <span><span class="opt-name">Nordaustlandet ice cap</span><span class="opt-meta">21 days, 280 km on skis, April and May. Needs a previous polar expedition.</span></span></label>
+                <label class="opt" data-route="sail"><input type="radio" name="route" value="sail" required>
+                  <span class="glyph-w"><svg class="glyph" viewBox="0 0 56 40" aria-hidden="true"><path class="g0"/><path class="g1"/></svg><span class="badge" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M4 8.2l2.6 2.6L12 5.4"/></svg></span></span>
+                  <span><span class="opt-name">Around Spitsbergen under sail</span><span class="opt-meta">14 days, about 800 nautical miles, July to September, ice permitting in Hinlopenstretet</span></span></label>
+                <label class="opt" data-route="unsure"><input type="radio" name="route" value="unsure" required>
+                  <span class="glyph-w"><svg class="glyph" viewBox="0 0 56 40" aria-hidden="true"><path class="q" d="M28 8a12 12 0 1 1 0 24a12 12 0 1 1 0-24"/></svg><span class="badge" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M4 8.2l2.6 2.6L12 5.4"/></svg></span></span>
+                  <span><span class="opt-name">Not sure yet, suggest one</span><span class="opt-meta">A guide suggests a route for your month and group</span></span></label>
+              </div>
+              <div class="err gerr reveal" id="e-route"><div><p></p></div></div>
+              <p class="sub">The route, night by night</p>
+              <ol class="itin" id="itin"><li>Pick a route to see where you sleep each night.</li></ol>
+            </fieldset>
+
+            <fieldset class="step" data-step="2" aria-describedby="e-month">
+              <legend tabindex="-1">When do you want to go?</legend>
+              <div class="chips">
+                <label class="chip" data-m="0"><input type="radio" name="month" value="march" required><span>March</span><span class="badge" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M4 8.2l2.6 2.6L12 5.4"/></svg></span></label>
+                <label class="chip" data-m="1"><input type="radio" name="month" value="april" required><span>April</span><span class="badge" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M4 8.2l2.6 2.6L12 5.4"/></svg></span></label>
+                <label class="chip" data-m="2"><input type="radio" name="month" value="may" required><span>May</span><span class="badge" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M4 8.2l2.6 2.6L12 5.4"/></svg></span></label>
+                <label class="chip" data-m="3"><input type="radio" name="month" value="june" required><span>June</span><span class="badge" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M4 8.2l2.6 2.6L12 5.4"/></svg></span></label>
+                <label class="chip" data-m="4"><input type="radio" name="month" value="july" required><span>July</span><span class="badge" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M4 8.2l2.6 2.6L12 5.4"/></svg></span></label>
+                <label class="chip" data-m="5"><input type="radio" name="month" value="august" required><span>August</span><span class="badge" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M4 8.2l2.6 2.6L12 5.4"/></svg></span></label>
+                <label class="chip" data-m="6"><input type="radio" name="month" value="september" required><span>September</span><span class="badge" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M4 8.2l2.6 2.6L12 5.4"/></svg></span></label>
+              </div>
+              <p class="mdetail" id="month-detail">Pick a month to see its temperature and daylight.</p>
+              <p class="seasonline" id="season-line" hidden></p>
+              <div class="err gerr reveal" id="e-month"><div><p></p></div></div>
+              <div class="sum" id="sum"></div>
+              <p class="sr" aria-live="polite" id="sum-live"></p>
+              <div class="note reveal" id="season-note"><div><p></p></div></div>
+              <div class="flex"><label class="check"><input type="checkbox" name="flexible" value="yes"><span class="box"><svg viewBox="0 0 16 16" aria-hidden="true"><path pathLength="1" d="M3.5 8.4l3 3L12.5 5"/></svg></span><span>My dates are flexible by a week or two</span></label></div>
+            </fieldset>
+
+            <fieldset class="step" data-step="3" aria-describedby="e-exp">
+              <legend tabindex="-1">Who is coming?</legend>
+              <div class="group-row">
+                <span class="lbl" id="people-lbl">People in your group</span>
+                <span class="stepper">
+                  <button type="button" class="sbtn" data-d="-1" aria-label="One person fewer"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10"/></svg></button>
+                  <span class="spin" id="spin" role="spinbutton" tabindex="0" aria-labelledby="people-lbl" aria-valuemin="1" aria-valuemax="8" aria-valuenow="2" aria-valuetext="2 people"><span class="digits"><span>2</span></span></span>
+                  <button type="button" class="sbtn" data-d="1" aria-label="One more person"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M8 3v10"/></svg></button>
+                </span>
+                <input type="hidden" name="people" value="2">
+                <div class="note reveal group-note" id="people-note"><div><p><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.8l6.6 11.7H1.4zM8 6.3v3.4M8 11.6v.2"/></svg><span>Groups above 8: tell us in step 4.</span></p></div></div>
+              </div>
+              <p class="sub" id="exp-lbl">Your group’s experience</p>
+              <div class="opts" role="radiogroup" aria-labelledby="exp-lbl">
+                <label class="opt opt--plain"><input type="radio" name="experience" value="first" required><span class="ring"><span class="badge" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M4 8.2l2.6 2.6L12 5.4"/></svg></span></span>
+                  <span><span class="opt-name">First trip in real cold</span><span class="opt-meta">We plan shorter days and a training day in Longyearbyen.</span></span></label>
+                <label class="opt opt--plain"><input type="radio" name="experience" value="touring" required><span class="ring"><span class="badge" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M4 8.2l2.6 2.6L12 5.4"/></svg></span></span>
+                  <span><span class="opt-name">Winter camping or multi-day ski touring</span><span class="opt-meta">You know your stove, your layers and your sleeping system.</span></span></label>
+                <label class="opt opt--plain"><input type="radio" name="experience" value="polar" required><span class="ring"><span class="badge" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M4 8.2l2.6 2.6L12 5.4"/></svg></span></span>
+                  <span><span class="opt-name">A polar expedition before</span><span class="opt-meta">Greenland, Antarctica or a long Svalbard crossing.</span></span></label>
+              </div>
+              <div class="note reveal" id="cap-note"><div><p><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.8l6.6 11.7H1.4zM8 6.3v3.4M8 11.6v.2"/></svg><span><span class="tag">The Nordaustlandet crossing needs a previous polar expedition.</span> You can still send the plan: a guide will talk you through it, or suggest the Isfjorden crossing first.</span></p></div></div>
+              <div class="err gerr reveal" id="e-exp"><div><p></p></div></div>
+              <p class="sub">Rental kit</p>
+              <div class="checks">
+                <label class="check"><input type="checkbox" name="kit" value="bags"><span class="box"><svg viewBox="0 0 16 16" aria-hidden="true"><path pathLength="1" d="M3.5 8.4l3 3L12.5 5"/></svg></span><span>Rent sleeping bags rated to −30 °C</span></label>
+                <label class="check"><input type="checkbox" name="kit" value="skis"><span class="box"><svg viewBox="0 0 16 16" aria-hidden="true"><path pathLength="1" d="M3.5 8.4l3 3L12.5 5"/></svg></span><span>Rent skis, boots and a pulk</span></label>
+                <label class="check"><input type="checkbox" name="kit" value="clothing"><span class="box"><svg viewBox="0 0 16 16" aria-hidden="true"><path pathLength="1" d="M3.5 8.4l3 3L12.5 5"/></svg></span><span>Rent expedition clothing</span></label>
+              </div>
+              <p class="bear">Our guides carry the polar bear protection. You do not need a firearms permit.</p>
+            </fieldset>
+
+            <fieldset class="step" data-step="4">
+              <legend tabindex="-1">How do we reach you?</legend>
+              <div class="fields">
+                <div class="fields-2">
+                  <div class="field" data-f="name"><label for="f-name">Full name</label>
+                    <div class="ctl"><input id="f-name" name="name" autocomplete="name" required aria-describedby="e-name"><span class="bar"></span><svg class="ok" viewBox="0 0 18 18" aria-hidden="true"><path pathLength="1" d="M3 9.5l3.6 3.6L15 5"/></svg></div>
+                    <div class="err reveal" id="e-name"><div><p></p></div></div></div>
+                  <div class="field" data-f="email"><label for="f-email">Email</label>
+                    <div class="ctl"><input id="f-email" name="email" type="email" autocomplete="email" required aria-describedby="e-email"><span class="bar"></span><svg class="ok" viewBox="0 0 18 18" aria-hidden="true"><path pathLength="1" d="M3 9.5l3.6 3.6L15 5"/></svg></div>
+                    <div class="err reveal" id="e-email"><div><p></p></div></div></div>
+                  <div class="field" data-f="phone"><label for="f-phone">Phone with country code <span class="opt-l">(optional)</span></label>
+                    <div class="ctl"><input id="f-phone" name="phone" type="tel" autocomplete="tel" aria-describedby="e-phone"><span class="bar"></span><svg class="ok" viewBox="0 0 18 18" aria-hidden="true"><path pathLength="1" d="M3 9.5l3.6 3.6L15 5"/></svg></div>
+                    <div class="err reveal" id="e-phone"><div><p></p></div></div></div>
+                  <div class="field" data-f="country"><label for="f-country">Country you live in <span class="opt-l">(optional)</span></label>
+                    <div class="ctl"><input id="f-country" name="country" autocomplete="country-name"><span class="bar"></span><svg class="ok" viewBox="0 0 18 18" aria-hidden="true"><path pathLength="1" d="M3 9.5l3.6 3.6L15 5"/></svg></div></div>
+                </div>
+                <div class="field" data-f="notes"><label for="f-notes">Anything we should know <span class="opt-l">(dietary needs, medical conditions, filming plans)</span></label>
+                  <div class="ctl"><textarea id="f-notes" name="notes" maxlength="600" aria-describedby="f-count" data-lenis-prevent></textarea><span class="bar"></span></div>
+                  <p class="count" id="f-count">600 of 600 characters left</p></div>
+              </div>
+            </fieldset>
+
+            <fieldset class="step" data-step="5">
+              <legend tabindex="-1">Check your plan</legend>
+              <dl class="review">
+                <div><dt>Route</dt><dd data-v="route">Not chosen yet</dd><dd><button type="button" class="tbtn" data-change="1"><span class="u">Change</span><span class="sr"> route</span></button></dd></div>
+                <div><dt>Month</dt><dd data-v="month">Not chosen yet</dd><dd><button type="button" class="tbtn" data-change="2"><span class="u">Change</span><span class="sr"> month</span></button></dd></div>
+                <div><dt>Group</dt><dd data-v="group">2 people</dd><dd><button type="button" class="tbtn" data-change="3"><span class="u">Change</span><span class="sr"> group</span></button></dd></div>
+                <div><dt>Kit</dt><dd data-v="kit">No rental kit</dd><dd><button type="button" class="tbtn" data-change="3"><span class="u">Change</span><span class="sr"> kit</span></button></dd></div>
+                <div><dt>Contact</dt><dd data-v="contact">Not filled in yet</dd><dd><button type="button" class="tbtn" data-change="4"><span class="u">Change</span><span class="sr"> contact details</span></button></dd></div>
+              </dl>
+            </fieldset>
+          </div>
+
+          <div class="nav">
+            <button type="button" class="tbtn js-only" id="back" hidden><span class="u">Back</span></button>
+            <button type="button" class="btn js-only" id="next"><span class="roll" data-longest="Next: check your plan"><span class="t">Next: month</span></span></button>
+            <button type="submit" class="btn" id="send">Send enquiry</button>
+          </div>
+        </form>
+
+        <div class="result" id="result" hidden>
+          <h3 id="result-title" tabindex="-1">Plan received</h3>
+          <p class="ref">Reference <strong id="ref">HIN-27-0417</strong></p>
+          <p class="msg" id="result-msg"></p>
+          <div class="actions">
+            <button type="button" class="btn" data-act="edit">Edit this plan</button>
+            <button type="button" class="tbtn" data-act="new"><span class="u">Start a new plan</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="direct" id="direct">
+    <div class="wrap">
+      <h3 id="direct-title" tabindex="-1">Talk to a guide directly</h3>
+      <p class="intro">We answer all year, including through the polar night.</p>
+      <ul class="chan">
+        <li class="row"><span class="rule"></span><span class="k">Email</span>
+          <a class="v lk" href="mailto:plan@hinlopen-outfitters.example" target="_blank" rel="noopener" data-value>plan@hinlopen-outfitters.example</a>
+          <span class="rn">Replies within two working days</span>
+          <span class="act"><button type="button" class="copy" data-copy="plan@hinlopen-outfitters.example"><span class="roll" data-longest="Select and copy"><span class="t">Copy</span></span><span class="sr"> email address</span></button></span></li>
+        <li class="row"><span class="rule"></span><span class="k">Phone</span>
+          <a class="v lk" href="tel:+4779000048" target="_blank" rel="noopener" data-value>+47 79 00 00 48</a>
+          <span class="rn">Monday to Friday, 08:00–16:00 Longyearbyen time (CET)</span>
+          <span class="act"><button type="button" class="copy" data-copy="+47 79 00 00 48"><span class="roll" data-longest="Select and copy"><span class="t">Copy</span></span><span class="sr"> phone number</span></button></span></li>
+        <li class="row"><span class="rule"></span><span class="k">Visit</span>
+          <address class="v addr">Hinlopen Outfitters, Vei 230-4, 9170 Longyearbyen, Svalbard</address>
+          <span class="rn">Shop open Monday to Saturday, 10:00–18:00. Try boots on before you book.</span>
+          <span class="act"><a class="lk" href="https://www.openstreetmap.org/?mlat=78.2232&amp;mlon=15.6469#map=16/78.2232/15.6469" target="_blank" rel="noopener">Open map</a></span></li>
+      </ul>
+      <p class="sr" aria-live="polite" id="copy-live"></p>
+    </div>
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/SplitText.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/DrawSVGPlugin.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  'use strict';
+  const doc = document.documentElement;
+  const lib = !!(window.gsap && window.ScrollTrigger && window.SplitText && window.DrawSVGPlugin && window.Lenis);
+  if (lib) doc.classList.add('js'); // CDN blocked: no class, so the fieldsets stay stacked and the form still validates and answers
+  const stepped = lib;
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const NS = 'http://www.w3.org/2000/svg';
+  const svgEl = (tag, attrs) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; };
+  const cap = s => s[0].toUpperCase() + s.slice(1);
+  const fine = () => matchMedia('(hover: hover) and (pointer: fine)').matches;
+
+  /* ================= data ================= */
+  const MONTHS = [
+    ['March', '−14 °C', '8 to 15 h of daylight'], ['April', '−12 °C', 'midnight sun from the 19th'], ['May', '−4 °C', 'midnight sun'],
+    ['June', '+2 °C', 'midnight sun'], ['July', '+6 °C', 'midnight sun'], ['August', '+5 °C', 'midnight sun until the 23rd'],
+    ['September', '+1 °C', '21 to 12 h of daylight']];
+  const STAGE = [
+    'The most ice of the year. Fast ice fills the inner arms of Isfjorden and Wijdefjorden, and very close drift ice lies down the whole east side. The west coast stays open, warmed by the West Spitsbergen Current.',
+    'Fast ice in the inner arms of Isfjorden. Very close drift ice down the east side and close drift ice in Storfjorden. The west coast stays open, warmed by the West Spitsbergen Current.',
+    'Fast ice is left only in Billefjorden, Sassenfjorden and Wijdefjorden. The drift ice in the east is thinning and starting to open up.',
+    'No fast ice left. Close drift ice still lies in Hinlopenstretet and north of Nordaustlandet; east of Edgeøya it has opened up.',
+    'The drift ice is breaking up: open drift in Hinlopenstretet and around Sjuøyane, open water along the west and south coasts.',
+    'Least ice of the year. The edge lies north of Nordaustlandet, so a full circuit of Spitsbergen is usually possible.',
+    'Still very little ice. Late in the month the edge starts moving south again north of 81°N.'];
+  const CLS = { F: 'fast ice', V: 'very close drift ice, 9–10/10', C: 'close drift ice, 7–8/10', O: 'open drift ice, 4–6/10', L: 'very open drift ice, 1–3/10', W: 'open water' };
+  const RAMP = 'WLOCVF'; // open water to fast ice: a month change steps through every class in between
+  // Typical, hand-made shapes, not data: [name, class for March..September]
+  const REGIONS = /*ICE*/{
+    adventfjorden: ['Adventfjorden', 'LLWWWWW'], isfjorden: ['Isfjorden', 'LWWWWWW'], isfjordmouth: ['the mouth of Isfjorden', 'WWWWWWW'],
+    billefjorden: ['Billefjorden', 'FFFLWWW'], tempelfjorden: ['Sassenfjorden', 'FFFLWWW'], nordfjorden: ['Nordfjorden', 'FFLWWWW'],
+    vanmijen: ['Van Mijenfjorden', 'FFLWWWW'], bellsund: ['Bellsund', 'LWWWWWW'], hornsund: ['Hornsund', 'OLWWWWW'],
+    kongsfjorden: ['Kongsfjorden', 'LLWWWWW'], forlandsundet: ['Forlandsundet', 'LWWWWWW'], wijdefjorden: ['Wijdefjorden', 'FFFLWWW'],
+    woodfjorden: ['Woodfjorden', 'FFOLWWW'], westsouth: ['the west coast off Bellsund', 'WWWWWWW'], westcoast: ['the west coast off Prins Karls Forland', 'WWWWWWW'],
+    northwest: ['the north-west corner', 'LLWWWWW'], northcoastwest: ['the north coast off Raudfjorden', 'OOLWWWW'], northcoast: ['the north coast off Verlegenhuken', 'OOOLWWW'],
+    hinlopennorth: ['Hinlopenstretet', 'VVCCOWW'], hinlopen: ['Hinlopenstretet', 'VVCCOWW'], hinlopensouth: ['Hinlopenstretet', 'VVCOLWW'],
+    sjuoyane: ['Sjuøyane', 'VVCCOLL'], northna: ['the sea north of Nordaustlandet', 'VVVCCLL'], farnorth: ['the Arctic Ocean north of 81°N', 'VVVVCLO'],
+    farnorthwest: ['the Arctic Ocean north-west of Spitsbergen', 'CCOLWWW'], kvitoya: ['the sea around Kvitøya', 'VVVCOLL'], olgastretet: ['Olgastretet', 'VVVCOWW'],
+    kkl: ['the sea around Kong Karls Land', 'VVVCOWW'], barentsoyaeast: ['the sea east of Barentsøya', 'VVCOLWW'], freemansundet: ['the waters off Barentsøya', 'VVCOWWW'],
+    storfjordbays: ['the bays of northern Storfjorden', 'FFCOWWW'], storfjorden: ['Storfjorden', 'VCCOWWW'], storfjordsouth: ['Storfjorden', 'CCOLWWW'],
+    edgeoyaeast: ['the sea east of Edgeøya', 'VVCOLWW'], hopen: ['the sea around Hopen', 'VCOLWWW'], edgeoyasouth: ['Tusenøyane, south of Edgeøya', 'VCOWWWW'],
+    sorkapp: ['the sea off Sørkapp', 'COLWWWW'], bjornoya: ['the sea towards Bjørnøya', 'WWWWWWW'], erikeriksen: ['Erik Eriksenstretet', 'VVVCOWW'],
+    heleysundet: ['Heleysundet', 'VVCOLWW']
+  }/*ICE*/;
+  // pts: [lat, lon, 1 = a night stop drawn as a dot]
+  const ROUTES = {
+    ski: { name: 'Isfjorden to Ny-Ålesund on skis', short: 'ski crossing', mode: 'ice', season: [0, 1, 2], seasonText: 'March to May',
+      pts: [[78.215, 15.68], [78.17, 16.05, 1], [78.31, 16.35], [78.40, 16.40], [78.50, 16.42], [78.58, 16.55], [78.63, 16.78, 1], [78.66, 16.55], [78.655, 16.26, 1], [78.82, 16.55, 1], [78.85, 17.25, 1], [79.0, 13.9, 1], [78.80, 13.05, 1], [78.85, 12.35], [78.9, 11.88, 1]],
+      itin: ['Night 1: Adventdalen', 'Night 2: Brucebyen, across Billefjorden’s fast ice', 'Night 3: Pyramiden', 'Nights 4–5: Mittag-Lefflerbreen', 'Nights 6–7: Lomonosovfonna', 'Night 8: Holtedahlfonna', 'Night 9: Kongsvegen', 'Day 10: Ny-Ålesund'] },
+    sled: { name: 'East coast by snowmobile', short: 'snowmobile route', mode: 'ice', season: [0, 1, 2], seasonText: 'March to May',
+      pts: [[78.215, 15.68], [78.17, 16.05], [78.24, 16.75], [78.43, 16.95, 1], [78.35, 17.6], [78.2, 18.2], [78.05, 18.5, 1]],
+      itin: ['Night 1: Fredheim trapper’s hut', 'Night 2: camp at Mohnbukta under the glacier front', 'Night 3: Fredheim', 'Day 4: back through Sassendalen'] },
+    cap: { name: 'Nordaustlandet ice cap', short: 'ice-cap crossing', mode: 'land', season: [1, 2], seasonText: 'April and May',
+      pts: [[79.71, 21.05, 1], [79.95, 20.3, 1], [79.75, 23.4, 1], [80.06, 24.5, 1]],
+      itin: ['Days 1–3: snowmobile drop at Wahlenbergfjorden', 'Days 4–9: Vestfonna', 'Days 10–18: Austfonna', 'Days 19–21: pick-up at Duvefjorden'] },
+    sail: { name: 'Around Spitsbergen under sail', short: 'sail route', mode: 'sea', season: [4, 5, 6], seasonText: 'July to September',
+      pts: [[78.235, 15.55], [78.27, 15.3], [78.25, 14.4], [78.17, 13.5], [78.12, 12.4], [78.4, 10.9], [78.75, 10.2], [78.98, 10.4], [79.0, 11.4], [78.95, 11.95, 1], [79.08, 11.3], [79.3, 10.9], [79.45, 10.7], [79.53, 10.7], [79.555, 11.0, 1], [79.62, 10.6], [79.75, 10.45], [79.92, 10.8], [80.0, 12.5], [80.12, 14.5], [80.2, 16.3], [80.5, 18.4], [80.62, 19.9, 1], [80.55, 18.5], [80.2, 17.6], [80.0, 17.6], [79.85, 18.4], [79.6, 18.8, 1], [79.4, 19.1], [79.2, 19.4], [79.05, 19.7], [78.85, 20.0], [78.7, 20.6], [78.6, 20.55, 1], [78.45, 20.4], [78.2, 20.2], [78.0, 20.0, 1], [77.6, 19.5], [77.2, 19.0], [76.75, 18.0], [76.35, 16.9], [76.45, 15.9], [76.75, 15.3], [76.97, 15.4], [77.0, 15.95, 1], [77.05, 15.0], [77.5, 13.9], [77.9, 13.3], [78.15, 13.8], [78.25, 14.6], [78.26, 15.3], [78.24, 15.5]],
+      itin: ['Day 2: Ny-Ålesund', 'Day 3: Magdalenefjorden', 'Days 5–6: Sjuøyane', 'Days 7–8: Hinlopenstretet', 'Day 9: Barentsøya', 'Days 10–11: Storfjorden', 'Day 13: Hornsund', 'Day 14: back in Longyearbyen'] },
+    unsure: { name: 'Not sure yet', short: 'route', mode: 'none', season: [0, 1, 2, 3, 4, 5, 6],
+      itin: ['Tell us what you would like to do in step 4, and a guide suggests a route that suits the month and your group.'] }
+  };
+  const SEASON_MSG = {
+    sail: 'Sailing trips run July to September. Hinlopenstretet is usually closed by drift ice before late July. Pick July, August or September, or choose a ski route.',
+    ski: 'Ski crossings run March to May, while the fjords are frozen to cross. Pick March, April or May, or choose the sail route.',
+    sled: 'Snowmobile trips run March to May, while there is snow and fast ice. Pick March, April or May, or choose the sail route.',
+    cap: 'The ice-cap crossing runs in April and May, when the snow is firm and the light lasts. Pick April or May.'
+  };
+  const ERR = {
+    route: 'Pick a route, or choose “Not sure yet”.', month: 'Pick the month you want to go.', experience: 'Pick the line that fits your group best.',
+    name: 'Enter your name so the guide knows who to write to.', email: 'Enter an email address like name@example.com.',
+    phone: 'Start with + and the country code, for example +44 7700 900123.'
+  };
+  const STEP_NAMES = ['Route', 'Month', 'Group', 'You', 'Check'];
+  const NEXT_LABEL = ['Next: month', 'Next: your group', 'Next: your details', 'Next: check your plan'];
+
+  /* ================= chart geometry ================= */
+  const map = $('.map'), K = Math.cos(78.5 * Math.PI / 180) * 150;
+  const proj = (lat, lon) => [(lon - 9) * K, (81.4 - lat) * 150];
+  const parse = d => d.replace(/Z/g, '').split(/[ML]/).filter(Boolean).map(s => s.trim().split(/\s+/).map(Number));
+  const shape = d => { const pts = parse(d), xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+    return { pts, b: [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)] }; };
+  const pip = ([x, y], pg) => { let c = false;
+    for (let i = 0, j = pg.length - 1; i < pg.length; j = i++) { const [xi, yi] = pg[i], [xj, yj] = pg[j];
+      if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; }
+    return c; };
+  const inShape = (p, s) => p[0] >= s.b[0] && p[0] <= s.b[2] && p[1] >= s.b[1] && p[1] <= s.b[3] && pip(p, s.pts);
+  const LANDS = $$('#landshapes path').map(p => shape(p.getAttribute('d')));
+  const REG = {};
+  for (const id in REGIONS) { const s = shape(document.getElementById('r-' + id).getAttribute('d'));
+    s.cy = Math.min(780, Math.max(0, (s.b[1] + s.b[3]) / 2)); REG[id] = s; }
+  const clsOf = (id, m) => REGIONS[id][1][m];
+  const nameOf = id => REGIONS[id][0];
+  const regionAt = p => LANDS.some(s => inShape(p, s)) ? null : Object.keys(REG).find(id => inShape(p, REG[id])) || null;
+  for (const R of Object.values(ROUTES)) if (R.pts) R.xy = R.pts.map(p => proj(p[0], p[1]));
+
+  // Route samples every 3 units: which sea region (or land) each point is in. Cached per route.
+  const sampleCache = {};
+  function samples(rid) {
+    if (sampleCache[rid]) return sampleCache[rid];
+    const xy = ROUTES[rid].xy, out = [];
+    for (let i = 1; i < xy.length; i++) {
+      const [a, b] = [xy[i - 1], xy[i]], n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / 3));
+      for (let s = 0; s < n; s++) { const p = [a[0] + (b[0] - a[0]) * s / n, a[1] + (b[1] - a[1]) * s / n]; out.push({ p, r: regionAt(p) }); }
+    }
+    const last = xy[xy.length - 1]; out.push({ p: last, r: regionAt(last) });
+    return (sampleCache[rid] = out);
+  }
+  // Is a route blocked in a month? Sea routes are blocked by fast ice and close or very close drift;
+  // routes over the ice need fast ice wherever they cross the sea. Runs shorter than 2 samples are shoreline noise.
+  function assess(rid, m) {
+    const R = ROUTES[rid], res = { blocked: [], caution: [], fast: [], runs: [] };
+    if (!R.xy) return res;
+    const bad = c => R.mode === 'sea' ? 'FVC'.includes(c) : c !== 'F';
+    const runs = [];
+    for (const s of samples(rid)) { const last = runs[runs.length - 1]; if (last && last.r === s.r) last.s.push(s); else runs.push({ r: s.r, s: [s] }); }
+    const seen = new Set();
+    for (const run of runs) {
+      if (!run.r || run.s.length < 2) continue;
+      const c = clsOf(run.r, m), name = nameOf(run.r), item = { name, c };
+      if (bad(c)) { res.runs.push(run.s); if (!seen.has('b' + name)) { seen.add('b' + name); res.blocked.push(item); } }
+      else if (R.mode === 'sea' && c === 'O' && !seen.has('c' + name)) { seen.add('c' + name); res.caution.push(item); }
+      else if (c === 'F' && !seen.has('f' + name)) { seen.add('f' + name); res.fast.push(item); }
+    }
+    // merge touching blocked runs into continuous strokes
+    res.runs = res.runs.reduce((acc, r) => { const prev = acc[acc.length - 1];
+      if (prev && Math.hypot(prev[prev.length - 1].p[0] - r[0].p[0], prev[prev.length - 1].p[1] - r[0].p[1]) < 4) prev.push(...r); else acc.push([...r]);
+      return acc; }, []);
+    return res;
+  }
+  const inSeason = (rid, m) => ROUTES[rid].season.includes(m);
+  // a sub-region listed with its parent is named once, last: '… and Storfjorden, including its northern bays'
+  const PART_OF = { 'the bays of northern Storfjorden': ['Storfjorden', 'Storfjorden, including its northern bays'] };
+  const mergeParts = names => { for (const part in PART_OF) { const [parent, merged] = PART_OF[part];
+    if (names.includes(part) && names.includes(parent)) names = [...names.filter(n => n !== part && n !== parent), merged]; } return names; };
+  const list = a => a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1];
+
+  // Lines for the ice summary (TR1). {t: text, k: 'head' | 'it' | 'stage', c: swatch class}
+  function summary(rid, m) {
+    if (m == null) return [{ k: 'head', t: 'The chart shows typical ice in April.' }, { k: 'stage', t: rid && rid !== 'unsure' ? 'Pick a month to check your route against it.' : 'Pick a route and a month to check them against the ice.' }];
+    const M = MONTHS[m][0], out = [], R = rid && ROUTES[rid];
+    if (!R || rid === 'unsure') out.push({ k: 'head', t: rid ? `${M}: a guide will suggest a route that fits this ice.` : `${M}: typical ice.` });
+    else if (R.mode === 'land') out.push({ k: 'head', t: `${M}: sea ice does not block the ice-cap crossing.` }, { k: 'it', t: 'It starts and ends on the ice cap, so only the weather on Austfonna decides the days.' });
+    else {
+      const a = assess(rid, m);
+      if (a.blocked.length) {
+        out.push({ k: 'head', t: `${M}: the ${R.short} is blocked${a.blocked.length > 1 ? ` in ${a.blocked.length} places` : ''}.` });
+        a.blocked.slice(0, 3).forEach(b => out.push({ k: 'it', c: b.c, t: `${cap(b.name)}: ${CLS[b.c]}. ${R.mode === 'sea' ? 'Blocked for sailing.' : b.c === 'W' ? 'No ice to cross on.' : 'Not safe to cross.'}` }));
+        if (a.blocked.length > 3) out.push({ k: 'it', t: `Also blocked: ${list(mergeParts(a.blocked.slice(3).map(b => b.name)))}.` });
+      } else {
+        out.push({ k: 'head', t: `${M}: the ${R.short} is clear.` });
+        if (R.mode === 'ice') out.push({ k: 'it', c: 'F', t: `It runs overland except ${list(a.fast.map(f => f.name))}, which ${a.fast.length > 1 ? 'are' : 'is'} fast ice in ${M}.` });
+        else if (a.caution.length) a.caution.forEach(b => out.push({ k: 'it', c: 'O', t: `${cap(b.name)}: ${CLS.O}. Passable with care.` }));
+        else out.push({ k: 'it', c: 'W', t: 'Open water or light drift all the way round.' });
+      }
+    }
+    out.push({ k: 'stage', t: STAGE[m] });
+    return out;
+  }
+
+  const verdictOf = (rid, m) => m == null ? '' : summary(rid, m)[0].t;
+
+  /* ================= state and elements ================= */
+  const grid = $('#grid'), form = $('#plan'), result = $('#result'), steps = $$('.step'), railBtns = $$('.rail-btn');
+  const backBtn = $('#back'), nextBtn = $('#next'), sendBtn = $('#send'), live = $('#step-live');
+  const iceG = Object.fromEntries($$('.ice > g', map).map(g => [g.dataset.r, g]));
+  const S = { done: false, step: 1, max: 1, route: null, month: null, people: 2, review: false, ref: 417, shown: {}, routeG: null };
+  for (const id in iceG) S.shown[id] = $('use', iceG[id]).getAttribute('class').slice(2);
+
+  // svg scale for hairlines and lettering
+  const setK = () => { const r = map.getBoundingClientRect(); if (r.width) map.style.setProperty('--k', Math.min(r.width / 750, r.height / 780).toFixed(4)); };
+  new ResizeObserver(setK).observe(map); setK();
+  // real coast paths (DrawSVG needs paths, not a <use>)
+  const coastG = $('.coast', map);
+  $$('#landshapes path').forEach(p => coastG.append(p.cloneNode()));
+  $('.coast-u', map).remove();
+
+  /* ================= instant effects (reduced motion, CDN blocked); the motion layer replaces these ================= */
+  const layer = (rid, c) => { const g = iceG[rid]; let u = g.querySelector('.c-' + c);
+    if (!u) { u = svgEl('use', { href: '#r-' + rid, class: 'c-' + c }); u.style.opacity = 0; g.prepend(u); } return u; };
+  // hide the classes under the one on top, so their anti-aliased strokes never show as seams between regions
+  const settle = (rid, top) => { for (const u of iceG[rid].children) if (u !== top) u.style.opacity = 0; };
+  const rampPath = (from, to) => { const a = RAMP.indexOf(from), b = RAMP.indexOf(to), d = Math.sign(b - a), out = []; for (let i = a + d; d && i !== b + d; i += d) out.push(RAMP[i]); return out; };
+  const fillLines = (el, lines) => { el.replaceChildren(...lines.map(l => { const p = document.createElement('p'); p.className = 'ln ' + l.k;
+    const s = document.createElement('span'); if (l.c) { const sw = document.createElement('span'); sw.className = 'sw c-' + l.c; s.className = 'it'; s.append(sw); }
+    s.append(document.createTextNode(l.t)); p.append(s); return p; })); };
+  const FX0 = {
+    swap(prev, next, show, hide, done) { show(next); hide(prev); done && done(); },
+    ice(target) { for (const id in target) if (S.shown[id] !== target[id]) { const u = layer(id, target[id]); iceG[id].append(u); u.style.opacity = 1; settle(id, u); S.shown[id] = target[id]; } },
+    route(oldG, newG) { oldG && oldG.remove(); },
+    blocked(g, build) { build(); },
+    roll(el, text) { $('.t', el).textContent = text; },
+    digit(box, val) { box.firstElementChild.textContent = val; },
+    pop() {}, glyph() {},
+    text(el, lines) { fillLines(el, lines); },
+    heading() {},
+    scroll(target, off) { scrollTo({ top: scrollY + target.getBoundingClientRect().top + off, behavior: 'auto' }); }
+  };
+  let fx = FX0;
+
+  /* ================= chart: route, ice, preview, pick ================= */
+  const routesG = $('.routes', map), ghost = $('.ghost', map), pick = $('.pick', map), pickline = $('#pickline');
+  const routeD = rid => 'M' + ROUTES[rid].xy.map(p => p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join('L');
+  function buildRoute(rid) {
+    const R = ROUTES[rid]; if (!R || !R.xy) return null;
+    const g = svgEl('g', { class: 'route' }), d = routeD(rid);
+    g.append(svgEl('path', { class: 'casing', d }), svgEl('path', { class: 'line', d }), svgEl('g', { class: 'blk' }));
+    const dots = svgEl('g', { class: 'dots' });
+    let len = 0; const cum = [0];
+    for (let i = 1; i < R.xy.length; i++) { len += Math.hypot(R.xy[i][0] - R.xy[i - 1][0], R.xy[i][1] - R.xy[i - 1][1]); cum.push(len); }
+    R.pts.forEach((p, i) => { if (p[2]) { const c = svgEl('circle', { class: 'dot', r: 4, cx: R.xy[i][0].toFixed(1), cy: R.xy[i][1].toFixed(1) }); c.dataset.f = (cum[i] / len).toFixed(3); dots.append(c); } });
+    g.append(dots);
+    return g;
+  }
+  function paintBlocked(g, m) {
+    const blk = $('.blk', g), rid = g.dataset.r;
+    blk.replaceChildren();
+    if (m == null) return;
+    for (const run of assess(rid, m).runs) {
+      const d = 'M' + run.map(s => s.p[0].toFixed(1) + ' ' + s.p[1].toFixed(1)).join('L');
+      blk.append(svgEl('path', { class: 'blk-c', d }), svgEl('path', { class: 'blk-h', d }));
+    }
+  }
+  function chartLabel() {
+    const R = S.route && ROUTES[S.route], m = S.month == null ? 1 : S.month;
+    let t = `Chart of Svalbard with typical sea ice in ${MONTHS[m][0]}`;
+    if (R && R.xy) { const a = assess(S.route, m); t += ` and the ${R.short}` + (S.month == null ? '' : a.blocked.length ? `, blocked by ice in ${a.blocked.length} place${a.blocked.length > 1 ? 's' : ''}` : ', clear of blocking ice'); }
+    map.setAttribute('aria-label', t + '.');
+    $('#cap-month').textContent = `Typical sea ice in ${MONTHS[m][0]}`;
+  }
+  function setRoute(rid) {
+    if (S.route === rid) return;
+    S.route = rid;
+    const old = S.routeG, g = buildRoute(rid);
+    if (g) { g.dataset.r = rid; routesG.append(g); paintBlocked(g, S.month); }
+    S.routeG = g;
+    fx.route(old, g);
+    ghost.classList.remove('on');
+    renderItin(); renderSeason(); renderSummary(true); chartLabel(); updateCapNote();
+  }
+  function setMonth(m) {
+    if (S.month === m) return;
+    S.month = m;
+    const target = {}; for (const id in iceG) target[id] = clsOf(id, m);
+    fx.ice(target);
+    if (S.routeG) fx.blocked(S.routeG, () => paintBlocked(S.routeG, m));
+    renderSeason(); renderSummary(true, .4); chartLabel(); renderDetail(m); // words change as the ice front passes halfway
+  }
+
+  // a hovered or focused row previews its route as a dashed ghost; a hovered month shows its weather
+  const routeRows = $$('.opt[data-route]'), chips = $$('.chip');
+  routeRows.forEach(row => {
+    const rid = row.dataset.route, input = $('input', row);
+    const on = () => { fx.glyph(row); if (ROUTES[rid].xy && S.route !== rid) { ghost.setAttribute('d', routeD(rid)); ghost.classList.add('on'); } };
+    const off = () => ghost.classList.remove('on');
+    row.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse' && fine()) on(); });
+    row.addEventListener('pointerleave', off);
+    input.addEventListener('focus', () => { if (input.matches(':focus-visible')) on(); });
+    input.addEventListener('blur', off);
+    input.addEventListener('change', () => { if (input.checked) { setRoute(rid); fx.pop($('.badge', row)); clearErr('route'); } });
+  });
+  const preview = m => { const now = S.month == null ? 1 : S.month;
+    for (const id in iceG) iceG[id].classList.toggle('dim', m != null && m !== now && clsOf(id, m) !== clsOf(id, now)); };
+  chips.forEach(chip => {
+    const m = +chip.dataset.m, input = $('input', chip), off = () => preview(null);
+    chip.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') preview(m); });
+    chip.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') preview(m); });
+    chip.addEventListener('pointerleave', off); chip.addEventListener('pointercancel', off);
+    input.addEventListener('focus', () => { if (input.matches(':focus-visible')) preview(m); });
+    input.addEventListener('blur', off);
+    input.addEventListener('change', () => { if (input.checked) { preview(null); setMonth(m); fx.pop($('.badge', chip)); clearErr('month'); } });
+  });
+
+  // chart pick: hover (fine pointer) or tap a sea region to read its class
+  const hint = pickline.textContent;
+  const keyRows = $$('.key li[data-c]');
+  function setPick(rid) {
+    const m = S.month == null ? 1 : S.month;
+    keyRows.forEach(li => li.classList.toggle('on', !!rid && li.dataset.c === clsOf(rid, m)));
+    pickline.classList.toggle('is-reading', !!rid);
+    if (!rid) { pick.classList.remove('on'); pickline.textContent = hint; return; }
+    pick.setAttribute('href', '#r-' + rid); pick.classList.add('on');
+    pickline.textContent = `${cap(nameOf(rid))}, ${CLS[clsOf(rid, m)]} in ${MONTHS[m][0]}`;
+  }
+  // the keyboard way to read the chart: a legend row mutes every other class and names where its own lies
+  function readClass(c) {
+    const m = S.month == null ? 1 : S.month, ids = Object.keys(iceG).filter(id => clsOf(id, m) === c);
+    for (const id in iceG) iceG[id].classList.toggle('mute', !!c && !ids.includes(id));
+    keyRows.forEach(li => li.classList.toggle('on', li.dataset.c === c));
+    pickline.classList.toggle('is-reading', !!c);
+    if (!c) { pickline.textContent = hint; return; }
+    const names = [...new Set(ids.map(nameOf))], shown = names.length > 4 ? [...names.slice(0, 3), `${names.length - 3} more areas`] : names;
+    pickline.textContent = `${cap(CLS[c])} in ${MONTHS[m][0]}: ${names.length ? list(shown) : 'none'}.`;
+  }
+  keyRows.forEach(li => { const b = $('.kbtn', li), on = () => readClass(li.dataset.c), off = () => readClass(null);
+    b.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') on(); });
+    b.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse' && document.activeElement !== b) off(); });
+    b.addEventListener('focus', on); b.addEventListener('blur', off); b.addEventListener('click', on); });
+  map.addEventListener('pointermove', e => { if (e.pointerType === 'mouse') setPick(e.target.closest('.hit use')?.dataset.r || null); });
+  map.addEventListener('pointerleave', () => setPick(null));
+  map.addEventListener('click', e => setPick(e.target.closest('.hit use')?.dataset.r || null));
+
+  /* ================= text renders ================= */
+  const sumEl = $('#sum'), itinEl = $('#itin'), detailEl = $('#month-detail'), seasonLine = $('#season-line'), seasonNote = $('#season-note');
+  const detailHint = detailEl.textContent;
+  const sumLive = $('#sum-live'), verdictEl = $('#verdict'), chartEl = $('#chart');
+  let sumTimer;
+  function renderSummary(announce, delay = 0) {
+    const lines = summary(S.route, S.month);
+    fx.text(sumEl, lines, delay);
+    clearTimeout(sumTimer); // one plain-text announcement, once the words have settled
+    if (announce) sumTimer = setTimeout(() => { sumLive.textContent = lines.map(l => l.t).join(' '); }, fx === FX0 ? 0 : 1100);
+    const v = verdictOf(S.route, S.month);
+    chartEl.classList.toggle('has-verdict', !!v);
+    if (v) fx.roll($('.roll', verdictEl), v);
+  }
+  function renderItin() {
+    const items = S.route ? ROUTES[S.route].itin : ['Pick a route to see where you sleep each night.'];
+    itinEl.replaceChildren(...items.map(t => { const li = document.createElement('li'); li.textContent = t; return li; }));
+  }
+  function renderDetail(m) { detailEl.textContent = m == null ? detailHint : `${MONTHS[m][0]}: ${MONTHS[m][1]} on average, ${MONTHS[m][2]}.`; }
+  function conflict() { return !!(S.route && S.month != null && !inSeason(S.route, S.month)); }
+  function renderSeason() {
+    const R = S.route && ROUTES[S.route], limited = R && R.season.length < 7;
+    chips.forEach(c => { const out = limited && !R.season.includes(+c.dataset.m); c.classList.toggle('is-out', !!out);
+      const i = $('input', c); out ? i.setAttribute('aria-describedby', 'season-line') : i.removeAttribute('aria-describedby'); });
+    seasonLine.hidden = !limited;
+    if (limited) seasonLine.textContent = 'Dashed months are outside this route’s season.';
+    const show = conflict();
+    if (show) $('p', seasonNote).replaceChildren(icon(), Object.assign(document.createElement('span'), { textContent: SEASON_MSG[S.route] }));
+    seasonNote.classList.toggle('on', show);
+  }
+  function updateCapNote() { $('#cap-note').classList.toggle('on', S.route === 'cap' && !!form.elements.experience.value && form.elements.experience.value !== 'polar'); }
+  $$('input[name="experience"]').forEach(i => i.addEventListener('change', () => { updateCapNote(); clearErr('experience'); fx.pop($('.badge', i.closest('.opt'))); }));
+
+  /* ================= validation ================= */
+  const checkEmail = v => /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(v);
+  const checkPhone = v => !v || /^\+\d[\d\s-]{6,18}\d$/.test(v) && v.replace(/\D/g, '').length >= 8 && v.replace(/\D/g, '').length <= 15;
+  const fieldRules = { name: v => v.trim().length > 1, email: v => checkEmail(v.trim()), phone: v => checkPhone(v.trim()) };
+  const errBox = { route: $('#e-route'), month: $('#e-month'), experience: $('#e-exp') };
+  function showErr(key, msg) { const box = errBox[key]; $('p', box).replaceChildren(icon(), document.createTextNode(msg)); box.classList.add('on'); }
+  function clearErr(key) { const box = errBox[key]; if (box) { box.classList.remove('on'); $('p', box).replaceChildren(); } }
+  function icon() { const s = svgEl('svg', { viewBox: '0 0 16 16', 'aria-hidden': 'true' }); s.append(svgEl('path', { d: 'M8 1.8l6.6 11.7H1.4zM8 6.3v3.4M8 11.6v.2' })); return s; }
+  function checkField(name, show = true) {
+    const input = form.elements[name], f = input.closest('.field'), ok = fieldRules[name](input.value), filled = !!input.value.trim();
+    if (show) {
+      f.classList.toggle('is-invalid', !ok); f.classList.toggle('is-valid', ok && filled);
+      input.setAttribute('aria-invalid', String(!ok));
+      const box = $('.err', f); box.classList.toggle('on', !ok);
+      $('p', box).replaceChildren(...(ok ? [] : [icon(), document.createTextNode(ERR[name])]));
+    }
+    return ok;
+  }
+  ['name', 'email', 'phone'].forEach(n => {
+    const input = form.elements[n];
+    input.addEventListener('blur', () => { if (input.value.trim() || input.closest('.is-invalid')) checkField(n); });
+    input.addEventListener('input', () => { if (input.closest('.is-invalid')) checkField(n); });
+  });
+  form.elements.country.addEventListener('blur', e => e.target.closest('.field').classList.toggle('is-valid', !!e.target.value.trim()));
+  const notes = form.elements.notes, count = $('#f-count');
+  notes.addEventListener('input', () => { count.textContent = `${600 - notes.value.length} of 600 characters left`; });
+
+  // returns the control to focus when the step is invalid, else null
+  function validateStep(n, show = true) {
+    const radios = name => $$(`input[name="${name}"]`);
+    if (n === 1 && !S.route) { if (show) showErr('route', ERR.route); return radios('route')[0]; }
+    if (n === 2) {
+      if (S.month == null) { if (show) showErr('month', ERR.month); return radios('month')[0]; }
+      if (conflict()) { if (show) renderSeason(); return radios('month')[S.month]; }
+    }
+    if (n === 3 && !form.elements.experience.value) { if (show) showErr('experience', ERR.experience); return radios('experience')[0]; }
+    if (n === 4) { let first = null; for (const k of ['name', 'email', 'phone']) if (!checkField(k, show) && !first) first = form.elements[k]; return first; }
+    return null;
+  }
+
+  /* ================= steps ================= */
+  const legendOf = n => $(`.step[data-step="${n}"] legend`);
+  const stickyH = () => getComputedStyle($('#chart')).position === 'sticky' && innerWidth < 992 ? $('#chart').offsetHeight : 0;
+  const setChartH = () => doc.style.setProperty('--chart-h', stickyH() + 'px');
+  new ResizeObserver(setChartH).observe($('#chart')); addEventListener('resize', setChartH);
+  function renderRail() {
+    railBtns.forEach((b, i) => {
+      const n = i + 1, cur = n === S.step && !S.done;
+      b.toggleAttribute('aria-current', cur); if (cur) b.setAttribute('aria-current', 'step');
+      b.classList.toggle('is-done', !cur && n <= S.max);
+      b.disabled = !cur && n > S.max;
+      $('.rail-sr', b).textContent = cur ? ', current step' : n > S.max ? ', not reached yet' : ', done';
+    });
+    $('#rail-status').textContent = `Step ${S.step} of 5: ${STEP_NAMES[S.step - 1]}`;
+  }
+  function renderNav() {
+    backBtn.hidden = S.step === 1;
+    nextBtn.hidden = S.step === 5; sendBtn.hidden = stepped && S.step !== 5;
+    fx.roll($('.roll', nextBtn), S.review && S.step < 5 ? 'Back to review' : NEXT_LABEL[Math.min(S.step, 4) - 1]);
+  }
+  function goStep(n, { focusEl } = {}) {
+    if (!stepped) { (focusEl || legendOf(n)).focus(); return; }
+    const prev = $('.step.is-active'), next = $(`.step[data-step="${n}"]`);
+    S.step = n; S.max = Math.max(S.max, n);
+    const from = +(prev?.dataset.step || n);
+    grid.dataset.step = n; setChartH();
+    if (n === 5) renderReview();
+    renderRail(); renderNav();
+    live.textContent = `Step ${n} of 5: ${STEP_NAMES[n - 1]}`;
+    if (prev !== next) fx.swap(prev, next, el => el.classList.add('is-active'), el => el.classList.remove('is-active'), afterLayout, n < from ? -1 : 1);
+    (focusEl || legendOf(n)).focus({ preventScroll: true });
+    const top = $('#planner').getBoundingClientRect().top;
+    if (top < stickyH()) fx.scroll($('#planner'), -(stickyH() + 24), .8);
+  }
+  let afterLayout = () => {};
+  function tryNext() {
+    const bad = validateStep(S.step);
+    if (bad) { bad.focus(); return; }
+    if (S.review) { S.review = false; goStep(5); return; }
+    goStep(S.step + 1);
+  }
+  nextBtn.addEventListener('click', tryNext);
+  backBtn.addEventListener('click', () => { S.review = false; goStep(Math.max(1, S.step - 1)); });
+  railBtns.forEach(b => b.addEventListener('click', () => {
+    const n = +b.dataset.to; if (b.disabled) return;
+    if (S.done) { openForm(n); return; }
+    if (!stepped) { legendOf(n).focus(); return; }
+    if (n === S.step) return;
+    if (n > S.step) for (let k = S.step; k < n; k++) { const bad = validateStep(k); if (bad) { if (k !== S.step) goStep(k, { focusEl: bad }); else bad.focus(); return; } }
+    S.review = false; goStep(n);
+  }));
+  $$('[data-change]').forEach(b => b.addEventListener('click', () => {
+    const n = +b.dataset.change;
+    if (!stepped) { legendOf(n).focus(); legendOf(n).scrollIntoView({ block: 'start' }); return; }
+    S.review = true; goStep(n);
+  }));
+  // Enter in a text field moves on instead of submitting from the middle of the plan
+  form.addEventListener('keydown', e => { if (stepped && e.key === 'Enter' && e.target.matches('input') && S.step < 5) { e.preventDefault(); tryNext(); } });
+
+  // group stepper
+  const spin = $('#spin'), digits = $('.digits', spin), minus = $('.sbtn[data-d="-1"]'), plus = $('.sbtn[data-d="1"]');
+  function setPeople(v) {
+    v = Math.max(1, Math.min(8, v)); if (v === S.people) return;
+    const dir = Math.sign(v - S.people); S.people = v;
+    form.elements.people.value = v;
+    spin.setAttribute('aria-valuenow', v); spin.setAttribute('aria-valuetext', v + (v > 1 ? ' people' : ' person') + (v === 8 ? '. Groups above 8: tell us in step 4.' : ''));
+    fx.digit(digits, v, dir);
+    minus.disabled = v === 1; plus.disabled = v === 8;
+    $('#people-note').classList.toggle('on', v === 8);
+  }
+  minus.addEventListener('click', () => setPeople(S.people - 1));
+  plus.addEventListener('click', () => setPeople(S.people + 1));
+  spin.addEventListener('keydown', e => {
+    const d = { ArrowUp: 1, ArrowRight: 1, ArrowDown: -1, ArrowLeft: -1, PageUp: 2, PageDown: -2, Home: -8, End: 8 }[e.key];
+    if (d) { e.preventDefault(); setPeople(S.people + d); }
+  });
+
+  /* ================= review, submit, result ================= */
+  function renderReview() {
+    const set = (k, v) => { $(`[data-v="${k}"]`).textContent = v; };
+    const R = S.route && ROUTES[S.route];
+    set('route', R ? (S.route === 'unsure' ? 'Not sure yet, suggest one' : R.name) : 'Not chosen yet');
+    set('month', S.month == null ? 'Not chosen yet' : MONTHS[S.month][0] + (form.elements.flexible.checked ? ', flexible by a week or two' : ''));
+    const exp = $('input[name="experience"]:checked');
+    set('group', `${S.people} ${S.people > 1 ? 'people' : 'person'}` + (exp ? ', ' + exp.closest('.opt').querySelector('.opt-name').textContent.toLowerCase() : ''));
+    const kit = $$('input[name="kit"]:checked').map(i => i.closest('.check').textContent.trim().replace(/^Rent /, ''));
+    set('kit', kit.length ? 'Rent ' + list(kit) : 'No rental kit');
+    const e = form.elements;
+    set('contact', [e.name.value.trim(), e.email.value.trim(), e.phone.value.trim()].filter(Boolean).join(', ') || 'Not filled in yet');
+  }
+  if (!stepped) form.addEventListener('change', renderReview);
+  form.noValidate = true;
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    for (let n = 1; n <= 4; n++) {
+      const bad = validateStep(n);
+      if (bad) { if (stepped && n !== S.step) { S.review = false; goStep(n, { focusEl: bad }); } else bad.focus(); return; }
+    }
+    renderReview();
+    const R = ROUTES[S.route], M = MONTHS[S.month][0];
+    $('#ref').textContent = `HIN-27-${String(S.ref).padStart(4, '0')}`;
+    $('#result-msg').textContent = `Ingrid Solberg, our trip planner, will email ${form.elements.email.value.trim()} within two working days with dates, a kit list and a price for ${S.route === 'unsure' ? 'a route that suits you' : R.name} in ${M}.`;
+    S.max = 5; S.done = true;
+    fx.swap(form, result, el => { el.hidden = false; }, el => { el.hidden = true; }, afterLayout);
+    renderRail();
+    live.textContent = 'Plan received';
+    fx.heading($('#result-title'));
+    $('#result-title').focus({ preventScroll: true });
+    if ($('#planner').getBoundingClientRect().top < stickyH()) fx.scroll($('#planner'), -(stickyH() + 24), .8);
+  });
+  function openForm(n) {
+    S.done = false; S.step = n;
+    if (stepped) { grid.dataset.step = n; setChartH(); $$('.step').forEach(s => s.classList.toggle('is-active', +s.dataset.step === n)); }
+    if (n === 5) renderReview();
+    fx.swap(result, form, el => { el.hidden = false; }, el => { el.hidden = true; }, afterLayout, -1);
+    renderRail(); if (stepped) renderNav();
+    live.textContent = `Step ${n} of 5: ${STEP_NAMES[n - 1]}`;
+    legendOf(n).focus({ preventScroll: true });
+  }
+  function resetPlan() {
+    S.ref++; form.reset(); S.review = false; S.max = 1;
+    setRoute(null); setPeople(2);
+    S.month = null; fx.ice(Object.fromEntries(Object.keys(iceG).map(id => [id, clsOf(id, 1)])));
+    renderSeason(); renderSummary(); chartLabel(); renderDetail(null); updateCapNote();
+    $$('.field').forEach(f => { f.classList.remove('is-invalid', 'is-valid'); $$('.err', f).forEach(b => b.classList.remove('on')); });
+    $$('[aria-invalid]').forEach(i => i.removeAttribute('aria-invalid'));
+    Object.keys(errBox).forEach(clearErr); count.textContent = '600 of 600 characters left';
+    if (!stepped) renderReview();
+  }
+  result.addEventListener('click', e => {
+    const act = e.target.closest('[data-act]')?.dataset.act; if (!act) return;
+    if (act === 'new') resetPlan();
+    openForm(act === 'new' ? 1 : 5);
+  });
+
+  /* ================= opening anchors (NV6) and copy buttons ================= */
+  $$('[data-go]').forEach(a => a.addEventListener('click', e => {
+    e.preventDefault();
+    const to = a.dataset.go, target = $('#' + to);
+    const focusEl = to === 'direct' ? $('#direct-title') : !result.hidden ? $('#result-title') : legendOf(stepped ? S.step : 1);
+    focusEl.focus({ preventScroll: true });
+    fx.scroll(target, to === 'direct' ? 0 : -(stickyH() + 16));
+  }));
+  const copyLive = $('#copy-live');
+  $$('.copy').forEach(btn => {
+    let timer;
+    btn.addEventListener('click', async () => {
+      clearTimeout(timer);
+      const roll = $('.roll', btn), value = btn.dataset.copy;
+      try { await navigator.clipboard.writeText(value); fx.roll(roll, 'Copied'); copyLive.textContent = `Copied ${value}`; }
+      catch {
+        fx.roll(roll, 'Select and copy'); copyLive.textContent = 'Copying is blocked here. The text is selected, so copy it with your keyboard.';
+        const v = btn.closest('.row').querySelector('[data-value]'), r = document.createRange(); r.selectNodeContents(v);
+        const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+      }
+      timer = setTimeout(() => fx.roll(roll, 'Copy'), 1600);
+    });
+  });
+  // channel rows: rule recolours from the side the pointer entered
+  $$('.row').forEach(row => {
+    row.addEventListener('pointerenter', e => { const r = row.getBoundingClientRect(); row.style.setProperty('--from', e.clientX < r.left + r.width / 2 ? 'left' : 'right'); row.classList.add('on'); });
+    row.addEventListener('pointerleave', e => { const r = row.getBoundingClientRect(); row.style.setProperty('--from', e.clientX < r.left + r.width / 2 ? 'left' : 'right'); row.classList.remove('on'); });
+  });
+  // HV4: the fill sweeps in from the edge the pointer entered
+  $$('.btn').forEach(b => b.addEventListener('pointerenter', e => { const r = b.getBoundingClientRect(); b.style.setProperty('--from', e.clientX < r.left + r.width / 2 ? 'left' : 'right'); }));
+
+  /* ================= glyphs, initial render ================= */
+  routeRows.forEach(row => {
+    const R = ROUTES[row.dataset.route]; if (!R.xy) return;
+    const xs = R.xy.map(p => p[0]), ys = R.xy.map(p => p[1]), x0 = Math.min(...xs), y0 = Math.min(...ys);
+    const s = Math.min(48 / (Math.max(...xs) - x0), 32 / (Math.max(...ys) - y0)), ox = (56 - (Math.max(...xs) - x0) * s) / 2, oy = (40 - (Math.max(...ys) - y0) * s) / 2;
+    const d = 'M' + R.xy.map(p => ((p[0] - x0) * s + ox).toFixed(1) + ' ' + ((p[1] - y0) * s + oy).toFixed(1)).join('L');
+    $$('.glyph path', row).forEach(p => p.setAttribute('d', d));
+  });
+  FX0.ice(Object.fromEntries(Object.keys(iceG).map(id => [id, clsOf(id, 1)])));
+  if (stepped) { grid.dataset.step = 1; renderRail(); renderNav(); }
+  else { sendBtn.hidden = false; renderReview(); }
+  renderSummary(); renderSeason(); chartLabel();
+  // the planner keeps whatever the browser restored on back/forward
+  const r0 = $('input[name="route"]:checked'), m0 = $('input[name="month"]:checked');
+  if (r0) setRoute(r0.value);
+  if (m0) setMonth(+m0.closest('.chip').dataset.m);
+
+  /* ================= self-test (#selftest) ================= */
+  function runSelfTest() {
+    const fails = [], ok = (c, m) => { if (!c) fails.push(m); };
+    const apr = assess('sail', 1), aug = assess('sail', 5), mar = assess('ski', 0);
+    ok(apr.blocked.some(b => b.name === 'Hinlopenstretet'), 'sail route blocked in Hinlopenstretet in April');
+    ok(aug.blocked.length === 0, 'sail route open in August');
+    ok(mar.blocked.length === 0, 'ski route clear of sea-ice blocks in March');
+    ok(mar.fast.some(f => f.name === 'Billefjorden'), 'ski route crosses Billefjorden on fast ice');
+    ok(/overland except .*Billefjorden.* fast ice/.test(summary('ski', 0).map(l => l.t).join(' ')), 'ski summary says why it is clear');
+    ok(assess('ski', 3).blocked.length > 0, 'ski crossing blocked once the fast ice has gone in June');
+    ok(assess('cap', 1).blocked.length === 0 && samples('cap').every(s => !s.r), 'ice-cap route never touches the sea');
+    ok(rampPath('V', 'W').join('') === 'COLW' && rampPath('W', 'C').join('') === 'LOC' && rampPath('F', 'F').length === 0, 'ramp steps through every class');
+    ok(!inSeason('sail', 1) && inSeason('sail', 5) && inSeason('unsure', 3), 'seasons');
+    ok(checkEmail('name@example.com') && !checkEmail('name@example') && !checkEmail('a b@c.de'), 'email check');
+    ok(checkPhone('') && checkPhone('+44 7700 900123') && !checkPhone('07700 900123') && !checkPhone('+1 2'), 'phone check');
+    const segs = new Map(); // every outline segment is shared by at most two regions, so the regions tile without overlaps
+    for (const id in REG) REG[id].pts.forEach((a, i, pts) => { const b = pts[(i + 1) % pts.length], k = [a.join(), b.join()].sort().join('|'); segs.set(k, (segs.get(k) || 0) + 1); });
+    ok([...segs.values()].every(n => n <= 2), 'regions tile without overlaps');
+    console.log(fails.length ? 'SELFTEST FAIL: ' + fails.join('; ') : 'SELFTEST PASS');
+  }
+  if (location.hash === '#selftest') runSelfTest();
+
+  /* ================= motion layer (GSAP + Lenis) ================= */
+  if (!lib) return;
+  gsap.registerPlugin(ScrollTrigger, SplitText, DrawSVGPlugin);
+  const fontsReady = Promise.race([document.fonts ? document.fonts.ready : Promise.resolve(), new Promise(r => setTimeout(r, 1200))]);
+  let introDone = false;
+  const mm = gsap.matchMedia();
+  mm.add({ motion: '(prefers-reduced-motion: no-preference)', reduce: '(prefers-reduced-motion: reduce)', fine: '(hover: hover) and (pointer: fine)', wide: '(min-width: 992px)' }, ctx => {
+    const { motion, wide } = ctx.conditions;
+    if (!motion) return; // reduced motion: native scroll, final states, instant changes (FX0)
+
+    const lenis = new Lenis({ lerp: .1, smoothWheel: true, autoRaf: false });
+    lenis.on('scroll', ScrollTrigger.update);
+    const tick = t => lenis.raf(t * 1000);
+    gsap.ticker.add(tick); gsap.ticker.lagSmoothing(0);
+    afterLayout = () => { lenis.resize(); ScrollTrigger.refresh(); };
+
+    let swapTl, sumTl, iceTl, headSplit, alive = true;
+    const STEP = .09, SPREAD = .7;
+    // inverse of power2.inOut: the time at which a front that eases in and out reaches a fraction f of the way
+    const inv = f => f < .5 ? Math.sqrt(f / 2) : 1 - Math.sqrt((1 - f) / 2);
+    fx = {
+      // Step switch in sequence, never a double exposure: the old step leaves (taken out of flow so the cell
+      // follows the new one), then the new legend leads its rows in. Forward moves left, back moves right.
+      swap(prev, next, show, hide, done, dir = 1) {
+        swapTl && swapTl.progress(1).kill();
+        const items = next.classList.contains('step') ? [...next.children] : [next];
+        show(next); prev.classList.add('is-leaving');
+        if (prev.classList.contains('step')) hide(prev); // steps: .is-leaving keeps it displayed while it leaves
+        gsap.set(prev, { position: 'absolute', top: 0, left: 0, right: 0 });
+        swapTl = gsap.timeline({ onComplete() {
+          prev.classList.remove('is-leaving'); hide(prev); gsap.set(prev, { clearProps: 'all' }); gsap.set(items, { clearProps: 'transform,opacity' }); done && done(); } })
+          .to(prev, { autoAlpha: 0, x: -16 * dir, duration: .18, ease: 'power2.in' })
+          .fromTo(items, { opacity: 0, x: 24 * dir }, { opacity: 1, x: 0, duration: .4, ease: 'expo.out', stagger: .04 }, .18);
+      },
+      // Signature: each region that changes steps through every WMO class in between as hard cuts (every frame
+      // shows true legend colours), .09s a step. Regions start by latitude along a front that moves with
+      // power2.inOut over .7s: from the south when the ice retreats, from the north when it advances.
+      ice(target) {
+        if (iceTl) { iceTl.kill(); for (const id in S.shown) { const u = layer(id, S.shown[id]); iceG[id].append(u); u.style.opacity = 1; settle(id, u); } }
+        const ids = Object.keys(target).filter(id => S.shown[id] !== target[id]);
+        if (!ids.length) return;
+        const delta = ids.reduce((s, id) => s + RAMP.indexOf(target[id]) - RAMP.indexOf(S.shown[id]), 0);
+        const ys = ids.map(id => REG[id].cy), y0 = Math.min(...ys), y1 = Math.max(...ys), span = Math.max(1, y1 - y0);
+        iceTl = gsap.timeline();
+        for (const id of ids) {
+          const at = SPREAD * inv((delta < 0 ? (y1 - REG[id].cy) : (REG[id].cy - y0)) / span);
+          rampPath(S.shown[id], target[id]).forEach((c, k) => {
+            const u = layer(id, c);
+            iceTl.call(() => { iceG[id].append(u); u.style.opacity = 1; settle(id, u); S.shown[id] = c; }, null, at + k * STEP);
+          });
+        }
+      },
+      route(oldG, newG) {
+        if (oldG) { gsap.to($$('.casing, .line', oldG), { drawSVG: '100% 100%', duration: .35, ease: 'power2.in' });
+          gsap.to($$('.blk, .dots', oldG), { opacity: 0, duration: .2, onComplete: () => oldG.remove() }); }
+        if (!newG) return;
+        const delay = oldG ? .25 : 0, D = 1.1;
+        gsap.fromTo($$('.casing, .line', newG), { drawSVG: '0%' }, { drawSVG: '100%', duration: D, ease: 'power2.inOut', delay });
+        // a stop pops when the line reaches it: invert power2.inOut for its share of the length
+        $$('.dot', newG).forEach(dot => gsap.fromTo(dot, { scale: 0 }, { scale: 1, transformOrigin: '50% 50%', duration: .25, ease: 'back.out(2)', delay: delay + D * inv(+dot.dataset.f) }));
+        gsap.fromTo($('.blk', newG), { opacity: 0 }, { opacity: 1, duration: .3, delay: delay + D });
+      },
+      blocked(g, build) {
+        const blk = $('.blk', g);
+        gsap.killTweensOf(blk);
+        gsap.to(blk, { opacity: 0, duration: .2, onComplete: () => { build(); gsap.to(blk, { opacity: 1, duration: .3, delay: .6 }); } });
+      },
+      roll(el, text) {
+        const cur = $('.t', el); if (cur.textContent === text) return;
+        gsap.killTweensOf(cur); $$('.old', el).forEach(o => o.remove());
+        const old = cur.cloneNode(true); old.classList.replace('t', 'old'); old.setAttribute('aria-hidden', 'true'); el.append(old);
+        cur.textContent = text;
+        gsap.fromTo(cur, { yPercent: 100 }, { yPercent: 0, duration: .3, ease: 'power3.inOut' });
+        gsap.to(old, { yPercent: -100, duration: .3, ease: 'power3.inOut', onComplete: () => old.remove() });
+      },
+      digit(box, val, dir) {
+        const cur = box.lastElementChild, nxt = cur.cloneNode(); nxt.textContent = val; box.append(nxt);
+        gsap.to(cur, { yPercent: -100 * dir, duration: .3, ease: 'power2.out', onComplete: () => cur.remove() });
+        gsap.fromTo(nxt, { yPercent: 100 * dir }, { yPercent: 0, duration: .3, ease: 'power2.out' });
+      },
+      pop(b) { if (b) gsap.fromTo(b, { scale: .6, opacity: 0 }, { scale: 1, opacity: 1, duration: .25, ease: 'back.out(2)', clearProps: 'transform,opacity' }); },
+      glyph(row) { const p = $('.g1', row); if (p && p.getAttribute('d')) gsap.fromTo(p, { drawSVG: '0%' }, { drawSVG: '100%', duration: .6, ease: 'power2.out' }); },
+      // TR1 in place: the text is swapped at once (screen readers and layout get it), the old lines are kept
+      // on top as a hidden copy that rolls out while the new lines roll in, and the box eases to its new height.
+      text(el, lines, delay = 0) {
+        sumTl && sumTl.progress(1).kill();
+        $$('.sum-old', el).forEach(o => o.remove()); gsap.set(el, { clearProps: 'height' });
+        const h0 = el.offsetHeight, old = document.createElement('div');
+        old.className = 'sum-old'; old.setAttribute('aria-hidden', 'true'); old.append(...el.childNodes);
+        fillLines(el, lines); el.append(old);
+        const h1 = el.offsetHeight;
+        gsap.set(el, { height: h0 });
+        sumTl = gsap.timeline({ delay, onComplete() { old.remove(); gsap.set(el, { clearProps: 'height' }); } })
+          .to(el, { height: h1, duration: .45, ease: 'power2.inOut' }, 0)
+          .to($$('.ln > span', old), { yPercent: -100, autoAlpha: 0, duration: .2, ease: 'power2.in' }, 0)
+          .fromTo($$(':scope > .ln > span', el), { yPercent: 100, autoAlpha: 0 }, { yPercent: 0, autoAlpha: 1, duration: .6, ease: 'expo.out', stagger: .05 }, .18);
+      },
+      heading(h) { headSplit && headSplit.revert(); headSplit = SplitText.create(h, { type: 'lines', mask: 'lines', linesClass: 'ln', onSplit: s => gsap.from(s.lines, { yPercent: 110, duration: 1, ease: 'expo.out', stagger: .08, delay: .15 }) }); },
+      scroll(target, off, dur) {
+        const dist = Math.abs(target.getBoundingClientRect().top + off);
+        lenis.scrollTo(target, { offset: off, duration: dur || Math.min(1.3, .65 + dist / 4000) });
+      }
+    };
+
+    /* load: H2 lines; the chart draws itself (graticule, coast, land fill, names, scale, legend) on open water,
+       then the April ice arrives from the north through the signature's own front */
+    const h2 = $('#enq-title');
+    const parts = { grat: $$('.grat line', map), coast: $$('.coast path', map), land: $('.land', map),
+      lbls: $$('.lbls text, .lbls circle, .grat text', map), scale: $$('.scale path, .scale line', map), scaleT: $$('.scale text', map), sw: $$('.key .sw') };
+    if (!introDone) {
+      gsap.set(h2, { autoAlpha: 0 });
+      gsap.set(parts.grat, { drawSVG: '50% 50%' }); gsap.set([...parts.coast, ...parts.scale], { drawSVG: 0 });
+      gsap.set(parts.land, { opacity: 0 }); gsap.set([...parts.lbls, ...parts.scaleT], { autoAlpha: 0 });
+      gsap.set(parts.sw, { scaleX: 0, transformOrigin: 'left center' });
+      FX0.ice(Object.fromEntries(Object.keys(iceG).map(id => [id, 'W'])));
+    }
+    const iceArrives = () => fx.ice(Object.fromEntries(Object.keys(iceG).map(id => [id, clsOf(id, S.month == null ? 1 : S.month)])));
+    const chartIntro = tl => tl
+      .to(parts.grat, { drawSVG: '0% 100%', duration: .8, ease: 'power2.out', stagger: .025 }, 0)
+      .to(parts.coast, { drawSVG: '100%', duration: 1, ease: 'power2.inOut' }, .1)
+      .to(parts.land, { opacity: 1, duration: .5, ease: 'power1.out' }, .6)
+      .fromTo(parts.lbls, { y: 4 }, { autoAlpha: 1, y: 0, duration: .4, ease: 'expo.out', stagger: .02 }, 1)
+      .to(parts.scale, { drawSVG: '100%', duration: .5, ease: 'power2.out' }, 1.1)
+      .to(parts.scaleT, { autoAlpha: 1, duration: .3 }, 1.3)
+      .to(parts.sw, { scaleX: 1, duration: .4, ease: 'expo.out', stagger: .04 }, 1.1)
+      .call(iceArrives, null, 1.4);
+    fontsReady.then(() => {
+      if (!alive) return;
+      ctx.add(() => {
+        SplitText.create(h2, { type: 'lines', mask: 'lines', linesClass: 'ln', autoSplit: true, onSplit: s => {
+          gsap.set(h2, { autoAlpha: 1 });
+          return introDone ? null : gsap.from(s.lines, { yPercent: 110, duration: 1, ease: 'expo.out', stagger: .08, delay: .1 });
+        } });
+        if (introDone) return;
+        if (wide) chartIntro(gsap.timeline({ delay: .2, onComplete: () => { introDone = true; } }));
+        else chartIntro(gsap.timeline({ scrollTrigger: { trigger: '#chart', start: 'top 85%', once: true }, onComplete: () => { introDone = true; } }));
+      });
+    });
+
+    /* direct band: heading lines rise, row rules draw in from the left */
+    SplitText.create('#direct-title', { type: 'lines', mask: 'lines', linesClass: 'ln', autoSplit: true,
+      onSplit: s => gsap.from(s.lines, { yPercent: 110, duration: 1, ease: 'expo.out', stagger: .08, scrollTrigger: { trigger: '#direct', start: 'clamp(top 85%)', once: true } }) });
+    gsap.from('.chan .rule', { scaleX: 0, duration: 1, ease: 'expo.out', stagger: .1, scrollTrigger: { trigger: '.chan', start: 'top 90%', once: true } });
+
+    /* route glyphs draw in as their rows come into view (SC16): each mark is the route's own shape, drawn the way the chart draws it */
+    const glyphs = $$('.opt .g0');
+    gsap.set(glyphs, { drawSVG: 0 });
+    ScrollTrigger.batch(glyphs, { start: 'top bottom', once: true,
+      onEnter: b => gsap.to(b, { drawSVG: '100%', duration: .9, ease: 'power2.inOut', stagger: .08, delay: introDone ? 0 : .5 }) });
+
+    return () => {
+      alive = false;
+      gsap.ticker.remove(tick); gsap.ticker.lagSmoothing(500, 33);
+      lenis.destroy(); headSplit && headSplit.revert(); afterLayout = () => {};
+      [swapTl, sumTl, iceTl].forEach(t => t && t.progress(1).kill());
+      fx = FX0;
+      // settle anything an event started: ice, routes, steps, labels
+      FX0.ice(Object.fromEntries(Object.keys(iceG).map(id => [id, clsOf(id, S.month == null ? 1 : S.month)])));
+      gsap.set($$('.route path, .route .dot, .route .blk, .key .sw, .badge, .roll .t, .digits > span, .step, #plan, #result'), { clearProps: 'all' });
+      $$('.roll .old').forEach(o => o.remove());
+      if (S.routeG) paintBlocked(S.routeG, S.month);
+      introDone = true;
+    };
+  });
+})();
+</script>
+</body>
+</html>
