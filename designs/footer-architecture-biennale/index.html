@@ -1,0 +1,1410 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Visit Below Grade, 6th Trieste Biennale of Architecture</title>
+<meta name="description" content="Footer of Below Grade, the 6th Trieste Biennale of Architecture: five venues in the old port ranked by floor level, a site plan with what lies underneath, ticket reservation and press contact.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;600;700;900&amp;display=swap" rel="stylesheet">
+<style>
+:root {
+  /* Palette: Karst stone. A section drawing pinned to the buff Aurisina limestone of the old port */
+  --stone: #BCAF93;       /* page ground: Aurisina limestone */
+  --below: #9C9075;       /* ground below grade: the wordmark's band and the plan's underground layer */
+  --sheet: #E2D3B2;       /* drawings on the wall: plan, detail panel, ticket stubs, dialog; text on ink and ochre */
+  --flysch: #2B2515;      /* ink, a brown flysch: text, wordmark above grade, datum, focus ring, Reserve (7.0:1 on stone, 10.3:1 on sheet, 4.8:1 on below) */
+  --marl: #443D2B;        /* secondary text, floor rules, captions (5.0:1 on stone, 7.3:1 on sheet) */
+  --ochre: #5B3A06;       /* clay as text and fills under text: Reserve fill, error mark, focused date line (4.7:1 on stone, 6.9:1 on sheet; sheet on it 6.9:1) */
+  --clay: #7E5410;        /* lighter clay, never text: the hatch below grade and the active footprint */
+  --groundwater: #15434E; /* the Timavo under the Karst: water-table line and the sea hatch only (3.4:1 on below, 7.3:1 on sheet) */
+  --tint: rgb(43 37 21 / .09);    /* ink over sheet: the stub fill on hover */
+  --backdrop: rgb(43 37 21 / .55);
+
+  /* Type: Titillium Web only; figures are tabular by default */
+  --font: "Titillium Web", "Segoe UI", system-ui, sans-serif;
+  --fs-s: .875rem;
+  --fs-b: 1.0625rem;
+  --fs-m: 1.328rem;
+  --fs-l: 1.66rem;
+  --fs-xl: clamp(2.25rem, 1.4rem + 3vw, 3.5rem);
+  --lh-body: 1.5;
+  --lh-lead: 1.4;
+  --lh-head: 1.05;
+  --w-body: 400;
+  --w-label: 600;
+  --w-head: 700;
+  --w-mark: 900;
+  --track-head: -.015em;
+
+  /* Space and grid */
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px;
+  --s6: 32px; --s7: 48px; --s8: 64px; --s9: 96px; --s10: 128px;
+  --max: 1360px;
+  --gap: 24px;
+  --gutter: clamp(16px, 4vw, 56px);
+  --band-gap: var(--s9);
+  --rule: 1px;
+  --datum: 2px;
+  --perf-y: 3.5rem;        /* stub perforation and notch height */
+
+  /* Motion: four eases (GSAP names in brackets) */
+  --d-fast: .25s;
+  --d: .4s;
+  --d-mid: .35s;          /* dimming, label swap, stepper release */
+  --d-wipe: .8s;          /* excavation wipe on the plan */
+  --d-press: .12s;
+  --ease-out: cubic-bezier(.16, 1, .3, 1);     /* expo.out: entrances, wipes, rolls */
+  --ease-sweep: cubic-bezier(.35, 0, 0, 1);    /* HV2 underline sweeps and HV4 fills */
+  --ease-draw: cubic-bezier(.45, 0, .55, 1);   /* power2.inOut: DrawSVG only (set in script) */
+  --ease-punch: cubic-bezier(.3, 2, .5, 1);    /* back.out(2.5): ticket punch only (set in script) */
+}
+
+/* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+html.lenis, html.lenis body { height: auto; }
+.lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+.lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+.lenis.lenis-smooth iframe { pointer-events: none; }
+
+/* Hidden start states exist only when the script runs; reduced motion shows them at once */
+html.js [data-rv] { opacity: 0; }
+html.js .rule { transform: scaleX(0); }
+html.js .rise, html.js .draw { visibility: hidden; }
+html.js .venue .key { transform: scale(0); }
+html.js .m-datum { transform: scaleX(0); }
+html.js .m-lab { opacity: 0; }
+html:not(.js) .mark-run { height: auto; min-height: 0; }
+html:not(.js) .end-nav { position: static; }
+@media (prefers-reduced-motion: no-preference) { html.js .plan-top:not(.is-drawn) .ov { opacity: 0; transition: none; } }
+@media (prefers-reduced-motion: reduce) {
+  html.js [data-rv] { opacity: 1; }
+  html.js .rule { transform: none; }
+  html.js .rise, html.js .draw { visibility: visible; }
+  html.js .venue .key, html.js .m-datum { transform: none; }
+  html.js .m-lab { opacity: 1; }
+  html .mark-run { height: auto; min-height: 0; } /* no scroll run: the name sits at rest */
+  html .end-nav { position: static; }
+  *, ::before, ::after { transition-duration: 0s !important; }
+}
+
+*, ::before, ::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--stone);
+  color: var(--flysch);
+  font: var(--w-body) var(--fs-b) / var(--lh-body) var(--font);
+  -webkit-font-smoothing: antialiased;
+}
+h2, h3, h4, p, ul, ol, dl, dd, figure { margin: 0; }
+ul { padding: 0; list-style: none; }
+button, input, output { font: inherit; color: inherit; }
+button { cursor: pointer; background: none; border: 0; padding: 0; }
+:focus-visible { outline: 2px solid var(--flysch); outline-offset: 3px; }
+[tabindex="-1"]:focus { outline: none; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* HV2 on links and text buttons: a 1px rule at rest, so a link always looks like one; on hover or keyboard
+   focus a 2px rule sweeps in from the left and leaves to the right. --pb extends the tap area below the rule. */
+.ln {
+  position: relative;
+  display: inline-block;
+  padding: var(--pb, 0px) 0 calc(var(--pb, 0px) + 3px);
+  color: inherit;
+  line-height: 1.3;
+  text-decoration: none;
+}
+.ln::before, .ln::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0;
+  bottom: var(--pb, 0px);
+  height: var(--rule);
+  background: currentColor;
+}
+.ln::after {
+  height: 2px;
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform var(--d) var(--ease-sweep);
+}
+.ln:focus-visible::after { transform: scaleX(1); transform-origin: left; }
+@media (hover: hover) { .ln:hover::after { transform: scaleX(1); transform-origin: left; } }
+
+/* HV4 on buttons: a fill sweeps in from the edge the pointer entered and leaves through the edge it left
+   (--from is set on pointerenter and pointerleave for fine pointers; keyboard focus fills from the left) */
+.fill { position: relative; isolation: isolate; }
+.fill::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--fill);
+  transform: scaleX(0);
+  transform-origin: var(--from, left);
+  transition: transform var(--d-fast) var(--ease-sweep);
+}
+.fill:focus-visible::before, .fill:active::before { transform: scaleX(1); transition-duration: var(--d); }
+@media (hover: hover) { .fill:hover::before { transform: scaleX(1); transition-duration: var(--d); } }
+.press-btn { transition: transform var(--d) var(--ease-out); }
+.press-btn:active { transform: scale(.97); transition-duration: var(--d-press); }
+
+/* HV7 sibling dimming, in the venue list and the bottom index only */
+.dl { transition: opacity var(--d-mid) var(--ease-out); }
+@media (hover: hover) {
+  .dim:has(.dl:hover) .dl:not(:hover) { opacity: .45; }
+}
+.vlist.has-hot .venue:not(.is-hot) { opacity: .45; }
+/* keyboard focus does not dim: dimmed marl would drop below 4.5:1, and focus is a sustained state */
+
+/* ---------- Frame ---------- */
+.foot { padding-top: var(--band-gap); }
+.wrap {
+  max-width: calc(var(--max) + 2 * var(--gutter));
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+.grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gap); }
+.grid > * { grid-column: 1 / -1; }
+.band { margin-top: var(--band-gap); }
+
+h2 {
+  font-size: var(--fs-xl);
+  font-weight: var(--w-head);
+  line-height: var(--lh-head);
+  letter-spacing: var(--track-head);
+}
+h3 {
+  font-size: var(--fs-l);
+  font-weight: var(--w-head);
+  line-height: var(--lh-head);
+  letter-spacing: var(--track-head);
+  margin-bottom: var(--s5);
+}
+.lead { font-size: var(--fs-m); line-height: var(--lh-lead); max-width: 34em; }
+.small { font-size: var(--fs-s); color: var(--marl); }
+.num { font-variant-numeric: tabular-nums; }
+
+/* ---------- Venues: rows ranked by floor level ---------- */
+.vlist { position: relative; border-top: var(--rule) solid transparent; }
+.venue {
+  position: relative;
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr) auto;
+  grid-template-areas: "key name lvl" ". what what";
+  column-gap: var(--s3);
+  align-items: baseline;
+  width: 100%;
+  padding: var(--s3) 0 var(--s3);
+  text-align: left;
+}
+.venue:focus-visible { outline-offset: -3px; }
+.key {
+  grid-area: key;
+  position: relative;
+  align-self: center;
+  display: grid;
+  place-items: center;
+  width: 1.875rem;
+  height: 1.875rem;
+  border: var(--rule) solid var(--flysch);
+  border-radius: 50%;
+  font-size: var(--fs-s);
+  font-weight: var(--w-head);
+  line-height: 1;
+}
+.key::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: 50%;
+  background: var(--sheet);
+  transform: scale(0);
+  transition: transform var(--d-fast) var(--ease-out);
+}
+.key > span { position: relative; }
+.venue:focus-visible .key::before, .venue.is-hot .key::before { transform: scale(1); }
+@media (hover: hover) { .venue:hover .key::before { transform: scale(1); } }
+.venue[aria-selected="true"] .key::before { background: var(--flysch); transform: scale(1); }
+.venue[aria-selected="true"] .key > span { color: var(--sheet); }
+.nm { grid-area: name; display: block; overflow: clip; padding-bottom: .1em; margin-bottom: -.1em; }
+.nm-i { display: block; font-size: var(--fs-m); font-weight: var(--w-label); line-height: 1.25; }
+.what { grid-area: what; color: var(--marl); }
+.lvl {
+  grid-area: lvl;
+  font-weight: var(--w-label);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+/* the level mark: a small triangle pointing at the floor line */
+.lvl::before {
+  content: "";
+  display: inline-block;
+  width: .5em;
+  height: .45em;
+  margin-right: .35em;
+  background: currentColor;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+.vrule {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: var(--rule);
+  background: var(--marl);
+  transform-origin: left;
+}
+.datum { position: relative; height: 2rem; margin-top: calc(-1 * var(--datum) / 2); }
+.datum-rule {
+  position: absolute;
+  left: 0; right: 0; top: 0;
+  height: var(--datum);
+  background: var(--flysch);
+  transform-origin: left;
+}
+.datum-lab {
+  position: absolute;
+  left: calc(2.25rem + var(--s3));
+  top: var(--s1);
+  font-size: var(--fs-s);
+  font-weight: var(--w-label);
+  font-variant-numeric: tabular-nums;
+}
+@media (min-width: 600px) {
+  .venue {
+    grid-template-columns: 2.25rem minmax(0, 13rem) minmax(0, 1fr) auto;
+    grid-template-areas: "key name what lvl";
+    padding: var(--s4) 0;
+  }
+}
+
+/* Detail panel: five tab panels in one cell, so the height never changes (CD9) */
+.vpanels {
+  display: grid;
+  margin-top: var(--s5);
+  background: var(--sheet);
+}
+.vpanel {
+  grid-area: 1 / 1;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  padding: var(--s5);
+  visibility: hidden;
+}
+.vpanel.is-on { visibility: visible; }
+.vpanel h4 {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s4);
+  font-size: var(--fs-m);
+  font-weight: var(--w-label);
+  line-height: 1.25;
+  margin: 0 0 var(--s2);
+}
+.vpanel h4 .num { font-weight: var(--w-label); }
+.vpanel p { max-width: 38em; }
+.vpanel .small { align-self: end; max-width: none; margin-top: var(--s4); padding-top: var(--s3); border-top: var(--rule) solid var(--marl); }
+
+/* ---------- Plan ---------- */
+.plan {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background: var(--sheet);
+  font-family: var(--font);
+}
+.plan svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.p-ground { fill: var(--sheet); }
+.p-below { fill: var(--below); }
+.sea-line { stroke: var(--groundwater); stroke-width: .9; }
+.p-thin { fill: none; stroke: var(--marl); stroke-width: .75; }
+.rail path { fill: none; stroke: var(--marl); stroke-width: .9; }
+.rail .sleepers { stroke-width: 9; stroke-dasharray: 1.1 5.5; }
+.plan-below {
+  clip-path: inset(0 0 100% 0);
+  transition: clip-path var(--d-wipe) var(--ease-out);
+}
+.plan.is-below .plan-below { clip-path: inset(0); }
+.quay-wall { fill: none; stroke: var(--marl); stroke-width: 5; }
+.piles { fill: url(#piles); }
+.piles-dot { fill: var(--flysch); }
+.vault { fill: url(#vault); stroke: var(--flysch); stroke-width: 2.5; }
+.rib { stroke: var(--marl); stroke-width: .8; }
+.col { fill: var(--flysch); }
+.t-wall { fill: none; stroke: var(--flysch); stroke-width: 10; }
+.t-in { fill: none; stroke: var(--below); stroke-width: 7; }
+.t-track { fill: none; stroke: var(--marl); stroke-width: .9; stroke-dasharray: 4 3; }
+.p-lab { font-size: 15px; font-weight: var(--w-label); fill: var(--flysch); }
+.quay { fill: none; stroke: var(--flysch); stroke-width: 1.5; }
+.site { cursor: pointer; }
+.site .ov { fill: var(--clay); opacity: 0; transition: opacity var(--d-fast) var(--ease-out); }
+.site .fp { fill: none; stroke: var(--flysch); stroke-width: 1.5; }
+.site.is-hot .ov, .site.is-sel .ov { opacity: .35; }
+.pkey circle { fill: var(--sheet); stroke: var(--flysch); stroke-width: 1; }
+.pkey text { font-size: 14px; font-weight: var(--w-head); fill: var(--flysch); text-anchor: middle; dominant-baseline: central; }
+.site.is-hot .pkey circle { stroke-width: 2.5; }
+.site.is-sel .pkey circle { fill: var(--flysch); }
+.site.is-sel .pkey text { fill: var(--sheet); }
+
+.plan-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--s3) var(--s5);
+  margin-top: var(--s3);
+}
+.plan-foot figcaption { flex: 1 1 18rem; max-width: 30em; }
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: 44px;
+  padding: var(--s2) var(--s4);
+  border: var(--rule) solid var(--flysch);
+  font-weight: var(--w-label);
+  --fill: var(--sheet);
+}
+.swap { display: inline-grid; overflow: clip; }
+.swap > span { grid-area: 1 / 1; white-space: nowrap; transition: transform var(--d-mid) var(--ease-out); }
+.swap > span + span { transform: translateY(110%); }
+.toggle.is-on .swap > span:first-child { transform: translateY(-110%); }
+.toggle.is-on .swap > span + span { transform: none; }
+
+/* ---------- Tickets ---------- */
+.book { display: grid; }
+.book > * { grid-area: 1 / 1; }
+.book.is-done form, .book:not(.is-done) .confirm { visibility: hidden; }
+.stubs {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+  gap: var(--s3);
+}
+.stub {
+  position: relative;
+  display: grid;
+  cursor: pointer;
+  transition: transform var(--d) var(--ease-out);
+}
+.stub:active { transform: scale(.98); transition-duration: var(--d-press); }
+.stub:has(input:focus-visible) { outline: 2px solid var(--flysch); outline-offset: 3px; }
+.stub input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+.stub-body {
+  --n: 7px;
+  position: relative;
+  display: grid;
+  grid-template-rows: var(--perf-y) auto 1fr;
+  background: var(--sheet);
+  -webkit-mask:
+    radial-gradient(circle var(--n) at 0 var(--perf-y), #0000 96%, #000),
+    radial-gradient(circle var(--n) at 100% var(--perf-y), #0000 96%, #000);
+  -webkit-mask-composite: source-in;
+  mask:
+    radial-gradient(circle var(--n) at 0 var(--perf-y), #0000 96%, #000),
+    radial-gradient(circle var(--n) at 100% var(--perf-y), #0000 96%, #000);
+  mask-composite: intersect;
+  isolation: isolate;
+}
+/* HV4 inside the notched stub: an ink tint sweeps in from the entry edge */
+.stub-body::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--tint);
+  transform: scaleX(0);
+  transform-origin: var(--from, left);
+  transition: transform var(--d-fast) var(--ease-sweep);
+}
+.stub input:focus-visible + .stub-body::before { transform: scaleX(1); transition-duration: var(--d); }
+@media (hover: hover) { .stub:hover .stub-body::before { transform: scaleX(1); transition-duration: var(--d); } }
+.stub-top {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--s2);
+  padding: 0 var(--s4) var(--s2);
+}
+.stub-name { font-weight: var(--w-label); line-height: 1.2; }
+.stub-price { font-size: var(--fs-m); font-weight: var(--w-head); line-height: 1.1; font-variant-numeric: tabular-nums; }
+.perf {
+  display: block;
+  margin: 0 calc(var(--n) + var(--s1));
+  border-top: 1.5px dashed var(--marl);
+  transform-origin: left;
+}
+.stub-desc { padding: var(--s2) var(--s4) var(--s4); font-size: var(--fs-s); color: var(--marl); line-height: 1.4; }
+.punch {
+  position: absolute;
+  top: calc(var(--perf-y) - 6px);
+  left: calc(var(--n) + var(--s2));
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--stone);
+  box-shadow: inset 0 0 0 1px var(--marl);
+  transform: scale(0);
+}
+.stub input:checked + .stub-body { box-shadow: inset 0 0 0 2px var(--flysch); }
+.stub input:checked + .stub-body .punch { transform: scale(1); }
+.note { margin-top: var(--s3); }
+
+.fields {
+  display: grid;
+  grid-template-columns: minmax(0, 20rem) auto;
+  justify-content: start;
+  gap: var(--s5) var(--s8);
+  margin-top: var(--s6);
+}
+.lab { display: block; font-weight: var(--w-label); margin-bottom: var(--s1); }
+.line { position: relative; display: block; }
+.line::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: var(--rule);
+  background: var(--flysch);
+  transform-origin: bottom;
+  transition: transform var(--d-fast) var(--ease-out);
+}
+@media (hover: hover) { .line:hover::after { transform: scaleY(2); } }
+.line:focus-within::after { background: var(--ochre); transform: scaleY(2); }
+.line input {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: var(--s2) 0;
+  border: 0;
+  background: transparent;
+  font-variant-numeric: tabular-nums;
+}
+.line input:focus-visible { outline: none; }
+.line:has(input:focus-visible) { outline: 2px solid var(--flysch); outline-offset: 3px; }
+.msg { display: grid; margin-top: var(--s2); min-height: 3em; font-size: var(--fs-s); line-height: 1.5; }
+.msg > p { grid-area: 1 / 1; }
+.help { color: var(--marl); }
+.err {
+  font-weight: var(--w-label);
+  clip-path: inset(0 0 100% 0);
+  transition: clip-path var(--d-fast) var(--ease-out);
+}
+.field.is-invalid .help { visibility: hidden; }
+.field.is-invalid .err { clip-path: inset(0); }
+.field.is-invalid .line::after { background: var(--flysch); transform: scaleY(2); }
+.err::before { content: ""; display: inline-block; width: .55em; height: .55em; margin-right: .4em; background: var(--ochre); transform: rotate(45deg); }
+
+.stepper { display: flex; align-items: center; gap: var(--s2); min-height: 44px; }
+.step {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 44px; height: 44px;
+  border: var(--rule) solid var(--flysch);
+  border-radius: 50%;
+  font-size: var(--fs-m);
+  font-weight: var(--w-label);
+  line-height: 1;
+  transition: transform var(--d-mid) var(--ease-out);
+}
+.step::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: var(--sheet);
+  transform: scale(0);
+  transition: transform var(--d-fast) var(--ease-out);
+}
+.step > span { position: relative; }
+.step:active { transform: scale(.92); transition-duration: var(--d-press); }
+.step:focus-visible:not([aria-disabled="true"])::before { transform: scale(1); }
+@media (hover: hover) { .step:hover:not([aria-disabled="true"])::before { transform: scale(1); } }
+.step[aria-disabled="true"] { opacity: .45; cursor: default; }
+.step[aria-disabled="true"]:active { transform: none; }
+.count { display: grid; place-items: center; min-width: 2.25em; font-size: var(--fs-m); font-weight: var(--w-head); }
+.roll { display: inline-grid; overflow: clip; }
+.roll > span { grid-area: 1 / 1; white-space: nowrap; }
+
+.btn {
+  display: inline-grid;
+  place-items: center;
+  min-height: 52px;
+  min-width: min(100%, 21rem);
+  margin-top: var(--s5);
+  padding: var(--s3) var(--s5);
+  background: var(--flysch);
+  color: var(--sheet);
+  font-weight: var(--w-label);
+  font-variant-numeric: tabular-nums;
+  --fill: var(--ochre);
+}
+
+.confirm h4 { font-size: var(--fs-m); font-weight: var(--w-label); line-height: 1.3; max-width: 26em; }
+.ref-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s2) var(--s4); margin-top: var(--s5); }
+.ref { font-size: var(--fs-l); font-weight: var(--w-head); font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+.confirm .pay { margin-top: var(--s4); max-width: 34em; }
+.confirm .ln-btn { margin-top: var(--s5); }
+.ln-btn { --pb: 11px; font-weight: var(--w-label); }
+button.ln { text-align: left; }
+.copy { display: inline-flex; align-items: baseline; gap: var(--s3); white-space: nowrap; } /* button and its slot wrap together */
+.copied { display: inline-block; min-width: 4em; font-size: var(--fs-s); font-weight: var(--w-label); visibility: hidden; }
+
+/* ---------- Press ---------- */
+.press p + p { margin-top: var(--s3); }
+.copyline { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s1) var(--s4); }
+.press .ln-btn { --pb: var(--s2); }
+
+/* ---------- Index and imprint ---------- */
+.index ul { display: flex; flex-wrap: wrap; gap: var(--s3) var(--s6); }
+.index .ln { font-weight: var(--w-label); }
+.imprint { margin-top: var(--s5); }
+/* ---------- The wordmark: a section cut through street level (TX11) ---------- */
+.end {
+  --u: calc(112vw / 1120);              /* one viewBox unit; the SVG is 112vw wide */
+  --dat: 125;                            /* datum height in units (the script sets it for the two-line phone mark) */
+  --band-u: 37;                          /* ground shown below grade in units, kept short of the letters' feet */
+  --above: calc(var(--u) * var(--dat));
+  --band: calc(var(--u) * var(--band-u));
+  --nav-h: 6rem;                         /* the index and imprint block (measured by the script) */
+}
+/* Sticky pushes the index and imprint down until they sit 48px above the word's cap line, so the last
+   frame reads content, links, then the name; any empty stone sits above the links, not between. */
+.end-nav { position: sticky; top: calc(100svh - var(--above) - var(--band) - var(--nav-h) - var(--s7)); }
+.mark-run {
+  height: calc(var(--above) + var(--band) + 24svh);
+  min-height: 50svh;                     /* the scroll the rise runs over, ending exactly at the page end */
+  margin-top: var(--s7);
+}
+.mark {
+  position: sticky;                      /* held at the viewport bottom, datum in view, while it rises */
+  top: calc(100svh - var(--above) - var(--band));
+  height: calc(var(--above) + var(--band));
+  overflow: clip;
+}
+.mark-svg {
+  position: absolute;
+  left: -4vw;
+  top: 0;
+  width: 112vw;
+  height: auto;
+  z-index: 1;
+  overflow: visible;
+}
+.mark use { font-family: var(--font); font-weight: var(--w-mark); }
+.mark .solid { fill: var(--flysch); }
+.mark .cut { fill: url(#hatch); stroke: var(--flysch); }
+.hatch-line { stroke: var(--clay); }
+.ground { position: absolute; left: 0; right: 0; top: var(--above); bottom: 0; background: var(--below); }
+.m-datum, .m-water { position: absolute; left: 0; right: 0; z-index: 2; }
+.m-datum { top: calc(var(--above) - 1px); height: var(--datum); background: var(--flysch); transform-origin: left; }
+.m-water { top: calc(var(--above) + var(--band) * .68); border-top: 2px dashed var(--groundwater); }
+.m-lab {
+  position: absolute;
+  z-index: 3;
+  padding: 0 var(--s2);
+  font-size: var(--fs-s);
+  font-weight: var(--w-label);
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.m-lab {
+  text-shadow: 0 0 1px var(--below), 1.5px 0 0 var(--below), -1.5px 0 0 var(--below), 0 1.5px 0 var(--below), 0 -1.5px 0 var(--below),
+    1px 1px 0 var(--below), -1px 1px 0 var(--below), 1px -1px 0 var(--below), -1px -1px 0 var(--below), 0 0 3px var(--below);
+}
+.m-lab-datum { left: calc(var(--gutter) - var(--s2)); top: calc(var(--above) + 2px); }
+.m-lab-water { right: calc(var(--gutter) - var(--s2)); top: calc(var(--above) + var(--band) * .68 + 1px); transform: translateY(-50%); }
+.m-lab-water svg { width: .7em; height: .6em; margin-right: .3em; vertical-align: 0; fill: var(--groundwater); stroke: var(--below); stroke-width: 1.5; paint-order: stroke; overflow: visible; }
+
+/* ---------- Access dialog (CD7) ---------- */
+dialog {
+  width: min(36rem, calc(100% - 2 * var(--gutter)));
+  max-height: calc(100dvh - 2 * var(--s5));
+  padding: 0;
+  border: 0;
+  background: var(--sheet);
+  color: var(--flysch);
+}
+dialog::backdrop { background: var(--backdrop); }
+html:has(dialog[open]) { overflow: clip; } /* no scroll behind the modal, with or without Lenis */
+.dlg { padding: var(--s6); overflow: auto; max-height: inherit; }
+.dlg h2 { font-size: var(--fs-l); margin-bottom: var(--s5); }
+.dlg li { padding: var(--s3) 0; border-top: var(--rule) solid var(--marl); }
+.dlg li b { display: block; font-weight: var(--w-label); }
+.dlg .after { margin-top: var(--s4); padding-top: var(--s4); border-top: var(--rule) solid var(--marl); }
+.dlg .ln-btn { margin-top: var(--s4); }
+
+@media (pointer: coarse) { .index .ln, .press .ln { --pb: 9px; } } /* 44px taps, same rule */
+
+/* ---------- Layout ---------- */
+@media (min-width: 992px) {
+  .intro h2 { grid-column: 1 / span 6; }
+  .intro .lead { grid-column: 8 / -1; align-self: end; }
+  .venues { grid-column: 1 / span 7; }
+  .plan-fig { grid-column: 8 / -1; margin-top: calc(var(--fs-l) * 1.05 + var(--s5)); }
+  .tickets { grid-column: 1 / span 7; }
+  .press { grid-column: 9 / -1; }
+  .intro, .venues-band, .lower { row-gap: 0; }
+}
+@media (max-width: 991px) {
+  .intro .lead { margin-top: var(--s4); }
+  .plan-fig { margin-top: var(--s6); }
+  .press { margin-top: var(--band-gap); }
+}
+@media (max-width: 599px) {
+  :root { --gap: 16px; --band-gap: var(--s8); }
+  /* two lines to raise, so a longer run: 'Below' surfaces first, then 'Grade' crosses the datum */
+  .mark-run { height: calc(var(--above) + var(--band) + 64svh); min-height: 50svh; }
+  .fields { grid-template-columns: 1fr; }
+  .btn { width: 100%; }
+  dialog { width: 100%; max-width: none; margin: auto 0 0; max-height: 85dvh; }
+  .dlg { padding: var(--s5) var(--gutter) var(--s6); }
+}
+</style>
+</head>
+<body>
+<footer id="visit" class="foot" tabindex="-1" aria-labelledby="visit-h">
+  <div class="wrap">
+    <div class="intro grid">
+      <h2 id="visit-h" class="rise">Visit Below Grade</h2>
+      <p class="lead" data-rv>22 May to 21 November 2027 in Trieste’s old port. Five venues, two of them underground. One ticket opens all five.</p>
+    </div>
+
+    <div class="venues-band grid band">
+      <section class="venues" aria-labelledby="venues">
+        <h3 id="venues" tabindex="-1">Venues</h3>
+        <div class="vlist dim" role="tablist" aria-orientation="vertical" aria-labelledby="venues">
+          <button type="button" class="venue dl" role="tab" id="tab-a" aria-selected="true" aria-controls="panel-a" tabindex="0" data-v="a">
+            <span class="key" aria-hidden="true"><span>A</span></span>
+            <span class="nm"><span class="nm-i rise">Molo IV shed</span></span>
+            <span class="what" data-rv>Talks and the book fair</span>
+            <span class="lvl" data-rv><span class="sr">floor level </span>+1.80</span>
+            <span class="rule vrule" aria-hidden="true"></span>
+          </button>
+          <button type="button" class="venue dl" role="tab" id="tab-b" aria-selected="false" aria-controls="panel-b" tabindex="-1" data-v="b">
+            <span class="key" aria-hidden="true"><span>B</span></span>
+            <span class="nm"><span class="nm-i rise">Magazzino 4</span></span>
+            <span class="what" data-rv>Main exhibition</span>
+            <span class="lvl" data-rv><span class="sr">floor level </span>+0.60</span>
+            <span class="rule vrule" aria-hidden="true"></span>
+          </button>
+          <button type="button" class="venue dl" role="tab" id="tab-c" aria-selected="false" aria-controls="panel-c" tabindex="-1" data-v="c">
+            <span class="key" aria-hidden="true"><span>C</span></span>
+            <span class="nm"><span class="nm-i rise">Old Customs Hall</span></span>
+            <span class="what" data-rv>Tickets, cloakroom, press office</span>
+            <span class="lvl" data-rv><span class="sr">floor level </span>±0.00</span>
+          </button>
+          <div class="datum" role="none" aria-hidden="true">
+            <span class="rule datum-rule"></span>
+            <span class="datum-lab" data-rv>±0.00 street level</span>
+          </div>
+          <button type="button" class="venue dl" role="tab" id="tab-d" aria-selected="false" aria-controls="panel-d" tabindex="-1" data-v="d">
+            <span class="key" aria-hidden="true"><span>D</span></span>
+            <span class="nm"><span class="nm-i rise">Salt Cistern</span></span>
+            <span class="what" data-rv>Three installations</span>
+            <span class="lvl" data-rv><span class="sr">floor level </span>−6.40</span>
+            <span class="rule vrule" aria-hidden="true"></span>
+          </button>
+          <button type="button" class="venue dl" role="tab" id="tab-e" aria-selected="false" aria-controls="panel-e" tabindex="-1" data-v="e">
+            <span class="key" aria-hidden="true"><span>E</span></span>
+            <span class="nm"><span class="nm-i rise">Rail tunnel 1912</span></span>
+            <span class="what" data-rv>Groundwork, a sound walk</span>
+            <span class="lvl" data-rv><span class="sr">floor level </span>−14.20</span>
+            <span class="rule vrule" aria-hidden="true"></span>
+          </button>
+        </div>
+
+        <div class="vpanels" data-rv>
+          <div class="vpanel is-on" role="tabpanel" id="panel-a" aria-labelledby="tab-a" tabindex="0">
+            <h4>Molo IV shed <span class="num">+1.80</span></h4>
+            <p>Talks every Thursday and Saturday at 18:00; the book fair fills the east bay.</p>
+            <p class="small">Open Thursday to Sunday, 10:00 to 20:00.</p>
+          </div>
+          <div class="vpanel" role="tabpanel" id="panel-b" aria-labelledby="tab-b" tabindex="0">
+            <h4>Magazzino 4 <span class="num">+0.60</span></h4>
+            <p>Thirty-one practices on foundations, soil and repair, on three floors of an 1891 bonded warehouse.</p>
+            <p class="small">Open Tuesday to Sunday, 10:00 to 19:00. Last entry 18:15.</p>
+          </div>
+          <div class="vpanel" role="tabpanel" id="panel-c" aria-labelledby="tab-c" tabindex="0">
+            <h4>Old Customs Hall <span class="num">±0.00</span></h4>
+            <p>Visitor centre, ticket desk, cloakroom and the press office.</p>
+            <p class="small">Open Tuesday to Sunday, 9:30 to 19:30.</p>
+          </div>
+          <div class="vpanel" role="tabpanel" id="panel-d" aria-labelledby="tab-d" tabindex="0">
+            <h4>Salt Cistern <span class="num">−6.40</span></h4>
+            <p>Three installations in the vaulted reservoir that held the port’s fresh water until 1958.</p>
+            <p class="small">Timed entry every 20 minutes, Tuesday to Sunday, 10:00 to 18:00. It is 14 °C inside; bring a layer.</p>
+          </div>
+          <div class="vpanel" role="tabpanel" id="panel-e" aria-labelledby="tab-e" tabindex="0">
+            <h4>Rail tunnel 1912 <span class="num">−14.20</span></h4>
+            <p>A 400 m sound walk through the disused harbour rail tunnel.</p>
+            <p class="small">Timed entry every 15 minutes, Friday to Sunday, 11:00 to 18:00. 13 °C and damp underfoot; wear sturdy shoes.</p>
+          </div>
+        </div>
+      </section>
+
+      <figure class="plan-fig">
+        <div class="plan" role="img" aria-labelledby="plan-cap">
+          <svg class="plan-street" data-rv viewBox="0 0 400 300" aria-hidden="true" focusable="false">
+            <defs>
+              <pattern id="sea" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line class="sea-line" x1="0" y1="0" x2="0" y2="6"/></pattern>
+            </defs>
+            <rect class="p-ground" width="400" height="300"/>
+            <path d="M0 0H118V64H24V118H118V300H0Z" fill="url(#sea)"/>
+            <g class="p-thin">
+              <rect x="276" y="30" width="92" height="86"/>
+              <rect x="140" y="256" width="70" height="30"/>
+              <rect x="232" y="268" width="74" height="22"/>
+            </g>
+            <g class="rail">
+              <path d="M118 146H332M118 152H332"/>
+              <path class="sleepers" d="M120 149H330"/>
+            </g>
+          </svg>
+          <svg class="plan-below" id="plan-below" viewBox="0 0 400 300" aria-hidden="true" focusable="false">
+            <defs>
+              <pattern id="piles" x="148.2" y="38.2" width="12.5" height="11" patternUnits="userSpaceOnUse"><circle class="piles-dot" cx="1.8" cy="1.8" r="1.8"/></pattern>
+              <pattern id="vault" x="232" y="176" width="18.5" height="18.5" patternUnits="userSpaceOnUse">
+                <path class="rib" d="M0 0L18.5 18.5M18.5 0L0 18.5"/>
+                <path class="col" d="M-2 -2h4v4h-4zM16.5 -2h4v4h-4zM-2 16.5h4v4h-4zM16.5 16.5h4v4h-4z"/>
+              </pattern>
+            </defs>
+            <rect class="p-below" width="400" height="300"/>
+            <path d="M0 0H118V64H24V118H118V300H0Z" fill="url(#sea)"/>
+            <path class="quay-wall" d="M120.5 0V61.5H21.5V120.5H120.5V300"/>
+            <rect class="piles" x="140" y="30" width="120" height="86"/>
+            <rect class="vault" x="232" y="176" width="74" height="74"/>
+            <path class="t-wall" d="M342 149H377C390 149 394 158 392 172L381 300"/>
+            <path class="t-in" d="M342 149H377C390 149 394 158 392 172L381 300"/>
+            <path class="t-track" d="M342 149H377C390 149 394 158 392 172L381 300"/>
+            <text class="p-lab" x="266" y="78">Piles</text>
+            <text class="p-lab" x="232" y="268">Cistern vaults</text>
+            <text class="p-lab" x="372" y="292" text-anchor="end">Rail tunnel</text>
+          </svg>
+          <svg class="plan-top" viewBox="0 0 400 300" aria-hidden="true" focusable="false">
+            <path class="quay draw" d="M118 0V64H24V118H118V300"/>
+            <g class="site is-sel" data-v="a">
+              <rect class="ov" x="34" y="74" width="76" height="34"/>
+              <rect class="fp draw" x="34" y="74" width="76" height="34"/>
+              <g class="pkey" data-rv><circle cx="72" cy="91" r="11"/><text x="72" y="91">A</text></g>
+            </g>
+            <g class="site" data-v="b">
+              <rect class="ov" x="140" y="30" width="120" height="86"/>
+              <rect class="fp draw" x="140" y="30" width="120" height="86"/>
+              <g class="pkey" data-rv><circle cx="200" cy="73" r="11"/><text x="200" y="73">B</text></g>
+            </g>
+            <g class="site" data-v="c">
+              <rect class="ov" x="140" y="176" width="70" height="60"/>
+              <rect class="fp draw" x="140" y="176" width="70" height="60"/>
+              <g class="pkey" data-rv><circle cx="175" cy="206" r="11"/><text x="175" y="206">C</text></g>
+            </g>
+            <g class="site" data-v="d">
+              <rect class="ov" x="232" y="176" width="74" height="74"/>
+              <rect class="fp draw" x="232" y="176" width="74" height="74"/>
+              <g class="pkey" data-rv><circle cx="269" cy="213" r="11"/><text x="269" y="213">D</text></g>
+            </g>
+            <g class="site" data-v="e">
+              <rect class="ov" x="332" y="136" width="34" height="26"/>
+              <rect class="fp draw" x="332" y="136" width="34" height="26"/>
+              <g class="pkey" data-rv><circle cx="349" cy="149" r="11"/><text x="349" y="149">E</text></g>
+            </g>
+          </svg>
+        </div>
+        <div class="plan-foot" data-rv>
+          <figcaption id="plan-cap" class="small">Site plan of the old port with the five venues. Below grade: the rail tunnel, the cistern vaults and the piles under Magazzino 4.</figcaption>
+          <button type="button" class="toggle fill press-btn" id="dig" aria-controls="plan-below">
+            <span class="swap"><span>Show what’s below grade</span><span aria-hidden="true">Back to street level</span></span>
+          </button>
+        </div>
+      </figure>
+    </div>
+
+    <div class="lower grid band">
+      <section class="tickets" aria-labelledby="tickets">
+        <h3 id="tickets" tabindex="-1">Tickets</h3>
+        <div class="book">
+          <form id="reserve" novalidate aria-label="Reserve tickets">
+            <fieldset class="stubs">
+              <legend class="sr">Ticket type</legend>
+              <label class="stub">
+                <input type="radio" name="type" value="day" checked>
+                <span class="stub-body">
+                  <span class="stub-top"><span class="stub-name">Day ticket</span><span class="stub-price">€16</span></span>
+                  <span class="rule perf" aria-hidden="true"></span>
+                  <span class="stub-desc">All five venues, one day</span>
+                  <span class="punch" aria-hidden="true"></span>
+                </span>
+              </label>
+              <label class="stub">
+                <input type="radio" name="type" value="two">
+                <span class="stub-body">
+                  <span class="stub-top"><span class="stub-name">Two days</span><span class="stub-price">€24</span></span>
+                  <span class="rule perf" aria-hidden="true"></span>
+                  <span class="stub-desc">Two days in a row</span>
+                  <span class="punch" aria-hidden="true"></span>
+                </span>
+              </label>
+              <label class="stub">
+                <input type="radio" name="type" value="season">
+                <span class="stub-body">
+                  <span class="stub-top"><span class="stub-name">Season pass</span><span class="stub-price">€38</span></span>
+                  <span class="rule perf" aria-hidden="true"></span>
+                  <span class="stub-desc">Unlimited visits until 21 November</span>
+                  <span class="punch" aria-hidden="true"></span>
+                </span>
+              </label>
+              <label class="stub">
+                <input type="radio" name="type" value="reduced">
+                <span class="stub-body">
+                  <span class="stub-top"><span class="stub-name">Reduced</span><span class="stub-price">€9</span></span>
+                  <span class="rule perf" aria-hidden="true"></span>
+                  <span class="stub-desc">Students, under 26, over 65; bring ID</span>
+                  <span class="punch" aria-hidden="true"></span>
+                </span>
+              </label>
+            </fieldset>
+            <p class="note small">Under 12s free. You pay at any venue desk.</p>
+
+            <div class="fields">
+              <div class="field" id="date-field">
+                <label class="lab" for="date">Visit date</label>
+                <span class="line"><input type="date" id="date" name="date" min="2027-05-22" max="2027-11-21" aria-describedby="date-help"></span>
+                <div class="msg">
+                  <p class="help" id="date-help">Valid on the day you pick.</p>
+                  <p class="err" id="date-err"></p>
+                </div>
+              </div>
+              <div class="field">
+                <span class="lab" id="visitors-l">Visitors</span>
+                <div class="stepper" role="group" aria-labelledby="visitors-l">
+                  <button type="button" class="step" data-d="-1" aria-label="One visitor fewer"><span aria-hidden="true">−</span></button>
+                  <output class="count" aria-live="polite"><span class="sr" id="count-sr">2 visitors</span><span class="roll" aria-hidden="true"><span>2</span></span></output>
+                  <button type="button" class="step" data-d="1" aria-label="One more visitor"><span aria-hidden="true">+</span></button>
+                </div>
+              </div>
+            </div>
+
+            <button type="submit" class="btn fill press-btn" id="reserve-btn"><span class="roll"><span>Reserve 2 day tickets, €32</span></span></button>
+          </form>
+
+          <div class="confirm" id="confirm" inert>
+            <h4 id="confirm-h" tabindex="-1">2 day tickets reserved for Saturday 12 June 2027.</h4>
+            <p class="ref-line">
+              <span>Reference <span class="ref" id="ref">BG 0612 4417</span></span>
+              <span class="copy"><button type="button" class="ln ln-btn press-btn" data-copy="#ref" data-done="Reference copied">Copy reference</button>
+              <span class="copied" aria-hidden="true">Copied</span></span>
+            </p>
+            <p class="pay" id="pay">Show this reference at any venue desk and pay €32 there. Under 12s need no ticket.</p>
+            <button type="button" class="ln ln-btn press-btn" id="change">Change reservation</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="press" aria-labelledby="press">
+        <h3 id="press" tabindex="-1">Press</h3>
+        <div>
+          <p>Irena Kos, press office</p>
+          <p class="copyline">
+            <a class="ln" id="press-mail" href="mailto:press@belowgrade.example" target="_blank" rel="noopener">press@belowgrade.example</a>
+            <span class="copy"><button type="button" class="ln ln-btn press-btn" data-copy="#press-mail" data-done="Press address copied">Copy address</button>
+            <span class="copied" aria-hidden="true">Copied</span></span>
+          </p>
+          <p><a class="ln num" href="tel:+390405550127" target="_blank" rel="noopener">+39 040 555 0127</a></p>
+          <p>Preview days for press are 19 to 21 May 2027. <a class="ln" href="mailto:press@belowgrade.example?subject=Accreditation%2C%20preview%20days" target="_blank" rel="noopener">Ask for accreditation</a> by 30 April.</p>
+        </div>
+      </section>
+    </div>
+
+  </div>
+
+  <div class="end band">
+  <div class="wrap end-nav">
+    <nav class="index" aria-label="Footer">
+      <ul class="dim">
+        <li><a class="ln dl" href="#venues">Venues</a></li>
+        <li><a class="ln dl" href="#tickets">Tickets</a></li>
+        <li><a class="ln dl" href="#press">Press</a></li>
+        <li><button type="button" class="ln dl" id="access-open" aria-haspopup="dialog">Access and step-free routes</button></li>
+        <li><a class="ln dl" href="#visit">Back to the top</a></li>
+      </ul>
+    </nav>
+    <p class="imprint small">© 2027 Trieste Biennale of Architecture</p>
+    <p class="sr" id="announce" aria-live="polite"></p>
+  </div>
+
+  <div class="mark-run">
+  <div class="mark">
+    <span class="ground" aria-hidden="true"></span>
+    <svg class="mark-svg" viewBox="0 0 1120 300" role="img" aria-label="Below Grade, 6th Trieste Biennale of Architecture">
+      <defs>
+        <pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line class="hatch-line" x1="0" y1="0" x2="0" y2="7" stroke-width="1.4"/></pattern>
+        <text id="word" x="6" y="173.6" font-size="200" letter-spacing="-6" textLength="1068" lengthAdjust="spacingAndGlyphs"><tspan>Below</tspan><tspan> Grade</tspan></text>
+        <clipPath id="clip-above"><rect x="-100" y="-200" width="1320" height="325"/></clipPath>
+        <clipPath id="clip-below"><rect x="-100" y="125" width="1320" height="400"/></clipPath>
+      </defs>
+      <g clip-path="url(#clip-below)"><use href="#word" class="cut" stroke-width="1"/></g>
+      <g clip-path="url(#clip-above)"><use href="#word" class="solid"/></g>
+    </svg>
+    <span class="m-datum" aria-hidden="true"></span>
+    <span class="m-water" aria-hidden="true"></span>
+    <span class="m-lab m-lab-datum" aria-hidden="true">±0.00 street level</span>
+    <span class="m-lab m-lab-water" aria-hidden="true"><svg viewBox="0 0 10 8" focusable="false"><path d="M0 0H10L5 8Z"/></svg>−3.20 water table</span>
+  </div>
+  </div>
+  </div>
+</footer>
+
+<dialog id="access" aria-labelledby="access-h">
+  <div class="dlg" data-lenis-prevent>
+    <h2 id="access-h">Access and step-free routes</h2>
+    <ul>
+      <li><b>Molo IV shed</b>Step-free from the quay. Hearing loop in the talks hall.</li>
+      <li><b>Magazzino 4</b>Step-free, with a lift to every floor and seats every 40 m.</li>
+      <li><b>Old Customs Hall</b>Step-free. Wheelchairs to borrow at the desk.</li>
+      <li><b>Salt Cistern</b>48 steps or a platform lift; book the lift at the Old Customs Hall desk.</li>
+      <li><b>Rail tunnel 1912</b>96 steps at the south portal, or a 140 m ramp at 1:12 from the north portal.</li>
+    </ul>
+    <p class="after">Assistance dogs welcome everywhere. Companions go free.</p>
+    <button type="button" class="ln ln-btn press-btn" id="access-close">Close</button>
+  </div>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/SplitText.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/DrawSVGPlugin.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  const root = document.documentElement;
+  root.classList.add('js');
+  const libs = !!(window.gsap && window.ScrollTrigger && window.SplitText && window.DrawSVGPlugin && window.Lenis);
+  if (!libs) root.classList.remove('js'); // CDN blocked: everything shows; tabs, form, copy and dialog still work
+
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const state = { lenis: null, motion: false };
+  const anim = () => libs && state.motion;
+
+  // ---- Wordmark geometry (viewBox units; the SVG is 112vw wide, 1 unit = 0.1vw) ----
+  // One <text>, two clipped <use> copies, one transform. Phones set it as two lines, 'Below' over 'Grade',
+  // each fitted to the slot, and the datum cuts 'Grade'.
+  const SLOT = 1068, CAP = 0.675, ASC = 0.76, LEAD = 0.8; // Titillium Web 900: cap height and ascender in em
+  const word = $('#word'), [w1, w2] = word.children, markSvg = $('.mark-svg'), hatch = $('#hatch'), cut = $('.mark .cut');
+  const run = $('.end'), navEl = $('.end-nav'), clipA = $('#clip-above rect'), clipB = $('#clip-below rect'), phone = matchMedia('(max-width: 599px)');
+  let rise = 0;
+  const set = (el, attrs) => Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, typeof v === 'number' ? v.toFixed(2) : v));
+  const fit = () => {
+    const c = document.createElement('canvas').getContext('2d');
+    c.font = `900 200px ${getComputedStyle(root).getPropertyValue('--font')}`;
+    c.letterSpacing = '-6px';
+    const size = (t) => 200 * SLOT / (c.measureText(t).width || SLOT); // font size that makes t fill the slot
+    const px = markSvg.getBoundingClientRect().width / 1120 || 1;    // px per unit
+    const two = phone.matches;
+    const line = (el, fs) => set(el, { x: 6, 'font-size': fs, 'letter-spacing': -0.03 * fs, textLength: SLOT, lengthAdjust: 'spacingAndGlyphs' });
+    [word, w1, w2].forEach((el) => ['x', 'y', 'font-size', 'letter-spacing', 'textLength', 'lengthAdjust'].forEach((k) => el.removeAttribute(k)));
+    w2.textContent = two ? 'Grade' : ' Grade';
+    const f1 = two ? size('Below') : 0, fs = size(two ? 'Grade' : 'Below Grade');
+    const cap = CAP * fs;
+    // The ground band stops short of the letters' feet, so the page end crops the hatch; it keeps 34px for its labels.
+    const band = Math.max(34 / px, 0.28 * cap), under = Math.max(0.36 * cap, band + 6 / px);
+    const dat = two ? Math.round(LEAD * fs + ASC * f1 - under + 12) : 125;
+    if (two) { line(w1, f1); line(w2, fs); set(w2, { y: dat + under }); set(w1, { y: dat + under - LEAD * fs }); }
+    else { line(word, fs); set(word, { y: dat + under }); }
+    // One line rises 58% of its cap height, never less than 80px. Phones start with both lines underground.
+    rise = two ? dat - 12 : Math.max(0.58 * cap, 80 / px);
+    run.style.setProperty('--dat', dat);
+    run.style.setProperty('--band-u', band.toFixed(2));
+    run.style.setProperty('--nav-h', navEl.offsetHeight + 'px');
+    set(markSvg, { viewBox: `0 0 1120 ${(dat + band).toFixed(1)}` });
+    set(clipA, { y: dat - 4000, height: 4000 });
+    set(clipB, { y: dat });
+    // Keep the hatch and the outline at about 7px and 1.25px on screen.
+    set(hatch, { width: 7 / px, height: 7 / px });
+    set(hatch.firstElementChild, { y2: 7 / px, 'stroke-width': 1.5 / px });
+    set(cut, { 'stroke-width': 1.25 / px });
+  };
+  fit();
+  document.fonts.ready.then(() => { fit(); window.ScrollTrigger?.refresh(); });
+  addEventListener('resize', fit);
+
+  // ---- Venues: a vertical tablist ranked by floor level, mirrored on the plan ----
+  const vlist = $('.vlist'), tabs = $$('.venue'), panels = $$('.vpanel'), sites = $$('.site');
+  let sel = 0, hot = -1, ptl = null;
+  // dim: pointer hover dims the other rows; keyboard focus only fills the key and marks the footprint
+  const heat = (i, dim = true) => {
+    vlist.classList.toggle('has-hot', i >= 0 && dim);
+    if (i === hot) return;
+    hot = i;
+    tabs.forEach((t, k) => t.classList.toggle('is-hot', k === i));
+    sites.forEach((s, k) => s.classList.toggle('is-hot', k === i));
+  };
+  const select = (i, focus) => {
+    if (focus) tabs[i].focus();
+    if (i === sel) return;
+    const old = panels[sel], next = panels[i];
+    sel = i;
+    tabs.forEach((t, k) => { t.setAttribute('aria-selected', String(k === i)); t.tabIndex = k === i ? 0 : -1; });
+    sites.forEach((s, k) => s.classList.toggle('is-sel', k === i));
+    const swap = () => { panels.forEach((p) => p.classList.toggle('is-on', p === next)); };
+    ptl?.progress(1).kill();
+    if (!anim()) return swap();
+    // The incoming panel is live (and next in the Tab order) at once; the outgoing one is inert while it fades.
+    gsap.set(next, { opacity: 0, y: 4 });
+    next.classList.add('is-on');
+    old.inert = true;
+    ptl = gsap.timeline()
+      .to(old, { opacity: 0, y: -4, duration: 0.15, ease: 'expo.out' })
+      .call(() => { old.classList.remove('is-on'); old.inert = false; gsap.set(old, { clearProps: 'opacity,transform' }); })
+      .to(next, { opacity: 1, y: 0, duration: 0.25, ease: 'expo.out', clearProps: 'opacity,transform' });
+  };
+  const mouse = (e) => e.pointerType === 'mouse';
+  tabs.forEach((t, i) => {
+    t.addEventListener('click', () => select(i));
+    t.addEventListener('pointerenter', (e) => { if (mouse(e)) heat(i); });
+    t.addEventListener('pointerleave', (e) => { if (mouse(e)) heat(-1); });
+    t.addEventListener('focus', () => { if (t.matches(':focus-visible')) heat(i, false); });
+    t.addEventListener('blur', () => heat(-1));
+  });
+  vlist.addEventListener('keydown', (e) => {
+    const i = tabs.indexOf(e.target);
+    const n = { ArrowDown: i + 1, ArrowUp: i - 1, Home: 0, End: tabs.length - 1 }[e.key];
+    if (i < 0 || n === undefined) return;
+    e.preventDefault();
+    select((n + tabs.length) % tabs.length, true);
+  });
+  sites.forEach((s, i) => {
+    s.addEventListener('pointerenter', (e) => { if (mouse(e)) heat(i); });
+    s.addEventListener('pointerleave', (e) => { if (mouse(e)) heat(-1); });
+    s.addEventListener('click', () => select(i));
+  });
+
+  // ---- Plan: dig down to what is below grade (clip-path wipe in CSS, label swap MI2) ----
+  const plan = $('.plan'), dig = $('#dig'), digLbls = $$('.swap > span', dig);
+  dig.addEventListener('click', () => {
+    const on = plan.classList.toggle('is-below');
+    dig.classList.toggle('is-on', on);
+    digLbls[0].toggleAttribute('aria-hidden', on);
+    digLbls[1].toggleAttribute('aria-hidden', !on);
+  });
+
+  // ---- Masked roll for changing numbers and labels (TR1) ----
+  const roll = (mask, text, dir = 1) => {
+    const cur = mask.lastElementChild;
+    if (cur.textContent === text) return;
+    if (!anim()) { [...mask.children].slice(0, -1).forEach((n) => n.remove()); cur.textContent = text; return; }
+    const next = cur.cloneNode();
+    next.textContent = text;
+    mask.append(next);
+    gsap.fromTo(next, { yPercent: 100 * dir }, { yPercent: 0, duration: 0.3, ease: 'expo.out' });
+    gsap.to(cur, { yPercent: -100 * dir, duration: 0.3, ease: 'expo.out', onComplete: () => cur.remove() });
+  };
+
+  // ---- Tickets ----
+  const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const PRICE = { day: 16, two: 24, season: 38, reduced: 9 };
+  const NOUN = { day: ['day ticket', 'day tickets'], two: ['two-day ticket', 'two-day tickets'], season: ['season pass', 'season passes'], reduced: ['reduced ticket', 'reduced tickets'] };
+  const FIRST = new Date(2027, 4, 22), LAST = new Date(2027, 10, 21);
+  const OPEN = { 'Molo IV': [0, 4, 5, 6], 'the rail tunnel': [0, 5, 6] }; // the other venues open Tuesday to Sunday
+  const plural = (n, pair) => pair[n === 1 ? 0 : 1];
+  const parse = (v) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v || ''); return m ? new Date(+m[1], m[2] - 1, +m[3]) : null; };
+  const dayMonth = (d) => `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]}`;
+  const long = (d) => `${dayMonth(d)} ${d.getFullYear()}`;
+  const next = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
+  const pair = (a, b) => (a.getMonth() === b.getMonth()
+    ? `${DAYS[a.getDay()]} ${a.getDate()} and ${long(b)}`
+    : `${dayMonth(a)} and ${long(b)}`);
+  const label = (t, n) => `Reserve ${n} ${plural(n, NOUN[t])}, €${PRICE[t] * n}`;
+  const dateError = (d, t) => (!d ? 'Pick the day you want to visit.'
+    : d < FIRST || d > LAST ? 'Pick a day between 22 May and 21 November 2027.'
+    : d.getDay() === 1 ? 'Venues are closed on Mondays. Pick another day.'
+    : t === 'two' && d.getDay() === 0 ? 'Two-day tickets cannot start on a Sunday, because venues are closed on Mondays. Pick another day.'
+    : '');
+  const closures = (days) => {
+    const shut = Object.keys(OPEN).filter((v) => days.every((w) => !OPEN[v].includes(w)));
+    if (!shut.length) return days.length > 1 ? 'You can see all five venues.' : 'All five venues are open.';
+    const who = shut.join(' and '), verb = shut.length > 1 ? 'are' : 'is';
+    return days.length > 1 ? `${who[0].toUpperCase()}${who.slice(1)} ${verb} closed on both days.` : `On ${DAYS[days[0]]}s ${who} ${verb} closed.`;
+  };
+  const helpText = (d, t) => {
+    const ok = d && !dateError(d, t);
+    if (t === 'season') return ok ? `Valid from ${dayMonth(d)} to 21 November.` : 'Valid from the day you pick to 21 November.';
+    if (t === 'two') return ok ? `Covers ${DAYS[d.getDay()]} and ${DAYS[next(d).getDay()]}. ${closures([d.getDay(), next(d).getDay()])}` : 'Covers the day you pick and the next.';
+    return ok ? `Valid on ${dayMonth(d)} only. ${closures([d.getDay()])}` : 'Valid on the day you pick.';
+  };
+  const reference = (v, n, t) => {
+    let h = 7;
+    for (const ch of `${v}|${n}|${t}`) h = (h * 31 + ch.charCodeAt(0)) % 1000003;
+    return `BG ${v.slice(5, 7)}${v.slice(8, 10)} ${String(h % 10000).padStart(4, '0')}`;
+  };
+  const confirmText = (d, t, n) => (t === 'season'
+    ? `${n === 1 ? 'Season pass' : 'Season passes'} for ${n} ${plural(n, ['visitor', 'visitors'])}, valid from ${dayMonth(d)} to Sunday 21 November 2027.`
+    : `${n} ${plural(n, NOUN[t])} reserved for ${t === 'two' ? pair(d, next(d)) : long(d)}.`);
+
+  const form = $('#reserve'), F = form.elements, dateField = $('#date-field'), help = $('#date-help'), err = $('#date-err');
+  const reserveRoll = $('#reserve-btn .roll'), countRoll = $('.count .roll'), countSr = $('#count-sr'), steps = $$('.step');
+  let count = 2;
+  const type = () => F.type.value;
+  const update = () => {
+    roll(reserveRoll, label(type(), count));
+    help.textContent = helpText(parse(F.date.value), type());
+  };
+  const setErr = (msg) => {
+    dateField.classList.toggle('is-invalid', !!msg);
+    if (msg) err.textContent = msg;
+    F.date.setAttribute('aria-invalid', String(!!msg));
+    F.date.setAttribute('aria-describedby', msg ? 'date-err' : 'date-help');
+  };
+  const setCount = (n) => {
+    if (n < 1 || n > 10 || n === count) return;
+    const dir = n > count ? 1 : -1;
+    count = n;
+    steps[0].setAttribute('aria-disabled', String(n === 1));
+    steps[1].setAttribute('aria-disabled', String(n === 10));
+    countSr.textContent = `${n} ${plural(n, ['visitor', 'visitors'])}`;
+    roll(countRoll, String(n), dir);
+    update();
+  };
+  steps.forEach((b) => b.addEventListener('click', () => setCount(count + +b.dataset.d)));
+  form.addEventListener('change', (e) => {
+    if (e.target.name === 'type' && anim()) gsap.fromTo($('.punch', e.target.closest('.stub')), { scale: 0 }, { scale: 1, duration: 0.35, ease: 'back.out(2.5)', clearProps: 'transform' });
+    if (dateField.classList.contains('is-invalid')) setErr(dateError(parse(F.date.value), type()));
+    update();
+  });
+  F.date.addEventListener('input', () => {
+    if (dateField.classList.contains('is-invalid') && !dateError(parse(F.date.value), type())) setErr('');
+    update();
+  });
+
+  const book = $('.book'), confirmEl = $('#confirm');
+  const swapBook = (done) => {
+    const from = done ? form : confirmEl, to = done ? confirmEl : form;
+    const flip = () => {
+      book.classList.toggle('is-done', done);
+      from.inert = true;
+      to.inert = false;
+      (done ? $('#confirm-h') : $('input[name=type]:checked', form)).focus();
+    };
+    if (!anim()) return flip();
+    gsap.timeline()
+      .to(from, { opacity: 0, duration: 0.15, ease: 'expo.out' })
+      .call(() => { flip(); gsap.set(from, { clearProps: 'opacity' }); })
+      .fromTo(to, { opacity: 0, y: 4 }, { opacity: 1, y: 0, duration: 0.3, ease: 'expo.out', clearProps: 'opacity,transform' });
+  };
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const v = F.date.value, d = parse(v), t = type(), msg = dateError(d, t);
+    setErr(msg);
+    if (msg) { F.date.focus(); return; }
+    $('#confirm-h').textContent = confirmText(d, t, count);
+    $('#ref').textContent = reference(v, count, t);
+    $('#pay').textContent = `Show this reference at any venue desk and pay €${PRICE[t] * count} there. Under 12s need no ticket.${t === 'reduced' ? ' Bring ID for each reduced ticket.' : ''}`;
+    swapBook(true);
+  });
+  $('#change').addEventListener('click', () => swapBook(false));
+
+  // ---- Copy with in-place confirmation (CD10) ----
+  const announce = $('#announce');
+  const say = (msg) => { announce.textContent = ''; setTimeout(() => { announce.textContent = msg; }, 60); };
+  $$('[data-copy]').forEach((b) => b.addEventListener('click', async () => {
+    const src = $(b.dataset.copy), slot = b.nextElementSibling;
+    let ok = true;
+    try { await navigator.clipboard.writeText(src.textContent.trim()); } catch { ok = false; }
+    if (!ok) { const r = document.createRange(); r.selectNodeContents(src); getSelection().removeAllRanges(); getSelection().addRange(r); }
+    slot.textContent = ok ? 'Copied' : 'Selected, press Ctrl+C';
+    say(ok ? b.dataset.done : 'Selected. Press Ctrl+C to copy.');
+    const hold = ok ? 1.2 : 3;
+    if (anim()) {
+      gsap.killTweensOf(slot);
+      gsap.timeline()
+        .fromTo(slot, { autoAlpha: 0, y: 6 }, { autoAlpha: 1, y: 0, duration: 0.25, ease: 'expo.out' })
+        .to(slot, { autoAlpha: 0, duration: 0.3, ease: 'expo.out' }, `+=${hold}`);
+    } else {
+      if (libs) { gsap.killTweensOf(slot); gsap.set(slot, { clearProps: 'all' }); }
+      slot.style.visibility = 'visible';
+      clearTimeout(slot.t);
+      slot.t = setTimeout(() => { slot.style.visibility = ''; }, hold * 1000 + 250);
+    }
+  }));
+
+  // ---- Eased anchors (NV6): Lenis when it runs, then focus moves to the target ----
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('a[href^="#"]');
+    const t = a && document.getElementById(a.hash.slice(1));
+    if (!t || e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    history.pushState(null, '', a.hash);
+    let moved = false;
+    const done = () => { if (!moved) { moved = true; t.focus({ preventScroll: true }); } };
+    const y = Math.max(0, scrollY + t.getBoundingClientRect().top - 16);
+    if (state.lenis) {
+      const dur = Math.min(1.3, 0.65 + Math.abs(y - scrollY) / 4000);
+      state.lenis.scrollTo(y, { duration: dur, onComplete: done });
+      setTimeout(done, dur * 1000 + 100); // an interrupted scroll never completes; focus still moves
+    } else { scrollTo(0, y); done(); }
+  });
+
+  // ---- Access dialog (CD7) ----
+  const dlg = $('#access'), opener = $('#access-open');
+  let closing = false;
+  opener.addEventListener('click', () => {
+    dlg.showModal();
+    state.lenis?.stop();
+    if (anim()) gsap.fromTo(dlg, { autoAlpha: 0, y: 12, scale: 0.98 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.45, ease: 'expo.out' });
+  });
+  const closeDlg = () => {
+    if (!dlg.open || closing) return;
+    if (!anim()) return dlg.close();
+    closing = true;
+    gsap.to(dlg, { autoAlpha: 0, y: 12, duration: 0.3, ease: 'expo.out', onComplete: () => dlg.close() });
+  };
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); closeDlg(); });
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) closeDlg(); });
+  $('#access-close').addEventListener('click', closeDlg);
+  dlg.addEventListener('close', () => {
+    closing = false;
+    if (libs) gsap.set(dlg, { clearProps: 'all' });
+    state.lenis?.start();
+    opener.focus();
+  });
+
+  // ---- Self-test: load with #selftest ----
+  function runSelfTest() {
+    const fails = [];
+    const assert = (c, m) => { if (!c) fails.push(m); };
+    const D = (s) => parse(s);
+    assert(long(D('2027-05-22')) === 'Saturday 22 May 2027', '22 May 2027 is a Saturday');
+    assert(long(D('2027-06-12')) === 'Saturday 12 June 2027', '12 June 2027 is a Saturday');
+    assert(long(D('2027-11-21')) === 'Sunday 21 November 2027', '21 November 2027 is a Sunday');
+    assert(dateError(null, 'day') === 'Pick the day you want to visit.', 'empty date');
+    assert(dateError(D('2027-05-21'), 'day').startsWith('Pick a day between'), 'before opening');
+    assert(dateError(D('2027-11-22'), 'day').startsWith('Pick a day between'), 'after closing');
+    assert(dateError(D('2027-06-14'), 'day')=== 'Venues are closed on Mondays. Pick another day.', 'Monday');
+    assert(dateError(D('2027-06-13'), 'two').startsWith('Two-day tickets cannot start'), 'two-day from Sunday');
+    assert(dateError(D('2027-06-13'), 'day') === '', 'day ticket on Sunday is fine');
+    assert(helpText(D('2027-06-15'), 'day') === 'Valid on Tuesday 15 June only. On Tuesdays Molo IV and the rail tunnel are closed.', 'Tuesday closures');
+    assert(helpText(D('2027-06-17'), 'day').endsWith('On Thursdays the rail tunnel is closed.'), 'Thursday closure');
+    assert(helpText(D('2027-06-12'), 'reduced').endsWith('All five venues are open.'), 'Saturday open');
+    assert(helpText(D('2027-06-16'), 'two') === 'Covers Wednesday and Thursday. The rail tunnel is closed on both days.', 'two-day closures');
+    assert(helpText(D('2027-06-17'), 'two').endsWith('You can see all five venues.'), 'Thursday plus Friday');
+    assert(label('day', 2) === 'Reserve 2 day tickets, €32' && label('season', 1) === 'Reserve 1 season pass, €38' && label('two', 10) === 'Reserve 10 two-day tickets, €240', 'button labels');
+    assert(confirmText(D('2027-06-12'), 'day', 2) === '2 day tickets reserved for Saturday 12 June 2027.', 'day confirmation');
+    assert(confirmText(D('2027-06-12'), 'two', 1) === '1 two-day ticket reserved for Saturday 12 and Sunday 13 June 2027.', 'two-day confirmation');
+    assert(confirmText(D('2027-07-31'), 'two', 2) === '2 two-day tickets reserved for Saturday 31 July and Sunday 1 August 2027.', 'two-day across months');
+    assert(confirmText(D('2027-06-12'), 'season', 1) === 'Season pass for 1 visitor, valid from Saturday 12 June to Sunday 21 November 2027.', 'season confirmation');
+    assert(confirmText(D('2027-06-12'), 'season', 3).startsWith('Season passes for 3 visitors'), 'season plural');
+    assert(/^BG 0612 \d{4}$/.test(reference('2027-06-12', 2, 'day')), 'reference format');
+    assert(reference('2027-06-12', 2, 'day') !== reference('2027-06-12', 3, 'day'), 'reference depends on count');
+    assert(reference('2027-06-12', 2, 'day') === reference('2027-06-12', 2, 'day'), 'reference is stable');
+    if (fails.length) console.error(`SELFTEST FAIL: ${fails.join('; ')}`); else console.log('SELFTEST PASS');
+  }
+  if (location.hash === '#selftest') runSelfTest();
+
+  if (!libs) return;
+
+  // ---- Motion ----
+  gsap.registerPlugin(ScrollTrigger, SplitText, DrawSVGPlugin);
+  const mm = gsap.matchMedia();
+
+  // HV4: fills enter from the edge the pointer came in by and leave by the edge it went out of. Fine pointers only.
+  mm.add('(hover: hover) and (pointer: fine)', () => {
+    const edge = (e) => {
+      const r = e.currentTarget.getBoundingClientRect();
+      e.currentTarget.style.setProperty('--from', e.clientX < r.left + r.width / 2 ? 'left' : 'right');
+    };
+    const fills = $$('.fill, .stub');
+    fills.forEach((el) => { el.addEventListener('pointerenter', edge); el.addEventListener('pointerleave', edge); });
+    return () => fills.forEach((el) => { el.removeEventListener('pointerenter', edge); el.removeEventListener('pointerleave', edge); el.style.removeProperty('--from'); });
+  });
+
+  mm.add({
+    motion: '(prefers-reduced-motion: no-preference)',
+    reduce: '(prefers-reduced-motion: reduce)',
+  }, (ctx) => {
+    const { motion } = ctx.conditions;
+    state.motion = motion;
+    if (!motion) return; // reduced: CSS shows every final state, native scroll, wordmark at rest
+
+    const lenis = new Lenis({ lerp: 0.1, smoothWheel: true, autoRaf: false, anchors: false });
+    state.lenis = lenis;
+    lenis.on('scroll', ScrollTrigger.update);
+    const tick = (time) => lenis.raf(time * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
+
+    let alive = true, split = null;
+    ctx.add('build', () => {
+      // Load: the heading rises, the floors draw, the venues rise onto them, the plan draws itself.
+      split = SplitText.create('#visit-h', { type: 'lines', mask: 'lines' });
+      const names = $$('.nm-i'), keys = $$('.pkey'), fps = $$('.site .fp'), vkeys = $$('.venue .key');
+      gsap.set(split.lines, { yPercent: 105 });
+      gsap.set(names, { yPercent: 100 });
+      gsap.set('.rise', { visibility: 'visible' });
+      gsap.set('.draw', { drawSVG: '0%', visibility: 'visible' });
+      const load = gsap.timeline({ paused: true, onComplete: () => split.revert() })
+        .to(split.lines, { yPercent: 0, duration: 0.9, ease: 'expo.out', stagger: 0.08 }, 0)
+        .to('.lead', { opacity: 1, duration: 0.6, ease: 'expo.out' }, 0.15)
+        .to('.vrule', { scaleX: 1, duration: 0.7, ease: 'expo.out', stagger: 0.05 }, 0.3)
+        .to(names, { yPercent: 0, duration: 0.6, ease: 'expo.out', stagger: 0.05 }, 0.4)
+        .to(vkeys, { scale: 1, duration: 0.5, ease: 'expo.out', stagger: 0.05 }, 0.4)
+        .to($$('.venue [data-rv]'), { opacity: 1, duration: 0.6, ease: 'expo.out', stagger: 0.025 }, 0.4)
+        .to('.datum-rule', { scaleX: 1, duration: 0.9, ease: 'expo.out' }, 0.45)
+        .to('.datum-lab', { opacity: 1, duration: 0.3, ease: 'expo.out' }, 0.75)
+        .to('.vpanels', { opacity: 1, duration: 0.4, ease: 'expo.out' }, 0.9);
+      ScrollTrigger.create({ trigger: '#visit', start: 'top 85%', once: true, onEnter: () => load.play() });
+
+      // The plan draws itself when it arrives, which on phones is well below the fold.
+      const planTl = gsap.timeline({ paused: true })
+        .to('.plan-street', { opacity: 1, duration: 0.4, ease: 'expo.out' }, 0)
+        .to('.quay', { drawSVG: '100%', duration: 0.8, ease: 'power2.inOut' }, 0)
+        .to(fps, { drawSVG: '100%', duration: 0.9, ease: 'power2.inOut', stagger: 0.08 }, 0.3)
+        .to(keys, { opacity: 1, duration: 0.4, ease: 'expo.out', stagger: 0.05 }, 0.55)
+        .call(() => $('.plan-top').classList.add('is-drawn'), null, 0.55)
+        .to('.plan-foot', { opacity: 1, duration: 0.4, ease: 'expo.out' }, 0.75);
+      // In view at load (desktop), it starts at load time 0.7, after the rows have landed; on phones it plays on arrival.
+      ScrollTrigger.create({ trigger: '.plan-fig', start: 'top 80%', once: true,
+        onEnter: () => gsap.delayedCall(load.progress() < 1 ? Math.max(0, 0.7 - load.time()) : 0, () => planTl.play()) });
+
+      // S1: the ticket perforations draw as the stubs arrive (SC16).
+      gsap.to('.perf', { scaleX: 1, duration: 0.7, ease: 'expo.out', stagger: 0.06, scrollTrigger: { trigger: '.stubs', start: 'top 85%', once: true } });
+
+      // S2, the signature: the word rises out of the ground through the street datum (TX11).
+      // .mark is sticky at the viewport bottom inside .mark-run, so the run's height is the scroll the rise takes.
+      // Street level is laid while the line is on screen, its labels follow 40px later, and the letters surface through it.
+      // Triggers sit on the (unstuck) run, offset to each line's place in the mark, so sticky never skews the measure.
+      const at = (sel, dy, where) => () => `top+=${$(sel).offsetTop + dy} ${where}`;
+      gsap.fromTo('.m-datum', { scaleX: 0 }, { scaleX: 1, ease: 'none',
+        scrollTrigger: { trigger: '.mark-run', start: at('.m-datum', 0, 'bottom'), end: at('.m-datum', 0, '80%'), scrub: true } });
+      $$('.m-lab').forEach((lab, i) => gsap.fromTo(lab, { opacity: 0 }, { opacity: 1, ease: 'none',
+        scrollTrigger: { trigger: '.mark-run', start: at(i ? '.m-water' : '.m-datum', 0, 'bottom-=40'), end: at(i ? '.m-water' : '.m-datum', 0, '78%'), scrub: true } }));
+      const rising = gsap.timeline({ scrollTrigger: { trigger: '.mark-run', start: 'top bottom', end: 'bottom bottom', scrub: true, invalidateOnRefresh: true } })
+        .fromTo(word, { y: () => rise }, { y: 0, duration: 1, ease: 'none' }, 0);
+      ScrollTrigger.refresh();
+      // Self-check: the rise ends (p = 1, y = 0) exactly at the bottom of the page.
+      if (location.hash === '#selftest') {
+        const st = rising.scrollTrigger, max = ScrollTrigger.maxScroll(window);
+        console[Math.abs(st.end - max) < 1 ? 'log' : 'error'](`SCRUB END ${Math.round(st.end)} / MAX SCROLL ${Math.round(max)}`);
+      }
+    });
+    Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 1200))]).then(() => { if (alive) ctx.build(); });
+
+    return () => {
+      alive = false;
+      split?.revert();
+      gsap.ticker.remove(tick);
+      gsap.ticker.lagSmoothing(500, 33);
+      const y = scrollY; // the run shortens and Lenis lets go: keep the reader's place
+      lenis.destroy();
+      requestAnimationFrame(() => scrollTo(0, y));
+      state.lenis = null;
+      state.motion = false;
+    };
+  });
+})();
+</script>
+</body>
+</html>
