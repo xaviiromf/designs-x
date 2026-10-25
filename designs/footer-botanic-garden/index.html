@@ -1,0 +1,1298 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Merrow Park footer</title>
+<link rel="icon" href="data:,">
+<meta name="description" content="Site footer for Merrow Park Botanic Garden: today's opening hours, a year of gate and glasshouse hours drawn against daylight, memberships and Garden notes.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400..500;1,7..72,400&family=National+Park:wght@400..600&display=swap">
+<style>
+:root {
+  /* Colour, by role. Material in brackets; contrast measured on --ground (white) and --surface. */
+  --ground: #FFFFFF;      /* white enamel park-gate sign */
+  --ink: #24513A;         /* Brunswick green railing paint: 9.08:1 on ground, 7.97:1 on surface */
+  --ink-soft: #56655B;    /* lichen: secondary text, axis labels, sun curves: 6.16:1 / 5.41:1 */
+  --accent: #B0246B;      /* cyclamen under the cedars: today, now, selected tier, Join, focus: 6.34:1 / 5.57:1 */
+  --on-accent: #FFFFFF;   /* label on cyclamen, 6.34:1 */
+  --daylight: #E4DA8C;    /* straw: fill of the daylight lens only, never text */
+  --surface: #EEF1EC;     /* limewash tint: dialog sheet, selected tier row, selected month */
+  --rule: #C3CCC6;        /* structural rules and hour gridlines only */
+  --backdrop: rgb(36 81 58 / .55);
+
+  --font-serif: 'Literata', Georgia, 'Times New Roman', serif;
+  --font-sans: 'National Park', 'Segoe UI', system-ui, sans-serif;
+
+  /* Type scale: 17px body, ratio 1.25. Leading beside each step. */
+  --step--1: .85rem;    --lh--1: 1.4;
+  --step-0: 1.0625rem;  --lh-0: 1.55;  --lh-serif: 1.6;
+  --step-1: 1.33rem;    --lh-1: 1.4;
+  --step-2: 1.66rem;    --lh-2: 1.25;
+  --step-3: 2.07rem;    --lh-3: 1.2;
+  --step-4: clamp(2.4rem, 1.6rem + 3.6vw, 4rem); --lh-4: 1.05;
+
+  /* Spacing, 4-based */
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px;
+  --s-6: 32px; --s-7: 48px; --s-8: 64px; --s-9: 96px; --s-10: 128px;
+  --ft-pad: clamp(80px, 10vh, 120px);   /* footer top padding */
+  --gutter: 16px;
+  --max: 1320px;
+  --measure: 62ch;
+  --measure-serif: 58ch;
+  --r-label: 3px;     /* aluminium plant-label corners */
+  --r-round: 50%;
+  --axis-w: 1.9rem;
+  --fig-w: .63em;     /* National Park has no tnum: each digit of a time gets a cell this wide */
+  --plot-h: 260px;
+  --target: 44px;
+
+  /* Motion: three eases (the JS uses the same three by GSAP name) and the durations. */
+  --ease-out: cubic-bezier(.16, 1, .3, 1);        /* expo.out: entrances, dialogs, fills, swaps */
+  --ease-draw: cubic-bezier(.45, 0, .55, 1);      /* power2.inOut: sun curves, dialog exit */
+  --ease-follow: cubic-bezier(.215, .61, .355, 1);/* power3.out: pointer follow, press release, tier rule */
+  --dur-press: .12s;
+  --dur-release: .45s;
+  --dur-ring: .3s;
+  --dur-ring-out: .2s;
+  --dur-rule: .35s;
+  --dur-dim: .2s;
+  --dur-roll: .35s;
+  --dur-roll-fast: .2s;
+  --dur-tick: .3s;
+}
+@media (min-width: 600px) { :root { --axis-w: 3.4rem; --plot-h: 340px; } }
+@media (min-width: 768px) { :root { --gutter: 24px; } }
+@media (min-width: 992px) { :root { --plot-h: clamp(300px, 38vh, 400px); } }
+
+/* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+html.lenis, html.lenis body { height: auto; }
+.lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+.lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+.lenis.lenis-smooth iframe { pointer-events: none; }
+/* First-frame states for the load sequence: only when JS runs, never under reduced motion. */
+html.js [data-rv] { opacity: 0; }
+html.js .rule { transform: scaleX(0); }
+@media (prefers-reduced-motion: reduce) {
+  html.js [data-rv] { opacity: 1; }
+  html.js .rule { transform: none; }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font: 400 var(--step-0)/var(--lh-0) var(--font-sans);
+  overflow-x: clip;
+}
+body:focus, [tabindex="-1"]:focus { outline: none; }
+h2, h3, p, ul, dl, dd, figure, fieldset { margin: 0; }
+ul { padding: 0; list-style: none; }
+button, input { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+::selection { background: var(--daylight); color: var(--ink); }
+.vh {
+  position: absolute !important; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+.t, .nw { white-space: nowrap; }
+.t > span { display: inline-block; width: var(--fig-w); text-align: center; }
+i[lang] { font-family: var(--font-serif); font-style: italic; font-size: .97em; }
+
+/* Host page end: a stand-in for the last section of the page. Delete .host-end when composing. */
+.host-end {
+  position: relative; z-index: 2;
+  min-height: 16svh;
+  display: flex; align-items: flex-end;
+  padding: var(--s-7) var(--gutter);
+  background: var(--ink); color: var(--ground);
+}
+.host-end p { max-width: 40ch; font-size: var(--step-1); line-height: var(--lh-1); }
+@media (min-width: 992px) { .host-end p { margin-left: max(0px, calc((100% - var(--max)) / 2)); } }
+
+/* ---------- Footer frame ---------- */
+.ft { position: relative; z-index: 1; padding-top: var(--ft-pad); background: var(--ground); }
+html:has(dialog[open]) { overflow: clip; }   /* scroll lock that does not depend on Lenis */
+.ft__inner { max-width: var(--max); margin-inline: auto; padding: 0 var(--gutter) var(--s-7); }
+.ft h2 { font: 500 var(--step-2)/var(--lh-2) var(--font-serif); letter-spacing: -.005em; }
+.ft h3 { font: 600 var(--step-0)/var(--lh-0) var(--font-sans); }
+
+/* ---------- Links and link-buttons: a painted 1px rule that turns into a 2px cyclamen one ---------- */
+.lnk {
+  position: relative; display: inline-block;
+  padding: 11px 0; line-height: 22px;
+  font-weight: 500; color: var(--ink); text-decoration: none;
+  background: none; border: 0; cursor: pointer; text-align: left;
+  transition: transform var(--dur-release) var(--ease-follow);
+}
+.lnk::after, .lnk::before, .u::before {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 10px; pointer-events: none;
+}
+.lnk::after { height: 1px; background: var(--ink); }   /* always there, so touch and print see a link */
+.lnk::before, .u::before {   /* the hover and focus state: opacity only, no sweep */
+  z-index: 1; height: 2px; background: var(--accent); opacity: 0;
+  transition: opacity var(--dur-dim) var(--ease-out);
+}
+.u { position: relative; display: inline-block; }
+.u::before { bottom: -2px; }
+@media (hover: hover) {
+  .lnk:hover::before, .tier:hover .u::before, .mo:hover .u::before { opacity: 1; }
+}
+.lnk:focus-visible::before, .tier:has(:focus-visible) .u::before, .mo:has(:focus-visible) .u::before { opacity: 1; }
+button.lnk:active { transform: scale(.97); transition-duration: var(--dur-press); }
+
+/* ---------- Buttons ---------- */
+.btn-fill, .btn-line {
+  position: relative; isolation: isolate; overflow: hidden;
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 52px; padding: 0 var(--s-5);
+  border-radius: var(--r-label); cursor: pointer;
+  font: 600 var(--step-0)/1.2 var(--font-sans);
+  transition: transform var(--dur-release) var(--ease-follow);
+}
+.btn-fill { border: 0; background: var(--accent); color: var(--on-accent); }
+.btn-line { min-height: var(--target); border: 1.5px solid var(--ink); background: transparent; color: var(--ink); }
+.btn-fill::before, .btn-line::before {   /* hover: a 2px inner ring, like the lined border of an enamel sign */
+  content: ""; position: absolute; inset: 4px; pointer-events: none;
+  border: 2px solid currentColor; border-radius: 1px;
+  opacity: 0; transform: scale(.96);
+  transition: opacity var(--dur-ring-out) var(--ease-out), transform var(--dur-ring-out) var(--ease-out);
+}
+.btn-line::before { inset: 2.5px; }
+@media (hover: hover) { .btn-fill:hover::before, .btn-line:hover::before { opacity: 1; transform: none; transition-duration: var(--dur-ring); } }
+.btn-fill:focus-visible::before, .btn-line:focus-visible::before { opacity: 1; transform: none; transition-duration: var(--dur-ring); }
+.btn-fill:active, .btn-line:active { transform: scale(.975); transition-duration: var(--dur-press); }
+
+/* MI2: stacked labels in one masked cell */
+.roll { display: inline-grid; overflow: hidden; vertical-align: top; }
+.roll > * { grid-area: 1 / 1; }
+.btn-fill .roll { padding-block: .12em; }
+
+/* ---------- Opening hours ---------- */
+.hours h2 { margin-bottom: var(--s-5); }
+.today-line {
+  font: 400 var(--step-4)/var(--lh-4) var(--font-serif);
+  letter-spacing: -.01em;
+  font-variant-numeric: tabular-nums;
+}
+.today { margin-top: var(--s-6); max-width: var(--measure); }
+.today__date { color: var(--ink-soft); margin-bottom: var(--s-2); }
+.today__rows div { display: grid; grid-template-columns: 7.5em 1fr; padding-block: var(--s-1); }
+.today__rows dt { color: var(--ink-soft); }
+.today__note { margin-top: var(--s-4); color: var(--ink-soft); max-width: 40ch; }
+
+.year { margin-top: var(--s-8); }
+.chart figcaption { color: var(--ink-soft); max-width: var(--measure); }
+.key { display: grid; grid-template-columns: repeat(2, max-content); gap: var(--s-1) var(--s-5); margin-top: var(--s-3); font-size: var(--step--1); line-height: var(--lh--1); color: var(--ink-soft); }
+.key li { display: inline-flex; align-items: center; gap: var(--s-2); }
+.key i { display: inline-block; width: 10px; height: 14px; font-style: normal; }
+.key__gate { background: var(--ink); }
+.key__glass { background: linear-gradient(90deg, var(--ink) 30%, var(--ground) 30% 70%, var(--ink) 70%); }
+.key__day { background: var(--daylight); border-block: 1.5px solid var(--ink-soft); }
+.key__now { height: 3px !important; width: 14px !important; background: var(--accent); }
+
+.chart__body {
+  display: grid; grid-template-columns: var(--axis-w) minmax(0, 1fr);
+  margin-top: var(--s-5); padding-top: .75em;
+}
+.axis { position: relative; grid-column: 1; grid-row: 1; font-size: var(--step--1); line-height: 1; color: var(--ink-soft); }
+.axis span { position: absolute; right: var(--s-2); top: calc(var(--h) / 18 * 100%); transform: translateY(-50%); }
+.axis span { transition: opacity var(--dur-dim) var(--ease-out); }
+.axis b { font-weight: 400; }
+.chart__body.is-probing .axis span { opacity: .7; }   /* lichen at .7 still reads 3.2:1 on white */
+.chart__body.is-probing .axis span.is-under { opacity: 0; }   /* the crosshair time label takes its place */
+@media (max-width: 599px) { .axis b { display: none; } }
+.plot { position: relative; grid-column: 2; grid-row: 1; height: var(--plot-h); touch-action: pan-y; }
+.plot svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.band { fill: var(--surface); }
+.grid { fill: var(--rule); }
+.lens { fill: var(--daylight); }
+.curve { fill: none; stroke: var(--ink-soft); stroke-width: 1.5; stroke-linecap: butt; }
+.gate { fill: var(--ink); }
+.lit { fill: var(--accent); }
+.slot, .cap, .under { fill: var(--ground); }   /* .under: a white bed under each bar, so a dimmed bar fades toward white, never into the straw */
+.tick { fill: var(--accent); stroke: var(--ground); stroke-width: 2; paint-order: stroke; }
+.bar { transition: opacity var(--dur-dim) var(--ease-out); }
+.plot[data-dim] .bar:not(.is-hot) { opacity: .45; }   /* HV7: the month being read keeps full ink */
+
+/* Crosshair (fine pointers only, built by the script) */
+.xh { position: absolute; inset: 0; pointer-events: none; visibility: hidden; opacity: 0; }
+.xh__row { position: absolute; left: 0; right: 0; top: 0; height: 0; }
+.xh__h { position: absolute; left: 0; right: 0; top: -.5px; height: 1px; background: var(--ink); }
+.xv { fill: var(--ink); visibility: hidden; opacity: 0; }   /* the vertical hairline sits under the bars, so it never cuts a slot */
+.xh__t {
+  position: absolute; right: 100%; top: 0; transform: translateY(-50%);
+  padding: 2px var(--s-2) 2px var(--s-1); background: var(--ground);
+  font-size: var(--step--1); line-height: 1.2; font-weight: 500; color: var(--ink); white-space: nowrap;
+}
+
+/* Month radios */
+.months { grid-column: 2; grid-row: 2; border: 0; padding: 0; min-width: 0; }
+.months__row { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); }
+.mo {
+  position: relative; display: grid; place-items: center;
+  min-height: var(--target); cursor: pointer;
+  font-size: var(--step--1); color: var(--ink-soft);
+  transition: transform var(--dur-release) var(--ease-follow);
+}
+.mo input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+.mo .u { z-index: 1; }
+.mo .m3 { display: none; }
+@media (min-width: 600px) { .mo .m3 { display: inline; } .mo .m1 { display: none; } }
+.mo:has(:checked) { background: var(--surface); color: var(--ink); font-weight: 600; }
+.mo:has(:focus-visible) { outline: 2px solid var(--accent); outline-offset: 3px; z-index: 2; }
+.mo:active { transform: scale(.96); transition-duration: var(--dur-press); }
+
+/* Readout */
+.readout { margin-top: var(--s-6); }
+.ro__month { font: 400 var(--step-2)/var(--lh-2) var(--font-serif); }
+.ro__fields { display: grid; gap: var(--s-3) var(--s-5); margin-top: var(--s-3); grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr)); }
+.ro__fields dt { font-size: var(--step--1); line-height: var(--lh--1); color: var(--ink-soft); }
+.ro__fields dd { font-size: var(--step-1); line-height: var(--lh-1); }
+.ro__sub { display: block; font-size: var(--step-0); line-height: var(--lh-0); color: var(--ink-soft); }   /* always rendered, so every month has the same height */
+.ro__probe { margin-top: var(--s-4); min-height: calc(2 * var(--lh-0) * 1em); max-width: 34ch; text-wrap: pretty; }   /* the longest sentence fits two lines... */
+@media (min-width: 992px) and (max-width: 1239px) { .ro__probe { min-height: calc(3 * var(--lh-0) * 1em); } }   /* ...except in this narrow column */
+.admission { margin-top: var(--s-5); max-width: var(--measure); color: var(--ink-soft); }
+
+/* ---------- Membership ---------- */
+.member { margin-top: var(--s-10); }
+.member__intro p { margin-top: var(--s-4); max-width: 40ch; }
+.tiers { border: 0; padding: 0; margin: var(--s-6) 0 0; min-width: 0; }
+.tier {
+  position: relative; display: grid; align-items: baseline;
+  grid-template-columns: minmax(0, 1fr) auto 18px;
+  grid-template-areas: "name price mark" "who who .";
+  column-gap: var(--s-4); row-gap: 2px;
+  padding: var(--s-4) var(--s-3) var(--s-4) var(--s-4);
+  cursor: pointer;
+  transition: transform var(--dur-release) var(--ease-follow);
+}
+@media (min-width: 600px) {
+  .tier { grid-template-columns: 8.5em minmax(0, 1fr) auto 18px; grid-template-areas: "name who price mark"; }
+}
+.tier input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+.tier::before {   /* left rule: hover grows it, checked keeps it in cyclamen */
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  background: var(--ink); transform: scaleY(0); transform-origin: 50% 0;
+  transition: transform var(--dur-rule) var(--ease-follow);
+}
+@media (hover: hover) { .tier:hover::before { transform: scaleY(1); } }
+.tier:has(:checked) { background: var(--surface); }
+.tier:has(:checked)::before { background: var(--accent); transform: scaleY(1); }
+.tier:has(:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; z-index: 1; }
+.tier:active { transform: scale(.985); transition-duration: var(--dur-press); }
+.tier__name { grid-area: name; justify-self: start; font-size: var(--step-1); line-height: var(--lh-1); font-weight: 500; }
+.tier__who { grid-area: who; color: var(--ink-soft); }
+.tier__price { grid-area: price; text-align: right; font: 400 var(--step-3)/1 var(--font-serif); font-variant-numeric: tabular-nums; }
+.tier__mark {
+  grid-area: mark; align-self: center; position: relative;
+  width: 18px; height: 18px; border-radius: var(--r-round);
+  box-shadow: inset 0 0 0 1.5px var(--ink-soft);
+}
+.tier__dot { position: absolute; inset: 0; border-radius: var(--r-round); background: var(--accent); opacity: 0; }
+.tier__dot svg { display: block; width: 18px; height: 18px; fill: none; stroke: var(--on-accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.tier:has(:checked) .tier__dot { opacity: 1; }
+.rule { position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--rule); transform-origin: 0 50%; }
+.member__join { margin-top: var(--s-5); }
+.member__join .btn-fill { width: 100%; }
+@media (min-width: 600px) { .member__join .btn-fill { width: auto; } }
+
+/* ---------- Index ---------- */
+.index { margin-top: var(--s-10); display: grid; gap: var(--s-7) var(--s-5); grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grp h3 { margin-bottom: var(--s-2); }
+.grp p { max-width: 32ch; }
+.grp p + p { margin-top: var(--s-2); }
+.grp--here, .notes { grid-column: 1 / -1; }
+.grp--here .lnk { overflow-wrap: anywhere; }
+.grp--here p.contact { margin-top: var(--s-2); }
+.grp--here p.contact + p.contact { margin-top: 0; }
+.idx-col { display: grid; gap: var(--s-7); align-content: start; }
+.notes h2 { margin-bottom: var(--s-3); }
+.notes__lead { max-width: 40ch; }
+.flowers { margin-top: var(--s-4); }
+.flowers li { padding-block: var(--s-1); max-width: 44ch; }
+.flowers__k { margin-top: var(--s-5); color: var(--ink-soft); }
+.notes__stack { display: grid; margin-top: var(--s-5); }
+.notes__stack > * { grid-area: 1 / 1; }
+.notes__row { display: flex; gap: var(--s-3); align-items: flex-end; flex-wrap: wrap; }
+.notes__row .field { flex: 1 1 14rem; }
+.notes__done p { max-width: 40ch; }
+
+/* Fields (newsletter and dialog) */
+.field label, .field__label { display: block; font-size: var(--step--1); line-height: var(--lh--1); color: var(--ink-soft); }
+.field:focus-within label { color: var(--ink); }
+.field__box { position: relative; margin-top: var(--s-1); }
+.field input {
+  display: block; width: 100%; min-height: var(--target);
+  padding: 10px var(--s-3); border: 0; border-radius: var(--r-label) var(--r-label) 0 0;
+  background: var(--ground); box-shadow: inset 0 -1px 0 var(--ink-soft);
+}
+.field input:focus-visible { outline-offset: 2px; }
+.field__rule {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--ink);
+  transform: scaleX(0); transform-origin: 0 50%; transition: transform var(--dur-rule) var(--ease-out);
+}
+.field:focus-within .field__rule { transform: scaleX(1); }
+.field__err { min-height: calc(var(--lh--1) * var(--step--1)); margin-top: var(--s-1); font-size: var(--step--1); line-height: var(--lh--1); color: var(--accent); font-weight: 500; }
+.field input[aria-invalid="true"] { box-shadow: inset 0 -2px 0 var(--accent); }
+
+/* ---------- Imprint ---------- */
+.imprint { position: relative; margin-top: var(--s-9); padding-top: var(--s-5); display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-6); justify-content: space-between; align-items: baseline; }
+.imprint .rule { top: 0; bottom: auto; }
+.imprint p { max-width: var(--measure); color: var(--ink-soft); }
+
+/* ---------- Dialogs (CD7) ---------- */
+.sheet {
+  width: min(30rem, calc(100% - 2 * var(--gutter)));
+  max-height: calc(100svh - 2 * var(--gutter));
+  padding: var(--s-6); border: 0; border-radius: var(--r-label);
+  background: var(--surface); color: var(--ink);
+}
+.sheet::backdrop { background: var(--backdrop); opacity: 0; transition: opacity .3s var(--ease-out); }
+.sheet[data-state="open"]::backdrop { opacity: 1; }
+.sheet h2 { font: 500 var(--step-2)/var(--lh-2) var(--font-serif); }
+.sheet__sum { margin-top: var(--s-2); color: var(--ink-soft); }
+.sheet__stack { display: grid; }
+.sheet__stack > * { grid-area: 1 / 1; }
+.sheet form { display: grid; gap: var(--s-3); }
+.sheet .field:first-of-type { margin-top: var(--s-3); }
+.sheet .field input { background: var(--ground); }
+.sheet__note { color: var(--ink-soft); font-size: var(--step--1); line-height: var(--lh--1); }
+.sheet__actions { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: var(--s-2); }
+.sheet__body { margin-top: var(--s-3); max-width: 46ch; }
+.sheet__done { align-content: start; display: grid; gap: var(--s-4); }
+.sheet__done .btn-line, .sheet > .btn-line { justify-self: start; }
+.sheet > .btn-line { margin-top: var(--s-5); }
+@media (max-width: 599px) {
+  .sheet { width: 100%; max-width: 100%; margin: auto 0 0; padding-bottom: calc(var(--s-6) + env(safe-area-inset-bottom)); border-radius: var(--r-label) var(--r-label) 0 0; }
+  .sheet__actions .btn-fill { width: 100%; }
+}
+.check { position: relative; display: flex; align-items: center; gap: var(--s-3); min-height: var(--target); cursor: pointer; }
+.check input {
+  appearance: none; flex: none; width: 22px; height: 22px; margin: 0;
+  border-radius: var(--r-label); background: var(--ground); box-shadow: inset 0 0 0 1.5px var(--ink); cursor: pointer;
+}
+.check svg { position: absolute; left: 0; top: 50%; width: 22px; height: 22px; margin-top: -11px; pointer-events: none; fill: none; stroke: var(--ink); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.check path { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset var(--dur-tick) var(--ease-out); }
+.check input:checked + svg path { stroke-dashoffset: 0; }
+
+/* ---------- Layout ---------- */
+@media (min-width: 600px) {
+  .index { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .grp--here { grid-column: 1 / -1; }
+}
+@media (min-width: 992px) {
+  /* Hours: the plot starts right under the today line; caption, key, readout and today's rows share the right column. */
+  .hours, .member, .index { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: 24px; }
+  .hours__top, .year, .chart { display: contents; }
+  .hours h2 { grid-column: 1 / 10; margin-bottom: var(--s-4); }
+  .today-line { grid-column: 1 / 10; grid-row: 2; }
+  .chart__body { grid-column: 1 / 10; grid-row: 3 / span 3; align-self: start; margin-top: var(--s-5); }
+  .chart figcaption { grid-column: 10 / 13; grid-row: 3; margin-top: var(--s-5); }
+  .key { grid-column: 10 / 13; grid-row: 4; }
+  .readout { grid-column: 10 / 13; grid-row: 5; }
+  .ro__fields { grid-template-columns: 1fr; }
+  .admission { grid-column: 1 / 10; grid-row: 6; margin-top: var(--s-6); align-self: start; }
+  .today { grid-column: 10 / 13; grid-row: 1 / 3; align-self: end; margin-top: 0; }   /* beside the answer it explains */
+  .member__intro { grid-column: 1 / 5; }
+  .member__list { grid-column: 6 / 13; }
+  .tiers { margin-top: 0; }
+  .grp--here { grid-column: 1 / 4; }
+  .idx-col--a { grid-column: 4 / 6; }
+  .idx-col--b { grid-column: 6 / 8; }
+  .notes { grid-column: 8 / 13; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after, ::backdrop { transition: none !important; }
+  .lnk:active, .btn-fill:active, .btn-line:active, .tier:active, .mo:active { transform: none; }
+}
+</style>
+</head>
+<body id="top" tabindex="-1">
+
+<div class="host-end">
+  <p>Dogs on short leads are welcome on the outer paths. Bicycle racks are inside both gates.</p>
+</div>
+
+<footer class="ft" aria-labelledby="ft-name">
+  <div class="ft__inner">
+
+    <section class="hours" id="hours" aria-labelledby="hours-h" tabindex="-1">
+      <h2 id="hours-h" data-rv>Opening hours</h2>
+      <div class="hours__top">
+        <div class="today-line" id="today-line" data-rv>
+          <p>Open today until&nbsp;18:00.</p>
+          <p>Last entry 17:30.</p>
+        </div>
+        <div class="today">
+          <p class="today__date" id="today-date" data-rv>Today, Thursday 22 October</p>
+          <dl class="today__rows">
+            <div data-rv><dt>Gates</dt><dd id="today-gates">08:00 to 18:00</dd></div>
+            <div data-rv><dt>Glasshouses</dt><dd id="today-glass">10:00 to 16:30</dd></div>
+          </dl>
+          <p class="today__note" id="clock-note" data-rv>The clocks go back on Sunday 25 October. From then the gates close at 16:30.</p>
+        </div>
+      </div>
+
+      <div class="year">
+        <figure class="chart" id="chart">
+          <figcaption id="chart-cap">Gate and glasshouse hours for each month, against sunrise and sunset. Gates close at or just before dusk.</figcaption>
+          <ul class="key" aria-hidden="true">
+            <li><i class="key__gate"></i>Gates open</li>
+            <li><i class="key__glass"></i>Glasshouses open</li>
+            <li><i class="key__day"></i>Daylight</li>
+            <li><i class="key__now"></i>Now</li>
+          </ul>
+          <div class="chart__body">
+            <div class="axis" aria-hidden="true">
+              <span style="--h:0">04<b>:00</b></span>
+              <span style="--h:4">08<b>:00</b></span>
+              <span style="--h:8">12<b>:00</b></span>
+              <span style="--h:12">16<b>:00</b></span>
+              <span style="--h:16">20<b>:00</b></span>
+            </div>
+            <div class="plot" id="plot">
+              <svg id="plot-svg" role="img" aria-labelledby="chart-cap" preserveAspectRatio="xMinYMin meet"></svg>
+            </div>
+            <fieldset class="months">
+              <legend class="vh">Show hours for</legend>
+              <div class="months__row">
+                <label class="mo"><input type="radio" name="month" value="0" aria-label="January"><span class="u"><span class="m3">Jan</span><span class="m1">J</span></span></label>
+                <label class="mo"><input type="radio" name="month" value="1" aria-label="February"><span class="u"><span class="m3">Feb</span><span class="m1">F</span></span></label>
+                <label class="mo"><input type="radio" name="month" value="2" aria-label="March"><span class="u"><span class="m3">Mar</span><span class="m1">M</span></span></label>
+                <label class="mo"><input type="radio" name="month" value="3" aria-label="April"><span class="u"><span class="m3">Apr</span><span class="m1">A</span></span></label>
+                <label class="mo"><input type="radio" name="month" value="4" aria-label="May"><span class="u"><span class="m3">May</span><span class="m1">M</span></span></label>
+                <label class="mo"><input type="radio" name="month" value="5" aria-label="June"><span class="u"><span class="m3">Jun</span><span class="m1">J</span></span></label>
+                <label class="mo"><input type="radio" name="month" value="6" aria-label="July"><span class="u"><span class="m3">Jul</span><span class="m1">J</span></span></label>
+                <label class="mo"><input type="radio" name="month" value="7" aria-label="August"><span class="u"><span class="m3">Aug</span><span class="m1">A</span></span></label>
+                <label class="mo"><input type="radio" name="month" value="8" aria-label="September"><span class="u"><span class="m3">Sep</span><span class="m1">S</span></span></label>
+                <label class="mo"><input type="radio" name="month" value="9" aria-label="October" checked><span class="u"><span class="m3">Oct</span><span class="m1">O</span></span></label>
+                <label class="mo"><input type="radio" name="month" value="10" aria-label="November"><span class="u"><span class="m3">Nov</span><span class="m1">N</span></span></label>
+                <label class="mo"><input type="radio" name="month" value="11" aria-label="December"><span class="u"><span class="m3">Dec</span><span class="m1">D</span></span></label>
+              </div>
+            </fieldset>
+          </div>
+        </figure>
+
+        <div class="readout" id="readout" aria-live="polite">
+          <p class="ro__month"><span class="roll" data-ro="month"><span>October</span></span></p>
+          <dl class="ro__fields">
+            <div><dt>Gates</dt><dd><span class="roll" data-ro="gates"><span>08:00 to 18:00<span class="ro__sub">16:30 from 25&nbsp;October</span></span></span></dd></div>
+            <div><dt>Glasshouses</dt><dd><span class="roll" data-ro="glass"><span>10:00 to 16:30</span></span></dd></div>
+            <div><dt>Daylight</dt><dd><span class="roll" data-ro="sun"><span>07:33 to 18:08 on the 15th<span class="ro__sub">06:52 to 16:42 from 25&nbsp;October</span></span></span></dd></div>
+          </dl>
+          <p class="ro__probe" id="probe">Now, 16:00: gates and glasshouses open.</p>
+        </div>
+      </div>
+      <p class="admission">The garden is free. Glasshouses £6, under-16s and members free. Closed on 25&nbsp;December.</p>
+    </section>
+
+    <section class="member" id="membership" aria-labelledby="member-h" tabindex="-1">
+      <div class="member__intro">
+        <h2 id="member-h">Become a member</h2>
+        <p>Members get into the glasshouses free all year, bring two guests twice a year, and shop the spring and autumn plant sales a day early.</p>
+      </div>
+      <div class="member__list">
+        <fieldset class="tiers">
+          <legend class="vh">Membership</legend>
+          <label class="tier" data-join="Join as an Individual member for £42 a year" data-title="Join as an Individual member" data-sum="£42 a year, for one adult.">
+            <input type="radio" name="tier" value="individual">
+            <span class="tier__name"><span class="u">Individual</span></span>
+            <span class="tier__who">One adult</span>
+            <span class="tier__price">£42<span class="vh"> a year</span></span>
+            <span class="tier__mark" aria-hidden="true"><span class="tier__dot"><svg viewBox="0 0 18 18"><path d="M5.2 9.4l2.5 2.5 5.1-5.3"/></svg></span></span>
+            <span class="rule" aria-hidden="true"></span>
+          </label>
+          <label class="tier" data-join="Join as Joint members for £64 a year" data-title="Join as Joint members" data-sum="£64 a year, for two adults at one address.">
+            <input type="radio" name="tier" value="joint" checked>
+            <span class="tier__name"><span class="u">Joint</span></span>
+            <span class="tier__who">Two adults at one address</span>
+            <span class="tier__price">£64<span class="vh"> a year</span></span>
+            <span class="tier__mark" aria-hidden="true"><span class="tier__dot"><svg viewBox="0 0 18 18"><path d="M5.2 9.4l2.5 2.5 5.1-5.3"/></svg></span></span>
+            <span class="rule" aria-hidden="true"></span>
+          </label>
+          <label class="tier" data-join="Join as Family members for £78 a year" data-title="Join as Family members" data-sum="£78 a year, for two adults and up to four children.">
+            <input type="radio" name="tier" value="family">
+            <span class="tier__name"><span class="u">Family</span></span>
+            <span class="tier__who">Two adults and up to four children</span>
+            <span class="tier__price">£78<span class="vh"> a year</span></span>
+            <span class="tier__mark" aria-hidden="true"><span class="tier__dot"><svg viewBox="0 0 18 18"><path d="M5.2 9.4l2.5 2.5 5.1-5.3"/></svg></span></span>
+            <span class="rule" aria-hidden="true"></span>
+          </label>
+          <label class="tier" data-join="Join as a Concession member for £30 a year" data-title="Join as a Concession member" data-sum="£30 a year, for students, over-65s and anyone receiving Universal Credit.">
+            <input type="radio" name="tier" value="concession">
+            <span class="tier__name"><span class="u">Concession</span></span>
+            <span class="tier__who">Students, over-65s and anyone receiving Universal Credit</span>
+            <span class="tier__price">£30<span class="vh"> a year</span></span>
+            <span class="tier__mark" aria-hidden="true"><span class="tier__dot"><svg viewBox="0 0 18 18"><path d="M5.2 9.4l2.5 2.5 5.1-5.3"/></svg></span></span>
+            <span class="rule" aria-hidden="true"></span>
+          </label>
+        </fieldset>
+        <p class="member__join">
+          <button class="btn-fill" id="join-btn" type="button" aria-haspopup="dialog" aria-controls="join-dialog"><span class="roll" id="join-label"><span>Join as Joint members for £64 a year</span></span></button>
+        </p>
+      </div>
+    </section>
+
+    <section class="index" aria-labelledby="index-h">
+      <h2 class="vh" id="index-h">Site index</h2>
+      <div class="grp grp--here" id="getting-here" tabindex="-1">
+        <h3>Getting here</h3>
+        <p>Main gate: Glasshouse Row, Dunmore DM4 7RT.</p>
+        <p>River gate: Tannery Lane, step-free.</p>
+        <p>Buses 12 and 31 stop at Merrow Park gate.</p>
+        <p class="contact"><a class="lnk" href="tel:+441632960418" target="_blank" rel="noopener">01632 960418<span class="vh"> (opens in a new tab)</span></a></p>
+        <p class="contact"><a class="lnk" href="mailto:garden@merrowpark.org.uk" target="_blank" rel="noopener">garden@merrowpark.org.uk<span class="vh"> (opens in a new tab)</span></a></p>
+      </div>
+      <div class="idx-col idx-col--a">
+        <div class="grp">
+          <h3>Visit</h3>
+          <ul>
+            <li><a class="lnk" href="#hours">Opening hours</a></li>
+            <li><a class="lnk" href="#getting-here">Getting here</a></li>
+            <li><button class="lnk" type="button" data-topic="access" aria-haspopup="dialog" aria-controls="topic-dialog">Accessibility</button></li>
+          </ul>
+        </div>
+        <div class="grp">
+          <h3>Support</h3>
+          <ul>
+            <li><a class="lnk" href="#membership">Membership</a></li>
+            <li><button class="lnk" type="button" data-topic="volunteer" aria-haspopup="dialog" aria-controls="topic-dialog">Volunteer</button></li>
+            <li><a class="lnk" href="#newsletter">Garden notes</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="idx-col idx-col--b">
+        <div class="grp">
+          <h3>Learn</h3>
+          <ul>
+            <li><button class="lnk" type="button" data-topic="collections" aria-haspopup="dialog" aria-controls="topic-dialog">Plant collections</button></li>
+            <li><button class="lnk" type="button" data-topic="schools" aria-haspopup="dialog" aria-controls="topic-dialog">School visits</button></li>
+            <li><button class="lnk" type="button" data-topic="courses" aria-haspopup="dialog" aria-controls="topic-dialog">Courses and talks</button></li>
+          </ul>
+        </div>
+      </div>
+
+      <section class="notes" id="newsletter" aria-labelledby="notes-h" tabindex="-1">
+        <h2 id="notes-h">Garden notes</h2>
+        <p class="notes__lead">One email a month: what's in flower and what's on.</p>
+        <p class="flowers__k">In flower now</p>
+        <ul class="flowers">
+          <li><i lang="la">Colchicum autumnale</i> in the meadow by the River gate</li>
+          <li><i lang="la">Cyclamen hederifolium</i> under the cedars</li>
+          <li><i lang="la">Nerine bowdenii</i> along the Temperate House wall</li>
+        </ul>
+        <div class="notes__stack">
+          <form id="notes-form" class="notes__form" novalidate aria-label="Sign up to Garden notes">
+            <div class="notes__row">
+              <div class="field">
+                <label for="notes-email">Email</label>
+                <div class="field__box"><input id="notes-email" name="email" type="email" autocomplete="email" required><span class="field__rule" aria-hidden="true"></span></div>
+              </div>
+              <button class="btn-line" type="submit">Sign up</button>
+            </div>
+            <p class="field__err" id="notes-email-err"></p>
+          </form>
+          <div class="notes__done" id="notes-done" inert style="display: none">
+            <p id="notes-done-text" tabindex="-1">Signed up. Your first Garden notes arrive on Tuesday 3 November.</p>
+            <button class="lnk" type="button" id="notes-again">Use a different email</button>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <div class="imprint">
+      <span class="rule" aria-hidden="true"></span>
+      <p><span id="ft-name">Merrow Park Botanic Garden</span> is run by Dunmore City Council with the Friends of Merrow Park, registered charity 1102877.</p>
+      <a class="lnk" href="#top">Back to top</a>
+    </div>
+  </div>
+
+  <dialog class="sheet" id="join-dialog" aria-labelledby="join-h" data-lenis-prevent>
+    <div class="sheet__stack">
+      <form id="join-form" novalidate>
+        <h2 id="join-h">Join as Joint members</h2>
+        <p class="sheet__sum" id="join-sum">£64 a year, for two adults at one address.</p>
+        <div class="field">
+          <label for="join-name">Full name</label>
+          <div class="field__box"><input id="join-name" name="name" autocomplete="name" required autofocus><span class="field__rule" aria-hidden="true"></span></div>
+          <p class="field__err" id="join-name-err"></p>
+        </div>
+        <div class="field">
+          <label for="join-email">Email</label>
+          <div class="field__box"><input id="join-email" name="email" type="email" autocomplete="email" required><span class="field__rule" aria-hidden="true"></span></div>
+          <p class="field__err" id="join-email-err"></p>
+        </div>
+        <label class="check"><input type="checkbox" name="gift"><svg viewBox="0 0 22 22" aria-hidden="true"><path pathLength="1" d="M6 11.4l3.4 3.4L16.2 8"/></svg><span>This membership is a gift</span></label>
+        <p class="sheet__note">We don't take card details here. The email has a secure payment link.</p>
+        <div class="sheet__actions">
+          <button class="btn-fill" type="submit">Email me the payment link</button>
+          <button class="btn-line" type="button" data-close>Close</button>
+        </div>
+      </form>
+      <div class="sheet__done" id="join-done" inert style="display: none">
+        <h2 id="join-done-h" tabindex="-1">Welcome to Merrow Park.</h2>
+        <p id="join-done-text">We've emailed a payment link to sam@example.com. Your card arrives by post within 10 days.</p>
+        <button class="btn-line" type="button" data-close>Close</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog class="sheet" id="topic-dialog" aria-labelledby="topic-h" data-lenis-prevent>
+    <h2 id="topic-h">Accessibility</h2>
+    <p class="sheet__body" id="topic-body">Step-free paths reach every glasshouse from the River gate.</p>
+    <button class="btn-line" type="button" data-close>Close</button>
+  </dialog>
+</footer>
+
+<script defer src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/SplitText.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/DrawSVGPlugin.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  /* ===== DATA: the garden's hours, in UK clock time. Edit here; everything else is computed. ===== */
+  const DATA = {
+    opens: '08:00',          // gates, every open day
+    glassOpens: '10:00',     // glasshouses, every open day
+    lastEntry: 30,           // minutes before the gates close
+    closed: [[11, 25]],      // [month index, day]: closed on 25 December
+    // gates: closing time; after: closing time from the clock change (last Sunday of March / October);
+    // glass: glasshouses close; sun: sunrise and sunset on the 15th; sunAfter: the same just after the clock change
+    months: [
+      { name: 'January',   gates: '16:00', glass: '15:30', sun: ['08:11', '16:24'] },
+      { name: 'February',  gates: '17:00', glass: '15:30', sun: ['07:27', '17:18'] },
+      { name: 'March',     gates: '17:45', after: '19:00', glass: '16:30', sun: ['06:19', '18:08'], sunAfter: ['06:45', '19:35'] },
+      { name: 'April',     gates: '19:30', glass: '16:30', sun: ['06:08', '19:57'] },
+      { name: 'May',       gates: '20:30', glass: '16:30', sun: ['05:07', '20:47'] },
+      { name: 'June',      gates: '21:00', glass: '16:30', sun: ['04:38', '21:33'] },
+      { name: 'July',      gates: '21:00', glass: '16:30', sun: ['04:59', '21:22'] },
+      { name: 'August',    gates: '20:00', glass: '16:30', sun: ['05:48', '20:30'] },
+      { name: 'September', gates: '19:00', glass: '16:30', sun: ['06:40', '19:18'] },
+      { name: 'October',   gates: '18:00', after: '16:30', glass: '16:30', sun: ['07:33', '18:08'], sunAfter: ['06:52', '16:42'] },
+      { name: 'November',  gates: '16:00', glass: '15:30', sun: ['07:29', '16:12'] },
+      { name: 'December',  gates: '15:45', glass: '15:30', sun: ['08:11', '15:50'] }
+    ],
+    topics: {
+      access: ['Accessibility', 'Step-free paths reach every glasshouse from the River gate. Three wheelchairs are free to borrow at the Main gate; call 01632 960418 to keep one for you.'],
+      collections: ['Plant collections', 'About 6,200 kinds of plant in 14 collections, from the Palm House cycads to the Alpine House saxifrages. Every plant carries a label with its accession number.'],
+      schools: ['School visits', 'Free guided sessions for Key Stages 1 to 3, on weekday mornings in term time. Book at least three weeks ahead.'],
+      courses: ['Courses and talks', 'Evening talks in the Temperate House from October to March, and Saturday courses in pruning, propagation and botanical drawing.'],
+      volunteer: ['Volunteer', 'Garden volunteers work Tuesday or Friday mornings alongside our gardeners. No experience needed; gloves and tools are provided.']
+    }
+  };
+
+  const root = document.documentElement;
+  root.classList.add('js');
+  const lateTimer = setTimeout(() => root.classList.remove('js'), 2500);   // libraries late or blocked: show the finished page
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const reduceMQ = matchMedia('(prefers-reduced-motion: reduce)');
+  const E = { out: 'expo.out', draw: 'power2.inOut', follow: 'power3.out', pop: 'back.out(2)' };   // mirrors --ease-*
+  const dur = n => parseFloat(getComputedStyle(root).getPropertyValue('--dur-' + n)) || 0;
+  let live = false;     // GSAP motion is running (not reduced, libraries loaded)
+  let lenis = null;
+
+  /* ===== Time ===== */
+  const WD = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const toMin = s => { const [h, m] = s.split(':'); return h * 60 + +m; };
+  const hhmm = m => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+  // Tabular times for a face without tnum: every hh:mm becomes fixed-width digit cells that never wrap.
+  const fig = s => s.replace(/\d\d:\d\d/g, t => `<span class="t">${t.replace(/\d/g, '<span>$&</span>')}</span>`);
+  const weekday = (y, m, d) => new Date(Date.UTC(y, m, d)).getUTCDay();
+  const lastSunday = (y, m) => { const d = new Date(Date.UTC(y, m + 1, 0)).getUTCDate(); return d - weekday(y, m, d); };
+  const addDays = (n, k) => { const t = new Date(Date.UTC(n.y, n.m, n.d + k)); return { y: t.getUTCFullYear(), m: t.getUTCMonth(), d: t.getUTCDate() }; };
+  const dayDiff = (a, b) => Math.round((Date.UTC(b.y, b.m, b.d) - Date.UTC(a.y, a.m, a.d)) / 864e5);
+
+  function gardenNow() {   // the garden's own clock (Europe/London), whatever the visitor's time zone
+    const d = new Date();
+    try {
+      const p = {};
+      for (const x of new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', hourCycle: 'h23' }).formatToParts(d)) p[x.type] = +x.value;
+      return { y: p.year, m: p.month - 1, d: p.day, min: p.hour * 60 + p.minute };
+    } catch { return { y: d.getFullYear(), m: d.getMonth(), d: d.getDate(), min: d.getHours() * 60 + d.getMinutes() }; }
+  }
+  function hoursOn(day) {   // null when closed, else minutes for gates and glasshouses
+    if (DATA.closed.some(([m, d]) => m === day.m && d === day.d)) return null;
+    const M = DATA.months[day.m];
+    const close = toMin(M.after && day.d >= lastSunday(day.y, day.m) ? M.after : M.gates);
+    return { open: toMin(DATA.opens), close, glass: [toMin(DATA.glassOpens), Math.min(toMin(M.glass), close)] };
+  }
+  const dayName = (day, now) => dayDiff(now, day) === 1 ? 'tomorrow' : `on ${day.d} ${DATA.months[day.m].name}`;
+  function nextOpen(now) { for (let k = 1; k < 7; k++) { const d = addDays(now, k); if (hoursOn(d)) return d; } }
+
+  function todayText(now) {   // the two sentences of the today line
+    const h = hoursOn(now), M = DATA.months[now.m];
+    if (!h) return [`Closed today, ${now.d} ${M.name}.`, `Opens ${dayName(nextOpen(now), now)} at\u00a0${DATA.opens}.`];
+    const last = h.close - DATA.lastEntry;
+    if (now.min < h.open) return [`Opens today at ${hhmm(h.open)}.`, `Closes at\u00a0${hhmm(h.close)}.`];
+    if (now.min < h.close) return [`Open today until ${hhmm(h.close)}.`, now.min < last ? `Last entry ${hhmm(last)}.` : `Last entry was ${hhmm(last)}.`];
+    return ['Closed now.', `Opens ${dayName(nextOpen(now), now)} at\u00a0${DATA.opens}.`];
+  }
+  function clockNote(now) {   // shown within 14 days of a clock change
+    for (const m of [2, 9]) {
+      const M = DATA.months[m], change = { y: now.y, m, d: lastSunday(now.y, m) }, k = dayDiff(now, change);
+      const verb = m === 2 ? 'forward' : 'back', when = `Sunday ${change.d} ${M.name}`;
+      if (k > 0 && k <= 14) return `The clocks go ${verb} on ${when}. From then the gates close at ${M.after}.`;
+      if (k === 0) return `The clocks ${m === 2 ? 'went forward' : 'went back'} today. The gates now close at ${M.after}.`;
+      if (k < 0 && k >= -14) return `The clocks ${m === 2 ? 'went forward' : 'went back'} on ${when}. The gates now close at ${M.after}.`;
+    }
+    return '';
+  }
+  function nextSend(now) {   // Garden notes go out on the first Tuesday of each month
+    for (let k = 0; k < 2; k++) {
+      const y = now.y + Math.floor((now.m + k) / 12), m = (now.m + k) % 12, d = 1 + (9 - weekday(y, m, 1)) % 7;
+      if (k || d > now.d) return `Tuesday ${d} ${DATA.months[m].name}`;
+    }
+  }
+  // Which half of a split month (March, October) a day falls in: 0 before the clock change, 1 from it; null if not split.
+  const halfOf = (m, d, y) => DATA.months[m].after ? +(d >= lastSunday(y, m)) : null;
+  // The half the readout leads with: today's half in today's month, the half with the 15th otherwise.
+  const leadHalf = (m, at) => halfOf(m, m === at.m ? at.d : 15, at.y);
+  function monthLines(m, y, lead = halfOf(m, 15, y)) {
+    // Gates and Daylight always have a second line with real content, so the readout height never changes.
+    const M = DATA.months[m], range = ([a, b]) => `${a} to ${b}`, sub = s => `<span class="ro__sub">${s}</span>`;
+    const head = { month: M.name, glass: range([DATA.glassOpens, M.glass]) };
+    if (M.after) {   // split month: the lead half as the value, the other half on the second line
+      const cd = `${lastSunday(y, m)}\u00a0${M.name}`, g = [M.gates, M.after], s = [M.sun, M.sunAfter], tag = ['before', 'from'], o = 1 - lead;
+      return { ...head,
+        gates: range([DATA.opens, g[lead]]) + sub(`${g[o]} ${tag[o]} ${cd}`),
+        sun: (lead ? range(s[1]) : `${range(s[0])} on the 15th`) + sub(`${range(s[o])} ${tag[o]} ${cd}`) };
+    }
+    const close = toMin(M.gates), early = toMin(M.sun[0]) - toMin(DATA.opens);
+    const cut = DATA.closed.filter(c => c[0] === m).map(c => `Closed ${c[1]}\u00a0${M.name}`);
+    return { ...head,
+      gates: range([DATA.opens, M.gates]) + sub(cut.join('. ') || `Last entry ${hhmm(close - DATA.lastEntry)}`),
+      sun: `${range(M.sun)} on the 15th` + sub(early > 0 ? `Gates open ${early} minutes before sunrise` : `Gates close ${toMin(M.sun[1]) - close} minutes before sunset`) };
+  }
+  function probeText(m, half, t, y) {   // "June at 19:10: gates open, glasshouses closed."
+    const M = DATA.months[m], cd = M.after && lastSunday(y, m);
+    const close = toMin(M.after && half ? M.after : M.gates);
+    const gates = t >= toMin(DATA.opens) && t < close;
+    const glass = gates && t >= toMin(DATA.glassOpens) && t < toMin(M.glass);
+    const who = !M.after ? M.name : `${M.name}, ${half ? 'from' : 'before'} ${cd} ${M.name},`;
+    return `${who} at ${hhmm(t)}: ${!gates ? 'gates closed' : glass ? 'gates and glasshouses open' : 'gates open, glasshouses closed'}.`;
+  }
+
+  /* ===== MI2 masked swap, used by the readout and the Join label ===== */
+  function roll(slot, html, d = dur('roll')) {
+    const cur = slot.lastElementChild;
+    if (cur && cur.dataset.v === html) return;
+    const next = document.createElement('span');
+    next.innerHTML = html; next.dataset.v = html;
+    slot.append(next);
+    const old = [...slot.children].slice(0, -1);
+    old.forEach(n => n.setAttribute('aria-hidden', 'true'));   // the live region reads only the new value
+    if (!live || !cur || !cur.dataset.v) { old.forEach(n => n.remove()); return; }
+    gsap.killTweensOf(old);
+    gsap.fromTo(next, { yPercent: 100 }, { yPercent: 0, duration: d, ease: E.out });
+    gsap.to(old, { yPercent: -100, duration: d, ease: E.out, onComplete: () => old.forEach(n => n.remove()) });
+  }
+  const show = (el, on) => { el.inert = !on; el.style.display = on ? '' : 'none'; el.style.visibility = 'visible'; el.style.opacity = 1; };
+  function crossfade(from, to, focusEl) {   // CD9: out, swap while both are invisible (the cell takes the new panel's height), in
+    from.inert = true; to.inert = false;
+    const swap = () => { show(from, false); show(to, true); focusEl.focus({ preventScroll: true }); };
+    if (!live) return swap();
+    gsap.timeline()
+      .to(from, { opacity: 0, y: -4, duration: .15, ease: E.out, onComplete: () => { swap(); gsap.set(from, { clearProps: 'transform' }); } })
+      .fromTo(to, { opacity: 0, y: 4 }, { opacity: 1, y: 0, duration: .25, ease: E.out, immediateRender: false });
+  }
+
+  /* ===== Today ===== */
+  let now = gardenNow();
+  const todayLine = $('#today-line');
+  let todayLineBusy = false;   // true while SplitText owns the line
+  function renderToday() {
+    const [a, b] = todayText(now), ps = $$('p', todayLine);
+    if (!todayLineBusy && (ps[0].textContent !== a || ps[1].textContent !== b)) { ps[0].textContent = a; ps[1].textContent = b; }
+    $('#today-date').textContent = `Today, ${WD[weekday(now.y, now.m, now.d)]} ${now.d} ${DATA.months[now.m].name}`;
+    const h = hoursOn(now);
+    $('#today-gates').innerHTML = h ? fig(`${hhmm(h.open)} to ${hhmm(h.close)}`) : 'Closed';
+    $('#today-glass').innerHTML = h ? fig(`${hhmm(h.glass[0])} to ${hhmm(h.glass[1])}`) : 'Closed';
+    const note = clockNote(now), el = $('#clock-note');
+    el.textContent = note; el.hidden = !note;
+  }
+
+  /* ===== The year chart ===== */
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = $('#plot-svg'), plot = $('#plot');
+  const mk = (tag, cls, parent = svg) => { const e = document.createElementNS(NS, tag); e.setAttribute('class', cls); parent.append(e); return e; };
+  const band = mk('rect', 'band');
+  const grid = [4, 8, 12, 16, 20].map(h => Object.assign(mk('rect', 'grid'), { h }));
+  const lens = mk('path', 'lens'), rise = mk('path', 'curve'), set = mk('path', 'curve');
+  const under = mk('g', 'under');   // never dimmed, so a .45 bar reads as pale green on straw and on white alike
+  const bars = [];
+  DATA.months.forEach((M, m) => (M.after ? [0, 1] : [null]).forEach(half => {
+    const g = mk('g', 'bar'); g.dataset.m = m;
+    // cap: a white hairline where sunrise crosses a bar that opens before it (January, December)
+    const early = !M.after && toMin(DATA.opens) < toMin(M.sun[0]);
+    bars.push({ m, half, g, u: mk('rect', '', under), gate: mk('rect', 'gate', g), slot: mk('rect', 'slot', g),
+      cap: early ? mk('rect', 'cap', g) : null, rise: toMin(M.sun[0]),
+      close: toMin(half ? M.after : M.gates), glass: toMin(M.glass) });
+  }));
+  const lit = mk('rect', 'lit'), tick = mk('rect', 'tick');
+  [band, lens, rise, set, lit, tick, ...grid, ...bars.flatMap(b => [b.u, b.gate, b.slot, b.cap].filter(Boolean))].forEach(e => e.setAttribute('data-rv', ''));
+  const monthInputs = $$('.mo input'), monthLabels = $$('.mo');
+
+  let geo = { W: 1, H: 1, cw: 1 };
+  const yOf = t => (t - 240) / 1080 * geo.H;             // 04:00 at the top, 22:00 at the bottom
+  const round = v => Math.round(v * 10) / 10;
+  function spline(pts, move = true) {   // Catmull-Rom through the points, as cubic Béziers
+    let d = move ? `M${round(pts[0][0])} ${round(pts[0][1])}` : `L${round(pts[0][0])} ${round(pts[0][1])}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
+      d += `C${round(p1[0] + (p2[0] - p0[0]) / 6)} ${round(p1[1] + (p2[1] - p0[1]) / 6)} ${round(p2[0] - (p3[0] - p1[0]) / 6)} ${round(p2[1] - (p3[1] - p1[1]) / 6)} ${round(p2[0])} ${round(p2[1])}`;
+    }
+    return d;
+  }
+  const todayBar = () => bars.find(b => b.m === now.m && b.half === halfOf(now.m, now.d, now.y));
+  function barBox(b) {   // x and width of a bar (or one half of a split bar)
+    const bw = Math.max(6, Math.min(geo.cw * .46, 32)), x = b.m * geo.cw + (geo.cw - bw) / 2;
+    if (b.half === null) return [x, bw];
+    const w = (bw - 2) / 2; return [x + b.half * (w + 2), w];
+  }
+  function layout() {
+    const W = plot.clientWidth, H = plot.clientHeight;
+    if (!W || !H) return;
+    geo = { W, H, cw: W / 12 };
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    grid.forEach(r => { r.setAttribute('x', 0); r.setAttribute('y', Math.round(yOf(r.h * 60))); r.setAttribute('width', W); r.setAttribute('height', 1); });
+    const edge = i => yOf((toMin(DATA.months[0].sun[i]) + toMin(DATA.months[11].sun[i])) / 2);   // the year wraps: 1 January sits between December and January
+    // Runs of points for one curve. A split month ends a run at its centre (where its half-bars meet) and starts
+    // the next run an hour away, so the daylight steps with the clock exactly where the bars split.
+    const runs = i => {
+      const out = [[[0, edge(i)]]];
+      DATA.months.forEach((M, m) => {
+        const x = (m + .5) * geo.cw;
+        out.at(-1).push([x, yOf(toMin(M.sun[i]))]);
+        if (M.sunAfter) out.push([[x, yOf(toMin(M.sunAfter[i]))]]);
+      });
+      out.at(-1).push([W, edge(i)]);
+      return out;
+    };
+    const path = (rs, move = true) => rs.map((pts, k) => spline(pts, move && !k)).join('');
+    const r = runs(0), s = runs(1);
+    rise.setAttribute('d', path(r)); set.setAttribute('d', path(s));
+    lens.setAttribute('d', path(r) + path(s.map(p => [...p].reverse()).reverse(), false) + 'Z');
+    const top = yOf(toMin(DATA.opens)), set4 = (el, o) => Object.entries(o).forEach(([k, v]) => el.setAttribute(k, v));
+    for (const b of bars) {
+      const [x, w] = barBox(b), sw = Math.max(2, Math.round(w * .38));
+      const box = { x: round(x), y: round(top), width: round(w), height: round(yOf(b.close) - top) };
+      set4(b.gate, box); set4(b.u, box);
+      set4(b.slot, { x: round(x + (w - sw) / 2), y: round(yOf(toMin(DATA.glassOpens))), width: sw, height: round(yOf(Math.min(b.glass, b.close)) - yOf(toMin(DATA.glassOpens))) });
+      if (b.cap) set4(b.cap, { x: box.x, y: round(yOf(b.rise) - .5), width: box.width, height: 1 });
+    }
+    const tb = todayBar();
+    if (tb) { ['x', 'y', 'width', 'height'].forEach(k => lit.setAttribute(k, tb.gate.getAttribute(k))); tb.g.insertBefore(lit, tb.slot); }
+    lit.style.display = tb && hoursOn(now) ? '' : 'none';
+    placeTick(); placeBand();
+  }
+  function placeTick() {
+    const inPlot = now.min >= 240 && now.min <= 1320;
+    tick.style.display = inPlot ? '' : 'none';
+    Object.entries({ x: round(now.m * geo.cw + 3), y: round(yOf(now.min) - 1.5), width: round(geo.cw - 6), height: 3 }).forEach(([k, v]) => tick.setAttribute(k, v));
+  }
+  function placeBand() {
+    Object.entries({ x: round(sel * geo.cw), y: 0, width: round(geo.cw), height: geo.H }).forEach(([k, v]) => band.setAttribute(k, v));
+  }
+
+  /* Readout and selection */
+  let sel = now.m, probing = null;
+  const slots = Object.fromEntries($$('[data-ro]').map(el => [el.dataset.ro, el]));
+  const probe = $('#probe');
+  function idleText(m = sel) {   // the readout's last line when nothing is pointed at: that month at the current time
+    if (m !== now.m) return probeText(m, halfOf(m, 15, now.y), now.min, now.y);   // a radio reads the half with the 15th
+    const h = hoursOn(now), gates = h && now.min >= h.open && now.min < h.close, glass = gates && now.min >= h.glass[0] && now.min < h.glass[1];
+    return `Now, ${hhmm(now.min)}: ${!gates ? 'gates closed' : glass ? 'gates and glasshouses open' : 'gates open, glasshouses closed'}.`;
+  }
+  function renderReadout(m, d, half = leadHalf(m, now)) {
+    const L = monthLines(m, now.y, half ?? 0);
+    for (const k of ['month', 'gates', 'glass', 'sun']) roll(slots[k], fig(L[k]), d);
+  }
+  const setProbe = s => { probe.innerHTML = fig(s.replace(/ (\S+)$/, ' $1')); };   // no lone last word
+  const readoutEl = $('#readout');
+  const quiet = on => readoutEl.setAttribute('aria-live', on ? 'off' : 'polite');   // pointer previews are not announced
+  function setDim(m, half = null) {   // HV7: the month (or half-month) being read keeps its ink, the rest fade
+    if (m === null) { delete plot.dataset.dim; bars.forEach(b => b.g.classList.remove('is-hot')); return; }
+    plot.dataset.dim = '';
+    bars.forEach(b => b.g.classList.toggle('is-hot', b.m === m && (half === null || b.half === half)));
+  }
+  const restDim = () => setDim(sel === now.m ? null : sel);   // a chosen month other than today's keeps the emphasis
+  function select(m, d) {
+    sel = m;
+    monthInputs[m].checked = true;
+    placeBand(); renderReadout(m, d);
+    setProbe(idleText());
+    if (!probing) restDim();
+  }
+  monthInputs.forEach((inp, m) => inp.addEventListener('change', () => select(m)));
+  let hoverMo = false;
+  monthLabels.forEach((lab, m) => {
+    lab.addEventListener('pointerenter', e => {   // a hovered month answers in the readout, as the crosshair does
+      if (e.pointerType !== 'mouse' || probing) return;
+      hoverMo = true; quiet(true); setDim(m);
+      renderReadout(m, dur('roll-fast')); setProbe(idleText(m));
+    });
+    lab.addEventListener('pointerleave', () => {
+      if (probing) return;
+      restDim();
+      if (hoverMo) { hoverMo = false; renderReadout(sel); setProbe(idleText()); quiet(false); }
+    });
+    const inp = monthInputs[m];
+    inp.addEventListener('focus', () => { if (inp.matches(':focus-visible')) setDim(m); });
+    inp.addEventListener('blur', () => { if (!probing) restDim(); });
+  });
+  // A tap or click on the plot selects the month under it. A finger drag selects only after 8px of sideways
+  // movement, so a vertical swipe that starts on the chart still scrolls the page (touch-action: pan-y).
+  const colAt = x => Math.max(0, Math.min(11, Math.floor(x / geo.cw)));
+  const plotX = e => e.clientX - plot.getBoundingClientRect().left;
+  const pick = e => { const m = colAt(plotX(e)); if (m !== sel) select(m, dur('roll-fast')); };
+  let drag = null;
+  plot.addEventListener('click', pick);
+  plot.addEventListener('pointerdown', e => { drag = e.pointerType === 'mouse' ? null : { x: e.clientX, on: false }; });
+  plot.addEventListener('pointermove', e => {
+    if (!drag) return;
+    if (!drag.on && Math.abs(e.clientX - drag.x) > 8) drag.on = true;
+    if (drag.on) pick(e);
+  });
+  ['pointerup', 'pointercancel'].forEach(t => plot.addEventListener(t, () => { drag = null; }));
+
+  /* ===== Membership ===== */
+  const joinBtn = $('#join-btn'), joinLabel = $('#join-label');
+  const tierOf = () => $('.tier input:checked').closest('.tier');
+  $$('.tier input').forEach(inp => inp.addEventListener('change', () => {
+    roll(joinLabel, tierOf().dataset.join);
+    const dot = inp.closest('.tier').querySelector('.tier__dot');
+    if (live) gsap.fromTo(dot, { scale: .6, opacity: 0 }, { scale: 1, opacity: 1, duration: .25, ease: E.pop, clearProps: 'all' });
+  }));
+  function sizeJoin() {   // reserve the longest label: width from 600px up, height when full width and wrapping
+    const cur = joinLabel.innerHTML; let w = 0, h = 0;
+    joinBtn.style.minWidth = joinBtn.style.minHeight = '';
+    for (const t of $$('.tier')) { joinLabel.firstElementChild.textContent = t.dataset.join; w = Math.max(w, joinBtn.offsetWidth); h = Math.max(h, joinBtn.offsetHeight); }
+    joinLabel.innerHTML = cur; joinBtn.style.minWidth = w ? Math.ceil(w) + 'px' : ''; joinBtn.style.minHeight = h ? Math.ceil(h) + 'px' : '';
+  }
+
+  /* ===== Dialogs (CD7) ===== */
+  const narrow = matchMedia('(max-width: 599px)');
+  let opener = null;
+  function openDialog(dlg, from) {
+    opener = from;
+    dlg.showModal();
+    lenis?.stop();
+    requestAnimationFrame(() => { dlg.dataset.state = 'open'; });
+    if (!window.gsap) return;
+    gsap.killTweensOf(dlg);
+    if (live) gsap.fromTo(dlg, narrow.matches ? { yPercent: 100, autoAlpha: 1 } : { autoAlpha: 0, y: 16, scale: .98 },
+      { autoAlpha: 1, y: 0, yPercent: 0, scale: 1, duration: .45, ease: E.out });
+    else gsap.fromTo(dlg, { opacity: 0 }, { opacity: 1, duration: .15 });   // opacity only: visibility:hidden would drop showModal's focus
+  }
+  function closeDialog(dlg) {
+    if (dlg.dataset.state === 'closing' || !dlg.open) return;
+    dlg.dataset.state = 'closing';
+    const done = () => { dlg.close(); };
+    if (!window.gsap) return done();
+    gsap.killTweensOf(dlg);
+    if (live) gsap.to(dlg, narrow.matches ? { yPercent: 100, duration: .25, ease: E.draw, onComplete: done } : { autoAlpha: 0, y: 8, scale: .98, duration: .25, ease: E.draw, onComplete: done });
+    else gsap.to(dlg, { opacity: 0, duration: .15, onComplete: done });
+  }
+  $$('dialog').forEach(dlg => {
+    dlg.addEventListener('cancel', e => { e.preventDefault(); closeDialog(dlg); });   // Escape animates out too
+    dlg.addEventListener('click', e => {
+      const r = dlg.getBoundingClientRect();   // the dialog's own padding is also e.target === dlg, so test the point
+      const outside = e.target === dlg && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom);
+      if (outside || e.target.closest('[data-close]')) closeDialog(dlg);
+    });
+    dlg.addEventListener('close', () => {
+      delete dlg.dataset.state;
+      if (window.gsap) gsap.set(dlg, { clearProps: 'all' });
+      lenis?.start();
+      if (dlg.id === 'join-dialog') resetJoin();
+      opener?.focus({ preventScroll: true });
+      lenis?.resize(); window.ScrollTrigger?.refresh();
+    });
+  });
+  joinBtn.addEventListener('click', () => {
+    const t = tierOf();
+    $('#join-h').textContent = t.dataset.title;
+    $('#join-sum').textContent = t.dataset.sum;
+    openDialog($('#join-dialog'), joinBtn);
+  });
+  $$('[data-topic]').forEach(b => b.addEventListener('click', () => {
+    const [title, body] = DATA.topics[b.dataset.topic];
+    $('#topic-h').textContent = title; $('#topic-body').textContent = body;
+    openDialog($('#topic-dialog'), b);
+  }));
+
+  /* ===== Forms (MI4 errors, CD9 results) ===== */
+  function check(input, msg) {   // returns true when valid; shows or clears the inline message
+    const err = $('#' + input.id + '-err'), bad = !input.value.trim() || !input.checkValidity();
+    if (bad) { input.setAttribute('aria-invalid', 'true'); input.setAttribute('aria-describedby', err.id); }
+    else { input.removeAttribute('aria-invalid'); input.removeAttribute('aria-describedby'); }
+    const text = bad ? msg : '';
+    if (err.textContent !== text) {
+      err.textContent = text;
+      if (text && live) gsap.fromTo(err, { y: 4, opacity: 0 }, { y: 0, opacity: 1, duration: .25, ease: E.out });
+    }
+    return !bad;
+  }
+  const EMAIL_MSG = 'Enter an email address, like name@example.com';
+  const joinForm = $('#join-form'), joinDone = $('#join-done');
+  joinForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const name = $('#join-name'), email = $('#join-email');
+    const ok = [check(name, 'Enter your full name'), check(email, EMAIL_MSG)];
+    if (ok.includes(false)) { (ok[0] ? email : name).focus(); return; }
+    const gift = joinForm.elements.gift.checked;
+    $('#join-done-text').textContent = `We've emailed a payment link to ${email.value.trim()}. ${gift ? 'The card arrives by post within 10 days, ready to give.' : 'Your card arrives by post within 10 days.'}`;
+    crossfade(joinForm, joinDone, $('#join-done-h'));
+  });
+  function resetJoin() {
+    joinForm.reset();
+    $$('#join-form .field__err').forEach(p => { p.textContent = ''; });
+    $$('#join-form input').forEach(i => { i.removeAttribute('aria-invalid'); i.removeAttribute('aria-describedby'); });
+    if (window.gsap) gsap.set([joinForm, joinDone], { clearProps: 'all' });
+    show(joinForm, true); show(joinDone, false);
+  }
+  const notesForm = $('#notes-form'), notesDone = $('#notes-done'), notesEmail = $('#notes-email');
+  notesForm.addEventListener('submit', e => {
+    e.preventDefault();
+    if (!check(notesEmail, EMAIL_MSG)) { notesEmail.focus(); return; }
+    $('#notes-done-text').textContent = `Signed up. Your first Garden notes arrive on ${nextSend(now)}.`;
+    crossfade(notesForm, notesDone, $('#notes-done-text'));
+  });
+  $('#notes-again').addEventListener('click', () => { notesForm.reset(); crossfade(notesDone, notesForm, notesEmail); });
+
+  /* ===== Anchors (NV6): eased glide, then focus moves to the target ===== */
+  document.addEventListener('click', e => {
+    const a = e.target.closest('a[href^="#"]');
+    if (!a) return;
+    const id = a.getAttribute('href').slice(1), target = id === 'top' ? document.body : document.getElementById(id);
+    if (!target) return;
+    e.preventDefault();
+    const y = id === 'top' ? 0 : target.getBoundingClientRect().top + scrollY - 16;
+    const land = () => target.focus({ preventScroll: true });
+    if (lenis) lenis.scrollTo(y, { duration: Math.min(1.3, .65 + Math.abs(y - scrollY) / 4000), onComplete: land });
+    else { scrollTo({ top: y, behavior: reduceMQ.matches ? 'auto' : 'smooth' }); land(); }
+  });
+
+  /* ===== First render, then a minute clock (S4: instant updates, no ambient motion) ===== */
+  renderToday();
+  layout();
+  select(sel);
+  new ResizeObserver(layout).observe(plot);
+  document.fonts.ready.then(sizeJoin);
+  let joinW = innerWidth;
+  addEventListener('resize', () => { if (innerWidth !== joinW) { joinW = innerWidth; sizeJoin(); } });
+  setInterval(() => {
+    const was = now.m; now = gardenNow();
+    renderToday(); layout();
+    if (was !== now.m && sel === was) select(now.m);
+    else if (!probing) setProbe(idleText());
+  }, 60000);
+
+  /* ===== Motion (GSAP + Lenis) ===== */
+  function initMotion() {
+    gsap.registerPlugin(ScrollTrigger, SplitText, DrawSVGPlugin);
+
+    const mm = gsap.matchMedia();
+    mm.add({
+      motion: '(prefers-reduced-motion: no-preference)',
+      reduce: '(prefers-reduced-motion: reduce)',
+      fine: '(hover: hover) and (pointer: fine)',
+      wide: '(min-width: 992px)'
+    }, ctx => {
+      const { motion, fine, wide } = ctx.conditions;
+      if (!motion) return;   // reduced: CSS shows final states, scroll stays native, swaps are instant
+      live = true;
+
+      lenis = new Lenis({ lerp: .1, smoothWheel: true, autoRaf: false });
+      lenis.on('scroll', ScrollTrigger.update);
+      const raf = t => lenis.raf(t * 1000);
+      gsap.ticker.add(raf);
+      gsap.ticker.lagSmoothing(0);
+
+      // S3 chart: hidden states now, the draw when it is due
+      const caps = bars.map(b => b.cap).filter(Boolean);
+      gsap.set(grid, { scaleX: 0, opacity: 1, transformOrigin: '0% 50%' });
+      // Bars (with their white beds), slots and today's bar all hang from their top edge (08:00, or 10:00 for the slots) and grow down.
+      gsap.set([...bars.flatMap(b => [b.u, b.gate, b.slot]), lit], { scaleY: 0, opacity: 1, transformOrigin: '50% 0%' });
+      gsap.set(caps, { autoAlpha: 0 });
+      gsap.set([rise, set], { drawSVG: '0%', opacity: 1 });
+      gsap.set(lens, { opacity: 0 });
+      let drawn = false;
+      function drawChart() {
+        if (drawn) return; drawn = true;
+        // Three beats, 2.1s in all: the two pens (0 to .75), the lens closing between them from midday (.6 to 1.05),
+        // then the gates hang month by month from next month round to today's, which lands last in cyclamen.
+        const tb = todayBar(), turn = b => [(b.m - now.m + 11) % 12, b === tb, b.half];
+        const order = [...bars].sort((a, b) => { const x = turn(a), y = turn(b); return x[0] - y[0] || x[1] - y[1] || x[2] - y[2]; });
+        const tl = gsap.timeline({ onComplete: () => { gsap.set([rise, set], { clearProps: 'strokeDasharray,strokeDashoffset' }); gsap.set(lens, { clearProps: 'clipPath' }); } })
+          .to(band, { autoAlpha: 1, duration: .4, ease: E.out }, 0)
+          .to(grid, { scaleX: 1, duration: .6, ease: E.out, stagger: .05 }, 0)
+          .fromTo([rise, set], { drawSVG: '0%' }, { drawSVG: '100%', duration: .75, ease: E.draw }, 0)
+          .fromTo(lens, { opacity: 1, clipPath: 'inset(48% 0% 48% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: .45, ease: E.draw, immediateRender: false }, .6);
+        let t = .85;
+        order.forEach((b, i) => {
+          t = .85 + i * .045;
+          tl.to([b.u, b.gate, ...(b === tb ? [lit] : [])], { scaleY: 1, duration: .35, ease: E.out }, t)
+            .to(b.slot, { scaleY: 1, duration: .25, ease: E.out }, t + .15);
+          if (b.cap) tl.to(b.cap, { autoAlpha: 1, duration: .25, ease: E.out }, t + .15);
+        });
+        tl.fromTo(tick, { scaleX: 0, autoAlpha: 0, transformOrigin: '50% 50%' }, { scaleX: 1, autoAlpha: 1, duration: .2, ease: E.pop }, t + .45);
+      }
+
+      // S2 SC16: structural rules draw from the left as they arrive
+      gsap.set('.ft .rule', { scaleX: 0, transformOrigin: '0% 50%' });
+      ScrollTrigger.batch('.ft .rule', { start: 'top 90%', once: true,
+        onEnter: els => gsap.to(els, { scaleX: 1, duration: 1, ease: E.out, stagger: .06 }) });
+
+      // Page load: L1 to L5, after fonts (capped at 1s)
+      const fontsReady = Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 1000))]);
+      fontsReady.then(() => ctx.add(() => {
+        const tl = gsap.timeline();
+        tl.fromTo('#hours-h', { y: 6, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: .4, ease: E.out }, 0);
+        todayLineBusy = true;
+        // SplitText turns no-break spaces into breakable ones, so "until 18:00." would split differently from how it rests.
+        $$('p', todayLine).forEach(p => { p.innerHTML = p.textContent.replace(/(\S+) (\S+)/g, '<span class="nw">$1 $2</span>'); });
+        const split = SplitText.create($$('p', todayLine), { type: 'lines', mask: 'lines', aria: 'none' });
+        gsap.set(split.masks, { paddingBottom: '.25em', marginBottom: '-.25em' });   // room for Literata's descenders
+        gsap.set(todayLine, { autoAlpha: 1 });
+        tl.from(split.lines, { yPercent: 110, duration: 1, ease: E.out, stagger: .08,
+          onComplete: () => { split.revert(); todayLineBusy = false; renderToday(); } }, .1);
+        tl.fromTo(['#today-date', ...$$('.today__rows div')], { y: 8, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: .5, ease: E.out, stagger: .08 }, .45);
+        tl.fromTo('#clock-note', { autoAlpha: 0 }, { autoAlpha: 1, duration: .4, ease: E.out }, .6);
+        // Wide and wholly in view at load: the draw closes the sequence (done by 2.4s). Otherwise it waits until
+        // the whole plot is on screen, so nobody scrolls down to a chart that has already drawn.
+        if (wide && plot.getBoundingClientRect().bottom <= innerHeight) tl.add(drawChart, .3);
+        else ScrollTrigger.create({ trigger: plot, start: 'bottom 95%', once: true, onEnter: drawChart });
+      }));
+
+      // P1 crosshair: fine pointers only; the native cursor stays
+      let off = () => {};
+      if (fine) {
+        const xh = document.createElement('div');
+        xh.className = 'xh'; xh.setAttribute('aria-hidden', 'true');
+        xh.innerHTML = '<span class="xh__row"><span class="xh__h"></span><span class="xh__t"></span></span>';
+        plot.append(xh);
+        // The vertical hairline is drawn in the SVG under the bars: it shows above 08:00 and below closing, never through a slot.
+        const xv = document.createElementNS(NS, 'rect');
+        xv.setAttribute('class', 'xv'); xv.setAttribute('width', 1);
+        svg.insertBefore(xv, bars[0].g);
+        const xTo = gsap.quickTo(xv, 'x', { duration: .25, ease: E.follow });
+        const colX = p => { const b = bars.find(b => b.m === p.m && b.half === p.half), [x, w] = barBox(b); return x + w / 2 - .5; };
+        const chartBody = $('.chart__body'), row = $('.xh__row', xh), label = $('.xh__t', xh), axisLabels = $$('.axis span');
+        const yTo = gsap.quickTo(row, 'y', { duration: .15, ease: E.follow });
+        let rect = null, key = '';
+        const measure = () => { rect = plot.getBoundingClientRect(); xv.setAttribute('height', geo.H); };
+        const at = e => {
+          const x = Math.max(0, Math.min(geo.W - .01, e.clientX - rect.left)), y = Math.max(0, Math.min(geo.H, e.clientY - rect.top));
+          const m = colAt(x), half = DATA.months[m].after ? +(x - m * geo.cw >= geo.cw / 2) : null;
+          return { m, half, y, t: Math.max(240, Math.min(1320, Math.round((240 + y / geo.H * 1080) / 10) * 10)) };
+        };
+        const enter = e => {
+          if (e.pointerType !== 'mouse') return;
+          measure(); const p = at(e);
+          gsap.set(row, { y: p.y }); gsap.set(xv, { x: colX(p) });
+          gsap.to([xh, xv], { autoAlpha: 1, duration: .2, ease: E.out, overwrite: 'auto' });   // 'auto' keeps the quickTo tweens alive
+          if (hoverMo) { hoverMo = false; setDim(null); }
+          quiet(true);
+          probing = {}; chartBody.classList.add('is-probing'); move(e);
+        };
+        const move = e => {
+          if (!probing || e.pointerType !== 'mouse') return;
+          const p = at(e);
+          yTo(p.y); xTo(colX(p));
+          label.innerHTML = fig(hhmm(p.t));
+          axisLabels.forEach(s => s.classList.toggle('is-under', Math.abs(s.style.getPropertyValue('--h') / 18 * geo.H - p.y) < 14));
+          const k = p.m + '/' + p.half;
+          if (k !== key) { key = k; setDim(p.m, p.half); renderReadout(p.m, dur('roll-fast'), p.half); }
+          setProbe(probeText(p.m, p.half, p.t, now.y));
+        };
+        const leave = () => {
+          if (!probing) return;
+          probing = null; key = ''; chartBody.classList.remove('is-probing');
+          gsap.to([xh, xv], { autoAlpha: 0, duration: .2, ease: E.out, overwrite: 'auto' });   // 'auto' keeps the quickTo tweens alive
+          restDim();
+          renderReadout(sel);
+          setProbe(idleText());
+          quiet(false);
+        };
+        plot.addEventListener('pointerenter', enter);
+        plot.addEventListener('pointermove', move);
+        plot.addEventListener('pointerleave', leave);
+        addEventListener('resize', measure);
+        off = () => {
+          leave();
+          plot.removeEventListener('pointerenter', enter); plot.removeEventListener('pointermove', move);
+          plot.removeEventListener('pointerleave', leave); removeEventListener('resize', measure);
+          xh.remove(); xv.remove();
+        };
+      }
+
+      return () => {   // runs when a condition flips (e.g. reduced motion turned on)
+        off();
+        live = false;
+        gsap.ticker.remove(raf);
+        gsap.ticker.lagSmoothing(500, 33);
+        lenis.destroy(); lenis = null;
+        todayLineBusy = false;
+      };
+    });
+  }
+
+  /* ===== Self-test: open index.html#selftest and read the console ===== */
+  function runSelfTest() {
+    const eq = (a, b, what) => { if (a !== b) throw new Error(`${what}: got "${a}", want "${b}"`); };
+    eq(lastSunday(2026, 2), 29, 'last Sunday of March 2026'); eq(lastSunday(2026, 9), 25, 'last Sunday of October 2026');
+    eq(lastSunday(2027, 2), 28, 'last Sunday of March 2027'); eq(lastSunday(2027, 9), 31, 'last Sunday of October 2027');
+    eq(todayText({ y: 2026, m: 9, d: 22, min: 14 * 60 }).join(' '), 'Open today until 18:00. Last entry 17:30.', 'open in October');
+    eq(todayText({ y: 2026, m: 9, d: 26, min: 17 * 60 }).join(' '), 'Closed now. Opens tomorrow at\u00a008:00.', 'after the clocks go back');
+    eq(todayText({ y: 2026, m: 11, d: 24, min: 16 * 60 }).join(' '), 'Closed now. Opens on 26 December at\u00a008:00.', 'Christmas Eve evening');
+    eq(todayText({ y: 2026, m: 11, d: 25, min: 9 * 60 }).join(' '), 'Closed today, 25 December. Opens tomorrow at\u00a008:00.', 'Christmas Day');
+    eq(todayText({ y: 2026, m: 5, d: 1, min: 7 * 60 }).join(' '), 'Opens today at 08:00. Closes at\u00a021:00.', 'before opening');
+    eq(clockNote({ y: 2026, m: 9, d: 22 }), 'The clocks go back on Sunday 25 October. From then the gates close at 16:30.', 'clock note');
+    eq(clockNote({ y: 2026, m: 6, d: 1 }), '', 'no clock note in July');
+    eq(nextSend({ y: 2026, m: 9, d: 22 }), 'Tuesday 3 November', 'next Garden notes');
+    eq(nextSend({ y: 2026, m: 11, d: 1 }), 'Tuesday 5 January', 'next Garden notes over new year');
+    eq(monthLines(9, 2026).gates, '08:00 to 18:00<span class="ro__sub">16:30 from 25\u00a0October</span>', 'October gates, two lines');
+    eq(monthLines(11, 2026).gates, '08:00 to 15:45<span class="ro__sub">Closed 25\u00a0December</span>', 'December gates, Christmas');
+    eq(monthLines(0, 2026).gates, '08:00 to 16:00<span class="ro__sub">Last entry 15:30</span>', 'January gates, second line');
+    eq(monthLines(0, 2026).sun, '08:11 to 16:24 on the 15th<span class="ro__sub">Gates open 11 minutes before sunrise</span>', 'January daylight, early gates');
+    // Today's month leads with today's half, so the readout agrees with the today line on 25 October.
+    eq(monthLines(9, 2026, leadHalf(9, { y: 2026, m: 9, d: 25 })).gates, '08:00 to 16:30<span class="ro__sub">18:00 before 25\u00a0October</span>', 'readout on 25 October');
+    // Every half-bar closes at or before its own half's sunset (the lens steps with the clock).
+    DATA.months.forEach((M, m) => M.after && [[M.gates, M.sun], [M.after, M.sunAfter]].forEach(([g, sun], h) => {
+      if (toMin(g) > toMin(sun[1])) throw new Error(`${M.name} half ${h}: gates close ${g} after sunset ${sun[1]}`);
+    }));
+    eq(probeText(5, null, 19 * 60 + 10, 2026), 'June at 19:10: gates open, glasshouses closed.', 'probe June');
+    eq(probeText(9, 1, 16 * 60 + 45, 2026), 'October, from 25 October, at 16:45: gates closed.', 'probe late October');
+    eq(probeText(2, 0, 18 * 60, 2026), 'March, before 29 March, at 18:00: gates closed.', 'probe early March');
+    eq(probeText(2, 1, 18 * 60, 2026), 'March, from 29 March, at 18:00: gates open, glasshouses closed.', 'probe late March');
+    eq(halfOf(9, 15, 2026), 0, 'radios read the half with the 15th');
+    // The clock change moves closing by an hour either side of it.
+    eq(todayText({ y: 2026, m: 2, d: 28, min: 18 * 60 }).join(' '), 'Closed now. Opens tomorrow at\u00a008:00.', '28 March 18:00');
+    eq(todayText({ y: 2026, m: 2, d: 30, min: 18 * 60 }).join(' '), 'Open today until\u00a019:00. Last entry 18:30.', '30 March 18:00');
+    eq(todayText({ y: 2026, m: 9, d: 24, min: 17 * 60 }).join(' '), 'Open today until\u00a018:00. Last entry 17:30.', '24 October 17:00');
+    eq(todayText({ y: 2026, m: 9, d: 26, min: 17 * 60 }).join(' '), 'Closed now. Opens tomorrow at\u00a008:00.', '26 October 17:00');
+    console.log('SELFTEST PASS');
+  }
+  if (location.hash === '#selftest') { try { runSelfTest(); } catch (err) { console.log('SELFTEST FAIL ' + err.message); } }
+
+  addEventListener('DOMContentLoaded', () => {
+    const late = !root.classList.contains('js');
+    clearTimeout(lateTimer);
+    if (late || !window.gsap || !window.ScrollTrigger || !window.SplitText || !window.DrawSVGPlugin || !window.Lenis) {
+      root.classList.remove('js');   // blocked or late: the finished page, every control still works
+      return;
+    }
+    initMotion();
+  });
+})();
+</script>
+</body>
+</html>
