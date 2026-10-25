@@ -1,0 +1,1683 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Halyard &amp; Hold, Voyage 14</title>
+<meta name="description" content="Follow Voyage 14 of Alizé, a 72-metre sail cargo ship, from Le Havre to Santa Marta: the loading, a chart of the Atlantic that the ship sails across as you scroll, eight noon reports, the arrival, and a request for space on Voyage 15.">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400..600;1,400&amp;family=Special+Gothic:wdth,wght@75..125,400..700&amp;display=swap" rel="stylesheet">
+<style>
+/* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+html.lenis, html.lenis body { height: auto; }
+.lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+.lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+.lenis.lenis-smooth iframe { pointer-events: none; }
+
+:root {
+  /* Colour: daylight documents on sea fog, and one Atlantic chapter */
+  --fog: #E6ECEE;        /* page ground: cool sea-fog paper */
+  --ink: #102330;        /* text, primary button, focus ring on light grounds */
+  --slate: #4A616E;      /* muted text on fog (5.5:1) */
+  --atlantic: #17445E;   /* the crossing: sea, header while at sea, hull, pallet squares */
+  --spray: #F4F7F8;      /* text on atlantic, log slips, sails, form fields */
+  --qflag: #F4C21B;      /* state only: sailed route, current report, selected lot, hover fill, focus on atlantic */
+  --spray-2: color-mix(in srgb, var(--spray) 72%, var(--atlantic));  /* muted text on atlantic (5.9:1) */
+  --rule: color-mix(in srgb, var(--ink) 20%, var(--fog));            /* table rules on fog */
+  --rule-2: color-mix(in srgb, var(--ink) 36%, var(--fog));          /* empty pallet squares, sail seams */
+  --land: color-mix(in srgb, var(--atlantic) 55%, var(--ink));       /* land on the chart */
+  --coast: color-mix(in srgb, var(--spray) 30%, var(--atlantic));    /* coastline */
+  --grat: color-mix(in srgb, var(--spray) 14%, var(--atlantic));     /* graticule */
+
+  /* Type */
+  --font-sans: 'Special Gothic', 'Arial Narrow', 'Helvetica Neue', Arial, sans-serif;
+  --font-serif: 'Crimson Pro', Georgia, 'Times New Roman', serif;
+  --wd-display: 125%;
+  --wd-ui: 100%;
+  --wd-data: 87.5%;
+  --fs-xs: .8125rem;
+  --fs-s: .9375rem;
+  --fs-base: 1.1875rem;  /* Crimson Pro has a small x-height, so body sits one step up */
+  --fs-m: 1.3125rem;
+  --fs-l: 1.5rem;
+  --fs-xl: clamp(1.75rem, 1.2rem + 2.2vw, 3rem);
+  --fs-hero: clamp(2.25rem, .8rem + 5.2vw, 5rem);
+  --fs-small: 1rem;                                   /* day links and log entries on phones */
+  --fs-data: 1.0625rem;                               /* manifest figures, day links, fields, fuel labels */
+  --fs-note: 1.125rem;                                /* wordmark, log entries */
+  --fs-menu: 2rem;                                    /* chapter names in the phone menu */
+  --fs-entry: clamp(1rem, .8rem + .4vw, 1.125rem);    /* log entries beside the chart */
+  --fs-readout: clamp(1.125rem, .6rem + 1.6vw, 2.25rem); /* the day in the chart readout */
+
+  /* Space, 4px base */
+  --sp-1: .25rem; --sp-2: .5rem; --sp-3: .75rem; --sp-4: 1rem; --sp-5: 1.5rem;
+  --sp-6: 2rem; --sp-7: 3rem; --sp-8: 4.5rem; --sp-9: 7rem;
+  --gutter: clamp(16px, 4vw, 48px);
+  --maxw: 1360px;
+  --bar-h: 3.5rem;
+  --r-cell: 3px;
+  --r-control: 6px;
+
+  /* The crossing */
+  --sea: max(560svh, 4200px);              /* scroll length of the whole voyage; each report is placed at its share of it */
+  --slip-w: clamp(15rem, 21vw, 21rem);
+  --hl: clamp(48px, 5vw, 80px);            /* hull length of the ship marker; the wake and the wind station scale with it */
+
+  /* Motion */
+  --t-press: .12s;
+  --t-release: .4s;
+  --t-fill-in: .45s;
+  --t-fill-out: .3s;
+  --t-line: .45s;
+  --t-dim: .35s;
+  --t-rule: .35s;
+  --t-err: .25s;
+  --t-sea: .4s;
+  --e-out: cubic-bezier(.16, 1, .3, 1);          /* expo.out */
+  --e-p3: cubic-bezier(.215, .61, .355, 1);      /* power3.out */
+  --e-p2: cubic-bezier(.455, .03, .515, .955);   /* power2.inOut */
+  --e-fill: cubic-bezier(.35, 0, 0, 1);
+  --e-release: cubic-bezier(.34, 1.56, .64, 1);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--fog);
+  color: var(--ink);
+  font: 400 var(--fs-base)/1.6 var(--font-serif);
+  font-variant-numeric: lining-nums;
+  overflow-x: clip;
+}
+::selection { background: var(--qflag); color: var(--ink); }
+h1, h2, h3, p, ol, ul, dl, dd, figure { margin: 0; }
+ol, ul { padding: 0; list-style: none; }
+img, svg { display: block; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+[tabindex="-1"]:focus { outline: none; }
+[hidden] { display: none !important; }
+
+.wrap { max-width: var(--maxw); margin-inline: auto; padding-inline: var(--gutter); }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+.ui { font-family: var(--font-sans); font-stretch: var(--wd-ui); font-weight: 500; }
+.data { font-family: var(--font-sans); font-stretch: var(--wd-data); font-weight: 500; font-variant-numeric: tabular-nums; }
+.h1, .h2 { font-family: var(--font-sans); font-stretch: var(--wd-display); font-weight: 700; color: var(--atlantic); }
+.h1 { font-size: var(--fs-hero); line-height: .95; letter-spacing: -.02em; text-wrap: balance; }
+.h2 { font-size: var(--fs-xl); line-height: 1; letter-spacing: -.01em; text-wrap: balance; }
+.h3 { font-family: var(--font-sans); font-stretch: var(--wd-ui); font-weight: 700; font-size: var(--fs-m); line-height: 1.2; color: var(--atlantic); }
+.lead { font-size: var(--fs-l); line-height: 1.45; max-width: 34ch; }
+.prose { max-width: 62ch; }
+
+/* ---------- Links: directional underline (HV2) ---------- */
+.ul {
+  color: inherit;
+  text-decoration: none;
+  background: linear-gradient(currentColor, currentColor) 100% 100% / 0 .08em no-repeat;
+  transition: background-size var(--t-line) var(--e-fill);
+}
+@media (hover: hover) { .ul:hover, a:hover > .ul { background-position: 0 100%; background-size: 100% .08em; } }
+.ul:focus-visible, a:focus-visible > .ul { background-position: 0 100%; background-size: 100% .08em; }
+.ul.keep { background-size: 100% .08em; }
+@media (hover: none) { .ul:active, a:active > .ul { background-size: 100% .08em; } }
+
+/* ---------- Buttons: fill from the entry edge (HV4) and press (MI1) ---------- */
+.btn {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4em;
+  min-height: 3rem;
+  padding: 0 1.375rem;
+  border: 1.5px solid transparent;
+  border-radius: var(--r-control);
+  font-family: var(--font-sans);
+  font-stretch: var(--wd-ui);
+  font-weight: 500;
+  font-size: var(--fs-s);
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color var(--t-fill-out) var(--e-fill), transform var(--t-release) var(--e-release);
+}
+.fill::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--fill);
+  transform: scaleX(0);
+  transform-origin: var(--from, left) center;
+  transition: transform var(--t-fill-out) var(--e-fill);
+}
+@media (hover: hover) {
+  .fill:hover::before { transform: scaleX(1); transition-duration: var(--t-fill-in); }
+}
+.fill:focus-visible::before, .fill:active::before { transform: scaleX(1); transition-duration: var(--t-fill-in); }
+.btn:active, .press:active { transform: scale(.96); transition: transform var(--t-press) ease-out, color var(--t-fill-in) var(--e-fill); }
+.btn-ink { background: var(--ink); color: var(--spray); --fill: var(--qflag); }
+.btn-line { border-color: var(--atlantic); color: var(--atlantic); --fill: var(--atlantic); }
+@media (hover: hover) {
+  .btn-ink:hover { color: var(--ink); transition-duration: var(--t-fill-in); }
+  .btn-line:hover { color: var(--spray); transition-duration: var(--t-fill-in); }
+}
+.btn-ink:focus-visible, .btn-ink:active { color: var(--ink); }
+.btn-line:focus-visible, .btn-line:active { color: var(--spray); }
+
+/* ---------- Chapter bar: fog on land, atlantic at sea (SC9) ---------- */
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: var(--fog);
+  border-bottom: 1px solid var(--rule);
+  transition: background-color var(--t-sea) linear, border-color var(--t-sea) linear;
+}
+.bar-in { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-5); height: var(--bar-h); }
+.mark {
+  display: inline-flex;
+  align-items: center;
+  gap: .45em;
+  color: var(--atlantic);
+  text-decoration: none;
+  font-family: var(--font-sans);
+  font-stretch: var(--wd-display);
+  font-weight: 700;
+  font-size: var(--fs-note);
+  letter-spacing: -.01em;
+  transition: color var(--t-sea) linear;
+}
+.mark .pg { width: 1.1em; height: .75em; }
+.chapters { position: relative; }
+.chapters ul { display: flex; gap: var(--sp-5); }
+.chapters a {
+  display: block;
+  padding: var(--sp-3) 0;
+  color: var(--ink);
+  text-decoration: none;
+  font-size: var(--fs-s);
+  transition: color var(--t-sea) linear;
+}
+.chapters a[aria-current] { color: var(--atlantic); }
+.chapters a:focus-visible { outline-offset: 0; }
+.ind {
+  position: absolute;
+  left: 0;
+  bottom: .35rem;
+  width: 100px;
+  height: 2px;
+  background: var(--atlantic);
+  transform-origin: left center;
+  opacity: 0;
+  pointer-events: none;
+  transition: transform .4s var(--e-p3), opacity .2s linear, background-color var(--t-sea) linear;
+}
+.ind.is-on { opacity: 1; }
+.ind.jump { transition: opacity .2s linear; }
+.menu-btn {
+  display: none;
+  min-height: 2.75rem;
+  padding: 0 1rem;
+  border: 1.5px solid var(--atlantic);
+  border-radius: var(--r-control);
+  background: none;
+  color: var(--atlantic);
+  font-size: var(--fs-s);
+  cursor: pointer;
+  --fill: var(--qflag);
+}
+@media (hover: hover) { .menu-btn:hover { color: var(--ink); } }
+.menu-btn:focus-visible, .menu-btn:active { color: var(--ink); }
+.swap { display: grid; overflow: hidden; height: 1.2em; line-height: 1.2; }
+.swap > span { grid-area: 1 / 1; transition: transform .3s var(--e-p3); }
+.swap > span + span { transform: translateY(100%); }
+.menu-btn[aria-expanded="true"] .swap > span:first-child { transform: translateY(-100%); }
+.menu-btn[aria-expanded="true"] .swap > span + span { transform: none; }
+.bar.at-sea { background: var(--atlantic); border-color: var(--coast); }
+.bar.at-sea .mark, .bar.at-sea .chapters a { color: var(--spray); }
+.bar.at-sea .chapters a[aria-current] { color: var(--spray); }
+.bar.at-sea .ind { background: var(--qflag); }
+.bar.at-sea .menu-btn { border-color: var(--spray); color: var(--spray); }
+.bar.at-sea :focus-visible { outline-color: var(--qflag); }
+@media (hover: hover) { .bar.at-sea .menu-btn:hover { color: var(--ink); } }
+.bar.at-sea .menu-btn:focus-visible, .bar.at-sea .menu-btn:active { color: var(--ink); }
+.menu {
+  position: fixed;
+  inset: var(--bar-h) 0 0;
+  z-index: 39;
+  background: var(--fog);
+  visibility: hidden;
+  overflow-y: auto;
+  padding: var(--sp-6) var(--gutter);
+}
+/* Visibility flips at once (no inherited transition, even the reduced-motion .01ms), so focus can move into the menu as it opens */
+.menu, .menu nav, .menu ul, .menu li, .menu a, .menu .m-when { transition-property: none; }
+.menu.is-open { visibility: visible; }
+html.menu-open { overflow: clip; } /* the page never scrolls under the open menu, with or without Lenis */
+.menu li { overflow: hidden; border-bottom: 1px solid var(--rule); }
+.menu a:focus-visible { outline-offset: -2px; } /* the li clips for the item rise, so the ring sits inside */
+.menu a {
+  display: block;
+  padding: var(--sp-4) 0;
+  color: var(--ink);
+  text-decoration: none;
+}
+.menu .m-name {
+  display: inline;
+  font-family: var(--font-sans);
+  font-stretch: var(--wd-display);
+  font-weight: 700;
+  font-size: var(--fs-menu);
+  line-height: 1.1;
+  color: var(--atlantic);
+}
+.menu .m-when { display: block; color: var(--slate); }
+.menu a[aria-current] .m-name { color: var(--ink); }
+@media (max-width: 759px) {
+  .chapters { display: none; }
+  .menu-btn { display: inline-flex; align-items: center; }
+}
+@media (min-width: 760px) { .menu { display: none; } }
+
+/* ---------- Opening ---------- */
+.opening { padding-top: var(--sp-8); scroll-margin-top: var(--bar-h); }
+.opening-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--sp-5);
+  align-items: end;
+}
+.opening-text { grid-column: 1 / span 6; align-self: center; padding-bottom: var(--sp-8); }
+.opening-text .lead { margin-top: var(--sp-5); }
+.actions { display: flex; flex-wrap: wrap; gap: var(--sp-3); margin-top: var(--sp-6); }
+.ship-fig { grid-column: 7 / -1; margin-right: calc(-.5 * var(--gutter)); }
+.ship-art { width: 100%; height: auto; overflow: visible; }
+.ship-art .sail path { fill: var(--spray); stroke: var(--atlantic); stroke-width: 1.5; stroke-linejoin: round; }
+.ship-art .sail .seam { fill: none; stroke: var(--rule-2); stroke-width: 1; }
+.ship-art .spar { stroke: var(--ink); stroke-width: 3; stroke-linecap: round; }
+.ship-art .rig { stroke: var(--atlantic); stroke-width: .8; fill: none; }
+.ship-art .mast { stroke: var(--ink); stroke-width: 4; stroke-linecap: round; }
+.ship-art .hull { fill: var(--atlantic); }
+.ship-art .paint { stroke: var(--fog); stroke-width: 2.5; fill: none; }
+.ship-art .name { fill: var(--spray); font: 700 13px var(--font-sans); font-stretch: var(--wd-display); letter-spacing: .08em; }
+.waterline { height: 2px; background: var(--atlantic); transform-origin: left center; }
+.h1 .ln, .h1 > div { padding-bottom: .08em; margin-bottom: -.08em; }
+
+/* ---------- Chapters ---------- */
+.chapter { padding-block: var(--sp-9) 0; scroll-margin-top: var(--bar-h); }
+.g12 { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--sp-5); }
+.ch-head { grid-column: 1 / span 7; }
+.ch-head .lead { margin-top: var(--sp-5); max-width: 40ch; }
+
+/* Loading: manifest and stowage plan */
+.loading-grid { row-gap: var(--sp-7); margin-top: var(--sp-7); align-items: start; }
+.manifest { grid-column: 1 / span 5; }
+.plan { grid-column: 7 / -1; }
+.m-head {
+  display: grid;
+  grid-template-columns: 1fr 5.5rem 4rem;
+  gap: var(--sp-3);
+  padding: 0 var(--sp-2) var(--sp-2) var(--sp-4);
+  color: var(--slate);
+  font-size: var(--fs-xs);
+  border-bottom: 1px solid var(--rule);
+}
+.m-head span + span, .lot .num { text-align: right; }
+.lot {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 5.5rem 4rem;
+  gap: 0 var(--sp-3);
+  align-items: baseline;
+  width: 100%;
+  padding: var(--sp-3) var(--sp-2) var(--sp-3) var(--sp-4);
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  transition: color var(--t-dim) linear;
+}
+.lot::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: var(--sp-3);
+  bottom: var(--sp-3);
+  width: 3px;
+  background: var(--atlantic);
+  transform: scaleY(0);
+  transition: transform .3s var(--e-p3);
+}
+.lot[aria-pressed="true"]::before { transform: scaleY(1); }
+.lot:focus-visible { outline-offset: -2px; }
+.goods { position: relative; isolation: isolate; grid-area: 1 / 1; justify-self: start; font-family: var(--font-sans); font-stretch: var(--wd-ui); font-weight: 600; font-size: var(--fs-data); line-height: 1.25; }
+.goods .hl {
+  position: absolute;
+  z-index: -1;
+  left: -.12em;
+  right: -.12em;
+  bottom: .06em;
+  height: 42%;
+  background: var(--qflag);
+  transform: scaleX(0);
+  transform-origin: right center;
+  transition: transform .4s var(--e-fill);
+}
+.lot.is-preview .goods .hl, .lot[aria-pressed="true"] .goods .hl { transform: scaleX(1); transform-origin: left center; }
+.shipper { grid-area: 2 / 1; color: var(--slate); font-size: var(--fs-data); line-height: 1.35; }
+.lot .num { grid-row: 1; font-size: var(--fs-data); }
+.lot .num { grid-column: 2; }
+.lot .num ~ .num { grid-column: 3; }
+.lot .sub { grid-area: 2 / 2; text-align: right; color: var(--slate); font-size: var(--fs-xs); }
+.lots.dim .lot:not(.is-preview) { color: var(--slate); }
+.total { margin-top: var(--sp-4); padding-left: var(--sp-4); font-size: var(--fs-s); }
+.plan-svg { width: 100%; height: auto; }
+.plan-svg .outline { fill: none; stroke: var(--atlantic); stroke-width: 1.5; }
+.plan-svg .deck { fill: var(--atlantic); }
+.plan-svg .bulkhead { stroke: var(--atlantic); stroke-width: 1.5; }
+.plan-svg .empty rect { fill: none; stroke: var(--rule-2); stroke-width: 1; }
+.plan-svg .lot-g { cursor: pointer; }
+.l-turbine { fill: var(--ink); }
+.l-wine { fill: color-mix(in srgb, var(--atlantic) 80%, var(--fog)); }
+.l-calvados { fill: color-mix(in srgb, var(--atlantic) 58%, var(--fog)); }
+.l-books { fill: color-mix(in srgb, var(--atlantic) 40%, var(--fog)); }
+.l-bikes { fill: color-mix(in srgb, var(--atlantic) 26%, var(--fog)); }
+.hi-g rect { fill: var(--qflag); stroke: var(--ink); stroke-width: 1; opacity: 0; transition: opacity .15s linear; }
+.hi-g.is-lit rect { opacity: 1; transition: opacity .25s var(--e-p2) calc(var(--k) * 8ms); }
+.plan figcaption { margin-top: var(--sp-4); font-size: var(--fs-s); color: var(--slate); }
+.plan .live { margin-top: var(--sp-2); min-height: 3.2em; color: var(--ink); font-size: var(--fs-base); }
+
+/* ---------- Crossing: the Atlantic chart ---------- */
+.crossing { margin-top: var(--sp-9); scroll-margin-top: var(--bar-h); background: var(--atlantic); color: var(--spray); }
+.crossing .h2, .crossing .lead { color: var(--spray); }
+.crossing :focus-visible { outline-color: var(--qflag); }
+.skip-to { display: inline-block; margin-top: var(--sp-5); font-family: var(--font-sans); font-stretch: var(--wd-ui); font-weight: 500; font-size: var(--fs-s); color: var(--spray); }
+.stage { position: relative; margin-top: var(--sp-7); padding-bottom: var(--sp-9); }
+.pin { position: relative; z-index: 2; }
+.chart {
+  position: relative;
+  width: min(100%, calc(78svh * 1.4722));
+  aspect-ratio: 73.61 / 50;
+  margin-inline: auto;
+  overflow: hidden;
+}
+/* The camera: the whole chart at the chart's size, or larger on phones, where it follows the ship */
+.cam { position: absolute; left: 0; top: 0; width: 100%; height: 100%; container-type: size; }
+.map, .sailed { position: absolute; inset: 0; width: 100%; height: 100%; }
+.map .land { fill: var(--land); stroke: var(--coast); stroke-width: 1; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.map .isle { fill: var(--land); stroke: var(--coast); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.map .grat path { stroke: var(--grat); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.map .neat { fill: none; stroke: var(--coast); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.map .plan-route { fill: none; stroke: var(--spray-2); stroke-width: 1.25; stroke-dasharray: 5 6; vector-effect: non-scaling-stroke; }
+.sailed path { fill: none; stroke: var(--qflag); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+/* Chart positions in CSS: the same slice fit as the SVG, from container units */
+.layer {
+  position: absolute;
+  inset: 0;
+  --s: max(100cqw / 73.61, 100cqh / 50);
+  --ox: calc((100cqw - 73.61 * var(--s)) / 2);
+  --oy: calc((100cqh - 50 * var(--s)) / 2);
+}
+.at { position: absolute; left: calc(var(--ox) + var(--x) * var(--s)); top: calc(var(--oy) + var(--y) * var(--s)); width: 0; height: 0; }
+.gl { position: absolute; color: var(--spray-2); font-size: var(--fs-xs); line-height: 1; white-space: nowrap; }
+.gl-lat { left: calc(max(0px, var(--ox)) + .5rem); top: calc(var(--oy) + var(--y) * var(--s) - 1.1rem); }
+.gl-lon { top: calc(max(0px, var(--oy)) + .75rem); left: calc(var(--ox) + var(--x) * var(--s) + .35rem); }
+/* Admiralty-style border: a tick every degree along the neatline, a longer one every five */
+.tick { position: absolute; pointer-events: none; }
+.tick-l, .tick-r { top: var(--oy); height: calc(50 * var(--s)); width: 9px; }
+.tick-l { left: max(0px, var(--ox)); background: repeating-linear-gradient(to bottom, var(--coast) 0 1px, transparent 1px var(--s)) 0 0 / 5px 100% no-repeat, repeating-linear-gradient(to bottom, var(--coast) 0 1px, transparent 1px calc(5 * var(--s))) 0 0 / 9px 100% no-repeat; }
+.tick-r { left: calc(min(100cqw, var(--ox) + 73.61 * var(--s)) - 9px); background: repeating-linear-gradient(to bottom, var(--coast) 0 1px, transparent 1px var(--s)) 100% 0 / 5px 100% no-repeat, repeating-linear-gradient(to bottom, var(--coast) 0 1px, transparent 1px calc(5 * var(--s))) 100% 0 / 9px 100% no-repeat; }
+.tick-t, .tick-b { left: var(--ox); width: calc(73.61 * var(--s)); height: 9px; }
+.tick-t { top: max(0px, var(--oy)); background: repeating-linear-gradient(to right, var(--coast) 0 1px, transparent 1px calc(.866025 * var(--s))) 0 0 / 100% 5px no-repeat, repeating-linear-gradient(to right, var(--coast) 0 1px, transparent 1px calc(4.330127 * var(--s))) 0 0 / 100% 9px no-repeat; }
+.tick-b { top: calc(min(100cqh, var(--oy) + 50 * var(--s)) - 9px); background: repeating-linear-gradient(to right, var(--coast) 0 1px, transparent 1px calc(.866025 * var(--s))) 0 100% / 100% 5px no-repeat, repeating-linear-gradient(to right, var(--coast) 0 1px, transparent 1px calc(4.330127 * var(--s))) 0 100% / 100% 9px no-repeat; }
+.place span { position: absolute; left: .55rem; top: -.55em; color: var(--spray); font-size: var(--fs-xs); line-height: 1.1; white-space: nowrap; }
+.place.left span { left: auto; right: .55rem; }
+.place.below span { top: .5rem; left: -.3rem; }
+.place.below-l span { top: .45rem; left: auto; right: -.2rem; }
+.place::before { content: ''; position: absolute; left: -3px; top: -3px; width: 6px; height: 6px; border-radius: 1px; background: var(--spray); }
+.place.isle::before { display: none; }
+.fix { color: var(--spray-2); }
+.fix .dot, .fix .ring { position: absolute; border-radius: 50%; }
+.fix .dot { left: -4px; top: -4px; width: 8px; height: 8px; border: 1.5px solid var(--spray-2); background: var(--atlantic); transition: transform .3s var(--e-p3), background-color .3s linear, border-color .3s linear; }
+.fix .ring { left: -11px; top: -11px; width: 22px; height: 22px; border: 2px solid var(--qflag); opacity: 0; transform: scale(.4); transition: opacity .3s linear, transform .45s var(--e-out); }
+.fix .fx { position: absolute; left: .55rem; bottom: .3rem; font-size: var(--fs-xs); line-height: 1; transition: color .3s linear; }
+.fix.w .fx { left: auto; right: .75rem; bottom: auto; top: -.5em; }
+.fix.nw .fx { left: auto; right: .55rem; }
+.fix.is-passed .dot { background: var(--spray); border-color: var(--spray); }
+.fix.is-passed .fx { color: var(--spray); }
+.fix.is-current .dot { background: var(--qflag); border-color: var(--qflag); }
+.fix.is-ghost .dot { transform: scale(1.8); }
+.fix.is-ghost .ring { opacity: .6; transform: none; border-color: var(--spray); }
+.marker { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+html:not(.js) .marker { display: none; }
+.boat { position: absolute; left: 0; top: 0; }
+.m-hull { position: absolute; left: calc(var(--hl) * -.2); top: calc(var(--hl) * -.64); width: calc(var(--hl) * .4); height: calc(var(--hl) * 1.2); overflow: visible; }
+.m-hull path { fill: var(--spray); stroke: var(--atlantic); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.m-hull circle { fill: var(--atlantic); }
+.m-hull .sprit { fill: none; stroke: var(--spray); stroke-width: 2; }
+/* The wake: two arms and the prop wash behind the stern; scroll speed stretches and brightens it (SC10) */
+.wake { position: absolute; left: calc(var(--hl) * -.55); top: calc(var(--hl) * .44); width: calc(var(--hl) * 1.1); height: calc(var(--hl) * 1.65); overflow: visible; transform-origin: 50% 0; opacity: .5; }
+.wake .wk-foam { fill: var(--spray); }
+.wake .wk-flow rect { fill: var(--atlantic); opacity: .7; }
+/* The wind: a station ahead of the bow, its shaft pointing where the wind blows from, a feather for every ten knots */
+.stn { position: absolute; left: 0; top: 0; }
+.barb { position: absolute; left: calc(var(--hl) * -.925); top: calc(var(--hl) * -.925); width: calc(var(--hl) * 1.85); height: calc(var(--hl) * 1.85); overflow: visible; filter: drop-shadow(0 0 1.5px var(--atlantic)) drop-shadow(0 0 1.5px var(--atlantic)); }
+.barb path, .barb circle { fill: none; stroke: var(--spray); stroke-width: 2; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+/* Arrival: the Q flag goes up at the masthead */
+.m-flag { position: absolute; left: calc(var(--hl) * .12); top: calc(var(--hl) * -.95); width: calc(var(--hl) * .42); height: calc(var(--hl) * .56); overflow: hidden; visibility: hidden; }
+.m-flag .staff { stroke: var(--spray); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.m-flag .cloth { fill: var(--qflag); }
+.readout { position: absolute; left: 36%; top: max(5%, 1.9rem); z-index: 1; line-height: 1.25; pointer-events: none; }
+.readout span { display: block; }
+.ro-day { font-family: var(--font-sans); font-stretch: var(--wd-display); font-weight: 700; font-size: var(--fs-readout); line-height: 1.05; }
+.ro-nm, .ro-lat { color: var(--spray-2); font-size: var(--fs-s); }
+.days { max-width: var(--maxw); margin-inline: auto; padding: var(--sp-3) var(--gutter); color: var(--spray); }
+.days-label { display: block; margin-bottom: var(--sp-2); color: var(--spray-2); font-size: var(--fs-xs); }
+.days ol { display: grid; grid-template-columns: repeat(8, minmax(2.5rem, 1fr)); gap: var(--sp-1); max-width: 26rem; }
+.day {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  min-height: 2.75rem;
+  border: 1px solid var(--spray-2);
+  border-radius: var(--r-cell);
+  color: var(--spray);
+  text-decoration: none;
+  font-size: var(--fs-data);
+  --fill: var(--spray);
+  transition: transform var(--t-release) var(--e-release), color .25s var(--e-fill), border-color .25s linear;
+}
+.day::before { transition-duration: .25s; }
+@media (hover: hover) { .day:hover { color: var(--ink); border-color: var(--spray); } .day:hover::before { transition-duration: .35s; } }
+.day:focus-visible, .day:active { color: var(--ink); border-color: var(--spray); }
+.day[aria-current] { background: var(--qflag); border-color: var(--qflag); color: var(--ink); --fill: var(--qflag); } /* yellow means the current noon, nothing else */
+
+/* Log slips: paper over the sea */
+.slips { position: relative; z-index: 3; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr)); gap: var(--sp-4); max-width: var(--maxw); margin: var(--sp-6) auto 0; padding-inline: var(--gutter); }
+.slip { display: grid; scroll-margin-top: calc(var(--bar-h) + var(--sp-4)); }
+.slip-card { position: relative; padding: var(--sp-3) var(--sp-4) var(--sp-4); background: var(--spray); color: var(--ink); border-top: 2px solid var(--atlantic); }
+.slip-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -2px;
+  height: 5px;
+  background: var(--qflag);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform .5s var(--e-out);
+}
+.slip.is-current .slip-card::before { transform: scaleX(1); }
+.slip .h3 { color: var(--atlantic); }
+.noon { display: grid; grid-template-columns: auto auto auto; justify-content: start; gap: var(--sp-1) var(--sp-4); margin-top: var(--sp-2); }
+.noon dt { color: var(--slate); font-size: var(--fs-xs); line-height: 1.3; }
+.noon dd { font-size: var(--fs-s); line-height: 1.3; }
+.noon dd span { white-space: nowrap; }
+.entry { margin-top: var(--sp-3); font-style: italic; font-size: var(--fs-note); line-height: 1.45; }
+
+/* Arrival */
+.arrival-head { position: relative; }
+/* The flag hangs in the margin, so the heading keeps the body's left edge */
+.qflag { position: absolute; left: calc(-1 * var(--sp-7)); top: -.75rem; width: 2.5rem; height: 4.5rem; overflow: hidden; }
+@media (max-width: 1199px) { .qflag { position: static; display: block; width: 2.25rem; height: 3rem; margin-bottom: var(--sp-2); } }
+.qflag .halyard { stroke: var(--ink); stroke-width: 1.25; }
+.qflag .cloth { fill: var(--qflag); stroke: var(--ink); stroke-width: 1; }
+.arrival-grid { row-gap: var(--sp-7); margin-top: var(--sp-6); align-items: start; }
+.arrival-grid > .prose { grid-column: 1 / span 6; }
+.fuel { grid-column: 8 / -1; }
+.fuel .h3 { margin-bottom: var(--sp-4); }
+.fuel dl > div { padding: var(--sp-3) 0; border-top: 1px solid var(--rule); }
+.fuel dt { font-size: var(--fs-data); line-height: 1.35; }
+.fuel dd { display: grid; grid-template-columns: 1fr 3.5rem; align-items: center; gap: var(--sp-3); margin-top: var(--sp-2); }
+.b-track { height: .875rem; }
+.b-fill { display: block; height: 100%; background: var(--atlantic); border-radius: 0 var(--r-cell) var(--r-cell) 0; transform: scaleX(var(--v)); transform-origin: left center; }
+.b-val { text-align: right; font-size: var(--fs-s); }
+.fuel-take { margin-top: var(--sp-4); padding-top: var(--sp-3); border-top: 1px solid var(--rule); font-size: var(--fs-l); line-height: 1.35; }
+.flood { display: none; }
+.arr-text .h3 { margin-top: var(--sp-7); }
+.arr-text .h3 + p { margin-top: var(--sp-3); }
+
+/* Book space */
+.book { padding-bottom: var(--sp-9); }
+.book-grid { row-gap: var(--sp-7); align-items: start; }
+.book-text { grid-column: 1 / span 5; }
+.book-text p { margin-top: var(--sp-5); }
+.book-text .alt { font-size: var(--fs-s); color: var(--slate); }
+.book-text .alt a { padding-block: .35em; background-origin: content-box; color: var(--atlantic); font-family: var(--font-sans); font-stretch: var(--wd-ui); font-weight: 500; } /* a 24px target; the underline stays on the text */
+.book-side { grid-column: 7 / -1; }
+.form { display: grid; gap: var(--sp-2) var(--sp-5); grid-template-columns: 1fr 1fr; }
+.field { grid-column: 1 / -1; position: relative; }
+.field.half { grid-column: span 1; }
+.field label { display: block; margin-bottom: var(--sp-1); font-size: var(--fs-s); }
+.field .opt { color: var(--slate); }
+.control { position: relative; }
+.input {
+  display: block;
+  width: 100%;
+  min-height: 3rem;
+  padding: .7rem .875rem;
+  border: 0;
+  border-bottom: 1.5px solid var(--slate);
+  border-radius: var(--r-control) var(--r-control) 0 0;
+  background: var(--spray);
+  font-family: var(--font-sans);
+  font-stretch: var(--wd-ui);
+  font-size: var(--fs-data);
+  transition: border-color .2s linear;
+  appearance: none;
+}
+.input:focus-visible { outline: none; }
+@media (hover: hover) { .control:hover .input { border-bottom-color: var(--ink); } }
+.control .line { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: var(--qflag); border-bottom: 2px solid var(--ink); transform: scaleX(0); transform-origin: left center; transition: transform var(--t-rule) var(--e-out); pointer-events: none; }
+.control:focus-within .line { transform: scaleX(1); }
+.input[aria-invalid="true"] { border-bottom-color: var(--ink); border-bottom-style: dashed; }
+select.input { padding-right: 2.5rem; cursor: pointer; }
+.chev { position: absolute; right: .9rem; top: 50%; width: 12px; height: 8px; margin-top: -4px; fill: none; stroke: var(--ink); stroke-width: 1.75; pointer-events: none; transition: transform .25s var(--e-p3); }
+@media (hover: hover) { .control:hover .chev { transform: translateY(2px); } }
+.control:focus-within .chev { transform: translateY(2px); }
+.err { min-height: 1.5em; margin-top: var(--sp-1); font-size: var(--fs-s); line-height: 1.4; opacity: 0; transform: translateY(4px); transition: opacity var(--t-err) linear, transform var(--t-err) var(--e-out); }
+.err.is-shown { opacity: 1; transform: none; }
+.stepper { display: grid; grid-template-columns: 3rem 6rem 3rem; gap: var(--sp-1); }
+.stepper .input { text-align: center; font-family: var(--font-sans); font-stretch: var(--wd-data); font-variant-numeric: tabular-nums; -moz-appearance: textfield; }
+.stepper .input::-webkit-inner-spin-button, .stepper .input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.step {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 3rem;
+  border: 1.5px solid var(--atlantic);
+  border-radius: var(--r-control);
+  background: none;
+  color: var(--atlantic);
+  font-family: var(--font-sans);
+  font-size: var(--fs-l);
+  line-height: 1;
+  cursor: pointer;
+  --fill: var(--qflag);
+  transition: transform var(--t-release) var(--e-release), color .2s linear;
+}
+@media (hover: hover) { .step:hover { color: var(--ink); } }
+.step:focus-visible, .step:active { color: var(--ink); }
+.submit { grid-column: 1 / -1; justify-self: start; margin-top: var(--sp-3); }
+.roll { display: inline-grid; overflow: hidden; height: 1lh; line-height: inherit; vertical-align: bottom; }
+.roll > span { grid-area: 1 / 1; font: inherit; font-variant-numeric: lining-nums tabular-nums; }
+.result h3 { margin-bottom: var(--sp-3); }
+.result-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-5); margin-top: var(--sp-6); }
+.result-actions .ul { font-family: var(--font-sans); font-stretch: var(--wd-ui); font-weight: 500; font-size: var(--fs-s); color: var(--atlantic); }
+
+/* ---------- Motion layouts: the crossing becomes a sticky chart only when the script runs and motion is welcome ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  html.intro .h1, html.intro .ship-art, html.intro .waterline { visibility: hidden; }
+  html.intro .bar-item { opacity: 0; }
+  html.intro .opening-text .lead, html.intro .opening-text .actions { opacity: .001; } /* painted for LCP, shown with the first headline line */
+
+  /* Phones and tablets: the chart sticks under the bar, the slips scroll beneath it */
+  html.js .stage { padding-bottom: 0; }
+  html.js .pin { position: sticky; top: var(--bar-h); z-index: 4; background: var(--atlantic); }
+  /* The chart band takes about half the screen and follows the ship; a whole report always fits below it */
+  html.js .chart { width: 100%; height: max(12rem, min(52svh, 100svh - var(--bar-h) - 19rem)); aspect-ratio: auto; }
+  html.js .chart.is-follow .fix .fx, html.js .chart.is-follow .place span { display: block; }
+  html.js .chart.is-follow .gl { display: none; }
+  /* The hatches close and the hold floods to the same Atlantic the crossing opens on */
+  html.js .flood { display: block; position: fixed; inset: 0; z-index: 1; background: var(--atlantic); clip-path: inset(100% 0 0 0); pointer-events: none; }
+  html.js .crossing { position: relative; z-index: 2; }
+  html.js .days ol { margin-inline: auto; }
+  html.js .days-label { display: none; }
+  html.js .slips { display: block; max-width: 44rem; margin: 0 auto; padding-top: calc(16px + var(--sea) * var(--gap0)); }
+  html.js .slip { display: block; min-height: calc(var(--sea) * var(--gap)); pointer-events: none; }
+  html.js .slip:last-child { min-height: calc(100svh - var(--rest-y, 60svh) + 10svh); }
+  /* A report rests under the chart (low on the screen beside it on wide screens) through the leg after its noon, then the next one pushes it away */
+  html.js .slip-card { position: sticky; top: var(--rest-y, 60svh); margin-bottom: var(--sp-5); pointer-events: auto; }
+}
+@media (prefers-reduced-motion: no-preference) and (min-width: 992px) and (min-aspect-ratio: 4/3) {
+  :root { --sea: max(500svh, 3800px); }
+  html.js .pin { height: calc(100svh - var(--bar-h)); z-index: 2; --ch: calc(100svh - var(--bar-h)); --cw: min(100% - 7rem, var(--ch) * 1.75); }
+  /* The chart sheet keeps a margin each side for its latitude scale, so the neatline reads as the edge of a chart */
+  html.js .chart { width: 100%; height: 100%; aspect-ratio: auto; }
+  html.js .cam { left: calc((100% - var(--cw)) / 2); width: var(--cw); clip-path: inset(0 0 0 -3.5rem); } /* only the latitude scale shows in the margin; the wake never trails off the sheet */
+  html.js .gl-lat { left: auto; right: calc(100% + .6rem); top: calc(var(--oy) + var(--y) * var(--s) - .5em); }
+  html.js .readout { left: calc((100% - var(--cw)) / 2 + var(--cw) * .36); }
+  html.js .days { position: absolute; left: calc((100% - var(--cw)) / 2 + var(--cw) * .36); top: calc(var(--ch) * .05 + var(--fs-readout) + 3.5rem); margin: 0; padding: 0; }
+  html.js .days ol { width: 22rem; }
+  html.js .days-label { display: block; }
+  html.js .day { min-height: 2.5rem; }
+  html.js .slip-card { padding: var(--sp-3) var(--sp-4); }
+  html.js .entry { margin-top: var(--sp-2); font-size: var(--fs-entry); line-height: 1.4; }
+  html.js .slips { width: var(--slip-w); margin: calc(var(--bar-h) - 100svh) clamp(16px, 3vw, 48px) 0 auto; padding: calc(var(--rest-y, 60svh) - var(--bar-h) + var(--sea) * var(--gap0)) 0 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: .01ms !important; transition-delay: 0s !important; animation: none !important; }
+}
+
+/* ---------- Narrow screens ---------- */
+@media (max-width: 991px) {
+  .opening-text { grid-column: 1 / -1; padding-bottom: var(--sp-6); }
+  .ship-fig { grid-column: 1 / -1; }
+  .ch-head, .manifest, .plan, .arrival-grid > .prose, .fuel, .book-text, .book-side { grid-column: 1 / -1; }
+  .plan { order: -1; }
+  .lead { max-width: 40ch; }
+}
+@media (max-width: 759px) {
+  .opening { padding-top: var(--sp-7); }
+  .actions .btn { width: 100%; }
+  .ship-fig { margin-right: 0; }
+  .chapter { padding-top: var(--sp-8); }
+  .crossing { margin-top: var(--sp-8); }
+  .lead, .ch-head .lead { font-size: var(--fs-m); }
+  .m-head, .lot { grid-template-columns: 1fr 4rem 3.25rem; }
+  .readout { left: 37%; top: .6rem; }
+  .ro-nm, .ro-lat { font-size: var(--fs-xs); }
+  .gl, .fix .fx, .place:not(.port) span { display: none; }
+  .days { padding-block: var(--sp-2); }
+  .days-label { display: none; }
+  .days ol { max-width: none; grid-template-columns: repeat(8, minmax(0, 1fr)); }
+  .day { min-height: 2.75rem; font-size: var(--fs-small); }
+  .noon { grid-template-columns: auto auto; }
+  .noon > div:first-child { grid-column: 1 / -1; }
+  .entry { font-size: var(--fs-data); }
+  .form { grid-template-columns: 1fr; }
+  .field.half { grid-column: 1 / -1; }
+  .submit { width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="wrap bar-in">
+    <a class="mark bar-item" href="#top"><span class="ul">Halyard &amp; Hold</span><svg class="pg" viewBox="0 0 22 14" aria-hidden="true" focusable="false"><path d="M1 1 L21 7 L1 13 Z" fill="currentColor"/></svg></a>
+    <nav class="chapters" aria-label="Chapters">
+      <ul class="ui">
+        <li class="bar-item"><a href="#loading">Loading</a></li>
+        <li class="bar-item"><a href="#crossing">Crossing</a></li>
+        <li class="bar-item"><a href="#arrival">Arrival</a></li>
+        <li class="bar-item"><a href="#book">Book space</a></li>
+      </ul>
+      <span class="ind" aria-hidden="true"></span>
+    </nav>
+    <button class="menu-btn fill press ui bar-item" type="button" aria-expanded="false" aria-controls="menu"><span class="swap"><span>Chapters</span><span aria-hidden="true">Close</span></span></button>
+  </div>
+</header>
+<div class="menu" id="menu" inert>
+  <nav aria-label="Chapters menu">
+    <ul>
+      <li><a href="#loading"><span class="m-name ul">Loading</span><span class="m-when">Le&nbsp;Havre, 2 to 5 March</span></a></li>
+      <li><a href="#crossing"><span class="m-name ul">Crossing</span><span class="m-when">Eight noon reports, 6 to 30 March</span></a></li>
+      <li><a href="#arrival"><span class="m-name ul">Arrival</span><span class="m-when">Santa&nbsp;Marta, 30 March</span></a></li>
+      <li><a href="#book"><span class="m-name ul">Book space</span><span class="m-when">Voyage 15, from 9 June</span></a></li>
+    </ul>
+  </nav>
+</div>
+
+<main>
+  <section class="opening" id="top" aria-labelledby="top-h">
+    <div class="wrap opening-grid">
+      <div class="opening-text">
+        <h1 class="h1" id="top-h" tabindex="-1">Le&nbsp;Havre to Santa&nbsp;Marta on the wind</h1>
+        <p class="lead">Follow Voyage 14 of Alizé, our 72-metre sail cargo ship: 336 pallets and 14 turbine crates loaded in Normandy, 5,068 nautical miles across the Atlantic, and 24 days at sea. The engine ran for nine hours, all of them in port.</p>
+        <p class="actions">
+          <a class="btn btn-ink fill press" href="#loading">Follow the voyage</a>
+          <a class="btn btn-line fill press" href="#book">Reserve space on Voyage 15</a>
+        </p>
+      </div>
+      <figure class="ship-fig">
+        <svg class="ship-art" viewBox="0 -100 760 492" role="img" aria-labelledby="ship-t">
+          <title id="ship-t">Alizé under sail: a two-masted cargo schooner with her mainsail, foresail, staysail and jib set</title>
+          <defs>
+            <clipPath id="sea"><rect x="-60" y="-160" width="880" height="552"/></clipPath>
+            <clipPath id="c-main"><path d="M250 -20 L120 -58 Q98 140 100 316 L250 320 Z"/></clipPath>
+            <clipPath id="c-fore"><path d="M444 8 L322 -22 Q294 150 294 316 L444 318 Z"/></clipPath>
+          </defs>
+          <g clip-path="url(#sea)">
+            <g class="vessel">
+              <g class="masts">
+                <line class="mast" x1="250" y1="352" x2="250" y2="-78"/>
+                <line class="mast" x1="444" y1="350" x2="444" y2="-42"/>
+                <path class="rig" d="M250 -72 L226 352 M250 -72 L274 352 M444 -36 L420 350 M444 -36 L468 350 M250 -72 L444 -36 M444 -36 L740 333"/>
+                <line class="spar" x1="250" y1="321" x2="98" y2="317"/>
+                <line class="spar" x1="444" y1="319" x2="292" y2="316"/>
+              </g>
+              <g class="sail s-jib"><path d="M444 -34 L738 333 Q668 316 606 306 Z"/></g>
+              <g class="sail s-stay"><path d="M442 22 L660 336 Q566 330 478 322 Z"/></g>
+              <g class="sail s-fore"><path d="M444 8 L322 -22 Q294 150 294 316 L444 318 Z"/><path class="seam" clip-path="url(#c-fore)" d="M280 60 L450 82 M280 140 L450 156 M280 220 L450 232"/><line class="spar" x1="444" y1="8" x2="320" y2="-23"/></g>
+              <g class="sail s-main"><path d="M250 -20 L120 -58 Q98 140 100 316 L250 320 Z"/><path class="seam" clip-path="url(#c-main)" d="M90 40 L256 58 M90 120 L256 134 M90 200 L256 210"/><line class="spar" x1="250" y1="-20" x2="118" y2="-59"/></g>
+              <g class="pen-wrap"><path class="pennant" d="M250 -84 L192 -77 L250 -70 Z" fill="var(--atlantic)"/></g>
+              <g class="hullg">
+                <line class="spar" x1="688" y1="341" x2="742" y2="332"/>
+                <rect x="300" y="345" width="80" height="9" fill="var(--atlantic)"/>
+                <rect x="486" y="342" width="80" height="9" fill="var(--atlantic)"/>
+                <rect x="112" y="328" width="74" height="26" rx="2" fill="var(--atlantic)"/>
+                <rect x="120" y="334" width="14" height="7" fill="var(--spray)"/><rect x="141" y="334" width="14" height="7" fill="var(--spray)"/><rect x="162" y="334" width="14" height="7" fill="var(--spray)"/>
+                <path class="hull" d="M70 350 C300 357 520 353 694 338 C682 360 668 378 656 394 L100 394 C90 378 80 364 70 350 Z"/>
+                <path class="paint" d="M86 376 C300 381 520 379 666 370"/>
+                <text class="name" x="640" y="364" text-anchor="end">ALIZÉ</text>
+              </g>
+            </g>
+          </g>
+        </svg>
+      </figure>
+    </div>
+    <div class="waterline" aria-hidden="true"></div>
+  </section>
+
+  <section class="chapter loading" id="loading" aria-labelledby="loading-h">
+    <div class="wrap">
+      <div class="g12">
+        <div class="ch-head">
+          <h2 class="h2" id="loading-h" tabindex="-1">Loading in Le&nbsp;Havre, 2 to 5 March</h2>
+          <p class="lead">Everything goes in by forklift through two hatches, heavy goods low and central so she sails upright. Pick a lot to see where it rides.</p>
+        </div>
+      </div>
+      <div class="g12 loading-grid">
+        <div class="manifest">
+          <div class="m-head ui" aria-hidden="true"><span>Lot and shipper</span><span>Positions</span><span>Tonnes</span></div>
+          <ul class="lots">
+            <li><button class="lot" type="button" aria-pressed="false" data-lot="wine"><span class="goods"><span class="hl" aria-hidden="true"></span>Loire red and white wine</span><span class="shipper">Vignerons de Montsoreau</span><span class="num data">220<span class="vh"> pallets,</span></span><span class="num data">198<span class="vh"> tonnes</span></span></button></li>
+            <li><button class="lot" type="button" aria-pressed="false" data-lot="calvados"><span class="goods"><span class="hl" aria-hidden="true"></span>Calvados and cider</span><span class="shipper">Cidrerie du Pays d’Auge</span><span class="num data">60<span class="vh"> pallets,</span></span><span class="num data">54<span class="vh"> tonnes</span></span></button></li>
+            <li><button class="lot" type="button" aria-pressed="false" data-lot="bikes"><span class="goods"><span class="hl" aria-hidden="true"></span>Cargo bicycles</span><span class="shipper">Mensajeros del Rodadero, Santa&nbsp;Marta</span><span class="num data">40<span class="vh"> pallets,</span></span><span class="num data">12<span class="vh"> tonnes</span></span></button></li>
+            <li><button class="lot" type="button" aria-pressed="false" data-lot="turbine"><span class="goods"><span class="hl" aria-hidden="true"></span>Turbine spare parts</span><span class="shipper">Minca run-of-river plant</span><span class="num data">16<span class="vh"> positions for</span></span><span class="sub data">14 crates<span class="vh">,</span></span><span class="num data">31<span class="vh"> tonnes</span></span></button></li>
+            <li><button class="lot" type="button" aria-pressed="false" data-lot="books"><span class="goods"><span class="hl" aria-hidden="true"></span>French textbooks</span><span class="shipper">Alliance Française de Santa&nbsp;Marta</span><span class="num data">16<span class="vh"> pallets,</span></span><span class="num data">9<span class="vh"> tonnes</span></span></button></li>
+          </ul>
+          <p class="total data">352 of 576 pallet positions, 304 t.</p>
+        </div>
+        <figure class="plan">
+          <svg class="plan-svg" viewBox="0 0 680 236" role="img" aria-labelledby="plan-t">
+            <title id="plan-t">Stowage plan of Alizé in profile, bow to the right: two holds of 72 squares each, with 88 squares loaded</title>
+            <path class="outline" d="M28 52 L640 46 C652 100 650 170 618 222 L56 222 C40 170 32 110 28 52 Z"/>
+            <rect class="deck" x="38" y="30" width="58" height="20" rx="2"/>
+            <rect class="deck hatch" x="124" y="42" width="140" height="8"/>
+            <rect class="deck hatch" x="406" y="40" width="140" height="8"/>
+            <line class="bulkhead" x1="333" y1="58" x2="333" y2="218"/>
+            <g class="lot-g l-turbine" data-lot="turbine"><rect x="342" y="196" width="18" height="18" rx="3"/><rect x="302" y="196" width="18" height="18" rx="3"/><rect x="364" y="196" width="18" height="18" rx="3"/><rect x="280" y="196" width="18" height="18" rx="3"/></g>
+            <g class="lot-g l-wine" data-lot="wine"><rect x="386" y="196" width="18" height="18" rx="3"/><rect x="258" y="196" width="18" height="18" rx="3"/><rect x="408" y="196" width="18" height="18" rx="3"/><rect x="236" y="196" width="18" height="18" rx="3"/><rect x="430" y="196" width="18" height="18" rx="3"/><rect x="214" y="196" width="18" height="18" rx="3"/><rect x="452" y="196" width="18" height="18" rx="3"/><rect x="192" y="196" width="18" height="18" rx="3"/><rect x="474" y="196" width="18" height="18" rx="3"/><rect x="170" y="196" width="18" height="18" rx="3"/><rect x="496" y="196" width="18" height="18" rx="3"/><rect x="148" y="196" width="18" height="18" rx="3"/><rect x="518" y="196" width="18" height="18" rx="3"/><rect x="126" y="196" width="18" height="18" rx="3"/><rect x="540" y="196" width="18" height="18" rx="3"/><rect x="104" y="196" width="18" height="18" rx="3"/><rect x="562" y="196" width="18" height="18" rx="3"/><rect x="82" y="196" width="18" height="18" rx="3"/><rect x="584" y="196" width="18" height="18" rx="3"/><rect x="60" y="196" width="18" height="18" rx="3"/><rect x="342" y="174" width="18" height="18" rx="3"/><rect x="302" y="174" width="18" height="18" rx="3"/><rect x="364" y="174" width="18" height="18" rx="3"/><rect x="280" y="174" width="18" height="18" rx="3"/><rect x="386" y="174" width="18" height="18" rx="3"/><rect x="258" y="174" width="18" height="18" rx="3"/><rect x="408" y="174" width="18" height="18" rx="3"/><rect x="236" y="174" width="18" height="18" rx="3"/><rect x="430" y="174" width="18" height="18" rx="3"/><rect x="214" y="174" width="18" height="18" rx="3"/><rect x="452" y="174" width="18" height="18" rx="3"/><rect x="192" y="174" width="18" height="18" rx="3"/><rect x="474" y="174" width="18" height="18" rx="3"/><rect x="170" y="174" width="18" height="18" rx="3"/><rect x="496" y="174" width="18" height="18" rx="3"/><rect x="148" y="174" width="18" height="18" rx="3"/><rect x="518" y="174" width="18" height="18" rx="3"/><rect x="126" y="174" width="18" height="18" rx="3"/><rect x="540" y="174" width="18" height="18" rx="3"/><rect x="104" y="174" width="18" height="18" rx="3"/><rect x="562" y="174" width="18" height="18" rx="3"/><rect x="82" y="174" width="18" height="18" rx="3"/><rect x="584" y="174" width="18" height="18" rx="3"/><rect x="60" y="174" width="18" height="18" rx="3"/><rect x="342" y="152" width="18" height="18" rx="3"/><rect x="302" y="152" width="18" height="18" rx="3"/><rect x="364" y="152" width="18" height="18" rx="3"/><rect x="280" y="152" width="18" height="18" rx="3"/><rect x="386" y="152" width="18" height="18" rx="3"/><rect x="258" y="152" width="18" height="18" rx="3"/><rect x="408" y="152" width="18" height="18" rx="3"/><rect x="236" y="152" width="18" height="18" rx="3"/><rect x="430" y="152" width="18" height="18" rx="3"/><rect x="214" y="152" width="18" height="18" rx="3"/><rect x="452" y="152" width="18" height="18" rx="3"/></g>
+            <g class="lot-g l-calvados" data-lot="calvados"><rect x="192" y="152" width="18" height="18" rx="3"/><rect x="474" y="152" width="18" height="18" rx="3"/><rect x="170" y="152" width="18" height="18" rx="3"/><rect x="496" y="152" width="18" height="18" rx="3"/><rect x="148" y="152" width="18" height="18" rx="3"/><rect x="518" y="152" width="18" height="18" rx="3"/><rect x="126" y="152" width="18" height="18" rx="3"/><rect x="540" y="152" width="18" height="18" rx="3"/><rect x="104" y="152" width="18" height="18" rx="3"/><rect x="562" y="152" width="18" height="18" rx="3"/><rect x="82" y="152" width="18" height="18" rx="3"/><rect x="584" y="152" width="18" height="18" rx="3"/><rect x="60" y="152" width="18" height="18" rx="3"/><rect x="342" y="130" width="18" height="18" rx="3"/><rect x="302" y="130" width="18" height="18" rx="3"/></g>
+            <g class="lot-g l-books" data-lot="books"><rect x="364" y="130" width="18" height="18" rx="3"/><rect x="280" y="130" width="18" height="18" rx="3"/><rect x="386" y="130" width="18" height="18" rx="3"/><rect x="258" y="130" width="18" height="18" rx="3"/></g>
+            <g class="lot-g l-bikes" data-lot="bikes"><rect x="408" y="130" width="18" height="18" rx="3"/><rect x="236" y="130" width="18" height="18" rx="3"/><rect x="430" y="130" width="18" height="18" rx="3"/><rect x="214" y="130" width="18" height="18" rx="3"/><rect x="452" y="130" width="18" height="18" rx="3"/><rect x="192" y="130" width="18" height="18" rx="3"/><rect x="474" y="130" width="18" height="18" rx="3"/><rect x="170" y="130" width="18" height="18" rx="3"/><rect x="496" y="130" width="18" height="18" rx="3"/><rect x="148" y="130" width="18" height="18" rx="3"/></g>
+            <g class="empty"><rect x="518" y="130" width="18" height="18" rx="3"/><rect x="126" y="130" width="18" height="18" rx="3"/><rect x="540" y="130" width="18" height="18" rx="3"/><rect x="104" y="130" width="18" height="18" rx="3"/><rect x="562" y="130" width="18" height="18" rx="3"/><rect x="82" y="130" width="18" height="18" rx="3"/><rect x="584" y="130" width="18" height="18" rx="3"/><rect x="60" y="130" width="18" height="18" rx="3"/><rect x="342" y="108" width="18" height="18" rx="3"/><rect x="302" y="108" width="18" height="18" rx="3"/><rect x="364" y="108" width="18" height="18" rx="3"/><rect x="280" y="108" width="18" height="18" rx="3"/><rect x="386" y="108" width="18" height="18" rx="3"/><rect x="258" y="108" width="18" height="18" rx="3"/><rect x="408" y="108" width="18" height="18" rx="3"/><rect x="236" y="108" width="18" height="18" rx="3"/><rect x="430" y="108" width="18" height="18" rx="3"/><rect x="214" y="108" width="18" height="18" rx="3"/><rect x="452" y="108" width="18" height="18" rx="3"/><rect x="192" y="108" width="18" height="18" rx="3"/><rect x="474" y="108" width="18" height="18" rx="3"/><rect x="170" y="108" width="18" height="18" rx="3"/><rect x="496" y="108" width="18" height="18" rx="3"/><rect x="148" y="108" width="18" height="18" rx="3"/><rect x="518" y="108" width="18" height="18" rx="3"/><rect x="126" y="108" width="18" height="18" rx="3"/><rect x="540" y="108" width="18" height="18" rx="3"/><rect x="104" y="108" width="18" height="18" rx="3"/><rect x="562" y="108" width="18" height="18" rx="3"/><rect x="82" y="108" width="18" height="18" rx="3"/><rect x="584" y="108" width="18" height="18" rx="3"/><rect x="60" y="108" width="18" height="18" rx="3"/><rect x="342" y="86" width="18" height="18" rx="3"/><rect x="302" y="86" width="18" height="18" rx="3"/><rect x="364" y="86" width="18" height="18" rx="3"/><rect x="280" y="86" width="18" height="18" rx="3"/><rect x="386" y="86" width="18" height="18" rx="3"/><rect x="258" y="86" width="18" height="18" rx="3"/><rect x="408" y="86" width="18" height="18" rx="3"/><rect x="236" y="86" width="18" height="18" rx="3"/><rect x="430" y="86" width="18" height="18" rx="3"/><rect x="214" y="86" width="18" height="18" rx="3"/><rect x="452" y="86" width="18" height="18" rx="3"/><rect x="192" y="86" width="18" height="18" rx="3"/><rect x="474" y="86" width="18" height="18" rx="3"/><rect x="170" y="86" width="18" height="18" rx="3"/><rect x="496" y="86" width="18" height="18" rx="3"/><rect x="148" y="86" width="18" height="18" rx="3"/><rect x="518" y="86" width="18" height="18" rx="3"/><rect x="126" y="86" width="18" height="18" rx="3"/><rect x="540" y="86" width="18" height="18" rx="3"/><rect x="104" y="86" width="18" height="18" rx="3"/><rect x="562" y="86" width="18" height="18" rx="3"/><rect x="82" y="86" width="18" height="18" rx="3"/><rect x="584" y="86" width="18" height="18" rx="3"/><rect x="60" y="86" width="18" height="18" rx="3"/></g>
+            <g class="hi-g" data-lot="turbine"><rect x="342" y="196" width="18" height="18" rx="3" style="--k:0"/><rect x="302" y="196" width="18" height="18" rx="3" style="--k:1"/><rect x="364" y="196" width="18" height="18" rx="3" style="--k:2"/><rect x="280" y="196" width="18" height="18" rx="3" style="--k:3"/></g>
+            <g class="hi-g" data-lot="wine"><rect x="386" y="196" width="18" height="18" rx="3" style="--k:0"/><rect x="258" y="196" width="18" height="18" rx="3" style="--k:1"/><rect x="408" y="196" width="18" height="18" rx="3" style="--k:2"/><rect x="236" y="196" width="18" height="18" rx="3" style="--k:3"/><rect x="430" y="196" width="18" height="18" rx="3" style="--k:4"/><rect x="214" y="196" width="18" height="18" rx="3" style="--k:5"/><rect x="452" y="196" width="18" height="18" rx="3" style="--k:6"/><rect x="192" y="196" width="18" height="18" rx="3" style="--k:7"/><rect x="474" y="196" width="18" height="18" rx="3" style="--k:8"/><rect x="170" y="196" width="18" height="18" rx="3" style="--k:9"/><rect x="496" y="196" width="18" height="18" rx="3" style="--k:10"/><rect x="148" y="196" width="18" height="18" rx="3" style="--k:11"/><rect x="518" y="196" width="18" height="18" rx="3" style="--k:12"/><rect x="126" y="196" width="18" height="18" rx="3" style="--k:13"/><rect x="540" y="196" width="18" height="18" rx="3" style="--k:14"/><rect x="104" y="196" width="18" height="18" rx="3" style="--k:15"/><rect x="562" y="196" width="18" height="18" rx="3" style="--k:16"/><rect x="82" y="196" width="18" height="18" rx="3" style="--k:17"/><rect x="584" y="196" width="18" height="18" rx="3" style="--k:18"/><rect x="60" y="196" width="18" height="18" rx="3" style="--k:19"/><rect x="342" y="174" width="18" height="18" rx="3" style="--k:20"/><rect x="302" y="174" width="18" height="18" rx="3" style="--k:21"/><rect x="364" y="174" width="18" height="18" rx="3" style="--k:22"/><rect x="280" y="174" width="18" height="18" rx="3" style="--k:23"/><rect x="386" y="174" width="18" height="18" rx="3" style="--k:24"/><rect x="258" y="174" width="18" height="18" rx="3" style="--k:25"/><rect x="408" y="174" width="18" height="18" rx="3" style="--k:26"/><rect x="236" y="174" width="18" height="18" rx="3" style="--k:27"/><rect x="430" y="174" width="18" height="18" rx="3" style="--k:28"/><rect x="214" y="174" width="18" height="18" rx="3" style="--k:29"/><rect x="452" y="174" width="18" height="18" rx="3" style="--k:30"/><rect x="192" y="174" width="18" height="18" rx="3" style="--k:31"/><rect x="474" y="174" width="18" height="18" rx="3" style="--k:32"/><rect x="170" y="174" width="18" height="18" rx="3" style="--k:33"/><rect x="496" y="174" width="18" height="18" rx="3" style="--k:34"/><rect x="148" y="174" width="18" height="18" rx="3" style="--k:35"/><rect x="518" y="174" width="18" height="18" rx="3" style="--k:36"/><rect x="126" y="174" width="18" height="18" rx="3" style="--k:37"/><rect x="540" y="174" width="18" height="18" rx="3" style="--k:38"/><rect x="104" y="174" width="18" height="18" rx="3" style="--k:39"/><rect x="562" y="174" width="18" height="18" rx="3" style="--k:40"/><rect x="82" y="174" width="18" height="18" rx="3" style="--k:41"/><rect x="584" y="174" width="18" height="18" rx="3" style="--k:42"/><rect x="60" y="174" width="18" height="18" rx="3" style="--k:43"/><rect x="342" y="152" width="18" height="18" rx="3" style="--k:44"/><rect x="302" y="152" width="18" height="18" rx="3" style="--k:45"/><rect x="364" y="152" width="18" height="18" rx="3" style="--k:46"/><rect x="280" y="152" width="18" height="18" rx="3" style="--k:47"/><rect x="386" y="152" width="18" height="18" rx="3" style="--k:48"/><rect x="258" y="152" width="18" height="18" rx="3" style="--k:49"/><rect x="408" y="152" width="18" height="18" rx="3" style="--k:50"/><rect x="236" y="152" width="18" height="18" rx="3" style="--k:51"/><rect x="430" y="152" width="18" height="18" rx="3" style="--k:52"/><rect x="214" y="152" width="18" height="18" rx="3" style="--k:53"/><rect x="452" y="152" width="18" height="18" rx="3" style="--k:54"/></g>
+            <g class="hi-g" data-lot="calvados"><rect x="192" y="152" width="18" height="18" rx="3" style="--k:0"/><rect x="474" y="152" width="18" height="18" rx="3" style="--k:1"/><rect x="170" y="152" width="18" height="18" rx="3" style="--k:2"/><rect x="496" y="152" width="18" height="18" rx="3" style="--k:3"/><rect x="148" y="152" width="18" height="18" rx="3" style="--k:4"/><rect x="518" y="152" width="18" height="18" rx="3" style="--k:5"/><rect x="126" y="152" width="18" height="18" rx="3" style="--k:6"/><rect x="540" y="152" width="18" height="18" rx="3" style="--k:7"/><rect x="104" y="152" width="18" height="18" rx="3" style="--k:8"/><rect x="562" y="152" width="18" height="18" rx="3" style="--k:9"/><rect x="82" y="152" width="18" height="18" rx="3" style="--k:10"/><rect x="584" y="152" width="18" height="18" rx="3" style="--k:11"/><rect x="60" y="152" width="18" height="18" rx="3" style="--k:12"/><rect x="342" y="130" width="18" height="18" rx="3" style="--k:13"/><rect x="302" y="130" width="18" height="18" rx="3" style="--k:14"/></g>
+            <g class="hi-g" data-lot="books"><rect x="364" y="130" width="18" height="18" rx="3" style="--k:0"/><rect x="280" y="130" width="18" height="18" rx="3" style="--k:1"/><rect x="386" y="130" width="18" height="18" rx="3" style="--k:2"/><rect x="258" y="130" width="18" height="18" rx="3" style="--k:3"/></g>
+            <g class="hi-g" data-lot="bikes"><rect x="408" y="130" width="18" height="18" rx="3" style="--k:0"/><rect x="236" y="130" width="18" height="18" rx="3" style="--k:1"/><rect x="430" y="130" width="18" height="18" rx="3" style="--k:2"/><rect x="214" y="130" width="18" height="18" rx="3" style="--k:3"/><rect x="452" y="130" width="18" height="18" rx="3" style="--k:4"/><rect x="192" y="130" width="18" height="18" rx="3" style="--k:5"/><rect x="474" y="130" width="18" height="18" rx="3" style="--k:6"/><rect x="170" y="130" width="18" height="18" rx="3" style="--k:7"/><rect x="496" y="130" width="18" height="18" rx="3" style="--k:8"/><rect x="148" y="130" width="18" height="18" rx="3" style="--k:9"/></g>
+          </svg>
+          <figcaption>
+            <p>Each square is four pallet positions. Bow to the right: hold 1 forward, hold 2 aft.</p>
+            <p class="live" id="plan-live" aria-live="polite">88 of 144 squares loaded, 56 left empty.</p>
+          </figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <div class="flood" aria-hidden="true"></div>
+
+  <section class="crossing" id="crossing" aria-labelledby="crossing-h">
+    <div class="wrap chapter">
+      <div class="g12">
+        <div class="ch-head">
+          <h2 class="h2" id="crossing-h" tabindex="-1">The crossing, 6 to 30 March</h2>
+          <p class="lead">At noon each day the mate writes down the ship’s position, the wind and the miles run since the noon before. Here are eight of those reports, as written.</p>
+          <a class="skip-to ul keep" href="#arrival">Skip to arrival</a>
+        </div>
+      </div>
+    </div>
+    <div class="stage">
+      <div class="pin">
+        <figure class="chart" aria-labelledby="chart-cap">
+          <figcaption class="vh" id="chart-cap">Chart of the North Atlantic from 55° N to 5° N and 80° W to 5° E, with the planned route from Le&nbsp;Havre to Santa&nbsp;Marta dashed and the eight noon positions marked.</figcaption>
+          <div class="cam">
+          <svg class="map" viewBox="0 0 73.61 50" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+            <g class="grat"><path d="M8.66 0V50 M17.321 0V50 M25.981 0V50 M34.641 0V50 M43.301 0V50 M51.962 0V50 M60.622 0V50 M69.282 0V50 M0 5H73.61 M0 15H73.61 M0 25H73.61 M0 35H73.61 M0 45H73.61"/></g>
+            <path class="land" d="M77.08 -2 77.08 1.4 75.26 1.55 73.44 2.05 73.01 2.9 72.4 3.6 71.45 3.95 70.67 4.05 70.67 4.8 69.8 5.15 69.37 5.51 69.02 5.7 68.33 5.62 68.18 5.32 67.88 5.36 67.59 5.28 67.9 6.15 67.98 6.37 67.51 6.36 66.86 6.2 66.16 6.26 65.3 6.4 65.15 6.67 65.19 6.98 65.64 7.2 66.68 7.48 67.38 7.75 67.68 8.45 68.29 8.85 68.37 9.4 68.2 10.4 67.94 11.5 66.77 11.6 65.99 11.53 64.35 11.44 62.62 11.22 62.01 11.63 61.25 12.12 61.62 12.8 61.79 13.85 61.57 15 61.05 16.25 61.66 17 61.5 17.98 62.44 18 62.87 17.8 63.83 18.5 64.43 19 64.65 18.85 65.47 18.3 67.39 18.28 68.43 17.4 69.46 16.25 69 15.53 70.06 14.3 71.19 13.6 72.05 12.7 71.92 12.3 72.49 11.6 73.44 11.6 73.96 11.75 77.08 11.7Z M67.85 -1 68.03 0.05 68.33 0.4 69.21 0.88 69.39 1.4 69.59 1.9 70.8 2.4 70.67 3 69.97 3.5 70.54 3.67 70.48 3.88 69.02 4.25 68.59 4.27 67.64 4.4 67.12 4.4 66.12 4.78 65.64 4.65 64.78 5.04 64.33 4.94 64.95 4.45 65.64 3.82 66.68 3.55 66.42 3.62 65.56 3.38 64.69 3.22 65.38 2.88 65.73 2.45 65.17 2.2 65.56 1.6 66.64 1.7 66.64 1.15 66.16 0.5 66.64 0.05 64.95 0.32 64.82 0 64.69 -1Z M64 -0.25 64.48 0.35 64.04 1.05 64 1.7 64.09 2.3 63.78 2.82 63.22 2.87 62.09 3.2 60.97 3.55 60.36 3.15 60.75 2.7 61.05 2.4 61.49 1.75 60.54 1.5 60.67 0.95 60.58 0.73 61.83 0.7 61.66 0.3 62.01 -0.15 62.9 -0.38Z M64.17 19.2 64.69 19.1 65.82 19.75 66.77 19.7 67.64 19.9 68.76 19.25 70.15 18.5 71.88 18.2 73.61 18.25 77.08 18 77.08 52 72.23 48.6 70.32 48.9 69.11 49.45 67.55 50.25 65.82 49.75 62.79 50.65 61.49 50 59.93 48.7 57.85 46.5 57.5 45.5 56.29 44.2 55.77 43.1 54.78 42.6 54.91 41.5 54.13 40.27 54.99 38.95 55.43 36.9 54.99 35.6 54.52 34.2 55.17 32.7 55.51 31.3 56.72 28.9 58.11 27.05 59.76 26.4 60.92 24.6 60.79 23.5 61.27 22.7 61.92 21.8 62.7 21.4 63.39 20.95 63.91 20Z M-2.6 -2 16.45 -1.5 17.32 -0.3 19.05 0.8 20.78 2.7 19.49 3.55 17.32 4.75 13.86 4.75 11.69 5 9.96 5.9 12.56 5.8 13.68 6.2 13.12 7.9 13.86 8.75 16.02 9.05 16.19 8.4 16.97 8 17.45 8.95 16.45 9.7 14.2 10.4 12.47 11.5 11.99 10.7 13.42 9.7 12.12 9.8 11.26 10.25 9.7 10.7 8.49 11.4 8.14 12.4 7.88 12.7 8.44 12.95 8.7 13.3 8.14 13.45 7.45 13.55 6.15 13.75 5.2 14.4 5.2 14.85 4.85 15.6 4.37 16.07 4.29 16.55 3.81 17.6 3.46 18 3.68 18.8 3.9 19.75 3.03 20.35 1.82 21.15 0.69 21.85 -0.78 23 -1.21 24.5 -0.52 26.55 -0.04 28.3 -0.13 29.2 -0.35 29.8 -1.04 29.9 -2.6 30Z M21.3 3.4 21.04 4.5 22.86 5.4 23.3 6.35 23.69 7.45 23.3 8.35 22.6 8.1 22.34 7.6 21.3 8.1 20.78 7.4 17.93 7.4 18.19 6.5 18.88 5.6 19.57 4.4 20.26 3.6Z M-0.87 31.8 0 31.85 1.73 32.65 3.81 33.9 5.07 34.75 3.81 35.1 1.99 35.15 2.42 34.35 1.21 33.45 -0.43 33.15 -0.87 33.1Z M5.72 35.08 6.93 35.15 8.66 35.18 9.53 35.7 10.09 36.4 8.75 36.55 7.62 37.25 6.41 36.8 4.81 36.62 5.63 36.45 6.24 35.95 6.06 35.4Z M11.04 36.5 12.47 36.6 12.43 37 11.09 37Z M1.43 36.55 2.6 36.48 3.29 37 2.73 37.12 1.56 36.8Z M15.66 44.28 16.52 44.2 16.45 44.94 15.68 44.92Z M16.28 40.12 16.61 40.35 16.56 40.6 16.3 40.52Z M16.39 40.9 16.56 41.05 16.5 41.28 16.39 41.2Z M-2.6 45.7 0 45.7 0.43 45.4 1.73 45.6 2.77 46.4 3.46 45.6 3.85 44.6 4.46 43.9 5.01 43.76 5.8 43.7 6.67 43.15 7.21 42.54 7.75 43 7.27 43.45 8.66 43.4 8.49 42.8 9.01 43.5 10.22 44.5 11.34 44.4 13.68 44.6 14.03 44.3 15.72 44.4 15.59 45.1 16.63 46.4 18.19 47 18.88 48.2 19.92 49 21.48 49.05 22.95 49.4 23.99 50.1 25.11 51 25.11 53 -2.6 53Z"/>
+            <path class="isle" d="M42.14 15.55a0.12 0.12 0 1 0 0.24 0a0.12 0.12 0 1 0 -0.24 0 M44.44 16.5a0.16 0.16 0 1 0 0.32 0a0.16 0.16 0 1 0 -0.32 0 M45.61 16.28a0.12 0.12 0 1 0 0.24 0a0.12 0.12 0 1 0 -0.24 0 M47 17.22a0.2 0.2 0 1 0 0.4 0a0.2 0.2 0 1 0 -0.4 0 M54.38 22.25a0.22 0.22 0 1 0 0.44 0a0.22 0.22 0 1 0 -0.44 0 M55.04 21.94a0.1 0.1 0 1 0 0.2 0a0.1 0.1 0 1 0 -0.2 0 M57.33 25.97a0.17 0.17 0 1 0 0.34 0a0.17 0.17 0 1 0 -0.34 0 M56.94 26.6a0.22 0.22 0 1 0 0.44 0a0.22 0.22 0 1 0 -0.44 0 M55.57 27.05a0.2 0.2 0 1 0 0.4 0a0.2 0.2 0 1 0 -0.4 0 M54.69 26.73a0.22 0.22 0 1 0 0.44 0a0.22 0.22 0 1 0 -0.44 0 M54.29 26.9a0.1 0.1 0 1 0 0.2 0a0.1 0.1 0 1 0 -0.2 0 M53.66 26.32a0.15 0.15 0 1 0 0.3 0a0.15 0.15 0 1 0 -0.3 0 M53.59 27.25a0.1 0.1 0 1 0 0.2 0a0.1 0.1 0 1 0 -0.2 0 M47.4 37.95a0.14 0.14 0 1 0 0.28 0a0.14 0.14 0 1 0 -0.28 0 M49.35 38.3a0.1 0.1 0 1 0 0.2 0a0.1 0.1 0 1 0 -0.2 0 M49.4 38.9a0.14 0.14 0 1 0 0.28 0a0.14 0.14 0 1 0 -0.28 0 M48.66 39.9a0.18 0.18 0 1 0 0.36 0a0.18 0.18 0 1 0 -0.36 0 M48.03 40.08a0.12 0.12 0 1 0 0.24 0a0.12 0.12 0 1 0 -0.24 0 M13.11 22.7a0.1 0.1 0 1 0 0.2 0a0.1 0.1 0 1 0 -0.2 0 M15.66 37.93a0.1 0.1 0 1 0 0.2 0a0.1 0.1 0 1 0 -0.2 0 M15.84 38.8a0.18 0.18 0 1 0 0.36 0a0.18 0.18 0 1 0 -0.36 0 M16.02 39.6a0.13 0.13 0 1 0 0.26 0a0.13 0.13 0 1 0 -0.26 0 M16.18 41.75a0.1 0.1 0 1 0 0.2 0a0.1 0.1 0 1 0 -0.2 0 M15.75 42.9a0.1 0.1 0 1 0 0.2 0a0.1 0.1 0 1 0 -0.2 0 M17.61 41.85a0.1 0.1 0 1 0 0.2 0a0.1 0.1 0 1 0 -0.2 0 M8.56 42.5a0.1 0.1 0 1 0 0.2 0a0.1 0.1 0 1 0 -0.2 0 M9.41 42.8a0.12 0.12 0 1 0 0.24 0a0.12 0.12 0 1 0 -0.24 0 M10.08 42.85a0.1 0.1 0 1 0 0.2 0a0.1 0.1 0 1 0 -0.2 0"/>
+            <path class="plan-route" d="M69.369 5.52 67.463 5.2 64.692 6.42 60.665 11.75 55.512 22 53.564 26.34 43.734 32.2 30.744 37.2 16.498 40.82 7.101 42.25 5.006 43.75"/>
+            <rect class="neat" x="0" y="0" width="73.61" height="50"/>
+          </svg>
+          <svg class="sailed" viewBox="0 0 73.61 50" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><path d="M69.369 5.52 67.463 5.2 64.692 6.42 60.665 11.75 55.512 22 53.564 26.34 43.734 32.2 30.744 37.2 16.498 40.82 7.101 42.25 5.006 43.75"/></svg>
+          <div class="layer data" aria-hidden="true">
+            <span class="gl gl-lat" style="--y:5">50°N</span>
+            <span class="gl gl-lat" style="--y:15">40°N</span>
+            <span class="gl gl-lat" style="--y:25">30°N</span>
+            <span class="gl gl-lat" style="--y:35">20°N</span>
+            <span class="gl gl-lat" style="--y:45">10°N</span>
+            <span class="gl gl-lon" style="--x:8.66">70°W</span>
+            <span class="gl gl-lon" style="--x:17.321">60°W</span>
+            <span class="gl gl-lon" style="--x:25.981">50°W</span>
+            <span class="gl gl-lon" style="--x:34.641">40°W</span>
+            <span class="gl gl-lon" style="--x:43.301">30°W</span>
+            <span class="gl gl-lon" style="--x:51.962">20°W</span>
+            <span class="gl gl-lon" style="--x:60.622">10°W</span>
+            <span class="place at port below-l" style="--x:69.369;--y:5.51"><span>Le&nbsp;Havre</span></span>
+            <span class="place at isle left" style="--x:54.603;--y:22.25"><span>Madeira</span></span>
+            <span class="place at isle" style="--x:53.806;--y:26.32"><span>La&nbsp;Palma</span></span>
+            <span class="place at isle below" style="--x:16.48;--y:41.1"><span>St&nbsp;Lucia</span></span>
+            <span class="place at port below" style="--x:5.014;--y:43.76"><span>Santa&nbsp;Marta</span></span>
+            <span class="fix at w is-passed" style="--x:64.477;--y:6.705"><span class="ring"></span><span class="dot"></span><span class="fx">1</span></span>
+            <span class="fix at w is-passed" style="--x:60.987;--y:11.324"><span class="ring"></span><span class="dot"></span><span class="fx">3</span></span>
+            <span class="fix at w is-passed" style="--x:56.84;--y:19.359"><span class="ring"></span><span class="dot"></span><span class="fx">6</span></span>
+            <span class="fix at nw is-passed" style="--x:53.035;--y:26.655"><span class="ring"></span><span class="dot"></span><span class="fx">9</span></span>
+            <span class="fix at nw is-passed" style="--x:42.625;--y:32.627"><span class="ring"></span><span class="dot"></span><span class="fx">12</span></span>
+            <span class="fix at nw is-passed" style="--x:29.326;--y:37.56"><span class="ring"></span><span class="dot"></span><span class="fx">16</span></span>
+            <span class="fix at nw is-passed" style="--x:15.469;--y:40.977"><span class="ring"></span><span class="dot"></span><span class="fx">20</span></span>
+            <span class="fix at nw is-passed" style="--x:5.006;--y:43.75"><span class="ring"></span><span class="dot"></span><span class="fx">24</span></span>
+            <span class="tick tick-l"></span><span class="tick tick-r"></span><span class="tick tick-t"></span><span class="tick tick-b"></span>
+            <div class="marker">
+              <div class="boat">
+                <svg class="wake" viewBox="0 0 60 100" preserveAspectRatio="none">
+                  <defs>
+                    <clipPath id="wk-c"><path d="M28.5 0 L1 100 L13 100 Z M31.5 0 L59 100 L47 100 Z M27 0 L33 0 L37 100 L23 100 Z"/></clipPath>
+                    <linearGradient id="wk-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+                    <mask id="wk-m" maskContentUnits="objectBoundingBox"><rect width="1" height="1" fill="url(#wk-g)"/></mask>
+                  </defs>
+                  <g clip-path="url(#wk-c)" mask="url(#wk-m)">
+                    <rect class="wk-foam" x="0" y="0" width="60" height="100"/>
+                    <g class="wk-flow"><rect y="-12" width="60" height="4"/><rect y="0" width="60" height="4"/><rect y="12" width="60" height="4"/><rect y="24" width="60" height="4"/><rect y="36" width="60" height="4"/><rect y="48" width="60" height="4"/><rect y="60" width="60" height="4"/><rect y="72" width="60" height="4"/><rect y="84" width="60" height="4"/><rect y="96" width="60" height="4"/></g>
+                  </g>
+                </svg>
+                <svg class="m-hull" viewBox="-10 -32 20 60"><path class="sprit" d="M0 -31 V-24"/><path d="M0 -25 C7 -14 7.5 6 6 25 L-6 25 C-7.5 6 -7 -14 0 -25 Z"/><circle cx="0" cy="-8" r="1.8"/><circle cx="0" cy="9" r="1.8"/></svg>
+              </div>
+              <div class="stn">
+                <svg class="barb" viewBox="-40 -40 80 80">
+                  <circle r="3"/>
+                  <path d="M0 -3 L0 -30"/>
+                  <path data-f="f1" d="M0 -30 L12 -37"/>
+                  <path data-f="f2" d="M0 -24 L12 -31"/>
+                  <path data-f="f3" d="M0 -18 L12 -25"/>
+                  <path data-f="h2" d="M0 -24 L6 -27.5"/>
+                  <path data-f="h3" d="M0 -18 L6 -21.5"/>
+                </svg>
+              </div>
+              <svg class="m-flag" viewBox="0 0 24 32"><line class="staff" x1="2" y1="1" x2="2" y2="32"/><rect class="cloth" x="3" y="2" width="20" height="14"/></svg>
+            </div>
+          </div>
+          </div>
+          <p class="readout" aria-hidden="true"><span class="ro-day">Day 24</span><span class="ro-nm data">5,068 of 5,068 nm</span><span class="ro-lat data">11°15′ N</span></p>
+        </figure>
+        <nav class="days" aria-label="Noon reports">
+          <span class="days-label ui" aria-hidden="true">Noon reports</span>
+          <ol class="data">
+            <li><a class="day fill press" href="#d1" aria-label="Day 1, 7 March">1</a></li>
+            <li><a class="day fill press" href="#d3" aria-label="Day 3, 9 March">3</a></li>
+            <li><a class="day fill press" href="#d6" aria-label="Day 6, 12 March">6</a></li>
+            <li><a class="day fill press" href="#d9" aria-label="Day 9, 15 March">9</a></li>
+            <li><a class="day fill press" href="#d12" aria-label="Day 12, 18 March">12</a></li>
+            <li><a class="day fill press" href="#d16" aria-label="Day 16, 22 March">16</a></li>
+            <li><a class="day fill press" href="#d20" aria-label="Day 20, 26 March">20</a></li>
+            <li><a class="day fill press" href="#d24" aria-label="Day 24, 30 March">24</a></li>
+          </ol>
+        </nav>
+      </div>
+      <ol class="slips" style="--gap0:.05091">
+        <li class="slip" id="d1" style="--gap:.06689" data-pos="48.295 5.549" data-run="258">
+          <article class="slip-card" aria-labelledby="d1-h">
+            <h3 class="h3" id="d1-h" tabindex="-1">Day 1, 7 March</h3>
+            <dl class="noon ui">
+              <div><dt>Position</dt><dd class="data"><span>48°18′ N</span> <span>5°33′ W</span></dd></div>
+              <div><dt>Wind</dt><dd class="data">NE force 5</dd></div>
+              <div><dt>Run from the lock</dt><dd class="data">258 nm</dd></div>
+            </dl>
+            <p class="entry">Cleared Ushant at 09:40 on the ebb. Engine off since the Le&nbsp;Havre lock at 05:50 yesterday.</p>
+          </article>
+        </li>
+        <li class="slip" id="d3" style="--gap:.10971" data-pos="43.676 9.578" data-run="171">
+          <article class="slip-card" aria-labelledby="d3-h">
+            <h3 class="h3" id="d3-h" tabindex="-1">Day 3, 9 March</h3>
+            <dl class="noon ui">
+              <div><dt>Position</dt><dd class="data"><span>43°41′ N</span> <span>9°35′ W</span></dd></div>
+              <div><dt>Wind</dt><dd class="data">NW force 7</dd></div>
+              <div><dt>Run</dt><dd class="data">171 nm</dd></div>
+            </dl>
+            <p class="entry">Fore and main reefed overnight. Two wine pallets in hold 1 re-lashed at 03:00, none damaged.</p>
+          </article>
+        </li>
+        <li class="slip" id="d6" style="--gap:.10260" data-pos="35.641 14.367" data-run="198">
+          <article class="slip-card" aria-labelledby="d6-h">
+            <h3 class="h3" id="d6-h" tabindex="-1">Day 6, 12 March</h3>
+            <dl class="noon ui">
+              <div><dt>Position</dt><dd class="data"><span>35°38′ N</span> <span>14°22′ W</span></dd></div>
+              <div><dt>Wind</dt><dd class="data">N force 5</dd></div>
+              <div><dt>Run</dt><dd class="data">198 nm</dd></div>
+            </dl>
+            <p class="entry">Madeira 215 miles to the south-west. Sea temperature up to 17 °C.</p>
+          </article>
+        </li>
+        <li class="slip" id="d9" style="--gap:.14917" data-pos="28.345 18.76" data-run="186">
+          <article class="slip-card" aria-labelledby="d9-h">
+            <h3 class="h3" id="d9-h" tabindex="-1">Day 9, 15 March</h3>
+            <dl class="noon ui">
+              <div><dt>Position</dt><dd class="data"><span>28°21′ N</span> <span>18°46′ W</span></dd></div>
+              <div><dt>Wind</dt><dd class="data">NE force 5</dd></div>
+              <div><dt>Run</dt><dd class="data">186 nm</dd></div>
+            </dl>
+            <p class="entry">Passed west of La&nbsp;Palma at dawn and bore away for the Caribbean.</p>
+          </article>
+        </li>
+        <li class="slip" id="d12" style="--gap:.18331" data-pos="22.373 30.781" data-run="268">
+          <article class="slip-card" aria-labelledby="d12-h">
+            <h3 class="h3" id="d12-h" tabindex="-1">Day 12, 18 March</h3>
+            <dl class="noon ui">
+              <div><dt>Position</dt><dd class="data"><span>22°22′ N</span> <span>30°47′ W</span></dd></div>
+              <div><dt>Wind</dt><dd class="data">ENE force 6</dd></div>
+              <div><dt>Run</dt><dd class="data">268 nm</dd></div>
+            </dl>
+            <p class="entry">Best run of the voyage: 268 miles noon to noon, 11 knots under sail alone.</p>
+          </article>
+        </li>
+        <li class="slip" id="d16" style="--gap:.18942" data-pos="17.44 46.137" data-run="172">
+          <article class="slip-card" aria-labelledby="d16-h">
+            <h3 class="h3" id="d16-h" tabindex="-1">Day 16, 22 March</h3>
+            <dl class="noon ui">
+              <div><dt>Position</dt><dd class="data"><span>17°26′ N</span> <span>46°08′ W</span></dd></div>
+              <div><dt>Wind</dt><dd class="data">E force 4</dd></div>
+              <div><dt>Run</dt><dd class="data">172 nm</dd></div>
+            </dl>
+            <p class="entry">Light trades. Chafed jib halyard renewed aloft in 40 minutes.</p>
+          </article>
+        </li>
+        <li class="slip" id="d20" style="--gap:.14799" data-pos="14.023 62.138" data-run="214">
+          <article class="slip-card" aria-labelledby="d20-h">
+            <h3 class="h3" id="d20-h" tabindex="-1">Day 20, 26 March</h3>
+            <dl class="noon ui">
+              <div><dt>Position</dt><dd class="data"><span>14°01′ N</span> <span>62°08′ W</span></dd></div>
+              <div><dt>Wind</dt><dd class="data">E force 6</dd></div>
+              <div><dt>Run</dt><dd class="data">214 nm</dd></div>
+            </dl>
+            <p class="entry">Through the St&nbsp;Lucia Channel at 04:00. First land since La&nbsp;Palma.</p>
+          </article>
+        </li>
+        <li class="slip" id="d24" data-pos="11.25 74.22" data-run="165">
+          <article class="slip-card" aria-labelledby="d24-h">
+            <h3 class="h3" id="d24-h" tabindex="-1">Day 24, 30 March</h3>
+            <dl class="noon ui">
+              <div><dt>Position</dt><dd class="data"><span>11°15′ N</span> <span>74°13′ W</span></dd></div>
+              <div><dt>Wind</dt><dd class="data">NE force 5</dd></div>
+              <div><dt>Run</dt><dd class="data">165 nm</dd></div>
+            </dl>
+            <p class="entry">Q flag up at 06:40. Anchored off Punta Betín at 07:15, alongside in Santa&nbsp;Marta at 11:30.</p>
+          </article>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="chapter arrival" id="arrival" aria-labelledby="arrival-h">
+    <div class="wrap">
+      <div class="g12">
+        <div class="ch-head arrival-head">
+          <svg class="qflag" viewBox="0 0 40 64" role="img" aria-labelledby="qflag-t"><title id="qflag-t">The yellow Q flag, flown on arrival to ask for free pratique</title><line class="halyard" x1="4" y1="0" x2="4" y2="64"/><rect class="cloth" x="5" y="4" width="32" height="24"/></svg>
+          <h2 class="h2" id="arrival-h" tabindex="-1">Arrival in Santa&nbsp;Marta, 30 March</h2>
+        </div>
+      </div>
+      <div class="g12 arrival-grid">
+        <div class="prose arr-text">
+          <p>Customs boarded at 12:10. Unloading took two days. The cargo bikes came out first and were on the quay by lunchtime.</p>
+          <h3 class="h3">Going back full</h3>
+          <p>On 3 April she sails for Le&nbsp;Havre with 4,140 sacks of green coffee from four cooperatives in the Sierra Nevada de Santa&nbsp;Marta and 60 t of cacao from growers around Ciénaga. Every pallet position is taken.</p>
+        </div>
+        <div class="fuel">
+          <h3 class="h3" id="fuel-h">Diesel burned to carry this cargo</h3>
+          <dl aria-labelledby="fuel-h">
+            <div><dt>Alizé, generators and harbour manoeuvres</dt><dd><span class="b-track" aria-hidden="true"><span class="b-fill" style="--v:.1846"></span></span><span class="b-val data">2.4 t</span></dd></div>
+            <div><dt>A typical 1,000 TEU feeder ship, same cargo share and route (estimate)</dt><dd><span class="b-track" aria-hidden="true"><span class="b-fill" style="--v:1"></span></span><span class="b-val data">13 t</span></dd></div>
+          </dl>
+          <p class="fuel-take">About a fifth of the feeder’s diesel, for the same cargo.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="chapter book" id="book" aria-labelledby="book-h">
+    <div class="wrap g12 book-grid">
+      <div class="book-text">
+        <h2 class="h2" id="book-h" tabindex="-1">Reserve space on Voyage 15</h2>
+        <p>Alizé leaves Le&nbsp;Havre on 9 June and reaches Santa&nbsp;Marta around 3 July. 226 pallet positions are open. The holds stay dry, between 12 and 18 °C, and are not refrigerated.</p>
+        <p class="alt">Prefer email? <a class="ul" href="mailto:freight@halyardandhold.example" target="_blank" rel="noopener">freight@halyardandhold.example</a></p>
+      </div>
+      <div class="book-side">
+        <form class="form" id="request" novalidate>
+          <div class="field half">
+            <label class="ui" for="f-name">Your name</label>
+            <div class="control"><input class="input" id="f-name" name="name" type="text" autocomplete="name" required aria-describedby="f-name-err"><span class="line" aria-hidden="true"></span></div>
+            <p class="err ui" id="f-name-err"></p>
+          </div>
+          <div class="field half">
+            <label class="ui" for="f-company">Company <span class="opt">(optional)</span></label>
+            <div class="control"><input class="input" id="f-company" name="company" type="text" autocomplete="organization"><span class="line" aria-hidden="true"></span></div>
+            <p class="err ui" aria-hidden="true"></p>
+          </div>
+          <div class="field">
+            <label class="ui" for="f-email">Email</label>
+            <div class="control"><input class="input" id="f-email" name="email" type="email" autocomplete="email" required aria-describedby="f-email-err"><span class="line" aria-hidden="true"></span></div>
+            <p class="err ui" id="f-email-err"></p>
+          </div>
+          <div class="field">
+            <label class="ui" for="f-cargo">What are you shipping?</label>
+            <div class="control">
+              <select class="input" id="f-cargo" name="cargo">
+                <option>Wine, spirits or cider</option>
+                <option>Machinery or spare parts</option>
+                <option>Dry goods in cartons</option>
+                <option>Something else</option>
+              </select>
+              <svg class="chev" viewBox="0 0 12 8" aria-hidden="true" focusable="false"><path d="M1 1 L6 6 L11 1"/></svg>
+              <span class="line" aria-hidden="true"></span>
+            </div>
+            <p class="err ui" aria-hidden="true"></p>
+          </div>
+          <div class="field">
+            <label class="ui" for="f-pallets">Pallets</label>
+            <div class="stepper">
+              <button class="step fill press" type="button" data-step="-1" aria-label="One pallet fewer">−</button>
+              <div class="control"><input class="input" id="f-pallets" name="pallets" type="number" inputmode="numeric" min="1" max="226" step="1" value="10" required aria-describedby="f-pallets-err"><span class="line" aria-hidden="true"></span></div>
+              <button class="step fill press" type="button" data-step="1" aria-label="One pallet more">+</button>
+            </div>
+            <p class="err ui" id="f-pallets-err"></p>
+          </div>
+          <button class="btn btn-ink fill press submit" type="submit"><span>Request space for <span class="roll"><span class="count">10</span></span> <span class="unit">pallets</span></span></button>
+        </form>
+        <div class="result" id="result" hidden>
+          <h3 class="h2" id="result-h" tabindex="-1">Request received for <span data-r-n>10 pallets</span></h3>
+          <p data-r-text>Wine, spirits or cider on Voyage 15, leaving Le&nbsp;Havre on 9 June. The freight desk will reply within two working days with a price and a loading slot.</p>
+          <p class="result-actions">
+            <button class="btn btn-line fill press" type="button" data-change>Change request</button>
+            <a class="ul" href="#top">Back to Le&nbsp;Havre</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/SplitText.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/CustomEase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  const doc = document.documentElement;
+  const lib = !!(window.gsap && window.ScrollTrigger && window.SplitText && window.CustomEase && window.Lenis);
+  if (lib) { // CDN blocked: no class, so every element stays in its final state and the controls still work
+    doc.classList.add('js');
+    if (matchMedia('(prefers-reduced-motion: no-preference)').matches) doc.classList.add('intro');
+    setTimeout(() => doc.classList.remove('intro'), 4000); // hard release if the load sequence never runs
+  }
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const env = { motion: false, lenis: null, slipY: null };
+  const moving = () => lib && env.motion;
+
+  /* ---------- DATA: Voyage 14. The copy quotes these; the asserts keep them honest ---------- */
+  const DATA = {
+    capacity: 576, perSquare: 4, squares: 144, voyage15Open: 226, total: 5068,
+    lots: {
+      wine: { positions: 220, tonnes: 198, squares: 55, say: 'Loire red and white wine: 220 pallets, 55 squares, low in holds 1 and 2.' },
+      calvados: { positions: 60, tonnes: 54, squares: 15, say: 'Calvados and cider: 60 pallets, 15 squares, in the third tier toward the ends of both holds.' },
+      bikes: { positions: 40, tonnes: 12, squares: 10, say: 'Cargo bicycles: 40 pallets, 10 squares, light enough to ride on top.' },
+      turbine: { positions: 16, tonnes: 31, squares: 4, say: 'Turbine spare parts: 14 crates in 16 positions, 4 squares, lowest of all, beside the bulkhead.' },
+      books: { positions: 16, tonnes: 9, squares: 4, say: 'French textbooks: 16 pallets, 4 squares, in the fourth tier beside the bulkhead.' },
+    },
+    // Miles run each day, noon to noon; Day 1 is counted from the Le Havre lock (05:50 on 6 March)
+    runs: [258, 168, 171, 176, 182, 198, 166, 168, 186, 236, 252, 268, 258, 255, 244, 172, 228, 260, 258, 214, 196, 200, 189, 165],
+    // The route as [lat N, lon W] (east is negative): Le Havre, Cap de la Hague, off Ushant, the noons, off Finisterre,
+    // east of Porto Santo, west of La Palma, the trades, the St Lucia Channel, north of La Guajira, Santa Marta
+    way: [[49.48, -0.1], [49.8, 2.1], [48.58, 5.3], [48.295, 5.549], [43.676, 9.578], [43.25, 9.95], [35.641, 14.367], [33, 15.9], [28.66, 18.15], [28.345, 18.76], [22.8, 29.5], [22.373, 30.781], [17.8, 44.5], [17.44, 46.137], [14.18, 60.95], [14.023, 62.138], [12.75, 71.8], [11.25, 74.22]],
+    // The eight noon reports shown: their index in `way`, and the wind they logged (direction it blows from, Beaufort force)
+    noon: [
+      { day: 1, at: 3, wind: 45, bft: 5 }, { day: 3, at: 4, wind: 315, bft: 7 }, { day: 6, at: 6, wind: 0, bft: 5 }, { day: 9, at: 9, wind: 45, bft: 5 },
+      { day: 12, at: 11, wind: 67.5, bft: 6 }, { day: 16, at: 13, wind: 90, bft: 4 }, { day: 20, at: 15, wind: 90, bft: 6 }, { day: 24, at: 17, wind: 45, bft: 5 },
+    ],
+  };
+  const LOTS = Object.values(DATA.lots);
+  const total = (k) => LOTS.reduce((s, l) => s + l[k], 0);
+  const CUM = DATA.runs.reduce((a, r) => [...a, a.at(-1) + r], [0]); // CUM[d]: miles sailed by noon of day d
+  const FIXC = DATA.noon.map((n) => CUM[n.day]);
+  const gc = ([a1, o1], [a2, o2]) => { // great-circle distance in nautical miles
+    const r = Math.PI / 180;
+    return 3440.065 * Math.acos(Math.min(1, Math.sin(a1 * r) * Math.sin(a2 * r) + Math.cos(a1 * r) * Math.cos(a2 * r) * Math.cos((o2 - o1) * r)));
+  };
+  const slips = $$('.slip');
+  console.assert(total('positions') === 352, 'manifest positions should total 352');
+  console.assert(total('tonnes') === 304, 'manifest tonnes should total 304');
+  console.assert(total('squares') === 88, 'loaded squares should total 88');
+  console.assert(LOTS.every((l) => l.squares * DATA.perSquare === l.positions), 'each square is four positions');
+  console.assert(DATA.squares * DATA.perSquare === DATA.capacity, 'the holds hold 576 positions');
+  for (const [id, l] of Object.entries(DATA.lots)) console.assert($$(`.lot-g[data-lot="${id}"] rect`).length === l.squares, `stowage squares for ${id}`);
+  console.assert(DATA.runs.length === 24 && CUM[24] === DATA.total, 'the 24 noon runs should add up to 5,068 nm');
+  console.assert(DATA.runs.indexOf(Math.max(...DATA.runs)) === 11, 'Day 12 holds the best run');
+  console.assert(DATA.way.every((p, i) => !i || p[1] > DATA.way[i - 1][1]), 'the route must run west all the way: the sailed line is revealed by its longitude');
+  DATA.noon.forEach((n, k) => { // each leg between noons must be at least as long as the straight line on the globe
+    const from = k ? DATA.noon[k - 1].at : 0, sailed = FIXC[k] - (k ? FIXC[k - 1] : 0);
+    const straight = DATA.way.slice(from + 1, n.at + 1).reduce((s, p, i) => s + gc(DATA.way[from + i], p), 0);
+    console.assert(straight <= sailed, `day ${n.day}: ${Math.round(straight)} nm of straight legs cannot take longer than ${sailed} nm sailed`);
+    const [lat, lon] = slips[k].dataset.pos.split(' ').map(Number), [wl, wo] = DATA.way[n.at];
+    console.assert(Math.abs(lat - wl) < .01 && Math.abs(lon - wo) < .01, `report ${n.day} position`);
+    console.assert(Number(slips[k].dataset.run) === DATA.runs[n.day - 1], `report ${n.day} run`);
+    if (k < 7) console.assert(Math.abs(parseFloat(slips[k].style.getPropertyValue('--gap')) - (FIXC[k + 1] - FIXC[k]) / DATA.total) < 1e-4, `report ${n.day} spacing`);
+  });
+
+  /* ---------- The chart: equirectangular, x scaled by cos 30°; the same numbers as the SVG viewBox ---------- */
+  const KX = Math.cos(Math.PI / 6), VW = 73.61, VH = 50;
+  const PTS = DATA.way.map(([lat, lon]) => [(80 - lon) * KX, 55 - lat]);
+  const LEN = PTS.reduce((a, p, i) => (i ? [...a, a.at(-1) + Math.hypot(p[0] - PTS[i - 1][0], p[1] - PTS[i - 1][1])] : a), [0]);
+  const FIXL = DATA.noon.map((n) => LEN[n.at]);
+  const along = (d) => { // miles sailed to length along the drawn route, piecewise between noons
+    const C = [0, ...FIXC], L = [0, ...FIXL];
+    let k = 1;
+    while (k < C.length - 1 && d > C[k]) k++;
+    return L[k - 1] + clamp((d - C[k - 1]) / (C[k] - C[k - 1]), 0, 1) * (L[k] - L[k - 1]);
+  };
+  const pointAt = (l) => {
+    l = clamp(l, 0, LEN.at(-1));
+    let i = 1;
+    while (i < LEN.length - 1 && l > LEN[i]) i++;
+    const t = (l - LEN[i - 1]) / (LEN[i] - LEN[i - 1]);
+    return [PTS[i - 1][0] + (PTS[i][0] - PTS[i - 1][0]) * t, PTS[i - 1][1] + (PTS[i][1] - PTS[i - 1][1]) * t];
+  };
+  const dm = (v) => { const m = Math.round(v * 60); return `${Math.floor(m / 60)}°${String(m % 60).padStart(2, '0')}′`; };
+
+  const stage = $('.stage'), pin = $('.pin'), chart = $('.chart'), sailed = $('.sailed'), slipsBox = $('.slips');
+  const cam = $('.cam'), marker = $('.marker'), boat = $('.boat'), barb = $('.barb'), stn = $('.stn'), hullEl = $('.m-hull'), cards = $$('.slip-card');
+  const mFlag = $('.m-flag'), mCloth = $('.m-flag .cloth'), wakeEl = $('.wake');
+  const fixEls = $$('.fix'), dayLinks = $$('.day');
+  const ro = { day: $('.ro-day'), nm: $('.ro-nm'), lat: $('.ro-lat') };
+  const FEATHERS = { 4: ['f1', 'h2'], 5: ['f1', 'f2'], 6: ['f1', 'f2', 'h3'], 7: ['f1', 'f2', 'f3'] };
+  let box = { s: 1, ox: 0, oy: 0 };
+  const measureChart = () => { // the camera holds the chart; on phones it is larger than the chart band and follows the ship
+    const W = cam.clientWidth, H = cam.clientHeight, s = Math.max(W / VW, H / VH);
+    const hl = parseFloat(getComputedStyle(hullEl).height) / 1.2;
+    box = { W, H, s, ox: (W - VW * s) / 2, oy: (H - VH * s) / 2, vw: chart.clientWidth, vh: chart.clientHeight, R: hl * 1.3 + 10 };
+  };
+  const toPx = ([x, y]) => [box.ox + x * box.s, box.oy + y * box.s];
+
+  let active = -2, turn = null, setX = null, setY = null, stnX = null, stnY = null, camX = null, camY = null, follow = false, arrived = null, wind = null;
+  function setActive(i, mark) {
+    if (i === active) return;
+    active = i;
+    fixEls.forEach((f, k) => { f.classList.toggle('is-passed', k <= i); f.classList.toggle('is-current', k === i); });
+    slips.forEach((s, k) => s.classList.toggle('is-current', mark && k === i));
+    dayLinks.forEach((a, k) => (mark && k === i ? a.setAttribute('aria-current', 'step') : a.removeAttribute('aria-current')));
+    const n = DATA.noon[Math.max(0, i)]; // before Day 1 the barb shows the wind she sailed out on
+    $$('[data-f]', barb).forEach((f) => { f.style.visibility = FEATHERS[n.bft].includes(f.dataset.f) ? 'visible' : 'hidden'; });
+    const changed = wind !== null && wind !== n.wind + '/' + n.bft;
+    wind = n.wind + '/' + n.bft;
+    if (!moving()) { gsap.set(barb, { rotation: n.wind }); return; }
+    gsap.to(barb, { rotation: n.wind + '_short', duration: .6, ease: 'power3.out', overwrite: 'auto' });
+    if (changed) gsap.fromTo(barb, { scale: 1.15 }, { scale: 1, duration: .4, ease: 'power2.out', overwrite: 'auto' }); // a gust: the new wind registers
+  }
+  function setArrived(on) { // the Q flag goes up at the masthead when she reaches Santa Marta
+    if (on === arrived) return;
+    arrived = on;
+    if (!moving()) { gsap.set(mFlag, { visibility: on ? 'visible' : 'hidden' }); gsap.set(mCloth, { y: 0 }); return; }
+    if (on) { gsap.set(mFlag, { visibility: 'visible' }); gsap.fromTo(mCloth, { y: 18 }, { y: 0, duration: .8, ease: 'hoist', overwrite: 'auto' }); }
+    else gsap.to(mCloth, { y: 18, duration: .25, ease: 'power2.in', overwrite: 'auto', onComplete: () => gsap.set(mFlag, { visibility: 'hidden' }) });
+  }
+  let roText = '';
+  function render(d, mark = true) {
+    const l = along(d), [X, Y] = toPx(pointAt(l)), [ax, ay] = pointAt(l - .5), [bx, by] = pointAt(l + .5);
+    const h = Math.atan2(bx - ax, ay - by);
+    setX(X); setY(Y);
+    turn(h * 180 / Math.PI);
+    stnX(Math.sin(h) * box.R); stnY(-Math.cos(h) * box.R); // the wind station sits ahead of the bow, clear of the wake
+    const sx = X + Math.sin(h) * box.R, sy = Y - Math.cos(h) * box.R, off = sx < 0 || sy < 0 || sx > box.W || sy > box.H;
+    if (off !== stn.hidden) stn.hidden = off; // never drawn off the chart, in the margin
+    if (follow) { camX(clamp(box.vw * .6 - X, box.vw - box.W, 0)); camY(clamp(box.vh * .55 - Y, box.vh - box.H, 0)); }
+    setArrived(d >= DATA.total - .5);
+    sailed.style.clipPath = `inset(0 0 0 ${X.toFixed(1)}px)`; // the route runs west, so everything right of the ship is sailed
+    let day = 0; // noons passed: Day 0 is the day she left Le Havre, as in the log
+    while (day < 24 && CUM[day + 1] <= d + .5) day++;
+    const t = `${day}|${Math.round(d)}|${dm(55 - pointAt(l)[1])}`;
+    if (t !== roText) { // write only when a shown number changes
+      roText = t;
+      ro.day.textContent = 'Day ' + day;
+      ro.nm.textContent = `${Math.round(d).toLocaleString('en-GB')} of ${DATA.total.toLocaleString('en-GB')} nm`;
+      ro.lat.textContent = dm(55 - pointAt(l)[1]) + ' N';
+    }
+    let i = -1;
+    while (i < FIXC.length - 1 && FIXC[i + 1] <= d + .5) i++;
+    setActive(i, mark);
+  }
+
+  /* ---------- Anchors: eased through Lenis when it runs; focus always follows (NV6) ---------- */
+  function go(el) {
+    const focusEl = el.matches('[tabindex="-1"]') ? el : $('[tabindex="-1"]', el) || el;
+    const k = slips.indexOf(el);
+    const target = k >= 0 && env.slipY ? env.slipY(k) : null; // a report: the scroll position where the ship reaches that noon
+    if (env.lenis) {
+      const dist = target === null ? Math.abs(el.getBoundingClientRect().top - parseFloat(getComputedStyle(el).scrollMarginTop)) : Math.abs(target - scrollY);
+      env.lenis.scrollTo(target ?? el, { duration: Math.min(1.3, .65 + dist / 4000) });
+    } else if (target !== null) {
+      scrollTo({ top: target, behavior: 'auto' });
+    } else {
+      el.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    }
+    if (k >= 0 && !moving()) dayLinks.forEach((a, j) => (j === k ? a.setAttribute('aria-current', 'step') : a.removeAttribute('aria-current')));
+    focusEl.focus({ preventScroll: true });
+  }
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('a[href^="#"]');
+    const el = a && document.getElementById(a.hash.slice(1));
+    if (!el) return;
+    e.preventDefault(); // a native jump would drop the focus we set
+    if (menuOpen) closeMenu(false);
+    go(el);
+  });
+
+  /* ---------- Fills enter from the edge the pointer came in by, and leave by the edge it went out (HV4) ---------- */
+  const edge = (e) => {
+    const b = e.target.closest?.('.fill');
+    if (!b || b.contains(e.relatedTarget)) return;
+    const r = b.getBoundingClientRect();
+    b.style.setProperty('--from', e.clientX < r.left + r.width / 2 ? 'left' : 'right');
+  };
+  document.addEventListener('pointerover', edge);
+  document.addEventListener('pointerout', edge);
+
+  /* ---------- Day links preview their noon on the chart ---------- */
+  dayLinks.forEach((a, k) => {
+    const on = () => fixEls[k].classList.add('is-ghost'), off = () => fixEls[k].classList.remove('is-ghost');
+    a.addEventListener('pointerenter', on);
+    a.addEventListener('pointerleave', off);
+    a.addEventListener('focus', on);
+    a.addEventListener('blur', off);
+  });
+
+  /* ---------- Chapter bar: sliding indicator (NV4) and section spy (NV6) ---------- */
+  const bar = $('.bar'), nav = $('.chapters'), navLinks = $$('a', nav), menuLinks = $$('#menu a'), ind = $('.ind');
+  let currentId = null;
+  function place(a) {
+    if (!a || !a.offsetWidth) { ind.classList.remove('is-on'); return; }
+    const on = ind.classList.contains('is-on');
+    if (!on) ind.classList.add('jump'); // first appearance: no travel from the far left
+    ind.style.transform = `translateX(${a.offsetLeft}px) scaleX(${a.offsetWidth / 100})`;
+    if (!on) { void ind.offsetWidth; ind.classList.remove('jump'); }
+    ind.classList.add('is-on');
+  }
+  const home = () => place(navLinks.find((a) => a.hash === '#' + currentId));
+  navLinks.forEach((a) => {
+    a.addEventListener('pointerenter', () => place(a));
+    a.addEventListener('focus', () => place(a));
+    a.addEventListener('blur', home);
+  });
+  nav.addEventListener('pointerleave', home);
+  addEventListener('resize', home);
+  const SPY = ['top', 'loading', 'crossing', 'arrival', 'book'];
+  const seen = new Set();
+  const spy = new IntersectionObserver((entries) => {
+    entries.forEach((en) => (en.isIntersecting ? seen.add(en.target.id) : seen.delete(en.target.id)));
+    const id = SPY.filter((s) => seen.has(s)).pop();
+    if (id === undefined) return;
+    currentId = id === 'top' ? null : id;
+    [...navLinks, ...menuLinks].forEach((a) => (a.hash === '#' + currentId ? a.setAttribute('aria-current', 'location') : a.removeAttribute('aria-current')));
+    if (!nav.matches(':hover') && !navLinks.includes(document.activeElement)) home();
+  }, { rootMargin: '-40% 0px -55% 0px' });
+  SPY.forEach((id) => spy.observe(document.getElementById(id)));
+
+  /* ---------- Chapters menu below 760px: one reversible timeline, Lenis stopped while open (NV1, MI2) ---------- */
+  const menuBtn = $('.menu-btn'), menu = $('#menu'), main = $('main'), mark = $('.mark');
+  let menuOpen = false, menuTl = null;
+  function openMenu() {
+    menuOpen = true;
+    menuBtn.setAttribute('aria-expanded', 'true');
+    menu.inert = false;
+    main.inert = true;
+    menu.classList.add('is-open');
+    doc.classList.add('menu-open');
+    mark.inert = true; // the menu, its Close button and nothing behind them
+    env.lenis?.stop();
+    if (moving() && menuTl) menuTl.timeScale(1).play();
+    menuLinks[0].focus({ preventScroll: true });
+  }
+  function closeMenu(restoreFocus = true) {
+    if (!menuOpen) return;
+    menuOpen = false;
+    menuBtn.setAttribute('aria-expanded', 'false');
+    menu.inert = true;
+    main.inert = false;
+    mark.inert = false;
+    doc.classList.remove('menu-open');
+    const done = () => { menu.classList.remove('is-open'); env.lenis?.start(); };
+    if (!restoreFocus) env.lenis?.start(); // a menu link scrolls straight away
+    if (moving() && menuTl) { menuTl.eventCallback('onReverseComplete', done); menuTl.timeScale(1.4).reverse(); } else done();
+    if (restoreFocus) menuBtn.focus({ preventScroll: true });
+  }
+  menuBtn.addEventListener('click', () => (menuOpen ? closeMenu() : openMenu()));
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && menuOpen) closeMenu(); });
+  matchMedia('(min-width: 760px)').addEventListener('change', (e) => { if (e.matches) closeMenu(false); });
+
+  /* ---------- Manifest to stowage plan: preview on hover or focus, pin on click (HV7, HV3) ---------- */
+  const lotsBox = $('.lots'), rows = $$('.lot'), plan = $('.plan-svg'), live = $('#plan-live');
+  const IDLE = live.textContent;
+  let pinned = null, preview = null;
+  function light() {
+    const id = preview || pinned;
+    $$('.hi-g', plan).forEach((g) => g.classList.toggle('is-lit', g.dataset.lot === id));
+    rows.forEach((r) => r.classList.toggle('is-preview', r.dataset.lot === preview));
+    lotsBox.classList.toggle('dim', !!preview);
+    const say = id ? DATA.lots[id].say : IDLE;
+    if (live.textContent !== say) live.textContent = say;
+  }
+  const pick = (id) => {
+    pinned = pinned === id ? null : id;
+    rows.forEach((r) => r.setAttribute('aria-pressed', String(r.dataset.lot === pinned)));
+    light();
+  };
+  const setPreview = (id) => { if (preview !== id) { preview = id; light(); } };
+  rows.forEach((r) => {
+    const id = r.dataset.lot;
+    r.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') setPreview(id); });
+    r.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse' && preview === id) setPreview(null); });
+    r.addEventListener('focus', () => { if (r.matches(':focus-visible')) setPreview(id); });
+    r.addEventListener('blur', () => { if (preview === id) setPreview(null); });
+    r.addEventListener('click', () => pick(id));
+  });
+  plan.addEventListener('pointerover', (e) => { if (e.pointerType === 'mouse') setPreview(e.target.closest('[data-lot]')?.dataset.lot ?? null); });
+  plan.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') setPreview(null); });
+  plan.addEventListener('click', (e) => { const g = e.target.closest('[data-lot]'); if (g) pick(g.dataset.lot); });
+
+  /* ---------- Space request form (MI4, MI2) ---------- */
+  const form = $('#request'), result = $('#result'), qty = form.elements.pallets;
+  const countEl = $('.roll', form), unitEl = $('.unit', form);
+  const MAX = DATA.voyage15Open;
+  let n = 10;
+  function roll(el, text, dir) {
+    const cur = el.lastElementChild;
+    if (cur.textContent === text) return;
+    if (!moving()) { cur.textContent = text; return; }
+    const next = cur.cloneNode();
+    next.textContent = text;
+    el.append(next);
+    gsap.fromTo(next, { yPercent: 100 * dir }, { yPercent: 0, duration: .35, ease: 'power3.out' });
+    gsap.to(cur, { yPercent: -100 * dir, duration: .35, ease: 'power3.out', onComplete: () => cur.remove() });
+  }
+  function setN(v) {
+    v = clamp(Math.round(v), 1, MAX);
+    if (String(v) !== qty.value) qty.value = v;
+    if (v === n) return;
+    const dir = v > n ? 1 : -1;
+    n = v;
+    roll(countEl, String(v), dir);
+    unitEl.textContent = v === 1 ? 'pallet' : 'pallets';
+    if (qty.hasAttribute('aria-invalid')) check(qty);
+  }
+  const valid = (v) => v !== '' && Number.isInteger(Number(v)) && Number(v) >= 1 && Number(v) <= MAX;
+  $$('[data-step]', form).forEach((b) => b.addEventListener('click', () => setN((valid(qty.value) ? Number(qty.value) : n) + Number(b.dataset.step))));
+  qty.addEventListener('input', () => { if (valid(qty.value)) setN(Number(qty.value)); });
+  const rules = {
+    name: (v) => (v.trim() ? '' : 'Enter your name so the freight desk knows who to reply to.'),
+    email: (v) => (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()) ? '' : 'Enter an email address, like name@company.fr.'),
+    pallets: (v) => (valid(v) ? '' : 'Choose between 1 and 226 pallets, the space left on Voyage 15.'),
+  };
+  function check(input) {
+    const msg = rules[input.name](input.value), err = $('#' + input.id + '-err');
+    if (msg) { err.textContent = msg; input.setAttribute('aria-invalid', 'true'); } else input.removeAttribute('aria-invalid');
+    err.classList.toggle('is-shown', !!msg);
+    return !msg;
+  }
+  ['name', 'email', 'pallets'].forEach((k) => form.elements[k].addEventListener('input', (e) => { if (e.target.hasAttribute('aria-invalid')) check(e.target); }));
+  function swap(from, to, focusEl) {
+    const show = () => {
+      from.hidden = true;
+      to.hidden = false;
+      focusEl.focus({ preventScroll: true });
+      if (moving()) gsap.fromTo(to, { clipPath: 'inset(100% 0% 0% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: .5, ease: 'expo.inOut', clearProps: 'clipPath' });
+      if (lib) { env.lenis?.resize(); ScrollTrigger.refresh(); }
+    };
+    if (!moving()) return show();
+    gsap.fromTo(from, { clipPath: 'inset(0% 0% 0% 0%)' }, { clipPath: 'inset(0% 0% 100% 0%)', duration: .5, ease: 'expo.inOut', onComplete: () => { gsap.set(from, { clearProps: 'clipPath' }); show(); } });
+  }
+  form.addEventListener('submit', (e) => {
+    e.preventDefault(); // nothing is sent
+    const bad = ['name', 'email', 'pallets'].map((k) => form.elements[k]).filter((f) => !check(f));
+    if (bad.length) { bad[0].focus(); return; }
+    setN(Number(qty.value));
+    const cargo = form.elements.cargo;
+    $('[data-r-n]', result).textContent = n === 1 ? '1 pallet' : n + ' pallets';
+    $('[data-r-text]', result).textContent = `${cargo.options[cargo.selectedIndex].text} on Voyage 15, leaving Le\u00a0Havre on 9 June. The freight desk will reply to ${form.elements.email.value.trim()} within two working days with a price and a loading slot.`;
+    swap(form, result, $('#result-h'));
+  });
+  $('[data-change]', result).addEventListener('click', () => swap(result, form, form.elements.name));
+
+  if (!lib) return;
+
+  /* ---------- Motion: everything below reverts when a media query flips ---------- */
+  gsap.registerPlugin(ScrollTrigger, SplitText, CustomEase);
+  // Three hand-over-hand surges with short holds, then a 2% settle: how a gaff sail goes up
+  CustomEase.create('hoist', 'M0,0 C0.05,0 0.12,0.34 0.2,0.34 C0.25,0.34 0.3,0.34 0.34,0.34 C0.4,0.34 0.47,0.68 0.55,0.68 C0.6,0.68 0.64,0.68 0.68,0.68 C0.74,0.68 0.82,1.02 0.9,1.02 C0.95,1.02 0.97,1 1,1');
+  const barH = () => bar.offsetHeight;
+  const vessel = $('.vessel'), penWrap = $('.pen-wrap'), hero = $('.opening'), shipFig = $('.ship-fig');
+
+  const mm = gsap.matchMedia();
+  mm.add({
+    motion: '(prefers-reduced-motion: no-preference)',
+    reduce: '(prefers-reduced-motion: reduce)',
+    fine: '(hover: hover) and (pointer: fine)',
+    wide: '(min-width: 992px) and (min-aspect-ratio: 4/3)',
+  }, (ctx) => {
+    const { motion, fine, wide } = ctx.conditions;
+    env.motion = motion;
+    const offs = [];
+    let lenis = null;
+
+    if (motion) {
+      lenis = new Lenis({ lerp: .1, smoothWheel: true, autoRaf: false });
+      env.lenis = lenis;
+      lenis.on('scroll', ScrollTrigger.update);
+      const tick = (time) => lenis.raf(time * 1000);
+      gsap.ticker.add(tick);
+      gsap.ticker.lagSmoothing(0);
+      offs.push(() => { gsap.ticker.remove(tick); gsap.ticker.lagSmoothing(500, 33); lenis.destroy(); });
+    } else {
+      doc.classList.remove('intro');
+    }
+
+    /* The bar turns atlantic while the crossing is under it (SC9) */
+    ScrollTrigger.create({
+      trigger: '#crossing', start: () => `top ${barH()}px`, end: () => `bottom ${barH()}px`,
+      onToggle: (s) => bar.classList.toggle('at-sea', s.isActive),
+    });
+    offs.push(() => bar.classList.remove('at-sea'));
+
+    /* ---- The crossing (signature): scroll sails the ship across a sticky chart ---- */
+    setX = gsap.quickSetter(marker, 'x', 'px');
+    setY = gsap.quickSetter(marker, 'y', 'px');
+    turn = motion ? gsap.quickTo(boat, 'rotation', { duration: .5, ease: 'power3.out' }) : gsap.quickSetter(boat, 'rotation', 'deg');
+    stnX = motion ? gsap.quickTo(stn, 'x', { duration: .5, ease: 'power3.out' }) : gsap.quickSetter(stn, 'x', 'px');
+    stnY = motion ? gsap.quickTo(stn, 'y', { duration: .5, ease: 'power3.out' }) : gsap.quickSetter(stn, 'y', 'px');
+    camX = gsap.quickSetter(cam, 'x', 'px');
+    camY = gsap.quickSetter(cam, 'y', 'px');
+    follow = motion && !wide;
+    chart.classList.toggle('is-follow', follow);
+    offs.push(() => { follow = false; chart.classList.remove('is-follow'); gsap.set(cam, { clearProps: 'all' }); });
+    active = -2; arrived = null; wind = null;
+    if (!motion) {
+      // Reduced motion: no pin, the whole route drawn, the ship alongside in Santa Marta
+      gsap.set(wakeEl, { opacity: 0 }); // alongside in Santa Marta: no wake
+      const still = () => { measureChart(); render(DATA.total, false); };
+      still();
+      ScrollTrigger.addEventListener('refresh', still);
+      offs.push(() => ScrollTrigger.removeEventListener('refresh', still));
+    } else {
+      let startY = 0, A = [], slotY = 0, restY = 0;
+      const absTop = (el) => el.getBoundingClientRect().top + scrollY;
+      const layout = () => { // before every refresh: where the slips may show, and where each one rests
+        measureChart();
+        if (wide) {
+          // Slips show below a line low enough that the route on their side of the chart is always above it
+          const cr = cam.getBoundingClientRect(), colLeft = slipsBox.getBoundingClientRect().left - cr.left - 44;
+          let lowest = 0;
+          for (let i = 0; i <= 600; i++) {
+            const [X, Y] = toPx(pointAt(LEN.at(-1) * i / 600));
+            if (X > colLeft) lowest = Math.max(lowest, Y);
+          }
+          const tallest = Math.max(...cards.map((c) => c.offsetHeight));
+          slotY = barH() + clamp(lowest + 40, box.H * .45, box.H - tallest - 32);
+          // A report comes to rest, whole and low, when the ship reaches its noon, then rises away during the leg that follows
+          restY = Math.max(slotY + 16, innerHeight - tallest - 24);
+        } else {
+          // The camera: the whole chart at 1.8 times the band's width or more, so the ship can be followed
+          const ch = chart.clientHeight, camH = Math.max(ch * 1.1, chart.clientWidth * 1.8 / (VW / VH));
+          gsap.set(cam, { width: camH * VW / VH, height: camH });
+          measureChart();
+          slotY = barH() + pin.offsetHeight;
+          restY = slotY + 12; // a report waits right under the chart until the next one arrives
+        }
+        stage.style.setProperty('--rest-y', restY + 'px');
+      };
+      const measure = () => {
+        startY = absTop(stage) - barH();
+        A = slips.map((s) => Math.round(absTop(s) - restY)); // whole pixels, so a jump lands exactly on a noon
+      };
+      const milesAt = (y) => {
+        if (y <= startY) return 0;
+        const Y = [startY, ...A], D = [0, ...FIXC];
+        let k = 1;
+        while (k < Y.length - 1 && y > Y[k]) k++;
+        return D[k - 1] + clamp((y - Y[k - 1]) / (Y[k] - Y[k - 1]), 0, 1) * (D[k] - D[k - 1]);
+      };
+      env.slipY = (k) => A[k]; // exactly the noon, so the readout shows the reported miles and latitude
+      ScrollTrigger.addEventListener('refreshInit', layout);
+      offs.push(() => { ScrollTrigger.removeEventListener('refreshInit', layout); stage.style.removeProperty('--rest-y'); env.slipY = null; });
+      layout();
+      ScrollTrigger.create({
+        trigger: stage, start: 'top bottom', end: 'bottom top',
+        onUpdate: (s) => render(milesAt(s.scroll())),
+        onRefresh: (s) => { measureChart(); measure(); render(milesAt(s.scroll())); },
+      });
+
+      /* Wide screens: slips slide under a fixed line, so they never cover the ship */
+      if (wide) {
+        const gapBelow = (card) => parseFloat(getComputedStyle(card).marginBottom);
+        // The card is sticky, so the trigger is its slip: the card leaves with the slip's bottom edge. The last one leaves with the chart
+        cards.slice(0, -1).forEach((card, k) => gsap.fromTo(card, { clipPath: 'inset(0% 0% 0% 0%)', opacity: 1 }, {
+          clipPath: 'inset(100% 0% 0% 0%)', opacity: 0, ease: 'none',
+          scrollTrigger: { trigger: slips[k], start: () => `bottom ${slotY + gapBelow(card) + card.offsetHeight}px`, end: () => `bottom ${slotY + gapBelow(card)}px`, scrub: true },
+        }));
+      }
+
+      /* The wake streams faster while the page moves faster (SC10), and sleeps off screen */
+      const wake = gsap.timeline({ repeat: -1, paused: true }).fromTo('.wk-flow', { y: -12 }, { y: 0, duration: .7, ease: 'none' });
+      ScrollTrigger.create({ trigger: '#crossing', start: 'top bottom', end: 'bottom top', animation: wake, toggleActions: 'play pause resume pause' });
+      // The same eased speed runs the foam and stretches the wake: longer, wider and brighter while the page moves fast
+      const wakeL = gsap.quickSetter(wakeEl, 'scaleY'), wakeW = gsap.quickSetter(wakeEl, 'scaleX'), wakeA = gsap.quickSetter(wakeEl, 'opacity');
+      let target = 1, shown = -1;
+      const onScroll = ({ velocity }) => { target = 1 + Math.min(Math.abs(velocity) * .02, 2.5); };
+      lenis.on('scroll', onScroll);
+      const pace = () => {
+        const ts = wake.timeScale(), next = ts + (target - ts) * .1;
+        wake.timeScale(next);
+        target += (1 - target) * .05;
+        const v = Math.round(clamp((next - 1) / 1.5, 0, 1) * 200) / 200, a = arrived ? 0 : 1;
+        if (v * 2 + a === shown) return; // write only when the wake changes
+        shown = v * 2 + a;
+        wakeL(1 + 1.2 * v); wakeW(1 + .35 * v); wakeA((.35 + .55 * v) * a);
+      };
+      gsap.ticker.add(pace);
+      offs.push(() => gsap.ticker.remove(pace));
+    }
+
+    if (motion) {
+      /* Hero: the pointer is the wind (fine pointers); on touch the ship heels as the page scrolls */
+      gsap.set(vessel, { svgOrigin: '400 392' });
+      gsap.set(penWrap, { svgOrigin: '250 -77' });
+      if (fine) {
+        const heel = gsap.quickTo(vessel, 'rotation', { duration: 1.2, ease: 'power3.out' });
+        const flag = gsap.quickTo(penWrap, 'scaleX', { duration: .8, ease: 'power3.out' });
+        const blow = (e) => {
+          const r = shipFig.getBoundingClientRect(), wind = clamp((e.clientX - r.left - r.width / 2) / (r.width / 2), -1, 1); // which side of the ship the pointer is on
+          heel(-wind * 2.5); // wind from the left heels her to the right
+          flag(clamp(wind * 2.5, -1, 1)); // and the pennant streams away from the pointer
+        };
+        const calm = () => { heel(0); flag(1); };
+        hero.addEventListener('pointermove', blow);
+        hero.addEventListener('pointerleave', calm);
+        addEventListener('blur', calm);
+        offs.push(() => { hero.removeEventListener('pointermove', blow); hero.removeEventListener('pointerleave', calm); removeEventListener('blur', calm); });
+      } else {
+        gsap.fromTo(vessel, { rotation: 0 }, { rotation: 3, ease: 'none', scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom top', scrub: true } });
+        gsap.fromTo(penWrap, { scaleX: 1 }, { scaleX: 1.2, ease: 'none', scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom top', scrub: true } });
+      }
+
+      /* Arrival: the Q flag goes up its halyard on the same hoist as the sails */
+      gsap.fromTo('.qflag .cloth', { y: 64 }, { y: 0, duration: .8, ease: 'hoist', scrollTrigger: { trigger: '#arrival', start: 'top 75%', once: true } });
+
+      /* Diesel bars grow with scroll and their figures count with them, ending on the printed values (SC16) */
+      $$('.b-fill').forEach((el) => {
+        const val = el.closest('dd').querySelector('.b-val'), text = val.textContent, t = parseFloat(text), dp = (text.split(' ')[0].split('.')[1] || '').length;
+        gsap.fromTo(el, { scaleX: 0 }, {
+          scaleX: parseFloat(el.style.getPropertyValue('--v')), ease: 'none',
+          onUpdate() { val.textContent = (t * this.progress()).toFixed(dp) + ' t'; },
+          scrollTrigger: { trigger: '.fuel', start: 'top 80%', end: 'top 40%', scrub: true },
+        });
+        offs.push(() => { val.textContent = text; });
+      });
+
+      /* Loaded: the hatch covers unfold shut, then the hold floods with the Atlantic the crossing opens on */
+      const flood = $('.flood'), hatches = $$('.hatch', plan);
+      const floodVis = (st) => { flood.style.visibility = st.progress >= 1 ? 'hidden' : ''; }; // past the end the crossing itself is the sea
+      gsap.timeline({ scrollTrigger: { trigger: '.loading-grid', start: 'bottom bottom', endTrigger: '#crossing', end: () => `top ${barH()}px`, scrub: true, onUpdate: floodVis, onRefresh: floodVis } })
+        .fromTo(hatches[0], { scaleX: .14, transformOrigin: '0% 50%' }, { scaleX: 1, duration: .2, ease: 'none' }, 0)
+        .fromTo(hatches[1], { scaleX: .14, transformOrigin: '100% 50%' }, { scaleX: 1, duration: .2, ease: 'none' }, 0)
+        // the water rises faster than the page, so it overtakes the incoming sea and fills the screen before the chapter arrives
+        .fromTo(flood, { clipPath: 'inset(100% 0% 0% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: .38, ease: 'none' }, .12)
+        .to({}, { duration: .5 });
+      offs.push(() => { flood.style.visibility = ''; });
+
+      /* Menu timeline */
+      menuTl = gsap.timeline({ paused: true })
+        .fromTo(menu, { clipPath: 'inset(0% 0% 100% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: .7, ease: 'expo.inOut' })
+        .fromTo(menuLinks, { yPercent: 100, opacity: 0 }, { yPercent: 0, opacity: 1, duration: .55, ease: 'power3.out', stagger: .06 }, '-=.3');
+
+      /* Load: the waterline draws, the headline rises, the hull comes up, the masts step, the sails hoist */
+      if (doc.classList.contains('intro')) {
+        const h1 = $('.h1'), art = $('.ship-art'), water = $('.waterline');
+        const ready = Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 1200))]);
+        ready.then(() => {
+          if (!env.motion) return;
+          const split = SplitText.create(h1, { type: 'lines', mask: 'lines', linesClass: 'ln' });
+          const parts = [h1, art, water];
+          const tl = gsap.timeline({
+            onComplete: () => {
+              split.revert();
+              doc.classList.remove('intro');
+              gsap.set([...parts, '.hullg', '.masts', '.sail', '.pennant', '.bar-item', '.opening-text .lead', '.opening-text .actions'], { clearProps: 'all' });
+            },
+          })
+            .fromTo(water, { scaleX: 0 }, { scaleX: 1, duration: .9, ease: 'expo.out' }, 0)
+            .fromTo(split.lines, { yPercent: 110 }, { yPercent: 0, duration: 1, ease: 'expo.out', stagger: .08 }, .15)
+            .fromTo(['.opening-text .lead', '.opening-text .actions'], { opacity: .001 }, { opacity: 1, duration: .4, ease: 'power1.out', stagger: .08 }, .15)
+            .fromTo('.hullg', { y: 70 }, { y: 0, duration: .9, ease: 'power3.out' }, .35)
+            .fromTo('.masts', { scaleY: 0, transformOrigin: '50% 100%' }, { scaleY: 1, duration: .6, ease: 'power2.out', stagger: .1 }, .6)
+            .fromTo(['.s-main', '.s-fore', '.s-stay', '.s-jib'], { clipPath: 'inset(100% 0% 0% 0%)' }, { clipPath: 'inset(-2% 0% 0% 0%)', duration: .9, ease: 'hoist', stagger: .14 }, .9)
+            .fromTo('.pennant', { scaleX: 0, transformOrigin: '100% 50%' }, { scaleX: 1, duration: .5, ease: 'power3.out' }, 1.6)
+            .fromTo('.bar-item', { y: 4, opacity: 0 }, { y: 0, opacity: 1, duration: .25, ease: 'expo.out', stagger: .06 }, 1.7);
+          gsap.set(parts, { visibility: 'visible' });
+          offs.push(() => { tl.progress(1); });
+        });
+      }
+    }
+
+    return () => {
+      offs.forEach((f) => f());
+      env.lenis = null;
+      env.motion = false;
+      menuTl = null;
+      doc.classList.remove('intro');
+    };
+  });
+})();
+</script>
+</body>
+</html>
