@@ -1,0 +1,991 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kiln Street Arena finals FAQ</title>
+<meta name="description" content="Questions and answers for the Kiln Street Open Autumn Finals, 13 to 15 November 2026, at Kiln Street Arena, Sheffield.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bitcount+Prop+Single:CRSV,ELSH,ELXP,wght@0..1,0..100,0..100,100..900&family=Signika:GRAD,wght@-30..0,300..700&display=swap">
+<style>
+  :root {
+    /* Colour: the concourse with the house lights up, then the bowl with them down */
+    --concourse: #E4DCDA;  /* painted blockwork under house lights: ground above the interlude */
+    --ink: #0E1A1A;        /* text, rules and button fills on the concourse (the bowl's own black) */
+    --ink-soft: #4C5655;   /* secondary text on the concourse */
+    --bowl: #0E1A1A;       /* blackout: ground below the interlude */
+    --chalk: #E4DCDA;      /* text in the bowl (the house-light colour) */
+    --haze: #A2ADAB;       /* secondary text in the bowl */
+    --face: #071010;       /* LED module black: the ribbon board and the jump menu */
+    --ribbon: #FFB23E;     /* amber LED: board dots, progress, focus on dark. Never on the concourse */
+    --led-off: color-mix(in srgb, var(--ribbon) 13%, var(--face));   /* unlit LED dots */
+
+    /* Type */
+    --font-led: "Bitcount Prop Single", "Courier New", monospace;
+    --font-text: "Signika", "Segoe UI", system-ui, sans-serif;
+    --led-axes: "ELSH" 0, "ELXP" 0, "CRSV" 0;   /* ELSH 0 = round LED elements */
+    --grad-dark: -30;      /* Signika grade in the bowl: same apparent weight light-on-dark, no reflow */
+    --fs-small: .9375rem;
+    --fs-body: 1.0625rem;
+    --fs-lede: 1.25rem;
+    --fs-q: clamp(1.125rem, .95rem + .7vw, 1.5rem);
+    --fs-h2: clamp(3rem, 1.4rem + 6.4vw, 7.5rem);
+    --fs-interlude: clamp(1.5rem, 1rem + 2.2vw, 3rem);
+    --fs-led-sign: clamp(1.75rem, 1.2rem + 1.8vw, 2.75rem);
+    --fs-led-index: 1.5rem;
+    --fs-led-menu: 1.5rem;
+    --fs-board: 20px;      /* LED pitch is .1em, so whole pixels keep the dots on the lattice */
+
+    /* Space (4px base) */
+    --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px;
+    --sp-6: 32px; --sp-7: 48px; --sp-8: 64px; --sp-9: 96px; --sp-10: 160px;
+    --gutter: clamp(16px, 4vw, 48px);
+    --gap: clamp(12px, 1.6vw, 24px);
+    --max: 1240px;
+    --measure: 62ch;
+    --radius: 2px;
+    --board-h: 56px;
+
+    /* Motion (seconds; the script reads the --d-* values) */
+    --ease-out: cubic-bezier(.16, 1, .3, 1);   /* expo.out */
+    --ease-in: cubic-bezier(.7, 0, .84, 0);    /* expo.in */
+    --d-open: .6s;
+    --d-close: .35s;
+    --d-hover: .45s;
+    --d-leave: .3s;
+    --d-press: .12s;
+    --d-release: .4s;
+    --d-swap: .35s;
+    --d-stagger: .03s;
+    --d-scan: .6s;
+    --d-scramble: .5s;
+    --d-tick: 1.5s;
+  }
+  @media (min-width: 768px) { :root { --fs-board: 30px; } }
+  @media (min-width: 992px) { :root { --fs-board: 40px; --board-h: 64px; } }
+  @media (prefers-reduced-motion: reduce) {
+    :root { --d-open: 0s; --d-close: 0s; --d-hover: 0s; --d-leave: 0s; --d-press: 0s; --d-release: 0s; --d-swap: 0s; --d-stagger: 0s; --d-scan: 0s; --d-scramble: 0s; }
+  }
+
+  /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+  @media (prefers-reduced-motion: no-preference) { html.static { scroll-behavior: smooth; } }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-padding-top: calc(var(--board-h) + var(--sp-4)); }   /* keyboard focus never lands under the sticky board */
+  body { margin: 0; background: var(--bowl); color: var(--ink); font: 400 var(--fs-body)/1.6 var(--font-text); -webkit-font-smoothing: antialiased; }
+  .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+  a { color: inherit; }
+  .led { font-family: var(--font-led); font-variation-settings: var(--led-axes); font-weight: 400; }
+
+  /* Zones: the concourse is lit, the bowl is dark; everything reads its colours from here */
+  .faq { overflow-x: clip; }
+  .concourse { --fg: var(--ink); --fg-2: var(--ink-soft); --focus: var(--ink); background: var(--concourse); color: var(--ink); }
+  .bowl {
+    --fg: var(--chalk); --fg-2: var(--haze); --focus: var(--ribbon);
+    background: var(--bowl); color: var(--chalk); font-variation-settings: "GRAD" var(--grad-dark);
+  }
+  .concourse, .bowl { --rule: color-mix(in srgb, var(--fg) 30%, transparent); }
+  .wrap {
+    max-width: var(--max); margin: 0 auto; padding: 0 var(--gutter);
+    display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gap);
+  }
+
+  /* ---------- The ribbon board (sticky) ---------- */
+  .board { --focus: var(--ribbon); --pitch: calc(var(--fs-board) / 10); position: sticky; top: 0; z-index: 20; height: var(--board-h); background: var(--face); color: var(--ribbon); container-type: inline-size;
+    box-shadow: inset 0 -1px color-mix(in srgb, var(--ribbon) 28%, var(--face)); }   /* fascia edge, still visible over the dark bowl */
+  /* Unlit LED lattice across the whole board, phased so its columns start where the message starts (lit dots land on it) */
+  .board-dots {
+    position: absolute; inset: 0;
+    background: radial-gradient(circle, var(--led-off) 0 calc(var(--pitch) * .3), transparent calc(var(--pitch) * .42))
+      calc(max(0px, (100cqw - var(--max)) / 2) + var(--gutter)) 50% / var(--pitch) var(--pitch);
+  }
+  .board-in { position: relative; display: flex; align-items: center; gap: var(--sp-4); max-width: var(--max); height: 100%; margin: 0 auto; padding: 0 var(--gutter); }
+  .msg {
+    position: relative; flex: 1; min-width: 0; align-self: stretch; display: flex; align-items: center; margin: 0;
+    font-size: var(--fs-board); line-height: 1.2;   /* 12 pitches: two-line messages stay on the lattice */
+  }
+  .msg-text { position: relative; display: block; max-height: 2.4em; overflow: hidden; white-space: normal; transition: opacity .12s steps(2); }
+  .msg.dim .msg-text { opacity: .45; }
+  @media (min-width: 600px) { .msg-text { white-space: nowrap; text-overflow: clip; } }
+  .progress { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; }
+  .progress i { display: block; height: 100%; background: var(--ribbon); transform: scaleX(0); transform-origin: left; }
+
+  /* Buttons: HV4 fill from the entry edge + MI1 press. Colours come from the zone. */
+  .btn {
+    --b: var(--fg); --on: var(--concourse);
+    position: relative; display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2);
+    min-height: 48px; padding: 0 var(--sp-5); border: 2px solid var(--b); border-radius: var(--radius);
+    background: none; color: var(--b); font: 600 var(--fs-body)/1 var(--font-text); font-variation-settings: inherit;
+    text-decoration: none; cursor: pointer; overflow: hidden; isolation: isolate;
+    transition: color var(--d-leave) var(--ease-out), transform var(--d-release) var(--ease-out);
+  }
+  .bowl .btn { --on: var(--bowl); }
+  .btn::before {
+    content: ""; position: absolute; inset: -1px; z-index: -1; background: var(--b);
+    transform: scaleX(0); transform-origin: var(--from, left);
+    transition: transform var(--d-leave) var(--ease-out);
+  }
+  .btn:hover, .btn:focus-visible { color: var(--on); transition-duration: var(--d-swap), var(--d-release); }
+  .btn:hover::before, .btn:focus-visible::before { transform: scaleX(1); transition-duration: var(--d-swap); }
+  .btn:active { transform: scale(.97); transition-duration: var(--d-press); }
+  @media (hover: none) { .btn:active { color: var(--on); } .btn:active::before { transform: scaleX(1); transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .btn:active { transform: none; } }
+
+  /* Jump to: MI2 label swap, chevron turn, non-modal list */
+  .jump { flex: none; }
+  .jump-btn { --b: var(--ribbon); --on: var(--face); min-height: 44px; padding: 0 var(--sp-4); border-width: 1px; font-size: 1rem; background: var(--face); box-shadow: 0 0 0 calc((var(--board-h) - 44px) / 2) var(--face); }   /* cut-out exactly as tall as the board */
+  .swap { display: grid; overflow: hidden; }
+  .swap > span { grid-area: 1 / 1; transition: transform var(--d-swap) var(--ease-out); }
+  .swap > span + span { transform: translateY(110%); }
+  .on > .swap > span:first-child, [aria-expanded="true"] > .swap > span:first-child { transform: translateY(-110%); }
+  .on > .swap > span + span, [aria-expanded="true"] > .swap > span + span { transform: none; }
+  .chev { width: 14px; height: 14px; transition: transform var(--d-swap) var(--ease-out); }
+  .jump-btn[aria-expanded="true"] .chev { transform: rotate(180deg); }
+
+  .jump-list {
+    --pitch: 2.4px;
+    position: absolute; right: var(--gutter); top: calc(100% + var(--sp-1)); width: 320px; margin: 0; padding: var(--sp-2); list-style: none;
+    border: 1px solid color-mix(in srgb, var(--ribbon) 28%, var(--face)); border-radius: var(--radius); color: var(--ribbon);
+    background: radial-gradient(circle, var(--led-off) 0 .7px, transparent 1px) 0 0 / var(--pitch) var(--pitch), var(--face);
+  }
+  .jump-list[hidden] { display: none; }
+  .jump-list a {
+    position: relative; display: flex; align-items: center; gap: var(--sp-3); min-height: 48px; padding: 0 var(--sp-3);
+    font-size: var(--fs-led-menu); text-decoration: none;
+  }
+  .jump-list a::before { content: ""; flex: none; width: 8px; height: 8px; border-radius: 50%; background: currentColor; opacity: 0; }
+  .jump-list a[aria-current]::before { opacity: 1; }
+  /* HV3 highlighter wipe: in from the left, out to the right, reset invisibly */
+  .jump-list a::after {
+    content: attr(data-label); position: absolute; inset: 0; display: flex; align-items: center; padding: 0 var(--sp-3) 0 calc(var(--sp-3) * 2 + 8px);
+    background: var(--ribbon); color: var(--face);
+    clip-path: inset(0 100% 0 0); transition: clip-path var(--d-swap) var(--ease-out);
+  }
+  .jump-list a[data-wipe="in"]::after, .jump-list a:focus-visible::after { clip-path: inset(0); }
+  .jump-list a[data-wipe="out"]::after { clip-path: inset(0 0 0 100%); transition-timing-function: var(--ease-in); transition-duration: var(--d-leave); }
+  .jump-list a[data-wipe="reset"]::after { transition: none; }
+  .jump-list a:focus-visible { outline-offset: -2px; }
+  @media (hover: none) { .jump-list a:active::after { clip-path: inset(0); transition: none; } }
+
+  /* ---------- Head ---------- */
+  .head { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; padding: var(--sp-9) 0 var(--sp-8); }
+  h2 { grid-column: 1 / 12; margin: 0 0 var(--sp-6); font: 700 var(--fs-h2)/.92 var(--font-text); letter-spacing: -.03em; }
+  h2 > span { display: block; }
+  .intro { grid-column: 1 / 7; margin: 0; max-width: 46ch; font-size: var(--fs-lede); line-height: 1.5; }
+  .controls { grid-column: 8 / 13; align-self: end; }
+  .index { display: grid; grid-template-columns: repeat(2, max-content); gap: 0 var(--sp-7); margin-bottom: var(--sp-3); }
+  .index a { display: inline-flex; align-items: center; min-height: 44px; font-size: var(--fs-led-index); text-decoration: none; }
+  .index .led, .all-btn .swap {
+    background: linear-gradient(currentColor, currentColor) 100% 100% / 0 .07em no-repeat;
+    transition: background-size var(--d-hover) var(--ease-out);
+  }
+  .index a:hover .led, .index a:focus-visible .led, .all-btn:hover .swap, .all-btn:focus-visible .swap { background-position: 0 100%; background-size: 100% .07em; }
+  .index .led { display: inline-block; white-space: nowrap; overflow: hidden; padding-bottom: .12em; }
+  @media (hover: none) { .index .led { background-size: 100% .07em; } }
+  .all-btn {
+    display: inline-flex; align-items: center; gap: var(--sp-3); min-height: 44px; padding: 0; border: 0; background: none; color: inherit; cursor: pointer;
+    font: 600 var(--fs-body)/1.2 var(--font-text); transition: transform var(--d-release) var(--ease-out);
+  }
+  .all-btn .swap { padding-bottom: .15em; }
+  .all-btn:active { transform: scale(.97); transition-duration: var(--d-press); }
+  .all-btn:focus-visible { outline-offset: 6px; }
+
+  /* ---------- Groups ---------- */
+  .group { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; margin-top: var(--sp-9); scroll-margin-top: calc(var(--board-h) + var(--sp-5)); }
+  .head + .group { margin-top: 0; }
+  .sign { grid-column: 1 / 4; }
+  .rows { grid-column: 4 / 13; }
+  .sign h3 { width: fit-content; margin: 0 0 var(--sp-2); padding-top: var(--sp-4); font-size: var(--fs-led-sign); line-height: 1.1; }
+  .sign h3:focus-visible { outline-offset: 6px; }
+  .note { margin: 0 0 var(--sp-5); max-width: 22ch; text-wrap: balance; color: var(--fg-2); font-size: var(--fs-small); line-height: 1.5; }
+
+  .qa { position: relative; scroll-margin-top: calc(var(--board-h) + var(--sp-4)); }
+  .qa::before, .qa:last-child::after {
+    content: ""; position: absolute; left: 0; right: 0; top: 0; height: 1px; background: var(--rule);
+    transform: scaleX(var(--draw, 1)); transform-origin: left;
+  }
+  .qa:last-child::after { top: auto; bottom: 0; }
+  .qa h4 { margin: 0; font: inherit; }
+  .q-btn {
+    position: relative; display: flex; justify-content: space-between; align-items: flex-start; gap: var(--sp-5);
+    width: 100%; margin: 0; padding: var(--sp-5) var(--sp-3); border: 0; border-radius: 0; background: none;
+    color: inherit; text-align: left; cursor: pointer;
+    font: 600 var(--fs-q)/1.3 var(--font-text); font-variation-settings: inherit; letter-spacing: -.01em;
+  }
+  .q-btn > * { position: relative; }
+  .q-btn::before {
+    content: ""; position: absolute; inset: 1px 0 0; background: color-mix(in srgb, var(--fg) 7%, transparent);
+    transform: scaleX(0); transform-origin: var(--from, left);
+    transition: transform var(--d-leave) var(--ease-out);
+  }
+  .q-btn:hover::before, .q-btn:focus-visible::before { transform: scaleX(1); transition-duration: var(--d-hover); }
+  .q-btn:focus-visible { outline-offset: -2px; }
+  @media (hover: none) { .q-btn:active::before { background: color-mix(in srgb, var(--fg) 12%, transparent); transform: scaleX(1); transition: none; } }
+
+  /* Plus that becomes a minus: the vertical bar folds away */
+  .icon { flex: none; position: relative; width: 16px; height: 16px; margin-top: .35em; transition: transform var(--d-hover) var(--ease-out); }
+  .icon i { position: absolute; left: 0; top: 7px; width: 16px; height: 2px; background: currentColor; }
+  .icon i + i { transform: rotate(90deg); transition: transform var(--d-open) var(--ease-out); }
+  [aria-expanded="true"] > .icon i + i { transform: rotate(90deg) scaleX(0); transition-duration: var(--d-close); transition-timing-function: var(--ease-in); }
+  .q-btn:hover .icon, .q-btn:focus-visible .icon { transform: rotate(90deg); }
+  .q-btn[aria-expanded="true"]:hover .icon, .q-btn[aria-expanded="true"]:focus-visible .icon { transform: rotate(180deg); }
+
+  /* CD6: real height through grid rows. Collapsed from first paint when scripting is on; open without JS. */
+  /* shortcut: browsers without the scripting media feature (Chrome <120, Safari <17, Firefox <113) keep every answer open; add html.js copies of these rules if they matter. */
+  .panel { display: grid; grid-template-rows: 1fr; }
+  @media (scripting: enabled) {
+    .panel { grid-template-rows: 0fr; transition: grid-template-rows var(--d-close) var(--ease-in) calc(var(--n, 0) * var(--d-stagger)); }
+    .qa.open .panel { grid-template-rows: 1fr; transition: grid-template-rows var(--d-open) var(--ease-out) calc(var(--n, 0) * var(--d-stagger)); }
+    .answer { opacity: 0; transform: translateY(6px); transition: opacity .2s linear, transform .2s linear; }
+    .qa.open .answer { opacity: 1; transform: none; transition: opacity var(--d-swap) var(--ease-out) .12s, transform var(--d-swap) var(--ease-out) .12s; }
+  }
+  @media (prefers-reduced-motion: reduce) { .answer, .qa.open .answer { transition: none; } }
+  .panel-in { min-height: 0; overflow: hidden; }
+  .answer { max-width: var(--measure); padding: 0 var(--sp-3) var(--sp-6); }
+  .answer p { margin: 0 0 var(--sp-3); }
+  .answer p:last-child { margin-bottom: 0; }
+  .fact { font-weight: 600; }
+
+  /* Cross-references: resting hairline, HV2 sweep on hover and focus */
+  .xref {
+    text-decoration: none; font-weight: 500;
+    background:
+      linear-gradient(currentColor, currentColor) 100% 100% / 0 .1em no-repeat,
+      linear-gradient(var(--rule), var(--rule)) 0 100% / 100% 1px no-repeat;
+    transition: background-size var(--d-hover) var(--ease-out);
+  }
+  .xref:hover, .xref:focus-visible { background-position: 0 100%, 0 100%; background-size: 100% .1em, 100% 1px; }
+  @media (hover: none) { .xref { background-size: 100% .07em, 100% 1px; } }
+
+  /* Target tick after a cross-reference jump: draws once, fades once */
+  .qa.tick .q-btn::after {
+    content: ""; position: absolute; left: 0; top: 1px; bottom: 0; width: 4px; background: var(--focus);
+    transform-origin: top; animation: tick var(--d-tick) var(--ease-out) forwards;
+  }
+  @keyframes tick { 0% { transform: scaleY(0); } 20% { transform: scaleY(1); opacity: 1; } 100% { transform: scaleY(1); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .qa.tick .q-btn::after { animation: none; } }
+
+  /* ---------- House lights down: the interlude and the bowl share one LED-cell canvas ----------
+     Default (no JS, no CDN, reduced motion): the interlude is already the bowl, a hard change of ground.
+     .house.wave (motion branch only): the interlude starts as concourse and the canvas covers it. */
+  .house { position: relative; }
+  .house .wrap { position: relative; z-index: 1; }
+  .cells-track { display: none; position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+  .cells { position: sticky; top: 0; display: block; width: 100%; height: 100lvh; }
+  .house.wave .cells-track { display: block; }
+  .interlude { background: var(--bowl); color: var(--chalk); font-variation-settings: "GRAD" var(--grad-dark); }
+  .il {
+    grid-column: 4 / 13; min-height: 80svh; margin: 0; padding: var(--sp-9) 0 var(--sp-8);
+    display: flex; flex-direction: column; justify-content: space-between; gap: var(--sp-8);
+    font: 600 var(--fs-interlude)/1.15 var(--font-text); font-variation-settings: inherit; letter-spacing: -.015em;
+  }
+  .il > span { display: block; }
+  .il-1 { position: relative; }
+  .il-chalk { display: none; position: absolute; inset: 0; color: var(--chalk); opacity: 0; }
+  .house.wave .interlude { background: var(--concourse); }
+  .house.wave .il-ink { color: var(--ink); font-variation-settings: "GRAD" 0; }
+  .house.wave .il-chalk { display: block; }
+  .bowl .group:first-child { margin-top: 0; }
+
+  /* ---------- Info desk ---------- */
+  .desk { grid-column: 4 / 13; margin-top: var(--sp-9); padding: var(--sp-6) var(--sp-3) 0; border-top: 2px solid var(--fg); scroll-margin-top: calc(var(--board-h) + var(--sp-5)); }
+  .desk h3 { width: fit-content; margin: 0 0 var(--sp-2); font: 700 var(--fs-lede)/1.3 var(--font-text); font-variation-settings: inherit; }
+  .desk p { margin: 0 0 var(--sp-5); max-width: 52ch; }
+  .actions { display: flex; flex-wrap: wrap; gap: var(--sp-3); }
+  .house > .bowl > .wrap { padding-bottom: var(--sp-10); }
+
+  /* Load states: hidden only when scripting runs and motion is welcome; a stalled script still reveals at 4s */
+  @media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+    html:not(.static):not(.loaded) .fade-in { opacity: 0; animation: failsafe 0s 4s forwards; }
+    html:not(.static):not(.loaded) .msg-text { clip-path: inset(0 100% 0 0); animation: failsafe 0s 4s forwards; }
+  }
+  @keyframes failsafe { to { opacity: 1; clip-path: inset(0); } }
+
+  @media (max-width: 991px) {
+    .controls { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-2) var(--sp-6); margin-top: var(--sp-6); }
+    .intro { grid-column: 1 / 10; }
+    .index { grid-template-columns: repeat(4, max-content); gap: 0 var(--sp-6); margin: 0; }
+  }
+  @media (max-width: 767px) {
+    .wrap, .head, .group { display: block; }
+    .head { padding: var(--sp-8) 0 var(--sp-7); }
+    .controls { display: block; }
+    .index { grid-template-columns: 1fr 1fr; gap: 0 var(--sp-5); margin-bottom: var(--sp-2); }
+    .group { margin-top: var(--sp-8); }
+    .sign h3 { padding-top: 0; }
+    .note { max-width: none; margin-bottom: var(--sp-4); }
+    .rows { margin-inline: calc(var(--sp-3) * -1); }
+    .il { padding: var(--sp-8) 0 var(--sp-7); }
+    .desk { padding-inline: 0; }
+    .actions .btn { flex: 1 1 100%; }
+    .jump-list { left: var(--gutter); right: var(--gutter); width: auto; }
+  }
+</style>
+</head>
+<body>
+<section class="faq" aria-labelledby="faq-title">
+  <div class="board">
+    <div class="board-dots" aria-hidden="true"></div>
+    <div class="board-in">
+      <p class="msg led" aria-hidden="true"><span class="msg-text">Kiln Street Open, autumn finals</span></p>
+      <div class="jump">
+        <button class="btn jump-btn" type="button" aria-expanded="false" aria-controls="jump-list">
+          <span class="swap"><span>Jump to</span><span aria-hidden="true">Close</span></span>
+          <svg class="chev" viewBox="0 0 14 14" aria-hidden="true" focusable="false"><path d="M2 5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        </button>
+        <ul class="jump-list led" id="jump-list" hidden>
+          <li><a href="#group-tickets" data-label="Tickets">Tickets</a></li>
+          <li><a href="#group-doors" data-label="Doors">Doors</a></li>
+          <li><a href="#group-watching" data-label="Watching">Watching</a></li>
+          <li><a href="#group-playing" data-label="Playing">Playing</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="progress" aria-hidden="true"><i></i></div>
+  </div>
+
+  <div class="concourse">
+    <div class="wrap">
+      <header class="head">
+        <h2 id="faq-title" class="fade-in"><span>Questions for</span> <span>finals weekend</span></h2>
+        <p class="intro fade-in">Kiln Street Open Autumn Finals, Friday 13 to Sunday 15 November 2026 at Kiln Street Arena, Sheffield. Fourteen answers from the info desk, from ticket names to controller checks.</p>
+        <div class="controls">
+          <nav class="index" aria-label="Question groups">
+            <a class="fade-in" href="#group-tickets"><span class="sr-only">Tickets</span><span class="led" aria-hidden="true">Tickets</span></a>
+            <a class="fade-in" href="#group-doors"><span class="sr-only">Doors</span><span class="led" aria-hidden="true">Doors</span></a>
+            <a class="fade-in" href="#group-watching"><span class="sr-only">Watching</span><span class="led" aria-hidden="true">Watching</span></a>
+            <a class="fade-in" href="#group-playing"><span class="sr-only">Playing</span><span class="led" aria-hidden="true">Playing</span></a>
+          </nav>
+          <button class="all-btn fade-in" type="button"><span class="swap"><span>Open all answers</span><span aria-hidden="true">Close all answers</span></span></button>
+        </div>
+      </header>
+
+      <section class="group" id="group-tickets" aria-labelledby="h-tickets">
+        <div class="sign">
+          <h3 id="h-tickets" class="led" tabindex="-1">Tickets</h3>
+          <p class="note">Sorted before you travel.</p>
+        </div>
+        <div class="rows">
+          <div class="qa" id="q-pass">
+            <h4><button class="q-btn" type="button" aria-expanded="false" aria-controls="q-pass-a"><span>What does a weekend pass include?</span><span class="icon" aria-hidden="true"><i></i><i></i></span></button></h4>
+            <div class="panel" id="q-pass-a"><div class="panel-in"><div class="answer">
+              <p><strong class="fact">Weekend pass £64, all three days.</strong> It gets you into any unreserved seat in blocks A to F on Friday, Saturday and Sunday, with <a class="xref" href="#q-reentry">re-entry on your wristband</a>.</p>
+              <p>Day tickets are £28 for Friday (quarter-finals), £34 for Saturday (semi-finals and the Iron Circuit top 8) and £34 for Sunday (both grand finals). Floor standing in front of the main stage is Sunday only and sold separately at £12.</p>
+            </div></div></div>
+          </div>
+          <div class="qa" id="q-name">
+            <h4><button class="q-btn" type="button" aria-expanded="false" aria-controls="q-name-a"><span>Can I change the name on my ticket?</span><span class="icon" aria-hidden="true"><i></i><i></i></span></button></h4>
+            <div class="panel" id="q-name-a"><div class="panel-in"><div class="answer">
+              <p><strong class="fact">Free name change until Thu 23:59.</strong> You can change it once, at no charge, until Thursday 12 November at 23:59, with the Change name link in your ticket email.</p>
+              <p>After that, the name must match your photo ID at the door, and the box office cannot change it on the day.</p>
+            </div></div></div>
+          </div>
+          <div class="qa" id="q-age">
+            <h4><button class="q-btn" type="button" aria-expanded="false" aria-controls="q-age-a"><span>Is there an age limit?</span><span class="icon" aria-hidden="true"><i></i><i></i></span></button></h4>
+            <div class="panel" id="q-age-a"><div class="panel-in"><div class="answer">
+              <p><strong class="fact">Under-16s need an adult.</strong> Rift Protocol is rated 16 and the broadcast shows realistic weapon violence, so anyone under 16 needs an adult (18 or over) in the same booking. Under-5s go free on a lap, with no seat of their own.</p>
+              <p>The Iron Circuit open bracket is for players aged 13 and over.</p>
+            </div></div></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="group" id="group-doors" aria-labelledby="h-doors">
+        <div class="sign">
+          <h3 id="h-doors" class="led" tabindex="-1">Doors</h3>
+          <p class="note">Friday from 16:00. Saturday and Sunday from 10:30.</p>
+        </div>
+        <div class="rows">
+          <div class="qa" id="q-doors">
+            <h4><button class="q-btn" type="button" aria-expanded="false" aria-controls="q-doors-a"><span>When do doors open, and when does the first match start?</span><span class="icon" aria-hidden="true"><i></i><i></i></span></button></h4>
+            <div class="panel" id="q-doors-a"><div class="panel-in"><div class="answer">
+              <p><strong class="fact">Doors Fri 16:00, Sat/Sun 10:30.</strong> The first match starts an hour later: 17:00 on Friday, 11:30 on Saturday and Sunday.</p>
+              <p>Gate 2 on Kiln Street is the quickest way in. Gate 4 is for wristband re-entry only. On Sunday, plan your way home around a late finish: see <a class="xref" href="#q-late-final">Will Sunday’s grand final run late?</a></p>
+            </div></div></div>
+          </div>
+          <div class="qa" id="q-bring">
+            <h4><button class="q-btn" type="button" aria-expanded="false" aria-controls="q-bring-a"><span>What can I bring in?</span><span class="icon" aria-hidden="true"><i></i><i></i></span></button></h4>
+            <div class="panel" id="q-bring-a"><div class="panel-in"><div class="answer">
+              <p><strong class="fact">One bag, up to 40 x 30 x 15 cm.</strong> It is checked at the gate. Banners up to 1 x 2 m with no poles, power banks up to 20,000 mAh and sealed water up to 500 ml are fine.</p>
+              <p>Not allowed: air horns, laser pointers, outside food (except baby food and food you need for medical reasons) and cameras with detachable lenses. Your own controller for the open bracket is welcome: see <a class="xref" href="#q-controller">Can I bring my own controller?</a></p>
+            </div></div></div>
+          </div>
+          <div class="qa" id="q-access">
+            <h4><button class="q-btn" type="button" aria-expanded="false" aria-controls="q-access-a"><span>Is the arena step-free?</span><span class="icon" aria-hidden="true"><i></i><i></i></span></button></h4>
+            <div class="panel" id="q-access-a"><div class="panel-in"><div class="answer">
+              <p><strong class="fact">Step-free from Gate 2.</strong> Every block can be reached without steps. Wheelchair spaces with a companion seat are in row 1 of blocks C and E; book them through <a class="xref" href="#info-desk">the info desk</a>.</p>
+              <p>Ear defenders are free at the info desk. The quiet room on concourse level 1 has a live feed and no crowd noise, and the main screen captions every caster segment.</p>
+            </div></div></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div class="house">
+    <div class="cells-track" aria-hidden="true"><canvas class="cells"></canvas></div>
+    <div class="interlude">
+      <div class="wrap">
+        <p class="il"><span class="il-1"><span class="il-ink">Lights go down at 17:00 on Friday.</span><span class="il-chalk" aria-hidden="true">Lights go down at 17:00 on Friday.</span></span> <span class="il-2">Everything below happens inside the bowl.</span></p>
+      </div>
+    </div>
+
+  <div class="bowl">
+    <div class="wrap">
+      <section class="group" id="group-watching" aria-labelledby="h-watching">
+        <div class="sign">
+          <h3 id="h-watching" class="led" tabindex="-1">Watching</h3>
+          <p class="note">Inside the bowl, blocks A&nbsp;to&nbsp;F.</p>
+        </div>
+        <div class="rows">
+          <div class="qa" id="q-reentry">
+            <h4><button class="q-btn" type="button" aria-expanded="false" aria-controls="q-reentry-a"><span>Can I leave and come back in?</span><span class="icon" aria-hidden="true"><i></i><i></i></span></button></h4>
+            <div class="panel" id="q-reentry-a"><div class="panel-in"><div class="answer">
+              <p><strong class="fact">Re-entry until 19:00, Gate 4.</strong> Keep your wristband on and scan out and back in at Gate 4, as often as you like until 19:00 each day.</p>
+              <p>A lost wristband is replaced once at the info desk, with photo ID.</p>
+            </div></div></div>
+          </div>
+          <div class="qa" id="q-loud">
+            <h4><button class="q-btn" type="button" aria-expanded="false" aria-controls="q-loud-a"><span>How loud will it be?</span><span class="icon" aria-hidden="true"><i></i><i></i></span></button></h4>
+            <div class="panel" id="q-loud-a"><div class="panel-in"><div class="answer">
+              <p><strong class="fact">Peaks around 95 dB.</strong> The loudest moments are match points and caster hype. Foam earplugs are free at every bar, and the <a class="xref" href="#q-access">quiet room</a> shows the broadcast without the crowd.</p>
+            </div></div></div>
+          </div>
+          <div class="qa" id="q-film">
+            <h4><button class="q-btn" type="button" aria-expanded="false" aria-controls="q-film-a"><span>Can I film or stream the matches?</span><span class="icon" aria-hidden="true"><i></i><i></i></span></button></h4>
+            <div class="panel" id="q-film-a"><div class="panel-in"><div class="answer">
+              <p><strong class="fact">Clips yes, live streams no.</strong> Photos and short clips for your own socials are fine, with no flash toward the stages. Live-streaming the match feed is not allowed, because of broadcast rights.</p>
+              <p>The free Wi-Fi, KSA-Guest, is capped at 5 Mbps.</p>
+            </div></div></div>
+          </div>
+          <div class="qa" id="q-signings">
+            <h4><button class="q-btn" type="button" aria-expanded="false" aria-controls="q-signings-a"><span>When and where are the player signings?</span><span class="icon" aria-hidden="true"><i></i><i></i></span></button></h4>
+            <div class="panel" id="q-signings-a"><div class="panel-in"><div class="answer">
+              <p><strong class="fact">Signings Sat 14:00, level 1.</strong> They run from 14:00 to 15:30 on Saturday on concourse level 1. Queue tickets are handed out at the info desk from 12:00, one per wristband, 300 in total.</p>
+            </div></div></div>
+          </div>
+          <div class="qa" id="q-late-final">
+            <h4><button class="q-btn" type="button" aria-expanded="false" aria-controls="q-late-final-a"><span>Will Sunday’s grand final run late?</span><span class="icon" aria-hidden="true"><i></i><i></i></span></button></h4>
+            <div class="panel" id="q-late-final-a"><div class="panel-in"><div class="answer">
+              <p><strong class="fact">Curfew 23:00, last tram 23:40.</strong> A best-of-five can run past 22:00. The arena has a hard curfew at 23:00: if the final reaches it, the deciding map is finished and the trophy ceremony moves online.</p>
+              <p>The last tram from the Kiln Street stop leaves at 23:40.</p>
+            </div></div></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="group" id="group-playing" aria-labelledby="h-playing">
+        <div class="sign">
+          <h3 id="h-playing" class="led" tabindex="-1">Playing</h3>
+          <p class="note">Iron Circuit open bracket, side stage.</p>
+        </div>
+        <div class="rows">
+          <div class="qa" id="q-bracket">
+            <h4><button class="q-btn" type="button" aria-expanded="false" aria-controls="q-bracket-a"><span>How do I enter the Iron Circuit open bracket?</span><span class="icon" aria-hidden="true"><i></i><i></i></span></button></h4>
+            <div class="panel" id="q-bracket-a"><div class="panel-in"><div class="answer">
+              <p><strong class="fact">Entry £10, pools Sat 10:00.</strong> Register online until Friday at 18:00, or at the player desk on concourse level 1 until Saturday at 09:30.</p>
+              <p>Entry is £10 on top of a Saturday or weekend ticket, capped at 256 players, double elimination. Pools start at 10:00 on Saturday on the side stage.</p>
+            </div></div></div>
+          </div>
+          <div class="qa" id="q-controller">
+            <h4><button class="q-btn" type="button" aria-expanded="false" aria-controls="q-controller-a"><span>Can I bring my own controller?</span><span class="icon" aria-hidden="true"><i></i><i></i></span></button></h4>
+            <div class="panel" id="q-controller-a"><div class="panel-in"><div class="answer">
+              <p><strong class="fact">Own pads checked at the desk.</strong> Wired pads and arcade sticks are checked at the player desk before your first match. Wireless pads must be paired by the tournament organiser, and turbo or macro buttons are not allowed.</p>
+              <p>Spare pads are kept at the desk in case yours fails.</p>
+            </div></div></div>
+          </div>
+          <div class="qa" id="q-pool">
+            <h4><button class="q-btn" type="button" aria-expanded="false" aria-controls="q-pool-a"><span>What happens if I miss my pool call?</span><span class="icon" aria-hidden="true"><i></i><i></i></span></button></h4>
+            <div class="panel" id="q-pool-a"><div class="panel-in"><div class="answer">
+              <p><strong class="fact">Three calls, then a loss.</strong> You are called three times over ten minutes, on the side-stage screen and over the PA. After the third call the match is recorded as a loss and you drop to the losers’ side. Miss a second call and you are out.</p>
+            </div></div></div>
+          </div>
+        </div>
+      </section>
+
+      <div class="desk" id="info-desk">
+        <h3 tabindex="-1">Still stuck?</h3>
+        <p>The info desk is on concourse level 1 beside Gate 2, open from doors until an hour after the last match.</p>
+        <p class="actions">
+          <a class="btn" href="mailto:info@kilnstreetarena.example" target="_blank" rel="noopener">Email the info desk</a>
+          <a class="btn" href="tel:+441144960730" target="_blank" rel="noopener">Call 0114 496 0730</a>
+        </p>
+      </div>
+    </div>
+  </div>
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrambleTextPlugin.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  const root = document.documentElement;
+  const libs = !!(window.gsap && window.ScrollTrigger && window.ScrambleTextPlugin && window.Lenis);
+  root.classList.add('js');
+  if (!libs) root.classList.add('static'); // CDN blocked: no motion, everything below still works
+
+  const $ = (s, c = document) => c.querySelector(s);
+  const $$ = (s, c = document) => [...c.querySelectorAll(s)];
+  const section = $('.faq');
+  const groups = $$('.group');
+  const qas = $$('.qa');
+  const names = groups.map((g) => $('h3', g).textContent);
+  const msg = $('.msg');
+  const msgText = $('.msg-text');
+  const EVENT = msgText.textContent;
+  const allBtn = $('.all-btn');
+  const jumpBtn = $('.jump-btn');
+  const jumpList = $('#jump-list');
+  const jumpLinks = $$('a', jumpList);
+  const fact = (qa) => $('.fact', qa).textContent.replace(/\.$/, '');   // the board only ever repeats the answer's first sentence
+  const isOpen = (qa) => qa.classList.contains('open');
+  const opened = [];   // answers opened one at a time, oldest first; the newest rests on the board
+  let current = -1;    // spied group; -1 is the head
+  let fx = null;       // motion hooks, set only while a motion branch runs
+
+  /* ---------- The board (plain JS state; motion only decorates it) ---------- */
+  let shown = { text: EVENT, dim: false };
+  // Only an open scans (scan = true); previews, restores and group changes swap instantly, so the board stays quiet.
+  function board(text, dim = false, scan = false) {
+    if (text === shown.text && dim === shown.dim) return;
+    shown = { text, dim };
+    msg.classList.toggle('dim', dim);
+    if (fx) fx.board(text, dim && false, scan && !dim);
+    else msgText.textContent = text;
+  }
+  const resting = () => (opened.length ? fact(opened[opened.length - 1]) : current < 0 ? EVENT : names[current]);
+  const rest = (scan = false) => board(resting(), false, scan);
+
+  // Preview at 45% on hover (fine pointer) or keyboard focus; a short intent delay keeps a fast sweep from flickering.
+  // A mouse preview needs the page to be still: rows sliding under a parked cursor while scrolling never preview.
+  let intent, scrolledAt = 0;
+  addEventListener('scroll', () => { scrolledAt = performance.now(); }, { passive: true });
+  const preview = (qa, mouse) => {
+    clearTimeout(intent);
+    intent = setTimeout(() => {
+      if (mouse && performance.now() - scrolledAt < 150) return;
+      const f = fact(qa);
+      if (!(f === shown.text && !shown.dim)) board(f, true);
+    }, 90);
+  };
+  const unpreview = () => { clearTimeout(intent); intent = setTimeout(rest, 140); };
+
+  /* ---------- Disclosures (APG: h4 > button, independent rows) ---------- */
+  function setOpen(qa, open, push = true) {
+    const i = opened.indexOf(qa);
+    if (i >= 0) opened.splice(i, 1);
+    if (open && push) opened.push(qa);
+    if (isOpen(qa) === open) return false;
+    qa.classList.toggle('open', open);
+    $('.q-btn', qa).setAttribute('aria-expanded', String(open));
+    $('.panel', qa).inert = !open;
+    return true;
+  }
+  function toggle(qa, open = !isOpen(qa)) {
+    clearTimeout(intent);
+    setOpen(qa, open);
+    rest(open);
+    syncAll();
+  }
+  // MI2 swaps: the accessible name is whichever label is showing.
+  function swapLabels(btn, second) {
+    $$('.swap > span', btn).forEach((s, i) => ((i === 1) === second ? s.removeAttribute('aria-hidden') : s.setAttribute('aria-hidden', 'true')));
+  }
+  function syncAll() {
+    const every = qas.every(isOpen);
+    allBtn.classList.toggle('on', every);
+    swapLabels(allBtn, every);
+  }
+  let unstagger;
+  allBtn.addEventListener('click', () => {
+    const open = !qas.every(isOpen);
+    opened.length = 0;
+    let n = 0;
+    qas.forEach((qa) => {
+      $('.panel', qa).style.setProperty('--n', n);
+      if (setOpen(qa, open, false)) n++;
+    });
+    clearTimeout(unstagger);
+    unstagger = setTimeout(() => qas.forEach((qa) => $('.panel', qa).style.removeProperty('--n')), 1200);
+    rest();
+    syncAll();
+  });
+
+  let settle;
+  qas.forEach((qa) => {
+    const btn = $('.q-btn', qa);
+    $('.panel', qa).inert = true;
+    btn.addEventListener('click', () => toggle(qa));
+    // A real move (not a row arriving under a still cursor after a layout change) starts the preview, once per visit.
+    let visiting = false;
+    btn.addEventListener('pointermove', (e) => {
+      if (e.pointerType !== 'mouse' || visiting || !(e.movementX || e.movementY)) return;
+      visiting = true;
+      preview(qa, true);
+    });
+    btn.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') { visiting = false; unpreview(); } });
+    btn.addEventListener('focus', () => { if (btn.matches(':focus-visible')) preview(qa); });
+    btn.addEventListener('blur', unpreview);
+    $('.panel', qa).addEventListener('transitionend', (e) => {
+      if (e.propertyName !== 'grid-template-rows' || !fx) return;
+      clearTimeout(settle);
+      settle = setTimeout(fx.refresh, 60);   // open all fires 14 of these
+    });
+  });
+
+  /* ---------- Anchors: groups focus their heading; answers open, take the board and focus their button ---------- */
+  function go(id) {
+    const el = id && document.getElementById(id);
+    if (!el || !section.contains(el)) return false;
+    let focusEl = $('h3', el) || el;
+    if (el.classList.contains('qa')) {
+      toggle(el, true);
+      focusEl = $('.q-btn', el);
+      el.classList.remove('tick'); void el.offsetWidth; el.classList.add('tick');
+      setTimeout(() => el.classList.remove('tick'), 1600);
+    }
+    focusEl.focus({ preventScroll: true });
+    if (fx) fx.go(el); else el.scrollIntoView({ block: 'start' });
+    return true;
+  }
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('a[href^="#"]');
+    if (!a) return;
+    if (jumpList.contains(a)) closeMenu(false);
+    if (go(decodeURIComponent(a.getAttribute('href').slice(1)))) e.preventDefault();
+  });
+  addEventListener('hashchange', () => go(decodeURIComponent(location.hash.slice(1))));
+
+  /* ---------- Spy (NV6): the group crossing 40-45% of the viewport is current ---------- */
+  function setGroup(g) {
+    if (g === current) return;
+    current = g;
+    jumpLinks.forEach((a, i) => (i === g ? a.setAttribute('aria-current', 'true') : a.removeAttribute('aria-current')));
+    if (!opened.length) rest();
+  }
+  const spy = new IntersectionObserver((entries) => {
+    entries.forEach((e) => { if (e.isIntersecting) setGroup(groups.indexOf(e.target)); });   // the head gives -1
+  }, { rootMargin: '-40% 0px -55% 0px' });
+  [$('.head'), ...groups].forEach((g) => spy.observe(g));
+
+  /* ---------- Progress under the board (SC11): state, so it tracks under reduced motion too ---------- */
+  const bar = $('.progress i');
+  const progress = () => {
+    const r = section.getBoundingClientRect();
+    const p = Math.min(1, Math.max(0, -r.top / Math.max(1, r.height - innerHeight)));
+    bar.style.transform = `scaleX(${p.toFixed(4)})`;
+  };
+  addEventListener('scroll', progress, { passive: true });
+  addEventListener('resize', progress);
+  progress();
+
+  /* ---------- Jump menu: non-modal; Escape, an outside click or focus leaving close it ---------- */
+  const menuOpen = () => jumpBtn.getAttribute('aria-expanded') === 'true';
+  function openMenu() {
+    jumpBtn.setAttribute('aria-expanded', 'true');
+    swapLabels(jumpBtn, true);
+    jumpList.hidden = false;
+    if (fx) fx.menu(true);
+  }
+  function closeMenu(returnFocus) {
+    if (!menuOpen()) return;
+    jumpBtn.setAttribute('aria-expanded', 'false');
+    swapLabels(jumpBtn, false);
+    if (fx) fx.menu(false); else jumpList.hidden = true;
+    if (returnFocus) jumpBtn.focus();
+  }
+  jumpBtn.addEventListener('click', () => (menuOpen() ? closeMenu(false) : openMenu()));
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && menuOpen()) closeMenu(true); });
+  document.addEventListener('pointerdown', (e) => { if (!e.target.closest('.jump')) closeMenu(false); });
+  $('.jump').addEventListener('focusout', (e) => { if (e.relatedTarget && !e.relatedTarget.closest('.jump')) closeMenu(false); });
+
+  /* ---------- HV4 entry edge and HV3 wipe states ---------- */
+  const edge = (e) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    e.currentTarget.style.setProperty('--from', e.clientX < r.left + r.width / 2 ? 'left' : 'right');
+  };
+  $$('.btn, .q-btn').forEach((el) => { el.addEventListener('pointerenter', edge); el.addEventListener('pointerleave', edge); });
+  jumpLinks.forEach((a) => {
+    const set = (s) => { a.dataset.wipe = s; };
+    a.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') set('in'); });
+    a.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') set('out'); });
+    a.addEventListener('transitionend', () => {
+      if (a.dataset.wipe !== 'out') return;
+      set('reset');
+      requestAnimationFrame(() => requestAnimationFrame(() => { if (a.dataset.wipe === 'reset') delete a.dataset.wipe; }));
+    });
+  });
+
+  // Self-check, run with #selftest (check-flows waits for the PASS line).
+  window.runSelfTest = () => {
+    const ok = (c, m) => { if (!c) throw new Error('SELFTEST FAIL: ' + m); };
+    ok(qas.every((q) => fact(q).length <= 34), 'facts fit the board');
+    ok($$('a[href^="#"]').every((a) => document.getElementById(a.getAttribute('href').slice(1))), 'anchors resolve');
+    const q = $('#q-reentry');
+    toggle(q, true);
+    ok(shown.text === 'Re-entry until 19:00, Gate 4' && !shown.dim && $('.q-btn', q).getAttribute('aria-expanded') === 'true', 'open puts the fact on the board');
+    toggle(q, false);
+    ok(shown.text === resting() && !opened.length && $('.panel', q).inert, 'close restores the board');
+    allBtn.click();
+    ok(qas.every(isOpen) && allBtn.classList.contains('on'), 'open all');
+    allBtn.click();
+    ok(!qas.some(isOpen), 'close all');
+    console.log('SELFTEST PASS');
+  };
+  if (location.hash === '#selftest') setTimeout(window.runSelfTest, 300);
+  else if (location.hash.length > 1) {
+    // Wait for the web fonts (or 1.2s): they change line heights above the target and would leave it under the board.
+    Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 1200))]).then(() => go(decodeURIComponent(location.hash.slice(1))));
+  }
+
+  if (!libs) return;
+
+  /* ---------- Motion (GSAP + Lenis), only when the CDN loaded ---------- */
+  gsap.registerPlugin(ScrollTrigger, ScrambleTextPlugin);
+  const dur = (n) => parseFloat(getComputedStyle(root).getPropertyValue(`--d-${n}`)) || 0;
+  const expoOut = (t) => (t === 1 ? 1 : 1 - Math.pow(2, -10 * t));
+  const CHARS = 'abcdeghknoprstuvxz';
+  const scramble = (el, text, d = dur('scramble')) =>
+    gsap.to(el, { duration: d, ease: 'none', overwrite: true, scrambleText: { text, chars: CHARS, speed: 0.85 } });
+  // Bitcount Prop is proportional: lock the box while glyphs flicker so nothing beside it moves.
+  const scrambleLocked = (el, d) => {
+    const text = el.textContent;
+    el.style.width = `${el.getBoundingClientRect().width}px`;
+    return scramble(el, text, d).eventCallback('onComplete', () => { el.style.width = ''; });
+  };
+  const scan = () => gsap.fromTo(msgText, { clipPath: 'inset(0 100% 0 0)' },
+    { clipPath: 'inset(0 0% 0 0)', duration: dur('scan'), ease: 'steps(16)', overwrite: true });
+
+  let booted = false;   // the load sequence plays once, not on every matchMedia flip
+  const mm = gsap.matchMedia();
+  mm.add({
+    motion: '(prefers-reduced-motion: no-preference)',
+    reduce: '(prefers-reduced-motion: reduce)',
+    fine: '(hover: hover) and (pointer: fine)',
+    wide: '(min-width: 992px)'
+  }, (ctx) => {
+    const { motion, fine } = ctx.conditions;
+
+    if (!motion) {
+      // Reduced motion: final states, instant board, native scroll, no Lenis.
+      root.classList.add('loaded');
+      gsap.set(msgText, { clearProps: 'clipPath' });
+      msgText.textContent = shown.text;
+      fx = {
+        board: (t) => { msgText.textContent = t; },
+        go: (el) => el.scrollIntoView({ block: 'start' }),
+        menu: (open) => { jumpList.hidden = !open; },
+        refresh: () => {}
+      };
+      return () => { fx = null; };
+    }
+
+    const lenis = new Lenis({ lerp: 0.1, smoothWheel: true, autoRaf: false, anchors: false });
+    lenis.on('scroll', ScrollTrigger.update);
+    const tick = (time) => lenis.raf(time * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
+
+    fx = {
+      // The board is state: an opened answer's fact scans in (16 columns), everything else swaps instantly.
+      board(text, scanIn) {
+        gsap.killTweensOf(msgText);
+        msgText.textContent = text;
+        if (scanIn) scan(); else gsap.set(msgText, { clipPath: 'inset(0 0% 0 0)' });
+      },
+      // Lenis honours the target's CSS scroll-margin-top, which already clears the sticky board.
+      // resize() first: a hash load can arrive before Lenis has measured the full page and clamp the target.
+      go(el) {
+        lenis.resize();
+        const dist = Math.abs(el.getBoundingClientRect().top);
+        lenis.scrollTo(el, { duration: Math.min(1.3, 0.65 + dist / 4000), easing: expoOut, force: true });
+      },
+      menu(open) {
+        const items = $$('li', jumpList);
+        if (open) {
+          lenis.stop();
+          gsap.fromTo(jumpList, { clipPath: 'inset(0 0 100% 0)' }, { clipPath: 'inset(0 0 0% 0)', duration: 0.45, ease: 'expo.out', overwrite: true, clearProps: 'clipPath' });
+          gsap.fromTo(items, { y: 8, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.4, ease: 'expo.out', stagger: 0.04, delay: 0.05, overwrite: true });
+        } else {
+          lenis.start();
+          gsap.to(jumpList, { clipPath: 'inset(0 0 100% 0)', duration: 0.25, ease: 'expo.in', overwrite: true,
+            onComplete: () => { jumpList.hidden = true; gsap.set(jumpList, { clearProps: 'clipPath' }); } });
+        }
+      },
+      refresh() { lenis.resize(); ScrollTrigger.refresh(); }
+    };
+
+    /* SC16: each group's rules draw from the left once; armed at 0.9s of the load so the first group draws inside the sequence */
+    const indexLabels = $$('.index .led');
+    const arm = () => groups.forEach((g) => ScrollTrigger.create({
+      trigger: g, start: 'top 88%', once: true,
+      onEnter: () => gsap.to($$('.qa', g), { '--draw': 1, duration: 0.9, ease: 'expo.out', stagger: 0.06 })
+    }));
+
+    /* Page load: the board warms up and scans the event name in, then the head arrives quietly.
+       The index labels' decode is the page's only scramble (TX4). */
+    const tl = gsap.timeline({ paused: true });
+    tl.from('.board-dots', { opacity: 0, duration: 0.3, ease: 'steps(3)' }, 0)
+      .fromTo(msgText, { clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0% 0 0)', duration: dur('scan'), ease: 'steps(16)' }, 0.1)
+      .from('h2', { opacity: 0, duration: 0.6, ease: 'expo.out' }, 0.45)
+      .from('.intro', { opacity: 0, duration: 0.6, ease: 'expo.out' }, 0.6)
+      .from('.index a, .all-btn', { y: 6, opacity: 0, duration: 0.3, ease: 'expo.out', stagger: 0.06 }, 0.7)
+      .add(() => indexLabels.forEach((el, i) => gsap.delayedCall(i * 0.1, () => scrambleLocked(el, 0.6))), 0.7)
+      .add(arm, 0.9);
+    gsap.set($$('.qa'), { '--draw': 0 });
+    root.classList.add('loaded');   // inline from() states now hold the hidden start; the CSS failsafe stands down
+    if (booted) tl.progress(1);
+    else Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 1200))]).then(() => { booted = true; tl.play(); });
+
+    /* ---------- The signature: house lights down (SC17), then the bowl's LED wall (CU5) ----------
+       One canvas, sticky to the viewport inside .house, one grid. Rows count from the top of the interlude;
+       columns are phased to the content edge, the same phase as the board's dot lattice (40px = 10 board pitches). */
+    const house = $('.house');
+    const interlude = $('.interlude');
+    const canvas = $('.cells');
+    const c2d = canvas.getContext('2d');
+    const ilInk = $('.il-ink');
+    const ilChalk = $('.il-chalk');
+    house.classList.add('wave');
+    const rgb = (v) => { const h = getComputedStyle(root).getPropertyValue(v).trim().slice(1); return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)); };
+    const BOWL = rgb('--bowl');
+    const AMBER = rgb('--ribbon');
+    const tint = (t) => `rgb(${BOWL.map((b, i) => Math.round(b + (AMBER[i] - b) * t)).join()})`;
+    const BOWL_FILL = tint(0);
+    const LEVELS = [tint(0.05), tint(0.09), tint(0.14)];   // three steps, never a glow; haze on the top step is 5.86:1
+
+    let cell, x0, cols, rows, ilRows, n = 0, rank, heat = new Float32Array(0), dpr = 1, lit = 0, inView = false, warm = false;
+    function build() {
+      cell = innerWidth < 600 ? 32 : 40;
+      const w = $('.wrap', interlude);
+      const edge = w.getBoundingClientRect().left + parseFloat(getComputedStyle(w).paddingLeft);
+      x0 = Math.round(edge - Math.ceil(edge / cell) * cell);
+      cols = Math.ceil((house.clientWidth - x0) / cell);
+      rows = Math.ceil(house.offsetHeight / cell);
+      const ir = Math.ceil(interlude.offsetHeight / cell);
+      if (ir !== ilRows || ir * cols !== n) {   // keep the wave's pattern across answer opens; reshuffle only when the grid changes
+        ilRows = ir; n = ir * cols;
+        const pri = Array.from({ length: n }, (_, i) => 50 * (ilRows - 1 - Math.floor(i / cols)) + 300 * Math.random());
+        rank = new Float32Array(n);
+        [...pri.keys()].sort((a, b) => pri[a] - pri[b]).forEach((c, r) => { rank[c] = r; });
+      }
+      if (heat.length !== rows * cols) heat = new Float32Array(rows * cols);
+      dpr = Math.min(2, devicePixelRatio || 1);
+      canvas.width = Math.round(canvas.clientWidth * dpr);
+      canvas.height = Math.round(canvas.clientHeight * dpr);
+    }
+    function draw() {
+      const hr = house.getBoundingClientRect();
+      const cr = canvas.getBoundingClientRect();
+      const off = cr.top - hr.top;   // canvas top in grid coordinates
+      const k = Math.max(1, n * 0.06);   // each cell fades over 6% of the wave (the recipe's .1 of 1.6)
+      const front = lit * (n + k);
+      const px = (v) => Math.round(v * dpr);   // whole device pixels: no seams between lit cells
+      c2d.clearRect(0, 0, canvas.width, canvas.height);
+      const r0 = Math.max(0, Math.floor(off / cell));
+      const r1 = Math.min(rows, Math.ceil((off + cr.height) / cell));
+      for (let r = r0; r < r1; r++) {
+        const y = r * cell - off;
+        for (let c = 0; c < cols; c++) {
+          const x = x0 + c * cell;
+          const i = r * cols + c;
+          let on = 1;
+          if (r < ilRows) {
+            on = Math.min(1, Math.max(0, (front - rank[i]) / k));
+            if (on > 0) {
+              c2d.globalAlpha = on;
+              c2d.fillStyle = BOWL_FILL;
+              c2d.fillRect(px(x), px(y), px(x + cell) - px(x), px(y + cell) - px(y));
+              c2d.globalAlpha = 1;
+            }
+          }
+          const h = heat[i];
+          if (on === 1 && h > 0.05) {
+            c2d.fillStyle = LEVELS[h > 0.66 ? 2 : h > 0.33 ? 1 : 0];
+            c2d.fillRect(px(x + 2), px(y + 2), px(x + cell - 2) - px(x + 2), px(y + cell - 2) - px(y + 2));
+          }
+        }
+      }
+    }
+    const rebuild = () => { build(); draw(); };
+    build();
+    ScrollTrigger.addEventListener('refresh', rebuild);   // resize (debounced by ScrollTrigger) and answer opens
+
+    ScrollTrigger.create({
+      trigger: interlude, start: 'top 70%', end: 'bottom 35%', scrub: 0.3,
+      onUpdate: (self) => {
+        lit = self.progress;
+        const t = Math.min(1, Math.max(0, (lit - 0.8) / 0.2));   // line 1 turns from ink to chalk as the top rows go dark
+        ilInk.style.opacity = 1 - t;
+        ilChalk.style.opacity = t;
+        draw();
+      },
+      onRefresh: (self) => { lit = self.progress; draw(); }
+    });
+    // The canvas is sticky, so cells move under it: redraw on every scroll while the house is on screen.
+    ScrollTrigger.create({
+      trigger: house, start: 'top bottom', end: 'bottom top',
+      onUpdate: draw,
+      onToggle: (self) => { inView = self.isActive; if (!inView) sleep(); }
+    });
+
+    // CU5: heat per cell, Chebyshev radius 3, decays with a half-life of about .15s; the loop sleeps when cold or off screen.
+    const R = 3;
+    function sleep() { if (warm) { warm = false; gsap.ticker.remove(wall); } heat.fill(0); }
+    function wall(time, dt) {
+      const f = Math.pow(0.92, dt / 16.7);
+      let max = 0;
+      for (let i = 0; i < heat.length; i++) { heat[i] *= f; if (heat[i] > max) max = heat[i]; }
+      if (max < 0.01) sleep();
+      draw();
+    }
+    function heatAt(x, y) {
+      const hr = house.getBoundingClientRect();
+      const pc = Math.floor((x - hr.left - x0) / cell);
+      const pr = Math.floor((y - hr.top) / cell);
+      for (let r = Math.max(0, pr - R + 1); r <= Math.min(rows - 1, pr + R - 1); r++) {
+        for (let c = Math.max(0, pc - R + 1); c <= Math.min(cols - 1, pc + R - 1); c++) {
+          const i = r * cols + c;
+          heat[i] = Math.max(heat[i], 1 - Math.max(Math.abs(r - pr), Math.abs(c - pc)) / R);
+        }
+      }
+      if (inView && !warm) { warm = true; gsap.ticker.add(wall); }
+    }
+    const onMove = (e) => { if (e.pointerType === 'mouse') heatAt(e.clientX, e.clientY); };
+    const onDown = (e) => { if (e.pointerType !== 'mouse') heatAt(e.clientX, e.clientY); };   // touch and pen: one tap, one ripple
+    const onFocus = (e) => {   // keyboard: the focused question lights the wall at its left edge
+      if (!e.target.matches('.bowl .q-btn:focus-visible')) return;
+      const r = e.target.getBoundingClientRect();
+      heatAt(r.left + 4, r.top + r.height / 2);
+    };
+    if (fine) house.addEventListener('pointermove', onMove, { passive: true });
+    house.addEventListener('pointerdown', onDown, { passive: true });
+    house.addEventListener('focusin', onFocus);
+
+    return () => {
+      fx = null;
+      sleep();
+      ScrollTrigger.removeEventListener('refresh', rebuild);
+      house.removeEventListener('pointermove', onMove);
+      house.removeEventListener('pointerdown', onDown);
+      house.removeEventListener('focusin', onFocus);
+      house.classList.remove('wave');
+      ilInk.style.opacity = ilChalk.style.opacity = '';
+      gsap.ticker.remove(tick);
+      gsap.ticker.lagSmoothing(500, 33);
+      lenis.destroy();
+    };
+  });
+})();
+</script>
+</body>
+</html>
