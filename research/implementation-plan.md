@@ -34,7 +34,7 @@ The label is derived from `design.md`: a non-empty `libraries` list means red; `
 | `hero-perfumery` | hero | detailed | light | An independent perfumery launching one new scent with a sample-vial offer. | LD6, TX3, CU4 lens reveal, MD1 |
 | `hero-doc-festival` | hero | detailed | dark | A documentary film festival announcing its programme and pass sales. | LD3 curtain hand-off, TX8 fly-through title, CU1 cursor states, MD4 grain |
 | `features-ebike` | features | detailed | light | An urban cargo e-bike maker presenting the features of its new model. | SC3 pinned chapters, SC12 scrubbed drawn sequence, HV6 |
-| `features-mixing-plugin` | features | detailed | dark | A small company selling a mixing-console audio plugin for music producers. | SC5 word illumination, CU3 pointer parallax, CD9 tabs crossfade, MI6 |
+| `features-mixing-plugin` | features | detailed | light | A small company selling a mixing-console audio plugin for music producers. | SC5 word illumination, HV12 meter-glass glare, CD9 tabs crossfade, MI6 (signature: a peak meter lines up on Test, holds 0.6 s, then falls) |
 | `features-coffee-roaster` | features | detailed | light | A specialty coffee roaster explaining what its subscription includes. | SC4 horizontal track, SC2 framed parallax, HV12 sheen |
 | `pricing-coworking` | pricing | detailed | light | Membership plans for a coworking space with desks, studios and meeting rooms. | NV4 sliding indicator billing toggle, CD5 Flip reflow, HV4, SC13 |
 | `pricing-ski-pass` | pricing | detailed | any | Lift-pass options for a mid-size ski resort (day, week, season, family). | TR4 threshold switcher, TX6 rotating word slot, MI3, HV5 |
@@ -46,7 +46,7 @@ The label is derived from `design.md`: a non-empty `libraries` list means red; `
 | `process-bespoke-tailor` | process | detailed | light | A bespoke tailor explaining the fittings from first measure to final suit. | SC4 horizontal track, MD2 frame to full bleed, HV11 drawn ornament |
 | `process-smallsat` | process | detailed | dark | A small-satellite integrator explaining the path from booking to launch. | SC15 stepped snap (handle with care), TX4 scramble short labels, SC17 pixel-cell cover |
 | `cta-city-marathon` | cta | detailed | light | A city marathon opening registration for next spring's race. | TX7 type as material, SC10, HV5, MI4 |
-| `cta-vineyard-harvest` | cta | detailed | light | A family vineyard inviting volunteers to its harvest weekend. | CU4 lens reveal, TX9 words converge, CD8 hold to confirm |
+| `cta-vineyard-harvest` | cta | detailed | light | A family vineyard inviting volunteers to its harvest weekend. | TR3 planting and path walk, SC16 rules, CD7 circles, MI3 (signature: your share walked as a serpentine path through the planting plan; CU4, TX9 and CD8 dropped) |
 | `cta-indie-game` | cta | detailed | dark | An indie game studio asking players to wishlist and try the demo. | TX11 bleeding wordmark, CU5 grid ripple, MI1, MD4 |
 | `footer-record-label` | footer | detailed | dark | The footer of an independent vinyl record label. | SC8 footer uncover, HV1 text roll, CU6 elastic string divider |
 | `footer-botanic-garden` | footer | detailed | light | The footer of a city botanic garden with opening hours and memberships. | SC8, HV2 underline sweep, SC16 |
@@ -60,7 +60,7 @@ The label is derived from `design.md`: a non-empty `libraries` list means red; `
 | `nav-bakery` | nav | simple | light | Header and menu for a neighbourhood bakery (hours, menu, order ahead). | CSS only: details/summary menu, HV2 in CSS |
 | `nav-city-services` | nav | simple | light | Header with a services mega-menu for a city council website. | vanilla: NV3 mega-menu with hover intent and full keyboard support |
 | `nav-fashion-label` | nav | detailed | any | Header and full-screen menu for an independent fashion label. | NV1 full-screen reversible timeline, HV1, MI2, lenis.stop |
-| `nav-concert-hall` | nav | detailed | dark | Header and mega-menu for a concert hall's season site. | NV3 hover intent, MD5 list-synced media swap, NV5 hide-on-scroll |
+| `nav-concert-hall` | nav | detailed | light | Header and mega-menu for a concert hall's season site. | NV3 hover intent, MD5 list-synced media swap, NV5 hide-on-scroll |
 | `nav-yacht-builder` | nav | detailed | light | Header for a sailing-yacht builder with section navigation. | NV2 morphing pill, NV4 sliding indicator, NV6 section spy |
 | `story-solar-coop` | story | simple | light | A community solar cooperative explaining how a shared roof array pays members. | vanilla: CSS sticky stage + JS progress (SC3 without libraries) |
 | `story-oyster-farm` | story | simple | light | An oyster farm telling one oyster's three years from seed to plate. | CSS scroll-driven animations (animation-timeline) with a static fallback, no JS |
@@ -77,7 +77,7 @@ The label is derived from `design.md`: a non-empty `libraries` list means red; `
 | `faq-camper-rental` | faq | detailed | any | Questions for a camper-van rental company. | CD6 accordion real height, NV6 section spy, MI2 |
 | `faq-language-school` | faq | detailed | light | Questions for a language school's immersion courses. | TX1, CD6, CU1, TX6 |
 | `faq-esports-arena` | faq | detailed | dark | Questions for an esports arena's tournament weekend. | TX4 scramble labels, CD6, SC17 |
-| `contact-plumber` | contact | simple | light | Contact and call-out request for a local plumbing business. | vanilla: form validation and in-page confirmation |
+| `contact-plumber` | contact | simple | light | Contact and call-out request for a local plumbing business. | vanilla: form validation and in-page confirmation (signature: an under-sink compression joint drawn in five urgency states, water growing out of the fitting; the boiler pressure gauge was dropped) |
 | `contact-wedding-florist` | contact | simple | light | Enquiry form for a wedding florist. | CSS-first with minimal vanilla JS for the in-page result |
 | `contact-recording-studio` | contact | detailed | dark | Booking enquiries for a recording studio. | MI4, HV5, CD8 hold to send, MI6 |
 | `contact-expedition-outfitter` | contact | detailed | any | Trip-planning enquiry for a polar expedition outfitter. | TR4 multi-step, MI3, CU4 |
