@@ -1,0 +1,993 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ask the guest book</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playwrite+CL:wght@100..400&family=Playwrite+DE+Grund:wght@100..400&family=Playwrite+GB+S:wght@100..400&family=Playwrite+NL:wght@100..400&family=Playwrite+US+Trad:wght@100..400&family=Reddit+Sans:wght@400..600&family=Reddit+Sans+Condensed:wght@500..700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Colour: one meaning each */
+    --ground: #2F5446;     /* glazed Kachelofen tile of the stove bench the book lies on: the section field */
+    --paper: #FBFBF9;      /* guest book page; also all chrome on the ground (8.2:1 on it) */
+    --slate: #22303A;      /* everything printed on paper (13.1:1); rail question text on the pink (7.9:1) */
+    --ink: #34389C;        /* Pelikan royal blue, violet cast: handwriting, focus inside pages, submit fill (9.3:1 on paper) */
+    --stamp: #6B3D88;      /* stamp-pad violet: the house stamp only (7.7:1 on paper) */
+    --marker: #F7B2CF;     /* Marta's Alpenrose-pink highlighter: answers and their questions only (ink on it 5.6:1, slate 7.9:1) */
+    --slate-soft: #4E5E68; /* printed column heads, field rules on paper (6.5:1) */
+    --mist: #A9BDB3;       /* paper seen through the glaze: leader lines, resting link rules on the ground (4.3:1) */
+    --rule: #C4D0D6;       /* ruling behind handwriting only, never a control boundary */
+    --shade: var(--slate); /* a covered page settles a little; its edge stays paper */
+    --shade-max: .08;     /* the page edges carry the depth; the shade only settles a covered page */
+
+    /* Type */
+    --font-print: 'Reddit Sans', 'Segoe UI', system-ui, sans-serif;
+    --font-cond: 'Reddit Sans Condensed', 'Reddit Sans', 'Arial Narrow', sans-serif; /* H2, column heads, labels */
+    --hand-nl: 'Playwrite NL', 'Segoe Print', 'Bradley Hand', cursive;
+    --hand-gb: 'Playwrite GB S', 'Segoe Print', 'Bradley Hand', cursive;
+    --hand-us: 'Playwrite US Trad', 'Segoe Print', 'Bradley Hand', cursive;
+    --hand-cl: 'Playwrite CL', 'Segoe Print', 'Bradley Hand', cursive;
+    --hand-de: 'Playwrite DE Grund', 'Segoe Print', 'Bradley Hand', cursive;
+    --t-xs: .875rem;       /* 15px: column heads, peak labels, notes, counter */
+    --t-sm: 1rem;          /* helper and status */
+    --t-base: 1.0625rem;   /* intro, hotel line */
+    --t-md: 1.3125rem;     /* rail questions */
+    --t-xl: clamp(2.4rem, 1.6rem + 3.6vw, 4.5rem); /* one line on phones (41px), from 530px the same as before */
+    --t-hand: clamp(1.1875rem, 1rem + .55vw, 1.4375rem);
+    --t-hand-sm: 1.0625rem;
+    --lh-hand: 1.8;
+    --hand-wght: 350;
+
+    /* Space (4px base at 16px; root is 17px) */
+    --s-1: .25rem; --s-2: .5rem; --s-3: .75rem; --s-4: 1rem; --s-5: 1.5rem;
+    --s-6: 2rem; --s-7: 3rem; --s-8: 4.5rem; --s-9: 7rem;
+    --gutter: 16px;
+    --max: 76rem;
+    --page-pad: var(--s-5);
+    --stack-top: 1rem;
+    --stack-step: .75rem;
+    --stack-gap: var(--s-7);
+    --stamp-size: 96px;
+    --board-h: 96px;
+    --col-room: 3.5rem;          /* Room column on a written page */
+    --col-from-form: 7rem;       /* the blank page's selects need their own widths */
+    --col-room-form: 7.5rem;
+    --btn-pad: .65em 1.35em;
+    --focus-margin: 1.5rem;      /* scroll-margin, so a focus ring is never clipped at the viewport edge */
+
+    /* The highlighter band, measured from the baseline */
+    --mk-up: .62em;
+    --mk-down: .26em;
+
+    /* Motion */
+    --ease-out: cubic-bezier(.16, 1, .3, 1);       /* expo.out */
+    --ease-under: cubic-bezier(.35, 0, 0, 1);      /* HV2 underline */
+    --dur-under: .45s;
+    --dur-hover: .2s;
+    --dur-rule: .3s;
+    --dur-fill-in: .35s;
+    --dur-fill-out: .25s;
+    --dur-press: .12s;
+    --dur-release: .4s;
+    --dur-err: .25s;
+  }
+  /* Registered so the script reads the unclamped stack offset in px (the rail spy must not move when a page grows) */
+  @property --stack-top { syntax: '<length>'; inherits: true; initial-value: 0px; }
+  @property --stack-step { syntax: '<length>'; inherits: true; initial-value: 0px; }
+  @media (min-width: 600px) { :root { --gutter: 1.5rem; --board-h: 180px; } }
+  @media (min-width: 1024px) {
+    :root {
+      --gutter: 2.5rem; --page-pad: var(--s-6); --stack-top: 6rem; --stack-step: 1.5rem;
+      --stack-gap: var(--s-8); --stamp-size: 104px; --board-h: 150px;
+    }
+  }
+
+  /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { font-size: 106.25%; -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--ground); color: var(--paper);
+    font: 400 var(--t-base)/1.55 var(--font-print);
+  }
+  :focus-visible { outline: 2px solid var(--paper); outline-offset: 3px; }
+  .page :focus-visible { outline-color: var(--ink); } /* on paper the ring is ink */
+  a, button, input, select, textarea { scroll-margin-block: var(--focus-margin); }
+  mark { background: none; color: inherit; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  .gb { overflow-x: clip; padding: var(--s-7) 0 var(--s-9); }
+  .wrap { max-width: var(--max); margin: 0 auto; padding: 0 var(--gutter); }
+
+  /* ---------- Hotel line and panorama board ---------- */
+  .hotel { margin: 0; font-weight: 500; max-width: 34em; }
+  .board { margin: var(--s-4) 0 0; }
+  /* A panorama board (Panoramatafel) drawn in paper lines on the tile: names above the summits on leader lines */
+  .board-frame { position: relative; height: var(--board-h); }
+  .ridge { display: block; width: 100%; height: 100%; overflow: visible; }
+  .ridge .far { fill: none; stroke: var(--paper); stroke-width: 1.5; stroke-linejoin: round; }
+  .ridge .lead { fill: none; stroke: var(--mist); stroke-width: 1; }
+  .peaks {
+    position: absolute; inset: 0; margin: 0; padding: 0; list-style: none; pointer-events: none;
+    font-size: var(--t-xs); line-height: 1.25; font-family: var(--font-cond);
+  }
+  .peaks li { position: absolute; left: var(--lx); bottom: 70%; padding-left: .2em; white-space: nowrap; }
+  .peaks b { display: block; font-weight: 600; }
+  .lead-narrow, .lead-xs { display: none; }
+  @media (max-width: 599px) {
+    .peaks li { left: var(--lxn); }
+    .peaks b { width: min-content; white-space: normal; } /* "Hinterer Ferner" on two lines, so five names fit */
+    .lead-wide { display: none; }
+    .lead-narrow { display: inline; }
+  }
+  /* Phones: three peaks named, the other two left as ridge (all five stay in the drawing's label) */
+  @media (max-width: 419px) {
+    .peaks li { left: var(--lxs); }
+    .peaks .xs-off { display: none; }
+    .peaks b { width: auto; white-space: nowrap; }
+    .lead-narrow { display: none; }
+    .lead-xs { display: inline; }
+  }
+
+  /* ---------- Book: rail + stack ---------- */
+  .book { display: grid; grid-template-columns: minmax(0, 1fr); margin-top: var(--s-7); }
+  .rail { display: contents; }
+  .stack { margin-top: var(--s-6); } /* on phones a page edge shows above the fold */
+
+  #gb-title {
+    margin: 0; font-size: var(--t-xl); line-height: .95; font-weight: 600;
+    font-family: var(--font-cond); letter-spacing: -.01em; text-wrap: balance;
+  }
+  #gb-title > div { padding-bottom: .12em; margin-bottom: -.12em; } /* SplitText masks: keep descenders */
+  .intro { margin: var(--s-5) 0 0; max-width: 34em; }
+
+  .qs { margin-top: var(--s-6); --mk-up: .8em; --mk-down: .3em; } /* on the dark ground the band covers caps and descenders, so slate text sits wholly on pink */
+  .qs ul { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-3); }
+  .qs a, .mail a {
+    position: relative; display: inline-block; color: inherit; text-decoration: none; padding-bottom: .12em;
+    /* Resting cue on every pointer: a 1px rule says "link"; HV2 draws the full line over it */
+    background: linear-gradient(var(--rest, var(--mist)), var(--rest, var(--mist))) 0 100% / 100% 1px no-repeat;
+  }
+  .qs li a[aria-current] { background: none; } /* the current question carries only its mark */
+  .qs a { font-size: var(--t-md); line-height: 1.3; font-weight: 500; }
+  .qs .add-row { margin: var(--s-6) 0 0; }
+  .qs .add { font-weight: 600; --rest: var(--paper); } /* the one action, not a question: heavier, full resting rule */
+
+  /* HV2: the underline enters from the left and leaves to the right */
+  .qs a::after, .mail a::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: max(2px, .07em); background: var(--paper);
+    transform: scaleX(0); transform-origin: 100% 50%;
+    transition: transform var(--dur-under) var(--ease-under);
+  }
+  .qs a:focus-visible::after, .mail a:focus-visible::after,
+  .qs .add[aria-current]::after { transform: scaleX(1); transform-origin: 0 50%; }
+  @media (hover: hover) and (pointer: fine) {
+    .qs a:hover::after, .mail a:hover::after { transform: scaleX(1); transform-origin: 0 50%; }
+  }
+  /* Touch: the tap itself draws the line before the glide starts */
+  .qs a:active::after, .mail a:active::after { transform: scaleX(1); transform-origin: 0 50%; transition-duration: var(--dur-press); }
+
+  .mail { margin: var(--s-6) 0 0; font-size: var(--t-sm); max-width: 24em; }
+  .mail a { font-weight: 500; white-space: nowrap; }
+
+  /* Below 1024px the rail scrolls away and the page notes carry the questions: a tighter list, so the first page lands on screen */
+  @media (max-width: 1023px) {
+    .qs { margin-top: var(--s-5); }
+    .qs a { font-size: var(--t-sm); line-height: 1.25; }
+    .qs ul { gap: var(--s-1); }
+    .qs .add-row { margin-top: var(--s-4); }
+  }
+  @media (max-width: 599px) {
+    .gb { padding-top: var(--s-5); }
+    .book { margin-top: var(--s-5); }
+    .stack { margin-top: var(--s-5); }
+  }
+  @media (min-width: 1024px) {
+    .book { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--s-6); align-items: start; margin-top: var(--s-8); }
+    .rail { display: block; grid-column: 1 / span 4; grid-row: 1; }
+    .stack { grid-column: 6 / -1; grid-row: 1; margin-top: 0; }
+    .mail { grid-column: 6 / -1; grid-row: 2; margin-top: var(--s-7); } /* after the blank page, under the stack: the sticky rail never covers it */
+  }
+  @media (min-width: 1024px) and (min-height: 641px) {
+    .rail { position: sticky; top: min(var(--stack-top), calc(100svh - var(--h, 0px) - var(--s-4))); }
+  }
+
+  /* ---------- The highlighter (TX5). Static unless the motion branch runs ---------- */
+  .mk {
+    text-decoration: underline var(--marker);
+    text-decoration-thickness: calc(var(--mk-up) + var(--mk-down));
+    text-underline-offset: calc(-1 * var(--mk-up));
+    text-decoration-skip-ink: none;
+  }
+  .qs .mk { text-decoration: none; }
+  .qs a[aria-current] .mk { text-decoration: underline var(--marker); text-decoration-thickness: calc(var(--mk-up) + var(--mk-down)); }
+  html:not(.motion) .qs a[aria-current]:has(.mk) { color: var(--slate); } /* paper on pink fails; "Add your page" has no mark */
+  html.motion .mk, html.motion .qs a[aria-current] .mk { text-decoration: none; position: relative; z-index: 0; }
+  .mk .w { display: inline-block; position: relative; }
+  .band {
+    position: absolute; z-index: -1; left: -.06em; right: -.3em; overflow: hidden;
+    top: var(--band-top, .73em); height: calc(var(--mk-up) + var(--mk-down));
+    background: var(--marker); clip-path: inset(0 100% 0 0);
+  }
+  /* The script marks each line's first (.ls) and last (.le) word: the stroke stops at the last glyph, with a felt-tip's chisel ends,
+     and every other line sits 1px lower (.lo), as a hand would draw it */
+  .ls > .band { left: -.1em; border-top-left-radius: .1em; border-bottom-left-radius: .12em; }
+  .le > .band { right: -.08em; border-top-right-radius: .35em; border-bottom-right-radius: .3em; }
+  .lo > .band { translate: 0 1px; }
+  .lo > .band > span { translate: 0 -1px; }
+  /* On the tile, paper on pink fails and slate on green fails: a rail band rides above the word and carries a slate copy of it,
+     so the clip shows every glyph either paper on green or slate on pink, never between */
+  .qs .band { z-index: 1; }
+  .band > span { position: absolute; left: .06em; top: calc(-1 * var(--band-top)); white-space: nowrap; color: var(--slate); }
+
+  /* ---------- Pages (SC6 stacked sticky cards) ---------- */
+  .sent { height: 0; }
+  .page {
+    /* --h (set by the script) keeps a tall page from sticking before its bottom is on screen */
+    position: sticky; top: min(calc(var(--stack-top) + var(--i, 0) * var(--stack-step)), calc(100svh - var(--h, 0px) - var(--s-4)));
+    margin-bottom: var(--stack-gap); padding: var(--page-pad);
+    min-height: var(--min, 0); /* never shorter than a page under it, so covered pages show only their top edges */
+    background: var(--paper); color: var(--slate); border: 1px solid var(--rule); border-radius: 2px;
+    transform-origin: 50% 0; container-type: inline-size;
+    display: flex; flex-direction: column;
+  }
+  .page::after {
+    content: ''; position: absolute; inset: -1px; border-radius: inherit; pointer-events: none;
+    background: var(--shade); opacity: calc(var(--dim, 0) * var(--shade-max));
+  }
+  /* A covering page's top reads as a page edge: its own hairline plus a paler line at the foot of the strip it covers */
+  .page ~ .page {
+    border-top-color: color-mix(in srgb, var(--slate-soft) 30%, var(--paper));
+    box-shadow: 0 -1px 0 color-mix(in srgb, var(--slate-soft) 25%, var(--paper));
+  }
+  .page:last-child { margin-bottom: 0; }
+  @media (max-height: 640px) { .page { position: relative; top: auto; } }
+
+  .entry {
+    display: grid; margin: 0; gap: var(--s-4) var(--s-4);
+    /* Narrow: two even columns, but the first widens when a written date needs it, so dates keep one line */
+    grid-template-columns: fit-content(50%) minmax(0, 1fr);
+  }
+  .entry > div { min-width: 0; }
+  .c-date { order: 1; } .c-room { order: 2; } .c-name { order: 3; } .c-from { order: 4; }
+  .entry > .c-date { min-width: max-content; } /* its written width counts, so fit-content can widen the column */
+  .c-date dd, .c-date .hand { white-space: nowrap; }
+  .c-rem, .c-help { order: 5; grid-column: 1 / -1; }
+  @container (min-width: 560px) {
+    /* Date and Name take their written width (Name capped), so a hand rarely wraps in the head row */
+    .entry { grid-template-columns: max-content fit-content(45%) minmax(0, 1fr) var(--col-room); }
+    .c-name { order: 2; } .c-from { order: 3; } .c-room { order: 4; }
+    /* The blank page: its selects need room for "Somewhere else" and "Day visit" */
+    .page--form .entry { grid-template-columns: max-content minmax(0, 1fr) minmax(var(--col-from-form), auto) minmax(var(--col-room-form), auto); }
+  }
+  dt, .colhead, label.colhead {
+    display: block; margin: 0 0 var(--s-1);
+    font: 600 var(--t-xs)/1.3 var(--font-cond); color: var(--slate-soft);
+  }
+  dd, .hand {
+    margin: 0; font-family: var(--hand); font-weight: var(--hand-wght); color: var(--ink); overflow-wrap: anywhere;
+    font-size: var(--t-hand-sm); line-height: var(--lh-hand);
+    /* Ruled line on every handwritten baseline (baseline sits at .75lh in all five hands) */
+    background: repeating-linear-gradient(to bottom, transparent 0 .75lh, var(--rule) .75lh calc(.75lh + 1px), transparent calc(.75lh + 1px) 1lh);
+  }
+  dd h3 { font: inherit; margin: 0; }
+  .c-rem dd { font-size: var(--t-hand); }
+  .c-rem p { margin: 0; overflow-wrap: anywhere; }
+  .page--yours .c-rem p { white-space: pre-line; }
+
+  .foot { display: flex; align-items: flex-end; gap: var(--s-4); margin-top: auto; padding-top: var(--s-2); }
+  /* Your page is stretched to cover the stack: its Remarks ruling runs on to the foot, like unused lines in the book */
+  .page--yours .entry { flex: 1; grid-template-rows: auto auto 1fr; }
+  .page--yours .c-rem { display: flex; flex-direction: column; }
+  .page--yours .c-rem dd { flex: 1; }
+  @container (min-width: 560px) { .page--yours .entry { grid-template-rows: auto 1fr; } }
+  .marked-for { /* below 1024px the question's half of the stroke, printed at the top so it comes before the answer */
+    margin: 0 0 var(--s-4);
+    font: 500 var(--t-xs)/1.3 var(--font-cond);
+  }
+  /* The question at the rail's scale and weight, on its own line, so the pink has the same weight as on desktop */
+  .marked-for .mk { display: block; width: fit-content; margin-top: var(--s-1); font: 500 var(--t-md)/1.3 var(--font-print); }
+  @media (min-width: 1024px) { .marked-for { display: none; } }
+
+  .stamp {
+    display: block; flex: none; margin-left: auto; width: var(--stamp-size); height: var(--stamp-size);
+    color: var(--stamp); opacity: .88; mix-blend-mode: multiply; transform: rotate(var(--rot, 0deg));
+    font-family: var(--font-cond); font-variant-numeric: tabular-nums; pointer-events: none;
+  }
+
+  /* ---------- The blank page: a form on the book's ruling ---------- */
+  .form-title { margin: 0 0 var(--s-5); font-size: var(--t-md); line-height: 1.3; font-weight: 600; font-family: var(--font-cond); }
+  /* The blank page stretches to cover the stack: its Remarks lines run on to the foot, waiting to be written on */
+  .page--form form { flex: 1; display: flex; flex-direction: column; }
+  .page--form .entry { flex: 1; grid-template-rows: auto auto auto 1fr; }
+  @container (min-width: 560px) { .page--form .entry { grid-template-rows: auto auto 1fr; } }
+  .page--form .c-rem, .page--form .c-rem .ctl { display: flex; flex-direction: column; }
+  .page--form .c-rem .ctl, .page--form textarea { flex: 1; }
+  .ctl { position: relative; display: block; }
+  .ctl::before, .ctl::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; pointer-events: none; }
+  .ctl::before { height: 1px; background: var(--slate-soft); transition: background-color var(--dur-hover); }
+  .ctl::after {
+    height: 2px; background: var(--ink); transform: scaleX(0); transform-origin: 0 50%;
+    transition: transform var(--dur-rule) var(--ease-out);
+  }
+  .ctl:focus-within::after { transform: scaleX(1); }
+  @media (hover: hover) and (pointer: fine) { .ctl:hover::before { background: var(--slate); } }
+  input, select, textarea {
+    display: block; width: 100%; margin: 0; border: 0; border-radius: 0; background: transparent;
+    color: var(--ink); padding: 0 0 2px;
+  }
+  .hand-field { font: var(--hand-wght) var(--t-hand-sm)/var(--lh-hand) var(--hand); }
+  textarea.hand-field {
+    font-size: var(--t-hand); resize: none; min-height: calc(4lh + 2px);
+    field-sizing: content; padding: 0;
+    background: repeating-linear-gradient(to bottom, transparent 0 .75lh, var(--rule) .75lh calc(.75lh + 1px), transparent calc(.75lh + 1px) 1lh);
+    background-attachment: local;
+  }
+  select {
+    appearance: none; font: 500 var(--t-base)/1.55 var(--font-print); color: var(--slate);
+    padding: .3em 1.3em calc(.25em + 2px) 0; cursor: pointer;
+    background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+    background-position: calc(100% - 9px) 55%, calc(100% - 4px) 55%;
+    background-size: 5px 5px; background-repeat: no-repeat;
+  }
+  /* Narrow blank page: Name and From take full rows, so a long name fits and "Pick a country" clears its arrow */
+  @container (max-width: 559px) { .page--form .c-name, .page--form .c-from { grid-column: 1 / -1; } }
+  #f-date { display: block; padding-bottom: 2px; background: none; border-bottom: 1px solid var(--rule); }
+  .ctl:has([aria-invalid="true"])::before { background: var(--ink); }
+
+  .err { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--dur-err) var(--ease-out); }
+  .err.open { grid-template-rows: 1fr; }
+  /* Under its own field, in the ink of the rule above it */
+  .err > p { overflow: hidden; min-height: 0; margin: 0; font: 500 var(--t-xs)/1.3 var(--font-print); color: var(--ink); }
+  .err.open > p { padding-top: var(--s-1); }
+  .help { margin: 0; font-size: var(--t-sm); line-height: 1.45; max-width: 36em; }
+  .count { margin: var(--s-3) 0 0; display: block; font: 500 var(--t-xs)/1.3 var(--font-cond); font-variant-numeric: tabular-nums; color: var(--slate-soft); }
+
+  .btn {
+    position: relative; isolation: isolate; overflow: hidden; margin-top: var(--s-5);
+    display: inline-block; padding: var(--btn-pad); border: 2px solid var(--ink); border-radius: 2px;
+    background: transparent; color: var(--ink); cursor: pointer;
+    font: 600 var(--t-base)/1.2 var(--font-print);
+    transition: transform var(--dur-release) var(--ease-out), color var(--dur-fill-out) var(--ease-out);
+  }
+  .btn::before {
+    content: ''; position: absolute; inset: 0; z-index: -1; background: var(--ink);
+    transform: scaleX(0); transform-origin: var(--from, left) 50%;
+    transition: transform var(--dur-fill-out) var(--ease-out);
+  }
+  .btn:focus-visible { color: var(--paper); }
+  .btn:focus-visible::before { transform: scaleX(1); transform-origin: left 50%; transition-duration: var(--dur-fill-in); }
+  @media (hover: hover) and (pointer: fine) {
+    .btn:hover { color: var(--paper); transition-duration: var(--dur-release), var(--dur-fill-in); }
+    .btn:hover::before { transform: scaleX(1); transition-duration: var(--dur-fill-in); }
+  }
+  .btn:active { transform: scale(.97); transition-duration: var(--dur-press); }
+
+  .status { margin: var(--s-4) 0 0; font-size: var(--t-sm); max-width: 36em; }
+  .status:empty { display: none; }
+  .status a { color: var(--ink); font-weight: 600; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0s !important; }
+    .mail a::after { transform: scaleX(1); }
+    .btn:active { transform: none; }
+  }
+</style>
+</head>
+<body>
+<svg class="sr" width="0" height="0" aria-hidden="true" focusable="false">
+  <defs>
+    <filter id="rough" x="-8%" y="-8%" width="116%" height="116%">
+      <feTurbulence type="fractalNoise" baseFrequency=".8" numOctaves="2" seed="4" result="warp"/>
+      <feDisplacementMap in="SourceGraphic" in2="warp" scale="2" xChannelSelector="R" yChannelSelector="G" result="moved"/>
+      <feTurbulence type="fractalNoise" baseFrequency="1.4" numOctaves="1" seed="9" result="grain"/>
+      <feColorMatrix in="grain" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -3 2.2" result="holes"/>
+      <feComposite in="moved" in2="holes" operator="in"/>
+    </filter>
+    <path id="arc-top" d="M 17 60 A 43 43 0 0 1 103 60"/>
+    <path id="arc-bot" d="M 9 60 A 51 51 0 0 0 111 60"/>
+    <symbol id="stamp-ring" viewBox="0 0 120 120">
+      <circle cx="60" cy="60" r="57" fill="none" stroke="currentColor" stroke-width="2.8"/>
+      <circle cx="60" cy="60" r="37" fill="none" stroke="currentColor" stroke-width="1.2"/>
+      <text fill="currentColor" font-size="11" font-weight="600" letter-spacing="1.2"><textPath href="#arc-top" startOffset="50%" text-anchor="middle">GASTHOF ZIRMEGG</textPath></text>
+      <text fill="currentColor" font-size="10" font-weight="600" letter-spacing="1.4"><textPath href="#arc-bot" startOffset="50%" text-anchor="middle">LÄRCHTAL TIROL</textPath></text>
+      <path d="M 9 60 h 6 M 105 60 h 6" stroke="currentColor" stroke-width="1.6"/>
+    </symbol>
+  </defs>
+</svg>
+
+<main>
+<section class="gb" aria-labelledby="gb-title">
+  <div class="wrap">
+    <header class="top">
+      <p class="hotel">Gasthof Zirmegg, 1,780 m, at the head of the Lärchtal, Tyrol</p>
+      <figure class="board">
+        <div class="board-frame">
+          <svg class="ridge" viewBox="0 0 1200 200" preserveAspectRatio="none" role="img" aria-label="The view from the terrace: Zirmkopf 2,348 m, Lärchkogel 2,611 m, Ruitspitze 3,104 m, Hinterer Ferner 3,290 m and Grubjoch 2,890 m.">
+            <path class="far" vector-effect="non-scaling-stroke" d="M0 177.5L28 172.3L52 174.9L80 163.6L104 156.7L118 152.3L130 148L142 151.5L160 155.8L176 154.1L196 163.6L214 167.1L236 160.1L262 153.2L290 146.3L318 139.3L338 134.1L352 131.5L360 128.9L372 132.4L392 138.5L414 141.1L436 137.6L456 142.8L482 149.7L506 153.2L526 148L548 134.1L566 123.7L586 113.3L604 108.1L620 101.2L632 96.9L640 94.3L648 97.7L660 104.7L676 111.6L694 116.8L712 115.1L730 118.5L748 113.3L770 106.4L792 99.5L812 93.4L844 88.2L858 85.6L870 84.7L884 86.5L898 89.1L912 93.4L932 101.2L952 109.9L972 118.5L988 123.7L1004 120.3L1022 115.1L1042 109.9L1060 105.5L1070 104.7L1080 107.3L1096 113.3L1114 122L1136 130.7L1160 139.3L1182 144.5L1200 149.7"/>
+            <path class="lead lead-wide" vector-effect="non-scaling-stroke" d="M72 61L130 148M300 61L360 128.9M588 61L640 94.3M840 61L870 84.7M1044 61L1070 104.7"/>
+            <path class="lead lead-narrow" vector-effect="non-scaling-stroke" d="M0 61L130 148M228 61L360 128.9M492 61L640 94.3M744 61L870 84.7M960 61L1070 104.7"/>
+            <path class="lead lead-xs" vector-effect="non-scaling-stroke" d="M0 61L130 148M408 61L640 94.3M768 61L870 84.7"/>
+          </svg>
+          <ol class="peaks" aria-hidden="true">
+          <li style="--lx:6%;--lxn:0%;--lxs:0%"><b>Zirmkopf</b>2,348 m</li>
+          <li class="xs-off" style="--lx:25%;--lxn:19%"><b>Lärchkogel</b>2,611 m</li>
+          <li style="--lx:49%;--lxn:41%;--lxs:34%"><b>Ruitspitze</b>3,104 m</li>
+          <li style="--lx:70%;--lxn:62%;--lxs:64%"><b>Hinterer Ferner</b>3,290 m</li>
+          <li class="xs-off" style="--lx:87%;--lxn:80%"><b>Grubjoch</b>2,890 m</li>
+          </ol>
+        </div>
+      </figure>
+    </header>
+
+    <div class="book">
+      <div class="rail">
+        <h2 id="gb-title">Ask the guest book</h2>
+        <p class="intro">Before people book, they ring us with the same five questions. Our guests have usually answered them better than we could, in the book on the stove bench in the Stube. When Marta finds such a line, she marks it in pink.</p>
+        <nav class="qs" aria-label="Questions our guests answered">
+          <ul>
+            <li><a href="#page-de-vries"><span class="mk">Will the children be bored?</span></a></li>
+            <li><a href="#page-holloway"><span class="mk">Can we get there without a car?</span></a></li>
+            <li><a href="#page-ostrowski"><span class="mk">What if it rains all week?</span></a></li>
+            <li><a href="#page-rojas"><span class="mk">Is it really quiet at night?</span></a></li>
+            <li><a href="#page-feld"><span class="mk">Is the food worth staying in for?</span></a></li>
+          </ul>
+          <p class="add-row"><a class="add" href="#your-page">Add your page</a></p>
+        </nav>
+      </div>
+
+      <div class="stack" id="stack">
+        <div class="sent" aria-hidden="true"></div>
+        <article class="page" id="page-de-vries" tabindex="-1" aria-labelledby="n-de-vries" style="--i:0;--hand:var(--hand-nl);--rot:-4deg">
+          <p class="marked-for">Marked for: <span class="mk">Will the children be bored?</span></p>
+          <dl class="entry">
+            <div class="c-date"><dt>Date</dt><dd><time datetime="2026-02-14">14-2-2026</time></dd></div>
+            <div class="c-name"><dt>Name</dt><dd><h3 id="n-de-vries">The de Vries family</h3></dd></div>
+            <div class="c-from"><dt>From</dt><dd>Utrecht, NL</dd></div>
+            <div class="c-room"><dt>Room</dt><dd>10</dd></div>
+            <div class="c-rem"><dt>Remarks</dt><dd><p>Bram (8) and Noor (5) wrote this part: <mark class="mk">we fed the goats every morning and built a snow cave behind the woodshed</mark>. Papa here: I skied twice in a week and nobody once asked for a tablet. Mama read four books by the stove.</p></dd></div>
+          </dl>
+          <div class="foot">
+            <svg class="stamp" viewBox="0 0 120 120" aria-hidden="true" focusable="false"><g filter="url(#rough)"><use href="#stamp-ring" width="120" height="120"/><text x="60" y="58" text-anchor="middle" fill="currentColor" font-size="15" font-weight="700">1780 m</text><path d="M38 65h44" stroke="currentColor" stroke-width="1"/><text x="60" y="78" text-anchor="middle" fill="currentColor" font-size="10" font-weight="600" letter-spacing=".5">14 FEB 2026</text></g></svg>
+          </div>
+        </article>
+
+        <div class="sent" aria-hidden="true"></div>
+        <article class="page" id="page-holloway" tabindex="-1" aria-labelledby="n-holloway" style="--i:1;--hand:var(--hand-gb);--rot:3deg">
+          <p class="marked-for">Marked for: <span class="mk">Can we get there without a car?</span></p>
+          <dl class="entry">
+            <div class="c-date"><dt>Date</dt><dd><time datetime="2026-07-03">3rd July 2026</time></dd></div>
+            <div class="c-name"><dt>Name</dt><dd><h3 id="n-holloway">Peter and Ann Holloway</h3></dd></div>
+            <div class="c-from"><dt>From</dt><dd>Kendal, England</dd></div>
+            <div class="c-room"><dt>Room</dt><dd>3</dd></div>
+            <div class="c-rem"><dt>Remarks</dt><dd><p>Train to Landeck, then the post bus to the end of the road, and <mark class="mk">Sepp was waiting at the stop with the luggage cart</mark>. Nine days without a car and we never missed one. Coming back in October for the larches.</p></dd></div>
+          </dl>
+          <div class="foot">
+            <svg class="stamp" viewBox="0 0 120 120" aria-hidden="true" focusable="false"><g filter="url(#rough)"><use href="#stamp-ring" width="120" height="120"/><text x="60" y="58" text-anchor="middle" fill="currentColor" font-size="15" font-weight="700">1780 m</text><path d="M38 65h44" stroke="currentColor" stroke-width="1"/><text x="60" y="78" text-anchor="middle" fill="currentColor" font-size="10" font-weight="600" letter-spacing=".5">03 JUL 2026</text></g></svg>
+          </div>
+        </article>
+
+        <div class="sent" aria-hidden="true"></div>
+        <article class="page" id="page-ostrowski" tabindex="-1" aria-labelledby="n-ostrowski" style="--i:2;--hand:var(--hand-us);--rot:-7deg">
+          <p class="marked-for">Marked for: <span class="mk">What if it rains all week?</span></p>
+          <dl class="entry">
+            <div class="c-date"><dt>Date</dt><dd><time datetime="2026-08-22">Aug 22, 2026</time></dd></div>
+            <div class="c-name"><dt>Name</dt><dd><h3 id="n-ostrowski">Dana and Mike Ostrowski</h3></dd></div>
+            <div class="c-from"><dt>From</dt><dd>Duluth, Minnesota</dd></div>
+            <div class="c-room"><dt>Room</dt><dd>9</dd></div>
+            <div class="c-rem"><dt>Remarks</dt><dd><p>Five days of rain out of six. <mark class="mk">We read our way through the shelf in the Stube</mark> and learned to play Watten, badly. Sepp's rain route up to the Ruitalm was still the best walk of our whole summer.</p></dd></div>
+          </dl>
+          <div class="foot">
+            <svg class="stamp" viewBox="0 0 120 120" aria-hidden="true" focusable="false"><g filter="url(#rough)"><use href="#stamp-ring" width="120" height="120"/><text x="60" y="58" text-anchor="middle" fill="currentColor" font-size="15" font-weight="700">1780 m</text><path d="M38 65h44" stroke="currentColor" stroke-width="1"/><text x="60" y="78" text-anchor="middle" fill="currentColor" font-size="10" font-weight="600" letter-spacing=".5">22 AUG 2026</text></g></svg>
+          </div>
+        </article>
+
+        <div class="sent" aria-hidden="true"></div>
+        <article class="page" id="page-rojas" tabindex="-1" aria-labelledby="n-rojas" style="--i:3;--hand:var(--hand-cl);--rot:5deg">
+          <p class="marked-for">Marked for: <span class="mk">Is it really quiet at night?</span></p>
+          <dl class="entry">
+            <div class="c-date"><dt>Date</dt><dd><time datetime="2026-09-09">9/9/2026</time></dd></div>
+            <div class="c-name"><dt>Name</dt><dd><h3 id="n-rojas">Valentina Rojas</h3></dd></div>
+            <div class="c-from"><dt>From</dt><dd>Puerto Varas, Chile</dd></div>
+            <div class="c-room"><dt>Room</dt><dd>7</dd></div>
+            <div class="c-rem"><dt>Remarks</dt><dd><p>I came to finish a translation and finished it in four days. <mark class="mk">At night the only sound is the stream under room 7</mark>. The cows pass my window at 6:40, every morning, exactly. Gracias, Marta, for the thermos of tea at my door.</p></dd></div>
+          </dl>
+          <div class="foot">
+            <svg class="stamp" viewBox="0 0 120 120" aria-hidden="true" focusable="false"><g filter="url(#rough)"><use href="#stamp-ring" width="120" height="120"/><text x="60" y="58" text-anchor="middle" fill="currentColor" font-size="15" font-weight="700">1780 m</text><path d="M38 65h44" stroke="currentColor" stroke-width="1"/><text x="60" y="78" text-anchor="middle" fill="currentColor" font-size="10" font-weight="600" letter-spacing=".5">09 SEP 2026</text></g></svg>
+          </div>
+        </article>
+
+        <div class="sent" aria-hidden="true"></div>
+        <article class="page" id="page-feld" tabindex="-1" aria-labelledby="n-feld" style="--i:4;--hand:var(--hand-de);--rot:-2deg">
+          <p class="marked-for">Marked for: <span class="mk">Is the food worth staying in for?</span></p>
+          <dl class="entry">
+            <div class="c-date"><dt>Date</dt><dd><time datetime="2026-10-11">11.10.2026</time></dd></div>
+            <div class="c-name"><dt>Name</dt><dd><h3 id="n-feld">Jürgen Feld</h3></dd></div>
+            <div class="c-from"><dt>From</dt><dd>Freiburg</dd></div>
+            <div class="c-room"><dt>Room</dt><dd>5</dd></div>
+            <div class="c-rem"><dt>Remarks</dt><dd><p>Half board was the right decision. <mark class="mk">The Kaspressknödel soup on Tuesday is why I have booked the same week next year</mark>. Ask Sepp for the plum schnapps only if you have nothing planned for the morning.</p></dd></div>
+          </dl>
+          <div class="foot">
+            <svg class="stamp" viewBox="0 0 120 120" aria-hidden="true" focusable="false"><g filter="url(#rough)"><use href="#stamp-ring" width="120" height="120"/><text x="60" y="58" text-anchor="middle" fill="currentColor" font-size="15" font-weight="700">1780 m</text><path d="M38 65h44" stroke="currentColor" stroke-width="1"/><text x="60" y="78" text-anchor="middle" fill="currentColor" font-size="10" font-weight="600" letter-spacing=".5">11 OCT 2026</text></g></svg>
+          </div>
+        </article>
+
+        <div class="sent" aria-hidden="true"></div>
+        <article class="page page--form" id="your-page" tabindex="-1" aria-labelledby="form-title" style="--i:5;--hand:var(--hand-gb)">
+          <h3 class="form-title" id="form-title">Add your page</h3>
+          <form id="add-page" novalidate>
+            <div class="entry">
+              <div class="c-date" role="group" aria-labelledby="h-date"><span class="colhead" id="h-date">Date</span><span class="hand" id="f-date">Today</span></div>
+              <div class="c-name"><label class="colhead" for="f-name">Name</label><span class="ctl"><input class="hand-field" id="f-name" name="name" required maxlength="60" autocomplete="name" aria-describedby="e-name"></span>
+                <div class="err"><p id="e-name" data-msg="Add your name"></p></div></div>
+              <div class="c-from"><label class="colhead" for="f-from">From</label><span class="ctl"><select id="f-from" name="from" required aria-describedby="h-from e-from">
+                <option value="">Pick a country</option>
+                <option>Chile</option>
+                <option>England</option>
+                <option>Germany</option>
+                <option>Netherlands</option>
+                <option>United States</option>
+                <option>Somewhere else</option>
+              </select></span>
+                <div class="err"><p id="e-from" data-msg="Pick where you're from"></p></div></div>
+              <div class="c-room"><label class="colhead" for="f-room">Room</label><span class="ctl"><select id="f-room" name="room" required aria-describedby="e-room">
+                <option value="">Pick a room</option>
+                <option>Room 1</option><option>Room 2</option><option>Room 3</option><option>Room 4</option>
+                <option>Room 5</option><option>Room 6</option><option>Room 7</option><option>Room 8</option>
+                <option>Room 9</option><option>Room 10</option><option>Room 11</option><option>Day visit</option>
+              </select></span>
+                <div class="err"><p id="e-room" data-msg="Pick a room or Day visit"></p></div></div>
+              <div class="c-help">
+                <p class="help" id="h-from">Your page is written in the school handwriting taught where you're from. Somewhere else uses the English hand.</p>
+              </div>
+              <div class="c-rem"><label class="colhead" for="f-rem">Remarks</label><span class="ctl"><textarea class="hand-field" id="f-rem" name="remarks" rows="4" required minlength="12" maxlength="280" aria-describedby="count e-rem"></textarea></span>
+                <div class="err"><p id="e-rem" data-msg="Write at least a few words, up to 280 characters."></p></div>
+                <p class="count" id="count">280 characters left</p>
+              </div>
+            </div>
+            <button class="btn" type="submit">Add my page</button>
+            <p class="status" id="status" role="status"></p>
+            <p class="sr" id="count-live" aria-live="polite"></p>
+          </form>
+        </article>
+      </div>
+        <p class="mail">Something else? Write to Marta at <a href="mailto:rooms@zirmegg.example" target="_blank" rel="noopener">rooms@zirmegg.example</a></p>
+    </div>
+  </div>
+</section>
+</main>
+
+<template id="tpl-page">
+  <article class="page page--yours" tabindex="-1">
+    <dl class="entry">
+      <div class="c-date"><dt>Date</dt><dd><time></time></dd></div>
+      <div class="c-name"><dt>Name</dt><dd><h3></h3></dd></div>
+      <div class="c-from"><dt>From</dt><dd class="v-from"></dd></div>
+      <div class="c-room"><dt>Room</dt><dd class="v-room"></dd></div>
+      <div class="c-rem"><dt>Remarks</dt><dd><p></p></dd></div>
+    </dl>
+    <div class="foot">
+      <svg class="stamp" viewBox="0 0 120 120" aria-hidden="true" focusable="false"><g filter="url(#rough)"><use href="#stamp-ring" width="120" height="120"/><text x="60" y="58" text-anchor="middle" fill="currentColor" font-size="15" font-weight="700">1780 m</text><path d="M38 65h44" stroke="currentColor" stroke-width="1"/><text class="v-stamp" x="60" y="78" text-anchor="middle" fill="currentColor" font-size="10" font-weight="600" letter-spacing=".5"></text></g></svg>
+    </div>
+  </article>
+</template>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/SplitText.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  const root = document.documentElement;
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  // Without the libraries (CDN blocked): static marks, plain anchors, the form still works
+  const libs = !!(window.gsap && window.ScrollTrigger && window.SplitText && window.Lenis);
+
+  const stack = $('#stack'), formPage = $('#your-page'), form = $('#add-page'), F = form.elements;
+  const status = $('#status'), count = $('#count'), live = $('#count-live'), dateField = $('#f-date');
+  const st = { lenis: null, motion: false, build: null, settle: null, glide: null, n: 0, cur: null, marks: new Map(), marked: new Set() };
+  const pages = () => $$('.page', stack);
+  const sentOf = (p) => p.previousElementSibling;
+  const stuckTop = (p) => parseFloat(getComputedStyle(p).top) || 0;
+  let refreshSoon;
+  // Each page is at least as tall as the tallest page before it (--min), so a short page covers a long one;
+  // --h is its final height, which keeps a tall page from sticking before its bottom is on screen
+  const fitPages = () => {
+    let max = 0;
+    pages().forEach((p) => {
+      p.style.removeProperty('--min');
+      max = Math.max(max, p.offsetHeight);
+      p.style.setProperty('--min', `${max}px`);
+      p.style.setProperty('--h', `${max}px`);
+    });
+  };
+  const rail = $('.rail');
+  const fit = new ResizeObserver((entries) => {
+    entries.forEach((e) => e.target === rail && rail.style.setProperty('--h', `${rail.offsetHeight}px`));
+    requestAnimationFrame(fitPages); // next frame: resizing observed elements inside the callback would loop
+    clearTimeout(refreshSoon);
+    refreshSoon = setTimeout(() => { st.marks.forEach((m) => m.lines()); window.ScrollTrigger && ScrollTrigger.refresh(); }, 120);
+  });
+  [rail, ...pages()].forEach((el) => fit.observe(el));
+  fitPages();
+
+  // ---- Dates come from the visitor's clock ----
+  const MON = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+  const pad = (n) => String(n).padStart(2, '0');
+  const longDate = (d) => new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(d);
+  const isoDate = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const stampDate = (d) => `${pad(d.getDate())} ${MON[d.getMonth()]} ${d.getFullYear()}`;
+  // Guests write the date the way they were taught at school, like the seeded pages
+  const handDate = (d, k) => {
+    const D = d.getDate(), M = d.getMonth() + 1, Y = d.getFullYear();
+    return { nl: `${D}-${M}-${Y}`, de: `${pad(D)}.${pad(M)}.${Y}`, cl: `${D}/${M}/${Y}`,
+      us: new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(d),
+      gb: new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).format(d) }[k];
+  };
+  dateField.textContent = handDate(new Date(), 'gb');
+
+  // Where a page sits once it sticks (a page taller than the screen arrives with its head row in view)
+  const landY = (p) => Math.max(0, sentOf(p).getBoundingClientRect().top + scrollY - Math.max(0, stuckTop(p)));
+  const jump = (y) => { scrollTo({ top: y, behavior: 'instant' }); if (st.lenis) { st.lenis.scrollTo(y, { immediate: true, force: true }); st.lenis.stop(); st.lenis.start(); } };
+
+  // ---- NV6: glide (or jump) to a page where it sticks, then move focus ----
+  function go(target, { focus = target, duration, then, instant } = {}) {
+    const y = landY(target);
+    st.glide && st.glide.end(false); // a newer glide supersedes: the old one still finishes its action (a stamp), without focus
+    const done = (landed) => { landed && focus && focus.focus({ preventScroll: true }); then && then(); };
+    if (!st.lenis || instant) { jump(y); done(true); return; }
+    // While gliding, the pages flown past are not marked; the pen strikes once, on arrival (st.settle)
+    const dur = duration ?? Math.min(1.3, .65 + Math.abs(y - scrollY) / 4000);
+    // Completes exactly once: from Lenis, from the timer (a wheel or touch cuts the glide short and Lenis never completes), or superseded
+    const g = st.glide = { end(landed) {
+      if (g.over) return;
+      g.over = true; clearTimeout(g.t);
+      if (st.glide === g) { st.glide = null; landed && st.settle && st.settle(); }
+      done(landed);
+    } };
+    g.t = setTimeout(() => g.end(true), (dur + .5) * 1000);
+    st.lenis.scrollTo(y, { duration: dur, force: true, onComplete: () => g.end(true) });
+  }
+  // A direct link or a reload with #page-...: the native jump ran before the pages were measured, so place it again
+  let hashDone = false;
+  const toHash = () => {
+    if (hashDone) return;
+    hashDone = true;
+    const t = location.hash.length > 1 && document.getElementById(decodeURIComponent(location.hash.slice(1)));
+    if (t && stack.contains(t)) { fitPages(); go(t, { focus: null, instant: true }); }
+  };
+  // Where the reader is in the book: a page and the share of the way to the next one, kept across breakpoint changes
+  let resizedAt = 0, recT;
+  const where = () => {
+    const ps = pages(), ys = ps.map(landY), i = ys.findLastIndex((y) => y <= scrollY + 1);
+    if (i < 0) return { y: scrollY, w: innerWidth };
+    return { w: innerWidth, p: ps[i], f: ps[i + 1] ? (scrollY - ys[i]) / Math.max(1, ys[i + 1] - ys[i]) : 0 };
+  };
+  const there = (at) => {
+    if (!at.p || !at.p.isConnected) return at.y || 0;
+    const next = pages()[pages().indexOf(at.p) + 1], y = landY(at.p);
+    return next ? y + at.f * (landY(next) - y) : y;
+  };
+  addEventListener('resize', () => { resizedAt = performance.now(); });
+  addEventListener('scroll', () => {
+    clearTimeout(recT); // only record at rest, and never from a layout that is mid-resize
+    recT = setTimeout(() => { if (performance.now() - resizedAt > 600) st.at = where(); }, 150);
+  }, { passive: true });
+  document.addEventListener('click', (e) => {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; // new tab/window stays native
+    const a = e.target.closest('a[href^="#"]');
+    const t = a && document.getElementById(a.hash.slice(1));
+    if (!t || !stack.contains(t)) return;
+    e.preventDefault();
+    go(t, { focus: t === formPage ? F.name : t, then: () => history.replaceState(null, '', a.hash) }); // toHash makes the URL land right on reload
+  });
+
+  // ---- The blank page: the From select chooses the hand ----
+  const HANDS = { Chile: 'cl', England: 'gb', Germany: 'de', Netherlands: 'nl', 'United States': 'us', 'Somewhere else': 'gb' };
+  let hand = 'gb';
+  function setHand(k, animate) {
+    if (k === hand) return;
+    hand = k;
+    const swap = () => { formPage.style.setProperty('--hand', `var(--hand-${k})`); dateField.textContent = handDate(new Date(), k); };
+    const handed = [F.name, F.remarks, dateField];
+    if (animate && st.motion) {
+      gsap.timeline({ defaults: { duration: .1, ease: 'expo.out', overwrite: 'auto' } })
+        .to(handed, { opacity: 0, onComplete: swap }).to(handed, { opacity: 1 });
+    } else swap();
+  }
+  F.from.addEventListener('change', () => setHand(HANDS[F.from.value] || 'gb', true));
+
+  // HV4: the fill enters and leaves by the edge the pointer crossed
+  const btn = $('.btn', form);
+  const edge = (e) => { const r = btn.getBoundingClientRect(); btn.style.setProperty('--from', e.clientX < r.left + r.width / 2 ? 'left' : 'right'); };
+  btn.addEventListener('pointerenter', edge);
+  btn.addEventListener('pointerleave', edge);
+
+  const MAX = 280;
+  function updateCount() {
+    const left = MAX - F.remarks.value.length;
+    count.textContent = `${left} character${left === 1 ? '' : 's'} left`;
+    if (left === 40 || left === 0) live.textContent = count.textContent;
+    // Only a textarea that really overflows keeps the wheel; otherwise it would trap page scroll
+    F.remarks.toggleAttribute('data-lenis-prevent', F.remarks.scrollHeight > F.remarks.clientHeight);
+  }
+  F.remarks.addEventListener('input', updateCount);
+
+  // ---- MI4 validation: each message under its own field, focus to the first invalid field ----
+  const RULES = [
+    [F.name, 'e-name', (v) => v.trim() !== ''],
+    [F.from, 'e-from', (v) => v !== ''],
+    [F.room, 'e-room', (v) => v !== ''],
+    [F.remarks, 'e-rem', (v) => v.trim().length >= 12 && v.length <= MAX],
+  ];
+  function flag(el, id, bad) {
+    const msg = document.getElementById(id);
+    if (bad) el.setAttribute('aria-invalid', 'true'); else el.removeAttribute('aria-invalid');
+    msg.textContent = bad ? msg.dataset.msg : '';
+    msg.parentElement.classList.toggle('open', bad);
+  }
+  const validate = () => RULES.filter(([el, id, ok]) => { const bad = !ok(el.value); flag(el, id, bad); return bad; }).map(([el]) => el);
+  RULES.forEach(([el, id, ok]) => el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input',
+    () => el.hasAttribute('aria-invalid') && flag(el, id, !ok(el.value))));
+
+  // ---- I7: a valid submit writes a new page into the book, before the blank one ----
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const bad = validate();
+    if (bad.length) { bad[0].focus(); return; }
+    const d = new Date(), n = ++st.n, k = HANDS[F.from.value] || 'gb', rot = ((n * 5) % 12) - 7;
+    const page = $('#tpl-page').content.firstElementChild.cloneNode(true);
+    page.id = `page-yours-${n}`;
+    page.setAttribute('aria-labelledby', `n-yours-${n}`);
+    page.style.cssText = `--hand:var(--hand-${k});--rot:${rot}deg`;
+    const time = $('time', page);
+    time.dateTime = isoDate(d); time.textContent = handDate(d, k);
+    Object.assign($('h3', page), { id: `n-yours-${n}`, textContent: F.name.value.trim() });
+    $('.v-from', page).textContent = F.from.value;
+    $('.v-room', page).textContent = F.room.value.replace('Room ', '');
+    $('.c-rem p', page).textContent = F.remarks.value.trim();
+    $('.v-stamp', page).textContent = stampDate(d);
+    const sent = Object.assign(document.createElement('div'), { className: 'sent' });
+    sent.setAttribute('aria-hidden', 'true');
+    sentOf(formPage).before(sent, page);
+    pages().forEach((p, i) => p.style.setProperty('--i', i));
+    fitPages(); // before go() reads where it sticks
+    fit.observe(page);
+
+    const link = Object.assign(document.createElement('a'), { href: `#${page.id}`, textContent: 'Read your page' });
+    status.replaceChildren(`Your page is added, dated ${longDate(d)}. Marta marks a line when she reads it. It stays here until you close this tab. `, link);
+    form.reset(); setHand('gb'); updateCount();
+
+    const stamp = $('.stamp', page);
+    if (st.motion) gsap.set(stamp, { autoAlpha: 0 });
+    st.build && st.build();
+    go(page, {
+      duration: 1,
+      then: () => st.motion && gsap.fromTo(stamp, { scale: 1.18, rotation: -14, autoAlpha: 0 },
+        { scale: 1, rotation: rot, autoAlpha: .88, duration: .35, ease: 'expo.out' }),
+    });
+  });
+  updateCount();
+
+  if (!libs) { document.fonts.ready.then(() => requestAnimationFrame(() => { fitPages(); toHash(); })); return; }
+  gsap.registerPlugin(ScrollTrigger, SplitText);
+
+  const fontsReady = Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 1500))]);
+  let loaded = false, loadEnd = 0;
+  const wait = () => Math.max(0, loadEnd - performance.now()) / 1000; // first strokes wait for the load sequence
+
+  // TX5: per-word bands that one eased progress tween drives across the phrase, line breaks included.
+  // Each band opens from its left edge and leaves through its right edge (clip-path, so a rail band can carry its slate copy).
+  const HIDE = 'inset(0% 100% 0% 0%)', SHOW = 'inset(0% 0% 0% 0%)', GONE = 'inset(0% 0% 0% 100%)';
+  function makeMark(el) {
+    const rail = !!el.closest('.qs');
+    const split = SplitText.create(el, { type: 'words', tag: 'span', wordsClass: 'w', aria: 'none' });
+    const probe = document.createElement('span');
+    probe.style.cssText = 'display:inline-block;width:0;height:0;vertical-align:baseline';
+    const bands = split.words.map((w) => {
+      const b = document.createElement('span');
+      b.className = 'band'; b.setAttribute('aria-hidden', 'true');
+      if (rail) b.append(Object.assign(document.createElement('span'), { textContent: w.textContent }));
+      return w.appendChild(b);
+    });
+    const widths = split.words.map((w) => w.offsetWidth || 1);
+    const total = widths.reduce((a, b) => a + b, 0);
+    let run;
+    // The baseline, then the first and last word of each line, and every other line, so each line's stroke has its own ends.
+    // Rerun on resize and when late fonts land (a hand can arrive after the 1.5 s cap and rewrap the phrase)
+    const lines = () => {
+      // offset* (layout boxes), never getBoundingClientRect: the page may be mid-drop, rotated, when this runs
+      split.words[0].append(probe);
+      el.style.setProperty('--band-top', `calc(${probe.offsetTop / parseFloat(getComputedStyle(el).fontSize)}em - var(--mk-up))`);
+      probe.remove();
+      const tops = split.words.map((w) => w.offsetTop);
+      const broke = (i) => i > 0 && i < tops.length && Math.abs(tops[i] - tops[i - 1]) > 2;
+      let line = 0;
+      split.words.forEach((w, i) => {
+        if (broke(i)) line++;
+        w.classList.toggle('ls', i === 0 || broke(i));
+        w.classList.toggle('le', i === tops.length - 1 || broke(i + 1));
+        w.classList.toggle('lo', line % 2 === 1);
+      });
+    };
+    lines();
+    return {
+      split, lines, on: false,
+      // One pen speed for every mark (~700 px/s): a longer phrase simply takes longer
+      sweep(to, dur = gsap.utils.clamp(.45, 1.1, total / 700), delay = 0) {
+        run && run.kill();
+        this.on = !!to;
+        if (to) gsap.set(bands, { clipPath: HIDE }); // HV3: a mark that left to the right comes back from the left
+        const tl = gsap.timeline({ paused: true });
+        bands.forEach((b, i) => tl.to(b, { clipPath: to ? SHOW : GONE, duration: widths[i], ease: 'none' }));
+        run = gsap.to(tl, { progress: 1, duration: dur, delay, ease: 'power2.inOut' });
+      },
+      set(v) { run && run.kill(); this.on = !!v; gsap.set(bands, { clipPath: v ? SHOW : HIDE }); },
+    };
+  }
+
+  const linkFor = (p) => p && $(`.qs a[href="#${p.id}"]`);
+  const markOf = (a) => a && st.marks.get($('.mk', a));
+  function setCurrent(p, motion) {
+    if (st.cur === p) return;
+    const was = linkFor(st.cur), now = linkFor(p);
+    st.cur = p;
+    if (was) { was.removeAttribute('aria-current'); const m = motion && markOf(was); m && (m.on ? m.sweep(0, .4) : m.set(0)); }
+    // During a glide only aria-current moves; the target's stroke waits for the landing
+    if (now) { now.setAttribute('aria-current', 'true'); const m = motion && !st.glide && markOf(now); m && m.sweep(1, undefined, wait()); }
+  }
+
+  // After a width change (and any breakpoint rebuild), put the reader back on the same page: pixel offsets differ per layout
+  let backT;
+  ScrollTrigger.addEventListener('refresh', () => {
+    if (!st.at || st.at.w === innerWidth) return;
+    clearTimeout(backT); // once the refreshes and page fitting of this resize have settled
+    backT = setTimeout(() => { st.at.w = innerWidth; jump(there(st.at)); }, 250);
+  });
+
+  gsap.matchMedia().add({
+    motion: '(prefers-reduced-motion: no-preference)',
+    fine: '(hover: hover) and (pointer: fine)',
+    wide: '(min-width: 1024px)',
+    tall: '(min-height: 641px)',
+  }, (ctx) => {
+    const { motion, wide, tall } = ctx.conditions;
+    let alive = true, trigs = [], inks = [], lenis, tick;
+    st.motion = motion;
+
+    if (motion) {
+      root.classList.add('motion');
+      lenis = st.lenis = new Lenis({ lerp: .1, smoothWheel: true, autoRaf: false, anchors: false });
+      lenis.on('scroll', ScrollTrigger.update);
+      tick = (time) => lenis.raf(time * 1000);
+      gsap.ticker.add(tick);
+      gsap.ticker.lagSmoothing(0);
+      if (!loaded) loadSequence(ctx, wide);
+    }
+    loaded = true;
+
+    // S1 depth, S2 the answer mark, S3 the rail spy. Rebuilt whenever a page is added.
+    const buildStack = () => {
+      trigs.forEach((t) => { t.scrollTrigger && t.scrollTrigger.kill(); t.kill(); });
+      trigs = []; inks = [];
+      const ps = pages(), keep = (t) => (trigs.push(t), t);
+      if (motion && tall) ps.slice(0, -1).forEach((p, i) => {
+        const next = ps[i + 1];
+        // Depth starts when the next page first overlaps this one, so the page being read stays bright
+        keep(gsap.fromTo(p, { scale: 1, '--dim': 0 }, {
+          scale: .955, '--dim': 1, ease: 'none',
+          scrollTrigger: {
+            trigger: sentOf(next), scrub: true, invalidateOnRefresh: true,
+            start: () => `top top+=${Math.min(innerHeight, stuckTop(p) + p.offsetHeight)}`,
+            end: () => `top top+=${stuckTop(next)}`,
+          },
+        }));
+      });
+      // The stroke starts as a page lands: just before it sticks on desktop; below 1024px when the note and the answer are both on screen.
+      // The first page is already in view at load on desktop, so it uses 60% of the viewport.
+      const at = (p, i) => () => (!wide ? 'top 45%' : !tall || !i ? 'top 60%' : `top top+=${stuckTop(p) + 120}`);
+      if (motion) ps.forEach((p, i) => {
+        const ans = st.marks.get($('mark.mk', p)), note = st.marks.get($('.marked-for .mk', p));
+        if (!ans) return;
+        if (st.marked.has(p.id)) { ans.set(1); note && note.set(1); return; }
+        const next = ps[i + 1];
+        const ink = {
+          go() { // the question's half at 0, the answer's at +0.15 s; then this page is done
+            if (st.marked.has(p.id)) return;
+            st.marked.add(p.id);
+            const d = wait();
+            if (!wide && note) note.sweep(1, undefined, d);
+            ans.sweep(1, undefined, d + .15);
+            ink.trig && ink.trig.kill();
+          },
+        };
+        // Live while the page is the one on top, from either direction, so a page flown past by a glide still gets its stroke
+        const fire = () => !st.glide && ink.go();
+        ink.trig = keep(ScrollTrigger.create({
+          trigger: sentOf(p), start: at(p, i), endTrigger: next ? sentOf(next) : stack, end: next ? at(next, i + 1) : 'bottom top',
+          onEnter: fire, onEnterBack: fire,
+        }));
+        inks.push(ink);
+      });
+      // The spy uses the unclamped stack offset, so a page that grows (the form's error rows) does not move the current question
+      const spyAt = (p, i) => () => {
+        if (!tall || !i) return 'top 60%';
+        const cs = getComputedStyle(p);
+        return `top top+=${parseFloat(cs.getPropertyValue('--stack-top')) + i * parseFloat(cs.getPropertyValue('--stack-step')) + 120}`;
+      };
+      if (wide) ps.forEach((p, i) => {
+        const next = ps[i + 1];
+        keep(ScrollTrigger.create({
+          trigger: sentOf(p), start: spyAt(p, i), endTrigger: next ? sentOf(next) : stack, end: next ? spyAt(next, i + 1) : 'bottom top',
+          onToggle: (self) => (self.isActive ? setCurrent(p, motion) : st.cur === p && setCurrent(null, motion)),
+        }));
+      });
+      ScrollTrigger.refresh();
+      lenis && lenis.resize();
+    };
+    st.build = () => alive && ctx.add(buildStack);
+    // A glide has landed: strike the current question, then the answer on the page now on top
+    st.settle = () => {
+      if (!alive) return;
+      ScrollTrigger.update();
+      const m = motion && markOf(linkFor(st.cur));
+      m && !m.on && m.sweep(1, undefined, wait());
+      inks.forEach((ink) => ink.trig.isActive && ink.go());
+    };
+
+    fontsReady.then(() => alive && ctx.add(() => {
+      if (motion) $$('.gb .mk').forEach((el) => st.marks.set(el, makeMark(el)));
+      document.fonts.ready.then(() => alive && st.marks.forEach((m) => m.lines()));
+      buildStack();
+      toHash();
+    }));
+
+    return () => {
+      alive = false;
+      st.settle = null; st.glide = null;
+      st.marks.forEach((m) => m.split.revert());
+      st.marks.clear();
+      setCurrent(null, false);
+      root.classList.remove('motion');
+      st.build = null;
+      if (lenis) { gsap.ticker.remove(tick); gsap.ticker.lagSmoothing(500, 33); lenis.destroy(); st.lenis = null; }
+    };
+  });
+
+  // ---- Page load: one header gesture, then the first page is laid on the stack, then the pen answers it ----
+  // Nothing is hidden but the H2 until its fonts are ready; every link is focusable throughout.
+  function loadSequence(ctx, wide) {
+    const h2 = $('#gb-title'), first = pages()[0], t0 = performance.now();
+    loadEnd = t0 + 1350; // the first stroke waits until the first page has settled: the stroke is the page's consequence
+    gsap.set(h2, { autoAlpha: 0 });
+    const tl = gsap.timeline({ defaults: { ease: 'expo.out' } })
+      // MD1: the board opens from the left; the negative top inset keeps labels that sit above the frame (phones) unclipped
+      .fromTo('.board-frame', { clipPath: 'inset(-3em 100% 0 0)' }, { clipPath: 'inset(-3em 0% 0 0)', duration: .9, clearProps: 'clipPath' }, 0);
+    // The main beat: the first page drops onto the stack, turned a little the way its stamp is turned.
+    // y and rotation only, so the depth scrub's scale composes with it (no clearProps needed: both end at 0)
+    const drop = { y: 28, rotation: (parseFloat(first.style.getPropertyValue('--rot')) || -4.8) / 4, duration: .9, ease: 'expo.out' };
+    // A screen too short to show it at load plays it when the page comes up, so it is always seen
+    if (wide || sentOf(first).getBoundingClientRect().top < innerHeight * .85) tl.from(first, drop, .45);
+    else gsap.from(first, { ...drop, scrollTrigger: { trigger: sentOf(first), start: 'top 85%', once: true } });
+    fontsReady.then(() => ctx.add(() => {
+      gsap.set(h2, { autoAlpha: 1 });
+      SplitText.create(h2, {
+        type: 'lines', mask: 'lines', autoSplit: true,
+        onSplit: (self) => gsap.from(self.lines, {
+          yPercent: 110, duration: 1, ease: 'expo.out', stagger: .08, delay: Math.max(0, .15 - (performance.now() - t0) / 1000),
+        }),
+      });
+    }));
+  }
+})();
+</script>
+</body>
+</html>
