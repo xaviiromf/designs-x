@@ -1,0 +1,2032 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>Thursday’s patients, Fennick Road Vets</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Reddit+Sans+Condensed:wght@200..900&family=Reddit+Sans:wght@200..900&display=swap">
+<style>
+:root {
+  /* Colour: the consult room's materials */
+  --floor: #E7E2E8;        /* heather safety vinyl, the page ground */
+  --sheet: #FFFFFF;        /* list sheet, chart panel, dialog */
+  --ink: #261F2C;          /* aubergine-graphite ink; also the primary button fill. 12.5:1 on floor */
+  --ink-2: #534A5C;        /* secondary text: 6.6:1 on floor, 8.4:1 on sheet */
+  --needle: #C8322A;       /* the scale's needle (same red as alarm, its own role) */
+  --wrap: #B8D433;         /* cohesive-bandage lime: what is selected, always under ink text (9.5:1) */
+  --alarm: #C8322A;        /* errors and delete only, on sheet 5.3:1, white on it 5.3:1 */
+  --sticker: #FF9A3C;      /* fluorescent "Handle with care" file sticker, ink text 7.5:1 */
+  --on-ink: #FFFFFF;
+  --ink-lift: color-mix(in srgb, var(--ink) 78%, #fff);   /* hover layer on ink buttons, white text 7.8:1 */
+  --alarm-deep: color-mix(in srgb, var(--alarm) 82%, #000);
+  --rule: color-mix(in srgb, var(--ink) 12%, transparent);
+  --line: color-mix(in srgb, var(--ink) 60%, transparent); /* field and chip outlines, 4.3:1 on sheet */
+  --tint: color-mix(in srgb, var(--ink) 6%, transparent);
+  --wash: color-mix(in srgb, var(--wrap) 45%, transparent);
+  --scrim: color-mix(in srgb, var(--ink) 55%, transparent);
+
+  /* Type: Reddit Sans Condensed for the dial and the file labels, Reddit Sans for the desk */
+  --font: 'Reddit Sans', system-ui, sans-serif;
+  --font-cond: 'Reddit Sans Condensed', 'Reddit Sans', 'Arial Narrow', sans-serif;
+  --wt-display: 800;
+  --wt-name: 700;
+  --wt-read: 600;
+  --wt-text: 400;
+  --wt-strong: 600;
+  --t-xs: .8125rem;
+  --t-sm: .875rem;
+  --t-base: 1rem;
+  --t-md: 1.25rem;
+  --t-lg: 1.5625rem;
+  --t-xl: 2.4414rem;
+  --t-display: clamp(3rem, 5.5vw, 5.25rem);
+
+  /* Space and shape */
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px; --s8: 72px; --s9: 112px;
+  --pad: clamp(16px, 4vw, 48px);
+  --max: 1360px;
+  --gutter-w: 56px;
+  --r-field: 6px;
+  --r-button: 10px;
+  --r-panel: 16px;
+
+  /* Motion: CSS transitions (one family: expo) */
+  --ease-out: cubic-bezier(.16, 1, .3, 1);
+  --ease-swap: cubic-bezier(.87, 0, .13, 1);
+  --ease-inout: cubic-bezier(.65, 0, .35, 1);
+  --ease-pop: cubic-bezier(.34, 1.56, .64, 1);
+  --dur-fast: .15s;
+  --dur: .3s;
+  --dur-slide: .45s;
+
+  /* Motion: GSAP (seconds, read by the script) */
+  --g-settle: 1.4;
+  --g-drop: .35;
+  --g-draw: .7;
+  --g-flip: .7;
+  --g-filter: .6;
+  --g-search: .35;
+  --g-rule: .8;
+  --g-recount: .4;
+  --g-dlg-in: .45;
+  --g-dlg-out: .3;
+  --g-toast-in: .4;
+  --g-toast-out: .3;
+}
+
+/* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+html.lenis, html.lenis body { height: auto; }
+.lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+.lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+.lenis.lenis-smooth iframe { pointer-events: none; }
+
+*, *::before, *::after { box-sizing: border-box; }
+[hidden]:not(.row):not(.grp):not(.empty) { display: none !important; }
+html { -webkit-text-size-adjust: 100%; overflow-x: clip; }
+body {
+  margin: 0; background: var(--floor); color: var(--ink);
+  font-family: var(--font); font-size: var(--t-base); font-weight: var(--wt-text); line-height: 1.5;
+  font-variant-numeric: tabular-nums; overflow-x: clip;
+}
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+.vh { position: absolute !important; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.wrap { max-width: var(--max); margin-inline: auto; padding-inline: var(--pad); }
+:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+h1, h2, h3, p { margin: 0; }
+.cond { font-family: var(--font-cond); }
+
+/* ---------- Skip link ---------- */
+.skip {
+  position: fixed; top: var(--s3); left: var(--s3); z-index: 100;
+  padding: var(--s2) var(--s4); border-radius: var(--r-button);
+  background: var(--ink); color: var(--on-ink); font-weight: var(--wt-strong); text-decoration: none;
+  clip-path: inset(0 0 100% 0); transition: clip-path .2s var(--ease-out);
+}
+.skip:focus-visible { clip-path: inset(-6px); box-shadow: inset 0 0 0 2px var(--on-ink); }
+
+/* ---------- Buttons: fill from the entry edge (HV4), press and release (MI1) ---------- */
+.btn {
+  --fill: transparent;
+  position: relative; isolation: isolate; overflow: hidden;
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s2);
+  min-height: 44px; padding: 0 var(--s4); border: 0; border-radius: var(--r-button);
+  font-weight: var(--wt-strong); line-height: 1.1; text-decoration: none; white-space: nowrap;
+  transition: color .2s, transform .4s var(--ease-pop);
+  -webkit-tap-highlight-color: transparent;
+}
+.btn::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; background: var(--fill);
+  transform: scaleX(0); transform-origin: var(--from, left) 50%; transition: transform .25s var(--ease-out);
+}
+@media (hover: hover) { .btn:hover::before { transform: scaleX(1); transition-duration: .35s; } }
+.btn:focus-visible::before { transform: scaleX(1); transform-origin: left 50%; }
+.btn:active { transform: scale(.96); transition-duration: .12s; }
+.btn--primary { background: var(--ink); color: var(--on-ink); --fill: var(--ink-lift); }
+.btn--line { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--ink); --fill: var(--ink); }
+.btn--alarm-line { background: var(--sheet); color: var(--alarm); box-shadow: inset 0 0 0 1.5px var(--alarm); --fill: var(--alarm); }
+.btn--alarm { background: var(--alarm); color: var(--on-ink); --fill: var(--alarm-deep); }
+@media (hover: hover) { .btn--line:hover, .btn--alarm-line:hover { color: var(--on-ink); } }
+.btn--line:focus-visible, .btn--alarm-line:focus-visible { color: var(--on-ink); }
+.btn:is(.btn--primary, .btn--line, .btn--alarm, .btn--alarm-line):focus-visible::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 2px var(--on-ink); pointer-events: none;
+}
+.btn svg { flex: none; }
+.btn .plus { transition: transform var(--dur) var(--ease-out); }
+@media (hover: hover) { .btn:hover .plus { transform: rotate(90deg); } }
+.btn:focus-visible .plus { transform: rotate(90deg); }
+.btn__swap { display: inline-grid; overflow: hidden; }
+.btn__swap > span { grid-area: 1 / 1; transition: transform var(--dur) var(--ease-swap); }
+.btn__swap > span + span { transform: translateY(105%); }
+.btn.is-saved .btn__swap > span:first-child { transform: translateY(-105%); }
+.btn.is-saved .btn__swap > span + span { transform: none; }
+
+/* Text buttons: an underline that sweeps in from the left and leaves to the right (HV2) */
+.tbtn {
+  display: inline-flex; align-items: center; min-height: 44px; padding: 0 2px; border: 0; background: none;
+  color: var(--ink); font-weight: var(--wt-strong); text-decoration: none;
+  transition: transform .4s var(--ease-pop); -webkit-tap-highlight-color: transparent;
+}
+.tbtn > span {
+  background:
+    linear-gradient(currentColor, currentColor) 100% 100% / 0 2px no-repeat,
+    linear-gradient(var(--line), var(--line)) 0 100% / 100% 1px no-repeat;
+  padding-bottom: 2px; transition: background-size .25s var(--ease-out);
+}
+@media (hover: hover) { .tbtn:hover > span { background-position: 0 100%, 0 100%; background-size: 100% 2px, 100% 1px; transition-duration: .3s; } }
+.tbtn:focus-visible > span { background-position: 0 100%, 0 100%; background-size: 100% 2px, 100% 1px; }
+.tbtn:active { transform: scale(.96); transition-duration: .12s; }
+
+.xbtn {
+  display: inline-grid; place-items: center; width: 44px; height: 44px; flex: none;
+  border: 0; border-radius: var(--r-button); background: transparent; color: inherit;
+  transition: background-color var(--dur-fast), transform .4s var(--ease-pop);
+}
+.xbtn svg { transition: transform .25s var(--ease-out); }
+@media (hover: hover) { .xbtn:hover { background: color-mix(in srgb, currentColor 10%, transparent); } .xbtn:hover svg { transform: rotate(90deg); } }
+.xbtn:active { transform: scale(.94); transition-duration: .12s; }
+
+.tag {
+  display: inline-block; padding: 1px 7px; border-radius: 3px; background: var(--sticker); color: var(--ink);
+  font-family: var(--font-cond); font-size: var(--t-xs); font-weight: var(--wt-name); line-height: 1.35; white-space: nowrap;
+}
+
+/* ---------- Page: the list column and the instrument column ---------- */
+.page { max-width: var(--max); margin-inline: auto; padding-inline: var(--pad); }
+
+/* ---------- Masthead ---------- */
+.mast { padding-block: var(--s4) var(--s6); }
+.mast__top { display: flex; align-items: center; justify-content: space-between; gap: var(--s4); }
+.mark { font-family: var(--font-cond); font-size: var(--t-md); font-weight: var(--wt-name); letter-spacing: -.005em; }
+.h1 {
+  margin: var(--s6) 0 var(--s4);
+  font-family: var(--font-cond); font-size: var(--t-display); font-weight: var(--wt-display);
+  line-height: .92; letter-spacing: -.02em;
+}
+.lede { max-width: 58ch; font-size: var(--t-md); line-height: 1.45; }
+
+/* ---------- Sticky toolbar ---------- */
+.bar { position: sticky; top: 0; z-index: 20; background: var(--floor); border-bottom: 1px solid var(--rule); margin-inline: calc(-1 * var(--pad)); padding-inline: var(--pad); }
+.bar__in { padding-block: var(--s3); display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--s3) var(--s5); }
+.bar__title { display: grid; align-self: center; flex: 0 0 auto; min-width: 9.5rem; font-family: var(--font-cond); font-size: var(--t-md); font-weight: var(--wt-name); line-height: 1.15; }
+.bar__tt { transition: opacity .2s; }
+.bar.has-spy:not(.is-stuck) .bar__tt { opacity: 0; }
+.bar__title time { font-family: var(--font); font-size: var(--t-xs); font-weight: var(--wt-text); color: var(--ink-2); }
+.bar__title:focus { outline: none; }
+.bar__title:focus-visible { outline: 3px solid var(--ink); }
+.bar__find { display: flex; align-items: flex-end; gap: var(--s3); flex: 1 1 18rem; max-width: 34rem; }
+.bar__add { margin-left: auto; }
+.bar__ctl { flex: 1 0 100%; display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s6); }
+
+/* Floating-label fields (MI4): search and the dialog */
+.fl { position: relative; }
+.fl .inp {
+  width: 100%; height: 54px; padding: 22px 40px 6px 12px; border-radius: var(--r-field);
+  border: 1.5px solid var(--line); background: var(--sheet); color: var(--ink); transition: border-color var(--dur-fast);
+  -webkit-appearance: none; appearance: none;
+}
+.fl > label {
+  position: absolute; left: 13.5px; top: 16px; max-width: calc(100% - 52px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--ink-2); font-weight: 500; pointer-events: none; transform-origin: 0 0;
+  transition: transform .2s cubic-bezier(.33, 1, .68, 1);
+}
+.fl:focus-within > label, .fl .inp:not(:placeholder-shown) + label, .fl--up > label { transform: translateY(-10px) scale(.8); }
+@media (hover: hover) { .fl .inp:hover { border-color: var(--ink); } }
+.fl .inp:focus-visible { outline: none; border-color: var(--ink); }
+.fl:focus-within { outline: 3px solid var(--ink); outline-offset: 2px; border-radius: var(--r-field); }
+.fbar { position: absolute; left: 6px; right: 6px; bottom: 1.5px; height: 2px; background: var(--ink); transform: scaleX(0); transform-origin: 0 50%; transition: transform .3s var(--ease-out); pointer-events: none; }
+.fl:focus-within .fbar { transform: none; }
+
+.search { flex: 1; }
+.search .inp { padding-left: 38px; }
+.search > label { left: 39px; }
+.search__glyph { position: absolute; left: 13px; top: 18px; color: var(--ink-2); pointer-events: none; }
+.search .inp::-webkit-search-cancel-button { -webkit-appearance: none; }
+.search .xbtn {
+  position: absolute; right: 5px; top: 5px; color: var(--ink-2);
+  opacity: 0; visibility: hidden; transform: scale(.6);
+  transition: opacity .2s, transform .2s var(--ease-pop), visibility 0s .2s;
+}
+.search.has-q .xbtn { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
+.search.has-q .xbtn:active { transform: scale(.94); }
+
+/* Sort: segmented control with one sliding lime pill (NV4) */
+.sort { display: flex; align-items: center; gap: var(--s3); }
+.sort__label { font-size: var(--t-sm); color: var(--ink-2); }
+.sort__set { position: relative; display: flex; isolation: isolate; }
+.sort__ind { position: absolute; inset: 5px 0; z-index: -1; pointer-events: none; --l: 0px; --r: 100%; }
+/* two clipped layers, ink then lime 1.5px inside it, so the pill keeps its outline while it slides (NV4) */
+.sort__ind::before, .sort__ind::after {
+  content: ''; position: absolute; inset: 0; background: var(--ink);
+  clip-path: inset(0 var(--r) 0 var(--l) round 999px); transition: clip-path var(--dur-slide) var(--ease-inout);
+}
+.sort__ind::after { background: var(--wrap); clip-path: inset(1.5px calc(var(--r) + 1.5px) 1.5px calc(var(--l) + 1.5px) round 999px); }
+.sort__ind.no-anim::before, .sort__ind.no-anim::after { transition: none; }
+.sort__btn {
+  position: relative; display: inline-flex; align-items: center; gap: 4px; min-height: 44px; padding: 0 var(--s3);
+  border: 0; border-radius: 999px; background: transparent; color: var(--ink-2); font-weight: 500;
+  transition: color var(--dur-fast), transform .4s var(--ease-pop);
+}
+.sort__btn::after {
+  content: ''; position: absolute; left: var(--s3); right: var(--s3); bottom: 10px; height: 1px;
+  background: currentColor; opacity: 0; transition: opacity var(--dur-fast);
+}
+@media (hover: hover) { .sort__btn:hover { color: var(--ink); } .sort__btn:hover::after { opacity: 1; } }
+.sort__btn:active { transform: scale(.95); transition-duration: .12s; }
+.sort__btn[aria-pressed="true"] { color: var(--ink); font-weight: var(--wt-strong); }
+.sort__btn[aria-pressed="true"]::after { opacity: 0; }
+.sort__btn svg { width: 10px; height: 10px; opacity: 0; transition: transform var(--dur) var(--ease-inout), opacity var(--dur-fast); }
+.sort__btn[aria-pressed="true"] svg { opacity: 1; }
+.sort__btn[data-dir="desc"] svg { transform: rotate(180deg); }
+
+/* Species filter chips: real radios with a selection badge (MI3) */
+.filters { border: 0; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--s2); min-width: 0; }
+.chipr { position: relative; display: inline-flex; }
+.chipr input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.chipr .face {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 var(--s3);
+  border-radius: 999px; box-shadow: inset 0 0 0 1px var(--line); font-size: var(--t-sm); font-weight: 500;
+  transition: box-shadow .2s, background-color var(--dur-fast), transform .4s var(--ease-pop);
+}
+.chipr .n { color: var(--ink-2); font-weight: var(--wt-text); }
+@media (hover: hover) { .chipr:hover .face { background: var(--tint); } }
+@media (pointer: coarse) { .chipr .face { min-height: 44px; } }
+.chipr input:checked + .face { box-shadow: inset 0 0 0 1.5px var(--ink); background: var(--wrap); }
+.chipr input:checked + .face .n { color: var(--ink); }
+.chipr input:focus-visible + .face { outline: 3px solid var(--ink); outline-offset: 2px; }
+.chipr input:active + .face { transform: scale(.95); transition-duration: .12s; }
+.badge {
+  position: absolute; top: -5px; right: -5px; width: 18px; height: 18px; border-radius: 50%;
+  display: grid; place-items: center; background: var(--ink); color: var(--on-ink);
+  opacity: 0; transform: scale(.6); pointer-events: none;
+}
+.chipr input:checked ~ .badge { opacity: 1; transform: none; animation: pop .25s var(--ease-pop); }
+@keyframes pop { from { opacity: 0; transform: scale(.6); } }
+
+/* ---------- Desk: list sheet and chart ---------- */
+.desk { padding-block: var(--s5) var(--s9); }
+.list { display: grid; grid-template-columns: var(--gutter-w) minmax(0, 1fr); }
+.gutter { position: relative; }
+.gutter__rule, .gutter__fill { position: absolute; left: calc(50% - 1px); top: var(--s3); bottom: var(--s3); width: 2px; transform-origin: 50% 0; }
+.gutter__rule { left: 50%; width: 1px; background: var(--rule); }
+.gutter__fill { background: var(--ink); transform: scaleY(0); }
+.chip {
+  position: sticky; top: calc(40svh - 13px); z-index: 1; display: block; width: max-content; min-width: 52px; margin: 22px auto 0;
+  padding: 3px 6px; border-radius: 999px; background: var(--sheet); box-shadow: inset 0 0 0 1.5px var(--ink);
+  font-family: var(--font-cond); font-size: var(--t-xs); font-weight: var(--wt-name); line-height: 1.3; text-align: center;
+}
+.swapbox { display: grid; overflow: hidden; }
+.swapbox > span { grid-area: 1 / 1; white-space: nowrap; }
+.bar__chip { display: none; }
+
+.sheet { position: relative; isolation: isolate; padding: var(--s2); min-width: 0; }
+/* the white sheet is a layer, so a Flip can shrink it with clip-path while rows are still moving */
+.sheet__bg { position: absolute; inset: 0; z-index: -1; background: var(--sheet); border-radius: var(--r-panel); }
+.rows { list-style: none; margin: 0; padding: 0; }
+.grp h3 { padding: var(--s5) var(--s4) var(--s2); font-size: var(--t-sm); font-weight: var(--wt-strong); color: var(--ink-2); border-bottom: 1px solid var(--rule); background: var(--sheet); }
+.row { background: var(--sheet); } /* rows occlude each other while a Flip moves them past one another */
+.row + .row { box-shadow: 0 -1px 0 var(--rule); }
+.row__btn {
+  position: relative; display: grid; width: 100%; min-height: 64px; margin: 0; padding: var(--s3) var(--s4) var(--s3) var(--s5);
+  grid-template-columns: 4rem minmax(0, 1.15fr) minmax(0, 1fr) 6.5rem; column-gap: var(--s4); row-gap: 2px;
+  grid-template-areas: "time name reason kg" "time owner vax kg"; align-items: baseline;
+  border: 0; border-radius: var(--r-button); background: transparent; color: var(--ink); text-align: left;
+  -webkit-tap-highlight-color: transparent;
+}
+.row__btn > span:not(.row__tint):not(.row__wash):not(.row__bar) { position: relative; transition: transform .3s var(--ease-pop); }
+.row__btn:active > span:not(.row__tint):not(.row__wash):not(.row__bar) { transform: scale(.99); transition-duration: .1s; }
+.row__btn:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+.row__tint, .row__wash { position: absolute; inset: 0; border-radius: inherit; pointer-events: none; }
+.row__tint { background: var(--tint); clip-path: inset(0 0 100% 0); }
+html:not(.motion) .row__btn:focus-visible .row__tint { clip-path: inset(0); }
+@media (hover: hover) { html:not(.motion) .row__btn:hover .row__tint { clip-path: inset(0); } }
+.row__wash { background: var(--wash); opacity: 0; }
+.row__bar {
+  position: absolute; left: 4px; top: 10px; bottom: 10px; width: 7px; border-radius: 4px; background: var(--wrap); box-shadow: inset 0 0 0 1.5px var(--ink);
+  transform: scaleY(0); transform-origin: 50% 100%; transition: transform .25s var(--ease-out); pointer-events: none;
+}
+.row__btn[aria-current="true"] .row__bar { transform: scaleY(1); transform-origin: 50% 0; transition-duration: .35s; }
+.row__btn[aria-current="true"] .row__nm { text-decoration: underline 2px var(--ink); text-underline-offset: 4px; }
+.row__time { grid-area: time; display: flex; flex-direction: column; font-weight: 500; }
+.row__day { font-size: var(--t-xs); font-weight: var(--wt-text); color: var(--ink-2); }
+.row__name { grid-area: name; font-weight: var(--wt-strong); overflow-wrap: anywhere; }
+.row__sp { font-weight: var(--wt-text); color: var(--ink-2); }
+.row__owner { grid-area: owner; font-size: var(--t-sm); color: var(--ink-2); overflow-wrap: anywhere; }
+.row__more { display: contents; }
+.row__reason, .row__vax { position: relative; } /* their wrapper is display: contents, so they stack above the tint here */
+.row__reason { grid-area: reason; font-size: var(--t-sm); }
+.row__vax { grid-area: vax; font-size: var(--t-sm); color: var(--ink-2); display: flex; flex-wrap: wrap; align-items: center; gap: 2px var(--s2); }
+.row__vax .is-due { color: var(--ink); font-weight: var(--wt-strong); }
+.row__kg { grid-area: kg; align-self: center; text-align: right; font-size: var(--t-md); font-weight: var(--wt-strong); white-space: nowrap; }
+.row__kg small { font-size: .7em; font-weight: 500; margin-left: .15em; }
+
+.empty { padding: var(--s6) var(--s4); }
+.empty p { max-width: 46ch; }
+.empty__acts { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s5); margin-top: var(--s2); }
+
+.foot { padding: var(--s5) var(--s4) var(--s4); }
+.foot__rule { display: block; width: 100%; height: 2px; overflow: visible; }
+.foot__rule line { stroke: var(--ink); stroke-width: 2; }
+.foot__cap { margin-top: var(--s3); font-size: var(--t-sm); color: var(--ink-2); }
+.foot__tot { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s6); margin-top: 2px; font-size: var(--t-md); }
+.foot__tot b { font-weight: var(--wt-strong); }
+.foot__add { display: none; margin-top: var(--s5); }
+
+/* Chart panel */
+.chart__in { background: var(--sheet); border-radius: var(--r-panel); padding: var(--s5); }
+.chart__name { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3); }
+.chart__name h2 { font-family: var(--font-cond); font-size: var(--t-xl); font-weight: var(--wt-name); line-height: 1; letter-spacing: -.015em; overflow-wrap: anywhere; }
+.chart__name h2:focus { outline: none; }
+.chart__name h2:focus-visible { outline: 3px solid var(--ink); }
+.chart__name .tag { transform: rotate(-2deg); font-size: var(--t-sm); padding: 2px 8px; }
+.chart__line { margin-top: var(--s1); color: var(--ink-2); }
+
+/* The scale: a 270-degree spring dial with a red needle and a hollow ghost needle for comparison */
+.scale { margin-top: var(--s4); }
+.dial { display: block; width: min(100%, 340px); height: auto; margin-inline: auto; overflow: visible; font-family: var(--font-cond); }
+.dial__bezel { fill: var(--floor); stroke: var(--ink); stroke-width: 2; }
+.dial__face { fill: var(--sheet); stroke: var(--ink); stroke-width: 1; }
+.dial__ticks line { stroke: var(--ink); stroke-width: 1.2; }
+.dial__ticks .maj { stroke-width: 2.6; }
+.dial__nums text { fill: var(--ink); font-size: 19px; font-weight: var(--wt-read); text-anchor: middle; dominant-baseline: central; }
+.dial__unit, .dial__range { fill: var(--ink-2); font-size: 17px; text-anchor: middle; }
+.dial__read { fill: var(--ink); font-size: 42px; font-weight: var(--wt-read); text-anchor: middle; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.dial__pin { fill: var(--ink-2); }
+.dial__needle { fill: var(--needle); }
+.dial__ghost { opacity: 0; fill: none; stroke: var(--ink); stroke-width: 1.5; stroke-linejoin: round; }
+.dial__cap { fill: var(--ink); }
+.dial__dot { fill: var(--sheet); }
+.cmp { margin-top: var(--s2); min-height: 3em; font-size: var(--t-sm); text-align: center; }
+.cmp > span { white-space: normal; }
+.cap { font-size: var(--t-sm); font-weight: var(--wt-strong); }
+
+.hist { margin: var(--s5) 0 0; }
+.hist__svg { display: block; width: 100%; height: auto; margin-top: var(--s2); overflow: visible; }
+.hist__base { stroke: var(--rule); stroke-width: 1.5; }
+.hist__line { fill: none; stroke: var(--ink); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.hist__pt { fill: var(--sheet); stroke: var(--ink); stroke-width: 1.5; }
+.hist__pt.is-last { fill: var(--ink); }
+.hist__ends { display: flex; justify-content: space-between; gap: var(--s3); margin-top: var(--s1); font-size: var(--t-xs); color: var(--ink-2); }
+.hist__delta { margin-top: var(--s2); font-weight: var(--wt-strong); }
+
+.facts { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3) var(--s4); margin: var(--s4) 0 0; padding-top: var(--s4); border-top: 1px solid var(--rule); }
+.facts dt { font-size: var(--t-xs); color: var(--ink-2); }
+.facts dd { margin: 0; font-weight: 500; }
+
+/* Actions with an inline confirm: a masked swap (MI2), no hold ring */
+.acts { display: grid; overflow: clip; margin: calc(var(--s5) - 6px) -6px -6px; padding: 6px; }
+.acts > div { grid-area: 1 / 1; align-self: start; transition: transform .35s var(--ease-swap), visibility 0s; }
+.acts:not(.is-confirm) .acts__b, .acts.is-confirm .acts__a { transition-delay: 0s, .35s; } /* the layer leaving hides after it slides out; the one arriving can take focus at once */
+.acts__a, .acts__row { display: flex; flex-wrap: wrap; gap: var(--s3); }
+.acts__b { transform: translateY(110%); visibility: hidden; }
+.acts__b p { font-weight: var(--wt-strong); margin-bottom: var(--s2); }
+.acts.is-confirm .acts__a { transform: translateY(-110%); visibility: hidden; }
+.acts.is-confirm .acts__b { transform: none; visibility: visible; }
+.chart__back { display: none; order: 2; }
+.chart__none { padding-block: var(--s2); }
+.chart__none p { margin-top: var(--s2); color: var(--ink-2); }
+
+/* ---------- Toast ---------- */
+.toast {
+  position: fixed; left: var(--s4); bottom: var(--s4); z-index: 60; max-width: min(32rem, calc(100vw - 32px));
+  display: flex; align-items: center; gap: var(--s2) var(--s4); padding: var(--s2) var(--s2) var(--s2) var(--s4);
+  border-radius: var(--r-button); background: var(--ink); color: var(--on-ink);
+}
+.toast__msg { flex: 1; }
+.toast .tbtn { color: var(--on-ink); }
+.toast .tbtn > span { background-image: linear-gradient(currentColor, currentColor), linear-gradient(color-mix(in srgb, var(--on-ink) 50%, transparent), color-mix(in srgb, var(--on-ink) 50%, transparent)); }
+.toast :focus-visible { outline-color: var(--on-ink); }
+
+/* ---------- Dialog (CD7) ---------- */
+.dlg { width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; background: transparent; color: var(--ink); overflow: hidden; }
+.dlg::backdrop { background: transparent; }
+.dlg__scrim { position: fixed; inset: 0; background: var(--scrim); backdrop-filter: blur(3px); }
+.dlg__panel {
+  position: relative; display: flex; flex-direction: column; width: min(46rem, calc(100% - 32px));
+  max-height: calc(100dvh - 64px); margin: 32px auto; border-radius: var(--r-panel); background: var(--sheet); overflow: hidden;
+}
+.dlg__head { display: flex; align-items: center; justify-content: space-between; gap: var(--s4); padding: var(--s3) var(--s3) var(--s3) var(--s5); border-bottom: 1px solid var(--rule); }
+.dlg__head h2 { font-family: var(--font-cond); font-size: var(--t-lg); font-weight: var(--wt-name); line-height: 1.15; }
+.dlg__body { overflow: auto; padding: var(--s5); overscroll-behavior: contain; }
+.dlg__foot { display: flex; justify-content: flex-end; align-items: center; gap: var(--s4); padding: var(--s3) var(--s5); border-top: 1px solid var(--rule); background: var(--sheet); }
+
+.fgrid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--s4); }
+.f { grid-column: span 3; min-width: 0; }
+.f--full { grid-column: 1 / -1; }
+.f--third { grid-column: span 2; }
+.f legend { display: flex; align-items: center; gap: 6px; padding: 0; margin-bottom: 6px; font-size: var(--t-sm); font-weight: 500; color: var(--ink-2); }
+.f fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+.ok { width: 14px; height: 14px; fill: none; stroke: var(--ink); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; opacity: 0; }
+.fl .ok { position: absolute; right: 14px; top: 20px; pointer-events: none; }
+.fl--sel .ok { right: 34px; }
+.fl--date .ok { right: 44px; }
+.ok path { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset .3s var(--ease-out); }
+.f.is-fixed .ok { opacity: 1; }
+.f.is-fixed .ok path { stroke-dashoffset: 0; }
+.fl .inp[aria-invalid="true"] { border-color: var(--alarm); }
+.fl--sel .inp { padding-right: 52px; }
+.fl--sel .chev { position: absolute; right: 14px; top: 22px; pointer-events: none; transition: transform .25s var(--ease-out); }
+.fl--sel:focus-within .chev { transform: rotate(180deg); }
+.fl input[type="date"] { padding-right: 12px; }
+.hint { margin-top: var(--s1); font-size: var(--t-xs); color: var(--ink-2); }
+.err { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .25s var(--ease-out); }
+.err > p { min-height: 0; overflow: hidden; color: var(--alarm); font-size: var(--t-sm); font-weight: 500; }
+.f.is-err .err { grid-template-rows: 1fr; }
+.f.is-err .err > p { padding-top: var(--s1); }
+
+.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s2); }
+.card { position: relative; display: block; }
+.card input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.card__face {
+  display: block; height: 100%; padding: var(--s2) var(--s3); border-radius: var(--r-button);
+  box-shadow: inset 0 0 0 1.5px var(--line); transition: box-shadow .2s, transform .4s var(--ease-pop);
+}
+.card__face b { display: block; font-weight: var(--wt-strong); }
+.card__face small { display: block; font-size: var(--t-xs); color: var(--ink-2); line-height: 1.35; }
+@media (hover: hover) { .card:hover .card__face { box-shadow: inset 0 0 0 1.5px var(--ink); } }
+.card input:checked + .card__face { box-shadow: inset 0 0 0 2.5px var(--ink); }
+.card input:focus-visible + .card__face { outline: 3px solid var(--ink); outline-offset: 2px; }
+.card input:active + .card__face { transform: scale(.97); transition-duration: .12s; }
+.card .badge { top: -6px; right: -6px; width: 22px; height: 22px; background: var(--wrap); color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--ink); }
+@media (hover: hover) { .card:hover input:not(:checked) ~ .badge { opacity: .3; transform: none; background: transparent; color: transparent; } }
+.card input:checked ~ .badge { opacity: 1; transform: none; animation: pop .25s var(--ease-pop); }
+.fset--err .card__face { box-shadow: inset 0 0 0 1.5px var(--alarm); }
+
+.check { position: relative; display: flex; align-items: center; flex-wrap: wrap; gap: var(--s2) var(--s3); min-height: 44px; }
+.check label { cursor: pointer; }
+.check input {
+  -webkit-appearance: none; appearance: none; flex: none; width: 22px; height: 22px; margin: 0;
+  border: 1.5px solid var(--ink); border-radius: 5px; background: var(--sheet); cursor: pointer;
+  transition: background-color var(--dur-fast), box-shadow var(--dur-fast);
+}
+@media (hover: hover) { .check:hover input { box-shadow: 0 0 0 6px var(--tint); } }
+.check input:checked { background: var(--ink); }
+.check__tick { position: absolute; left: 3px; top: 50%; width: 16px; height: 16px; margin-top: -8px; pointer-events: none; fill: none; stroke: var(--on-ink); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.check__tick path { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset .3s var(--ease-out); }
+.check input:checked + .check__tick path { stroke-dashoffset: 0; }
+.check .tag { opacity: 0; transform: scale(.6) rotate(-2deg); transition: opacity .2s, transform .25s var(--ease-pop); }
+.check input:checked ~ .tag { opacity: 1; transform: rotate(-2deg); }
+
+/* ---------- Hidden first states, only when the motion script runs ---------- */
+html.js:not(.booted) [data-rv], html.js:not(.booted) .dial__ticks, html.js:not(.booted) .dial__nums { opacity: 0; }
+
+/* ---------- Layout breakpoints ---------- */
+@media (min-width: 992px) {
+  /* the instrument column runs beside the masthead, so the weigh-in plays above the fold */
+  .page { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); grid-template-rows: auto 1fr; column-gap: var(--s6); }
+  .mast { grid-column: 1; grid-row: 1; }
+  .main { grid-column: 1; grid-row: 2; }
+  .chart { grid-column: 2; grid-row: 1 / 3; align-self: start; margin-top: var(--s4); margin-bottom: var(--s9); }
+  .bar { margin-inline: 0; padding-inline: 0; }
+  .dial { width: min(100%, 420px); }
+}
+@media (min-width: 992px) and (min-height: 700px) {
+  .chart { position: sticky; top: var(--s4); }
+  .chart__in { max-height: calc(100svh - 32px); overflow: auto; overscroll-behavior: contain; }
+}
+@media (max-width: 991px) {
+  .chart { margin-bottom: var(--s5); }
+  .chart__back { display: inline-flex; }
+  .acts__a::after { content: ''; flex-basis: 100%; order: 1; } /* the back link takes its own line */
+}
+@media (min-width: 600px) and (max-width: 991px) {
+  .chart__in { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); column-gap: var(--s6); align-items: start;
+    grid-template-areas: "name name" "line line" "scale hist" "scale facts" "scale acts" "none none"; }
+  .chart__name { grid-area: name; } .chart__line { grid-area: line; } .scale { grid-area: scale; } .hist { grid-area: hist; }
+  .facts { grid-area: facts; } .acts { grid-area: acts; } .chart__none { grid-area: none; }
+}
+@media (max-width: 767px) {
+  .row__btn {
+    grid-template-columns: 3.4rem minmax(0, 1fr) auto; column-gap: var(--s3);
+    grid-template-areas: "time name kg" "time owner owner" "time more more"; min-height: 56px; padding-left: var(--s4);
+  }
+  .row__more { grid-area: more; display: flex; flex-wrap: wrap; align-items: center; gap: 2px var(--s3); }
+  .row__kg { align-self: baseline; font-size: var(--t-base); }
+  .row__bar { left: 2px; width: 6px; }
+}
+@media (max-width: 599px) {
+  .mast { padding-bottom: var(--s5); }
+  .h1 { margin-top: var(--s5); }
+  .lede { font-size: var(--t-base); }
+  #patients { display: flex; flex-direction: column; }
+  .bar, .bar__in { display: contents; }
+  .bar__title { order: 1; display: block; align-self: auto; padding: var(--s2) 0 0; }
+  .bar__tt { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .bar__title time { font-size: var(--t-sm); font-weight: 500; }
+  .bar__find {
+    order: 2; flex: none; position: sticky; top: 0; z-index: 20; max-width: none; align-items: center;
+    margin-inline: calc(-1 * var(--pad)); padding: var(--s2) var(--pad); background: var(--floor); border-bottom: 1px solid var(--rule);
+  }
+  .bar__ctl { order: 3; flex: none; padding: var(--s3) 0 0; gap: var(--s2); }
+  .bar__add { order: 4; margin: var(--s3) 0 0; }
+  .desk { order: 5; padding-top: var(--s4); }
+  .sort { width: 100%; }
+  .sort__set { width: 100%; justify-content: space-between; }
+  .sort__btn { padding: 0 var(--s2); }
+  .sort__btn::after { left: var(--s2); right: var(--s2); }
+  .sort__label { display: none; }
+  .bar__chip { display: block; position: static; flex: none; width: auto; min-width: 4.4rem; margin: 0; padding: 4px 8px; }
+  .list { grid-template-columns: minmax(0, 1fr); }
+  .gutter { display: none; }
+  .sheet { padding: var(--s1); }
+  .foot__add { display: flex; width: 100%; }
+  .chart__in { padding: var(--s4); }
+  .dial { width: min(100%, 300px); }
+  .dlg__panel { width: 100%; height: 100%; max-height: none; margin: 0; border-radius: 0; }
+  .dlg__body { padding: var(--s4); }
+  .dlg__foot { padding-bottom: max(var(--s3), env(safe-area-inset-bottom)); }
+  .f, .f--third { grid-column: 1 / -1; }
+  .f--pair { grid-column: span 3; }
+  .f--third.f--pair { grid-column: 1 / -1; } /* date and time stack, so "Appointment date" is never cut */
+  .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .toast { left: var(--s4); right: var(--s4); max-width: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0s !important; transition-delay: 0s !important; animation: none !important; }
+  .btn:active, .tbtn:active, .xbtn:active, .sort__btn:active, .chipr input:active + .face, .card input:active + .card__face,
+  .row__btn:active > span { transform: none !important; }
+  html.js:not(.booted) [data-rv], html.js:not(.booted) .dial__ticks, html.js:not(.booted) .dial__nums { opacity: 1; }
+}
+</style>
+</head>
+<body>
+<a class="skip" id="skip" href="#patients-h">Skip to patient list</a>
+
+<div class="page">
+<header class="mast">
+  <div class="mast__top">
+    <p class="mark" data-rv>Fennick Road Vets</p>
+    <button class="tbtn" id="reset" type="button" data-rv><span>Reset sample data</span></button>
+  </div>
+  <h1 class="h1" data-rv>Thursday’s patients</h1>
+  <p class="lede" data-rv>Weigh every patient on arrival. Their chart keeps the last six weights, so the vet sees the trend before the consult starts.</p>
+</header>
+
+  <aside class="chart" id="chart" aria-labelledby="chart-h" data-rv>
+    <div class="chart__in" data-lenis-prevent>
+      <div class="chart__name">
+        <h2 id="chart-h" tabindex="-1">Biscuit</h2>
+        <span class="tag" id="chart-tag" hidden>Handle with care</span>
+      </div>
+      <p class="chart__line" id="chart-line"></p>
+
+      <div class="scale" id="scale">
+        <svg class="dial" id="dial" viewBox="0 0 400 400" role="img" aria-labelledby="dial-t">
+          <title id="dial-t">The scale reads zero.</title>
+          <circle class="dial__bezel" cx="200" cy="200" r="198"/>
+          <circle class="dial__face" cx="200" cy="200" r="188"/>
+          <g class="dial__ticks" id="dial-ticks"></g>
+          <g class="dial__nums" id="dial-nums"></g>
+          <text class="dial__unit" x="200" y="122">kg</text>
+          <circle class="dial__pin" cx="91.7" cy="334.7" r="4"/>
+          <text class="dial__read" id="dial-read" x="200" y="336">0.00 kg</text>
+          <text class="dial__range" id="dial-range" x="200" y="362">0 to 10 kg</text>
+          <path class="dial__ghost" id="ghost" d="M196.4 232 L199.1 36 L200 27 L200.9 36 L203.6 232 Z"/>
+          <path class="dial__needle" id="needle" d="M196.4 232 L199.1 36 L200 27 L200.9 36 L203.6 232 Z"/>
+          <circle class="dial__cap" cx="200" cy="200" r="12"/>
+          <circle class="dial__dot" cx="200" cy="200" r="3.5"/>
+        </svg>
+        <p class="vh" id="weight-sr" aria-live="polite"></p>
+        <p class="cmp swapbox" id="cmp"><span></span></p>
+      </div>
+
+      <figure class="hist" id="hist">
+        <figcaption class="cap" id="hist-cap">Last six weights</figcaption>
+        <svg class="hist__svg" id="hist-svg" viewBox="0 0 320 64" role="img" aria-labelledby="hist-title hist-desc">
+          <title id="hist-title">Weight history</title>
+          <desc id="hist-desc"></desc>
+          <line class="hist__base" x1="0" y1="63" x2="320" y2="63"/>
+          <path class="hist__line" id="hist-line" d="M0 0"/>
+          <g id="hist-pts"></g>
+        </svg>
+        <div class="hist__ends" aria-hidden="true"><span id="hist-first"></span><span id="hist-last"></span></div>
+        <ol class="vh" id="hist-list"></ol>
+        <p class="hist__delta" id="hist-delta"></p>
+      </figure>
+
+      <dl class="facts" id="facts">
+        <div><dt>Appointment</dt><dd id="fact-appt"></dd></div>
+        <div><dt>Slot</dt><dd id="fact-slot"></dd></div>
+        <div><dt>Reason</dt><dd id="fact-reason"></dd></div>
+        <div><dt>Vaccinations</dt><dd id="fact-vax"></dd></div>
+      </dl>
+
+      <div class="acts" id="acts">
+        <div class="acts__a" id="acts-a">
+          <button class="btn btn--line hv4" id="edit" type="button">Edit details</button>
+          <button class="btn btn--alarm-line hv4" id="del" type="button" aria-expanded="false" aria-controls="acts-b">Delete Biscuit’s record</button>
+          <a class="tbtn chart__back" id="back" href="#patients"><span>Back to list</span></a>
+        </div>
+        <div class="acts__b" id="acts-b" role="group" aria-labelledby="confirm-q" inert>
+          <p id="confirm-q">Delete Biscuit and 5 weights?</p>
+          <div class="acts__row">
+            <button class="btn btn--alarm hv4" id="del-yes" type="button">Yes, delete</button>
+            <button class="btn btn--line hv4" id="keep" type="button">Keep record</button>
+          </div>
+        </div>
+      </div>
+      <div class="chart__none" id="chart-none" hidden>
+        <p>Add a patient to weigh them in, or reset the sample data.</p>
+      </div>
+    </div>
+  </aside>
+
+<main class="main">
+<section id="patients" aria-labelledby="patients-h">
+  <div class="bar" id="bar">
+    <div class="bar__in">
+      <h2 class="bar__title" id="patients-h" tabindex="-1" data-rv><span class="bar__tt">Thursday’s patients </span><time datetime="2026-10-22">22 October 2026</time></h2>
+      <div class="bar__find" id="find-row" data-rv>
+        <form class="search fl" id="find" role="search">
+          <svg class="search__glyph" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="7.5" cy="7.5" r="5.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m11.6 11.6 4.4 4.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <input class="inp" id="q" name="q" type="search" placeholder=" " autocomplete="off" spellcheck="false">
+          <label for="q">Find a patient or owner</label>
+          <span class="fbar" aria-hidden="true"></span>
+          <button class="xbtn" id="q-clear" type="button" aria-label="Clear search"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2l10 10M12 2 2 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+        </form>
+        <span class="chip bar__chip" aria-hidden="true"><span class="swapbox chip__box"><span></span></span></span>
+      </div>
+      <button class="btn btn--primary bar__add hv4" id="add" type="button" data-rv><svg class="plus" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Add patient</button>
+      <div class="bar__ctl" data-rv>
+        <div class="sort" role="group" aria-labelledby="sort-l">
+          <span class="sort__label" id="sort-l">Sort by</span>
+          <div class="sort__set" id="sort">
+            <span class="sort__ind" id="sort-ind" aria-hidden="true"></span>
+            <button class="sort__btn" type="button" data-sort="time" aria-pressed="true" data-dir="asc">Time<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M1.5 3.5 5 7l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>
+            <button class="sort__btn" type="button" data-sort="name" aria-pressed="false">Name<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M1.5 3.5 5 7l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>
+            <button class="sort__btn" type="button" data-sort="weight" aria-pressed="false">Weight<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M1.5 3.5 5 7l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>
+            <button class="sort__btn" type="button" data-sort="vaccines" aria-pressed="false">Vaccines<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M1.5 3.5 5 7l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>
+          </div>
+        </div>
+        <fieldset class="filters" id="filters">
+          <legend class="vh">Show</legend>
+        </fieldset>
+      </div>
+    </div>
+  </div>
+
+  <div class="desk">
+    <div class="list">
+      <div class="gutter" aria-hidden="true" data-rv>
+        <span class="gutter__rule"></span>
+        <span class="gutter__fill"></span>
+        <span class="chip"><span class="swapbox chip__box"><span></span></span></span>
+      </div>
+      <div class="sheet" data-rv>
+        <span class="sheet__bg" aria-hidden="true"></span>
+        <ul class="rows" id="rows" aria-label="Patients"></ul>
+        <div class="empty" id="empty" hidden>
+          <p id="empty-msg"></p>
+          <div class="empty__acts">
+            <button class="tbtn" type="button" id="empty-clear"><span>Clear search</span></button>
+            <button class="tbtn" type="button" id="empty-all"><span>Show all patients</span></button>
+            <button class="tbtn" type="button" id="empty-add"><span>Add a patient</span></button>
+            <button class="tbtn" type="button" id="empty-reset"><span>Reset the sample data</span></button>
+          </div>
+        </div>
+        <div class="foot" id="foot">
+          <svg class="foot__rule" viewBox="0 0 100 2" preserveAspectRatio="none" aria-hidden="true"><line id="foot-rule" x1="0" y1="1" x2="100" y2="1"/></svg>
+          <p class="foot__cap" id="foot-cap">Thursday totals</p>
+          <p class="vh" id="tot-sr"></p>
+          <p class="foot__tot" aria-hidden="true">
+            <span><b data-tot="count">12 patients</b></span>
+            <span><b data-tot="minutes">4 h 50 min</b> booked</span>
+            <span><b data-tot="overdue">2 vaccinations</b> overdue</span>
+          </p>
+          <button class="btn btn--primary foot__add hv4" id="add-2" type="button"><svg class="plus" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Add patient</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+</main>
+</div>
+
+<div class="toast" id="toast" hidden>
+  <p class="toast__msg" id="toast-msg"></p>
+  <button class="tbtn" id="toast-undo" type="button"><span>Undo</span></button>
+  <button class="xbtn" id="toast-x" type="button" aria-label="Dismiss message"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2l10 10M12 2 2 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+</div>
+<p class="vh" id="live" aria-live="polite"></p>
+
+<dialog class="dlg" id="dlg" aria-labelledby="dlg-h">
+  <div class="dlg__scrim"></div>
+  <form class="dlg__panel" id="form" novalidate>
+    <div class="dlg__head">
+      <h2 id="dlg-h">Add a patient</h2>
+      <button class="xbtn" id="dlg-x" type="button" aria-label="Close without saving"><svg width="16" height="16" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2l10 10M12 2 2 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+    </div>
+    <div class="dlg__body" data-lenis-prevent>
+      <div class="fgrid">
+        <div class="f" data-f="name">
+          <div class="fl"><input class="inp" id="f-name" name="name" type="text" placeholder=" " autocomplete="off" maxlength="30" aria-describedby="e-name"><label for="f-name">Patient name</label><svg class="ok" viewBox="0 0 14 14" aria-hidden="true"><path pathLength="1" d="m2.5 7.5 3 3 6-7"/></svg><span class="fbar" aria-hidden="true"></span></div>
+          <div class="err"><p id="e-name"></p></div>
+        </div>
+        <div class="f" data-f="owner">
+          <div class="fl"><input class="inp" id="f-owner" name="owner" type="text" placeholder=" " autocomplete="off" maxlength="40" aria-describedby="e-owner"><label for="f-owner">Owner’s name</label><svg class="ok" viewBox="0 0 14 14" aria-hidden="true"><path pathLength="1" d="m2.5 7.5 3 3 6-7"/></svg><span class="fbar" aria-hidden="true"></span></div>
+          <div class="err"><p id="e-owner"></p></div>
+        </div>
+        <div class="f f--full" data-f="species">
+          <fieldset id="f-species" aria-describedby="e-species">
+            <legend>Species <svg class="ok" viewBox="0 0 14 14" aria-hidden="true"><path pathLength="1" d="m2.5 7.5 3 3 6-7"/></svg></legend>
+            <div class="cards" id="cards"></div>
+          </fieldset>
+          <div class="err"><p id="e-species"></p></div>
+        </div>
+        <div class="f f--pair" data-f="weightKg">
+          <div class="fl"><input class="inp" id="f-weight" name="weightKg" type="text" inputmode="decimal" placeholder=" " autocomplete="off" aria-describedby="h-weight e-weightKg"><label for="f-weight">Weight (kg)</label><svg class="ok" viewBox="0 0 14 14" aria-hidden="true"><path pathLength="1" d="m2.5 7.5 3 3 6-7"/></svg><span class="fbar" aria-hidden="true"></span></div>
+          <p class="hint" id="h-weight"></p>
+          <div class="err"><p id="e-weightKg"></p></div>
+        </div>
+        <div class="f f--pair" data-f="ageYears">
+          <div class="fl"><input class="inp" id="f-age" name="ageYears" type="text" inputmode="numeric" placeholder=" " autocomplete="off" aria-describedby="h-age e-ageYears"><label for="f-age">Age (years)</label><svg class="ok" viewBox="0 0 14 14" aria-hidden="true"><path pathLength="1" d="m2.5 7.5 3 3 6-7"/></svg><span class="fbar" aria-hidden="true"></span></div>
+          <p class="hint" id="h-age">Use 0 for patients under a year</p>
+          <div class="err"><p id="e-ageYears"></p></div>
+        </div>
+        <div class="f f--third f--pair" data-f="date">
+          <div class="fl fl--up fl--date"><input class="inp" id="f-date" name="date" type="date" min="2026-01-01" max="2027-12-31" aria-describedby="e-date"><label for="f-date">Appointment date</label><svg class="ok" viewBox="0 0 14 14" aria-hidden="true"><path pathLength="1" d="m2.5 7.5 3 3 6-7"/></svg><span class="fbar" aria-hidden="true"></span></div>
+          <div class="err"><p id="e-date"></p></div>
+        </div>
+        <div class="f f--third f--pair" data-f="time">
+          <div class="fl fl--up fl--sel"><select class="inp" id="f-time" name="time" aria-describedby="e-time"></select><label for="f-time">Time</label><svg class="ok" viewBox="0 0 14 14" aria-hidden="true"><path pathLength="1" d="m2.5 7.5 3 3 6-7"/></svg><svg class="chev" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M1.5 3.5 5 7l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><span class="fbar" aria-hidden="true"></span></div>
+          <div class="err"><p id="e-time"></p></div>
+        </div>
+        <div class="f f--third" data-f="minutes">
+          <div class="fl"><input class="inp" id="f-min" name="minutes" type="text" inputmode="numeric" placeholder=" " autocomplete="off" aria-describedby="e-minutes"><label for="f-min">Slot length (minutes)</label><svg class="ok" viewBox="0 0 14 14" aria-hidden="true"><path pathLength="1" d="m2.5 7.5 3 3 6-7"/></svg><span class="fbar" aria-hidden="true"></span></div>
+          <div class="err"><p id="e-minutes"></p></div>
+        </div>
+        <div class="f f--full" data-f="reason">
+          <div class="fl fl--up fl--sel"><select class="inp" id="f-reason" name="reason" aria-describedby="e-reason"></select><label for="f-reason">Reason</label><svg class="ok" viewBox="0 0 14 14" aria-hidden="true"><path pathLength="1" d="m2.5 7.5 3 3 6-7"/></svg><svg class="chev" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M1.5 3.5 5 7l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><span class="fbar" aria-hidden="true"></span></div>
+          <div class="err"><p id="e-reason"></p></div>
+        </div>
+        <div class="f f--full" data-f="vaccinated">
+          <div class="check">
+            <input id="f-vax" name="vaccinated" type="checkbox">
+            <svg class="check__tick" viewBox="0 0 16 16" aria-hidden="true"><path pathLength="1" d="m3.5 8.5 3 3 6-7"/></svg>
+            <label for="f-vax">Vaccinations up to date</label>
+          </div>
+        </div>
+        <div class="f f--full" data-f="caution">
+          <div class="check">
+            <input id="f-care" name="caution" type="checkbox">
+            <svg class="check__tick" viewBox="0 0 16 16" aria-hidden="true"><path pathLength="1" d="m3.5 8.5 3 3 6-7"/></svg>
+            <label for="f-care">Handle with care (may bite or scratch)</label>
+            <span class="tag" aria-hidden="true">Handle with care</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="dlg__foot">
+      <button class="tbtn" id="dlg-cancel" type="button"><span>Cancel</span></button>
+      <button class="btn btn--primary hv4" id="dlg-save" type="submit"><span class="btn__swap"><span id="save-l">Save patient</span><span aria-hidden="true">Saved</span></span></button>
+    </div>
+  </form>
+</dialog>
+
+<noscript><p class="wrap">The patient list needs JavaScript to run in this browser.</p></noscript>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/Flip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/DrawSVGPlugin.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/CustomEase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  'use strict';
+  const root = document.documentElement;
+  root.classList.add('js');
+  const LIBS = !!(window.gsap && window.ScrollTrigger && window.Flip && window.DrawSVGPlugin && window.CustomEase && window.Lenis);
+  if (!LIBS) root.classList.remove('js'); // CDN blocked: nothing is hidden, the records still work without motion
+
+  const $ = (s, c = document) => c.querySelector(s);
+  const $$ = (s, c = document) => [...c.querySelectorAll(s)];
+  const css = getComputedStyle(root);
+  const G = k => parseFloat(css.getPropertyValue('--g-' + k)) || 0;
+  const mq = q => matchMedia(q).matches;
+  const reduced = () => mq('(prefers-reduced-motion: reduce)');
+  const sideBySide = () => mq('(min-width: 992px)');
+
+  /* ================= Domain ================= */
+  const KEY = 'crud-vet-clinic:v1';
+  // shortcut: fixed clinic day so seeds and self-test are deterministic, switch to new Date() for real use
+  const CLINIC_DAY = '2026-10-22';
+  const SPECIES = [
+    ['dog', 'Dog', 'Usually 2 to 45 kg'], ['cat', 'Cat', 'Usually 3 to 6 kg'], ['rabbit', 'Rabbit', 'Usually 1 to 6 kg'],
+    ['guineapig', 'Guinea pig', 'Usually 0.7 to 1.2 kg'], ['bird', 'Bird', 'Usually 20 g to 1 kg'], ['reptile', 'Reptile', 'Usually 50 g to 5 kg']
+  ];
+  const SP = Object.fromEntries(SPECIES.map(([k, l]) => [k, l]));
+  const FILTERS = {
+    all: { chip: 'All', label: 'all patients', species: null }, dogs: { chip: 'Dogs', label: 'dogs', species: ['dog'] }, cats: { chip: 'Cats', label: 'cats', species: ['cat'] },
+    small: { chip: 'Rabbits and guinea pigs', label: 'rabbits and guinea pigs', species: ['rabbit', 'guineapig'] },
+    exotic: { chip: 'Birds and reptiles', label: 'birds and reptiles', species: ['bird', 'reptile'] }
+  };
+  const REASONS = ['Booster vaccination', 'Check-up', 'Dental', 'Post-op check', 'Nail clip', 'Weight clinic'];
+  const SLOTS = Array.from({ length: 57 }, (_, i) => { const m = 510 + i * 10; return String(m / 60 | 0).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); });
+  const LABELS = { name: 'Patient name', owner: 'Owner’s name', species: 'Species', weightKg: 'Weight', ageYears: 'Age', date: 'Appointment date', time: 'Time', minutes: 'Slot length', reason: 'Reason' };
+  const MSG = {
+    name: 'Enter the patient’s name, up to 30 characters.',
+    owner: 'Enter the owner’s name, 2 to 40 characters.',
+    species: 'Choose the species.',
+    weight: 'Enter the weight in kilograms, up to 3 decimals, for example 0.041 or 8.62',
+    weightRange: 'Enter a weight above 0 and up to 100 kg, the most the scale reads.',
+    age: 'Enter whole years from 0 to 30. Use 0 for patients under a year.',
+    date: 'Enter a date from 1 January 2026 to 31 December 2027.',
+    time: 'Choose a time between 08:30 and 17:50.',
+    minutes: 'Enter 5 to 120 minutes, in steps of 5.',
+    visit: (name, iso) => `Choose a date after ${name}’s last weigh-in on ${dateWords(iso)}.`,
+    reason: 'Choose a reason from the list.'
+  };
+  // name, species, age, owner, reason, time, slot minutes, vaccinations up to date, handle with care, weights [date, kg]
+  const SEED = [
+    ['Biscuit', 'dog', 6, 'Ms A. Okafor', 'Booster vaccination', '08:40', 15, true, false, [['2024-10-10', 7.84], ['2025-04-03', 7.96], ['2025-10-09', 8.1], ['2026-02-18', 8.35], ['2026-07-14', 8.22], ['2026-10-22', 8.62]]],
+    ['Mango', 'cat', 9, 'Mr T. Hale', 'Check-up', '09:10', 20, false, false, [['2025-09-30', 4.31], ['2026-04-21', 4.26], ['2026-10-22', 4.2]]],
+    ['Pickle', 'rabbit', 3, 'The Ndlovu family', 'Nail clip', '09:30', 10, true, false, [['2026-01-15', 2.05], ['2026-06-10', 2.11], ['2026-10-22', 2.14]]],
+    ['Juniper', 'dog', 7, 'Mrs R. Pryce', 'Post-op check', '10:00', 20, true, true, [['2026-08-02', 28.1], ['2026-10-08', 27.1], ['2026-10-22', 27.4]]],
+    ['Duchess', 'cat', 16, 'Mr D. Achterberg', 'Check-up', '10:20', 30, true, false, [['2026-03-03', 4.1], ['2026-04-14', 3.95], ['2026-05-26', 3.86], ['2026-07-07', 3.74], ['2026-08-25', 3.66], ['2026-10-22', 3.58]]],
+    ['Ziggy', 'bird', 4, 'Miss L. Fenwick', 'Nail clip', '11:00', 10, true, false, [['2025-11-12', 0.038], ['2026-05-06', 0.04], ['2026-10-22', 0.041]]],
+    ['Otis', 'dog', 8, 'Mr K. Mensah', 'Weight clinic', '11:40', 20, true, false, [['2026-05-14', 36.7], ['2026-06-11', 36.2], ['2026-07-09', 35.8], ['2026-08-13', 35.5], ['2026-09-17', 35.2], ['2026-10-22', 34.9]]],
+    ['Bramble', 'guineapig', 4, 'Ms P. Ivanova', 'Dental', '12:10', 40, true, false, [['2026-07-01', 1.12], ['2026-09-09', 1.08], ['2026-10-22', 1.05]]],
+    ['Nala', 'cat', 5, 'Ms J. Whitlock', 'Booster vaccination', '14:00', 15, false, true, [['2025-10-20', 5.62], ['2026-10-22', 5.8]]],
+    ['Hector', 'reptile', 24, 'Mr G. Doyle', 'Check-up', '14:30', 30, true, false, [['2026-03-25', 1.29], ['2026-10-22', 1.36]]],
+    ['Rolo', 'dog', 11, 'Mrs S. Kaur', 'Dental', '15:10', 60, true, false, [['2026-02-02', 9.95], ['2026-10-22', 9.8]]],
+    ['Clover', 'rabbit', 2, 'Mr O. Brennan', 'Booster vaccination', '16:30', 20, true, false, [['2025-11-04', 1.7], ['2026-10-22', 1.92]]]
+  ];
+  const seedRecords = () => SEED.map((s, i) => ({
+    id: 'p' + (i + 1), name: s[0], species: s[1], ageYears: s[2], owner: s[3], reason: s[4], date: CLINIC_DAY, time: s[5],
+    minutes: s[6], vaccinated: s[7], caution: s[8], weightKg: s[9].at(-1)[1], weights: s[9].map(([date, kg]) => ({ date, kg }))
+  }));
+  const freshState = () => ({ records: seedRecords(), seq: SEED.length, undo: null });
+  const clone = x => JSON.parse(JSON.stringify(x));
+
+  /* Validators, one per field type */
+  const V = {
+    text(raw, min, max) { const v = String(raw ?? '').trim().replace(/\s+/g, ' '); return v.length >= min && v.length <= max ? { value: v } : { error: true }; },
+    int(raw, min, max, step = 1) {
+      const s = String(raw ?? '').trim();
+      if (!/^\d+$/.test(s)) return { error: true };
+      const n = Number(s);
+      return n >= min && n <= max && n % step === 0 ? { value: n } : { error: true };
+    },
+    dec(raw) { // accepts "0,041" or "0.041"; up to 3 decimals, the scale's gram resolution
+      const s = String(raw ?? '').trim().replace(',', '.');
+      if (!/^(\d+(\.\d*)?|\.\d+)$/.test(s)) return { error: MSG.weight };
+      const n = parseFloat(s);
+      if (!(n > 0 && n <= 100)) return { error: MSG.weightRange };
+      if ((s.split('.')[1] || '').length > 3) return { error: MSG.weight };
+      return { value: n };
+    },
+    date(raw, min, max) {
+      const s = String(raw ?? '');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return { error: true };
+      const d = new Date(s + 'T00:00:00Z');
+      if (isNaN(d) || d.toISOString().slice(0, 10) !== s) return { error: true };
+      return s >= min && s <= max ? { value: s } : { error: true };
+    },
+    choice(raw, list) { return list.includes(raw) ? { value: raw } : { error: true }; },
+    bool(raw) { return { value: raw === true || raw === 'true' || raw === 'on' || raw === 1 || raw === '1' }; }
+  };
+  function validateRecord(raw) {
+    const errors = {}, rec = {};
+    const take = (k, r, msg) => { if (r.error) errors[k] = typeof r.error === 'string' ? r.error : msg; else rec[k] = r.value; };
+    take('name', V.text(raw.name, 1, 30), MSG.name);
+    take('owner', V.text(raw.owner, 2, 40), MSG.owner);
+    take('species', V.choice(raw.species, SPECIES.map(s => s[0])), MSG.species);
+    take('weightKg', V.dec(raw.weightKg));
+    take('ageYears', V.int(raw.ageYears, 0, 30), MSG.age);
+    take('date', V.date(raw.date, '2026-01-01', '2027-12-31'), MSG.date);
+    take('time', V.choice(raw.time, SLOTS), MSG.time);
+    take('minutes', V.int(raw.minutes, 5, 120, 5), MSG.minutes);
+    take('reason', V.choice(raw.reason, REASONS), MSG.reason);
+    rec.vaccinated = V.bool(raw.vaccinated).value;
+    rec.caution = V.bool(raw.caution).value;
+    return { ok: !Object.keys(errors).length, errors, rec };
+  }
+  const isWeights = w => Array.isArray(w) && w.length >= 1 && w.length <= 6 && w.every(p => p && V.date(p.date, '2000-01-01', '2099-12-31').value && typeof p.kg === 'number' && p.kg > 0 && p.kg <= 100);
+  // this visit is always the last weigh-in, so the chart, the row and the history agree
+  const isRecord = r => r && typeof r.id === 'string' && validateRecord(r).ok && isWeights(r.weights) && r.weights.at(-1).date === r.date && r.weights.at(-1).kg === r.weightKg;
+  // an edited visit cannot move onto or before an earlier weigh-in
+  const visitClash = (r, date) => { const p = r.weights.at(-2); return p && date <= p.date ? p : null; };
+
+  /* Create, update, delete, reset and one-step undo, on any state object */
+  const ops = {
+    create(st, rec) {
+      const r = { ...rec, id: 'p' + (++st.seq), weights: [{ date: rec.date, kg: rec.weightKg }] };
+      st.records.push(r);
+      return r;
+    },
+    update(st, id, rec) {
+      const r = st.records.find(x => x.id === id);
+      if (!r || visitClash(r, rec.date)) return null;
+      const prev = clone(r), weightChanged = rec.weightKg !== r.weightKg;
+      Object.assign(r, rec, { id });
+      r.weights = [...r.weights.slice(0, -1), { date: r.date, kg: r.weightKg }]; // the visit's weigh-in moves and changes with the visit
+      return { r, prev, weightChanged };
+    },
+    remove(st, id) {
+      const r = st.records.find(x => x.id === id);
+      if (!r) return null;
+      st.undo = { kind: 'delete', records: clone(st.records), id, name: r.name };
+      st.records = st.records.filter(x => x.id !== id);
+      return r;
+    },
+    reset(st) {
+      st.undo = { kind: 'reset', records: clone(st.records) };
+      st.records = seedRecords();
+      st.seq = Math.max(st.seq, SEED.length);
+    },
+    undo(st) {
+      const u = st.undo;
+      if (!u) return null;
+      st.records = u.records;
+      st.undo = null;
+      return u;
+    }
+  };
+
+  /* Sorting, search, filters and totals */
+  const dayGroup = r => r.date === CLINIC_DAY ? 0 : r.date > CLINIC_DAY ? 1 : 2;
+  const GROUP_NAMES = ['', 'Later dates', 'Earlier dates'];
+  const SORTS = {
+    time: { def: 'asc', words: { asc: 'earliest first', desc: 'latest first' }, cmp: (a, b) => (a.date + a.time).localeCompare(b.date + b.time) },
+    name: { def: 'asc', words: { asc: 'A to Z', desc: 'Z to A' }, cmp: (a, b) => a.name.localeCompare(b.name, 'en', { sensitivity: 'base' }) },
+    weight: { def: 'desc', words: { desc: 'heaviest first', asc: 'lightest first' }, cmp: (a, b) => a.weightKg - b.weightKg },
+    vaccines: { def: 'asc', words: { asc: 'overdue first', desc: 'up to date first' }, cmp: (a, b) => a.vaccinated - b.vaccinated }
+  };
+  const sortRecords = (list, key, dir) => {
+    const s = SORTS[key], k = dir === 'desc' ? -1 : 1;
+    return list.slice().sort((a, b) => dayGroup(a) - dayGroup(b) || k * s.cmp(a, b) || SORTS.time.cmp(a, b));
+  };
+  const norm = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+  const matches = (r, q) => !q || norm(r.name).includes(norm(q)) || norm(r.owner).includes(norm(q));
+  const inFilter = (r, f) => !FILTERS[f].species || FILTERS[f].species.includes(r.species);
+  const totals = list => {
+    const today = list.filter(r => r.date === CLINIC_DAY);
+    return { count: today.length, minutes: today.reduce((s, r) => s + r.minutes, 0), overdue: today.filter(r => !r.vaccinated).length };
+  };
+  const fmtDuration = min => { const h = Math.floor(min / 60), m = Math.round(min % 60); return h && m ? `${h} h ${m} min` : h ? `${h} h` : `${m} min`; };
+  const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+  const NUM_WORDS = ['no', 'one', 'two', 'three', 'four', 'five', 'six'];
+  const ordinal = n => { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
+
+  /* Resolution: the scale reads in 1 g steps up to 6 kg and in 20 g steps above */
+  const FINE_MAX = 6;
+  const reading = kg => { kg = Math.max(0, kg); return kg <= FINE_MAX ? (Math.round(kg * 1000) / 1000).toFixed(3) : (Math.round(kg / .02) * .02).toFixed(2); };
+  const trim2 = s => /\.\d\d0$/.test(s) ? s.slice(0, -1) : s; // 4.200 reads 4.20 on paper, 4.215 stays
+  const kgParts = kg => kg < 1 ? { v: String(Math.round(kg * 1000)), u: 'g' } : { v: trim2(reading(kg)), u: 'kg' };
+  const kgText = kg => { const p = kgParts(kg); return `${p.v} ${p.u}`; };
+  const kgWords = kg => { const p = kgParts(kg); return `${p.v} ${p.u === 'g' ? 'grams' : 'kilograms'}`; };
+  // a difference is only as fine as the coarser of its two readings; prose drops trailing zeros ("0.4 kg")
+  const diffText = (d, a, b) => {
+    if (Math.max(a, b) < 1) return `${Math.round(Math.abs(d) * 1000)} g`;
+    const v = Math.max(a, b) > FINE_MAX ? (Math.round(Math.abs(d) / .02) * .02).toFixed(2) : Math.abs(d).toFixed(3);
+    return `${v.replace(/\.?0+$/, '')} kg`;
+  };
+  const fmtDelta = r => { // since the previous visit: the trend a vet reads first
+    const w = r.weights;
+    if (w.length < 2) return 'First weight on record';
+    const a = w.at(-2).kg, b = w.at(-1).kg, d = b - a, since = ` since ${dateWords(w.at(-2).date)}`;
+    if (Math.abs(d) < .0005) return `No change${since}`;
+    return (d > 0 ? 'Up ' : 'Down ') + diffText(d, a, b) + since;
+  };
+
+  /* The dial auto-ranges like a clinic scale: full scale is the smallest of these that holds the weight */
+  const RANGES = [1, 2, 5, 10, 20, 50, 100];
+  const rangeOf = kg => RANGES.find(m => kg <= m) || 100;
+  const needleAngle = (kg, max) => Math.min(1, Math.max(0, kg / max)) * 270 - 135; // 0 at -135deg, full scale at +135deg
+  const numeral = v => String(+v.toFixed(2));
+  // the readout shows what the needle points at, at the precision of the weight it is heading for
+  const readText = (kg, to) => {
+    const p = kgParts(to);
+    if (p.u === 'g') return `${Math.round(kg * 1000)} g`;
+    return `${(to > FINE_MAX ? Math.round(kg / .02) * .02 : kg).toFixed((p.v.split('.')[1] || '').length)} kg`;
+  };
+
+  /* Dates, fixed to UTC so the clinic day never drifts */
+  const D = (iso, o) => new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', ...o }).format(new Date(iso + 'T00:00:00Z'));
+  const sameYear = iso => iso.slice(0, 4) === CLINIC_DAY.slice(0, 4);
+  const dayShort = iso => D(iso, { weekday: 'short', day: 'numeric', month: 'short' });
+  const dayLong = iso => D(iso, { weekday: 'long', day: 'numeric', month: 'long' });
+  const dateWords = iso => D(iso, sameYear(iso) ? { day: 'numeric', month: 'long' } : { day: 'numeric', month: 'long', year: 'numeric' });
+
+  /* ================= Storage ================= */
+  function makeStore(getStorage, key = KEY) {
+    let mem = null; // in-memory copy, used when sessionStorage is blocked or throws
+    return {
+      load() {
+        try { const raw = getStorage().getItem(key); if (raw) return JSON.parse(raw); } catch { /* fall through to memory */ }
+        try { return mem ? JSON.parse(mem) : null; } catch { return null; }
+      },
+      save(data) {
+        mem = JSON.stringify(data);
+        try { getStorage().setItem(key, mem); return true; } catch { return false; }
+      }
+    };
+  }
+  const store = makeStore(() => window.sessionStorage);
+  function loadState() {
+    const d = store.load();
+    if (d && Array.isArray(d.records) && d.records.every(isRecord)) return { records: d.records, seq: Math.max(Number(d.seq) || 0, d.records.length), undo: null };
+    return freshState();
+  }
+  const state = loadState();
+  const save = () => store.save({ records: state.records, seq: state.seq });
+  const ui = { sort: 'time', dir: 'asc', filter: 'all', q: '', sel: null, booted: false };
+  const find = id => state.records.find(r => r.id === id);
+
+  /* ================= Elements ================= */
+  const el = {
+    rows: $('#rows'), empty: $('#empty'), emptyMsg: $('#empty-msg'), foot: $('#foot'), footCap: $('#foot-cap'),
+    chart: $('#chart'), chartH: $('#chart-h'), chartTag: $('#chart-tag'), chartLine: $('#chart-line'),
+    dial: $('#dial'), dialT: $('#dial-t'), ticks: $('#dial-ticks'), nums: $('#dial-nums'), read: $('#dial-read'), range: $('#dial-range'),
+    needle: $('#needle'), ghost: $('#ghost'), weightSr: $('#weight-sr'), cmp: $('#cmp'), chartIn: $('.chart__in'), patients: $('#patients'),
+    hist: $('#hist'), histCap: $('#hist-cap'), histLine: $('#hist-line'), histPts: $('#hist-pts'), histDesc: $('#hist-desc'),
+    histFirst: $('#hist-first'), histLast: $('#hist-last'), histList: $('#hist-list'), histDelta: $('#hist-delta'),
+    facts: $('#facts'), acts: $('#acts'), actsA: $('#acts-a'), actsB: $('#acts-b'), del: $('#del'), confirmQ: $('#confirm-q'), none: $('#chart-none'),
+    toast: $('#toast'), toastMsg: $('#toast-msg'), toastUndo: $('#toast-undo'), live: $('#live'),
+    dlg: $('#dlg'), form: $('#form'), q: $('#q'), find: $('#find'), sort: $('#sort'), ind: $('#sort-ind'),
+    chips: $$('.chip__box'), bar: $('#bar'), findRow: $('#find-row')
+  };
+
+  /* Filter chips with live counts */
+  $('#filters').insertAdjacentHTML('beforeend', Object.entries(FILTERS).map(([k, f], i) =>
+    `<label class="chipr"><input type="radio" name="show" value="${k}"${i ? '' : ' checked'}><span class="face">${f.chip} <span class="n" data-count="${k}"></span></span><span class="badge" aria-hidden="true"><svg width="10" height="10" viewBox="0 0 10 10"><path d="m2 5.2 2 2L8 3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></label>`).join(''));
+
+  /* ================= The dial: 50 divisions, 11 numbered, drawn once ================= */
+  const CX = 200, CY = 200;
+  const polar = (deg, r) => [CX + r * Math.sin(deg * Math.PI / 180), CY - r * Math.cos(deg * Math.PI / 180)];
+  el.ticks.innerHTML = Array.from({ length: 51 }, (_, i) => {
+    const deg = -135 + i * 5.4, maj = i % 5 === 0, [x1, y1] = polar(deg, 178), [x2, y2] = polar(deg, maj ? 156 : 166);
+    return `<line class="${maj ? 'maj' : 'min'}" x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"/>`;
+  }).join('');
+  el.nums.innerHTML = Array.from({ length: 11 }, (_, i) => { const [x, y] = polar(-135 + i * 27, 136); return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}"></text>`; }).join('');
+  const dial = { kg: 0, to: 10, max: 0 }; // what the needle points at, the weight whose precision the readout uses, full scale
+  const rot = (node, deg) => node.setAttribute('transform', `rotate(${deg.toFixed(2)} ${CX} ${CY})`);
+  function setRange(max) {
+    if (dial.max === max) return;
+    dial.max = max;
+    $$('text', el.nums).forEach((t, i) => { t.textContent = numeral(max * i / 10); });
+    el.range.textContent = `0 to ${max} kg`;
+  }
+  function paint(kg) { // the needle and the readout move together: the number is read off the needle's angle
+    dial.kg = kg;
+    rot(el.needle, needleAngle(kg, dial.max));
+    el.read.textContent = readText(Math.min(kg, dial.max), dial.to);
+  }
+  function lockScale(r) {
+    setRange(rangeOf(r.weightKg));
+    dial.to = r.weightKg;
+    paint(r.weightKg);
+    el.dialT.textContent = `Weight ${kgWords(r.weightKg)} on the 0 to ${dial.max} kilogram scale`;
+    el.weightSr.textContent = `${r.name}, ${kgWords(r.weightKg)}`;
+  }
+  function emptyScale() {
+    dial.to = 10; // reads 0.00 kg
+    paint(0);
+    el.dialT.textContent = el.weightSr.textContent = 'The scale reads zero.';
+  }
+  setRange(10);
+  function setText(box, text) { const s = document.createElement('span'); s.textContent = text; box.replaceChildren(s); }
+
+  /* ================= Motion hooks (plain defaults; the GSAP layer replaces them) ================= */
+  const FX = {
+    flip(mutate) { mutate(); },
+    afterLayout() {},
+    weigh(r) { if (r) lockScale(r); else emptyScale(); },
+    swap(box, text) { setText(box, text); },
+    ghost(kg) { // instant: the hollow needle shows the hovered patient's weight on this dial
+      if (kg == null) { el.ghost.style.opacity = ''; return; }
+      rot(el.ghost, needleAngle(kg, dial.max));
+      el.ghost.style.opacity = '.55';
+    },
+    rowEnter() {}, rowLeave() {}, rowFocus() {}, rowBlur() {},
+    highlight() {},
+    toastIn() {}, toastOut(t, done) { done(); },
+    dlgOpen() {}, dlgClose(d, done) { done(); },
+    totals(node, from, to, fmt) { node.textContent = fmt(to); },
+    scrollTo(target, done) {
+      const top = target.getBoundingClientRect().top + scrollY - scrollOffset(target);
+      scrollTo({ top: Math.max(0, top), behavior: reduced() ? 'auto' : 'smooth' });
+      done && done();
+    },
+    lenis() {},
+    cancelIntro() {}
+  };
+  const fx = { ...FX };
+
+  /* ================= UI helpers ================= */
+  const say = msg => { el.live.textContent = ''; requestAnimationFrame(() => { el.live.textContent = msg; }); };
+  const barHeight = () => (mq('(max-width: 599px)') ? el.findRow : el.bar).getBoundingClientRect().height;
+  // targets inside the list sit under the sticky toolbar; the chart and the list's own top do not
+  const scrollOffset = t => (t !== el.patients && el.patients.contains(t) ? barHeight() : 0) + 16;
+  const focusNoScroll = node => node && node.focus({ preventScroll: true });
+  const setLabel = (btn, text) => { $('span', btn).textContent = text; };
+
+  /* ================= List ================= */
+  const rowEls = new Map();
+  const grpEls = [null, makeGroup(1), makeGroup(2)];
+  function makeGroup(i) {
+    const li = document.createElement('li');
+    li.className = 'grp'; li.setAttribute('role', 'presentation'); li.hidden = true;
+    li.innerHTML = `<h3>${GROUP_NAMES[i]}</h3>`;
+    return li;
+  }
+  function makeRow(id) {
+    const li = document.createElement('li');
+    li.className = 'row'; li.dataset.id = id;
+    li.innerHTML = `<button class="row__btn" type="button" aria-describedby="${id}-o ${id}-m"><span class="row__tint" aria-hidden="true"></span><span class="row__wash" aria-hidden="true"></span><span class="row__bar" aria-hidden="true"></span><span class="row__time" aria-hidden="true"><span class="row__day"></span><span class="row__clock"></span></span><span class="row__name" aria-hidden="true"><span class="row__nm"></span><span class="row__sp"></span></span><span class="row__kg" aria-hidden="true"></span><span class="row__owner" id="${id}-o"></span><span class="row__more" id="${id}-m"><span class="row__reason"></span><span class="row__vax"><span class="row__vt"></span><span class="tag">Handle with care</span></span></span></button>`;
+    const btn = li.firstElementChild;
+    btn.addEventListener('click', () => select(id, { user: true }));
+    btn.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') { fx.rowEnter(li, e); compare(id); } });
+    btn.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') { fx.rowLeave(li, e); compare(null); } });
+    btn.addEventListener('focus', () => { if (btn.matches(':focus-visible')) { fx.rowFocus(li); compare(id); } });
+    btn.addEventListener('blur', () => { fx.rowBlur(li); compare(null); });
+    return li;
+  }
+  function fillRow(li, r) {
+    const q = s => $(s, li), other = r.date !== CLINIC_DAY, p = kgParts(r.weightKg);
+    q('.row__btn').setAttribute('aria-label', `Open ${r.name}’s chart, ${other ? dayLong(r.date) + ' ' : ''}${r.time}, ${SP[r.species].toLowerCase()}, ${kgWords(r.weightKg)}`);
+    q('.row__day').textContent = other ? dayShort(r.date) + ',' : '';
+    q('.row__day').hidden = !other;
+    q('.row__clock').textContent = r.time;
+    q('.row__nm').textContent = r.name;
+    q('.row__sp').textContent = ', ' + SP[r.species].toLowerCase();
+    q('.row__kg').innerHTML = `${p.v}<small>${p.u}</small>`;
+    q('.row__owner').textContent = r.owner;
+    q('.row__reason').textContent = r.reason;
+    const vt = q('.row__vt');
+    vt.textContent = r.vaccinated ? 'Vaccines up to date' : 'Vaccines overdue';
+    vt.classList.toggle('is-due', !r.vaccinated);
+    q('.tag').hidden = !r.caution;
+  }
+  const view = () => sortRecords(state.records.filter(r => inFilter(r, ui.filter) && matches(r, ui.q)), ui.sort, ui.dir);
+  const visibleRows = () => $$('.row:not([hidden])', el.rows);
+  const chipKey = r => ({
+    time: (r.date !== CLINIC_DAY ? dayShort(r.date).slice(0, 3) + ' ' : '') + r.time,
+    name: r.name.charAt(0).toUpperCase(),
+    weight: kgText(r.weightKg),
+    vaccines: r.vaccinated ? 'Up to date' : 'Overdue'
+  })[ui.sort];
+  function setChip(id) {
+    const r = find(id);
+    if (r) el.chips.forEach(b => fx.swap(b, chipKey(r)));
+  }
+  const lastTotals = { count: null, minutes: null, overdue: null };
+  const TOT_FMT = {
+    count: n => plural(n, 'patient', 'patients'),
+    minutes: n => fmtDuration(n),
+    overdue: n => plural(n, 'vaccination', 'vaccinations')
+  };
+
+  function render(o = {}) {
+    const list = view();
+    const mutate = () => {
+      $$('.row[data-gone]', el.rows).forEach(li => li.remove());
+      for (const r of state.records) {
+        let li = rowEls.get(r.id);
+        if (!li) { li = makeRow(r.id); rowEls.set(r.id, li); }
+        fillRow(li, r);
+      }
+      for (const [id, li] of rowEls) if (!find(id)) { li.hidden = true; li.dataset.gone = ''; rowEls.delete(id); }
+      const shown = new Set(list.map(r => r.id));
+      const order = [];
+      [0, 1, 2].forEach(g => {
+        const inG = list.filter(r => dayGroup(r) === g);
+        if (g && inG.length) order.push(grpEls[g]);
+        inG.forEach(r => order.push(rowEls.get(r.id)));
+      });
+      const rest = [...el.rows.children].filter(n => !order.includes(n));
+      const want = [...order, ...rest], have = [...el.rows.children];
+      if (want.length !== have.length || want.some((n, i) => n !== have[i])) {
+        const active = document.activeElement;
+        el.rows.append(...want);
+        if (active && active !== document.activeElement && active.isConnected) focusNoScroll(active);
+      }
+      for (const [id, li] of rowEls) li.hidden = !shown.has(id);
+      grpEls.forEach((g, i) => { if (g) g.hidden = !list.some(r => dayGroup(r) === i); });
+      $$('.row__btn', el.rows).forEach(b => b.setAttribute('aria-current', String(b.parentElement.dataset.id === ui.sel)));
+
+      // empty states
+      const qShown = ui.q.trim();
+      el.empty.hidden = list.length > 0;
+      $('#empty-clear').hidden = !qShown;
+      $('#empty-all').hidden = !!qShown || !state.records.length || ui.filter === 'all';
+      $('#empty-add').hidden = !!state.records.length;
+      $('#empty-reset').hidden = !!state.records.length;
+      el.emptyMsg.textContent = qShown ? `No patients match ‘${qShown}’. Check the spelling, or search by owner.`
+        : !state.records.length ? 'No patients left on Thursday’s list. Add a patient, or reset the sample data.'
+        : `No ${FILTERS[ui.filter].label} on the list.`;
+
+      // counts per filter, over the current search
+      const searched = state.records.filter(r => matches(r, ui.q));
+      Object.keys(FILTERS).forEach(f => { $(`[data-count="${f}"]`).textContent = searched.filter(r => inFilter(r, f)).length; });
+
+      // totals over the Thursday rows shown
+      const t = totals(list), narrowed = ui.q.trim() || ui.filter !== 'all';
+      el.footCap.textContent = narrowed ? `Thursday totals for the ${plural(t.count, 'row', 'rows')} shown` : 'Thursday totals';
+      $('#tot-sr').textContent = `${TOT_FMT.count(t.count)}, ${TOT_FMT.minutes(t.minutes)} booked, ${TOT_FMT.overdue(t.overdue)} overdue.`; // the figures below may be mid-count
+      for (const k of Object.keys(t)) {
+        const node = $(`[data-tot="${k}"]`);
+        if (lastTotals[k] === null || !o.flip) node.textContent = TOT_FMT[k](t[k]);
+        else if (lastTotals[k] !== t[k]) fx.totals(node, lastTotals[k], t[k], TOT_FMT[k]);
+        lastTotals[k] = t[k];
+      }
+      if (list.length) setChip(list[0].id);
+      $$('.chip').forEach(c => { c.style.visibility = list.length ? '' : 'hidden'; });
+      if (!hovered) fx.swap(el.cmp, rankText(find(ui.sel), list));
+    };
+    if (o.flip) fx.flip(mutate, o.flip); else { mutate(); fx.afterLayout(); }
+  }
+
+  /* ================= Comparison: the ghost needle and its sentence ================= */
+  let hovered = null;
+  function rankText(s, list = view()) {
+    if (!s) return '';
+    const n = list.length, i = list.slice().sort((a, b) => b.weightKg - a.weightKg).findIndex(r => r.id === s.id);
+    if (i < 0) return `${s.name} is not in the list shown.`;
+    if (n === 1) return `${s.name} is the only patient shown.`;
+    return i === 0 ? `${s.name} is the heaviest of the ${n} shown.` : i === n - 1 ? `${s.name} is the lightest of the ${n} shown.` : `${s.name} is ${ordinal(i + 1)} heaviest of the ${n} shown.`;
+  }
+  function compareText(r, s, max = rangeOf(s.weightKg)) {
+    const d = r.weightKg - s.weightKg, off = r.weightKg > max ? `, off this 0 to ${max} kg dial` : '';
+    if (Math.abs(d) < .0005) return `${r.name} ${kgText(r.weightKg)}, the same as ${s.name}`;
+    return `${r.name} ${kgText(r.weightKg)}${off}, ${diffText(d, r.weightKg, s.weightKg)} ${d < 0 ? 'lighter' : 'heavier'} than ${s.name}`;
+  }
+  function compare(id) {
+    const sel = find(ui.sel), r = id && id !== ui.sel && sel ? find(id) : null;
+    hovered = r ? r.id : null;
+    fx.ghost(r ? r.weightKg : null);
+    fx.swap(el.cmp, r ? compareText(r, sel) : rankText(sel));
+  }
+
+  /* ================= Chart ================= */
+  function drawHistory(r) {
+    const w = r.weights, n = w.length, W = 320, H = 64, px = 8, py = 9;
+    const kgs = w.map(p => p.kg), lo = Math.min(...kgs), hi = Math.max(...kgs), span = hi - lo || 1;
+    const pts = w.map((p, i) => [n === 1 ? W / 2 : px + i * (W - 2 * px) / (n - 1), hi === lo ? H / 2 : py + (hi - p.kg) / span * (H - 2 * py)]);
+    el.histLine.setAttribute('d', pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' '));
+    el.histPts.innerHTML = pts.map((p, i) => `<circle class="hist__pt${i === n - 1 ? ' is-last' : ''}" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="4"/>`).join('');
+    let total = 0, upToLast = 0;
+    for (let i = 1; i < n; i++) { const d = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); total += d; if (i < n - 1) upToLast += d; }
+    el.histCap.textContent = n === 1 ? 'Weight on record' : `Last ${NUM_WORDS[n]} weights`;
+    el.histFirst.textContent = `${kgText(w[0].kg)}, ${dateWords(w[0].date)}`;
+    el.histLast.textContent = n > 1 ? `${kgText(w.at(-1).kg)}, ${dateWords(w.at(-1).date)}` : '';
+    el.histDesc.textContent = `${r.name}’s weights from ${dateWords(w[0].date)} to ${dateWords(w.at(-1).date)}. ${fmtDelta(r)}.`;
+    el.histList.innerHTML = '';
+    w.forEach(p => { const li = document.createElement('li'); li.textContent = `${dateWords(p.date)}: ${kgText(p.kg)}`; el.histList.append(li); });
+    el.histDelta.textContent = fmtDelta(r);
+    el.histLine.style.strokeDasharray = el.histLine.style.strokeDashoffset = ''; // a redrawn path never keeps the last draw's dash lengths
+    return total ? upToLast / total : 0;
+  }
+  function renderChart(r, o = {}) {
+    closeConfirm(false);
+    const has = !!r;
+    el.none.hidden = has;
+    [el.hist, el.facts, el.acts].forEach(n => { n.hidden = !has; });
+    if (!has) {
+      el.chartH.textContent = 'No patient selected';
+      el.chartTag.hidden = true;
+      el.chartLine.textContent = 'The list is empty.';
+      fx.weigh(null, {});
+      return;
+    }
+    el.chartH.textContent = r.name;
+    el.chartTag.hidden = !r.caution;
+    const age = r.ageYears === 0 ? 'under a year' : plural(r.ageYears, 'year', 'years');
+    el.chartLine.textContent = `${SP[r.species]}, ${age}. Owner ${r.owner}.`;
+    $('#fact-appt').textContent = `${dayShort(r.date)}, ${r.time}`;
+    $('#fact-slot').textContent = plural(r.minutes, 'minute', 'minutes');
+    $('#fact-reason').textContent = r.reason;
+    $('#fact-vax').textContent = r.vaccinated ? 'Up to date' : 'Overdue';
+    el.del.textContent = `Delete ${r.name}’s record`;
+    el.confirmQ.textContent = `Delete ${r.name} and ${plural(r.weights.length, 'weight', 'weights')}?`;
+    const frac = drawHistory(r);
+    if (o.mode === 'none') return;
+    const inner = el.chartIn;
+    if (inner.scrollTop > 0 && sideBySide()) inner.scrollTo({ top: 0, behavior: reduced() ? 'auto' : 'smooth' }); // the weigh-in plays where it can be seen
+    fx.weigh(r, { mode: o.mode || 'switch', from: o.from, historyFrom: o.mode === 'change' ? frac : 0 });
+  }
+  function select(id, o = {}) {
+    const r = find(id);
+    if (!r) { ui.sel = null; renderChart(null); fx.swap(el.cmp, ''); return; }
+    const same = ui.sel === id;
+    ui.sel = id;
+    fx.cancelIntro();
+    $$('.row__btn', el.rows).forEach(b => b.setAttribute('aria-current', String(b.parentElement.dataset.id === id)));
+    hovered = null;
+    fx.ghost(null);
+    fx.swap(el.cmp, rankText(r));
+    // the chart is above the list on narrow screens, or (on short screens) not sticky and scrolled away: bring the dial into view first.
+    // A sticky panel scrolled down inside itself goes back to its top, so measure where the dial will be.
+    const d = el.dial.getBoundingClientRect(), lift = sideBySide() ? el.chartIn.scrollTop : 0;
+    const away = o.user && (d.top + lift < 0 || d.bottom + lift > innerHeight);
+    const fresh = !same || o.force;
+    if (fresh) renderChart(r, { mode: away ? 'none' : 'switch' });
+    if (away) fx.scrollTo(el.chart, () => {
+      if (fresh && ui.sel === id) fx.weigh(r, { mode: 'switch' });
+      focusNoScroll(el.chartH);
+    });
+  }
+
+  /* ================= Delete with an inline confirm ================= */
+  function openConfirm() {
+    el.acts.classList.add('is-confirm');
+    el.actsB.inert = false; el.actsA.inert = true;
+    el.del.setAttribute('aria-expanded', 'true');
+    focusNoScroll($('#keep'));
+  }
+  function closeConfirm(refocus) {
+    if (!el.acts.classList.contains('is-confirm')) return;
+    el.acts.classList.remove('is-confirm');
+    el.actsB.inert = true; el.actsA.inert = false;
+    el.del.setAttribute('aria-expanded', 'false');
+    if (refocus) focusNoScroll(el.del);
+  }
+  el.del.addEventListener('click', openConfirm);
+  $('#keep').addEventListener('click', () => closeConfirm(true));
+  el.actsB.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); closeConfirm(true); } });
+  $('#del-yes').addEventListener('click', () => {
+    const id = ui.sel, before = visibleRows().map(li => li.dataset.id), at = before.indexOf(id);
+    const r = ops.remove(state, id);
+    if (!r) return;
+    save();
+    const next = before[at + 1] || before[at - 1] || (state.records[0] && state.records[0].id);
+    closeConfirm(false);
+    ui.sel = null;
+    render({ flip: 'delete' });
+    select(next && find(next) ? next : null);
+    focusNoScroll(el.chartH);
+    toast(`${r.name} deleted.`, 'Undo');
+    say(`${r.name} deleted. Undo is in the message at the bottom of the screen.`);
+  });
+
+  /* ================= Toast and undo ================= */
+  function toast(msg, undoLabel) {
+    const wasOpen = !el.toast.hidden;
+    el.toastMsg.textContent = msg;
+    el.toastUndo.hidden = !undoLabel;
+    setLabel(el.toastUndo, undoLabel || '');
+    el.toast.hidden = false;
+    fx.toastIn(el.toast, wasOpen);
+  }
+  function hideToast(refocus) {
+    const inside = el.toast.contains(document.activeElement);
+    fx.toastOut(el.toast, () => { el.toast.hidden = true; });
+    if (inside || refocus) focusNoScroll($('#patients-h'));
+  }
+  $('#toast-x').addEventListener('click', () => hideToast(true));
+  el.toastUndo.addEventListener('click', () => {
+    const u = ops.undo(state);
+    if (!u) { hideToast(true); return; }
+    save();
+    render({ flip: 'undo' });
+    if (u.kind === 'delete') {
+      const li = rowEls.get(u.id);
+      select(u.id);
+      if (li && !li.hidden) { fx.highlight(li); focusNoScroll($('.row__btn', li)); } else focusNoScroll(el.chartH);
+      toast(`${u.name} is back on the list.`);
+      say(`${u.name} is back on the list.`);
+    } else {
+      const first = visibleRows()[0];
+      if (first) select(first.dataset.id, { force: true });
+      toast('Your changes are back.');
+      say('Your changes are back.');
+      focusNoScroll($('#patients-h'));
+    }
+  });
+
+  /* ================= Reset ================= */
+  function resetData() {
+    ops.reset(state);
+    save();
+    ui.q = ''; el.q.value = ''; el.find.classList.remove('has-q');
+    render({ flip: 'reset' });
+    const first = visibleRows()[0];
+    select(first ? first.dataset.id : null, { force: true });
+    toast('Sample data restored.', 'Undo reset');
+    say('Sample data restored. Undo reset is in the message at the bottom of the screen.');
+  }
+  $('#reset').addEventListener('click', resetData);
+  $('#empty-reset').addEventListener('click', resetData);
+
+  /* ================= Sort, filter and search ================= */
+  function placeInd() {
+    const b = $('[aria-pressed="true"]', el.sort), w = el.sort.offsetWidth;
+    el.ind.style.setProperty('--l', b.offsetLeft + 'px');
+    el.ind.style.setProperty('--r', (w - b.offsetLeft - b.offsetWidth) + 'px');
+  }
+  el.sort.addEventListener('click', e => {
+    const b = e.target.closest('[data-sort]');
+    if (!b) return;
+    const key = b.dataset.sort;
+    if (key === ui.sort) ui.dir = ui.dir === 'asc' ? 'desc' : 'asc';
+    else { ui.sort = key; ui.dir = SORTS[key].def; }
+    $$('[data-sort]', el.sort).forEach(x => {
+      const on = x.dataset.sort === ui.sort;
+      x.setAttribute('aria-pressed', String(on));
+      if (on) x.dataset.dir = ui.dir; else delete x.dataset.dir;
+    });
+    placeInd();
+    render({ flip: 'sort' });
+    say(`Sorted by ${key === 'vaccines' ? 'vaccinations' : key}, ${SORTS[key].words[ui.dir]}.`);
+  });
+  $('#filters').addEventListener('change', e => {
+    ui.filter = e.target.value;
+    render({ flip: 'filter' });
+    const n = view().length;
+    say(n ? `Showing ${FILTERS[ui.filter].label}, ${plural(n, 'patient', 'patients')}.` : `No ${FILTERS[ui.filter].label} on the list.`);
+  });
+  function setFilter(f) {
+    const input = $(`#filters input[value="${f}"]`);
+    input.checked = true;
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  let qTimer = 0;
+  function runSearch() {
+    ui.q = el.q.value;
+    el.find.classList.toggle('has-q', !!ui.q);
+    render({ flip: 'search' });
+    const n = view().length, q = ui.q.trim();
+    say(q ? (n ? `${plural(n, 'patient matches', 'patients match')} ‘${q}’.` : `No patients match ‘${q}’.`) : 'Search cleared.');
+  }
+  el.q.addEventListener('input', () => { clearTimeout(qTimer); el.find.classList.toggle('has-q', !!el.q.value); qTimer = setTimeout(runSearch, 150); });
+  el.find.addEventListener('submit', e => { e.preventDefault(); clearTimeout(qTimer); runSearch(); });
+  function clearSearch() { clearTimeout(qTimer); el.q.value = ''; runSearch(); focusNoScroll(el.q); }
+  $('#q-clear').addEventListener('click', clearSearch);
+  $('#empty-clear').addEventListener('click', clearSearch);
+  $('#empty-all').addEventListener('click', () => setFilter('all'));
+
+  /* ================= In-page anchors ================= */
+  $('#skip').addEventListener('click', e => {
+    e.preventDefault(); e.stopPropagation();
+    fx.scrollTo($('#patients'), () => focusNoScroll($('#patients-h')));
+    focusNoScroll($('#patients-h'));
+  });
+  $('#back').addEventListener('click', e => {
+    e.preventDefault(); e.stopPropagation();
+    const li = ui.sel && rowEls.get(ui.sel);
+    const target = li && !li.hidden ? li : $('#patients');
+    fx.scrollTo(target, () => focusNoScroll(li && !li.hidden ? $('.row__btn', li) : $('#patients-h')));
+  });
+
+  /* Buttons fill from the edge the pointer came in by and empty toward the edge it leaves by (HV4) */
+  document.addEventListener('pointerover', e => {
+    const b = e.target.closest && e.target.closest('.hv4');
+    if (b && !b.contains(e.relatedTarget)) { const r = b.getBoundingClientRect(); b.style.setProperty('--from', e.clientX < r.left + r.width / 2 ? 'left' : 'right'); }
+  });
+  document.addEventListener('pointerout', e => {
+    const b = e.target.closest && e.target.closest('.hv4');
+    if (b && !b.contains(e.relatedTarget)) { const r = b.getBoundingClientRect(); b.style.setProperty('--from', e.clientX < r.left + r.width / 2 ? 'left' : 'right'); }
+  });
+
+  /* The compact title shows once the toolbar sticks */
+  if ('IntersectionObserver' in window) {
+    const probe = document.createElement('div');
+    probe.setAttribute('aria-hidden', 'true');
+    probe.style.height = '1px';
+    el.bar.before(probe);
+    el.bar.classList.add('has-spy');
+    new IntersectionObserver(([en]) => el.bar.classList.toggle('is-stuck', !en.isIntersecting && en.boundingClientRect.top < 0)).observe(probe);
+  }
+
+  /* ================= Dialog: add and edit ================= */
+  const F = el.form.elements;
+  $('#cards').innerHTML = SPECIES.map(([k, l, usual]) => `<label class="card"><input type="radio" name="species" value="${k}"><span class="card__face"><b>${l}</b><small>${usual}</small></span><span class="badge" aria-hidden="true"><svg width="11" height="11" viewBox="0 0 10 10"><path d="m2 5.2 2 2L8 3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></label>`).join('');
+  $('#f-time').innerHTML = SLOTS.map(t => `<option>${t}</option>`).join('');
+  $('#f-reason').innerHTML = '<option value="">Choose a reason</option>' + REASONS.map(t => `<option>${t}</option>`).join('');
+  let editing = null, trigger = null;
+  const readForm = () => ({
+    name: F.name.value, owner: F.owner.value, species: (el.form.querySelector('input[name="species"]:checked') || {}).value,
+    weightKg: F.weightKg.value, ageYears: F.ageYears.value, date: F.date.value, time: F.time.value, minutes: F.minutes.value,
+    reason: F.reason.value, vaccinated: F.vaccinated.checked, caution: F.caution.checked
+  });
+  function fieldState(k, msg) {
+    const f = $(`[data-f="${k}"]`, el.form);
+    if (!f) return;
+    const had = f.classList.contains('is-err');
+    f.classList.toggle('is-err', !!msg);
+    f.classList.toggle('is-fixed', !msg && (had || f.classList.contains('is-fixed')));
+    const p = $(`#e-${k}`);
+    if (msg) p.textContent = msg;
+    const input = k === 'species' ? $('#f-species') : F[k];
+    if (input && input.setAttribute) input.setAttribute('aria-invalid', String(!!msg));
+    if (k === 'species') $('#f-species').classList.toggle('fset--err', !!msg);
+  }
+  function weightHint() {
+    const r = V.dec(F.weightKg.value);
+    $('#h-weight').textContent = r.error ? 'Up to 3 decimals, with a dot or a comma' : `Reads ${kgText(r.value)} on the 0 to ${rangeOf(r.value)} kg dial`;
+  }
+  function formCheck() {
+    const res = validateRecord(readForm()), r = editing && find(editing), p = r && res.rec.date && visitClash(r, res.rec.date);
+    if (p) { res.errors.date = MSG.visit(r.name, p.date); res.ok = false; }
+    return res;
+  }
+  const recheck = e => {
+    if (e.target === F.weightKg) weightHint();
+    const k = e.target.name, f = k && $(`[data-f="${k}"]`, el.form);
+    if (f && f.classList.contains('is-err')) fieldState(k, formCheck().errors[k]);
+  };
+  el.form.addEventListener('input', recheck);
+  el.form.addEventListener('change', recheck);
+  function openDialog(id, from) {
+    editing = id || null; trigger = from || document.activeElement;
+    const r = id ? find(id) : null;
+    $('#dlg-h').textContent = r ? `Edit ${r.name}’s details` : 'Add a patient';
+    $('#save-l').textContent = r ? 'Save changes' : 'Save patient';
+    $('#dlg-save').classList.remove('is-saved');
+    el.form.reset();
+    F.name.value = r ? r.name : '';
+    F.owner.value = r ? r.owner : '';
+    $$('input[name="species"]', el.form).forEach(x => { x.checked = !!r && x.value === r.species; });
+    F.weightKg.value = r ? String(r.weightKg) : '';
+    F.ageYears.value = r ? String(r.ageYears) : '';
+    F.date.value = r ? r.date : CLINIC_DAY;
+    F.time.value = r ? r.time : '09:00';
+    F.minutes.value = r ? String(r.minutes) : '15';
+    F.reason.value = r ? r.reason : '';
+    F.vaccinated.checked = r ? r.vaccinated : false;
+    F.caution.checked = r ? r.caution : false;
+    $$('.f', el.form).forEach(f => { f.classList.remove('is-err', 'is-fixed'); });
+    $$('[aria-invalid]', el.form).forEach(x => x.setAttribute('aria-invalid', 'false'));
+    $('#f-species').classList.remove('fset--err');
+    weightHint();
+    closeConfirm(false);
+    el.dlg.showModal();
+    fx.lenis(false);
+    $('.dlg__body', el.form).scrollTop = 0;
+    focusNoScroll(F.name);
+    fx.dlgOpen(el.dlg);
+  }
+  let closing = false;
+  function closeDialog(after) {
+    if (closing || !el.dlg.open) return;
+    closing = true;
+    fx.dlgClose(el.dlg, () => {
+      el.dlg.close();
+      closing = false;
+      fx.lenis(true);
+      if (trigger && trigger.isConnected && !trigger.closest('[hidden]')) focusNoScroll(trigger);
+      else focusNoScroll(el.chartH);
+      after && after();
+    });
+  }
+  el.dlg.addEventListener('cancel', e => { e.preventDefault(); closeDialog(); });
+  $('#dlg-x').addEventListener('click', () => closeDialog());
+  $('#dlg-cancel').addEventListener('click', () => closeDialog());
+  $('#add').addEventListener('click', e => openDialog(null, e.currentTarget));
+  $('#add-2').addEventListener('click', e => openDialog(null, e.currentTarget));
+  $('#empty-add').addEventListener('click', () => openDialog(null, $('#add')));
+  $('#edit').addEventListener('click', e => ui.sel && openDialog(ui.sel, e.currentTarget));
+
+  el.form.addEventListener('submit', e => {
+    e.preventDefault();
+    if (closing) return;
+    const res = formCheck();
+    Object.keys(LABELS).forEach(k => fieldState(k, res.errors[k]));
+    if (!res.ok) {
+      const bad = Object.keys(LABELS).filter(k => res.errors[k]);
+      const first = bad[0] === 'species' ? $('input[name="species"]', el.form) : F[bad[0]];
+      focusNoScroll(first);
+      first.scrollIntoView({ block: 'nearest' });
+      say(`${plural(bad.length, 'field needs', 'fields need')} attention: ${bad.map(k => LABELS[k]).join(', ')}.`);
+      return;
+    }
+    $('#dlg-save').classList.add('is-saved');
+    const id = editing;
+    setTimeout(() => closeDialog(() => apply(id, res.rec)), reduced() || !LIBS ? 0 : 300);
+  });
+  function apply(id, rec) {
+    if (!id) {
+      const r = ops.create(state, rec);
+      save();
+      render({ flip: 'save' });
+      select(r.id);
+      const li = rowEls.get(r.id);
+      if (li && !li.hidden) fx.highlight(li);
+      const msg = r.date === CLINIC_DAY ? `Added ${r.name} to Thursday’s list.` : `Added ${r.name} to the list for ${dayLong(r.date)}.`;
+      toast(msg); say(msg);
+      return;
+    }
+    const u = ops.update(state, id, rec);
+    if (!u) return;
+    save();
+    render({ flip: 'save' });
+    const li = rowEls.get(id);
+    if (li && !li.hidden) fx.highlight(li);
+    if (ui.sel === id) renderChart(u.r, u.weightChanged ? { mode: 'change', from: u.prev.weightKg } : { mode: 'none' });
+    const msg = u.prev.date !== u.r.date ? `Moved ${u.r.name} to ${dayLong(u.r.date)}.` : `Saved ${u.r.name}’s details.`;
+    toast(msg); say(msg);
+  }
+
+  /* ================= Boot (plain) ================= */
+  render();
+  placeInd();
+  const firstRow = visibleRows()[0];
+  select(firstRow ? firstRow.dataset.id : null);
+  const onResize = () => { el.ind.classList.add('no-anim'); placeInd(); requestAnimationFrame(() => el.ind.classList.remove('no-anim')); };
+  if (window.ResizeObserver) new ResizeObserver(onResize).observe(document.body);
+  else addEventListener('resize', onResize);
+
+  /* ================= Motion layer: GSAP + Lenis ================= */
+  if (LIBS) {
+    gsap.registerPlugin(ScrollTrigger, Flip, DrawSVGPlugin, CustomEase);
+    CustomEase.create('settle', 'M0,0 C0.12,0 0.18,1.09 0.36,1.06 0.52,1.03 0.66,0.985 1,1'); // about 6% overshoot, then a damped settle
+    let spy = [];
+    const buildSpy = () => {
+      spy.forEach(t => t.kill());
+      spy = visibleRows().map(li => ScrollTrigger.create({
+        trigger: li, start: 'top 40%', end: 'bottom 40%',
+        onToggle: s => { // back above the first row: the chip returns to it
+          if (s.isActive) setChip(li.dataset.id);
+          else if (s.direction < 0 && li === visibleRows()[0]) setChip(li.dataset.id);
+        }
+      }));
+      // a jump back above the list (Home key, scrollTo) passes no row, so the list itself returns the chip to the first row
+      if (spy.length) spy.push(ScrollTrigger.create({ trigger: el.rows, start: 'top 40%', end: 'bottom 40%', onLeaveBack: () => { const f = visibleRows()[0]; if (f) setChip(f.dataset.id); } }));
+    };
+    const finishBoot = () => {
+      if (ui.booted) return;
+      ui.booted = true;
+      root.classList.add('booted');
+    };
+    setTimeout(finishBoot, 6000); // never leave the page hidden if the timeline stalls
+
+    const mm = gsap.matchMedia();
+    mm.add({
+      motion: '(prefers-reduced-motion: no-preference)',
+      reduce: '(prefers-reduced-motion: reduce)',
+      fine: '(hover: hover) and (pointer: fine)',
+      wide: '(min-width: 992px)'
+    }, ctx => {
+      const { motion, fine } = ctx.conditions;
+
+      if (!motion) {
+        // Reduced motion: final states, native scroll, the index chip still follows the reading line.
+        finishBoot();
+        Object.assign(fx, FX, { afterLayout() { ScrollTrigger.refresh(); buildSpy(); } });
+        buildSpy();
+        return () => { spy.forEach(t => t.kill()); spy = []; Object.assign(fx, FX); };
+      }
+
+      root.classList.add('motion');
+      const lenis = new Lenis({ lerp: .1, smoothWheel: true, autoRaf: false, anchors: true });
+      lenis.on('scroll', ScrollTrigger.update);
+      const tick = time => lenis.raf(time * 1000);
+      gsap.ticker.add(tick);
+      gsap.ticker.lagSmoothing(0);
+
+      /* ---- Signature: the weigh-in ---- */
+      let wtl = null, flipTl = null, intro = null;
+      const historyTl = (fromFrac = 0) => {
+        const tl = gsap.timeline();
+        const pts = $$('.hist__pt', el.histPts), d = G('draw');
+        if (fromFrac > 0 && pts.length > 1) { // only the new segment draws
+          tl.fromTo(el.histLine, { drawSVG: `0% ${fromFrac * 100}%` }, { drawSVG: '0% 100%', duration: d * .6, ease: 'power2.inOut' })
+            .fromTo(pts.at(-1), { scale: 0, transformOrigin: '50% 50%' }, { scale: 1, duration: .2, ease: 'back.out(2)' }, '>-0.08');
+        } else {
+          tl.fromTo(el.histLine, { drawSVG: '0%' }, { drawSVG: '100%', duration: d, ease: 'power2.inOut' }, 0)
+            .fromTo(pts, { scale: 0, transformOrigin: '50% 50%' }, { scale: 1, duration: .2, ease: 'back.out(2)', stagger: pts.length > 1 ? d / (pts.length - 1) * .85 : 0 }, 0);
+        }
+        tl.fromTo(fromFrac > 0 ? [el.histDelta, el.histLast] : [el.histDelta, el.histFirst, el.histLast], { autoAlpha: 0 }, { autoAlpha: 1, duration: .3 }, '>-0.15');
+        return tl;
+      };
+      const hideHistory = () => {
+        gsap.killTweensOf([el.histLine, el.histDelta, el.histFirst, el.histLast]);
+        gsap.set(el.histLine, { drawSVG: '0%' });
+        gsap.set($$('.hist__pt', el.histPts), { scale: 0, transformOrigin: '50% 50%' });
+        gsap.set([el.histDelta, el.histFirst, el.histLast], { autoAlpha: 0 });
+      };
+      const needle = { kg: 0 }; // one proxy: the needle angle and the readout are both drawn from it
+      const drive = () => paint(needle.kg);
+      // The last patient steps off (needle to rest), the dial changes range if it must, the next steps on (settle swing).
+      const weighTl = (r, o = {}) => {
+        if (wtl) wtl.kill();
+        const tl = gsap.timeline(), max = rangeOf(r.weightKg), change = o.mode === 'change', newRange = max !== dial.max;
+        needle.kg = dial.kg;
+        if (change && o.historyFrom > 0) { // an edited weight: the old part of the line stays while the needle moves
+          gsap.killTweensOf([el.histLine, el.histDelta, el.histLast]);
+          gsap.set(el.histLine, { drawSVG: `0% ${o.historyFrom * 100}%` });
+          gsap.set($$('.hist__pt', el.histPts).at(-1), { scale: 0, transformOrigin: '50% 50%' });
+          gsap.set([el.histDelta, el.histLast], { autoAlpha: 0 });
+        } else hideHistory();
+        if ((!change || newRange) && dial.kg > 0) tl.to(needle, { kg: 0, duration: G('drop'), ease: 'power2.in', onUpdate: drive });
+        if (newRange) tl.to(el.nums, { opacity: 0, duration: .125, ease: 'none' }).call(() => setRange(max)).to(el.nums, { opacity: 1, duration: .125, ease: 'none' });
+        tl.call(() => { dial.to = r.weightKg; drive(); });
+        tl.to(needle, { kg: r.weightKg, duration: G('settle'), ease: 'settle', onUpdate: drive });
+        tl.call(() => lockScale(r));
+        tl.add(historyTl(o.historyFrom || 0), '-=0.1');
+        wtl = tl;
+        return tl;
+      };
+      // ghost needle: one quickTo on a proxy angle, so sweeping down the list swings it continuously
+      const gp = { a: -135 };
+      const ghostTo = gsap.quickTo(gp, 'a', { duration: .45, ease: 'power3.out', onUpdate: () => rot(el.ghost, gp.a) });
+      let ghostOn = false;
+
+      /* ---- Flip reorders (CD5) ---- */
+      const FLIP = {
+        sort: { duration: G('flip'), stagger: .015, enter: .35, leave: .25 },
+        filter: { duration: G('filter'), stagger: .012, enter: .35, leave: .25 },
+        search: { duration: G('search'), stagger: .01, enter: .25, leave: .2 },
+        delete: { duration: .5, stagger: .01, enter: .35, leave: .3 },
+        undo: { duration: .6, stagger: .01, enter: .35, leave: .25 },
+        reset: { duration: G('flip'), stagger: .015, enter: .35, leave: .25 },
+        save: { duration: G('flip'), stagger: .012, enter: .35, leave: .25 }
+      };
+      const flipTargets = () => [...el.rows.children, el.empty, el.foot];
+      const afterLayout = () => { lenis.resize(); ScrollTrigger.refresh(); buildSpy(); };
+      const sheetBg = $('.sheet__bg');
+
+      Object.assign(fx, {
+        flip(mutate, kind) {
+          const c = FLIP[kind] || FLIP.sort;
+          const st = Flip.getState(flipTargets()); // records in-flight positions, so a new click interrupts instead of queueing
+          const bgClip = /inset\(\S+ \S+ ([\d.]+)px/.exec(getComputedStyle(sheetBg).clipPath);
+          const h0 = sheetBg.getBoundingClientRect().height - (bgClip ? parseFloat(bgClip[1]) : 0);
+          mutate();
+          const h1 = sheetBg.parentElement.offsetHeight, hm = Math.max(h0, h1);
+          gsap.killTweensOf(sheetBg);
+          if (Math.abs(h1 - h0) > 1) {
+            gsap.set(sheetBg, { bottom: 'auto', height: hm });
+            gsap.fromTo(sheetBg, { clipPath: `inset(0px 0px ${hm - h0}px 0px round 16px)` }, { clipPath: `inset(0px 0px ${hm - h1}px 0px round 16px)`,
+              duration: c.duration, ease: 'power3.inOut', onComplete: () => gsap.set(sheetBg, { clearProps: 'bottom,height,clipPath' }) });
+          } else gsap.set(sheetBg, { clearProps: 'bottom,height,clipPath' });
+          flipTl = Flip.from(st, {
+            targets: flipTargets(), duration: c.duration, ease: 'power3.inOut', stagger: c.stagger,
+            absoluteOnLeave: true, kill: true, prune: true,
+            onEnter: els => gsap.fromTo(els, { opacity: 0 }, { opacity: 1, duration: c.enter, delay: c.duration * .4 }), // newcomers fade into the gaps once the movers have passed
+            onLeave: els => gsap.to(els, { opacity: 0, duration: c.leave }),
+            onComplete: () => { $$('.row[data-gone]', el.rows).forEach(li => li.remove()); afterLayout(); }
+          });
+        },
+        afterLayout,
+        weigh(r, o) {
+          if (intro) { intro.kill(); intro = null; }
+          if (r) { weighTl(r, o); return; }
+          if (wtl) wtl.kill();
+          hideHistory();
+          needle.kg = dial.kg;
+          wtl = gsap.timeline().to(needle, { kg: 0, duration: G('drop'), ease: 'power2.in', onUpdate: drive }).call(emptyScale);
+        },
+        swap(box, text, dur = .3) {
+          const cur = box.lastElementChild;
+          if (cur && cur.textContent === text && box.children.length === 1) return;
+          const nx = document.createElement('span');
+          nx.textContent = text;
+          box.append(nx);
+          const old = [...box.children].slice(0, -1);
+          gsap.killTweensOf(box.children);
+          old.forEach(o => gsap.to(o, { yPercent: -100, duration: dur, ease: 'expo.inOut', onComplete: () => o.remove() }));
+          gsap.fromTo(nx, { yPercent: 100 }, { yPercent: 0, duration: dur, ease: 'expo.inOut' });
+        },
+        ghost(kg) {
+          if (kg == null) { ghostOn = false; gsap.to(el.ghost, { opacity: 0, duration: .2, overwrite: 'auto' }); return; }
+          const a = needleAngle(kg, dial.max); // beyond full scale it parks against the end stop
+          if (ghostOn) ghostTo(a); else ghostTo(a, needleAngle(dial.kg, dial.max)); // a fresh ghost leaves from the real needle
+          ghostOn = true;
+          gsap.to(el.ghost, { opacity: .55, duration: .15, overwrite: 'auto' });
+        },
+        rowEnter(li, e) {
+          const r = li.getBoundingClientRect(), top = e.clientY < r.top + r.height / 2;
+          gsap.fromTo($('.row__tint', li), { clipPath: top ? 'inset(0% 0% 100% 0%)' : 'inset(100% 0% 0% 0%)' },
+            { clipPath: 'inset(0% 0% 0% 0%)', duration: .3, ease: 'power2.out', overwrite: true });
+        },
+        rowLeave(li, e) {
+          if ($('.row__btn', li).matches(':focus-visible')) return;
+          const r = li.getBoundingClientRect(), down = e.clientY > r.top + r.height / 2;
+          gsap.to($('.row__tint', li), { clipPath: down ? 'inset(100% 0% 0% 0%)' : 'inset(0% 0% 100% 0%)', duration: .25, ease: 'power2.out', overwrite: true });
+        },
+        rowFocus(li) {
+          gsap.fromTo($('.row__tint', li), { clipPath: 'inset(0% 100% 0% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: .3, ease: 'power2.out', overwrite: true });
+        },
+        rowBlur(li) {
+          if ($('.row__btn', li).matches(':hover')) return;
+          gsap.to($('.row__tint', li), { clipPath: 'inset(0% 0% 0% 100%)', duration: .25, ease: 'power2.out', overwrite: true });
+        },
+        highlight(li) {
+          const w = $('.row__wash', li);
+          gsap.timeline()
+            .fromTo(w, { opacity: 1, clipPath: 'inset(0% 100% 0% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: .6, ease: 'power2.out', delay: .25 })
+            .to(w, { opacity: 0, duration: .5, ease: 'power1.out' }, '+=1.2');
+        },
+        toastIn(t, wasOpen) {
+          gsap.killTweensOf(t);
+          if (wasOpen) gsap.fromTo(t, { yPercent: 0, autoAlpha: 1, y: 6 }, { y: 0, duration: .3, ease: 'expo.out' });
+          else gsap.fromTo(t, { yPercent: 100, autoAlpha: 0 }, { yPercent: 0, autoAlpha: 1, duration: G('toast-in'), ease: 'expo.out' });
+        },
+        toastOut(t, done) {
+          gsap.killTweensOf(t);
+          gsap.to(t, { yPercent: 100, autoAlpha: 0, duration: G('toast-out'), ease: 'power2.in', onComplete: () => { gsap.set(t, { clearProps: 'all' }); done(); } });
+        },
+        dlgOpen(d) {
+          const panel = $('.dlg__panel', d), scrim = $('.dlg__scrim', d), sheet = mq('(max-width: 599px)');
+          const items = $$('.fgrid > .f', d);
+          gsap.killTweensOf([panel, scrim, ...items]);
+          gsap.fromTo(scrim, { opacity: 0 }, { opacity: 1, duration: .35, ease: 'power1.out' });
+          if (sheet) gsap.fromTo(panel, { yPercent: 100, autoAlpha: 1 }, { yPercent: 0, duration: G('dlg-in'), ease: 'expo.out' });
+          else gsap.fromTo(panel, { autoAlpha: 0, y: 12, scale: .98 }, { autoAlpha: 1, y: 0, scale: 1, duration: G('dlg-in'), ease: 'expo.out' });
+          gsap.fromTo(items, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: .35, ease: 'expo.out', delay: .06, stagger: Math.min(.025, .25 / items.length) });
+        },
+        dlgClose(d, done) {
+          const panel = $('.dlg__panel', d), scrim = $('.dlg__scrim', d), sheet = mq('(max-width: 599px)');
+          gsap.killTweensOf([panel, scrim]);
+          gsap.to(scrim, { opacity: 0, duration: G('dlg-out'), ease: 'power2.in' });
+          gsap.to(panel, { ...(sheet ? { yPercent: 100 } : { autoAlpha: 0, y: 8, scale: .985 }), duration: G('dlg-out'), ease: 'power2.in',
+            onComplete: () => { gsap.set([panel, scrim, ...$$('.fgrid > .f', d)], { clearProps: 'all' }); done(); } });
+        },
+        totals(node, from, to, fmt) { // after a create, edit or delete: old value to new
+          const o = { v: from };
+          gsap.killTweensOf(node);
+          gsap.to(o, { v: to, duration: G('recount'), ease: 'power2.out', snap: { v: 1 }, onUpdate: () => { node.textContent = fmt(o.v); } });
+        },
+        scrollTo(target, done) {
+          const off = -(barHeight() + 16), dist = Math.abs(target.getBoundingClientRect().top + off);
+          lenis.scrollTo(target, { offset: off, duration: Math.min(1.3, .65 + dist / 4000), onComplete: () => done && done() });
+        },
+        lenis(on) { on ? lenis.start() : lenis.stop(); },
+        cancelIntro() { if (intro) { intro.kill(); intro = null; } }
+      });
+      if (!fine) fx.ghost = () => {}; // touch: no ghost; a tap selects and the real needle swings
+
+      /* ---- Scroll moments ---- */
+      const fill = $('.gutter__fill');
+      gsap.fromTo(fill, { scaleY: 0 }, { scaleY: 1, ease: 'none', scrollTrigger: { trigger: el.rows, start: 'top 40%', end: 'bottom 40%', scrub: true } });
+      // The totals footing: the rule above the sum draws once (SC16). The figures are real from the first paint.
+      const footRule = $('#foot-rule');
+      if (el.foot.getBoundingClientRect().top > innerHeight * .9) {
+        gsap.set(footRule, { drawSVG: '0%' });
+        ScrollTrigger.create({
+          trigger: el.foot, start: 'top 90%', once: true,
+          onEnter: () => gsap.fromTo(footRule, { drawSVG: '0%' }, { drawSVG: '100%', duration: G('rule'), ease: 'power2.inOut' })
+        });
+      }
+      buildSpy();
+
+      /* ---- Page-load sequence (once per visit; a media-query change does not replay it) ---- */
+      // The page arrives in one short opacity pass; the instrument is the sequence: ticks draw, numerals follow, the first patient steps on.
+      const boot = () => {
+        if (ui.booted) return;
+        const r = ui.sel && find(ui.sel);
+        const page = $$('[data-rv]'), lines = $$('line', el.ticks), nums = $$('text', el.nums);
+        const tl = gsap.timeline();
+        tl.fromTo(page, { autoAlpha: 0 }, { autoAlpha: 1, duration: .4, ease: 'power1.out' }, 0);
+        gsap.set([el.ticks, el.nums], { opacity: 1 });
+        const wake = gsap.timeline()
+          .fromTo(lines, { drawSVG: '0%' }, { drawSVG: '100%', duration: .3, ease: 'power2.out', stagger: .008 }, 0)
+          .fromTo(nums, { opacity: 0 }, { opacity: 1, duration: .25, ease: 'power1.out', stagger: .035 }, .15);
+        const seen = el.dial.getBoundingClientRect().top < innerHeight * .85;
+        if (r) { hideHistory(); paint(0); } // the needle rests on its pin; the screen-reader line already holds the weight
+        const play = () => { if (r && ui.sel === r.id) weighTl(r, { mode: 'switch' }); };
+        if (seen) tl.add(wake, .3).add(play, .85);
+        else if (r) intro = ScrollTrigger.create({ trigger: el.dial, start: 'top 75%', once: true, onEnter: () => { intro = null; play(); } });
+        tl.eventCallback('onComplete', () => {
+          gsap.set([...page, el.ticks, el.nums, ...lines, ...nums], { clearProps: 'all' });
+          finishBoot();
+          off();
+        });
+        const skip = () => {
+          if (tl.progress() < 1) tl.progress(1, false);
+          if (wtl && wtl.progress() < 1) wtl.progress(1, false);
+        };
+        const evs = ['pointerdown', 'keydown', 'wheel', 'touchstart'];
+        const off = () => evs.forEach(ev => removeEventListener(ev, skip, true));
+        evs.forEach(ev => addEventListener(ev, skip, { capture: true, passive: true }));
+      };
+      if (!ui.booted) {
+        const fontLoad = document.fonts ? document.fonts.ready.catch(() => {}) : Promise.resolve();
+        Promise.race([fontLoad, new Promise(res => setTimeout(res, 1200))]).then(ctx.add(null, boot));
+      }
+
+      return () => {
+        root.classList.remove('motion');
+        if (wtl) wtl.progress(1).kill();
+        if (intro) { intro.kill(); intro = null; }
+        const r = ui.sel && find(ui.sel);
+        gsap.killTweensOf([needle, gp, el.ghost, el.nums]);
+        ghostOn = false;
+        gsap.set([el.ghost, el.nums, el.ticks, ...$$('line', el.ticks), ...$$('text', el.nums)], { clearProps: 'all' });
+        if (r) { lockScale(r); gsap.set([el.histLine, ...$$('.hist__pt'), el.histDelta, el.histFirst, el.histLast], { clearProps: 'all' }); }
+        else emptyScale();
+        if (flipTl) flipTl.progress(1).kill();
+        spy.forEach(t => t.kill()); spy = [];
+        gsap.killTweensOf($$('.row__tint, .row__wash, .swapbox > span'));
+        gsap.set($$('.row__tint, .row__wash'), { clearProps: 'all' });
+        gsap.set(footRule, { clearProps: 'all' });
+        gsap.ticker.remove(tick);
+        gsap.ticker.lagSmoothing(500, 33);
+        lenis.destroy();
+        Object.assign(fx, FX);
+        finishBoot();
+      };
+    });
+  }
+
+  /* ================= Self-test (#selftest) ================= */
+  function runSelfTest() {
+    const assert = (c, m) => { if (!c) throw new Error(m); };
+    // validators
+    assert(V.text('', 1, 30).error, 'empty text rejected');
+    assert(V.text('x'.repeat(31), 1, 30).error, 'long text rejected');
+    assert(V.text('  Biscuit  ', 1, 30).value === 'Biscuit', 'text trimmed');
+    assert(V.int('2.5', 0, 30).error, 'integer 2.5 rejected');
+    assert(V.int('7', 0, 30).value === 7, 'integer accepted');
+    assert(V.int('12', 5, 120, 5).error, 'minutes must be a multiple of 5');
+    assert(V.dec('4,25').value === 4.25, 'decimal comma parses');
+    assert(V.dec('0,041').value === 0.041, 'grams: 0,041 accepted');
+    assert(V.dec('0.0415').error === MSG.weight, '0.0415 rejected, more than 3 decimals');
+    assert(V.dec('0').error && V.dec('100.5').error && V.dec('abc').error, 'decimal range and format');
+    assert(V.date('2026-02-30', '2026-01-01', '2027-12-31').error, 'invalid date rejected');
+    assert(V.date('2028-01-01', '2026-01-01', '2027-12-31').error, 'date out of range rejected');
+    assert(V.choice('Grooming', REASONS).error, 'choice outside list rejected');
+    assert(V.bool('on').value === true && V.bool(undefined).value === false && V.bool('1').value === true, 'boolean coercion');
+    const good = { name: 'Pepper', owner: 'Mr B. Shah', species: 'cat', weightKg: '4,5', ageYears: '2', date: '2026-10-22', time: '09:00', minutes: '15', reason: 'Check-up', vaccinated: 'on', caution: false };
+    const v = validateRecord(good);
+    assert(v.ok && v.rec.weightKg === 4.5 && v.rec.vaccinated === true, 'whole record validates');
+    assert(Object.keys(validateRecord({ ...good, weightKg: '', date: 'x' }).errors).join() === 'weightKg,date', 'errors keyed by field');
+    // create, edit, delete, undo, reset
+    const st = freshState();
+    const r = ops.create(st, v.rec);
+    assert(st.records.length === 13 && r.id === 'p13' && r.weights.length === 1, 'create');
+    const u = ops.update(st, 'p1', { ...st.records[0], weightKg: 8.9 });
+    assert(u.weightChanged && u.r.weights.at(-1).kg === 8.9 && u.r.weights.length === 6, 'edit replaces this visit’s weight');
+    const moved = ops.update(st, 'p1', { ...st.records[0], date: '2026-10-23', weightKg: 9 });
+    assert(moved.r.weights.length === 6 && moved.r.weights.at(-1).date === '2026-10-23' && moved.r.weights.at(-1).kg === 9 && isRecord(moved.r), 'moving a visit moves its weigh-in');
+    const otis = st.records.find(x => x.name === 'Otis');
+    assert(ops.update(st, otis.id, { ...otis, date: '2026-09-17', weightKg: 30 }) === null && otis.weights.at(-2).kg === 35.2, 'a visit cannot land on an earlier weigh-in');
+    assert(ops.update(st, 'p1', { ...st.records[0], date: '2026-07-14' }) === null && visitClash(st.records[0], '2026-07-15') === null, 'a visit cannot move before the last weigh-in');
+    assert(MSG.visit('Otis', '2026-09-17') === 'Choose a date after Otis’s last weigh-in on 17 September.', 'visit clash message');
+    ops.remove(st, 'p2');
+    assert(!st.records.some(x => x.id === 'p2') && st.records.length === 12, 'delete');
+    ops.undo(st);
+    assert(st.records.some(x => x.id === 'p2') && st.records.length === 13, 'undo delete');
+    ops.reset(st);
+    assert(st.records.length === 12 && st.records[0].weightKg === 8.62, 'reset to seed');
+    ops.undo(st);
+    assert(st.records.length === 13, 'undo reset');
+    // sort, search, filter, totals
+    const seed = seedRecords();
+    assert(seed.every(x => x.date === CLINIC_DAY), 'every seed is on the clinic day');
+    assert(sortRecords(seed, 'weight', 'desc')[0].name === 'Otis' && sortRecords(seed, 'weight', 'asc')[0].name === 'Ziggy', 'sort by weight');
+    assert(sortRecords(seed, 'name', 'asc')[0].name === 'Biscuit' && sortRecords(seed, 'name', 'desc')[0].name === 'Ziggy', 'sort by name');
+    assert(sortRecords(seed, 'vaccines', 'asc')[0].name === 'Mango', 'sort by vaccines');
+    assert(sortRecords([...seed, { ...seed[1], id: 'x', date: '2026-10-23', time: '08:30' }], 'time', 'asc').at(-1).id === 'x', 'another day sorts after Thursday');
+    assert(seed.filter(x => matches(x, 'okafor')).length === 1 && seed.filter(x => matches(x, 'ok')).length === 1, 'search by owner');
+    assert(seed.filter(x => inFilter(x, 'small')).length === 3 && seed.filter(x => inFilter(x, 'dogs')).length === 4 && seed.filter(x => inFilter(x, 'cats')).length === 3, 'filter counts');
+    const t = totals(seed);
+    assert(t.count === 12 && t.minutes === 290 && fmtDuration(t.minutes) === '4 h 50 min' && t.overdue === 2, 'totals');
+    assert(totals([...seed, { ...seed[0], id: 'x', date: '2026-10-23' }]).count === 12, 'totals cover Thursday only');
+    // the scale: resolution, auto-range, needle and readout
+    assert(reading(0.041) === '0.041' && kgText(0.041) === '41 g' && reading(8.62) === '8.62', 'readings at 1 g and 20 g');
+    assert(reading(34.9) === '34.90' && reading(27.43) === '27.44', 'above 6 kg the scale reads in 20 g steps');
+    assert(reading(6) === '6.000' && kgText(4.2) === '4.20 kg' && kgText(4.215) === '4.215 kg', 'up to 6 kg it reads to 1 g');
+    assert(rangeOf(0.041) === 1 && rangeOf(1.05) === 2 && rangeOf(2.14) === 5 && rangeOf(8.62) === 10 && rangeOf(34.9) === 50 && rangeOf(100) === 100, 'the dial auto-ranges');
+    assert(needleAngle(0, 10) === -135 && needleAngle(10, 10) === 135 && needleAngle(5, 10) === 0 && needleAngle(34.9, 10) === 135, 'needle angle, parked at the end stop past full scale');
+    assert(numeral(0.1 * 3) === '0.3' && numeral(5 * 3 / 10) === '1.5' && numeral(100) === '100', 'dial numerals');
+    seed.forEach(x => assert(readText(x.weightKg, x.weightKg) === kgText(x.weightKg), `${x.name}: the settled readout matches the row`));
+    assert(readText(27.43, 27.43) === kgText(27.43) && readText(4.4, 8.62) === '4.40 kg' && readText(0.0204, 0.041) === '20 g', 'the readout follows the needle at the target precision');
+    assert(seed[0].weights.length === 6, 'Biscuit has six weights');
+    assert(fmtDelta(seed[0]) === 'Up 0.4 kg since 14 July', 'Biscuit delta, against the previous visit');
+    assert(fmtDelta(seed[4]) === 'Down 0.08 kg since 25 August', 'Duchess delta');
+    assert(fmtDelta(seed[5]) === 'Up 1 g since 6 May', 'grams delta');
+    assert(compareText(seed[1], seed[0]) === 'Mango 4.20 kg, 4.42 kg lighter than Biscuit', 'comparison');
+    assert(compareText(seed[5], seed[0]) === 'Ziggy 41 g, 8.58 kg lighter than Biscuit', 'comparison at the coarser resolution');
+    assert(compareText(seed[6], seed[0]) === 'Otis 34.90 kg, off this 0 to 10 kg dial, 26.28 kg heavier than Biscuit', 'off-scale comparison');
+    // storage falls back to memory when sessionStorage throws
+    const blocked = makeStore(() => { throw new Error('blocked'); }, 'selftest');
+    assert(blocked.save({ records: [1] }) === false && blocked.load().records[0] === 1, 'memory fallback');
+    assert(seedRecords().every(isRecord), 'seed records pass validation');
+    return true;
+  }
+  if (location.hash === '#selftest') {
+    try { runSelfTest(); console.log('SELFTEST PASS'); }
+    catch (err) { console.error('SELFTEST FAIL: ' + err.message); }
+  }
+})();
+</script>
+</body>
+</html>
