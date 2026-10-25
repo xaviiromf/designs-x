@@ -1,0 +1,1169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kade L2: what it is built from</title>
+<meta name="description" content="Kade L2 front-loading cargo e-bike, drawn onto a red bike lane one system at a time: box, drive, steering and brakes, size.">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Wix+Madefor+Display:wght@600..800&family=Wix+Madefor+Text:wght@400..500&display=swap" rel="stylesheet">
+<style>
+  /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+
+  :root {
+    /* Street materials */
+    --ground: #D3D0C8;      /* Dutch concrete paving tile: the page */
+    --ink: #1B2430;         /* harbour slate: all text on the ground */
+    --ink-soft: color-mix(in oklab, var(--ink) 78%, var(--ground));
+    --lane: #782A23;        /* red bike-lane asphalt: the slab, buttons, checked chips, box paint */
+    --paint: #FBFBF7;       /* white thermoplastic road marking */
+    --paint-dry: color-mix(in oklab, var(--paint) 87%, var(--lane));
+    --reflector: #F2A21B;   /* SAE pedal-reflector amber: slab only (4.6:1 on lane) */
+    --sign: #1D55A8;        /* round bicycle-sign blue: the brand mark only */
+    --paint-wet: #FFFFFF;   /* the wet head of a stroke, brighter than dried paint */
+    --reflector-wet: #FFE2AE;   /* wet head of the dimension lines */
+    --paint-glow: #FFEACB;  /* glass-bead marking lit by the headlamp */
+    --beam: #FFF3DA;        /* the headlamp's light on the asphalt */
+    --rule: color-mix(in oklab, var(--ink) 38%, var(--ground));    /* decorative rules only; control borders use --ink-soft */
+    --sheet: var(--paint);
+    --field: color-mix(in oklab, var(--ground) 45%, var(--paint));
+    --focus: var(--ink);    /* focus ring on the ground; nothing focusable sits on the slab */
+
+    --font-display: 'Wix Madefor Display', 'Segoe UI', system-ui, sans-serif;
+    --font-text: 'Wix Madefor Text', 'Segoe UI', system-ui, sans-serif;
+    --t-xs: .8125rem;
+    --t-sm: .9375rem;
+    --t-base: 1.0625rem;
+    --t-md: 1.3125rem;
+    --t-lg: 1.625rem;
+    --t-xl: clamp(1.625rem, 1.1rem + 1.6vw, 2.5rem);
+    --t-2xl: clamp(2.25rem, 1.2rem + 2.4vw, 3.5rem);
+    --label-px: 13px;      /* SVG dimension labels at rendered size */
+
+    --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px;
+    --s-6: 32px; --s-7: 48px; --s-8: 64px; --s-9: 96px; --s-10: 128px;
+    --gutter: clamp(16px, 4vw, 48px);
+    --measure: 52ch;
+
+    --r-slab: 20px;
+    --r-pill: 999px;
+    --stroke-paint: 8;     /* one marking-cart width, SVG units */
+    --stroke-dim: 3;
+
+    --ease-out: cubic-bezier(.16, 1, .3, 1);
+    --d-fast: .2s;
+    --d-mid: .45s;
+    --d-slow: .9s;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; scroll-padding-block: 24px; }
+  /* The dialog locks the page even when Lenis is not running (reduced motion, libraries blocked) */
+  html:has(dialog.ride[open]) { overflow: clip; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font: 400 var(--t-base)/1.55 var(--font-text);
+    overflow-x: clip;
+  }
+  h1, h2, h3, h4, p, dl, dd, ol, ul, figure, fieldset { margin: 0; padding: 0; }
+  ol, ul { list-style: none; }
+  fieldset { border: 0; min-width: 0; }
+  a { color: inherit; }
+  button, input, select { font: inherit; color: inherit; }
+  [tabindex="-1"]:focus { outline: none; }
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+  .wrap { max-width: 1440px; margin-inline: auto; padding-inline: var(--gutter); }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  /* ---------- Shared link and button language ---------- */
+  /* HV2: underline enters from the left, leaves to the right */
+  .ul {
+    text-decoration: none;
+    background: linear-gradient(var(--ink), var(--ink)) 100% 100% / 0 .09em no-repeat;
+    transition: background-size var(--d-mid) var(--ease-out);
+    padding-bottom: .12em;
+  }
+  .ul:focus-visible, .ul[aria-current] { background-position: 0 100%; background-size: 100% .09em; }
+  @media (hover: hover) { .ul:hover { background-position: 0 100%; background-size: 100% .09em; } }
+  @media (hover: none) {
+    .ul { background-image: linear-gradient(color-mix(in srgb, var(--ink) 30%, transparent), color-mix(in srgb, var(--ink) 30%, transparent)); background-size: 100% .09em; }
+    .ul:active { background-image: linear-gradient(var(--ink), var(--ink)); }
+  }
+
+  /* HV4, laid in the direction of travel: the ink fill always runs left to right, and leaves by fading, never by
+     retracting (the scale resets only once it is invisible). MI1 press. */
+  .btn {
+    position: relative; isolation: isolate; overflow: hidden;
+    display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2);
+    min-height: 48px; padding: 0 var(--s-5);
+    border: 0; border-radius: var(--r-pill);
+    background: var(--lane); color: var(--paint);
+    font: 600 var(--t-base)/1.1 var(--font-display); white-space: nowrap;
+    cursor: pointer;
+    transition: transform var(--d-mid) var(--ease-out);
+  }
+  .btn::before {
+    content: ''; position: absolute; inset: 0; z-index: -1;
+    background: var(--ink);
+    transform: scaleX(0); transform-origin: left center; opacity: 0;
+    transition: opacity .3s var(--ease-out), transform 0s .3s;
+  }
+  .btn:focus-visible::before, .btn:active::before { transform: none; opacity: 1; transition: transform var(--d-mid) var(--ease-out), opacity 0s; }
+  @media (hover: hover) { .btn:hover::before { transform: none; opacity: 1; transition: transform var(--d-mid) var(--ease-out), opacity 0s; } }
+  .btn:active { transform: scale(.975); transition-duration: .12s; }
+
+  /* ---------- Header (in flow) ---------- */
+  .top { padding-block: var(--s-5); }
+  .top .wrap { display: flex; align-items: center; gap: var(--s-6); }
+  .brand { display: inline-flex; align-items: center; gap: var(--s-3); text-decoration: none; font: 800 var(--t-md)/1 var(--font-display); letter-spacing: -.01em; }
+  .brand svg { width: 34px; height: 34px; flex: none; }
+  .brand .disc { fill: var(--sign); }
+  .brand .mark { stroke: var(--paint); }
+  .brand .mark .fill { fill: var(--paint); }
+  .brand .fw { transform-box: fill-box; transform-origin: center; }
+  .brand:focus-visible .fw { animation: spin .8s var(--ease-out); }
+  @media (hover: hover) { .brand:hover .fw { animation: spin .8s var(--ease-out); } }
+  @keyframes spin { to { rotate: 360deg; } }
+  .brand:active svg { scale: .97; }
+  .top nav { margin-left: auto; display: flex; gap: var(--s-6); }
+  .top nav a { font-weight: 500; }
+  /* Phones: one row. Skip the drawing leads to Setups, and Specs follows it. */
+  @media (max-width: 599px) {
+    .top nav { display: none; }
+    .top .btn { margin-left: auto; min-height: 44px; padding-inline: var(--s-4); font-size: var(--t-sm); }
+  }
+  /* While the stage runs on wide screens, the header lies over the top of the runway, so the stage is centred from the
+     first frame. Phones keep it in flow: their stage uses the full height and the header would cover the chapter links. */
+  @media (min-width: 960px) { .stage .top { position: absolute; inset: 0 0 auto; z-index: 2; } }
+
+  /* ---------- Stage: static by default (no JS, reduced motion, short screens) ---------- */
+  .stage-box {
+    display: grid; gap: var(--s-6) var(--s-8);
+    grid-template-areas: "intro" "skip" "slab" "chap";
+    padding-block: var(--s-6) var(--s-8);
+  }
+  .intro { grid-area: intro; }
+  .intro h2 { font: 800 var(--t-2xl)/1 var(--font-display); letter-spacing: -.02em; max-width: 14ch; text-wrap: balance; }
+  .lede { margin-top: var(--s-5); max-width: 46ch; color: var(--ink-soft); text-wrap: pretty; }
+  .skip { grid-area: skip; justify-self: start; font-weight: 500; }
+  .chap-nav { display: none; grid-area: nav; }
+  .slab { grid-area: slab; position: relative; align-self: center; aspect-ratio: 1000 / 570; background: var(--lane); border-radius: var(--r-slab); overflow: clip; }
+  .chapters { grid-area: chap; display: grid; gap: var(--s-7) var(--s-8); }
+  .chapter h3 { font: 700 var(--t-xl)/1.1 var(--font-display); letter-spacing: -.01em; text-wrap: balance; max-width: 20ch; }
+  .chapter p { margin-top: var(--s-4); max-width: var(--measure); text-wrap: pretty; }
+  .facts { margin-top: var(--s-5); display: grid; grid-template-columns: max-content 1fr; gap: var(--s-1) var(--s-5); font-size: var(--t-sm); max-width: 30rem; }
+  .facts dt { color: var(--ink-soft); }
+  .facts dd { font-weight: 500; }
+  @media (min-width: 768px) { .chapters { grid-template-columns: 1fr 1fr; } }
+  @media (min-width: 960px) {
+    .stage-box { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); grid-template-areas: "intro slab" "skip slab" "chap chap"; align-items: start; }
+    .skip { align-self: start; }
+  }
+
+  /* ---------- Stage: sticky chapters (html.stage, set by the script) ---------- */
+  /* The Setups heading slides up into the stage's empty lower band as the stage releases, kept clear of the chapter links */
+  .stage .runway { position: relative; margin-bottom: -10svh; }
+  .stage .stage-box {
+    position: sticky; top: 0; height: 100svh;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "slab" "text" "nav" "skip";
+    align-content: start; gap: var(--s-4);
+    padding-block: clamp(var(--s-5), 6svh, var(--s-8)) var(--s-5);
+  }
+  .stage .intro, .stage .chapters { grid-area: text; }
+  .stage .chapters { grid-template-columns: minmax(0, 1fr); }
+  .stage .chapters > .chapter { grid-area: 1 / 1; opacity: 0; pointer-events: none; }
+  .stage .intro { pointer-events: none; }
+  .stage .is-current { pointer-events: auto !important; }
+  .stage .chap-nav { display: block; }
+  .stage .skip { font-size: var(--t-sm); }
+  @media (min-width: 960px) {
+    .stage .stage-box {
+      grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+      grid-template-areas: "text slab" "nav slab" "skip slab";
+      align-content: center; column-gap: var(--s-8); row-gap: var(--s-6);
+      padding-top: max(var(--s-5), 88px - 13svh);   /* keeps the slab's top edge below the header */
+    }
+    /* The slab's top edge and the heading's cap height share one line, in the intro and every chapter */
+    .stage .intro h2, .stage .chapter h3 { text-box: trim-start cap alphabetic; }
+    /* The lane runs off the page in the direction of travel; capped so short laptops still fit */
+    .stage .slab {
+      align-self: start;
+      --bleed: calc(var(--gutter) + max(0px, (100vw - 1440px) / 2));
+      grid-row: 1 / -1; justify-self: end;
+      width: min(calc(100% + var(--bleed)), calc(74svh * 1000 / 570));
+      margin-right: calc(-1 * var(--bleed));
+      border-radius: var(--r-slab) 0 0 var(--r-slab);
+    }
+    .stage .setups { position: relative; pointer-events: none; }
+    .stage .setups .wrap > * { pointer-events: auto; }
+  }
+  /* Short laptops (560 to 760px tall): the stage starts below the overlaid header, and type and slab tighten to fit */
+  @media (min-width: 960px) and (max-height: 760px) {
+    .stage .stage-box { --t-base: var(--t-sm); --t-xl: 1.75rem; --t-2xl: 2.75rem; padding-top: 104px; align-content: start; row-gap: var(--s-5); }
+    .stage .slab { width: min(calc(100% + var(--bleed)), calc(min(74svh, 100svh - 136px) * 1000 / 570)); }
+    .stage .chapter p, .stage .lede { margin-top: var(--s-3); }
+    .stage .facts { margin-top: var(--s-4); }
+    .stage .chap-nav ol { flex-direction: row; column-gap: var(--s-6); }   /* room for the hanging dash between links */
+    .stage .runway { margin-bottom: 0; }   /* the stage is full here: no lower band for Setups to slide into */
+  }
+  @media (max-width: 959px) { .stage .setups { padding-top: var(--s-6); } }
+  @media (max-width: 959px) and (max-height: 860px) {
+    .stage .stage-box { --t-base: var(--t-sm); --t-xl: 1.5rem; --t-2xl: 2rem; gap: var(--s-3); padding-block: var(--s-4); }
+    .stage .chapter p, .stage .lede { margin-top: var(--s-3); line-height: 1.45; }
+    .stage .facts { margin-top: var(--s-3); }
+  }
+  @media (max-width: 959px) and (max-height: 700px) {
+    .stage .stage-box { --t-2xl: 1.75rem; --t-xl: 1.375rem; padding-block: var(--s-3); }
+    .stage .chapter p, .stage .lede { line-height: 1.4; }
+    .stage .facts { margin-top: var(--s-2); gap: 0 var(--s-5); }
+  }
+
+  /* Chapter links: plain text; the current one carries a short painted dash */
+  .chap-nav ol { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-4); font-size: var(--t-sm); font-weight: 500; }
+  .chap-nav a { position: relative; display: inline-block; padding-block: var(--s-1) .12em; color: var(--ink-soft); }
+  .chap-nav a[aria-current] { color: var(--ink); }
+  .chap-nav a::before {
+    content: ''; position: absolute; left: -22px; top: 50%; width: 14px; height: 4px; margin-top: -1px;
+    border-radius: 2px; background: var(--lane);
+    transform: scaleX(0); transform-origin: left center; transition: transform calc(var(--d-mid) * .7) var(--ease-out);
+  }
+  .chap-nav a[aria-current]::before { transform: none; transition-duration: var(--d-mid); }
+  @media (min-width: 960px) { .chap-nav ol { flex-direction: column; align-items: flex-start; } }
+  /* Narrow: the 16px gutter has no room for a hanging dash, so it is painted under the link instead */
+  @media (max-width: 959px) { .chap-nav a::before { left: 0; top: auto; bottom: -6px; width: 100%; margin-top: 0; } }
+
+  /* ---------- The lane slab and the drawing ---------- */
+  .bike { display: block; width: 100%; height: 100%; --u: 1.4; }
+  /* The lit markings sit in their own layer over the drawing. No filter: their clip-paths change on every scrub frame,
+     and a filtered layer would be re-rasterised each time. The amber halo is a wide stroke underlay (.halo) instead. */
+  .bike-lit { position: absolute; inset: 0; pointer-events: none; }
+  .bike [data-paint], .bike .wet, .bike .glow > g {
+    fill: none; stroke: var(--paint-dry); stroke-width: var(--stroke-paint);
+    stroke-linecap: round; stroke-linejoin: round;
+  }
+  .bike .butt { stroke-linecap: butt; }
+  /* The lane edge's chalk layout line (voormarkering): laid on load, then repainted quarter by quarter as each chapter completes */
+  .bike .primer { opacity: .25; }
+  .bike .solid { fill: var(--paint-dry); }
+  .bike .dim { stroke: var(--reflector); stroke-width: var(--stroke-dim); }
+  .bike .dim .ext { stroke-dasharray: 3 9; opacity: .6; }
+  .bike text {
+    fill: var(--reflector); stroke: var(--lane); stroke-width: calc(10px * var(--u)); paint-order: stroke;
+    font: 500 calc(var(--label-px) * var(--u)) var(--font-text);
+    text-anchor: middle; dominant-baseline: central;
+  }
+  /* The wet head of each stroke: a brighter band at the wipe front */
+  .bike .wet { stroke: var(--paint-wet); visibility: hidden; filter: drop-shadow(0 0 5px color-mix(in srgb, var(--paint-wet) 70%, transparent)); }
+  .bike .wet .solid { fill: var(--paint-wet); }
+  .bike .wet.dim { stroke: var(--reflector-wet); }
+  .bike .wet text { fill: var(--reflector-wet); }
+  /* Headlamp: beam, lit lamp, and the glass-bead glow on markings inside the cone */
+  .bike .glow > g { stroke: var(--paint-glow); }
+  .bike .glow .solid { fill: var(--paint-glow); }
+  /* Two warm-white halo strokes give the lit markings a falloff instead of an outlined band */
+  .bike .glow > .halo { stroke: var(--paint-glow); stroke-width: calc(var(--stroke-paint) * 2); stroke-opacity: .18; }
+  .bike .glow > .halo .solid { fill: var(--paint-glow); fill-opacity: .18; }
+  .bike .glow > .halo.far { stroke-width: calc(var(--stroke-paint) * 3.2); stroke-opacity: .08; }
+  .bike .glow > .halo.far .solid { fill-opacity: .08; }
+  .bike .beam-stop { stop-color: var(--beam); }
+  .bike .lamp-lit { fill: var(--reflector); }
+
+  /* ---------- Setups: bays between painted stall lines ---------- */
+  .setups { padding-block: var(--s-9) var(--s-8); }
+  .stage .setups { padding-top: var(--s-7); }
+  .sec-head { display: grid; gap: var(--s-4) var(--s-8); align-items: end; margin-bottom: var(--s-7); }
+  .sec-head h3 { font: 700 var(--t-xl)/1.1 var(--font-display); letter-spacing: -.01em; }
+  .sec-head p { color: var(--ink-soft); max-width: 46ch; }
+  @media (min-width: 960px) { .sec-head { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); } }
+
+  .bays { display: grid; }
+  .bay { position: relative; display: grid; align-content: start; gap: var(--s-3); padding: var(--s-6) 0 var(--s-6); }
+  .bay::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 6px; background: var(--paint); transform-origin: left center; transition: transform var(--d-slow) var(--ease-out) calc(var(--i) * .08s); }
+  .bay-fig { position: relative; aspect-ratio: 3 / 2; max-width: 360px; }
+  .bay-fig svg { display: block; width: 100%; height: 100%; color: var(--ink); fill: none; stroke: currentColor; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+  .bay-fig .box { fill: var(--lane); }
+  .bay-fig .fill-ink { fill: var(--ink); stroke: none; }
+  .bay-fig .fill-ground { fill: var(--ground); }
+  .bay-fig .thin { stroke-width: 3; }
+  .bay-fig .mesh { stroke: var(--paint); }
+  .bay-fig .empty, .bay-fig .loaded { transform-box: view-box; transform-origin: 50% 65%; transition: transform calc(.5s * .7) var(--ease-out), opacity calc(.5s * .7) var(--ease-out); }
+  .bay-fig .loaded { opacity: 0; transform: scale(1.05); }
+  .bay-fig .loaded > rect:first-child { fill: var(--ground); stroke: none; }
+  .bay h4 { font: 700 var(--t-md)/1.25 var(--font-display); display: flex; flex-wrap: wrap; gap: 0 var(--s-3); align-items: baseline; }
+  .bay h4 .price { font: 500 var(--t-sm) var(--font-text); color: var(--ink-soft); }
+  .bay p { max-width: 34ch; text-wrap: pretty; }
+  .floor { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--rule); }
+  /* The button stays untransformed so its ::after keeps covering the whole bay; the pill inside takes the press. */
+  .toggle { position: static; justify-self: start; margin-top: var(--s-2); padding: 0; border: 0; border-radius: var(--r-pill); background: none; font: 600 var(--t-base) var(--font-display); cursor: pointer; }
+  .toggle::after { content: ''; position: absolute; inset: 0; }
+  .pill {
+    display: inline-flex; align-items: center; gap: var(--s-2);
+    min-height: 44px; padding: 0 var(--s-4) 0 var(--s-3);
+    border: 2px solid var(--ink); border-radius: var(--r-pill);
+    transition: transform var(--d-mid) var(--ease-out), background-color var(--d-fast), color var(--d-fast), border-color var(--d-fast);
+  }
+  .toggle:active .pill { transform: scale(.975); transition-duration: .12s; }
+  .tickbox { width: 18px; height: 18px; border: 2px solid currentColor; border-radius: 5px; display: grid; place-items: center; }
+  .tickbox svg, .chip .dot svg, .check .box svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; clip-path: inset(0 100% 0 0); transition: clip-path .25s var(--ease-out); }
+  .toggle[aria-pressed="true"] .pill { background: var(--lane); border-color: var(--lane); color: var(--paint); }
+  .toggle[aria-pressed="true"] svg { clip-path: inset(0); }
+  /* HV6: hover or keyboard focus previews, aria-pressed commits */
+  @media (hover: hover) {
+    .bay:hover .loaded { opacity: 1; transform: none; transition-duration: .5s; }
+    .bay:hover .empty { transform: scale(.95); transition-duration: .5s; }
+    .bay:hover .toggle:not([aria-pressed="true"]) .pill { border-color: var(--lane); }
+  }
+  .bay:has(.toggle:focus-visible) .loaded, .bay:has([aria-pressed="true"]) .loaded { opacity: 1; transform: none; transition-duration: .5s; }
+  .bay:has(.toggle:focus-visible) .empty, .bay:has([aria-pressed="true"]) .empty { transform: scale(.95); transition-duration: .5s; }
+
+  @media (max-width: 999px) { .bay:not(:last-child) .floor { display: none; } }
+  @media (max-width: 599px) {
+    .bay { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); column-gap: var(--s-4); padding-block: var(--s-5); }
+    .bay-fig { grid-row: 1 / span 4; align-self: start; }
+    .bay h4 { font-size: var(--t-base); }
+    .bay p { font-size: var(--t-sm); line-height: 1.45; }
+  }
+  @media (min-width: 600px) and (max-width: 999px) {
+    .bay { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); column-gap: var(--s-6); }
+    .bay-fig { grid-row: 1 / span 4; }
+  }
+  @media (min-width: 1000px) {
+    .bays { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(4, auto); column-gap: var(--s-7); }
+    .bay { grid-row: span 4; grid-template-rows: subgrid; padding: var(--s-2) 0 var(--s-6); }
+    .bay::before { left: calc(var(--s-7) / -2 - 3px); right: auto; top: 0; bottom: 0; width: 6px; height: auto; transform-origin: center bottom; }
+    .bay:first-child::before { display: none; }
+    .bay .toggle { align-self: end; }
+    .floor { left: calc(var(--s-7) / -2); right: calc(var(--s-7) / -2); }
+    .bay:first-child .floor { left: 0; }
+    .bay:last-child .floor { right: 0; }
+  }
+
+  /* ---------- Specs ---------- */
+  .specs { padding-block: var(--s-8) var(--s-9); }
+  .specs .wrap { display: grid; gap: var(--s-7) var(--s-8); }
+  .specs-side h3 { font: 700 var(--t-xl)/1.1 var(--font-display); letter-spacing: -.01em; }
+  .price-line { margin-top: var(--s-4); font-size: var(--t-md); line-height: 1.3; max-width: 24ch; text-wrap: balance; }
+  .specs-side { display: flex; flex-direction: column; align-items: flex-start; }
+  .specs-side .btn { margin-top: var(--s-6); }
+  .specs-side .mail { margin-top: var(--s-5); font-weight: 500; }
+  .spec-list { display: grid; grid-template-columns: minmax(0, 1fr); line-height: 26px; }   /* whole-pixel rows keep the 1px rules crisp */
+  .spec-list li { position: relative; }
+  .spec-list li::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 1px; background: var(--rule); transform-origin: left center; transition: transform var(--d-slow) var(--ease-out) calc(var(--i) * .04s); }
+  .spec-list li:last-child { border-bottom: 1px solid var(--rule); }
+  .row { position: relative; isolation: isolate; display: block; padding: var(--s-3) var(--s-2); text-decoration: none; }
+  .row .k, .row .go { display: block; }
+  .row::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 4px; background: var(--lane); transform: scaleX(0); transform-origin: right center; transition: transform calc(var(--d-mid) * .7) var(--ease-out); }
+  .row:focus-visible::before { transform: scaleX(1); transform-origin: left center; transition-duration: var(--d-mid); }
+  @media (hover: hover) { .row:hover::before { transform: scaleX(1); transform-origin: left center; transition-duration: var(--d-mid); } }
+  .row:active::before { transform: scaleX(1); }
+  .row .k { color: var(--ink-soft); }
+  .row .v { font-weight: 500; }
+  .row .go { overflow: hidden; color: var(--lane); font-size: var(--t-sm); font-weight: 500; white-space: nowrap; }
+  .row .go span { display: block; transform: translateY(105%); transition: transform calc(.35s * .7) var(--ease-out); }
+  .row:focus-visible .go span { transform: none; transition-duration: .35s; }
+  @media (hover: hover) { .row:hover .go span { transform: none; transition-duration: .35s; } }
+  @media (hover: none) { .row .go { color: var(--ink-soft); font-size: var(--t-xs); } .row .go span { transform: none; } }
+  /* Keys, values and destinations each share one column, so every value starts on one left edge */
+  @media (min-width: 640px) {
+    .spec-list { grid-template-columns: max-content minmax(0, 1fr) max-content; }
+    .spec-list li, .row { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; }
+    .row { align-items: baseline; }
+    .row .k { padding-right: var(--s-5); }
+    .row .go { padding-left: var(--s-5); }
+  }
+  @media (min-width: 960px) { .specs .wrap { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); } }
+
+  /* ---------- Scroll reveals (hidden states exist only once the script set html.motion) ---------- */
+  .motion .bays:not(.in) .bay::before, .motion .spec-list:not(.in) li::before { transform: scaleX(0); }
+  @media (min-width: 1000px) { .motion .bays:not(.in) .bay::before { transform: scaleY(0); } }
+
+  /* ---------- Test-ride dialog ---------- */
+  dialog.ride {
+    width: min(560px, calc(100vw - 2 * var(--gutter))); max-height: calc(100svh - 2 * var(--s-6));
+    padding: 0; border: 0; border-radius: var(--s-4);
+    background: var(--sheet); color: var(--ink);
+    overflow: auto; overscroll-behavior: contain;
+  }
+  dialog.ride::backdrop { background: color-mix(in srgb, var(--ink) 55%, transparent); }
+  .sheet { position: relative; padding: var(--s-7) var(--s-6) var(--s-6); }
+  .sheet h2 { font: 700 var(--t-lg)/1.15 var(--font-display); letter-spacing: -.01em; padding-right: var(--s-7); }
+  .sheet .intro-p { margin-top: var(--s-3); color: var(--ink-soft); }
+  .x {
+    position: absolute; top: var(--s-4); right: var(--s-4); width: 44px; height: 44px;
+    display: grid; place-items: center; border: 0; border-radius: 50%; background: transparent; cursor: pointer;
+    transition: transform var(--d-mid) var(--ease-out);
+  }
+  .x svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; transition: rotate calc(.4s * .7) var(--ease-out); }
+  .x:focus-visible svg { rotate: 90deg; transition-duration: .4s; }
+  @media (hover: hover) { .x:hover svg { rotate: 90deg; transition-duration: .4s; } }
+  .x:active { transform: scale(.94); transition-duration: .12s; }
+  .form { margin-top: var(--s-6); display: grid; gap: var(--s-4); }
+  .field > label, .field > legend { display: block; padding: 0; font-size: var(--t-sm); font-weight: 500; margin-bottom: var(--s-1); }
+  .input { position: relative; display: block; }
+  .input input {
+    display: block; width: 100%; padding: var(--s-3) var(--s-3) var(--s-2);
+    border: 0; border-radius: 6px 6px 0 0; background: var(--field);
+  }
+  .bar, .bar-on { position: absolute; left: 0; right: 0; bottom: 0; pointer-events: none; }
+  .bar { height: 2px; background: var(--ink-soft); transform-origin: bottom; transition: transform var(--d-fast) var(--ease-out); }
+  .bar-on { height: 3px; background: var(--lane); transform: scaleX(0); transform-origin: left center; transition: transform calc(.35s * .7) var(--ease-out); }
+  @media (hover: hover) { .input:hover .bar { transform: scaleY(2); } }
+  .input:focus-within .bar-on { transform: scaleX(1); transition-duration: .35s; }
+  .input input[aria-invalid="true"] ~ .bar { background: var(--lane); }
+  .err { min-height: 1.4em; margin-top: var(--s-1); font-size: var(--t-sm); color: var(--lane); font-weight: 500; clip-path: inset(0 0 100% 0); transition: clip-path .25s var(--ease-out); }
+  .err.on { clip-path: inset(0); }
+  .chips { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-2); }
+  .chip {
+    position: relative; display: inline-flex; align-items: center; gap: var(--s-2);
+    min-height: 44px; padding: 0 var(--s-4) 0 var(--s-2);
+    border: 2px solid var(--ink-soft); border-radius: var(--r-pill); cursor: pointer; font-size: var(--t-sm);
+    transition: transform var(--d-mid) var(--ease-out), border-color var(--d-fast), background-color var(--d-fast), color var(--d-fast);
+  }
+  .chip input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+  .chip .dot { position: relative; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; box-shadow: inset 0 0 0 2px var(--ink-soft); }
+  .chip .dot::before { content: ''; position: absolute; inset: 0; border-radius: 50%; background: var(--lane); transform: scale(0); transition: transform .35s var(--ease-out); }
+  .chip .dot svg { position: relative; color: var(--lane); }
+  .chip:active { transform: scale(.975); transition-duration: .12s; }
+  .chip:has(:checked) { background: var(--lane); border-color: var(--lane); color: var(--paint); }
+  .chip:has(:checked) .dot { box-shadow: none; }
+  .chip:has(:checked) .dot::before { background: var(--paint); transform: scale(1); }
+  .chip:has(:checked) svg { clip-path: inset(0); }
+  .chip:has(:focus-visible), .check:has(:focus-visible) { outline: 3px solid var(--focus); outline-offset: 3px; }
+  .select { position: relative; display: block; }
+  .select select { appearance: none; display: block; width: 100%; min-height: 48px; padding: 0 var(--s-7) 0 var(--s-3); border: 2px solid var(--ink-soft); border-radius: 6px; background: var(--field); cursor: pointer; transition: border-color var(--d-fast); }
+  .select::after { content: ''; position: absolute; right: var(--s-4); top: 50%; width: 9px; height: 9px; border: solid var(--ink); border-width: 0 2.5px 2.5px 0; transform: translateY(-70%) rotate(45deg); pointer-events: none; }
+  .check { position: relative; display: flex; gap: var(--s-3); align-items: flex-start; cursor: pointer; font-size: var(--t-sm); padding-block: var(--s-1); border-radius: 6px; }
+  .check input { position: absolute; opacity: 0; width: 24px; height: 24px; margin: 0; cursor: pointer; }
+  .check .box { flex: none; width: 24px; height: 24px; border: 2px solid var(--ink-soft); border-radius: 6px; display: grid; place-items: center; transition: border-color var(--d-fast), background-color var(--d-fast); }
+  .check:has(:checked) .box { background: var(--lane); border-color: var(--lane); color: var(--paint); }
+  .check:has(:checked) svg { clip-path: inset(0); }
+  @media (hover: hover) {
+    .chip:hover { border-color: var(--lane); }
+    .chip:hover:not(:has(:checked)) .dot::before { transform: scale(.6); }
+    .select select:hover, .check:hover .box { border-color: var(--lane); }
+  }
+  .form .btn { justify-self: start; margin-top: var(--s-2); }
+  .done h2 { padding-right: var(--s-7); }
+  .done p { margin-top: var(--s-3); max-width: 40ch; }
+  .done .acts { margin-top: var(--s-6); display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-5); }
+  .text-btn { border: 0; background: none; padding: var(--s-2) 0; cursor: pointer; font-weight: 500; transition: transform var(--d-mid) var(--ease-out); }
+  .text-btn:active { transform: scale(.975); transition-duration: .12s; }
+  @media (max-width: 559px) {
+    dialog.ride { width: 100vw; max-width: 100vw; height: 100svh; max-height: 100svh; margin: 0; border-radius: 0; }
+    .sheet { padding: var(--s-8) var(--gutter) var(--s-6); }
+    /* The sheet scrolls, so the close button sticks to its top */
+    .x { position: sticky; top: var(--s-4); z-index: 1; margin: calc(-1 * var(--s-7)) 0 var(--s-1) auto;   /* net zero height: sits in the top padding */ background: var(--sheet); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0s !important; transition-delay: 0s !important; animation: none !important; }
+    .ul { background-position: 0 100%; background-size: 100% .09em; }
+    .bay-fig .empty, .bay-fig .loaded { transform: none !important; transition: opacity .2s !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="top" id="top" tabindex="-1">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="Kade, back to top">
+      <svg viewBox="0 0 34 34" aria-hidden="true">
+        <circle class="disc" cx="17" cy="17" r="17"/>
+        <g class="mark" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="9.5" cy="20.5" r="4.2"/>
+          <path d="M9.5 20.5 13 14.5 15 21.5 22 21.5 25.5 16.5M12.5 12.5h2.5M14 21.5V17"/>
+          <path class="fill" d="M15.5 14.5h7.5l-1 5h-6.5z"/>
+          <g class="fw"><circle cx="25" cy="22" r="3.4"/><path d="M25 18.6v6.8M21.6 22h6.8" stroke-width="1.1"/></g>
+        </g>
+      </svg>
+      <span>Kade</span>
+    </a>
+    <nav aria-label="Kade L2">
+      <a class="ul" href="#setups">Setups</a>
+      <a class="ul" href="#specs">Specs</a>
+    </nav>
+    <button class="btn" type="button" data-ride>Book a test ride</button>
+  </div>
+</header>
+
+<main>
+<section class="features" aria-labelledby="l2-title">
+  <div class="runway">
+    <div class="stage-box wrap">
+      <div class="intro">
+        <h2 id="l2-title">Room for two kids and the weekly shop, on a bike that fits the lane</h2>
+        <p class="lede">The Kade L2 is a front-loading cargo e-bike, built in Rotterdam. Here it is one system at a time: the box, the drive, the steering and brakes, and the size.</p>
+      </div>
+
+      <figure class="slab">
+        <svg class="bike" id="bike" viewBox="0 0 1000 570" role="img" aria-labelledby="bike-t">
+          <title id="bike-t">Side view of the Kade L2 cargo e-bike: rider at the back, a low box between the handlebars and the small front wheel, 2.21&nbsp;m long and 1.12&nbsp;m high</title>
+          <defs>
+            <radialGradient id="beam-g" gradientUnits="userSpaceOnUse" cx="758" cy="190" r="950">
+              <stop class="beam-stop" offset="0" stop-opacity=".56"/>
+              <stop class="beam-stop" offset=".45" stop-opacity=".18"/>
+              <stop class="beam-stop" offset="1" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+
+          <g class="paint">
+            <!-- 0: laid down during page load: the lane edge's chalk layout line, both wheels, the lamp's stay (the top of the box front), the headlamp -->
+            <g data-ch="0" data-paint="x" class="primer"><path class="butt" d="M-20 494 H1020" stroke-dasharray="46 30"/></g>
+            <g data-ch="0" data-paint="a" data-hub="194 361"><circle cx="194" cy="361" r="119"/><circle cx="194" cy="361" r="8"/></g>
+            <g data-ch="0" data-paint="a" data-hub="828 384"><circle cx="828" cy="384" r="96"/><circle cx="828" cy="384" r="8"/></g>
+            <g data-ch="0" data-paint="y"><path d="M732.8 224 L752 176"/></g>
+            <g data-ch="0" data-paint="a" data-hub="758 190"><circle class="solid" cx="758" cy="190" r="7"/></g>
+            <!-- 1-4: one quarter of the lane edge each, repainted over that chapter's run (split in dash gaps) -->
+            <g data-ch="1" data-paint="x" class="edge"><path class="butt" d="M-20 494 H269" stroke-dasharray="46 30"/></g>
+            <g data-ch="2" data-paint="x" class="edge"><path class="butt" d="M269 494 H497" stroke-dasharray="46 30" stroke-dashoffset="61"/></g>
+            <g data-ch="3" data-paint="x" class="edge"><path class="butt" d="M497 494 H725" stroke-dasharray="46 30" stroke-dashoffset="61"/></g>
+            <g data-ch="4" data-paint="x" class="edge"><path class="butt" d="M725 494 H1020" stroke-dasharray="46 30" stroke-dashoffset="61"/></g>
+            <!-- 1: the box -->
+            <g data-ch="1" data-paint="x"><path d="M386 384 L404 398 H670 L780 280"/></g>
+            <g data-ch="1" data-paint="x"><path d="M500 356 H680"/></g>
+            <g data-ch="1" data-paint="y"><path d="M500 356 L492 186"/></g>
+            <g data-ch="1" data-paint="y"><path d="M680 356 L732.8 224"/></g>
+            <g data-ch="1" data-paint="x"><path d="M492 186 L752 176"/></g>
+            <g data-ch="1" data-paint="x"><path d="M512 300 H590 V352"/></g>
+            <g data-ch="1" data-paint="y"><path d="M522 182 Q522 162 542 162 Q562 162 562 182 M604 181 Q604 164 622 164 Q640 164 640 181"/><circle class="solid" cx="542" cy="132" r="15"/><circle class="solid" cx="622" cy="136" r="13"/></g>
+            <!-- 2: the drive -->
+            <g data-ch="2" data-paint="y"><path d="M358 368 L300 190"/></g>
+            <g data-ch="2" data-paint="y"><path d="M300 190 L290 106 M256 101 Q288 91 324 102"/></g>
+            <g data-ch="2" data-paint="y"><path d="M194 361 L304 214"/></g>
+            <g data-ch="2" data-paint="y"><path d="M452 262 L372 352"/></g>
+            <g data-ch="2" data-paint="x"><path d="M306 228 L440 210"/></g>
+            <g data-ch="2" data-paint="a" data-hub="358 368"><circle cx="358" cy="368" r="30"/><circle class="solid" cx="358" cy="368" r="6"/></g>
+            <g data-ch="2" data-paint="x"><path d="M356 338 L194 350 M356 398 L194 372"/></g>
+            <g data-ch="2" data-paint="y"><rect x="336" y="238" width="92" height="26" rx="11" transform="rotate(-7.5 382 251)"/></g>
+            <g data-ch="2" data-paint="y"><path d="M358 368 L384 428 M368 432 H402"/></g>
+            <!-- 3: steering and brakes -->
+            <g data-ch="3" data-paint="y"><path d="M458 290 L436 196"/></g>
+            <g data-ch="3" data-paint="y"><path d="M436 196 L428 96 L394 56 H368"/></g>
+            <g data-ch="3" data-paint="y"><path d="M828 384 L761 238"/></g>
+            <g data-ch="3" data-paint="x"><path d="M458 290 L470 377 H690"/></g>
+            <g data-ch="3" data-paint="a" data-hub="194 361"><circle cx="194" cy="361" r="34"/><path d="M186 315.7 A46 46 0 0 1 217 321.2"/></g>
+            <g data-ch="3" data-paint="a" data-hub="828 384"><circle cx="828" cy="384" r="30"/><path d="M813.6 344.5 A42 42 0 0 1 842.4 344.5"/></g>
+            <!-- 4: size and parking -->
+            <g data-ch="4" data-paint="x"><path d="M106 226 H294 M130 226 L190 348"/></g>
+            <g data-ch="4" data-paint="y"><path d="M534 478 L560 398 L590 478"/></g>
+            <g data-ch="4" data-paint="x" class="dim"><path d="M75 536 H924 M75 524 V548 M924 524 V548"/><text x="500" y="536">2.21&nbsp;m</text></g>
+            <g data-ch="4" data-paint="y" class="dim"><path d="M36 480 V54 M24 480 H48 M24 54 H48"/><path class="ext" d="M52 54 H360 M52 480 H70"/><text x="36" y="300" transform="rotate(-90 36 300)">1.12&nbsp;m</text></g>
+          </g>
+
+          <!-- The headlamp's beam: three co-centred wedges (24, 36 and 50 degrees) feather its sides without a filter. Drawn
+               pointing straight ahead and turned by the group's transform (aim angle). -->
+          <g id="cone" aria-hidden="true" fill="url(#beam-g)" transform="rotate(40 758 190)"><path d="M758 190 L1687.2 -7.5 A950 950 0 0 1 1687.2 387.5 Z" fill-opacity=".45"/><path d="M758 190 L1661.5 -103.6 A950 950 0 0 1 1661.5 483.6 Z" fill-opacity=".35"/><path d="M758 190 L1619.0 -211.5 A950 950 0 0 1 1619.0 591.5 Z" fill-opacity=".2"/></g>
+        </svg>
+        <!-- Glass-bead glow: a copy of the painted markings, shown through a feathered mask (the beam) and the headlamp cone -->
+        <svg class="bike bike-lit" viewBox="0 0 1000 570" aria-hidden="true">
+          <defs>
+            <radialGradient id="lit-g" gradientUnits="userSpaceOnUse" cx="758" cy="190" r="950"><stop offset="0" stop-color="#fff"/><stop offset=".5" stop-color="#fff"/><stop offset="1" stop-color="#000"/></radialGradient>
+            <mask id="lit" maskUnits="userSpaceOnUse" x="-200" y="-200" width="1400" height="1000">
+              <g id="cone-path" fill="url(#lit-g)" transform="rotate(40 758 190)"><path d="M758 190 L1687.2 -7.5 A950 950 0 0 1 1687.2 387.5 Z" fill-opacity=".7"/><path d="M758 190 L1661.5 -103.6 A950 950 0 0 1 1661.5 483.6 Z" fill-opacity=".6"/><path d="M758 190 L1619.0 -211.5 A950 950 0 0 1 1619.0 591.5 Z" fill-opacity=".4"/></g>
+            </mask>
+          </defs>
+          <g class="glow" mask="url(#lit)"></g>
+          <g class="lamp-lit"><circle cx="758" cy="190" r="17" opacity=".3"/><circle cx="758" cy="190" r="8"/></g>
+        </svg>
+      </figure>
+
+      <div class="chapters">
+        <article class="chapter" id="ch-box" aria-labelledby="ch-box-t">
+          <h3 id="ch-box-t" tabindex="-1">A box that carries 100&nbsp;kg low and in sight</h3>
+          <p>The box sits between your hands and the front wheel, 32&nbsp;cm off the road, so the weight stays low and your kids stay where you can see them. The bench folds flat for crates, and both five-point belts clip into the frame, not the plywood.</p>
+          <dl class="facts">
+            <dt>Box load</dt><dd>100&nbsp;kg</dd>
+            <dt>Inside the box</dt><dd>78 × 54&nbsp;cm</dd>
+            <dt>Maximum total weight</dt><dd>220&nbsp;kg (bike, rider and load)</dd>
+          </dl>
+        </article>
+        <article class="chapter" id="ch-drive" aria-labelledby="ch-drive-t">
+          <h3 id="ch-drive-t" tabindex="-1">Pedal like a normal bike, climb like a lighter one</h3>
+          <p>An 85&nbsp;Nm mid-drive motor and a stepless hub change gear for you as the lights change. A carbon belt replaces the chain: no oil on your trousers, and about 20,000&nbsp;km before it needs a look.</p>
+          <dl class="facts">
+            <dt>Range</dt><dd>70–120&nbsp;km on 750&nbsp;Wh</dd>
+            <dt>Assist</dt><dd>Up to 25&nbsp;km/h</dd>
+            <dt>Charge</dt><dd>0–100% in 5&nbsp;h</dd>
+          </dl>
+        </article>
+        <article class="chapter" id="ch-steer" aria-labelledby="ch-steer-t">
+          <h3 id="ch-steer-t" tabindex="-1">Turns in a 4.6&nbsp;m circle, stops in 5.5&nbsp;m loaded</h3>
+          <p>A steel rod under the box links the bars to the front wheel, so steering feels direct and there are no cables to stretch. Four-piston hydraulic brakes on 203&nbsp;mm rotors stop a fully loaded bike from 25&nbsp;km/h in 5.5&nbsp;m.</p>
+          <dl class="facts">
+            <dt>Turning circle</dt><dd>4.6&nbsp;m</dd>
+            <dt>Rotors</dt><dd>203&nbsp;mm, front and rear</dd>
+          </dl>
+        </article>
+        <article class="chapter" id="ch-size" aria-labelledby="ch-size-t">
+          <h3 id="ch-size-t" tabindex="-1">2.21&nbsp;m long, 64&nbsp;cm wide, through a standard front door</h3>
+          <p>That is shorter than most front-loaders and narrow enough for an 80&nbsp;cm doorway. The centre stand lifts the front wheel and locks the steering, so the bike stays put while you lift a child out. The rear rack takes a second child seat.</p>
+          <dl class="facts">
+            <dt>Length</dt><dd>2.21&nbsp;m</dd>
+            <dt>Bar width</dt><dd>64&nbsp;cm</dd>
+            <dt>Bike weight</dt><dd>42&nbsp;kg</dd>
+            <dt>Rear rack</dt><dd>27&nbsp;kg, takes a second child seat</dd>
+          </dl>
+        </article>
+      </div>
+
+      <nav class="chap-nav" aria-label="Chapters">
+        <ol>
+          <li><a class="ul" href="#ch-box">The box</a></li>
+          <li><a class="ul" href="#ch-drive">The drive</a></li>
+          <li><a class="ul" href="#ch-steer">Steering and brakes</a></li>
+          <li><a class="ul" href="#ch-size">Size and parking</a></li>
+        </ol>
+      </nav>
+
+      <a class="skip ul" href="#setups">Skip the drawing</a>
+    </div>
+  </div>
+
+  <!-- Shared front end for the bay drawings -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <g id="fe" fill="none" stroke="currentColor"><circle cx="246" cy="156" r="38"/><circle cx="246" cy="156" r="3" fill="currentColor"/><path d="M246 156 L222 98 M8 190 H164 L218 112"/></g>
+    </defs>
+  </svg>
+
+  <section class="setups" id="setups" aria-labelledby="setups-t">
+    <div class="wrap">
+      <div class="sec-head">
+        <h3 id="setups-t" tabindex="-1">One frame, four boxes</h3>
+        <p>Boxes swap with four bolts in about ten minutes. Choose a setup to see it loaded.</p>
+      </div>
+      <div class="bays" data-reveal="top 80%">
+        <article class="bay" style="--i:0">
+          <div class="bay-fig">
+            <svg viewBox="0 0 300 200" role="img" aria-labelledby="bay1-t">
+              <title id="bay1-t" data-empty="Kids bench box, empty" data-loaded="Kids bench box with two children in helmets">Kids bench box, empty</title>
+              <g class="empty"><use href="#fe"/><path class="box" d="M28 182 H156 L178 80 L20 86 Z"/></g>
+              <g class="loaded"><rect width="300" height="200"/><use href="#fe"/>
+                <path d="M44 86 Q62 64 80 85 M98 84 Q114 66 130 83"/><circle class="fill-ground" cx="62" cy="48" r="16"/><path class="fill-ink" d="M44 46 A18 18 0 0 1 80 46 Z"/><circle class="fill-ground" cx="114" cy="54" r="14"/><path class="fill-ink" d="M98 52 A16 16 0 0 1 130 52 Z"/>
+                <path class="box" d="M28 182 H156 L178 80 L20 86 Z"/></g>
+            </svg>
+          </div>
+          <h4>Kids bench <span class="price">+€290</span></h4>
+          <p>Padded bench, two five-point belts, and a rain hood that clips on in one go.</p>
+          <button class="toggle" type="button" aria-pressed="false"><span class="pill"><span class="tickbox" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M2 6.4 4.8 9 10 3"/></svg></span>Show it loaded<span class="sr"> (Kids bench)</span></span></button>
+          <span class="floor" aria-hidden="true"></span>
+        </article>
+        <article class="bay" style="--i:1">
+          <div class="bay-fig">
+            <svg viewBox="0 0 300 200" role="img" aria-labelledby="bay2-t">
+              <title id="bay2-t" data-empty="Flat bed, empty" data-loaded="Flat bed with two Euro crates stacked">Flat bed, empty</title>
+              <g class="empty"><use href="#fe"/><path class="box" d="M18 168 H170 V182 H18 Z"/><path d="M24 168 V146 M164 168 V146"/></g>
+              <g class="loaded"><rect width="300" height="200"/><use href="#fe"/><path class="box" d="M18 168 H170 V182 H18 Z"/><path d="M24 168 V146 M164 168 V146"/>
+                <rect class="fill-ground" x="38" y="126" width="112" height="42" rx="3"/><rect class="fill-ground" x="38" y="84" width="112" height="42" rx="3"/>
+                <rect class="thin" x="78" y="133" width="32" height="9" rx="4.5"/><rect class="thin" x="78" y="91" width="32" height="9" rx="4.5"/>
+                <path class="thin" d="M60 148 V162 M128 148 V162 M60 106 V120 M128 106 V120"/></g>
+            </svg>
+          </div>
+          <h4>Flat bed <span class="price">+€240</span></h4>
+          <p>Open aluminium deck with tie-down rails, sized for a stack of two Euro crates.</p>
+          <button class="toggle" type="button" aria-pressed="false"><span class="pill"><span class="tickbox" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M2 6.4 4.8 9 10 3"/></svg></span>Show it loaded<span class="sr"> (Flat bed)</span></span></button>
+          <span class="floor" aria-hidden="true"></span>
+        </article>
+        <article class="bay" style="--i:2">
+          <div class="bay-fig">
+            <svg viewBox="0 0 300 200" role="img" aria-labelledby="bay3-t">
+              <title id="bay3-t" data-empty="Dog box, empty" data-loaded="Dog box with a dog looking over the side">Dog box, empty</title>
+              <g class="empty"><use href="#fe"/><path class="box" d="M28 182 H152 L174 60 L22 66 Z"/><path class="thin mesh" d="M126 70 V178 M138 69 V178 M150 68 V178"/></g>
+              <g class="loaded"><rect width="300" height="200"/><use href="#fe"/>
+                <path class="fill-ground" d="M106 34 Q134 32 142 44 Q146 56 126 58 L104 60 Z"/><circle class="fill-ground" cx="90" cy="46" r="24"/><path class="fill-ink" d="M76 28 Q60 30 62 58 Q72 60 80 46 Z"/><circle class="fill-ink" cx="141" cy="44" r="4"/><circle class="fill-ink" cx="102" cy="40" r="3.2"/><path class="thin" d="M70 66 Q90 74 112 66"/>
+                <path class="box" d="M28 182 H152 L174 60 L22 66 Z"/><path class="thin mesh" d="M126 70 V178 M138 69 V178 M150 68 V178"/></g>
+            </svg>
+          </div>
+          <h4>Dog box <span class="price">+€340</span></h4>
+          <p>Raised sides, a non-slip floor and a mesh door at the front for dogs up to 35&nbsp;kg.</p>
+          <button class="toggle" type="button" aria-pressed="false"><span class="pill"><span class="tickbox" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M2 6.4 4.8 9 10 3"/></svg></span>Show it loaded<span class="sr"> (Dog box)</span></span></button>
+          <span class="floor" aria-hidden="true"></span>
+        </article>
+        <article class="bay" style="--i:3">
+          <div class="bay-fig">
+            <svg viewBox="0 0 300 200" role="img" aria-labelledby="bay4-t">
+              <title id="bay4-t" data-empty="Market box with its lid shut" data-loaded="Market box, lid open, with bread, leeks and a crate">Market box with its lid shut</title>
+              <g class="empty"><use href="#fe"/><path class="box" d="M28 182 H158 L168 96 L20 100 Z"/><path d="M14 92 L172 88"/><circle class="fill-ink" cx="16" cy="93" r="5"/></g>
+              <g class="loaded"><rect width="300" height="200"/><use href="#fe"/>
+                <path d="M18 96 L6 22"/><circle class="fill-ink" cx="17" cy="97" r="5"/>
+                <rect class="fill-ground" x="88" y="70" width="64" height="28" rx="3"/><path class="thin" d="M104 78 H136"/>
+                <rect class="fill-ground" x="30" y="40" width="20" height="74" rx="10" transform="rotate(-28 40 77)"/><path class="thin" d="M40 56 L48 60 M36 72 L44 76" transform="rotate(-28 40 77)"/>
+                <path d="M74 98 L82 20 M82 20 L70 4 M82 20 L94 6"/>
+                <path class="box" d="M28 182 H158 L168 96 L20 100 Z"/></g>
+            </svg>
+          </div>
+          <h4>Market box <span class="price">+€310</span></h4>
+          <p>A 140&nbsp;L box with a lockable lid for the weekly shop.</p>
+          <button class="toggle" type="button" aria-pressed="false"><span class="pill"><span class="tickbox" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M2 6.4 4.8 9 10 3"/></svg></span>Show it loaded<span class="sr"> (Market box)</span></span></button>
+          <span class="floor" aria-hidden="true"></span>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="specs" id="specs" aria-labelledby="specs-t">
+    <div class="wrap">
+      <div class="specs-side">
+        <h3 id="specs-t" tabindex="-1">Specifications</h3>
+        <p class="price-line">From €5,890 with the kids bench.</p>
+        <button class="btn" type="button" data-ride>Book a test ride</button>
+        <a class="mail ul" href="mailto:workshop@kade-cargo.example" target="_blank" rel="noopener">Email the workshop</a>
+      </div>
+      <ul class="spec-list" data-reveal="top 85%">
+        <li style="--i:0"><a class="row" href="#ch-drive"><span class="k">Motor</span><span class="v">85&nbsp;Nm mid-drive</span><span class="go"><span>See the drive</span></span></a></li>
+        <li style="--i:1"><a class="row" href="#ch-drive"><span class="k">Battery</span><span class="v">750&nbsp;Wh, removable, second 545&nbsp;Wh optional</span><span class="go"><span>See the drive</span></span></a></li>
+        <li style="--i:2"><a class="row" href="#ch-drive"><span class="k">Range</span><span class="v">70–120&nbsp;km</span><span class="go"><span>See the drive</span></span></a></li>
+        <li style="--i:3"><a class="row" href="#ch-drive"><span class="k">Drive</span><span class="v">Carbon belt, stepless hub</span><span class="go"><span>See the drive</span></span></a></li>
+        <li style="--i:4"><a class="row" href="#ch-steer"><span class="k">Brakes</span><span class="v">203&nbsp;mm rotors, four-piston hydraulic</span><span class="go"><span>See steering and brakes</span></span></a></li>
+        <li style="--i:5"><a class="row" href="#ch-steer"><span class="k">Steering</span><span class="v">4.6&nbsp;m turning circle, rod linkage</span><span class="go"><span>See steering and brakes</span></span></a></li>
+        <li style="--i:6"><a class="row" href="#ch-box"><span class="k">Box load</span><span class="v">100&nbsp;kg</span><span class="go"><span>See the box</span></span></a></li>
+        <li style="--i:7"><a class="row" href="#ch-box"><span class="k">Maximum total weight</span><span class="v">220&nbsp;kg (bike, rider and load)</span><span class="go"><span>See the box</span></span></a></li>
+        <li style="--i:8"><a class="row" href="#ch-size"><span class="k">Length and width</span><span class="v">2.21&nbsp;m × 64&nbsp;cm</span><span class="go"><span>See the size</span></span></a></li>
+      </ul>
+    </div>
+  </section>
+</section>
+</main>
+
+<dialog class="ride" id="ride" aria-labelledby="ride-t" data-lenis-prevent>
+  <div class="sheet">
+    <button class="x" type="button" aria-label="Close" data-close><svg viewBox="0 0 18 18" aria-hidden="true"><path d="M3 3 15 15 M15 3 3 15"/></svg></button>
+    <div class="view" data-view="form">
+      <h2 id="ride-t">Book a test ride</h2>
+      <p class="intro-p">Thirty minutes on the L2 with a mechanic, loaded or empty. Helmets and child seats are there.</p>
+      <form class="form" id="ride-form" novalidate>
+        <div class="field">
+          <label for="f-name">Your name</label>
+          <span class="input"><input id="f-name" name="name" autocomplete="name" required aria-describedby="e-name"><span class="bar"></span><span class="bar-on"></span></span>
+          <p class="err" id="e-name" aria-live="polite"></p>
+        </div>
+        <div class="field">
+          <label for="f-email">Email</label>
+          <span class="input"><input id="f-email" name="email" type="email" autocomplete="email" required aria-describedby="e-email"><span class="bar"></span><span class="bar-on"></span></span>
+          <p class="err" id="e-email" aria-live="polite"></p>
+        </div>
+        <fieldset class="field">
+          <legend>Workshop</legend>
+          <div class="chips">
+            <label class="chip"><input type="radio" name="shop" value="Kop van Zuid" data-city="Rotterdam" required aria-describedby="e-shop"><span class="dot"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6.4 4.8 9 10 3"/></svg></span>Rotterdam, Kop van Zuid</label>
+            <label class="chip"><input type="radio" name="shop" value="Lombok" data-city="Utrecht" required aria-describedby="e-shop"><span class="dot"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6.4 4.8 9 10 3"/></svg></span>Utrecht, Lombok</label>
+            <label class="chip"><input type="radio" name="shop" value="Oost" data-city="Amsterdam" required aria-describedby="e-shop"><span class="dot"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6.4 4.8 9 10 3"/></svg></span>Amsterdam, Oost</label>
+          </div>
+          <p class="err" id="e-shop" aria-live="polite"></p>
+        </fieldset>
+        <div class="field">
+          <label for="f-slot">Day and time</label>
+          <span class="select"><select id="f-slot" name="slot" required></select></span>
+        </div>
+        <label class="check"><input type="checkbox" name="child"><span class="box"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6.4 4.8 9 10 3"/></svg></span><span>I'm bringing a child (helmets 46 to 56&nbsp;cm provided)</span></label>
+        <button class="btn" type="submit">Book my ride</button>
+      </form>
+    </div>
+    <div class="view done" data-view="done" hidden>
+      <h2 id="done-t" tabindex="-1">Ride booked</h2>
+      <p id="done-p"></p>
+      <div class="acts">
+        <button class="btn" type="button" data-close>Done</button>
+        <button class="text-btn ul" type="button" data-edit>Change details</button>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  const root = document.documentElement;
+  const libs = !!(window.gsap && window.ScrollTrigger && window.Lenis);   // CDN blocked: everything below still works, without motion
+  const $ = (s, c = document) => c.querySelector(s);
+  const $$ = (s, c = document) => [...c.querySelectorAll(s)];
+  let lenis = null;      // live while the motion layer runs
+  let chapterY = null;   // scroll position of a chapter inside the sticky stage, while it runs
+
+  /* ---------- The drawing: paint state per stroke group ---------- */
+  const svg = $('#bike'), slab = $('.slab'), glow = $('.slab .glow');
+  const SW = 8, BAND = .1;
+  const els = $$('[data-paint]', svg);
+  const groups = els.map(el => {
+    const g = { el, mode: el.dataset.paint, ch: +el.dataset.ch, edge: el.classList.contains('edge'), p: 1 }, b = el.getBBox();
+    if (el.dataset.hub) {
+      const [hx, hy] = el.dataset.hub.split(' ').map(Number);
+      g.cx = (hx - b.x + SW / 2) / (b.width + SW) * 100;
+      g.cy = (hy - b.y + SW / 2) / (b.height + SW) * 100;
+    }
+    // The lit copy of every marking (not the dimension lines or the chalk layout line), shown only inside the beam.
+    // Two wider warm-white halo copies sit under it (geometry, not a filter, so scrubbing never re-rasterises a filtered layer).
+    if (!el.matches('.dim, .primer')) {
+      g.glowEl = el.cloneNode(true);
+      ['data-paint', 'data-ch', 'data-hub'].forEach(a => g.glowEl.removeAttribute(a));
+      g.halos = ['halo', 'halo far'].map(c => { const h = g.glowEl.cloneNode(true); h.setAttribute('class', c); return h; });
+    }
+    g.wet = el.cloneNode(true);   // the wet head: a brighter copy clipped to a band at the wipe front
+    g.wet.removeAttribute('data-paint');
+    g.wet.classList.add('wet');
+    g.wet.setAttribute('aria-hidden', 'true');
+    el.after(g.wet);
+    return g;
+  });
+  const lit = groups.filter(g => g.glowEl);
+  glow.append(...lit.map(g => g.halos[1]), ...lit.map(g => g.halos[0]), ...lit.map(g => g.glowEl));   // far halos, near halos, then the bright strokes
+  // Pie slice around the hub, from the contact patch, clockwise (the way the wheel turns riding right).
+  const pie = (g, a0, a1) => {
+    const pts = [`${g.cx}% ${g.cy}%`], from = 90 + a0 * 360, to = 90 + a1 * 360;
+    for (let a = from; ; a = Math.min(to, a + 10)) {
+      const r = a * Math.PI / 180;
+      pts.push(`${(g.cx + 160 * Math.cos(r)).toFixed(2)}% ${(g.cy + 160 * Math.sin(r)).toFixed(2)}%`);
+      if (a >= to) break;
+    }
+    return `polygon(${pts.join(',')})`;
+  };
+  function paint(g) {
+    const p = g.p, s = g.el.style, w = g.wet.style;
+    if (p >= 1) { s.clipPath = ''; w.visibility = ''; }
+    else {
+      const q = Math.max(0, p), lo = Math.max(0, q - BAND), cut = (100 - q * 100).toFixed(2);
+      if (g.mode === 'x') { s.clipPath = `inset(0 ${cut}% 0 0)`; w.clipPath = `inset(0 ${cut}% 0 ${(lo * 100).toFixed(2)}%)`; }
+      else if (g.mode === 'y') { s.clipPath = `inset(${cut}% 0 0 0)`; w.clipPath = `inset(${cut}% 0 ${(lo * 100).toFixed(2)}% 0)`; }
+      else { s.clipPath = pie(g, 0, q); w.clipPath = pie(g, lo, q); }
+      w.visibility = q > 0 ? 'visible' : '';
+    }
+    if (g.glowEl) g.glowEl.style.clipPath = g.halos[0].style.clipPath = g.halos[1].style.clipPath = s.clipPath;   // unpainted strokes never light up
+  }
+  // Keep the dimension labels at a constant rendered size whatever the drawing's width.
+  new ResizeObserver(([e]) => { if (e.contentRect.width) svg.style.setProperty('--u', (1000 / e.contentRect.width).toFixed(3)); }).observe(svg);
+
+  /* ---------- The headlamp: a wedge of light anchored at the drawn lamp, turned by its aim angle ---------- */
+  const LAMP = [758, 190], cone = $('#cone'), conePath = $('#cone-path');
+  const lampEls = [cone, $('.lamp-lit', slab)];
+  const AHEAD = 40;                  // degrees below straight ahead: down the lane, the resting aim
+  const lamp = { a: AHEAD, s: 1 };   // a: aim in degrees (0 = straight ahead, clockwise), s: beam length (switch-on)
+  const setCone = () => {
+    const t = `rotate(${lamp.a.toFixed(2)} ${LAMP}) translate(${LAMP}) scale(${lamp.s.toFixed(3)}) translate(${-LAMP[0]} ${-LAMP[1]})`;
+    cone.setAttribute('transform', t);
+    conePath.setAttribute('transform', t);
+  };
+  // Unclamped: the lamp turns on its mount to wherever it is aimed, so every painted part, the saddle and the rear rack
+  // included, can be lit from it.
+  const angleTo = ([x, y]) => Math.atan2(y - LAMP[1], x - LAMP[0]) * 180 / Math.PI;
+  // The same direction, the short way round from where the beam points now, so it never swings through 300 degrees.
+  const nearest = a => lamp.a + ((a - lamp.a) % 360 + 540) % 360 - 180;
+
+  /* ---------- In-page anchors: eased through Lenis, focus moves to the target ---------- */
+  const chapterIds = ['ch-box', 'ch-drive', 'ch-steer', 'ch-size'];
+  function goTo(id, instant) {
+    const el = document.getElementById(id);
+    const target = el.matches('[tabindex]') ? el : $('[tabindex="-1"]', el) || el;
+    const k = chapterIds.indexOf(id);
+    const y = k >= 0 && chapterY ? chapterY(k + 1) : Math.max(0, el.getBoundingClientRect().top + scrollY);
+    const done = () => target.focus({ preventScroll: true });
+    if (lenis) lenis.scrollTo(y, instant ? { immediate: true, force: true, onComplete: done } : { duration: Math.min(1.3, .65 + Math.abs(y - scrollY) / 4000), onComplete: done });
+    else { scrollTo(0, y); done(); }
+  }
+  document.addEventListener('click', e => {
+    const a = e.target.closest('a[href^="#"]');
+    if (!a || e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey) return;
+    const id = decodeURIComponent(a.hash.slice(1));
+    if (!document.getElementById(id)) return;
+    e.preventDefault();
+    history.replaceState(null, '', '#' + id);
+    goTo(id);
+  });
+
+  /* ---------- Setups: each bay is a toggle; hover and focus preview, click and tap commit ---------- */
+  $$('.toggle').forEach(b => b.addEventListener('click', () => {
+    const on = b.getAttribute('aria-pressed') !== 'true', t = $('title', b.closest('.bay'));
+    b.setAttribute('aria-pressed', String(on));
+    t.textContent = on ? t.dataset.loaded : t.dataset.empty;
+  }));
+
+  /* ---------- Test-ride dialog ---------- */
+  const dlg = $('#ride'), form = $('#ride-form'), slot = $('#f-slot');
+  const views = { form: $('[data-view="form"]', dlg), done: $('[data-view="done"]', dlg) };
+  const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let opener = null, closing = false;
+  // The next six Saturdays, 10:00 and 14:00.
+  const day = new Date(); day.setHours(12, 0, 0, 0); day.setDate(day.getDate() + ((6 - day.getDay() + 7) % 7 || 7));
+  const fmt = new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  for (let i = 0; i < 6; i++, day.setDate(day.getDate() + 7)) for (const t of ['10:00', '14:00']) slot.add(new Option(`${fmt.format(day)}, ${t}`));
+
+  function show(name, focusEl) {
+    const next = views[name], prev = views[name === 'form' ? 'done' : 'form'];
+    prev.hidden = true; next.hidden = false;
+    dlg.setAttribute('aria-labelledby', name === 'form' ? 'ride-t' : 'done-t');
+    if (libs && !reduced()) gsap.fromTo(next, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: .4, ease: 'expo.out' });
+    focusEl?.focus();
+  }
+  function openRide(btn) {
+    opener = btn; closing = false;
+    views.form.hidden = false; views.done.hidden = true;
+    dlg.setAttribute('aria-labelledby', 'ride-t');
+    dlg.showModal();
+    lenis?.stop();
+    // Opacity only, never visibility: hiding the dialog for a frame would drop the focus showModal() just set.
+    if (libs && !reduced()) gsap.fromTo(dlg, { opacity: 0, y: 12, scale: .98 }, { opacity: 1, y: 0, scale: 1, duration: .45, ease: 'expo.out' });
+  }
+  function closeRide() {
+    if (closing || !dlg.open) return;
+    closing = true;
+    if (libs && !reduced()) gsap.to(dlg, { opacity: 0, y: 8, duration: .3, ease: 'expo.out', onComplete: () => dlg.close() });
+    else dlg.close();
+  }
+  dlg.addEventListener('close', () => {
+    closing = false;
+    if (!views.done.hidden) form.reset();   // a finished booking does not prefill the next; a half-filled form is kept
+    if (libs) gsap.set(dlg, { clearProps: 'all' });
+    lenis?.start();
+    opener?.focus();
+  });
+  dlg.addEventListener('cancel', e => { e.preventDefault(); closeRide(); });
+  // The sheet fills the dialog, so a click on the dialog itself is the backdrop; a press that started inside (a text
+  // selection dragged out over the backdrop) does not count.
+  let downOn = null;
+  dlg.addEventListener('pointerdown', e => { downOn = e.target; });
+  dlg.addEventListener('click', e => { if (e.target === dlg && downOn === dlg) closeRide(); downOn = null; });
+  $$('[data-ride]').forEach(b => b.addEventListener('click', () => openRide(b)));
+  $$('[data-close]', dlg).forEach(b => b.addEventListener('click', closeRide));
+  $('[data-edit]', dlg).addEventListener('click', () => show('form', $('#f-name')));
+
+  const checks = [
+    [form.elements.name, $('#e-name'), el => el.value.trim() !== '', 'Add your name so the mechanic knows who to look for.'],
+    [form.elements.email, $('#e-email'), el => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(el.value.trim()), 'Enter an email like name@example.com.'],
+    [$$('[name="shop"]', form), $('#e-shop'), els => els.some(r => r.checked), 'Pick a workshop.'],
+  ];
+  const mark = (target, msg, text) => {
+    const ok = !text;
+    (Array.isArray(target) ? target : [target]).forEach(el => el.setAttribute('aria-invalid', String(!ok)));
+    if (text) msg.textContent = text;
+    msg.classList.toggle('on', !ok);
+  };
+  checks.forEach(([target, msg, test]) => (Array.isArray(target) ? target : [target]).forEach(el =>
+    el.addEventListener(el.type === 'radio' ? 'change' : 'input', () => { if (msg.classList.contains('on') && test(target)) mark(target, msg); })));
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const bad = checks.filter(([target, msg, test, text]) => { const ok = test(target); mark(target, msg, ok ? '' : text); return !ok; });
+    if (bad.length) { const t = bad[0][0]; (Array.isArray(t) ? t[0] : t).focus(); return; }
+    const shop = $('[name="shop"]:checked', form);
+    const ref = 'K2\u2011' + (1000 + Math.floor(Math.random() * 9000));   // non-breaking hyphen keeps the reference on one line
+    $('#done-p').textContent = `${slot.value} at our ${shop.value} workshop in ${shop.dataset.city}. Booking ${ref}. Bring photo ID. We bring the helmets${form.elements.child.checked ? ', a child size too' : ''}.`;
+    show('done', $('#done-t'));
+  });
+
+  if (!libs) return;
+
+  /* ---------- Motion layer ---------- */
+  gsap.registerPlugin(ScrollTrigger);
+  const runway = $('.runway'), lede = $('.lede'), skip = $('.skip');
+  const panels = [$('.intro'), ...$$('.chapter')];
+  const navLinks = $$('.chap-nav a');
+  // Where the headlamp rests in each chapter when no pointer aims it (S2): the box, the drive, the steering rod,
+  // the stand and dimensions. On the intro and after the last stroke it points down the lane.
+  const AIM = [null, [590, 270], [370, 320], [600, 335], [530, 470]];
+
+  // Where the reader is, kept across a matchMedia rebuild (rotation, a motion-setting change), which resets the layout.
+  // Inside the running stage that is the current chapter; elsewhere the last landmark above the viewport and the offset.
+  let stageIdx = 0, resume = null;
+  const marks = [$('.features'), ...$$('.chapter'), $('#setups'), $('#specs')];
+  function remember() {
+    if (chapterY && runway.getBoundingClientRect().bottom > innerHeight) { resume = { k: stageIdx }; return; }
+    // The lowest landmark in the top third of the viewport or above; of two side by side (stacked chapters), the first.
+    const el = marks.filter(m => !m.closest('.stage .chapters') && m.getBoundingClientRect().top <= innerHeight / 3)
+      .reduce((a, m) => !a || m.getBoundingClientRect().top > a.getBoundingClientRect().top + 1 ? m : a, null);
+    const ci = $$('.chapter').indexOf(el);   // a stacked chapter maps to that chapter in the stage, and back
+    resume = ci >= 0 ? { k: ci + 1 } : el ? { el, dy: -el.getBoundingClientRect().top } : null;
+  }
+  function restore() {
+    if (!resume) return;
+    const { k, el, dy } = resume;
+    resume = null;
+    ScrollTrigger.refresh();
+    const y = k === undefined ? el.getBoundingClientRect().top + scrollY + dy
+      : !k ? 0 : chapterY ? chapterY(k) : $$('.chapter')[k - 1].getBoundingClientRect().top + scrollY;
+    if (lenis) { lenis.resize(); lenis.scrollTo(y, { immediate: true, force: true }); } else scrollTo(0, y);
+  }
+
+  function buildStage(wide, fine) {
+    root.classList.add('stage');
+    const C = wide ? 100 : 90;                       // svh per chapter; the last runs 15% longer
+    const LEN = [40, C, C, C, C * 1.15];
+    const START = LEN.map((_, i) => LEN.slice(0, i).reduce((a, b) => a + b, 0));
+    const TOTAL = START[4] + LEN[4], LAMP_T = START[4] + LEN[4] * .7;
+    runway.style.height = `calc(100svh + ${TOTAL}svh)`;
+
+    groups.forEach(g => { g.p = 0; paint(g); });
+    lamp.a = AHEAD; lamp.s = .001; setCone();
+    gsap.set(lampEls, { opacity: 0 });
+    gsap.set(panels.slice(1), { opacity: 0 });
+    panels.slice(1).forEach(p => { p.inert = true; });   // hidden chapters stay out of the accessibility tree from the start
+    panels[0].classList.add('is-current');
+
+    let cur = 0, final = false, hover = false;
+    const aimQ = gsap.quickTo(lamp, 'a', { duration: .6, ease: 'expo.out', onUpdate: setCone });
+    const aimAt = (deg, d) => { aimQ.tween.duration(d); aimQ(nearest(deg)); };
+    // A chapter change always takes the lamp to its system; leaving the slab hands it back from the pointer.
+    const park = force => { if (force || !hover) aimAt(final || !cur ? AHEAD : angleTo(AIM[cur]), .6); };
+
+    // Page load: the slab opens in the marking cart's direction, the lane edge's layout line and both wheels are laid
+    // down, then the headlamp switches on and throws its beam down the lane.
+    const ch0 = groups.filter(g => g.ch === 0);      // layout line, rear wheel, front wheel, lamp stay, headlamp
+    const R = getComputedStyle(slab).borderRadius;   // square on the right where the lane bleeds off the page
+    // The closed slab would show as a hairline at its left edge on the first frames, so it appears once it is opening.
+    gsap.set(slab, { autoAlpha: 0 });
+    gsap.timeline()
+      .set(slab, { autoAlpha: 1 }, .06)
+      .fromTo(slab, { clipPath: `inset(0% 100% 0% 0% round ${R})` }, { clipPath: `inset(0% 0% 0% 0% round ${R})`, duration: .9, ease: 'expo.inOut', clearProps: 'clipPath' }, 0)
+      .to(ch0[0], { p: 1, duration: .8, ease: 'expo.inOut', onUpdate: () => paint(ch0[0]) }, .45)
+      .to(ch0[1], { p: 1, duration: 1, ease: 'expo.out', onUpdate: () => paint(ch0[1]) }, .6)
+      .to(ch0[2], { p: 1, duration: 1, ease: 'expo.out', onUpdate: () => paint(ch0[2]) }, .75)
+      .to(ch0[3], { p: 1, duration: .35, ease: 'expo.out', onUpdate: () => paint(ch0[3]) }, .95)
+      .to(ch0[4], { p: 1, duration: .4, ease: 'expo.out', onUpdate: () => paint(ch0[4]) }, 1.1)
+      .to(lampEls, { opacity: 1, duration: .3, ease: 'expo.out' }, 1.3)
+      .to(lamp, { s: 1, duration: .7, ease: 'expo.out', onUpdate: setCone }, 1.3)
+      .fromTo(navLinks, { opacity: 0 }, { opacity: 1, duration: .6, ease: 'expo.out', stagger: .06 }, .6)
+      .fromTo(skip, { opacity: 0 }, { opacity: 1, duration: .6, ease: 'expo.out' }, .9);
+
+    // One paused master timeline, scrubbed by one trigger: each chapter paints its groups over its first 70%, then
+    // holds. Its quarter of the lane edge is repainted over the same 70%, so the lane edge is the progress line.
+    const tl = gsap.timeline({ paused: true });
+    for (let k = 1; k <= 4; k++) {
+      const all = groups.filter(g => g.ch === k), gs = all.filter(g => !g.edge), W = LEN[k] * .7;
+      const n = gs.length, d = W * 2 / (n + 1), step = n > 1 ? (W - d) / (n - 1) : 0;
+      gs.forEach((g, i) => tl.to(g, { p: 1, duration: d, ease: 'none', onUpdate: () => paint(g) }, START[k] + i * step));
+      all.filter(g => g.edge).forEach(g => tl.to(g, { p: 1, duration: W, ease: 'none', onUpdate: () => paint(g) }, START[k]));
+    }
+    tl.set({}, {}, TOTAL);
+
+    function showChapter(i) {
+      const prev = panels[cur], next = panels[i];
+      cur = stageIdx = i;
+      panels.forEach((p, k) => {
+        p.classList.toggle('is-current', k === i);
+        if (k) p.inert = k !== i;   // hidden chapters leave the accessibility tree
+        if (p !== prev && p !== next) { gsap.killTweensOf(p); gsap.set(p, { opacity: 0 }); }
+      });
+      const head = next.querySelector('h2, h3'), rest = [...next.children].filter(c => c !== head);
+      gsap.killTweensOf([prev, next, ...prev.children, ...next.children]);
+      gsap.to(prev, { opacity: 0, duration: .3, ease: 'expo.out' });
+      gsap.set(next, { opacity: 1 });
+      // The heading is laid like a marking, left to right; the paragraph and facts fade in just after it.
+      gsap.fromTo(head, { clipPath: 'inset(0% 100% 0% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: .5, ease: 'expo.out', delay: .16, clearProps: 'clipPath' });
+      gsap.fromTo(rest, { opacity: 0 }, { opacity: 1, duration: .45, ease: 'expo.out', delay: .24 });
+      if (i) lede.setAttribute('aria-hidden', 'true'); else lede.removeAttribute('aria-hidden');   // the h2 stays exposed: it names the section
+      navLinks.forEach((a, k) => { if (k === i - 1) a.setAttribute('aria-current', 'step'); else a.removeAttribute('aria-current'); });
+      park(true);
+    }
+    function render(t) {
+      let idx = 0;
+      for (let k = 1; k <= 4; k++) if (t >= START[k]) idx = k;
+      if (idx !== cur) showChapter(idx);
+      // Finale: once the last stroke lands, the lamp turns back down the lane, the bike's own light again.
+      const fin = t >= LAMP_T;
+      if (fin !== final) {
+        final = fin; park(true);
+        // Nothing left to skip once the drawing is finished; hidden so it never reads as a label over Setups.
+        gsap.to(skip, { autoAlpha: fin ? 0 : 1, duration: .3, ease: 'expo.out', overwrite: 'auto' });
+        skip.inert = fin;
+      }
+    }
+    const st = ScrollTrigger.create({
+      trigger: runway, start: 'top top', end: 'bottom bottom', scrub: true, animation: tl,
+      onUpdate: s => render(s.progress * TOTAL), onRefresh: s => render(s.progress * TOTAL),
+    });
+    chapterY = k => st.start + (START[k] + LEN[k] * .75) / TOTAL * (st.end - st.start);
+    render(st.progress * TOTAL);
+    // A chapter hash on load, or typed into the address bar: the browser scrolls to the stacked article, so correct it.
+    const fixHash = () => { if (chapterY && chapterIds.includes(location.hash.slice(1))) { ScrollTrigger.refresh(); lenis?.resize(); goTo(location.hash.slice(1), true); } };
+    if (document.readyState === 'complete') fixHash(); else addEventListener('load', () => requestAnimationFrame(fixHash), { once: true });
+    addEventListener('hashchange', fixHash);
+
+    // Fine pointers aim the headlamp: the wedge turns about the lamp toward the pointer, and the painted lines inside it
+    // light up amber-white. The native cursor stays.
+    let offPointer = () => {};
+    if (fine) {
+      const move = e => {
+        const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(svg.getScreenCTM().inverse());
+        if (Math.hypot(p.x - LAMP[0], p.y - LAMP[1]) < 24) return;   // too close to the lamp to give a direction
+        hover = true;
+        aimAt(angleTo([p.x, p.y]), .5);
+      };
+      const leave = () => { hover = false; park(); };
+      slab.addEventListener('pointermove', move);
+      slab.addEventListener('pointerleave', leave);
+      offPointer = () => { slab.removeEventListener('pointermove', move); slab.removeEventListener('pointerleave', leave); };
+    }
+
+    return () => {
+      stageIdx = 0;
+      offPointer();
+      removeEventListener('hashchange', fixHash);
+      root.classList.remove('stage');
+      runway.style.height = '';
+      chapterY = null;
+      groups.forEach(g => { g.p = 1; paint(g); });
+      // Tweens started after build (chapter crossfades, the lamp) are outside the matchMedia context, so undo them here.
+      const touched = [...panels, ...panels.flatMap(p => [...p.children]), ...lampEls, ...navLinks, slab, skip];
+      gsap.killTweensOf([lamp, ...touched]);
+      lamp.a = AHEAD; lamp.s = 1; setCone();
+      gsap.set(touched, { clearProps: 'opacity,visibility,transform,translate,rotate,scale,clipPath' });
+      lede.removeAttribute('aria-hidden');
+      skip.inert = false;
+      navLinks.forEach(a => a.removeAttribute('aria-current'));
+      panels.forEach(p => { p.classList.remove('is-current'); p.inert = false; });
+    };
+  }
+
+  const mm = gsap.matchMedia();
+  mm.add({
+    motion: '(prefers-reduced-motion: no-preference)',
+    reduce: '(prefers-reduced-motion: reduce)',
+    fine: '(hover: hover) and (pointer: fine)',
+    wide: '(min-width: 768px)',
+    tall: '(min-height: 560px)',
+  }, ctx => {
+    const { motion, fine, wide, tall } = ctx.conditions;
+    if (!motion) { restore(); return remember; }   // reduced motion: static drawing, lamp on, stacked chapters, native scroll
+
+    root.classList.add('motion');
+    const l = lenis = new Lenis({ lerp: .1, smoothWheel: true, autoRaf: false });
+    l.on('scroll', ScrollTrigger.update);
+    const tick = time => l.raf(time * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
+    if (dlg.open) l.stop();
+
+    // LD8: the header chrome settles. The CTA only rises (on `translate`, clear of its press transition); it is never hidden.
+    gsap.timeline({ delay: .3 })
+      .from($$('.top .brand, .top nav a'), { y: 6, autoAlpha: 0, duration: .4, ease: 'expo.out', stagger: .08, clearProps: 'all' })
+      .fromTo('.top .btn', { translate: '0px 6px' }, { translate: '0px 0px', duration: .4, ease: 'expo.out', clearProps: 'translate' }, .24);
+
+    // S3 stall lines and S4 spec rules: CSS transitions, started once on enter.
+    $$('[data-reveal]').forEach(el => ScrollTrigger.create({ trigger: el, start: el.dataset.reveal, once: true, onEnter: () => el.classList.add('in') }));
+
+    const offStage = tall ? buildStage(wide, fine) : () => {};
+    document.fonts.ready.then(() => ScrollTrigger.refresh());
+    restore();
+
+    return () => {
+      remember();
+      offStage();
+      gsap.ticker.remove(tick);
+      gsap.ticker.lagSmoothing(500, 33);
+      l.destroy();
+      if (lenis === l) lenis = null;
+      root.classList.remove('motion');
+    };
+  });
+})();
+</script>
+</body>
+</html>
