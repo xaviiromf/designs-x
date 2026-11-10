@@ -29,10 +29,10 @@
     --magenta: #FF4FA3;    /* module: mesh radio (5.0:1) */
     --amber: #FF9B42;      /* module: battery sled (7.3:1) */
     --coral: #FF6B5E;      /* errors only (5.4:1 on mask) */
-    --pulse-1: rgb(233 185 73 / .95);   /* the four stepped levels of a pulse, head to tail */
-    --pulse-2: rgb(233 185 73 / .6);
-    --pulse-3: rgb(233 185 73 / .34);
-    --pulse-4: rgb(233 185 73 / .16);
+    --pulse-1: rgb(233 185 73);         /* the four stepped levels of a pulse, head to tail */
+    --pulse-2: rgb(233 185 73 / .72);
+    --pulse-3: rgb(233 185 73 / .46);
+    --pulse-4: rgb(233 185 73 / .24);
     --flash: rgb(242 247 233 / .55);    /* second frame of a lock flash */
     --scrim: rgb(4 14 9 / .82);
 
@@ -56,6 +56,8 @@
     --notch: 4px;           /* stepped corner on keycaps */
     --skirt: 6px;           /* keycap skirt showing under the face */
     --travel: 4px;          /* key travel */
+    --led-h: 4px;           /* skirt LED height */
+    --led-gap: 4px;         /* gap between the eight skirt LEDs */
     --tap: 48px;            /* keycap face and field height */
     --hit: 44px;            /* minimum target for text actions, jumper and switch positions */
     --max-w: 1296px;
@@ -163,12 +165,13 @@
   }
   .key-gold { --face-c: var(--gold); --skirt-c: var(--gold-deep); --led-on: var(--silk); --led-off: var(--gold-led); }
   .key-pale { --face-c: var(--mute); --skirt-c: var(--mute-deep); --led-on: var(--gold); --led-off: var(--mute-led); }
-  /* Eight LEDs along the skirt: a dim row, and a lit copy shown one LED at a time. */
+  /* Eight LEDs along the skirt: the row is cut into eight segments 4px high, with a lit copy shown one at a time. */
   .key-leds, .key-leds::after {
-    position: absolute; left: var(--s2); right: var(--s2); bottom: 2px; height: 2px;
-    background: linear-gradient(90deg, var(--led-off) 0 6px, transparent 6px) 0 0 / 12.5% 100%;
+    --seg: calc(100% - var(--led-gap));
+    position: absolute; left: var(--s2); right: calc(var(--s2) - var(--led-gap)); bottom: 1px; height: var(--led-h);
+    background: linear-gradient(90deg, var(--led-off) 0 var(--seg), transparent var(--seg)) 0 0 / 12.5% 100%;
   }
-  .key-leds::after { content: ""; inset: 0; background-image: linear-gradient(90deg, var(--led-on) 0 6px, transparent 6px); clip-path: inset(0 100% 0 0); }
+  .key-leds::after { content: ""; inset: 0; background-image: linear-gradient(90deg, var(--led-on) 0 var(--seg), transparent var(--seg)); clip-path: inset(0 100% 0 0); }
   @keyframes chase { from { clip-path: inset(0 87.5% 0 0); } to { clip-path: inset(0 0 0 87.5%); } }
   @media (hover: hover) { .key:hover .key-leds::after { animation: chase var(--d-chase) steps(8, jump-none) infinite; } }
   .key:focus-visible .key-leds::after, .key.is-lit .key-leds::after { animation: chase var(--d-chase) steps(8, jump-none) infinite; }
@@ -233,6 +236,8 @@
   }
   .is-ready .scr { visibility: visible; }
   .is-kit .scr { color: var(--lime); }
+  /* A pulse arriving at the well: the stretch of wall nearest to it shows gold for 2 frames. The script places it. */
+  .well-hit { position: absolute; background: var(--gold); pointer-events: none; }
   .scr-s { display: none; }
 
   /* ---------- Features ---------- */
@@ -874,7 +879,7 @@
     let dead = false;
     const off = [];
     const on = (el, type, fn, opt) => { el.addEventListener(type, fn, opt); off.push(() => el.removeEventListener(type, fn, opt)); };
-    const T = Object.fromEntries(['chase', 'fold', 'led', 'word', 'press', 'frame'].map((k) => [k, parseFloat(read(`--d-${k}`))]));
+    const T = Object.fromEntries(['key', 'up', 'chase', 'fold', 'led', 'word', 'press', 'frame'].map((k) => [k, parseFloat(read(`--d-${k}`))]));
     const h2 = $('.h2'), feats = $$('.feat'), list = $('.feats'), keys = $$('.key'), dips = $$('.dip');
     root.classList.add('fx'); // pins the well and gives each feature its share of scroll
     well.size();
@@ -938,55 +943,82 @@
     /* ---------- Pointer: pulses along the traces ---------- */
     const pc = $('.pulses'), pg = pc.getContext('2d');
     const { T: TILE, adj, via, delta } = board;
-    const TAIL = 6, MAX = 24;
-    let pulses = [], awake = false, inView = true, acc = 0, pw = 0, ph = 0, lastVia = -1, lastAt = 0, lastXY = null, pcol = [];
+    const TAIL = 6, MAX = 24, HOP = 6;
+    let pulses = [], awake = false, inView = true, acc = 0, pw = 0, ph = 0, lastAt = 0, lastXY = null, pcol = [];
+    const used = new Map(); // via -> when it last started a pulse, so a moving pointer lights many wires, not one
     const sizePulses = () => {
       const dpr = Math.min(2, window.devicePixelRatio || 1);
       pw = pc.clientWidth; ph = pc.clientHeight;
       pc.width = Math.round(pw * dpr); pc.height = Math.round(ph * dpr);
-      pcol = [1, 1, 2, 2, 3, 4].map((k) => read(`--pulse-${k}`)); // six cells lit: four hard levels, the first two held for two cells
+      pcol = [1, 1, 1, 2, 3, 4].map((k) => read(`--pulse-${k}`)); // six cells lit: three at full gold, then three hard steps down
     };
     sizePulses();
     const pro = new ResizeObserver(sizePulses);
     pro.observe(pc);
     off.push(() => pro.disconnect());
+    const node = (ux, uy) => ((uy % TILE + TILE) % TILE) * TILE + (ux % TILE + TILE) % TILE;
+    // The well in section pixels, grown by half a cell: where pulses are heading, and where they stop.
+    const wellRect = () => { const w = box.getBoundingClientRect(), r = sec.getBoundingClientRect(), m = board.cell / 2; return { l: w.left - r.left - m, t: w.top - r.top - m, r: w.right - r.left + m, b: w.bottom - r.top + m }; };
 
-    // Inject a pulse at the via nearest (x, y), in section pixels, that leads away from (ax, ay).
-    // It walks the trace graph, steering toward the well at junctions, for 20 to 40 cells or to the trace's end.
+    // Inject a pulse at a via near (x, y), in section pixels, on a trace that leads away from (ax, ay).
+    // It walks the trace graph for 44 to 72 cells, steering toward the well at junctions. Where a trace ends in a
+    // via, the signal changes layer: it comes up again at a via within six cells that is nearer the well.
     const inject = (x, y, ax = x, ay = y) => {
       if (pulses.length >= MAX || !inView) return;
-      const c = board.cell, fx0 = x / c - .5, fy0 = y / c - .5, cx = Math.round(fx0), cy = Math.round(fy0);
+      const c = board.cell, fx0 = x / c - .5, fy0 = y / c - .5, cx = Math.round(fx0), cy = Math.round(fy0), now = performance.now();
+      const W = wellRect(), tx = (W.l + W.r) / 2 / c - .5, ty = (W.t + W.b) / 2 / c - .5, own = Math.hypot(ax / c - .5 - tx, ay / c - .5 - ty);
+      const inWell = (ux, uy) => { const px = (ux + .5) * c, py = (uy + .5) * c; return px > W.l && px < W.r && py > W.t && py < W.b; };
       let best = null, score = 1e9;
       for (let j = -7; j <= 7; j++) for (let i = -7; i <= 7; i++) {
-        const ux = cx + i, uy = cy + j, n = ((uy % TILE + TILE) % TILE) * TILE + (ux % TILE + TILE) % TILE;
-        if (!via[n] || n === lastVia || !adj[n].length) continue;
+        const ux = cx + i, uy = cy + j, n = node(ux, uy);
+        if (!via[n] || !adj[n].length || now - (used.get(n) || 0) < 600 || inWell(ux, uy)) continue;
         const [dx, dy] = delta(n, adj[n][0]), ox = ux - (ax / c - .5), oy = uy - (ay / c - .5), dist = Math.hypot(ux - fx0, uy - fy0);
-        // Never under the pointer: a via closer than a cell and a half, or one whose trace heads back toward
-        // the pointer, is passed over for the next nearest.
-        const sc = dist + (Math.hypot(ox, oy) < 1.5 ? 9 : 0) + (dx * ox + dy * oy < 0 ? 9 : 0);
+        // Never under the pointer: a via closer than a cell and a half, one whose trace heads back toward the
+        // pointer, or one with the pointer between it and the well, is passed over for the next nearest.
+        const sc = dist + (Math.hypot(ox, oy) < 1.5 ? 9 : 0) + (dx * ox + dy * oy < 0 ? 9 : 0) + (Math.hypot(ux - tx, uy - ty) > own ? 5 : 0);
         if (sc < score) { score = sc; best = [n, ux, uy]; }
       }
       if (!best) return;
-      const wr = box.getBoundingClientRect(), sr = sec.getBoundingClientRect();
-      const tx = (wr.left + wr.width / 2 - sr.left) / c, ty = (wr.top + wr.height / 2 - sr.top) / c;
       let [n, ux, uy] = best, prev = -1;
-      const path = [[ux, uy, 1]], len = 20 + Math.random() * 20 | 0;
-      lastVia = n;
-      while (path.length < len) {
+      const path = [[ux, uy, 1, 0]], len = 44 + Math.random() * 28 | 0, seen = new Set([n]); // [column, row, is a via, arrived by a layer change]
+      used.set(n, now);
+      while (path.length < len && !inWell(ux, uy)) {
         const opts = adj[n].filter((m) => m !== prev);
-        if (!opts.length) break;
+        if (!opts.length) { // the end of a trace: change layer
+          let hop = null, near = Math.hypot(ux - tx, uy - ty) - 1;
+          for (let j = -HOP; j <= HOP; j++) for (let i = -HOP; i <= HOP; i++) {
+            const q = node(ux + i, uy + j), d = Math.hypot(ux + i - tx, uy + j - ty);
+            if (via[q] && adj[q].length && !seen.has(q) && d < near) { near = d; hop = [q, ux + i, uy + j]; }
+          }
+          if (!hop) break;
+          [n, ux, uy] = hop; prev = -1; seen.add(n);
+          path.push([ux, uy, 1, 1]);
+          continue;
+        }
         let m = opts[0];
         if (opts.length > 1 && Math.random() < .8) { // at a junction, take the branch that ends nearer the well
           let dBest = 1e9;
           for (const q of opts) { const [dx, dy] = delta(n, q), dd = Math.hypot(ux + dx - tx, uy + dy - ty); if (dd < dBest) { dBest = dd; m = q; } }
         } else if (opts.length > 1) m = opts[Math.random() * opts.length | 0];
         const [dx, dy] = delta(n, m);
-        ux += dx; uy += dy; prev = n; n = m;
-        path.push([ux, uy, via[n]]);
+        ux += dx; uy += dy; prev = n; n = m; seen.add(n);
+        path.push([ux, uy, via[n], 0]);
       }
       pulses.push({ path, head: 0 });
       wakeUp();
     };
+    // A pulse that reaches the well stops there, and the nearest stretch of the well's wall blinks once.
+    const hits = [];
+    const hit = (px, py, W) => {
+      const wc = box.clientWidth / 12, bw = box.clientWidth, bh = box.clientHeight, m = board.cell / 2, x = px - W.l - m, y = py - W.t - m;
+      const el = document.createElement('i'), side = Math.min(Math.abs(x), Math.abs(x - bw)) <= Math.abs(y - bh) ? (x < bw / 2 ? 'l' : 'r') : 'b';
+      const along = (v, max) => Math.round(Math.max(0, Math.min(max - 2 * wc, v - wc)));
+      el.className = 'well-hit';
+      el.style.cssText = side === 'b' ? `left:${along(x, bw)}px;top:${bh - 1}px;width:${2 * wc}px;height:4px` : `left:${side === 'l' ? -3 : bw - 1}px;top:${along(y, bh)}px;width:4px;height:${2 * wc}px`;
+      box.append(el); hits.push(el);
+      gsap.delayedCall(2 * T.frame, () => { el.remove(); hits.splice(hits.indexOf(el), 1); });
+    };
+    off.push(() => hits.splice(0).forEach((el) => el.remove()));
     // The canvas is pinned to the viewport; the board scrolls under it, so each frame is drawn at the current offset.
     const drawPulses = () => {
       const c = board.cell, dpr = pc.width / pw, oy = pc.getBoundingClientRect().top - sec.getBoundingClientRect().top;
@@ -994,21 +1026,32 @@
       pg.clearRect(0, 0, pc.width, pc.height);
       pg.setTransform(dpr, 0, 0, dpr, 0, -oy * dpr);
       pg.lineWidth = c < 12 ? 2 : 3;
-      const r = c < 12 ? 2.5 : 3.5, h = c < 12 ? 2 : 2.5;
+      const r = c < 12 ? 2.5 : 3.5, big = r + 2, h = c < 12 ? 2 : 3;
+      const sq = (x, y, k) => pg.fillRect((x + .5) * c - k, (y + .5) * c - k, 2 * k, 2 * k);
       for (const p of pulses) {
         for (let k = TAIL - 1; k >= 0; k--) { // tail first, so the head is drawn over it: hard levels, no gradient
           const b = p.head - k, a = b - 1;
           if (a < 0 || b >= p.path.length) continue;
-          const [x0, y0] = p.path[a], [x1, y1, v] = p.path[b];
+          const [x0, y0] = p.path[a], [x1, y1, v, hop] = p.path[b];
           pg.strokeStyle = pg.fillStyle = pcol[k];
-          pg.beginPath(); pg.moveTo((x0 + .5) * c, (y0 + .5) * c); pg.lineTo((x1 + .5) * c, (y1 + .5) * c); pg.stroke();
-          if (v || !k) pg.fillRect((x1 + .5) * c - (v ? r : h), (y1 + .5) * c - (v ? r : h), 2 * (v ? r : h), 2 * (v ? r : h)); // a square head; a via it reaches turns gold
+          if (!hop) { pg.beginPath(); pg.moveTo((x0 + .5) * c, (y0 + .5) * c); pg.lineTo((x1 + .5) * c, (y1 + .5) * c); pg.stroke(); }
+          if (v) sq(x1, y1, k ? r : big); // a via blinks large for the one frame the head is on it, then fades with the tail
+          else if (!k) sq(x1, y1, h);     // a square head
         }
+        if (p.head < 2) { pg.fillStyle = pcol[0]; sq(p.path[0][0], p.path[0][1], big); } // the via it starts from flashes for 2 frames
       }
     };
     const frame = (t, dms) => {
       acc += Math.min(dms, 100) / 1000;
-      while (acc >= T.frame) { acc -= T.frame; pulses.forEach((p) => p.head++); } // one whole cell per step, 20 a second
+      const c = board.cell, W = wellRect();
+      while (acc >= T.frame) { // one whole cell per step, 20 a second
+        acc -= T.frame;
+        for (const p of pulses) {
+          if (++p.head >= p.path.length) continue;
+          const px = (p.path[p.head][0] + .5) * c, py = (p.path[p.head][1] + .5) * c;
+          if (px > W.l && px < W.r && py > W.t && py < W.b) { p.path.length = p.head + 1; hit(px, py, W); }
+        }
+      }
       pulses = pulses.filter((p) => p.head < p.path.length + TAIL);
       drawPulses();
       if (!pulses.length) sleep();
@@ -1019,10 +1062,10 @@
     io.observe(sec);
     off.push(() => io.disconnect());
 
-    // One pulse for about every two cells of travel, and no faster than every 40ms.
+    // One pulse for about every cell and a half of travel, and no faster than every 30ms (24 alive at most).
     const point = (cx, cy, force) => {
       const r = sec.getBoundingClientRect(), x = cx - r.left, y = cy - r.top, now = performance.now();
-      if (!force && lastXY && (now - lastAt < 40 || Math.hypot(x - lastXY[0], y - lastXY[1]) < 2 * board.cell)) return;
+      if (!force && lastXY && (now - lastAt < 30 || Math.hypot(x - lastXY[0], y - lastXY[1]) < 1.5 * board.cell)) return;
       lastXY = [x, y]; lastAt = now;
       inject(x, y);
     };
@@ -1037,21 +1080,31 @@
     });
 
     /* ---------- Keycaps and DIP switches ---------- */
-    // Touch gets key travel on pointerdown (":active" arrives late there) and one pass of the LED chase.
+    // Key travel starts on pointerdown (":active" arrives late on touch) and a quick tap still shows all of it:
+    // the key stays down for at least four frames before the release with its 1px overshoot. Touch has no hover,
+    // so there the eight LEDs make one pass as the key comes back up.
+    const since = (t0) => (performance.now() - t0) / 1000;
     keys.forEach((k) => {
-      let lit = null;
-      on(k, 'pointerdown', (e) => {
-        k.classList.remove('is-up'); k.classList.add('is-down');
-        if (e.pointerType === 'touch') { k.classList.add('is-lit'); lit?.kill(); lit = gsap.delayedCall(T.chase, () => k.classList.remove('is-lit')); }
-      });
-      const up = () => { if (!k.classList.contains('is-down')) return; k.classList.remove('is-down'); k.classList.add('is-up'); }; // 1px overshoot, one frame
+      let lit = null, rel = null, t0 = 0, touch = false;
+      on(k, 'pointerdown', (e) => { rel?.kill(); t0 = performance.now(); touch = e.pointerType === 'touch'; k.classList.remove('is-up'); k.classList.add('is-down'); });
+      const up = () => {
+        if (!k.classList.contains('is-down') || rel?.isActive()) return;
+        rel = gsap.delayedCall(Math.max(0, 2 * T.key - since(t0)), () => {
+          k.classList.remove('is-down'); k.classList.add('is-up');
+          gsap.delayedCall(T.up, () => k.classList.remove('is-up'));
+          if (touch) { k.classList.add('is-lit'); lit?.kill(); lit = gsap.delayedCall(T.chase, () => k.classList.remove('is-lit')); }
+        });
+      };
       ['pointerup', 'pointerleave', 'pointercancel'].forEach((t) => on(k, t, up));
-      on(k, 'animationend', (e) => { if (e.animationName === 'key-up') k.classList.remove('is-up'); });
-      off.push(() => { lit?.kill(); k.classList.remove('is-down', 'is-up', 'is-lit'); });
+      off.push(() => { lit?.kill(); rel?.kill(); k.classList.remove('is-down', 'is-up', 'is-lit'); });
     });
+    // Touch: the DIP switch goes to ON under the finger and holds there for at least 0.2s, so a tap shows it.
     dips.forEach((d) => {
-      on(d, 'pointerdown', (e) => { if (e.pointerType === 'touch') d.classList.add('is-down'); });
-      ['pointerup', 'pointerleave', 'pointercancel'].forEach((t) => on(d, t, () => d.classList.remove('is-down')));
+      let rel = null, t0 = 0;
+      on(d, 'pointerdown', (e) => { if (e.pointerType !== 'touch') return; rel?.kill(); t0 = performance.now(); d.classList.add('is-down'); });
+      const up = () => { if (!d.classList.contains('is-down') || rel?.isActive()) return; rel = gsap.delayedCall(Math.max(0, .2 - since(t0)), () => d.classList.remove('is-down')); };
+      ['pointerup', 'pointerleave', 'pointercancel'].forEach((t) => on(d, t, up));
+      off.push(() => { rel?.kill(); d.classList.remove('is-down'); });
     });
 
     /* ---------- Hooks for the plain-JS flows ---------- */
