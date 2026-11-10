@@ -1,0 +1,1224 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Afterimage prices</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Handjet:ELGR,ELSH,wght@1..2,0..16,100..900&family=Host+Grotesk:wght@300..800&display=swap">
+<style>
+  :root {
+    /* Colour: a smoked room full of tubes. Every hue has one job. Ratios are on --smoke / on --glass. */
+    --smoke: #221810;       /* page ground: smoked brown-black; also the ink on lit fills */
+    --glass: #2E2117;       /* tube glass: plan panels, dialog surface */
+    --glass-hi: #3D2D20;    /* an outline button's lit face (ink on it 11.8:1) */
+    --off: #1A120B;         /* a tube that is switched off (decorative ground) */
+    --bezel: #8A6E52;       /* monitor bezel and the dialog rim (3.7:1 on smoke, 3.3:1 on glass; not text) */
+    --ink: #FFF1DC;         /* warm white text (15.6:1 / 14.0:1); the chosen booth segment (smoke on it 15.6:1) */
+    --dim: #D6C2A8;         /* secondary text, field and segment outlines (10.1:1 / 9.0:1) */
+    --amber: #FFB23E;       /* phosphor amber: prices (8.7:1 on glass), the primary action (smoke on it 9.7:1), the by-the-hour tag */
+    --amber-hot: #FFD88F;   /* the primary action lit up on hover and focus (smoke on it 12.8:1) */
+    --green: #7CFF9B;       /* phosphor green: free seats, success, lit links, focused fields (13.8:1 / 12.4:1) */
+    --pink: #FF6BAA;        /* colour ghost A, and the night pack's tag (smoke on it 6.6:1) */
+    --cyan: #4FE3FF;        /* colour ghost B, and every focus ring (11.4:1 / 10.2:1) */
+    --violet: #B48CFF;      /* the 30-hour card's tag (smoke on it 6.8:1) */
+    --red: #FF7B6C;         /* errors only (6.2:1 on glass) */
+    --paper: #FFF1DC;       /* receipt paper (smoke text on it 15.6:1) */
+    --paper-dim: #5E4630;   /* receipt terms (7.9:1 on paper) */
+    --burn: #FFFFFF;        /* the two-frame overexposure when a booth segment burns in; never behind text at rest */
+    --scrim: rgb(20 13 8 / .86);   /* dialog backdrop, and the roll bar that crosses the dialog */
+    /* Overlays on text. Worst cases, computed per pixel row: dark text on the pink tag on a mask row under the hum
+       bar 5.0:1; an amber price over the refresh line with the hum bar's edge on the same row 4.6:1. */
+    --mask-a: .08;          /* static scanline mask on the tubes: 1px in 4 (the 4th row) at 8% black */
+    --hum-a: .08;           /* hum bar: 8% black, flat */
+    --hum-edge: color-mix(in srgb, var(--ink) 10%, transparent);   /* the hum bar's 1px leading edge */
+    --hum-h: 120px;         /* hum bar height */
+    --hum-rate: .5;         /* hum bar travel down the screen per scrolled pixel */
+    /* Refresh line: amber, under the text, on rows 1-2 of the 4px raster (never a mask row). Body alphas run from
+       the line back through three afterglow rows; the caps sit in the tube's side padding, where there is no text. */
+    --line-4: color-mix(in srgb, var(--amber) 18%, transparent);
+    --line-3: color-mix(in srgb, var(--amber) 10%, transparent);
+    --line-2: color-mix(in srgb, var(--amber) 6%, transparent);
+    --line-1: color-mix(in srgb, var(--amber) 3%, transparent);
+    --cap-4: color-mix(in srgb, var(--amber) 90%, transparent);
+    --cap-3: color-mix(in srgb, var(--amber) 50%, transparent);
+    --cap-2: color-mix(in srgb, var(--amber) 30%, transparent);
+    --cap-1: color-mix(in srgb, var(--amber) 15%, transparent);
+    --cap-w: 12px;          /* cap width; keep it inside the tube's side padding (16px on phones) */
+    --refresh-rate: 2;      /* refresh line travel down the tube per scrolled pixel */
+
+    /* Type */
+    --font-display: "Handjet", "Arial Narrow", sans-serif;
+    --font-text: "Host Grotesk", system-ui, sans-serif;
+    --modules: "ELSH" 2, "ELGR" 1;   /* square Handjet modules */
+    --t-small: 14px;
+    --t-body: 17px;
+    --t-lede: 21px;
+    --t-h3: 24px;            /* fine-print and dialog headings (Host Grotesk 600) */
+    --t-name: 40px;          /* plan names (Handjet) */
+    --t-price: clamp(72px, 28cqw, 124px);   /* the price, sized from its own panel */
+    --t-code: 88px;          /* the seat code on the receipt */
+    --t-h2: clamp(46px, 7.2vw, 104px);
+    --lh-body: 1.55;
+    --lh-lede: 1.45;
+
+    /* Space: an 8px cell. Scanlines repeat every half cell, the hum bar moves in half cells. */
+    --cell: 8px;
+    --s1: 4px; --s2: 8px; --s3: 16px; --s4: 24px;
+    --s5: 32px; --s6: 48px; --s7: 72px; --s8: 96px;
+    --notch: 4px;           /* pixel corner on buttons */
+    --step: 6px;            /* one step of a monitor's two-step corner */
+    --bz: 3px;              /* bezel thickness */
+    --tap: 48px;            /* button, field and segment height */
+    --hit: 44px;            /* minimum target for text links */
+    --max-w: 1296px;
+
+    /* Motion: a machine with a frame rate. CSS and the script read these. */
+    --d-degauss: .6s;       /* load: 9 decaying frames */
+    --d-line-on: .18s;      /* tube power-on: the line grows across, steps(6) */
+    --d-open: .2s;          /* tube power-on: the line opens to the full panel, steps(5) */
+    --d-flash: .12s;        /* tube power-on: two frames of afterglow */
+    --d-stagger: .12s;      /* between tubes that switch on together */
+    --d-scan: .3s;          /* booth change: the beam re-scans a price, steps(10) */
+    --d-burn: .12s;         /* booth change: the chosen segment burns in, 2 frames */
+    --d-glitch: .24s;       /* button hover and focus: 4 frames of slices */
+    --d-drop: .1s;          /* button press: 2 frames of static */
+    --d-after: .6s;         /* link afterimage: 4 opacity steps */
+    --d-field: .2s;         /* field focus: one scanline, steps(6) */
+    --d-track: .12s;        /* field error: the label mistracks for 2 frames */
+    --d-hold-in: .32s;      /* dialog: vertical hold, steps(4) */
+    --d-hold-out: .24s;
+    --d-feed: .06s;         /* receipt: one line of paper */
+    --d-pulse: .06s;        /* keyboard: one frame of the split pulse */
+    --d-tear: .2s;          /* fine print tunes in: 3 frames of tracking tear */
+    --d-tear-gap: .07s;     /* between fine-print lines that tune in together */
+    --half-split: .14s;     /* half-life of the pointer's energy; the split is 0 at rest */
+    --split-max: 5;         /* px, pointer split */
+    --split-reach: 360;     /* px from a text box at which the pointer stops reaching it */
+  }
+  @media (max-width: 599px) {
+    :root { --t-body: 16px; --t-lede: 18px; --t-name: 36px; --s7: 56px; --t-code: 72px; }
+  }
+
+  /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+
+  /* Hidden only when the script runs, and only until the load sequence takes over (it sets the same states inline). */
+  html.js:not(.go) .head { visibility: hidden; }
+  html.js:not(.go) .tube { clip-path: inset(50%); }
+  html.js:not(.go) .fine-list li { opacity: 0; }
+  @media (prefers-reduced-motion: reduce) {
+    html.js:not(.go) .head { visibility: visible; }
+    html.js:not(.go) .tube { clip-path: none; }
+    html.js:not(.go) .fine-list li { opacity: 1; }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { background: var(--smoke); }
+  body {
+    margin: 0;
+    background: var(--smoke);
+    color: var(--ink);
+    font: 400 var(--t-body)/var(--lh-body) var(--font-text);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  :focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+  ::selection { background: var(--amber); color: var(--smoke); }
+  .vh {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+  }
+
+  /* ---------- The room ---------- */
+  .pricing {
+    position: relative;
+    overflow: clip;
+    isolation: isolate;
+    padding-block: var(--s7) var(--s8);
+    padding-inline: max(var(--s4), (100% - var(--max-w)) / 2);
+    background: var(--smoke);
+  }
+  @media (max-width: 599px) { .pricing { padding-inline: var(--s3); } }
+  .wrap { position: relative; z-index: 1; }
+  /* Hum bar: a flat 8% dark band with a 1px lighter leading edge, placed by the scroll. Only with the motion layer. */
+  .hum {
+    display: none;
+    position: absolute; left: 0; right: 0; top: 0;
+    height: var(--hum-h);
+    z-index: 2;
+    pointer-events: none;
+    background: linear-gradient(to bottom, rgb(0 0 0 / var(--hum-a)) 0 calc(100% - 1px), var(--hum-edge) calc(100% - 1px) 100%);
+  }
+  html.fx .hum { display: block; }
+
+  /* ---------- Colour ghosts (the signature): a pink and a cyan copy under the text, 0px apart at rest ---------- */
+  .rgb { position: relative; isolation: isolate; }
+  .rgb::before, .rgb::after {
+    content: attr(data-text);
+    content: attr(data-text) / "";   /* no alternative text: the real text is read once */
+    position: absolute; inset: 0;
+    z-index: -1;
+    visibility: hidden;              /* at rest the ghosts are not painted at all, so the edges stay clean */
+    pointer-events: none;
+    user-select: none;
+  }
+  .rgb::before { color: var(--pink); transform: translate(calc(var(--gx, 0px) * -1), calc(var(--gy, 0px) * -1)); }
+  .rgb::after { color: var(--cyan); transform: translate(var(--gx, 0px), var(--gy, 0px)); }
+  .rgb.is-split::before, .rgb.is-split::after { visibility: visible; }
+
+  /* ---------- Header ---------- */
+  .head { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s5); }
+  @media (min-width: 960px) {
+    .head { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); column-gap: var(--s7); align-items: end; }
+  }
+  .h2 {
+    margin: 0;
+    font: 700 var(--t-h2)/.92 var(--font-display);
+    font-variation-settings: var(--modules);
+    letter-spacing: 0;
+    text-wrap: balance;
+  }
+  .lede { margin: var(--s4) 0 0; max-width: 54ch; font-size: var(--t-lede); line-height: var(--lh-lede); }
+  .avail {
+    display: flex; align-items: center; gap: var(--s2);
+    margin: 0 0 var(--s4);
+    color: var(--green);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .avail::before { content: ""; flex: none; width: var(--cell); height: var(--cell); background: var(--green); }
+
+  /* Booth control: a radio group as three hard segments. No sliding indicator: the chosen one burns in. */
+  .booth { margin: 0; padding: 0; border: 0; min-width: 0; }
+  .booth legend { padding: 0; margin-bottom: var(--s2); font-weight: 600; }
+  .segs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .seg { position: relative; display: block; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .seg + .seg { margin-left: -2px; }
+  .seg-face {
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+    min-height: var(--tap);
+    padding: var(--s1) var(--s2);
+    border: 2px solid var(--dim);
+    background: var(--smoke);
+    color: var(--ink);
+    font: 600 var(--t-body)/1.15 var(--font-text);
+    text-align: center;
+  }
+  .seg:hover .seg-face { background: var(--glass-hi); }
+  .seg input:checked + .seg-face { z-index: 1; border-color: var(--ink); background: var(--ink); color: var(--smoke); }
+  .seg input:focus-visible + .seg-face { z-index: 2; outline: 2px solid var(--cyan); outline-offset: 3px; }
+  .seg-face::after {   /* the overexposed frame: a white block 3px larger than the segment */
+    content: "";
+    position: absolute; inset: -5px;
+    background: var(--burn);
+    opacity: 0;
+    pointer-events: none;
+  }
+  html.fx .seg-face.is-burn::after { animation: burn var(--d-burn) steps(2, jump-none) 1; }
+  @keyframes burn { from { opacity: 1; } to { opacity: .45; } }
+  .booth-note { margin: var(--s3) 0 0; min-height: calc(var(--t-body) * var(--lh-body) * 2); color: var(--dim); font-variant-numeric: tabular-nums; }
+
+  /* ---------- Plans: three monitors ---------- */
+  .plans { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s4); margin-top: var(--s6); }
+  @media (min-width: 960px) { .plans { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .plan { display: flex; container-type: inline-size; }
+  .bezel, .screen, .dlg-rim, .dlg {
+    --n: var(--step);
+    --corners: polygon(
+      0 calc(2 * var(--n)), var(--n) calc(2 * var(--n)), var(--n) var(--n), calc(2 * var(--n)) var(--n), calc(2 * var(--n)) 0,
+      calc(100% - 2 * var(--n)) 0, calc(100% - 2 * var(--n)) var(--n), calc(100% - var(--n)) var(--n), calc(100% - var(--n)) calc(2 * var(--n)), 100% calc(2 * var(--n)),
+      100% calc(100% - 2 * var(--n)), calc(100% - var(--n)) calc(100% - 2 * var(--n)), calc(100% - var(--n)) calc(100% - var(--n)), calc(100% - 2 * var(--n)) calc(100% - var(--n)), calc(100% - 2 * var(--n)) 100%,
+      calc(2 * var(--n)) 100%, calc(2 * var(--n)) calc(100% - var(--n)), var(--n) calc(100% - var(--n)), var(--n) calc(100% - 2 * var(--n)), 0 calc(100% - 2 * var(--n)));
+  }
+  .bezel { flex: 1; display: flex; min-width: 0; padding: var(--bz); background: var(--bezel); clip-path: var(--corners); }
+  .screen { flex: 1; display: flex; min-width: 0; background: var(--off); clip-path: var(--corners); }
+  .tube { position: relative; flex: 1; min-width: 0; background: var(--glass); }
+  .tube::after {   /* static scanline mask: 1px in 4, 8% black; text under it stays far above AA */
+    content: "";
+    position: absolute; inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    background: repeating-linear-gradient(to bottom, transparent 0 3px, rgb(0 0 0 / var(--mask-a)) 3px 4px);
+  }
+  .flash { position: absolute; inset: 0; z-index: 2; background: var(--ink); opacity: 0; pointer-events: none; }
+  /* Refresh line: over the glass, under the content. The script moves it with the scroll in whole raster rows.
+     From the top: three afterglow rows, then the line; the script flips it when the scroll turns round. */
+  .refresh {
+    display: none;
+    position: absolute; left: 0; right: 0; top: 0;
+    height: 14px;
+    pointer-events: none;
+    background: linear-gradient(to bottom, var(--line-1) 0 2px, transparent 2px 4px, var(--line-2) 4px 6px, transparent 6px 8px, var(--line-3) 8px 10px, transparent 10px 12px, var(--line-4) 12px 14px);
+  }
+  .refresh::before, .refresh::after {
+    content: "";
+    position: absolute; top: 0; bottom: 0; width: var(--cap-w);
+    background: linear-gradient(to bottom, var(--cap-1) 0 2px, transparent 2px 4px, var(--cap-2) 4px 6px, transparent 6px 8px, var(--cap-3) 8px 10px, transparent 10px 12px, var(--cap-4) 12px 14px);
+  }
+  .refresh::before { left: 0; }
+  .refresh::after { right: 0; }
+  html.fx .refresh { display: block; }
+  .tube-in { position: relative; z-index: 1; display: flex; flex-direction: column; height: 100%; padding: var(--s4); }
+  .plan-b { display: flex; flex-direction: column; flex: 1; }
+  @container (min-width: 620px) {   /* a single wide monitor (tablets): price left, terms right */
+    .tube-in { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: var(--s6); padding: var(--s5); }
+    .incl { margin-top: var(--s1); }
+  }
+  .tag {
+    display: inline-block;
+    margin: 0;
+    padding: 2px var(--s2);
+    background: var(--tag);
+    color: var(--smoke);
+    font: 600 var(--t-small)/1.5 var(--font-text);
+    font-variant-numeric: tabular-nums;
+  }
+  .name {
+    margin: var(--s3) 0 0;
+    font: 600 var(--t-name)/1 var(--font-display);
+    font-variation-settings: var(--modules);
+  }
+  .price { margin: var(--s2) 0 0; }
+  .price-box { position: relative; display: block; width: max-content; max-width: 100%; }
+  .num, .old {
+    display: block;
+    color: var(--amber);
+    font: 700 var(--t-price)/.9 var(--font-display);
+    font-variation-settings: var(--modules);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  /* Beam re-scan: the old price is a second copy on top, uncovered from above by the beam. */
+  .old { position: absolute; left: 0; top: 0; display: none; }
+  .beam { position: absolute; left: -8px; right: -8px; top: -1px; height: 2px; background: var(--ink); display: none; }
+  .is-scan .old, .is-scan .beam { display: block; }
+  .unit { display: block; margin-top: var(--s1); font-weight: 600; }
+  .per { margin: var(--s1) 0 0; color: var(--dim); font-variant-numeric: tabular-nums; }
+  .incl { list-style: none; margin: var(--s4) 0 var(--s4); padding: 0; }
+  .incl li { position: relative; padding-left: var(--s4); }
+  .incl li + li { margin-top: var(--s2); }
+  .incl li::before { content: ""; position: absolute; left: 0; top: .55em; width: var(--cell); height: var(--cell); background: var(--tag); }
+  .plan-foot { margin-top: auto; }
+  .plan-foot .lnk { margin-top: var(--s1); }
+
+  /* ---------- Buttons: pixel-cornered tiles. The corners live on .face and .inner, never on the button. ---------- */
+  .btn {
+    --corners: polygon(0 var(--notch), var(--notch) var(--notch), var(--notch) 0, calc(100% - var(--notch)) 0, calc(100% - var(--notch)) var(--notch), 100% var(--notch), 100% calc(100% - var(--notch)), calc(100% - var(--notch)) calc(100% - var(--notch)), calc(100% - var(--notch)) 100%, var(--notch) 100%, var(--notch) calc(100% - var(--notch)), 0 calc(100% - var(--notch)));
+    position: relative;
+    display: inline-block;
+    padding: 0; border: 0; background: none;
+    color: inherit;
+    font: 600 var(--t-body)/1.2 var(--font-text);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-block { display: block; width: 100%; }
+  .face { display: block; padding: var(--bw); background: var(--rim); clip-path: var(--corners); }
+  .inner {
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+    min-height: calc(var(--tap) - 2 * var(--bw));
+    padding: 0 var(--s4);
+    background: var(--ground);
+    color: var(--label);
+    clip-path: var(--corners);
+    overflow: hidden;
+  }
+  .btn-amber { --bw: 0px; --rim: var(--amber); --ground: var(--amber); --label: var(--smoke); --rim-hot: var(--amber-hot); --ground-hot: var(--amber-hot); }
+  .btn-line { --bw: 2px; --rim: var(--dim); --ground: var(--glass); --label: var(--ink); --rim-hot: var(--ink); --ground-hot: var(--glass-hi); }
+  /* The lit state. With the motion layer the script locks it in after the glitch; without it, a plain colour cut. */
+  .btn.is-hot > .face, .slices .face { background: var(--rim-hot); }
+  .btn.is-hot > .face .inner, .slices .inner { background: var(--ground-hot); }
+  html:not(.fx) .btn:hover .face, html:not(.fx) .btn:focus-visible .face { background: var(--rim-hot); }
+  html:not(.fx) .btn:hover .inner, html:not(.fx) .btn:focus-visible .inner { background: var(--ground-hot); }
+  @media (hover: none) {
+    .btn:active .face { background: var(--rim-hot); }
+    .btn:active .inner { background: var(--ground-hot); }
+  }
+  /* Glitch slices (built by the script): four strips of the lit face, each with a pink and a cyan edge. */
+  .slices { position: absolute; inset: 0; visibility: hidden; pointer-events: none; }
+  .btn.is-glitch .slices { visibility: visible; }
+  .btn.is-glitch > .face { opacity: 0; }
+  .sl { position: absolute; left: 0; right: 0; top: calc(var(--i) * 25%); height: 25%; }
+  .sl::before, .sl::after { content: ""; position: absolute; inset: 0; }
+  .sl::before { background: var(--pink); transform: translateX(-2px); }
+  .sl::after { background: var(--cyan); transform: translateX(2px); }
+  .sl-in { position: absolute; inset: 0; z-index: 1; overflow: hidden; }
+  .sl-in .face { position: absolute; left: 0; right: 0; top: calc(var(--i) * -100%); height: 400%; }
+  .sl-in .inner { height: 100%; }
+  /* Signal dropout: two frames of static over the face. The tile is made once by the script. */
+  .noise {
+    position: absolute; inset: -12px;
+    visibility: hidden;
+    background: var(--noise-tile, var(--dim)) 0 0 / 96px 48px;
+    image-rendering: pixelated;
+    pointer-events: none;
+  }
+
+  /* ---------- Text links: lit green; the afterimage is a ghost copy that decays in four steps ---------- */
+  .lnk {
+    position: relative;
+    display: inline-block;
+    min-height: var(--hit);
+    padding: 10px 0;
+    color: var(--ink);
+    font: inherit; line-height: 1.4;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 4px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .lnk:hover, .lnk:focus-visible, .lnk:active { color: var(--green); }
+  .lnk::after {
+    content: attr(data-text);
+    content: attr(data-text) / "";
+    position: absolute; left: 0; top: 10px;
+    color: var(--green);
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+  }
+  html.fx .lnk.is-after::after { animation: afterimage var(--d-after) steps(4, end) 1; }
+  @keyframes afterimage { from { opacity: .8; } to { opacity: 0; } }
+
+  /* ---------- Fine print ---------- */
+  .fine { margin-top: var(--s7); }
+  .fine-title { margin: 0; font: 600 var(--t-h3)/1.2 var(--font-text); letter-spacing: -.01em; }
+  .fine-list { list-style: none; margin: var(--s4) 0 0; padding: 0; display: grid; gap: var(--s3) var(--s7); color: var(--dim); }
+  @media (min-width: 800px) { .fine-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .fine-list li { position: relative; max-width: 62ch; padding-left: var(--s4); scroll-margin-top: var(--s6); }
+  .fine-list li::before { content: ""; position: absolute; left: 0; top: .55em; width: var(--cell); height: var(--cell); background: var(--bezel); }
+  .fine-list b { color: var(--ink); font-weight: 600; }
+  /* Tuning in: for three frames the line is shown as three slices of itself, torn sideways, with colour ghosts. */
+  .fine-list li.is-tear, .fine-list li.is-tear > b { color: transparent; }
+  .fine-list li.is-tear .tear {
+    position: absolute; inset: 0;
+    padding-left: var(--s4);
+    color: var(--dim);
+    pointer-events: none;
+    filter: drop-shadow(-2px 0 0 var(--pink)) drop-shadow(2px 0 0 var(--cyan));
+  }
+  .fine-list li.is-tear .tear b { color: var(--ink); }
+  .fine-list li:target { color: var(--ink); }                       /* the line a link pointed at: an instant cut */
+  .fine-list li:target::before { background: var(--green); }
+
+  /* ---------- Hold dialog ---------- */
+  .hold {
+    width: min(640px, 100% - 2 * var(--s3));
+    max-width: none;
+    max-height: calc(100dvh - 2 * var(--s3));
+    margin: auto;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--ink);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .hold::backdrop { background: var(--scrim); }
+  .dlg-rim { position: relative; padding: var(--bz); background: var(--bezel); clip-path: var(--corners); }
+  .dlg { padding: var(--s5); background: var(--glass); clip-path: var(--corners); }
+  .roll { position: absolute; left: 0; right: 0; top: 0; height: var(--s6); z-index: 3; background: var(--scrim); visibility: hidden; pointer-events: none; }
+  .dlg-head { display: flex; justify-content: space-between; align-items: center; gap: var(--s4); }
+  .dlg h2 { margin: 0; font: 600 var(--t-h3)/1.2 var(--font-text); letter-spacing: -.01em; }
+  .dlg-intro { margin: var(--s3) 0 0; max-width: 52ch; color: var(--dim); }
+  .rows { display: grid; grid-template-columns: minmax(0, 1fr); column-gap: var(--s4); margin-top: var(--s3); }
+  @media (min-width: 600px) { .rows { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .lbl { display: inline-block; margin-top: var(--s3); font-weight: 600; }
+  .field { position: relative; margin-top: var(--s1); }
+  .field input, .field select {
+    display: block;
+    width: 100%; height: var(--tap);
+    padding: 0 var(--s3);
+    border: 2px solid var(--dim);
+    border-radius: 0;
+    background: var(--smoke);
+    color: var(--ink);
+    font: inherit;
+    appearance: none;
+  }
+  .field select { padding-right: var(--s6); cursor: pointer; }
+  .field option { background: var(--smoke); color: var(--ink); }
+  .field.is-select::after {   /* a stepped pixel arrow */
+    content: "";
+    position: absolute; right: var(--s3); top: 50%;
+    width: 12px; height: 6px; margin-top: -3px;
+    background: var(--dim);
+    clip-path: polygon(0 0, 12px 0, 12px 2px, 10px 2px, 10px 4px, 8px 4px, 8px 6px, 4px 6px, 4px 4px, 2px 4px, 2px 2px, 0 2px);
+    pointer-events: none;
+  }
+  .field input:hover, .field select:hover { border-color: var(--ink); }
+  .field input:focus, .field select:focus { border-color: var(--green); }
+  /* Focus: one green scanline sweeps down the field in six steps. */
+  .scan { position: absolute; left: 2px; right: 2px; top: 2px; height: 2px; background: var(--green); opacity: 0; pointer-events: none; }
+  .field:focus-within .scan { animation: scan var(--d-field) steps(6, jump-none) 1; }
+  @keyframes scan { from { opacity: 1; transform: translateY(0); } to { opacity: 1; transform: translateY(calc(var(--tap) - 6px)); } }
+  /* Error: red border, a specific message, and the label mistracks for two frames. */
+  .row.is-bad input { border-color: var(--red); }
+  .row.is-jit .lbl { animation: track var(--d-track) steps(2, jump-none) 1; }
+  @keyframes track { from { transform: translateX(-4px); } to { transform: translateX(3px); } }
+  /* One reserved line pair under each text field: a hint at rest, the error in its place. Nothing shifts. */
+  .msg { min-height: calc(var(--t-small) * 1.45 * 2); margin: var(--s1) 0 0; color: var(--dim); font-size: var(--t-small); line-height: 1.45; }
+  .row.is-bad .msg { color: var(--red); font-weight: 500; }
+  .sum { margin: var(--s4) 0 0; font-variant-numeric: tabular-nums; }
+  .sum b { color: var(--amber); font-weight: 600; }
+  .hold-form .btn { margin-top: var(--s4); }
+
+  /* Receipt: a paper strip fed out of a slot, line by line. */
+  .done-head { margin: var(--s4) 0 0; font: 600 var(--t-lede)/1.3 var(--font-text); color: var(--green); }
+  .done-head:focus { outline: none; }   /* focus lands here only to announce the result; it is not a control */
+  .printer { width: min(360px, 100%); margin: var(--s3) auto 0; }
+  .slot { height: var(--s2); background: var(--off); border: 2px solid var(--bezel); }
+  .feed { margin: -2px var(--s2) 0; overflow: hidden; }
+  .paper-body { padding: var(--s3) var(--s4) var(--s4); background: var(--paper); color: var(--smoke); }
+  .paper::after {   /* the torn edge, in squares */
+    content: "";
+    display: block; height: 6px;
+    background: repeating-linear-gradient(90deg, var(--paper) 0 6px, transparent 6px 12px);
+  }
+  .paper-shop { margin: 0; font-weight: 600; }
+  .paper-shop span { display: block; color: var(--paper-dim); font-weight: 400; font-size: var(--t-small); }
+  .code {
+    margin: var(--s3) 0 0;
+    font: 700 var(--t-code)/.9 var(--font-display);
+    font-variation-settings: var(--modules);
+    font-variant-numeric: tabular-nums;
+  }
+  .code-lbl { margin: 0; color: var(--paper-dim); font-size: var(--t-small); }
+  .slip { margin: var(--s3) 0 0; padding-top: var(--s3); border-top: 2px dashed var(--paper-dim); font-variant-numeric: tabular-nums; }
+  .slip > div { display: grid; grid-template-columns: 5.5em minmax(0, 1fr); gap: var(--s2); }
+  .slip dt { color: var(--paper-dim); }
+  .slip dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+  .paper-note { margin: var(--s3) 0 0; padding-top: var(--s3); border-top: 2px dashed var(--paper-dim); font-size: var(--t-small); line-height: 1.45; }
+  .paper-note b { display: inline-block; max-width: 100%; font-weight: 600; overflow-wrap: anywhere; }
+  .done .btn { margin-top: var(--s4); }
+
+  @media (max-width: 599px) {
+    .dlg { padding: var(--s4) var(--s3); }
+    .tube-in { padding: var(--s4) var(--s3); }
+    .seg-face { font-size: 15px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition-duration: 0s !important; }
+  }
+</style>
+</head>
+<body>
+
+<section class="pricing" id="prices" aria-labelledby="prices-title">
+  <div class="hum" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="head">
+      <div class="head-copy">
+        <h2 class="h2 rgb" id="prices-title" data-text="Pay by the hour, or stay the night.">Pay by the hour, or stay the night.</h2>
+        <p class="lede">Afterimage is a 24-hour net cafe two minutes from Seomyeon station in Busan, with 96 seats on two floors. Pick a booth, then pick how you pay. Prices are in won and include tax.</p>
+      </div>
+      <div class="head-ctl">
+        <p class="avail">41 of 96 seats free right now</p>
+        <fieldset class="booth">
+          <legend>Booth</legend>
+          <div class="segs">
+            <label class="seg"><input class="vh" type="radio" name="booth" value="standard" checked><span class="seg-face">Standard</span></label>
+            <label class="seg"><input class="vh" type="radio" name="booth" value="pro"><span class="seg-face">Pro booth</span></label>
+            <label class="seg"><input class="vh" type="radio" name="booth" value="couple"><span class="seg-face">Couple booth</span></label>
+          </div>
+          <p class="booth-note" id="booth-note">Standard: a 27-inch 165 Hz monitor and a membrane keyboard. 28 of 60 seats free.</p>
+        </fieldset>
+        <p class="vh" id="price-live" aria-live="polite"></p>
+      </div>
+    </div>
+
+    <div class="plans" id="plans">
+      <article class="plan" data-plan="hour" style="--tag: var(--amber)">
+        <div class="bezel"><div class="screen"><div class="tube">
+          <span class="refresh" aria-hidden="true"></span>
+          <div class="tube-in">
+            <div class="plan-a">
+              <p class="tag">Any time of day</p>
+              <h3 class="name rgb" data-text="By the hour">By the hour</h3>
+              <p class="price">
+                <span class="price-box"><span class="num rgb" data-text="1,800">1,800</span><span class="old" aria-hidden="true"></span><span class="beam" aria-hidden="true"></span></span>
+                <span class="unit">won per hour</span>
+              </p>
+              <p class="per">30 won a minute after the first hour</p>
+            </div>
+            <div class="plan-b">
+              <ul class="incl">
+                <li>The first hour is charged in full, then by the minute</li>
+                <li>Pay at the counter or the kiosk when you leave</li>
+                <li>Ramyeon and drinks ordered from your seat</li>
+              </ul>
+              <div class="plan-foot">
+                <button class="btn btn-amber btn-block" type="button" data-hold aria-haspopup="dialog" aria-controls="hold"><span class="face"><span class="inner"><span class="label">Hold a seat<span class="vh">, by the hour</span></span></span></span></button>
+                <a class="lnk" href="#fine-food" data-text="How ordering food works">How ordering food works</a>
+              </div>
+            </div>
+          </div>
+          <span class="flash" aria-hidden="true"></span>
+        </div></div></div>
+      </article>
+
+      <article class="plan" data-plan="night" style="--tag: var(--pink)">
+        <div class="bezel"><div class="screen"><div class="tube">
+          <span class="refresh" aria-hidden="true"></span>
+          <div class="tube-in">
+            <div class="plan-a">
+              <p class="tag">22:00 to 08:00</p>
+              <h3 class="name rgb" data-text="Night pack">Night pack</h3>
+              <p class="price">
+                <span class="price-box"><span class="num rgb" data-text="9,000">9,000</span><span class="old" aria-hidden="true"></span><span class="beam" aria-hidden="true"></span></span>
+                <span class="unit">won for the night</span>
+              </p>
+              <p class="per">900 won an hour if you stay all ten</p>
+            </div>
+            <div class="plan-b">
+              <ul class="incl">
+                <li>Ten hours in one seat, 22:00 to 08:00</li>
+                <li>Start late if you like; it still ends at 08:00</li>
+                <li>A blanket and a locker for the night</li>
+                <li>Adults only, so bring ID</li>
+              </ul>
+              <div class="plan-foot">
+                <button class="btn btn-amber btn-block" type="button" data-hold aria-haspopup="dialog" aria-controls="hold"><span class="face"><span class="inner"><span class="label">Hold a seat<span class="vh">, night pack</span></span></span></span></button>
+                <a class="lnk" href="#fine-night" data-text="Who can stay after 22:00">Who can stay after 22:00</a>
+              </div>
+            </div>
+          </div>
+          <span class="flash" aria-hidden="true"></span>
+        </div></div></div>
+      </article>
+
+      <article class="plan" data-plan="card" style="--tag: var(--violet)">
+        <div class="bezel"><div class="screen"><div class="tube">
+          <span class="refresh" aria-hidden="true"></span>
+          <div class="tube-in">
+            <div class="plan-a">
+              <p class="tag">Valid for 60 days</p>
+              <h3 class="name rgb" data-text="30-hour card">30-hour card</h3>
+              <p class="price">
+                <span class="price-box"><span class="num rgb" data-text="39,000">39,000</span><span class="old" aria-hidden="true"></span><span class="beam" aria-hidden="true"></span></span>
+                <span class="unit">won for 30 hours</span>
+              </p>
+              <p class="per">1,300 won an hour</p>
+            </div>
+            <div class="plan-b">
+              <ul class="incl">
+                <li>30 hours in as many visits as you like</li>
+                <li>Counted by the minute while you are logged in</li>
+                <li>Works in the booth type you bought it for</li>
+              </ul>
+              <div class="plan-foot">
+                <button class="btn btn-amber btn-block" type="button" data-hold aria-haspopup="dialog" aria-controls="hold"><span class="face"><span class="inner"><span class="label">Hold a seat<span class="vh">, 30-hour card</span></span></span></span></button>
+                <a class="lnk" href="#fine-card" data-text="How the 30-hour card works">How the 30-hour card works</a>
+              </div>
+            </div>
+          </div>
+          <span class="flash" aria-hidden="true"></span>
+        </div></div></div>
+      </article>
+    </div>
+
+    <div class="fine">
+      <h3 class="fine-title">Fine print</h3>
+      <ul class="fine-list">
+        <li id="fine-night"><b>Under-18s cannot stay after 22:00.</b> The law keeps under-18s out of PC rooms from 22:00 to 09:00, so staff check ID at 21:50 and the night pack is sold to adults only.</li>
+        <li id="fine-card"><b>Cards are per person.</b> A 30-hour card logs in one person at a time, in the booth type printed on it, and expires 60 days after its first login. Unused time is not refunded. A Couple booth card is sold to two named people and logs in both seats together.</li>
+        <li><b>The night pack ends at 08:00</b> whenever you started. If you stay on, the seat runs at the hourly price from 08:00.</li>
+        <li id="fine-food"><b>Food comes to the seat.</b> Ramyeon, rice bowls and drinks are ordered from the menu on your screen, brought to you, and added to your bill.</li>
+        <li><b>Couple booth prices cover both seats.</b> One person in a Couple booth still pays the booth price.</li>
+        <li><b>A held seat waits 15 minutes</b> past your arrival time, then goes back on the floor. Holding is free and you pay at the counter.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<dialog class="hold" id="hold" aria-labelledby="hold-title" data-lenis-prevent>
+  <div class="dlg-rim">
+    <span class="roll" aria-hidden="true"></span>
+    <div class="dlg">
+      <div class="dlg-head">
+        <h2 id="hold-title">Hold a seat</h2>
+        <button class="btn btn-line" id="hold-close" type="button"><span class="face"><span class="inner"><span class="label">Close</span></span></span></button>
+      </div>
+
+      <form class="hold-form" id="hold-form" novalidate>
+        <p class="dlg-intro">Holding is free. We keep the seat for 15 minutes past your arrival time, and you pay at the counter.</p>
+        <div class="rows">
+          <div class="row">
+            <label class="lbl" for="f-plan">Plan</label>
+            <div class="field is-select">
+              <select id="f-plan" name="plan">
+                <option value="hour">By the hour</option>
+                <option value="night">Night pack</option>
+                <option value="card">30-hour card</option>
+              </select>
+              <span class="scan" aria-hidden="true"></span>
+            </div>
+          </div>
+          <div class="row">
+            <label class="lbl" for="f-booth">Booth</label>
+            <div class="field is-select">
+              <select id="f-booth" name="booth">
+                <option value="standard">Standard</option>
+                <option value="pro">Pro booth</option>
+                <option value="couple">Couple booth</option>
+              </select>
+              <span class="scan" aria-hidden="true"></span>
+            </div>
+          </div>
+          <div class="row">
+            <label class="lbl" for="f-name">Name</label>
+            <div class="field">
+              <input id="f-name" name="name" type="text" autocomplete="name" spellcheck="false" aria-describedby="f-name-msg" required>
+              <span class="scan" aria-hidden="true"></span>
+            </div>
+            <p class="msg" id="f-name-msg" aria-live="polite" data-hint="The name we call out at the counter.">The name we call out at the counter.</p>
+          </div>
+          <div class="row">
+            <label class="lbl" for="f-contact">Phone or email</label>
+            <div class="field">
+              <input id="f-contact" name="contact" type="text" inputmode="email" autocomplete="off" spellcheck="false" aria-describedby="f-contact-msg" required>
+              <span class="scan" aria-hidden="true"></span>
+            </div>
+            <p class="msg" id="f-contact-msg" aria-live="polite" data-hint="For one confirmation, nothing else.">For one confirmation, nothing else.</p>
+          </div>
+          <div class="row">
+            <label class="lbl" for="f-arrive">Arriving</label>
+            <div class="field is-select">
+              <select id="f-arrive" name="arrive">
+                <option value="15">In 15 minutes</option>
+                <option value="30">In 30 minutes</option>
+                <option value="45">In 45 minutes</option>
+                <option value="60">In 1 hour</option>
+              </select>
+              <span class="scan" aria-hidden="true"></span>
+            </div>
+          </div>
+        </div>
+        <p class="sum" id="sum" aria-live="polite">By the hour in a Standard booth: <b>1,800 won per hour</b>, paid at the counter.</p>
+        <button class="btn btn-amber" type="submit"><span class="face"><span class="inner"><span class="label">Hold this seat</span></span></span></button>
+      </form>
+
+      <div class="done" id="done" hidden>
+        <p class="done-head" id="done-head" tabindex="-1">Your seat is held.</p>
+        <div class="printer">
+          <div class="slot" aria-hidden="true"></div>
+          <div class="feed"><div class="paper" id="paper">
+            <div class="paper-body">
+              <p class="paper-shop">Afterimage <span>Seomyeon, Busan. Open 24 hours.</span></p>
+              <p class="code" id="r-code">S-27</p>
+              <p class="code-lbl">Seat code. Show it at the counter.</p>
+              <dl class="slip">
+                <div><dt>Plan</dt><dd id="r-plan">By the hour</dd></div>
+                <div><dt>Booth</dt><dd id="r-booth">Standard</dd></div>
+                <div><dt>Arrive by</dt><dd id="r-time">21:45</dd></div>
+                <div><dt>Price</dt><dd id="r-price">1,800 won</dd></div>
+                <div><dt>Name</dt><dd id="r-name">Jiho</dd></div>
+              </dl>
+              <p class="paper-note" id="r-note">We release the seat at 22:00 if you have not arrived. A confirmation goes to <b>jiho@example.com</b>.</p>
+            </div>
+          </div></div>
+        </div>
+        <button class="btn btn-line" id="again" type="button"><span class="face"><span class="inner"><span class="label">Hold another seat</span></span></span></button>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  const root = document.documentElement;
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const lib = !!(window.gsap && window.ScrollTrigger && window.Lenis);
+  if (lib) root.classList.add('js'); // CDN blocked: no class, everything is visible and still works
+
+  /* ---------- The price table: three ways to pay by three booths ---------- */
+  const PRICE = {
+    standard: { hour: 1800, night: 9000, card: 39000 },
+    pro: { hour: 2400, night: 12000, card: 51000 },
+    couple: { hour: 3000, night: 15000, card: 66000 }
+  };
+  const won = (n) => Math.round(n).toLocaleString('en-US');
+  const PLAN = {
+    hour: { name: 'By the hour', unit: 'won per hour', per: (p) => `${won(p / 60)} won a minute after the first hour` },
+    night: { name: 'Night pack', unit: 'won for the night', per: (p) => `${won(p / 10)} won an hour if you stay all ten` },
+    card: { name: '30-hour card', unit: 'won for 30 hours', per: (p) => `${won(p / 30)} won an hour` }
+  };
+  const BOOTH = {
+    standard: { name: 'Standard', letter: 'S', count: 60, note: 'Standard: a 27-inch 165 Hz monitor and a membrane keyboard. 28 of 60 seats free.' },
+    pro: { name: 'Pro booth', letter: 'P', count: 24, note: 'Pro booth: a 240 Hz monitor, a mechanical keyboard and taller partitions. 9 of 24 seats free.' },
+    couple: { name: 'Couple booth', letter: 'C', count: 6, note: 'Couple booth: two seats side by side behind one partition. Prices cover both seats. 2 of 6 booths free.' }
+  };
+
+  const sec = $('.pricing'), wrap = $('.wrap'), hum = $('.hum');
+  const plans = $$('.plan'), radios = $$('input[name=booth]'), note = $('#booth-note'), live = $('#price-live');
+  const dlg = $('#hold'), form = $('#hold-form'), done = $('#done'), doneHead = $('#done-head'), paper = $('#paper');
+  const fPlan = $('#f-plan'), fBooth = $('#f-booth'), fName = $('#f-name'), fContact = $('#f-contact'), fArrive = $('#f-arrive'), sum = $('#sum');
+  let lenis = null, fx = null; // fx: hooks set by the motion branch; null means instant
+  let booth = 'standard';
+
+  /* ---------- Booth control (works without the libraries) ---------- */
+  const setBooth = (key, say) => {
+    booth = key;
+    plans.forEach((pl, i) => {
+      const k = pl.dataset.plan, num = $('.num', pl), was = num.textContent, now = won(PRICE[key][k]);
+      num.textContent = now;
+      num.dataset.text = now; // the colour ghosts read this
+      $('.per', pl).textContent = PLAN[k].per(PRICE[key][k]);
+      if (say && was !== now) fx?.rescan(pl, was, i);
+    });
+    note.textContent = BOOTH[key].note;
+    if (say) live.textContent = `${BOOTH[key].name} prices: ` + Object.keys(PLAN).map((k) => `${won(PRICE[key][k])} ${PLAN[k].unit}`).join(', ') + '.';
+  };
+  radios.forEach((r) => r.addEventListener('change', () => {
+    if (!r.checked) return;
+    setBooth(r.value, true);
+    fx?.burn(r.nextElementSibling);
+  }));
+  setBooth((radios.find((r) => r.checked) || radios[0]).value, false); // a reload may restore another radio
+
+  /* ---------- Hold dialog ---------- */
+  const summary = () => {
+    const p = fPlan.value, b = fBooth.value;
+    sum.innerHTML = `${PLAN[p].name} in a ${BOOTH[b].name}${b === 'standard' ? ' booth' : ''}: <b>${won(PRICE[b][p])} ${PLAN[p].unit}</b>, paid at the counter.`;
+  };
+  fPlan.addEventListener('change', summary);
+  fBooth.addEventListener('change', summary);
+
+  const RULES = [
+    [fName, (v) => !v ? 'Enter the name we should call at the counter.' : v.length < 2 ? 'That name is too short. Use at least 2 characters.' : ''],
+    [fContact, (v) => {
+      if (!v) return 'Enter a phone number or an email, so we can confirm the hold.';
+      if (v.includes('@')) return /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(v) ? '' : 'This email needs a domain, like jiho@example.com.';
+      return /^\d{9,13}$/.test(v.replace(/[\s().+-]/g, '')) ? '' : 'Use a phone number like 010-1234-5678, or an email address.';
+    }]
+  ];
+  const showError = (input, msg, jolt) => {
+    const row = input.closest('.row'), line = $('.msg', row);
+    line.textContent = msg || line.dataset.hint; // the hint returns when the error clears, so no stale message is left
+    row.classList.toggle('is-bad', !!msg);
+    if (msg) input.setAttribute('aria-invalid', 'true'); else input.removeAttribute('aria-invalid');
+    row.classList.remove('is-jit');
+    if (msg && jolt) { void row.offsetWidth; row.classList.add('is-jit'); } // restart the label's two-frame mistrack
+  };
+  RULES.forEach(([input, rule]) => input.addEventListener('input', () => {
+    if (input.hasAttribute('aria-invalid') && !rule(input.value.trim())) showError(input, '');
+  }));
+
+  const hhmm = (d) => String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  const showDone = (yes) => {
+    form.hidden = yes; done.hidden = !yes;
+    if (yes) { doneHead.focus({ preventScroll: true }); fx?.feed(); }
+  };
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const bad = RULES.map(([input, rule]) => { const msg = rule(input.value.trim()); showError(input, msg, true); return msg ? input : null; }).filter(Boolean);
+    if (bad.length) { bad[0].focus(); return; }
+    const p = fPlan.value, b = fBooth.value, mins = +fArrive.value, t = new Date(Date.now() + mins * 60000);
+    const contact = fContact.value.trim();
+    $('#r-code').textContent = `${BOOTH[b].letter}-${String(1 + Math.floor(Math.random() * BOOTH[b].count)).padStart(2, '0')}`;
+    $('#r-plan').textContent = PLAN[p].name;
+    $('#r-booth').textContent = BOOTH[b].name;
+    $('#r-time').textContent = hhmm(t);
+    $('#r-price').textContent = `${won(PRICE[b][p])} won`;
+    $('#r-name').textContent = fName.value.trim();
+    $('#r-note').textContent = `We release the seat at ${hhmm(new Date(t.getTime() + 15 * 60000))} if you have not arrived. A confirmation goes to `;
+    const to = document.createElement('b'); // textContent, never innerHTML: this is what the visitor typed
+    to.textContent = contact;
+    $('#r-note').append(to, '.');
+    showDone(true);
+  });
+  $('#again').addEventListener('click', () => { showDone(false); fPlan.focus(); }); // name and contact are kept
+
+  let opener = null, closing = false, downOn = null;
+  // Recover from any close, even one the browser forces (a second Escape is not cancelable) mid-roll.
+  const settle = () => { closing = false; fx?.dialogReset(); };
+  $$('[data-hold]').forEach((btn) => btn.addEventListener('click', () => {
+    if (dlg.open) return;
+    opener = btn;
+    settle();
+    fPlan.value = btn.closest('.plan').dataset.plan;
+    fBooth.value = booth;
+    summary();
+    showDone(false);
+    dlg.showModal();
+    lenis?.stop();
+    fx?.dialogIn();
+  }));
+  const closeDialog = () => {
+    if (!dlg.open || closing) return;
+    closing = true;
+    const end = () => { closing = false; dlg.close(); };
+    fx ? fx.dialogOut(end) : end();
+  };
+  $('#hold-close').addEventListener('click', closeDialog);
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); closeDialog(); });
+  // Close on a backdrop click only when the press also started on the backdrop (not a text selection overshoot).
+  dlg.addEventListener('pointerdown', (e) => { downOn = e.target; });
+  dlg.addEventListener('click', (e) => { if (e.target === dlg && downOn === dlg) closeDialog(); });
+  dlg.addEventListener('close', () => { settle(); lenis?.start(); opener?.focus(); });
+
+  if (!lib) return;
+
+  /* ---------- Motion ---------- */
+  gsap.registerPlugin(ScrollTrigger);
+  const read = (n) => getComputedStyle(root).getPropertyValue(n).trim();
+  const fontsReady = Promise.race([
+    Promise.all([document.fonts.ready, document.fonts.load('700 100px "Handjet"'), document.fonts.load('600 40px "Handjet"')]).then(() => 'fonts', () => 'fonts'),
+    new Promise((r) => setTimeout(() => r('timeout'), 1500))
+  ]);
+  // Start the load sequence only on a visible page: with lagSmoothing(0), a timeline started in a background
+  // tab would jump to its end on return.
+  const visible = new Promise((r) => {
+    if (document.visibilityState === 'visible') return r();
+    const f = () => { if (document.visibilityState === 'visible') { document.removeEventListener('visibilitychange', f); r(); } };
+    document.addEventListener('visibilitychange', f);
+  });
+  let played = false;           // the degauss runs once per page
+  const lit = new Set();        // tubes that are already on; they stay on across matchMedia changes
+  const tuned = new Set();      // fine-print lines that have tuned in
+
+  const mm = gsap.matchMedia();
+  mm.add({
+    motion: '(prefers-reduced-motion: no-preference)',
+    reduce: '(prefers-reduced-motion: reduce)',
+    fine: '(hover: hover) and (pointer: fine)'
+  }, (ctx) => {
+    const { motion, fine } = ctx.conditions;
+    if (!motion) {
+      // Reduced motion: clean text, tubes on, no hum bar, native scroll. Prices and the dialog change instantly.
+      root.classList.add('go');
+      return;
+    }
+
+    let dead = false;
+    const off = [];
+    const on = (el, type, fn, opt) => { el.addEventListener(type, fn, opt); off.push(() => el.removeEventListener(type, fn, opt)); };
+    const T = Object.fromEntries(['degauss', 'line-on', 'open', 'flash', 'stagger', 'scan', 'burn', 'glitch', 'drop', 'hold-in', 'hold-out', 'feed', 'pulse', 'tear', 'tear-gap']
+      .map((k) => [k, parseFloat(read(`--d-${k}`))]));
+    const HALF = parseFloat(read('--half-split')), MAX = parseFloat(read('--split-max')), REACH = parseFloat(read('--split-reach'));
+    const clamp = gsap.utils.clamp;
+    root.classList.add('fx');
+
+    // Lenis on GSAP's clock. Touch keeps native scrolling.
+    lenis = new Lenis({ lerp: .1, smoothWheel: true, autoRaf: false, anchors: true });
+    lenis.on('scroll', ScrollTrigger.update);
+    const tick = (t) => lenis.raf(t * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
+
+    let inView = true;
+    const io = new IntersectionObserver(([e]) => { inView = e.isIntersecting; if (!inView) rgb.rest(); });
+    io.observe(sec);
+    off.push(() => io.disconnect());
+
+    /* ---------- RGB split (signature): the ghosts pull apart, away from the pointer ----------
+       Each .rgb text has a pink copy and a cyan copy under it. Their offset is a whole-pixel vector: the pointer
+       part (0 to 5px, proximity x energy, where energy comes from pointer speed and halves every 0.14s, so the
+       text is clean at rest), plus a horizontal part from the load degauss and from a keyboard pulse.
+       The loop is on the ticker only while some offset is not zero. */
+    const rgb = (() => {
+      const items = $$('.rgb').map((el) => ({ el, plan: el.closest('.plan'), x: 0, y: 0, pulse: 0 }));
+      let e = 0, px = 0, py = 0, has = false, deg = 0, awake = false, lastT = 0, lx = 0, ly = 0;
+      const apply = () => {
+        let any = false;
+        for (const g of items) {
+          let dx = 0, dy = 0;
+          if (e && has) {
+            const r = g.el.getBoundingClientRect();
+            const d = Math.hypot(px - clamp(r.left, r.right, px), py - clamp(r.top, r.bottom, py)); // distance to the text box
+            const a = MAX * clamp(0, 1, 1 - d / REACH) * e;
+            let vx = r.left + r.width / 2 - px, vy = r.top + r.height / 2 - py;
+            if (!d) vy = 0; // pointer on the text itself: a clean horizontal split
+            const m = Math.hypot(vx, vy) || 1;
+            dx = Math.round((vx || 1) / m * a); dy = Math.round(vy / m * a);
+          }
+          dx += g.pulse + deg;
+          if (dx !== g.x || dy !== g.y) {
+            g.x = dx; g.y = dy;
+            g.el.style.setProperty('--gx', dx + 'px'); g.el.style.setProperty('--gy', dy + 'px');
+            g.el.classList.toggle('is-split', !!(dx || dy));
+          }
+          if (dx || dy) any = true;
+        }
+        return any;
+      };
+      const frame = (t, dms) => {
+        if (e) { e *= Math.pow(.5, Math.min(dms, 100) / 1000 / HALF); if (e < .08) e = 0; }
+        if (!apply() && !e) sleep();
+      };
+      const wake = () => { if (awake || !inView || dead) return; awake = true; gsap.ticker.add(frame); };
+      const sleep = () => { if (!awake) return; awake = false; gsap.ticker.remove(frame); };
+      return {
+        move(x, y, kick) { // kick: a touch landing spreads the ghosts at once
+          const now = performance.now(), dt = Math.max(1, now - lastT);
+          const speed = has && dt < 120 ? Math.hypot(x - lx, y - ly) / dt : 0; // px per ms
+          e = Math.max(e, kick ? 1 : clamp(.25, 1, speed / .9));
+          px = lx = x; py = ly = y; lastT = now; has = true;
+          wake();
+        },
+        leave() { has = false; },
+        pulse(plan) { // keyboard: one pulse over three frames on that plan's name and price
+          const mine = items.filter((g) => g.plan === plan);
+          [4, 2, 1, 0].forEach((v, i) => gsap.delayedCall(i * T.pulse, () => { mine.forEach((g) => { g.pulse = v; }); wake(); }));
+        },
+        degauss(v) { deg = v; wake(); },
+        rest() { e = 0; deg = 0; items.forEach((g) => { g.pulse = 0; }); apply(); sleep(); }
+      };
+    })();
+    if (fine) {
+      on(sec, 'pointermove', (e) => { if (e.pointerType !== 'touch') rgb.move(e.clientX, e.clientY); });
+      on(sec, 'pointerleave', () => rgb.leave());
+    }
+    on(sec, 'touchstart', (e) => rgb.move(e.touches[0].clientX, e.touches[0].clientY, true), { passive: true });
+    on(sec, 'touchmove', (e) => rgb.move(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
+    on(sec, 'focusin', (e) => { if (e.target.matches('[data-hold]:focus-visible')) rgb.pulse(e.target.closest('.plan')); });
+
+    /* ---------- Hum bar: its place on the screen is a function of the scroll position, and it wraps ----------
+       It rolls down the screen half a pixel per scrolled pixel and re-enters at the top, like the bar on a tube
+       that shares a socket with a fridge. Written only on scroll and resize, in half-cell steps: no loop. */
+    const humH = parseFloat(read('--hum-h')), humRate = parseFloat(read('--hum-rate'));
+    const humAt = () => {
+      const vh = innerHeight, onScreen = (window.scrollY * humRate + vh * .3) % (vh + humH) - humH;
+      hum.style.transform = `translateY(${Math.round((onScreen - sec.getBoundingClientRect().top) / 4) * 4}px)`;
+    };
+
+    /* ---------- Refresh line: each tube's line is placed by the scroll position, in whole raster rows ----------
+       It travels down the glass as the page scrolls down and back up as it scrolls up, wraps at the bottom, and
+       stands still when the page does. The three tubes are a third of a pass apart. Its rows are multiples of
+       4px from the tube's top, so it never lands on a scanline-mask row. */
+    const lineRate = parseFloat(read('--refresh-rate'));
+    const lines = plans.map((pl, i) => ({ el: $('.refresh', pl), tube: $('.tube', pl), i, span: 0 }));
+    let lastY = window.scrollY, down = true;
+    const linesAt = () => {
+      const y = window.scrollY;
+      if (y !== lastY) { down = y > lastY; lastY = y; }
+      for (const l of lines) {
+        const at = (Math.floor(y * lineRate / 4) * 4 + Math.round(l.span * (.2 + l.i / 3) / 4) * 4) % l.span;
+        l.el.style.transform = `translateY(${at - 12}px)` + (down ? '' : ' scaleY(-1)'); // the afterglow trails the travel
+      }
+    };
+    const ro = new ResizeObserver(() => { lines.forEach((l) => { l.span = Math.ceil((l.tube.offsetHeight + 16) / 4) * 4; }); linesAt(); });
+    ro.observe(sec);
+    off.push(() => ro.disconnect());
+    const onScroll = () => { humAt(); if (lines[0].span) linesAt(); };
+    on(window, 'scroll', onScroll, { passive: true });
+    on(window, 'resize', onScroll);
+    humAt();
+
+    /* ---------- Buttons: glitch slices on hover and focus, signal dropout on press ---------- */
+    // One 24x12 noise tile for every button, in the page's own colours, made once.
+    if (!root.style.getPropertyValue('--noise-tile')) {
+      const c = document.createElement('canvas'), g = c.getContext('2d'), tones = ['--smoke', '--ink', '--dim', '--smoke', '--amber', '--off'].map(read);
+      c.width = 24; c.height = 12;
+      for (let y = 0; y < 12; y++) for (let x = 0; x < 24; x++) { g.fillStyle = tones[Math.floor(Math.random() * tones.length)]; g.fillRect(x, y, 1, 1); }
+      root.style.setProperty('--noise-tile', `url(${c.toDataURL()})`);
+    }
+    const JIT = [-4, -3, -2, 2, 3, 4];
+    const btns = $$('.btn').map((el) => {
+      const face = $('.face', el), slices = document.createElement('span'), noise = document.createElement('span');
+      slices.className = 'slices'; slices.setAttribute('aria-hidden', 'true');
+      for (let i = 0; i < 4; i++) {
+        const sl = document.createElement('span'), inr = document.createElement('span');
+        sl.className = 'sl'; sl.style.setProperty('--i', i); inr.className = 'sl-in';
+        inr.append(face.cloneNode(true)); sl.append(inr); slices.append(sl);
+      }
+      noise.className = 'noise'; noise.setAttribute('aria-hidden', 'true');
+      el.append(slices); $('.inner', face).append(noise);
+      return { el, noise, sl: [...slices.children], slices, hover: false, focus: false, tl: null, dt: null };
+    });
+    btns.forEach((b) => {
+      const jit = () => b.sl.forEach((s) => { s.style.transform = `translateX(${JIT[Math.floor(Math.random() * JIT.length)]}px)`; });
+      const lock = () => { b.el.classList.remove('is-glitch'); b.sl.forEach((s) => { s.style.transform = ''; }); };
+      const glitch = () => { // four frames of slices, then the lit face locks in
+        b.tl?.kill();
+        b.el.classList.add('is-glitch', 'is-hot');
+        b.tl = gsap.timeline({ onComplete: lock });
+        for (let i = 0; i < 4; i++) b.tl.call(jit, null, i * T.glitch / 4);
+        b.tl.to({}, { duration: T.glitch }, 0);
+      };
+      const cool = () => { if (b.hover || b.focus) return; b.tl?.kill(); lock(); b.el.classList.remove('is-hot'); };
+      const drop = () => { // two frames of static, then the picture is back
+        b.dt?.kill();
+        b.noise.style.visibility = 'visible'; b.noise.style.transform = '';
+        b.dt = gsap.timeline()
+          .call(() => { b.noise.style.transform = 'translate(-7px, 5px)'; }, null, T.drop / 2)
+          .call(() => { b.noise.style.visibility = ''; }, null, T.drop);
+      };
+      on(b.el, 'pointerenter', (e) => { if (e.pointerType === 'touch' || b.hover) return; b.hover = true; if (!b.focus) glitch(); });
+      on(b.el, 'pointerleave', () => { if (!b.hover) return; b.hover = false; cool(); });
+      on(b.el, 'focus', () => { if (!b.el.matches(':focus-visible')) return; b.focus = true; if (!b.hover) glitch(); });
+      on(b.el, 'blur', () => { if (!b.focus) return; b.focus = false; cool(); });
+      on(b.el, 'pointerdown', drop);
+      on(b.el, 'keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) drop(); });
+      off.push(() => { b.tl?.kill(); b.dt?.kill(); b.slices.remove(); b.noise.remove(); b.el.classList.remove('is-glitch', 'is-hot'); });
+    });
+
+    /* ---------- Text links: the afterimage starts when the light leaves ---------- */
+    $$('.lnk').forEach((a) => {
+      let focus = false;
+      const after = () => { a.classList.remove('is-after'); void a.offsetWidth; a.classList.add('is-after'); };
+      on(a, 'pointerleave', (e) => { if (e.pointerType !== 'touch') after(); });
+      on(a, 'pointerup', (e) => { if (e.pointerType === 'touch') after(); });
+      on(a, 'focus', () => { focus = a.matches(':focus-visible'); });
+      on(a, 'blur', () => { if (focus) after(); focus = false; });
+      on(a, 'animationend', () => a.classList.remove('is-after'));
+      off.push(() => a.classList.remove('is-after'));
+    });
+
+    /* ---------- Tube power-on: a line grows across, opens to the full panel, flashes, and the content cuts in ---------- */
+    const parts = (pl) => [$('.tube', pl), $('.tube-in', pl), $('.flash', pl)];
+    const clearTube = (pl) => { const [tube, inner, flash] = parts(pl); tube.style.clipPath = ''; inner.style.opacity = ''; flash.style.opacity = ''; };
+    let slot = 0; // tubes that enter together switch on one after another
+    const powerOn = (pl) => {
+      if (lit.has(pl)) return;
+      lit.add(pl);
+      const [tube, inner, flash] = parts(pl), p = { w: 0, h: 0 };
+      const now = gsap.ticker.time, at = Math.max(now, slot);
+      slot = at + T.stagger;
+      const draw = () => {
+        const W = tube.offsetWidth, H = tube.offsetHeight;
+        tube.style.clipPath = `inset(${Math.round((1 - p.h) * (H / 2 - 1))}px ${Math.round((1 - p.w) * W / 2)}px)`;
+      };
+      gsap.timeline({ delay: at - now })
+        .call(() => { flash.style.opacity = 1; draw(); })
+        .to(p, { w: 1, duration: T['line-on'], ease: 'steps(6)', onUpdate: draw })
+        .call(() => { flash.style.opacity = .4; }) // the open tube is lit at 40%, not white: three tubes may switch on within a second
+        .to(p, { h: 1, duration: T.open, ease: 'steps(5)', onUpdate: draw })
+        .call(() => { tube.style.clipPath = ''; inner.style.opacity = ''; flash.style.opacity = .2; })
+        .call(() => { flash.style.opacity = .08; }, null, `+=${T.flash / 2}`)
+        .call(() => { flash.style.opacity = ''; }, null, `+=${T.flash / 2}`);
+    };
+
+    /* ---------- Fine print tunes in: three frames of tracking tear, then the line locks clean ----------
+       The line is copied into three slices cut at two random heights; each frame moves every slice sideways by a
+       smaller amount (up to 8, 6, then 3px) with a pink and a cyan ghost. Then the copies are removed. Once per line. */
+    const fineItems = $$('.fine-list li');
+    let tearSlot = 0;
+    const tuneIn = (li) => {
+      if (tuned.has(li)) return;
+      tuned.add(li);
+      const now = gsap.ticker.time, at = Math.max(now, tearSlot);
+      tearSlot = at + T['tear-gap'];
+      gsap.delayedCall(at - now, () => {
+        if (dead) return;
+        const html = li.innerHTML, slices = [0, 1, 2].map(() => {
+          const sl = document.createElement('span');
+          sl.className = 'tear'; sl.setAttribute('aria-hidden', 'true'); sl.innerHTML = html;
+          return sl;
+        });
+        const tear = (amp) => {
+          const a = 20 + Math.random() * 25, b = 55 + Math.random() * 25, cuts = [0, a, b, 100];
+          slices.forEach((sl, k) => {
+            sl.style.clipPath = `inset(${cuts[k]}% -12px ${100 - cuts[k + 1]}% -12px)`;
+            sl.style.transform = `translateX(${(Math.random() < .5 ? -1 : 1) * (k % 2 ? amp : amp - 2)}px)`;
+          });
+        };
+        const lock = () => { slices.forEach((sl) => sl.remove()); li.classList.remove('is-tear'); };
+        tear(8);
+        li.append(...slices); li.classList.add('is-tear'); li.style.opacity = '';
+        gsap.delayedCall(T.tear / 3, () => tear(6));
+        gsap.delayedCall(T.tear * 2 / 3, () => tear(3));
+        gsap.delayedCall(T.tear, lock);
+      });
+    };
+
+    /* ---------- Load: degauss. Nine decaying frames of skew and shake while the ghosts converge from 8px. ---------- */
+    const degauss = () => {
+      const K = [1, -.8, .65, -.5, .38, -.27, .17, -.08, 0], n = K.length;
+      K.forEach((k, i) => gsap.delayedCall(i * T.degauss / n, () => {
+        wrap.style.transform = k ? `translateX(${Math.round(6 * k)}px) skewX(${2 * k}deg)` : '';
+        rgb.degauss(n - 1 - i);
+      }));
+    };
+
+    /* ---------- Hooks for the plain-JS flows ---------- */
+    const roll = $('.roll', dlg);
+    fx = {
+      // Booth change: the beam sweeps down each price box in ten steps. Above it is the new price, below it the old.
+      rescan(pl, was, i) { ctx.add(() => {
+        if (!lit.has(pl)) return; // a tube that is still off has nothing to re-scan
+        const box = $('.price-box', pl), num = $('.num', pl), old = $('.old', pl), beam = $('.beam', pl), p = { t: 0 };
+        const h = box.offsetHeight;
+        const draw = () => {
+          const y = Math.round(p.t * h);
+          num.style.clipPath = `inset(0 -12px ${h - y}px -12px)`;
+          old.style.clipPath = `inset(${y}px -12px 0 -12px)`;
+          beam.style.transform = `translateY(${y}px)`;
+        };
+        const end = () => { box.classList.remove('is-scan'); num.style.clipPath = old.style.clipPath = beam.style.transform = ''; old.textContent = ''; };
+        pl.scan?.kill();
+        old.textContent = was;
+        box.classList.add('is-scan');
+        draw();
+        pl.scan = gsap.to(p, { t: 1, duration: T.scan, delay: i * .05, ease: 'steps(10)', onUpdate: draw, onComplete: end, onInterrupt: end });
+      }); },
+      burn(face) { face.classList.remove('is-burn'); void face.offsetWidth; face.classList.add('is-burn'); },
+      // Dialog: vertical hold. The picture rolls up into place in four steps while a dark bar crosses it once.
+      dialogReset() { gsap.killTweensOf([dlg, roll]); gsap.set([dlg, roll], { clearProps: 'all' }); },
+      dialogIn() {
+        const h = dlg.offsetHeight;
+        gsap.fromTo(dlg, { y: 160 }, { y: 0, duration: T['hold-in'], ease: 'steps(4)', clearProps: 'transform', overwrite: true });
+        gsap.fromTo(roll, { y: h, visibility: 'visible' }, { y: -roll.offsetHeight, duration: T['hold-in'] * 1.25, ease: 'steps(6)', clearProps: 'all', overwrite: true });
+      },
+      dialogOut(end) {
+        const h = dlg.offsetHeight;
+        gsap.fromTo(roll, { y: -roll.offsetHeight, visibility: 'visible' }, { y: h, duration: T['hold-out'], ease: 'steps(5)', overwrite: true });
+        gsap.to(dlg, { y: 160, duration: T['hold-out'], ease: 'steps(4)', overwrite: true, onComplete: () => { gsap.set([dlg, roll], { clearProps: 'all' }); end(); } });
+      },
+      // Success: the receipt feeds out of the slot one line at a time.
+      feed() {
+        const n = Math.max(6, Math.round(paper.offsetHeight / 26));
+        gsap.fromTo(paper, { yPercent: -100 }, { yPercent: 0, duration: n * T.feed, ease: `steps(${n})`, clearProps: 'transform', overwrite: true });
+      }
+    };
+    on($('.segs'), 'animationend', (e) => e.target.classList.remove('is-burn'));
+
+    Promise.all([fontsReady, visible]).then(() => ctx.add(() => {
+      if (dead) return;
+      // The same hidden states as the CSS, now inline, so .go can be added in the same task.
+      plans.forEach((pl) => {
+        if (lit.has(pl)) return;
+        const [tube, inner, flash] = parts(pl);
+        tube.style.clipPath = 'inset(50%)'; inner.style.opacity = 0; flash.style.opacity = 0; // opacity, not visibility: the button stays focusable, and focus scrolls the tube into view
+      });
+      fineItems.forEach((li) => { if (!tuned.has(li)) li.style.opacity = 0; });
+      root.classList.add('go');
+      if (!played) { played = true; degauss(); slot = gsap.ticker.time + .2; tearSlot = gsap.ticker.time + T.degauss; }
+      plans.forEach((pl) => ScrollTrigger.create({ trigger: pl, start: 'top 88%', once: true, onEnter: () => powerOn(pl) }));
+      fineItems.forEach((li) => ScrollTrigger.create({ trigger: li, start: 'top 92%', once: true, onEnter: () => tuneIn(li) }));
+    }));
+
+    return () => {
+      dead = true;
+      off.forEach((f) => f());
+      rgb.rest();
+      fx = null;
+      gsap.ticker.remove(tick);
+      gsap.ticker.lagSmoothing(500, 33);
+      lenis.destroy(); lenis = null;
+      plans.forEach((pl) => { pl.scan?.kill(); clearTube(pl); lit.add(pl); });
+      fineItems.forEach((li) => { $$('.tear', li).forEach((sl) => sl.remove()); li.classList.remove('is-tear'); li.style.opacity = ''; tuned.add(li); });
+      lines.forEach((l) => { l.el.style.transform = ''; });
+      gsap.killTweensOf([dlg, roll, paper]);
+      gsap.set([dlg, roll, paper], { clearProps: 'all' });
+      wrap.style.transform = ''; hum.style.transform = '';
+      root.classList.remove('fx');
+    };
+  });
+})();
+</script>
+</body>
+</html>

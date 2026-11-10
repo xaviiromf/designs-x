@@ -87,3 +87,21 @@ The label is derived from `design.md`: a non-empty `libraries` list means red; `
 | `team-restaurant-kitchen` | team | detailed | dark | The kitchen brigade of a seasonal restaurant. | CD3 drag strip, HV10 hover-to-play (generated), TX2 |
 | `team-theatre-company` | team | detailed | any | The ensemble of a touring theatre company. | CU2, TR3 ripple by distance, HV7 |
 | `team-research-lab` | team | detailed | light | The members of a university marine-biology research lab. | CD5 Flip filter, SC6, TX3 |
+
+## Arcade series (added after the 76)
+
+Six more detailed designs, built at the owner's request as a family around `cta-indie-game`: the same two typefaces (Handjet for display, Host Grotesk for text), a dark chosen ground, flat pixel geometry and stepped motion, with a retro gamer / cyberpunk subject each. This is the one place where the collection repeats a typeface pair on purpose. Two rules replaced the usual art-direction pass:
+
+- **A wider palette with jobs.** Each design has five to seven hues and every hue has one stated meaning (a competition, a module, a side, a pace).
+- **Nothing recycled.** No technique from `research/motion-techniques.md` and no effect already used in the collection, including the reference's own lattice wake, bow wave, rising wordmark, grain, entry-point fill and underline sweep. Each design was given an exclusive set of new effects, listed below, so the six do not share effects with each other either.
+
+| Slug | Section | Mode | Subject | New effects (no catalogue code) |
+|---|---|---|---|---|
+| `hero-racing-arcade` | hero | dark | League night at a racing-cabinet arcade in Turin. | Pseudo-3D raster road steered by the pointer, scroll as throttle with checkpoint gantries, start-light load, speed-streak headline, checker-wipe button, launch press, tach-strip link, marching centre-line field, pit-board dialog, waving flag |
+| `gallery-demoparty` | gallery | dark | The 2026 winners of a demoparty in Bergen. | Copper bars that follow the pointer in the border and through the headline letters, scroll-driven sine scroller, bit-depth tile build, decrunch load, colour-cycling button, bit-flip chips, letter sine ripple link, interlace-weave dialog |
+| `team-fighting-game` | team | dark | A fighting-game team from Valparaíso as a character-select screen. | Eye-tracking pixel portraits, player-one cursor with impact slam, scroll-scrubbed versus clash, damage-ghost health bars, round-call load, lock-on bracket buttons with hit-stop, three-hit underline |
+| `pricing-net-cafe` | pricing | dark | Hourly, night and 30-hour prices of a 24-hour net café in Busan. | RGB split that follows the pointer, tube power-on, scroll-scrubbed refresh line and hum bar, degauss load, beam re-scan price change, glitch-slice buttons with signal dropout, phosphor afterimage link, vertical-hold dialog, receipt feed |
+| `story-speedrun-marathon` | story | dark | One run at a charity speedrun marathon in Gothenburg. | Scroll plays a side-scrolling run with a split timer and a ghost, input display driven by the pointer, lantern beam aimed at the pointer, tile build-in load, brick-bump buttons, gem-trail underline, pause-menu dialog |
+| `features-cyberdeck-kit` | features | dark | An open-hardware cyberdeck kit from a workshop in Tallinn. | Scroll-scrubbed falling-block assembly, pulses that travel along PCB traces away from the pointer, LED self-test and key-roll load, keycap buttons with LED chase, DIP-switch link, pad-tinning field, ribbon-unfold dialog |
+
+Built values (palette, type, motion) are in each design's `design.md`.

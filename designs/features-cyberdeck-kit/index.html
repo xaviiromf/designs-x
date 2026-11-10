@@ -1,0 +1,1175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Moth-1 cyberdeck kit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Handjet:ELGR,ELSH,wght@1..2,0..16,100..900&family=Host+Grotesk:wght@300..800&display=swap">
+<style>
+  :root {
+    /* Colour: a solder-masked circuit board. Every hue has one job. */
+    --mask: #0E2B1C;       /* solder mask: the page ground */
+    --well: #081C12;       /* bare board: the well, field grounds, the deck's display window */
+    --panel: #123523;      /* the dialog's ribbon (silk on it 12.4:1, mute 8.0:1) */
+    --trace: #1B4A31;      /* copper under the mask: the PCB network; decorative only (1.50:1) */
+    --land: #2A6A47;       /* empty footprints: well outlines, resting pads, unlit LEDs, table rules; decorative (2.35:1) */
+    --silk: #F2F7E9;       /* silkscreen: text (13.9:1 on mask), the expansion bay's hollow block */
+    --mute: #B5CDB8;       /* secondary text, field borders, the pale keycap (9.0:1 on mask; mask text on it 9.0:1) */
+    --mute-deep: #52705B;  /* the pale keycap's skirt, the parked jumper's rim */
+    --mute-led: #344C3C;   /* unlit LEDs on the pale skirt */
+    --gold: #E9B949;       /* gold is what you touch: pads, pulses, the primary key, the slide knob, focus (8.3:1; mask text on it 8.3:1) */
+    --gold-deep: #8A6410;  /* the gold keycap's skirt */
+    --gold-led: #5F4407;   /* unlit LEDs on the gold skirt */
+    --violet: #A78BFF;     /* module: screen (5.6:1 on mask, 6.6:1 on well) */
+    --lime: #B6FF5C;       /* module: keyboard; also every "on" state and the success LED (12.6:1) */
+    --cyan: #48E5E0;       /* module: carrier board (9.8:1) */
+    --magenta: #FF4FA3;    /* module: mesh radio (5.0:1) */
+    --amber: #FF9B42;      /* module: battery sled (7.3:1) */
+    --coral: #FF6B5E;      /* errors only (5.4:1 on mask) */
+    --pulse-1: rgb(233 185 73);         /* the four stepped levels of a pulse, head to tail */
+    --pulse-2: rgb(233 185 73 / .72);
+    --pulse-3: rgb(233 185 73 / .46);
+    --pulse-4: rgb(233 185 73 / .24);
+    --flash: rgb(242 247 233 / .55);    /* second frame of a lock flash */
+    --scrim: rgb(4 14 9 / .82);
+
+    /* Type */
+    --font-display: "Handjet", "Arial Narrow", sans-serif;
+    --font-text: "Host Grotesk", system-ui, sans-serif;
+    --modules: "ELSH" 2, "ELGR" 1;   /* square Handjet modules */
+    --t-small: 13px;
+    --t-body: 17px;
+    --t-lede: 22.5px;
+    --t-h3: 30px;
+    --t-h2: clamp(48px, 6.6vw, 96px);
+    --t-stat: 22px;                  /* the well's status line */
+    --lh-body: 1.55;
+    --lh-lede: 1.45;
+
+    /* Space: the board grid. Traces, vias and every spacing step sit on a 12px cell (8px traces on phones). */
+    --cell: 12px;
+    --s1: 6px; --s2: 12px; --s3: 24px; --s4: 36px;
+    --s5: 48px; --s6: 72px; --s7: 96px; --s8: 144px;
+    --notch: 4px;           /* stepped corner on keycaps */
+    --skirt: 6px;           /* keycap skirt showing under the face */
+    --travel: 4px;          /* key travel */
+    --led-h: 4px;           /* skirt LED height */
+    --led-gap: 4px;         /* gap between the eight skirt LEDs */
+    --tap: 48px;            /* keycap face and field height */
+    --hit: 44px;            /* minimum target for text actions, jumper and switch positions */
+    --max-w: 1296px;
+    --wc: 20px;             /* one cell of the well; set per layout below */
+
+    /* Motion: a machine with a frame rate. CSS and the script read these. */
+    --d-key: .05s;          /* key travel, 2 frames */
+    --d-up: .07s;           /* release with a one-frame overshoot */
+    --d-chase: .48s;        /* 8 skirt LEDs, one per step */
+    --d-dip: .06s;          /* DIP slider and jumper cap, 2 frames */
+    --d-pad: .05s;          /* one corner pad; four make the 0.2s tinning */
+    --d-fold: .3s;          /* ribbon unfold, 5 folds */
+    --d-led: .09s;          /* one LED of the self-test */
+    --d-word: .04s;         /* gap between pressed words */
+    --d-press: .066s;       /* a pressed word stays down 2 frames */
+    --d-frame: .05s;        /* one frame of a lock flash; also one pulse step (20 cells a second) */
+  }
+  @media (max-width: 599px) {
+    :root { --cell: 8px; --t-body: 16px; --t-lede: 18px; --t-h3: 22.5px; --t-stat: 20px; }
+  }
+
+  /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+
+  /* Hidden only when the script runs, and only until the self-test and key roll have played. The headline is never hidden. */
+  html.js:not(.go) [data-cut] { visibility: hidden; }
+  @media (prefers-reduced-motion: reduce) {
+    html.js:not(.go) [data-cut] { visibility: visible; }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { background: var(--mask); }
+  body {
+    margin: 0;
+    background: var(--mask);
+    color: var(--silk);
+    font: 400 var(--t-body)/var(--lh-body) var(--font-text);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  :focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+  ::selection { background: var(--gold); color: var(--mask); }
+  .vh {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+  }
+  h3 { margin: 0; font: 600 var(--t-h3)/1.15 var(--font-text); letter-spacing: -.01em; }
+
+  /* ---------- The board ---------- */
+  /* The script paints the trace network once into a tile and sets it as this background, so it scrolls natively. */
+  .deck { position: relative; overflow: clip; isolation: isolate; background: var(--mask) 0 0 repeat; }
+  /* Pulses only: a viewport-sized canvas that stays put while the board scrolls under it. */
+  .pulses {
+    position: sticky; top: 0; z-index: 0;
+    display: block; width: 100%; height: 100vh; height: 100lvh;
+    margin-bottom: -100vh; margin-bottom: -100lvh;
+    pointer-events: none;
+  }
+  .wrap {
+    position: relative; z-index: 1;
+    max-width: calc(var(--max-w) + 2 * var(--s3));
+    margin-inline: auto;
+    padding: var(--s7) var(--s3);
+  }
+
+  /* ---------- Intro ---------- */
+  .h2 {
+    margin: 0;
+    font: 700 var(--t-h2)/.95 var(--font-display);
+    font-variation-settings: var(--modules);
+    letter-spacing: 0;
+    text-wrap: balance;
+    max-width: 12em;
+  }
+  .h2 .w { display: inline-block; }
+  .lede { margin: var(--s4) 0 0; max-width: 54ch; font-size: var(--t-lede); line-height: var(--lh-lede); }
+  .actions { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s3); margin-top: var(--s5); }
+  .hint { margin: var(--s3) 0 0; max-width: 54ch; color: var(--mute); }
+
+  /* ---------- Buttons: keycaps ---------- */
+  .key {
+    --corners: polygon(0 var(--notch), var(--notch) var(--notch), var(--notch) 0, calc(100% - var(--notch)) 0, calc(100% - var(--notch)) var(--notch), 100% var(--notch), 100% calc(100% - var(--notch)), calc(100% - var(--notch)) calc(100% - var(--notch)), calc(100% - var(--notch)) 100%, var(--notch) 100%, var(--notch) calc(100% - var(--notch)), 0 calc(100% - var(--notch)));
+    position: relative;
+    display: inline-block;
+    padding: 0 0 var(--skirt); border: 0; background: none;
+    color: var(--mask); text-decoration: none;
+    font: 600 var(--t-body)/1.2 var(--font-text);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  /* The skirt starts one skirt-height down, so a pressed face uncovers board above it, not skirt. */
+  .key-skirt { position: absolute; inset: var(--skirt) 0 0; background: var(--skirt-c); clip-path: var(--corners); }
+  .key-face {
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+    min-height: var(--tap);
+    padding: 0 var(--s3);
+    background: var(--face-c);
+    clip-path: var(--corners);
+    transition: transform var(--d-key) steps(2, end);
+  }
+  .key-gold { --face-c: var(--gold); --skirt-c: var(--gold-deep); --led-on: var(--silk); --led-off: var(--gold-led); }
+  .key-pale { --face-c: var(--mute); --skirt-c: var(--mute-deep); --led-on: var(--gold); --led-off: var(--mute-led); }
+  /* Eight LEDs along the skirt: the row is cut into eight segments 4px high, with a lit copy shown one at a time. */
+  .key-leds, .key-leds::after {
+    --seg: calc(100% - var(--led-gap));
+    position: absolute; left: var(--s2); right: calc(var(--s2) - var(--led-gap)); bottom: 1px; height: var(--led-h);
+    background: linear-gradient(90deg, var(--led-off) 0 var(--seg), transparent var(--seg)) 0 0 / 12.5% 100%;
+  }
+  .key-leds::after { content: ""; inset: 0; background-image: linear-gradient(90deg, var(--led-on) 0 var(--seg), transparent var(--seg)); clip-path: inset(0 100% 0 0); }
+  @keyframes chase { from { clip-path: inset(0 87.5% 0 0); } to { clip-path: inset(0 0 0 87.5%); } }
+  @media (hover: hover) { .key:hover .key-leds::after { animation: chase var(--d-chase) steps(8, jump-none) infinite; } }
+  .key:focus-visible .key-leds::after, .key.is-lit .key-leds::after { animation: chase var(--d-chase) steps(8, jump-none) infinite; }
+  .key:active .key-face, .key.is-down .key-face { transform: translateY(var(--travel)); }
+  @keyframes key-up { 0%, 49.9% { transform: translateY(-1px); } 50%, 100% { transform: none; } }
+  .key.is-up .key-face { animation: key-up var(--d-up) linear; }
+
+  /* ---------- Text actions: a DIP switch before the words ---------- */
+  .dip {
+    display: inline-flex; align-items: center; gap: var(--s2);
+    min-height: var(--hit); padding: 0; border: 0; background: none;
+    color: var(--silk);
+    font: inherit; font-weight: 600; text-align: left;
+    text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 5px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .dip-sw { position: relative; flex: none; width: 12px; height: 20px; background: var(--well); box-shadow: inset 0 0 0 2px var(--mute); }
+  .dip-sw::after {
+    content: ""; position: absolute; left: 2px; bottom: 2px; width: 8px; height: 8px;
+    background: var(--mute);
+    transition: transform var(--d-dip) steps(2, end);
+  }
+  @media (hover: hover) { .dip:hover .dip-sw::after { transform: translateY(-8px); background: var(--lime); } }
+  .dip:focus-visible .dip-sw::after, .dip:active .dip-sw::after, .dip.is-down .dip-sw::after { transform: translateY(-8px); background: var(--lime); }
+
+  /* ---------- The well ---------- */
+  .well { width: calc(12 * var(--wc)); margin: var(--s6) auto 0; }
+  .well-top { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); min-height: var(--s3); margin-bottom: var(--s2); }
+  .leds { display: flex; gap: var(--s1); }
+  .led { flex: none; width: 14px; height: 14px; background: var(--well); box-shadow: inset 0 0 0 2px var(--land); }
+  .led.is-on { background: var(--hue); box-shadow: none; }
+  .is-kit .led.is-on { background: var(--lime); }
+  .stat {
+    margin: 0;
+    color: var(--mute);
+    font: 600 var(--t-stat)/1 var(--font-display);
+    font-variation-settings: var(--modules);
+    letter-spacing: .02em;
+  }
+  .is-kit .stat { color: var(--lime); }
+  .well-box {
+    position: relative; box-sizing: content-box;
+    width: calc(12 * var(--wc)); height: calc(16 * var(--wc));
+    margin-inline: -2px;
+    border: 2px solid var(--land); border-top: 0;   /* three walls, open at the top */
+    background: var(--well);
+  }
+  .well-cv { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+  /* The deck's display: a dark window set half a cell into the screen block, so the block reads as its bezel. */
+  .scr {
+    position: absolute; left: calc(.5 * var(--wc)); top: calc(4.5 * var(--wc));
+    width: calc(9 * var(--wc)); height: calc(2 * var(--wc));
+    display: grid; place-items: center;
+    margin: 0;
+    background: var(--well);
+    color: var(--violet);
+    font: 600 calc(var(--wc) * 1.1)/1 var(--font-display);
+    font-variation-settings: var(--modules);
+    white-space: nowrap;
+    visibility: hidden;
+  }
+  .is-ready .scr { visibility: visible; }
+  .is-kit .scr { color: var(--lime); }
+  /* A pulse arriving at the well: the stretch of wall nearest to it shows gold for 2 frames. The script places it. */
+  .well-hit { position: absolute; background: var(--gold); pointer-events: none; }
+  .scr-s { display: none; }
+
+  /* ---------- Features ---------- */
+  .feats { position: relative; list-style: none; margin: var(--s6) 0 0; padding: 0; display: grid; gap: var(--s5) var(--s5); }
+  .feat { max-width: 58ch; }
+  .chip {
+    display: inline-flex; align-items: center; gap: var(--s1);
+    min-height: 28px; margin: 0 0 var(--s2); padding: 0 var(--s2) 0 var(--s1);
+    border: 2px solid var(--hue);
+    background: var(--hue); color: var(--mask);
+    font-size: var(--t-small); font-weight: 600; line-height: 1;
+  }
+  .chip b { font: 700 var(--t-stat)/1 var(--font-display); font-variation-settings: var(--modules); min-width: 12px; text-align: center; }
+  /* With the assembly running, only the module in play has a filled chip: a hard cut, no fade. */
+  html.fx .feat:not(.is-on) .chip { background: none; color: var(--hue); }
+  .feat p { margin: var(--s2) 0 0; }
+  .feat .chip { margin-top: 0; }
+  .feat .spec { color: var(--mute); font-variant-numeric: tabular-nums; }
+
+  /* ---------- Facts and reservation ---------- */
+  .after { display: grid; gap: var(--s6); margin-top: var(--s7); }
+  .kit, .swap { max-width: 520px; }
+  .facts { display: grid; gap: var(--s1); margin: var(--s3) 0 var(--s2); }
+  .facts > div { display: grid; grid-template-columns: 8.5em minmax(0, 1fr); gap: var(--s2); }
+  .facts dt { font-weight: 600; }
+  .facts dd { margin: 0; font-variant-numeric: tabular-nums; }
+  .swap { scroll-margin-top: var(--s5); }
+  .swap > [hidden] { display: none; }
+  .form-note { margin: var(--s2) 0 0; color: var(--mute); }
+  .lbl, .slide legend { display: block; margin-top: var(--s3); padding: 0; font-weight: 600; }
+
+  /* Field: four corner pads that tin clockwise when the field takes focus. */
+  .fld { position: relative; margin-top: var(--s1); }
+  .fld input {
+    display: block; width: 100%; height: var(--tap);
+    padding: 0 var(--s2);
+    border: 2px solid var(--mute); border-radius: 0;
+    background: var(--well); color: var(--silk);
+    font: inherit;
+    appearance: none;
+  }
+  .fld input:hover { border-color: var(--silk); }
+  .fld input:focus { border-color: var(--gold); outline: 1px solid var(--gold); outline-offset: 0; }
+  .pad { position: absolute; width: 8px; height: 8px; background: var(--land); pointer-events: none; }
+  .pad::after { content: ""; position: absolute; inset: 0; background: var(--gold); opacity: 0; }
+  .pad:nth-of-type(1) { left: -3px; top: -3px; --n: 0; }
+  .pad:nth-of-type(2) { right: -3px; top: -3px; --n: 1; }
+  .pad:nth-of-type(3) { right: -3px; bottom: -3px; --n: 2; }
+  .pad:nth-of-type(4) { left: -3px; bottom: -3px; --n: 3; }
+  .fld:focus-within .pad::after { opacity: 1; transition: opacity 0s linear calc(var(--n) * var(--d-pad)); }
+  .fld.is-bad input { border-color: var(--coral); outline-color: var(--coral); }
+  .fld.is-bad .pad, .fld.is-bad .pad::after { background: var(--coral); }
+  .err {
+    min-height: calc(var(--t-small) * 1.45 * 2);
+    margin: var(--s1) 0 0;
+    color: var(--coral);
+    font-size: var(--t-small); line-height: 1.45; font-weight: 500;
+  }
+
+  /* Radios: one slide switch with three positions. The knob jumps; it has no transition. */
+  .slide { margin: 0; padding: 0; border: 0; min-width: 0; }
+  .slide-body { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); margin-top: var(--s1); }
+  .slide-track {
+    position: absolute; left: 0; right: 0; top: 0; height: 20px;
+    background: var(--well) linear-gradient(90deg, var(--land) 0 2px, transparent 2px) 0 0 / calc(100% / 3) 100%;
+    box-shadow: inset 0 0 0 2px var(--mute);
+    pointer-events: none;
+  }
+  .slide-knob { position: absolute; left: 4px; top: 4px; width: calc(100% / 3 - 8px); height: 12px; background: var(--gold); }
+  .slide[data-pos="1"] .slide-knob { left: calc(100% / 3 + 4px); }
+  .slide[data-pos="2"] .slide-knob { left: calc(200% / 3 + 4px); }
+  .slide label { position: relative; display: block; min-height: calc(20px + var(--hit)); padding-top: 20px; cursor: pointer; }
+  .slide input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+  .slide label span { display: flex; align-items: center; justify-content: center; min-height: var(--hit); color: var(--mute); }
+  .slide input:checked + span { color: var(--silk); font-weight: 600; }
+  .slide input:focus-visible + span { outline: 2px solid var(--gold); outline-offset: -4px; }
+
+  /* Checkbox: a jumper. The cap is parked on one pin, and moves to bridge both. */
+  .jump { position: relative; display: flex; align-items: center; gap: var(--s2); min-height: var(--hit); margin-top: var(--s2); cursor: pointer; }
+  .jump input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+  .jump-sw {
+    position: relative; flex: none; width: 48px; height: 20px;
+    background:
+      linear-gradient(var(--gold), var(--gold)) 20px 5px / 6px 6px no-repeat,
+      linear-gradient(var(--gold), var(--gold)) 34px 5px / 6px 6px no-repeat,
+      linear-gradient(var(--land), var(--land)) 0 16px / 100% 4px no-repeat;
+  }
+  .jump-sw i { position: absolute; left: 2px; top: 0; width: 26px; height: 16px; background: var(--mute); box-shadow: inset 0 0 0 2px var(--mute-deep); transition: transform var(--d-dip) steps(2, end); }
+  .jump input:checked + .jump-sw i { transform: translateX(14px); background: var(--lime); box-shadow: inset 0 0 0 2px var(--mask); }
+  .jump input:focus-visible + .jump-sw { outline: 2px solid var(--gold); outline-offset: 4px; }
+  .reserve .key { margin-top: var(--s3); }
+  .done p { margin: var(--s2) 0 0; }
+  .done b { font-weight: 600; overflow-wrap: anywhere; }
+  .done .dip { margin-top: var(--s2); }
+  .done h3:focus { outline: none; } /* focus lands here only to announce the result; it is not a control */
+
+  /* ---------- Bill of materials: a ribbon that unfolds from its top edge ---------- */
+  .bom {
+    width: min(620px, 100% - 2 * var(--s3)); max-width: none;
+    max-height: calc(100dvh - 2 * var(--s3));
+    margin: var(--s3) auto auto;
+    padding: 0; border: 0; background: none; color: var(--silk);
+    overflow-y: auto; overscroll-behavior: contain;
+  }
+  @media (min-height: 860px) { .bom { margin-top: 8vh; max-height: calc(92dvh - var(--s3)); } }
+  .bom::backdrop { background: var(--scrim); }
+  .bom-in { position: relative; isolation: isolate; padding: var(--s4); }
+  /* The ribbon itself is a separate layer, so the stepped scaleY never squashes the text. Its stripes are the cable's conductors. */
+  .bom-back {
+    position: absolute; inset: 0; z-index: -1;
+    border: 2px solid var(--mute);
+    background: var(--panel) linear-gradient(90deg, var(--trace) 0 1px, transparent 1px) 0 0 / var(--cell) 100%;
+    transform-origin: 50% 0;
+  }
+  .bom-head { display: flex; justify-content: space-between; align-items: center; gap: var(--s3); }
+  .bom h2 { margin: 0; font: 600 var(--t-h3)/1.15 var(--font-text); letter-spacing: -.01em; }
+  .bom p { margin: var(--s2) 0 0; max-width: 52ch; }
+  .bom table { width: 100%; margin-top: var(--s3); border-collapse: separate; border-spacing: 0; font-variant-numeric: tabular-nums; } /* separate, so a hidden row hides its rule too */
+  .bom th, .bom td { padding: 5px 0; border-bottom: 1px solid var(--land); text-align: left; vertical-align: top; font-weight: 400; }
+  .bom thead th { color: var(--mute); font-weight: 600; border-bottom: 2px solid var(--mute); }
+  .bom :is(th, td):last-child { width: 5.5em; padding-left: var(--s2); text-align: right; }
+  .bom .bom-note { color: var(--mute); }
+
+  /* ---------- Layout: phones and tablets ---------- */
+  @media (max-width: 899px) {
+    .well { --wc: min(22px, (100vw - 2 * var(--s3) - 4px) / 12); --wc: round(down, min(22px, (100vw - 2 * var(--s3) - 4px) / 12), 1px); }
+    .wrap { padding-block: var(--s6); }
+    /* Assembly running: the well becomes a bar that sticks to the top while the features scroll beneath it. */
+    html.fx .well {
+      --wc: 12px;
+      position: sticky; top: 0; z-index: 3;
+      display: flex; flex-direction: row-reverse; justify-content: flex-end; align-items: center; gap: var(--s3);
+      width: auto; margin: var(--s6) calc(-1 * var(--s3)) 0;
+      padding: var(--s2) calc(var(--s3) + 2px);
+      background: var(--mask);
+      border-bottom: 2px solid var(--land);
+    }
+    html.fx .well-top { flex: 1; flex-direction: column; align-items: flex-start; justify-content: center; gap: var(--s2); margin: 0; }
+    html.fx .well-box { flex: none; }
+    html.fx .scr-l { display: none; }
+    html.fx .scr-s { display: inline; }
+    html.fx .scr { font-size: calc(var(--wc) * 1.7); }
+    html.fx .feats { margin-top: var(--s5); gap: 0; }
+    html.fx .feat { min-height: 46svh; }
+    html.fx .swap, html.fx .after :is(button, input) { scroll-margin-top: calc(16 * 12px + 2 * var(--s2) + var(--s3)); } /* clear of the bar */
+  }
+  @media (max-width: 599px) {
+    html.fx .well { --wc: 9px; }
+    html.fx .feat { min-height: 58svh; }
+    html.fx .swap, html.fx .after :is(button, input) { scroll-margin-top: calc(16 * 9px + 2 * var(--s2) + var(--s3)); }
+    .actions { display: grid; }
+    .reserve .key { display: block; width: 100%; }
+    .lede { line-height: 1.5; }
+    .bom-in { padding: var(--s3); }
+  }
+  /* Too short to give up a third of the screen (a phone on its side): the bar scrolls away with the page. */
+  @media (max-width: 899px) and (max-height: 520px) { html.fx .well { position: relative; } }
+
+  /* ---------- Layout: desktop ---------- */
+  @media (min-width: 900px) {
+    .well { --wc: clamp(16px, min((100vh - 180px) / 16, 2.4vw), 34px); --wc: round(down, clamp(16px, min((100svh - 180px) / 16, 2.4vw), 34px), 1px); }
+    .build { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); grid-template-rows: auto auto auto; column-gap: var(--s6); }
+    .intro { grid-column: 2; grid-row: 1; }
+    .well { grid-column: 1; grid-row: 1; align-self: start; justify-self: center; margin: 0; }
+    /* Without the assembly (reduced motion, no libraries) the features are a plain grid under the finished deck. */
+    .feats { grid-column: 1 / -1; grid-row: 2; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); margin-top: var(--s7); }
+    .after { grid-column: 1 / -1; grid-row: 3; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
+    /* With it, the well is pinned in the left column for the whole section and the features pass on the right. */
+    html.fx .well { grid-row: 1 / -1; position: sticky; top: max(var(--s3), (100vh - 16 * var(--wc) - 40px) / 2); }
+    html.fx .feats { grid-column: 2; display: block; margin-top: var(--s8); }
+    html.fx .feat { min-height: 56vh; }
+    html.fx .after { grid-column: 2; grid-template-columns: minmax(0, 1fr); margin-top: var(--s5); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0s !important; transition-delay: 0s !important; }
+    /* No chase: hover and focus light all eight LEDs at once. */
+    .key:hover .key-leds::after, .key:focus-visible .key-leds::after { animation: none; clip-path: none; }
+    .key.is-up .key-face { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<section class="deck" id="deck" aria-labelledby="deck-title">
+  <canvas class="pulses" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <div class="build">
+      <div class="intro">
+        <h2 class="h2" id="deck-title">A pocket computer you solder yourself.</h2>
+        <p class="lede" data-cut>Moth-1 is an open-hardware cyberdeck kit from Dusklight Labs, two people in a workshop in Tallinn. Six modules, 62 through-hole joints and about four hours with an iron give you a Linux computer that fits a coat pocket.</p>
+        <div class="actions" data-cut>
+          <a class="key key-gold" href="#reserve"><span class="key-skirt" aria-hidden="true"><span class="key-leds"></span></span><span class="key-face">Reserve a kit</span></a>
+          <button class="key key-pale" type="button" data-bom aria-haspopup="dialog" aria-controls="bom"><span class="key-skirt" aria-hidden="true"><span class="key-leds"></span></span><span class="key-face">See what's in the box</span></button>
+        </div>
+        <p class="hint" data-cut>The six modules below are in build order, from the battery sled up to the antenna.</p>
+      </div>
+
+      <!-- The well is a drawing of the six features that follow; the list is its text alternative. -->
+      <div class="well is-ready" id="well" aria-hidden="true">
+        <div class="well-top">
+          <div class="leds">
+            <i class="led is-on" style="--hue: var(--amber)"></i><i class="led is-on" style="--hue: var(--cyan)"></i><i class="led is-on" style="--hue: var(--silk)"></i><i class="led is-on" style="--hue: var(--lime)"></i><i class="led is-on" style="--hue: var(--violet)"></i><i class="led is-on" style="--hue: var(--magenta)"></i>
+          </div>
+          <p class="stat" id="stat">6/6 MOTH-1 READY</p>
+        </div>
+        <div class="well-box">
+          <canvas class="well-cv"></canvas>
+          <p class="scr"><span class="scr-l" id="scr-l">moth-1 ready</span><span class="scr-s" id="scr-s">ready</span></p>
+        </div>
+      </div>
+
+      <ol class="feats" id="modules">
+        <li class="feat" style="--hue: var(--amber)">
+          <p class="chip"><b>1</b> Battery sled</p>
+          <h3>Two cells, about nine hours</h3>
+          <p>The sled holds two 18650 cells side by side and slides out of the bottom of the deck without tools. Its charge board fills them over USB-C and cuts the power before they run too low.</p>
+          <p class="spec">2 × 18650 cells (not included), about 9 hours of typing, a full charge in 3 hours</p>
+        </li>
+        <li class="feat" style="--hue: var(--cyan)">
+          <p class="chip"><b>2</b> Carrier board</p>
+          <h3>A carrier for the compute module you choose</h3>
+          <p>The carrier takes any credit-card-size compute module with the common 200-pin edge connector. It breaks the module out to two USB-C ports, a microSD slot and the display ribbon, so a faster module later is one latch away.</p>
+          <p class="spec">2 × USB-C, microSD, display ribbon, 5 V at 3 A from the sled</p>
+        </li>
+        <li class="feat" style="--hue: var(--silk)">
+          <p class="chip"><b>3</b> Expansion bay</p>
+          <h3>An empty bay with 40 pins</h3>
+          <p>A corner of the deck is left open on purpose. Forty GPIO pins run along its edge, and its cover is a flat printed plate you can cut for a knob, a camera or a second radio.</p>
+          <p class="spec">40 GPIO pins on a 2 × 20 header, 52 × 38 × 14 mm of free space</p>
+        </li>
+        <li class="feat" style="--hue: var(--lime)">
+          <p class="chip"><b>4</b> Keyboard</p>
+          <h3>Forty-eight keys in a straight grid</h3>
+          <p>The keyboard is a 40% ortholinear board: four rows of twelve keys, all the same size. Every switch sits in a hot-swap socket, so you change tactile for linear with a puller, not an iron.</p>
+          <p class="spec">48 keys, hot-swap sockets, open firmware with 4 layers</p>
+        </li>
+        <li class="feat" style="--hue: var(--violet)">
+          <p class="chip"><b>5</b> Screen</p>
+          <h3>A screen as wide as the keyboard</h3>
+          <p>The panel is 7.9 inches and 1280 by 400 pixels, which is two terminal windows side by side at a size you can read. It sits directly above the keys, so your eyes travel one hand's width from typing to text.</p>
+          <p class="spec">7.9 in, 1280 × 400, IPS, 400 nits</p>
+        </li>
+        <li class="feat" style="--hue: var(--magenta)">
+          <p class="chip"><b>6</b> Mesh radio</p>
+          <h3>A mesh radio for places without signal</h3>
+          <p>The LoRa board sends short text messages from deck to deck, and every deck passes them on to the next. Two decks reach each other across about 3 km of open ground, with no network and no subscription.</p>
+          <p class="spec">LoRa on 868 MHz, about 3 km line of sight, antenna on the top edge</p>
+        </li>
+      </ol>
+
+      <div class="after">
+        <div class="kit">
+          <h3>The kit</h3>
+          <dl class="facts">
+            <div><dt>Price</dt><dd>EUR 289, shipping included in the EU</dd></div>
+            <div><dt>Joints</dt><dd>62, all through-hole</dd></div>
+            <div><dt>Soldering time</dt><dd>About 4 hours</dd></div>
+            <div><dt>Shell</dt><dd>Free files to print at home</dd></div>
+            <div><dt>Licence</dt><dd>CERN-OHL-S v2, schematics and firmware included</dd></div>
+          </dl>
+          <button class="dip" type="button" data-bom aria-haspopup="dialog" aria-controls="bom"><span class="dip-sw" aria-hidden="true"></span>See the full bill of materials</button>
+        </div>
+
+        <div class="swap" id="reserve">
+          <form class="reserve" id="reserve-form" aria-labelledby="reserve-title">
+            <h3 id="reserve-title">Reserve a kit</h3>
+            <p class="form-note">No payment now. We email you when batch 3 is packed, in March 2027, and you pay then.</p>
+            <label class="lbl" for="email">Email address</label>
+            <div class="fld" id="email-fld">
+              <input id="email" name="email" type="email" autocomplete="email" spellcheck="false" required>
+              <i class="pad" aria-hidden="true"></i><i class="pad" aria-hidden="true"></i><i class="pad" aria-hidden="true"></i><i class="pad" aria-hidden="true"></i>
+            </div>
+            <p class="err" id="email-err" aria-live="polite"></p>
+            <fieldset class="slide" id="switches" data-pos="0">
+              <legend>Keyboard switches</legend>
+              <div class="slide-body">
+                <span class="slide-track" aria-hidden="true"><i class="slide-knob"></i></span>
+                <label><input type="radio" name="switches" value="tactile" checked><span>Tactile</span></label>
+                <label><input type="radio" name="switches" value="linear"><span>Linear</span></label>
+                <label><input type="radio" name="switches" value="silent"><span>Silent</span></label>
+              </div>
+            </fieldset>
+            <label class="jump"><input type="checkbox" name="guide"><span class="jump-sw" aria-hidden="true"><i></i></span><span>Send me the build guide now</span></label>
+            <button class="key key-gold" type="submit"><span class="key-skirt" aria-hidden="true"><span class="key-leds"></span></span><span class="key-face">Reserve my kit</span></button>
+          </form>
+          <div class="done" id="done" hidden>
+            <h3 id="done-title" tabindex="-1">Kit #0412 is reserved.</h3>
+            <p>We'll email <b id="done-mail">mari@example.com</b> when batch 3 is packed in March 2027. Your switches: <b id="done-sw">tactile</b>.</p>
+            <p id="done-guide" hidden>The build guide is on its way to the same address.</p>
+            <button class="dip" id="again" type="button"><span class="dip-sw" aria-hidden="true"></span>Change this reservation</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<dialog class="bom" id="bom" aria-labelledby="bom-title" data-lenis-prevent>
+  <div class="bom-in">
+    <div class="bom-back" aria-hidden="true"></div>
+    <div class="bom-head" data-row>
+      <h2 id="bom-title">What's in the box</h2>
+      <button class="dip" id="bom-close" type="button"><span class="dip-sw" aria-hidden="true"></span>Close</button>
+    </div>
+    <p data-row>Every part for the six modules, sorted into six numbered bags in build order.</p>
+    <table>
+      <thead><tr data-row><th scope="col">Part</th><th scope="col">Quantity</th></tr></thead>
+      <tbody>
+        <tr data-row><th scope="row">Battery sled with charge board</th><td>1</td></tr>
+        <tr data-row><th scope="row">Carrier board for a credit-card-size compute module</th><td>1</td></tr>
+        <tr data-row><th scope="row">GPIO header, 2 × 20 pins</th><td>1</td></tr>
+        <tr data-row><th scope="row">Keyboard board with hot-swap sockets fitted</th><td>1</td></tr>
+        <tr data-row><th scope="row">Switches in the type you choose</th><td>48</td></tr>
+        <tr data-row><th scope="row">Blank keycaps</th><td>48</td></tr>
+        <tr data-row><th scope="row">7.9-inch display panel with driver board</th><td>1</td></tr>
+        <tr data-row><th scope="row">LoRa mesh radio board</th><td>1</td></tr>
+        <tr data-row><th scope="row">Antenna, 868 MHz</th><td>1</td></tr>
+        <tr data-row><th scope="row">Ribbon cables</th><td>3</td></tr>
+        <tr data-row><th scope="row">M2.5 screws and standoffs</th><td>16</td></tr>
+        <tr data-row><th scope="row">Solder, 0.8 mm</th><td>10 g</td></tr>
+      </tbody>
+    </table>
+    <p class="bom-note" data-row>Not in the box: the compute module, two 18650 cells and the printed shell.</p>
+  </div>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  const root = document.documentElement;
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const lib = !!(window.gsap && window.ScrollTrigger && window.Lenis);
+  if (lib) root.classList.add('js'); // CDN blocked: no class, everything is visible and still works
+  const read = (n) => getComputedStyle(root).getPropertyValue(n).trim();
+
+  const sec = $('.deck'), wellEl = $('#well'), box = $('.well-box'), cv = $('.well-cv'), stat = $('#stat');
+  const leds = $$('.led'), scrL = $('#scr-l'), scrS = $('#scr-s');
+  const form = $('#reserve-form'), email = $('#email'), fld = $('#email-fld'), err = $('#email-err'), slide = $('#switches');
+  const done = $('#done'), doneTitle = $('#done-title'), again = $('#again');
+  const dlg = $('#bom'), closeBtn = $('#bom-close');
+  let lenis = null, fx = null; // fx: hooks set by the motion branch; null means instant
+  let reserved = false, testing = false;
+
+  /* ---------- The board: a seeded trace network on a tile that wraps (drawn once, also without the libraries) ---------- */
+  const board = (() => {
+    const T = 96, N = T * T; // 96 x 96 cells; the network is toroidal, so the tile repeats without seams
+    const DX = [1, 1, 0, -1, -1, -1, 0, 1], DY = [0, 1, 1, 1, 0, -1, -1, -1];
+    const adj = Array.from({ length: N }, () => []), via = new Uint8Array(N), occ = new Uint8Array(N), laid = [];
+    const id = (x, y) => ((y + T) % T) * T + (x + T) % T;
+    let seed = 0x4D4F5448; // "MOTH": the same board on every visit
+    const rnd = () => { seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+    // Clearance: no copper within one cell of (x, y), except the nodes in skip. This also rules out crossings.
+    const free = (x, y, skip) => { for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) { const n = id(x + i, y + j); if (occ[n] && !skip.includes(n)) return false; } return true; };
+    // Each trace is a walker: straight runs, turning 45 degrees at a time, ending in a via. Three in ten leave an
+    // existing straight run at a right angle (a T junction), which is what gives a pulse a choice of route.
+    for (let tries = 0, made = 0; tries < 9000 && made < 150; tries++) {
+      let x = rnd() * T | 0, y = rnd() * T | 0, d = (rnd() * 4 | 0) * 2, skip = [], from = -1;
+      if (made > 10 && rnd() < .3) {
+        const n = laid[rnd() * laid.length | 0];
+        if (adj[n].length !== 2) continue;
+        x = n % T; y = n / T | 0;
+        const [a, b] = adj[n], flat = (a / T | 0) === y && (b / T | 0) === y, tall = a % T === x && b % T === x;
+        if (!flat && !tall) continue;
+        d = flat ? (rnd() < .5 ? 2 : 6) : (rnd() < .5 ? 0 : 4);
+        from = n; skip = [n, a, b];
+      } else if (!free(x, y, skip)) continue;
+      const nodes = from < 0 ? [id(x, y)] : [];
+      let prev = from < 0 ? nodes[0] : from, run = 0, runLen = 3 + rnd() * 9 | 0;
+      const want = 10 + rnd() * 46 | 0;
+      if (from < 0) occ[prev] = 1;
+      while (nodes.length < want) {
+        if (run >= runLen) { d = (d + (rnd() < .5 ? 1 : 7)) % 8; run = 0; runLen = d % 2 ? 1 + rnd() * 3 | 0 : 3 + rnd() * 9 | 0; }
+        let moved = false;
+        for (const dd of [d, (d + 1) % 8, (d + 7) % 8]) {
+          const nx = (x + DX[dd] + T) % T, ny = (y + DY[dd] + T) % T;
+          if (!free(nx, ny, skip.length ? skip : [prev])) continue;
+          x = nx; y = ny; if (dd !== d) { d = dd; run = 0; }
+          moved = true; break;
+        }
+        if (!moved) break;
+        prev = id(x, y); occ[prev] = 1; nodes.push(prev); skip = []; run++;
+      }
+      if (nodes.length < 6) { nodes.forEach((n) => { occ[n] = 0; }); continue; }
+      nodes.forEach((n, i) => { const m = i ? nodes[i - 1] : from; if (m >= 0) { adj[n].push(m); adj[m].push(n); } });
+      if (from < 0) via[nodes[0]] = 1;
+      via[nodes[nodes.length - 1]] = 1;
+      laid.push(...nodes); made++;
+    }
+    // The step from node n to its neighbour m, as -1, 0 or 1 on each axis (the tile wraps).
+    const delta = (n, m) => { let dx = m % T - n % T, dy = (m / T | 0) - (n / T | 0); if (dx > 1) dx -= T; if (dx < -1) dx += T; if (dy > 1) dy -= T; if (dy < -1) dy += T; return [dx, dy]; };
+
+    let cell = 12, url = '';
+    function paint() {
+      cell = parseFloat(read('--cell')) || 12;
+      const dpr = Math.min(2, window.devicePixelRatio || 1), c = document.createElement('canvas'), g = c.getContext('2d');
+      c.width = c.height = Math.round(T * cell * dpr);
+      g.scale(c.width / (T * cell), c.width / (T * cell));
+      const lw = cell < 12 ? 1.5 : 2, r = cell < 12 ? 2.5 : 3.5, hole = cell < 12 ? 1 : 1.5;
+      g.strokeStyle = g.fillStyle = read('--trace'); g.lineWidth = lw;
+      g.beginPath();
+      for (const n of laid) {
+        const x = n % T, y = n / T | 0;
+        for (const m of adj[n]) {
+          const [dx, dy] = delta(n, m);
+          if (dx < 0 || (!dx && dy < 0)) continue; // each segment once
+          // A segment that leaves the tile is drawn again on the opposite side.
+          for (const sx of x + dx >= T ? [0, -T] : [0]) for (const sy of y + dy >= T ? [0, -T] : y + dy < 0 ? [0, T] : [0]) {
+            g.moveTo((x + sx + .5) * cell, (y + sy + .5) * cell); g.lineTo((x + sx + dx + .5) * cell, (y + sy + dy + .5) * cell);
+          }
+        }
+      }
+      g.stroke();
+      for (const n of laid) { // square joints close the corners; vias are square pads with a drilled hole
+        const px = (n % T + .5) * cell, py = ((n / T | 0) + .5) * cell, k = via[n] ? r : lw / 2;
+        g.fillRect(px - k, py - k, 2 * k, 2 * k);
+      }
+      g.fillStyle = read('--mask');
+      for (const n of laid) if (via[n]) g.fillRect((n % T + .5) * cell - hole, ((n / T | 0) + .5) * cell - hole, 2 * hole, 2 * hole);
+      const apply = (u) => { sec.style.backgroundImage = `url(${u})`; sec.style.backgroundSize = `${T * cell}px ${T * cell}px`; if (url.startsWith('blob:')) URL.revokeObjectURL(url); url = u; };
+      if (c.toBlob) c.toBlob((b) => b && apply(URL.createObjectURL(b))); else apply(c.toDataURL());
+    }
+    paint();
+    const phone = window.matchMedia('(max-width: 599px)');
+    phone.addEventListener?.('change', paint); // the trace cell is 8px on phones
+    return { T, adj, via, delta, get cell() { return cell; } };
+  })();
+
+  /* ---------- The well: six blocks on a 12 x 16 grid (plain canvas; shows the finished deck without the libraries) ---------- */
+  const well = (() => {
+    const COLS = 12, ROWS = 16;
+    // The finished deck, one letter per module. Rows 5 to 13 are complete across the well.
+    const MAP = [
+      '............',
+      '..........R.',
+      '..........R.',
+      '..........R.',
+      '.SSSSSSSSSRR',
+      'SSSSSSSSSSRR',
+      'SSSSSSSSSSRR',
+      'KKKKKKKKKKEE',
+      'KKKKKKKKKKEE',
+      'KKKKKKKKKKEE',
+      'CKKKKKKKKKEE',
+      'CCCCCCCCEEEE',
+      'CCCCCCCCEEEE',
+      'CCCCCCCBBBBB',
+      '.BBBBBBBBBB.',
+      '.BBBBBBBBBB.'];
+    // Build order, bottom up. move: ['shift', columns it starts off by, row at which it shifts]
+    // or ['turn', column it enters at lying on its side, row at which it turns, row it holds after turning].
+    const P = [
+      { k: 'B', hue: '--amber', name: 'BATTERY SLED', move: ['shift', -1, 5] },
+      { k: 'C', hue: '--cyan', name: 'CARRIER BOARD', move: ['turn', 2, 0, 2] },
+      { k: 'E', hue: '--silk', name: 'EXPANSION BAY', move: ['shift', -2, 2], hollow: true },
+      { k: 'K', hue: '--lime', name: 'KEYBOARD', move: ['shift', 1, 1] },
+      { k: 'S', hue: '--violet', name: 'SCREEN', move: ['shift', 2, 0] },
+      { k: 'R', hue: '--magenta', name: 'MESH RADIO', move: ['turn', 5, 1, -1] }
+    ];
+    const FULL = MAP.map((row, r) => row.includes('.') ? -1 : r).filter((r) => r >= 0);
+    P.forEach((p) => {
+      p.cells = [];
+      MAP.forEach((row, r) => [...row].forEach((ch, c) => { if (ch === p.k) p.cells.push([c, r]); }));
+      p.has = new Set(p.cells.map(([c, r]) => c + ',' + r));
+      const c0 = Math.min(...p.cells.map((c) => c[0])), r0 = Math.min(...p.cells.map((c) => c[1]));
+      const w = Math.max(...p.cells.map((c) => c[0])) - c0 + 1, h = Math.max(...p.cells.map((c) => c[1])) - r0 + 1;
+      const fin = p.cells.map(([c, r]) => [c - c0, r - r0]), [type, a, at, to] = p.move, shift = type === 'shift';
+      const pre = shift ? fin : fin.map(([x, y]) => [y, w - 1 - x]); // lying on its side: the final shape a quarter turn back
+      // The fall, one state per whole-cell step: enters with one row showing, shifts or turns once, lands.
+      p.path = [];
+      for (let t = 1 - (shift ? h : w); t <= at; t++) p.path.push({ cells: pre, c: shift ? c0 + a : a, r: t });
+      for (let t = shift ? at : to; t <= r0; t++) p.path.push({ cells: fin, c: c0, r: t });
+    });
+
+    const g = cv.getContext('2d'), col = {};
+    // locked: modules in place; fall/step: the module in the air and its path state; cur: the feature in play;
+    // flash/ff: a module in its 2-frame lock flash; rows: frame of the full-row flash; screen: the display is on
+    const st = { locked: 6, fall: -1, step: 0, cur: 5, flash: -1, ff: 0, rows: 0, screen: true };
+    let cp = 0;
+
+    function size() {
+      const w = box.clientWidth; if (!w) return;
+      const dpr = Math.min(2, window.devicePixelRatio || 1), n = Math.max(2, Math.round(w / COLS * dpr));
+      if (n !== cp) { cp = n; cv.width = COLS * cp; cv.height = ROWS * cp; }
+      ['--land', '--silk', '--flash', ...P.map((p) => p.hue)].forEach((k) => { col[k] = read(k); });
+      draw();
+    }
+    function draw() {
+      if (!cp) return;
+      g.clearRect(0, 0, cv.width, cv.height);
+      const gap = Math.max(1, Math.round(cp * .07)), s = cp - gap, o = gap >> 1, lw = Math.max(1, Math.round(cp / 16)), rim = Math.max(1, Math.round(cp / 9));
+      const cellAt = (c, r, hollow) => {
+        const x = c * cp + o, y = r * cp + o;
+        if (!hollow) return g.fillRect(x, y, s, s);
+        g.fillRect(x, y, s, rim); g.fillRect(x, y + s - rim, s, rim); g.fillRect(x, y, rim, s); g.fillRect(x + s - rim, y, rim, s);
+      };
+      // Silkscreen footprints: the outline of every module that is not on the board yet.
+      g.fillStyle = col['--land'];
+      P.forEach((p, i) => {
+        if (i < st.locked) return;
+        for (const [c, r] of p.cells) {
+          if (!p.has.has(c + ',' + (r - 1))) g.fillRect(c * cp, r * cp, cp, lw);
+          if (!p.has.has(c + ',' + (r + 1))) g.fillRect(c * cp, (r + 1) * cp - lw, cp, lw);
+          if (!p.has.has((c - 1) + ',' + r)) g.fillRect(c * cp, r * cp, lw, cp);
+          if (!p.has.has((c + 1) + ',' + r)) g.fillRect((c + 1) * cp - lw, r * cp, lw, cp);
+        }
+      });
+      P.forEach((p, i) => {
+        if (i >= st.locked) return;
+        const hot = st.flash === i;
+        g.fillStyle = hot && !st.ff ? col['--silk'] : col[p.hue];
+        for (const [c, r] of p.cells) cellAt(c, r, p.hollow && !hot);
+        if (hot && st.ff) { g.fillStyle = col['--flash']; for (const [c, r] of p.cells) cellAt(c, r); }
+      });
+      if (st.rows) { // every complete row, once: frame 1 solid silkscreen white, frame 2 half
+        g.fillStyle = st.rows === 1 ? col['--silk'] : col['--flash'];
+        for (const r of FULL) for (let c = 0; c < COLS; c++) cellAt(c, r);
+      }
+      if (st.fall >= 0) {
+        const p = P[st.fall], q = p.path[st.step];
+        g.fillStyle = col[p.hue];
+        for (const [x, y] of q.cells) if (q.r + y >= 0) cellAt(q.c + x, q.r + y, p.hollow);
+      }
+    }
+    return { P, st, size, set(patch) { Object.assign(st, patch); draw(); paint(); } };
+  })();
+
+  // LEDs, status line and the deck's display follow the well's state. The status line and display are aria-hidden;
+  // the same facts are in the features list and the confirmation.
+  function paint() {
+    const s = well.st, all = s.locked === 6, kit = reserved && all;
+    wellEl.classList.toggle('is-ready', s.screen);
+    wellEl.classList.toggle('is-kit', kit);
+    if (!testing) leds.forEach((l, i) => l.classList.toggle('is-on', i < s.locked));
+    stat.textContent = kit ? 'KIT #0412 RESERVED' : all ? '6/6 MOTH-1 READY' : s.cur < 0 ? '0/6 WELL EMPTY' : `${s.locked}/6 ${well.P[s.cur].name}`;
+    scrL.textContent = kit ? 'kit #0412 reserved' : 'moth-1 ready';
+    scrS.textContent = kit ? '#0412' : 'ready';
+  }
+  new ResizeObserver(() => well.size()).observe(box);
+  well.size(); paint();
+  document.fonts?.ready.then(() => well.size());
+
+  /* ---------- Reservation (works without the libraries) ---------- */
+  form.noValidate = true;
+  const check = () => {
+    const v = email.value.trim();
+    if (!v) return 'Enter an email address, like mari@example.com. It is how we tell you your kit is packed.';
+    if (!/^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(v)) return 'This address needs an @ and a domain, like mari@example.com.';
+    return '';
+  };
+  const showError = (msg) => {
+    err.textContent = msg; // cleared too, so assistive tech never finds a stale message
+    fld.classList.toggle('is-bad', !!msg); // the four pads turn coral: a cold joint
+    if (msg) { email.setAttribute('aria-invalid', 'true'); email.setAttribute('aria-describedby', 'email-err'); }
+    else { email.removeAttribute('aria-invalid'); email.removeAttribute('aria-describedby'); }
+  };
+  const swap = (toDone) => {
+    form.hidden = toDone; done.hidden = !toDone; // a hard cut, like everything else here
+    reserved = toDone;
+    paint(); // the deck's display shows the kit number and the six LEDs turn lime
+    (toDone ? doneTitle : email).focus();
+    if (toDone) fx?.success();
+  };
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const msg = check();
+    showError(msg);
+    if (msg) { email.focus(); return; }
+    $('#done-mail').textContent = email.value.trim();
+    $('#done-sw').textContent = form.elements.switches.value;
+    $('#done-guide').hidden = !form.elements.guide.checked;
+    swap(true);
+  });
+  email.addEventListener('input', () => { if (email.hasAttribute('aria-invalid') && !check()) showError(''); });
+  again.addEventListener('click', () => swap(false));
+  // The slide switch: the knob jumps to the chosen position.
+  slide.addEventListener('change', () => { slide.dataset.pos = $$('input', slide).findIndex((r) => r.checked); });
+
+  /* ---------- Bill of materials dialog ---------- */
+  let closing = false, downOn = null, opener = null;
+  const settle = () => { closing = false; fx?.dialogReset(); };
+  $$('[data-bom]').forEach((b) => b.addEventListener('click', () => {
+    if (dlg.open) return;
+    settle();
+    opener = b;
+    dlg.showModal();
+    lenis?.stop();
+    fx?.dialogIn();
+  }));
+  const closeDialog = () => {
+    if (!dlg.open || closing) return;
+    closing = true;
+    const end = () => { closing = false; dlg.close(); };
+    fx ? fx.dialogOut(end) : end();
+  };
+  closeBtn.addEventListener('click', closeDialog);
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); closeDialog(); });
+  // Close on a backdrop click only when the press also started on the backdrop.
+  dlg.addEventListener('pointerdown', (e) => { downOn = e.target; });
+  dlg.addEventListener('click', (e) => { if (e.target === dlg && downOn === dlg) closeDialog(); });
+  // Every close path ends here, including one the browser forces: focus goes back to the control that opened it.
+  dlg.addEventListener('close', () => { settle(); lenis?.start(); opener?.focus(); });
+
+  if (!lib) return;
+
+  /* ---------- Motion ---------- */
+  gsap.registerPlugin(ScrollTrigger);
+  const fontsReady = Promise.race([
+    Promise.all([document.fonts.ready, document.fonts.load('700 100px "Handjet"'), document.fonts.load('600 20px "Handjet"')]).then(() => 1, () => 1),
+    new Promise((r) => setTimeout(r, 1500))
+  ]);
+  // Start the self-test only on a visible page: with lagSmoothing(0) a background tab would jump past it.
+  const visible = new Promise((r) => {
+    if (document.visibilityState === 'visible') return r();
+    const f = () => { if (document.visibilityState === 'visible') { document.removeEventListener('visibilitychange', f); r(); } };
+    document.addEventListener('visibilitychange', f);
+  });
+  let played = false;
+  // When a breakpoint flips (a tablet turned on its side) the branch below is torn down and rebuilt, and
+  // ScrollTrigger's refresh leaves the page at the top. The teardown notes the scroll position; the rebuild restores it.
+  let keepY = -1;
+  const restoreY = () => { if (keepY < 0) return; const y = keepY; keepY = -1; requestAnimationFrame(() => { window.scrollTo(0, y); ScrollTrigger.update(); }); };
+
+  const mm = gsap.matchMedia();
+  mm.add({
+    motion: '(prefers-reduced-motion: no-preference)',
+    reduce: '(prefers-reduced-motion: reduce)',
+    fine: '(hover: hover) and (pointer: fine)',
+    wide: '(min-width: 900px)'
+  }, (ctx) => {
+    const { motion, fine, wide } = ctx.conditions;
+    // Reduced motion: no pin, the finished deck, all LEDs on, the static board, native scroll. Nothing to tear down.
+    restoreY();
+    if (!motion) { root.classList.add('go'); return; }
+
+    let dead = false;
+    const off = [];
+    const on = (el, type, fn, opt) => { el.addEventListener(type, fn, opt); off.push(() => el.removeEventListener(type, fn, opt)); };
+    const T = Object.fromEntries(['key', 'up', 'chase', 'fold', 'led', 'word', 'press', 'frame'].map((k) => [k, parseFloat(read(`--d-${k}`))]));
+    const h2 = $('.h2'), feats = $$('.feat'), list = $('.feats'), keys = $$('.key'), dips = $$('.dip');
+    root.classList.add('fx'); // pins the well and gives each feature its share of scroll
+    well.size();
+
+    // Lenis on GSAP's clock. Touch keeps native scrolling.
+    lenis = new Lenis({ lerp: .1, smoothWheel: true, autoRaf: false, anchors: true });
+    lenis.on('scroll', ScrollTrigger.update);
+    const tick = (t) => lenis.raf(t * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
+
+    /* ---------- Scroll: the falling-block assembly (signature) ---------- */
+    const LOCK = .7; // a module falls for the first 70% of its feature's scroll, then sits locked while you read
+    let tops = [], span = 1, lastKey = -1, calls = [];
+    const later = (t, fn) => { const c = gsap.delayedCall(t, fn); calls.push(c); return c; };
+    const stopFx = () => { calls.forEach((c) => c.kill()); calls = []; };
+    // Every complete row flashes once (2 frames), then the deck's display comes on.
+    const rowsFx = () => {
+      well.set({ rows: 1, screen: false });
+      later(T.frame, () => well.set({ rows: 2 }));
+      later(2 * T.frame, () => well.set({ rows: 0, screen: true }));
+    };
+    // A module locks with a 2-frame flash; the sixth also sets off the rows.
+    const lockFx = (i, all) => {
+      well.set({ flash: i, ff: 0 });
+      later(T.frame, () => well.set({ ff: 1 }));
+      later(2 * T.frame, () => { well.set({ flash: -1 }); if (all) rowsFx(); });
+    };
+    const measure = () => { tops = feats.map((el) => el.offsetTop); span = list.offsetHeight; };
+    const apply = (prog, quiet) => {
+      let i = -1, f = 0;
+      if (prog > 0) { // which feature is in play, and how far through its share
+        const y = prog * span;
+        i = 0; while (i < 5 && y >= tops[i + 1]) i++;
+        f = Math.min(1, (y - tops[i]) / ((i < 5 ? tops[i + 1] : span) - tops[i]));
+      }
+      const down = i >= 0 && f >= LOCK, locked = i < 0 ? 0 : i + (down ? 1 : 0);
+      const n = i < 0 ? 1 : well.P[i].path.length, step = down || i < 0 ? 0 : Math.min(n - 1, Math.floor(f / LOCK * n));
+      const key = (i + 1) * 1000 + (down ? 999 : step);
+      if (key === lastKey) return;
+      lastKey = key;
+      const was = well.st.locked, all = locked === 6, fresh = !quiet && locked > was; // fresh: locked just now, scrolling forward
+      stopFx();
+      feats.forEach((el, k) => el.classList.toggle('is-on', k === i));
+      well.set({ locked, fall: down ? -1 : i, step, cur: i, flash: -1, ff: 0, rows: 0, screen: all && !fresh });
+      if (fresh) lockFx(locked - 1, all);
+    };
+    measure();
+    // The reading line: 72% down the viewport on desktop, 84% under the sticky bar on phones.
+    const st = ScrollTrigger.create({
+      trigger: list, start: () => `top ${wide ? 72 : 84}%`, end: () => `bottom ${wide ? 72 : 84}%`, scrub: true,
+      invalidateOnRefresh: true,
+      onRefresh: (self) => { measure(); lastKey = -1; apply(self.progress, true); },
+      onUpdate: (self) => apply(self.progress)
+    });
+    apply(st.progress, true);
+    const ro = new ResizeObserver(() => { if (list.offsetHeight !== span) ScrollTrigger.refresh(); });
+    ro.observe(list);
+    off.push(() => ro.disconnect());
+
+    /* ---------- Pointer: pulses along the traces ---------- */
+    const pc = $('.pulses'), pg = pc.getContext('2d');
+    const { T: TILE, adj, via, delta } = board;
+    const TAIL = 6, MAX = 24, HOP = 6;
+    let pulses = [], awake = false, inView = true, acc = 0, pw = 0, ph = 0, lastAt = 0, lastXY = null, pcol = [];
+    const used = new Map(); // via -> when it last started a pulse, so a moving pointer lights many wires, not one
+    const sizePulses = () => {
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      pw = pc.clientWidth; ph = pc.clientHeight;
+      pc.width = Math.round(pw * dpr); pc.height = Math.round(ph * dpr);
+      pcol = [1, 1, 1, 2, 3, 4].map((k) => read(`--pulse-${k}`)); // six cells lit: three at full gold, then three hard steps down
+    };
+    sizePulses();
+    const pro = new ResizeObserver(sizePulses);
+    pro.observe(pc);
+    off.push(() => pro.disconnect());
+    const node = (ux, uy) => ((uy % TILE + TILE) % TILE) * TILE + (ux % TILE + TILE) % TILE;
+    // The well in section pixels, grown by half a cell: where pulses are heading, and where they stop.
+    const wellRect = () => { const w = box.getBoundingClientRect(), r = sec.getBoundingClientRect(), m = board.cell / 2; return { l: w.left - r.left - m, t: w.top - r.top - m, r: w.right - r.left + m, b: w.bottom - r.top + m }; };
+
+    // Inject a pulse at a via near (x, y), in section pixels, on a trace that leads away from (ax, ay).
+    // It walks the trace graph for 44 to 72 cells, steering toward the well at junctions. Where a trace ends in a
+    // via, the signal changes layer: it comes up again at a via within six cells that is nearer the well.
+    const inject = (x, y, ax = x, ay = y) => {
+      if (pulses.length >= MAX || !inView) return;
+      const c = board.cell, fx0 = x / c - .5, fy0 = y / c - .5, cx = Math.round(fx0), cy = Math.round(fy0), now = performance.now();
+      const W = wellRect(), tx = (W.l + W.r) / 2 / c - .5, ty = (W.t + W.b) / 2 / c - .5, own = Math.hypot(ax / c - .5 - tx, ay / c - .5 - ty);
+      const inWell = (ux, uy) => { const px = (ux + .5) * c, py = (uy + .5) * c; return px > W.l && px < W.r && py > W.t && py < W.b; };
+      let best = null, score = 1e9;
+      for (let j = -7; j <= 7; j++) for (let i = -7; i <= 7; i++) {
+        const ux = cx + i, uy = cy + j, n = node(ux, uy);
+        if (!via[n] || !adj[n].length || now - (used.get(n) || 0) < 600 || inWell(ux, uy)) continue;
+        const [dx, dy] = delta(n, adj[n][0]), ox = ux - (ax / c - .5), oy = uy - (ay / c - .5), dist = Math.hypot(ux - fx0, uy - fy0);
+        // Never under the pointer: a via closer than a cell and a half, one whose trace heads back toward the
+        // pointer, or one with the pointer between it and the well, is passed over for the next nearest.
+        const sc = dist + (Math.hypot(ox, oy) < 1.5 ? 9 : 0) + (dx * ox + dy * oy < 0 ? 9 : 0) + (Math.hypot(ux - tx, uy - ty) > own ? 5 : 0);
+        if (sc < score) { score = sc; best = [n, ux, uy]; }
+      }
+      if (!best) return;
+      let [n, ux, uy] = best, prev = -1;
+      const path = [[ux, uy, 1, 0]], len = 44 + Math.random() * 28 | 0, seen = new Set([n]); // [column, row, is a via, arrived by a layer change]
+      used.set(n, now);
+      while (path.length < len && !inWell(ux, uy)) {
+        const opts = adj[n].filter((m) => m !== prev);
+        if (!opts.length) { // the end of a trace: change layer
+          let hop = null, near = Math.hypot(ux - tx, uy - ty) - 1;
+          for (let j = -HOP; j <= HOP; j++) for (let i = -HOP; i <= HOP; i++) {
+            const q = node(ux + i, uy + j), d = Math.hypot(ux + i - tx, uy + j - ty);
+            if (via[q] && adj[q].length && !seen.has(q) && d < near) { near = d; hop = [q, ux + i, uy + j]; }
+          }
+          if (!hop) break;
+          [n, ux, uy] = hop; prev = -1; seen.add(n);
+          path.push([ux, uy, 1, 1]);
+          continue;
+        }
+        let m = opts[0];
+        if (opts.length > 1 && Math.random() < .8) { // at a junction, take the branch that ends nearer the well
+          let dBest = 1e9;
+          for (const q of opts) { const [dx, dy] = delta(n, q), dd = Math.hypot(ux + dx - tx, uy + dy - ty); if (dd < dBest) { dBest = dd; m = q; } }
+        } else if (opts.length > 1) m = opts[Math.random() * opts.length | 0];
+        const [dx, dy] = delta(n, m);
+        ux += dx; uy += dy; prev = n; n = m; seen.add(n);
+        path.push([ux, uy, via[n], 0]);
+      }
+      pulses.push({ path, head: 0 });
+      wakeUp();
+    };
+    // A pulse that reaches the well stops there, and the nearest stretch of the well's wall blinks once.
+    const hits = [];
+    const hit = (px, py, W) => {
+      const wc = box.clientWidth / 12, bw = box.clientWidth, bh = box.clientHeight, m = board.cell / 2, x = px - W.l - m, y = py - W.t - m;
+      const el = document.createElement('i'), side = Math.min(Math.abs(x), Math.abs(x - bw)) <= Math.abs(y - bh) ? (x < bw / 2 ? 'l' : 'r') : 'b';
+      const along = (v, max) => Math.round(Math.max(0, Math.min(max - 2 * wc, v - wc)));
+      el.className = 'well-hit';
+      el.style.cssText = side === 'b' ? `left:${along(x, bw)}px;top:${bh - 1}px;width:${2 * wc}px;height:4px` : `left:${side === 'l' ? -3 : bw - 1}px;top:${along(y, bh)}px;width:4px;height:${2 * wc}px`;
+      box.append(el); hits.push(el);
+      gsap.delayedCall(2 * T.frame, () => { el.remove(); hits.splice(hits.indexOf(el), 1); });
+    };
+    off.push(() => hits.splice(0).forEach((el) => el.remove()));
+    // The canvas is pinned to the viewport; the board scrolls under it, so each frame is drawn at the current offset.
+    const drawPulses = () => {
+      const c = board.cell, dpr = pc.width / pw, oy = pc.getBoundingClientRect().top - sec.getBoundingClientRect().top;
+      pg.setTransform(1, 0, 0, 1, 0, 0);
+      pg.clearRect(0, 0, pc.width, pc.height);
+      pg.setTransform(dpr, 0, 0, dpr, 0, -oy * dpr);
+      pg.lineWidth = c < 12 ? 2 : 3;
+      const r = c < 12 ? 2.5 : 3.5, big = r + 2, h = c < 12 ? 2 : 3;
+      const sq = (x, y, k) => pg.fillRect((x + .5) * c - k, (y + .5) * c - k, 2 * k, 2 * k);
+      for (const p of pulses) {
+        for (let k = TAIL - 1; k >= 0; k--) { // tail first, so the head is drawn over it: hard levels, no gradient
+          const b = p.head - k, a = b - 1;
+          if (a < 0 || b >= p.path.length) continue;
+          const [x0, y0] = p.path[a], [x1, y1, v, hop] = p.path[b];
+          pg.strokeStyle = pg.fillStyle = pcol[k];
+          if (!hop) { pg.beginPath(); pg.moveTo((x0 + .5) * c, (y0 + .5) * c); pg.lineTo((x1 + .5) * c, (y1 + .5) * c); pg.stroke(); }
+          if (v) sq(x1, y1, k ? r : big); // a via blinks large for the one frame the head is on it, then fades with the tail
+          else if (!k) sq(x1, y1, h);     // a square head
+        }
+        if (p.head < 2) { pg.fillStyle = pcol[0]; sq(p.path[0][0], p.path[0][1], big); } // the via it starts from flashes for 2 frames
+      }
+    };
+    const frame = (t, dms) => {
+      acc += Math.min(dms, 100) / 1000;
+      const c = board.cell, W = wellRect();
+      while (acc >= T.frame) { // one whole cell per step, 20 a second
+        acc -= T.frame;
+        for (const p of pulses) {
+          if (++p.head >= p.path.length) continue;
+          const px = (p.path[p.head][0] + .5) * c, py = (p.path[p.head][1] + .5) * c;
+          if (px > W.l && px < W.r && py > W.t && py < W.b) { p.path.length = p.head + 1; hit(px, py, W); }
+        }
+      }
+      pulses = pulses.filter((p) => p.head < p.path.length + TAIL);
+      drawPulses();
+      if (!pulses.length) sleep();
+    };
+    const wakeUp = () => { if (awake || !inView) return; awake = true; acc = 0; gsap.ticker.add(frame); };
+    const sleep = () => { if (!awake) return; awake = false; gsap.ticker.remove(frame); pg.setTransform(1, 0, 0, 1, 0, 0); pg.clearRect(0, 0, pc.width, pc.height); };
+    const io = new IntersectionObserver(([e]) => { inView = e.isIntersecting; if (!inView) { pulses = []; sleep(); } });
+    io.observe(sec);
+    off.push(() => io.disconnect());
+
+    // One pulse for about every cell and a half of travel, and no faster than every 30ms (24 alive at most).
+    const point = (cx, cy, force) => {
+      const r = sec.getBoundingClientRect(), x = cx - r.left, y = cy - r.top, now = performance.now();
+      if (!force && lastXY && (now - lastAt < 30 || Math.hypot(x - lastXY[0], y - lastXY[1]) < 1.5 * board.cell)) return;
+      lastXY = [x, y]; lastAt = now;
+      inject(x, y);
+    };
+    if (fine) on(sec, 'pointermove', (e) => { if (e.pointerType !== 'touch') point(e.clientX, e.clientY); });
+    on(sec, 'touchstart', (e) => point(e.touches[0].clientX, e.touches[0].clientY, true), { passive: true });
+    on(sec, 'touchmove', (e) => point(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
+    // Keyboard: a focused control sends a pulse from the via nearest its left edge, away from the control.
+    on(sec, 'focusin', (e) => {
+      if (!e.target.matches(':focus-visible') || e.target.tabIndex < 0) return;
+      const a = e.target.getBoundingClientRect(), r = sec.getBoundingClientRect();
+      inject(a.left - r.left - board.cell, a.top - r.top + a.height / 2, a.left - r.left + a.width / 2, a.top - r.top + a.height / 2);
+    });
+
+    /* ---------- Keycaps and DIP switches ---------- */
+    // Key travel starts on pointerdown (":active" arrives late on touch) and a quick tap still shows all of it:
+    // the key stays down for at least four frames before the release with its 1px overshoot. Touch has no hover,
+    // so there the eight LEDs make one pass as the key comes back up.
+    const since = (t0) => (performance.now() - t0) / 1000;
+    keys.forEach((k) => {
+      let lit = null, rel = null, t0 = 0, touch = false;
+      on(k, 'pointerdown', (e) => { rel?.kill(); t0 = performance.now(); touch = e.pointerType === 'touch'; k.classList.remove('is-up'); k.classList.add('is-down'); });
+      const up = () => {
+        if (!k.classList.contains('is-down') || rel?.isActive()) return;
+        rel = gsap.delayedCall(Math.max(0, 2 * T.key - since(t0)), () => {
+          k.classList.remove('is-down'); k.classList.add('is-up');
+          gsap.delayedCall(T.up, () => k.classList.remove('is-up'));
+          if (touch) { k.classList.add('is-lit'); lit?.kill(); lit = gsap.delayedCall(T.chase, () => k.classList.remove('is-lit')); }
+        });
+      };
+      ['pointerup', 'pointerleave', 'pointercancel'].forEach((t) => on(k, t, up));
+      off.push(() => { lit?.kill(); rel?.kill(); k.classList.remove('is-down', 'is-up', 'is-lit'); });
+    });
+    // Touch: the DIP switch goes to ON under the finger and holds there for at least 0.2s, so a tap shows it.
+    dips.forEach((d) => {
+      let rel = null, t0 = 0;
+      on(d, 'pointerdown', (e) => { if (e.pointerType !== 'touch') return; rel?.kill(); t0 = performance.now(); d.classList.add('is-down'); });
+      const up = () => { if (!d.classList.contains('is-down') || rel?.isActive()) return; rel = gsap.delayedCall(Math.max(0, .2 - since(t0)), () => d.classList.remove('is-down')); };
+      ['pointerup', 'pointerleave', 'pointercancel'].forEach((t) => on(d, t, up));
+      off.push(() => { rel?.kill(); d.classList.remove('is-down'); });
+    });
+
+    /* ---------- Hooks for the plain-JS flows ---------- */
+    const back = $('.bom-back'), rows = $$('[data-row]', dlg);
+    // Which of the five folds each row sits in, measured on the unfolded panel.
+    const folds = () => { const b = back.getBoundingClientRect(); return rows.map((r) => Math.min(5, Math.max(1, Math.ceil((r.getBoundingClientRect().bottom - b.top) / b.height * 5)))); };
+    fx = {
+      success() { if (well.st.locked === 6) { stopFx(); rowsFx(); } },
+      dialogReset() { gsap.killTweensOf([back, ...rows]); gsap.set([back, ...rows], { clearProps: 'all' }); },
+      dialogIn() { // the ribbon unfolds downward in five stepped folds, and each fold's rows cut in with it
+        const k = folds(), dt = T.fold / 5;
+        gsap.fromTo(back, { scaleY: 0 }, { scaleY: 1, duration: T.fold, ease: 'steps(5)', overwrite: true });
+        rows.forEach((r, i) => { gsap.set(r, { opacity: 0 }); gsap.set(r, { opacity: 1, delay: k[i] * dt }); }); // opacity, not visibility: Close keeps its focus
+      },
+      dialogOut(end) { // and folds back up
+        const k = folds(), dt = T.fold / 5;
+        gsap.killTweensOf(rows);
+        rows.forEach((r, i) => gsap.set(r, { opacity: 0, delay: (5 - k[i]) * dt + .001 }));
+        gsap.to(back, { scaleY: 0, duration: T.fold, ease: 'steps(5)', overwrite: true, onComplete: end });
+      }
+    };
+
+    /* ---------- Load: self-test, then the key roll ---------- */
+    let words = null, tl = null;
+    const text = h2.textContent;
+    Promise.all([fontsReady, visible]).then(() => ctx.add(() => {
+      if (dead) return;
+      ScrollTrigger.refresh();
+      if (played) { root.classList.add('go'); return; }
+      played = true;
+      // The headline is visible throughout; its words are wrapped only so each can be pressed like a key.
+      h2.textContent = '';
+      words = text.split(' ').map((w, i, a) => { const s = document.createElement('span'); s.className = 'w'; s.textContent = w; h2.append(s, i < a.length - 1 ? ' ' : ''); return s; });
+      testing = true;
+      leds.forEach((l) => l.classList.remove('is-on'));
+      tl = gsap.timeline();
+      leds.forEach((l, i) => tl.call(() => l.classList.add('is-on'), null, (i + 1) * T.led)); // one LED per 90ms
+      let t = 8 * T.led;
+      [0, 1, 0, 1].forEach((v) => { tl.call(() => leds.forEach((l) => l.classList.toggle('is-on', !!v)), null, t); t += T.led; }); // two blinks together
+      tl.call(() => { testing = false; paint(); }, null, t); // back to what the well really holds
+      // Rolling fingers: each word drops 3px and is back 2 frames later, 40ms after the one before it.
+      words.forEach((w, i) => tl.set(w, { y: 3 }, t + i * T.word).set(w, { y: 0 }, t + i * T.word + T.press));
+      tl.call(() => root.classList.add('go'), null, t + (words.length - 1) * T.word + T.press); // the rest cuts in hard, as the last word comes back up
+    }));
+
+    return () => {
+      keepY = window.scrollY;
+      dead = true;
+      off.forEach((f) => f());
+      stopFx(); sleep(); pulses = [];
+      tl?.kill(); testing = false;
+      if (words) h2.textContent = text;
+      fx.dialogReset(); fx = null;
+      st.kill();
+      gsap.ticker.remove(tick);
+      gsap.ticker.lagSmoothing(500, 33);
+      lenis.destroy(); lenis = null;
+      feats.forEach((el) => el.classList.remove('is-on'));
+      root.classList.remove('fx');
+      root.classList.add('go');
+      well.set({ locked: 6, fall: -1, step: 0, cur: 5, flash: -1, ff: 0, rows: 0, screen: true }); // the finished deck
+      well.size();
+    };
+  });
+})();
+</script>
+</body>
+</html>
