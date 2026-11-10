@@ -973,7 +973,7 @@
       still();
       return () => {};
     }
-    let dead = false, st = null, ths = [0, .2, .4, .6, .8], pf = .9, lastW = 0, lastH = 0;
+    let dead = false, st = null, ths = [0, .2, .4, .6, .8], pf = .9, lastW = 0, lastH = 0, runP = 0;
     const off = [];
     const on = (el, type, fn, opt) => { el.addEventListener(type, fn, opt); off.push(() => el.removeEventListener(type, fn, opt)); };
     const s = stage.s, pin = tall;   // a very short viewport has no room under a pinned stage: it gets the still
@@ -1020,7 +1020,7 @@
           pf = ths[4] + (1 - ths[4]) * .6;   // the beacon lights 60% of the way through the last chapter
           update(self.progress);
         },
-        onUpdate: (self) => update(self.progress, self.direction > 0)
+        onUpdate: (self) => { if (!ScrollTrigger.isRefreshing) runP = self.progress; update(self.progress, self.direction > 0); }
       });
       // Refit when the section's width or the viewport's height really changes (not for a phone's address bar).
       const ro = new ResizeObserver(() => {
@@ -1075,7 +1075,7 @@
       if (keep) {   // a breakpoint or a rotation rebuilt this branch: put the visitor back at the same moment of the run
         const y = st && keep.p > 0 && keep.p < 1 ? st.start + keep.p * (st.end - st.start) : keep.y;
         keep = null;
-        lenis.scrollTo(y, { immediate: true, force: true });
+        window.scrollTo(0, y);   // native: Lenis follows it
         ScrollTrigger.update();
       }
       if (played || r.top > innerHeight - 40 || r.bottom < 40) {   // already played, or the stage is not on screen: no opening
@@ -1102,7 +1102,7 @@
 
     return () => {
       dead = true;
-      keep = { y: scrollY, p: st ? st.progress : 0 };
+      keep = { y: scrollY, p: runP };   // the trigger is already reverted here, so the progress was noted while scrolling
       off.forEach((f) => f());
       fx = null;
       st?.kill();
