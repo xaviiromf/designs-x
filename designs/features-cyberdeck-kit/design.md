@@ -50,7 +50,7 @@ Deviations from the brief, and why:
 - **`MAP` is the deck.** The sixteen strings in the script define every block's cells and the silhouette. If you change a shape, check that each block can still fall to its place past the blocks before it, and adjust its `move` entry. Rows with no "." are the complete rows that flash.
 - **Blocks move in whole cells and change state in hard cuts.** No easing between cells, no fade on the lock flash, no fade on the chip. The stepped motion is what makes the page read as a machine with a frame rate.
 - **Only the current feature's chip is filled** while the assembly runs. Do not dim the other features; they stay fully readable.
-- **Nothing lights under the pointer.** Pulses start at a via at least a cell and a half away and are steered away from the pointer. Do not add a glow, a halo or lit cells at the cursor: that is the reference design's effect, and the collection already has several.
+- **Nothing lights under the pointer.** A pulse starts at a via at least a cell and a half away, on a trace that leads away from the pointer, and only wires light. (A pulse already travelling can still cross the place the pointer moves to next.) Do not add a glow, a halo or lit cells at the cursor: that is the reference design's effect, and the collection already has several.
 - **Trace green stays decorative (1.5:1).** Do not raise its contrast; body text sits on top of the network.
 - **Gold means "you can touch this" and lime means "on".** Do not use gold for decoration or lime for a second accent.
 - **One cell for the board.** `--cell` sets the trace grid, and the tile and the pulse canvas both read it, so pulses sit exactly on the painted traces. The section must keep `background-position: 0 0` and no border.
