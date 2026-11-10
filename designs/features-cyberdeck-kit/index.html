@@ -18,9 +18,11 @@
     --land: #2A6A47;       /* empty footprints: well outlines, resting pads, unlit LEDs, table rules; decorative (2.35:1) */
     --silk: #F2F7E9;       /* silkscreen: text (13.9:1 on mask), the expansion bay's hollow block */
     --mute: #B5CDB8;       /* secondary text, field borders, the pale keycap (9.0:1 on mask; mask text on it 9.0:1) */
-    --mute-deep: #52705B;  /* the pale keycap's skirt */
+    --mute-deep: #52705B;  /* the pale keycap's skirt, the parked jumper's rim */
+    --mute-led: #344C3C;   /* unlit LEDs on the pale skirt */
     --gold: #E9B949;       /* gold is what you touch: pads, pulses, the primary key, the slide knob, focus (8.3:1; mask text on it 8.3:1) */
     --gold-deep: #8A6410;  /* the gold keycap's skirt */
+    --gold-led: #5F4407;   /* unlit LEDs on the gold skirt */
     --violet: #A78BFF;     /* module: screen (5.6:1 on mask, 6.6:1 on well) */
     --lime: #B6FF5C;       /* module: keyboard; also every "on" state and the success LED (12.6:1) */
     --cyan: #48E5E0;       /* module: carrier board (9.8:1) */
@@ -68,10 +70,11 @@
     --d-fold: .3s;          /* ribbon unfold, 5 folds */
     --d-led: .09s;          /* one LED of the self-test */
     --d-word: .04s;         /* gap between pressed words */
+    --d-press: .066s;       /* a pressed word stays down 2 frames */
     --d-frame: .05s;        /* one frame of a lock flash; also one pulse step (20 cells a second) */
   }
   @media (max-width: 599px) {
-    :root { --cell: 8px; --t-body: 16px; --t-stat: 20px; }
+    :root { --cell: 8px; --t-body: 16px; --t-lede: 18px; --t-h3: 22.5px; --t-stat: 20px; }
   }
 
   /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
@@ -158,8 +161,8 @@
     clip-path: var(--corners);
     transition: transform var(--d-key) steps(2, end);
   }
-  .key-gold { --face-c: var(--gold); --skirt-c: var(--gold-deep); --led-on: var(--silk); --led-off: #5F4407; }
-  .key-pale { --face-c: var(--mute); --skirt-c: var(--mute-deep); --led-on: var(--gold); --led-off: #344C3C; }
+  .key-gold { --face-c: var(--gold); --skirt-c: var(--gold-deep); --led-on: var(--silk); --led-off: var(--gold-led); }
+  .key-pale { --face-c: var(--mute); --skirt-c: var(--mute-deep); --led-on: var(--gold); --led-off: var(--mute-led); }
   /* Eight LEDs along the skirt: a dim row, and a lit copy shown one LED at a time. */
   .key-leds, .key-leds::after {
     position: absolute; left: var(--s2); right: var(--s2); bottom: 2px; height: 2px;
@@ -215,7 +218,7 @@
     background: var(--well);
   }
   .well-cv { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
-  /* The deck's display: a dark window in the screen block (columns 1 to 8, rows 5 and 6). */
+  /* The deck's display: a dark window set half a cell into the screen block, so the block reads as its bezel. */
   .scr {
     position: absolute; left: calc(.5 * var(--wc)); top: calc(4.5 * var(--wc));
     width: calc(9 * var(--wc)); height: calc(2 * var(--wc));
@@ -242,7 +245,7 @@
     background: var(--hue); color: var(--mask);
     font-size: var(--t-small); font-weight: 600; line-height: 1;
   }
-  .chip b { font: 700 22px/1 var(--font-display); font-variation-settings: var(--modules); min-width: 12px; text-align: center; }
+  .chip b { font: 700 var(--t-stat)/1 var(--font-display); font-variation-settings: var(--modules); min-width: 12px; text-align: center; }
   /* With the assembly running, only the module in play has a filled chip: a hard cut, no fade. */
   html.fx .feat:not(.is-on) .chip { background: none; color: var(--hue); }
   .feat p { margin: var(--s2) 0 0; }
@@ -347,7 +350,7 @@
   .bom-head { display: flex; justify-content: space-between; align-items: center; gap: var(--s3); }
   .bom h2 { margin: 0; font: 600 var(--t-h3)/1.15 var(--font-text); letter-spacing: -.01em; }
   .bom p { margin: var(--s2) 0 0; max-width: 52ch; }
-  .bom table { width: 100%; margin-top: var(--s3); border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  .bom table { width: 100%; margin-top: var(--s3); border-collapse: separate; border-spacing: 0; font-variant-numeric: tabular-nums; } /* separate, so a hidden row hides its rule too */
   .bom th, .bom td { padding: 5px 0; border-bottom: 1px solid var(--land); text-align: left; vertical-align: top; font-weight: 400; }
   .bom thead th { color: var(--mute); font-weight: 600; border-bottom: 2px solid var(--mute); }
   .bom :is(th, td):last-child { width: 5.5em; padding-left: var(--s2); text-align: right; }
@@ -373,16 +376,16 @@
     html.fx .scr-s { display: inline; }
     html.fx .scr { font-size: calc(var(--wc) * 1.7); }
     html.fx .feats { margin-top: var(--s5); gap: 0; }
-    html.fx .feat { min-height: 58svh; }
-    html.fx .swap { scroll-margin-top: calc(16 * 12px + 2 * var(--s2) + var(--s3)); }
+    html.fx .feat { min-height: 46svh; }
+    html.fx .swap, html.fx .after :is(button, input) { scroll-margin-top: calc(16 * 12px + 2 * var(--s2) + var(--s3)); } /* clear of the bar */
   }
   @media (max-width: 599px) {
     html.fx .well { --wc: 9px; }
-    html.fx .swap { scroll-margin-top: calc(16 * 9px + 2 * var(--s2) + var(--s3)); }
+    html.fx .feat { min-height: 58svh; }
+    html.fx .swap, html.fx .after :is(button, input) { scroll-margin-top: calc(16 * 9px + 2 * var(--s2) + var(--s3)); }
     .actions { display: grid; }
     .reserve .key { display: block; width: 100%; }
-    .lede { font-size: 18px; line-height: 1.5; }
-    h3, .bom h2 { font-size: var(--t-lede); }
+    .lede { line-height: 1.5; }
     .bom-in { padding: var(--s3); }
   }
   /* Too short to give up a third of the screen (a phone on its side): the bar scrolls away with the page. */
@@ -723,7 +726,7 @@
     function draw() {
       if (!cp) return;
       g.clearRect(0, 0, cv.width, cv.height);
-      const gap = Math.max(1, Math.round(cp * .07)), s = cp - gap, o = gap >> 1, lw = Math.max(1, Math.round(cp / 16)), rim = Math.max(1, Math.round(cp / 7));
+      const gap = Math.max(1, Math.round(cp * .07)), s = cp - gap, o = gap >> 1, lw = Math.max(1, Math.round(cp / 16)), rim = Math.max(1, Math.round(cp / 9));
       const cellAt = (c, r, hollow) => {
         const x = c * cp + o, y = r * cp + o;
         if (!hollow) return g.fillRect(x, y, s, s);
@@ -851,6 +854,10 @@
     document.addEventListener('visibilitychange', f);
   });
   let played = false;
+  // When a breakpoint flips (a tablet turned on its side) the branch below is torn down and rebuilt, and
+  // ScrollTrigger's refresh leaves the page at the top. The teardown notes the scroll position; the rebuild restores it.
+  let keepY = -1;
+  const restoreY = () => { if (keepY < 0) return; const y = keepY; keepY = -1; requestAnimationFrame(() => { window.scrollTo(0, y); ScrollTrigger.update(); }); };
 
   const mm = gsap.matchMedia();
   mm.add({
@@ -861,12 +868,13 @@
   }, (ctx) => {
     const { motion, fine, wide } = ctx.conditions;
     // Reduced motion: no pin, the finished deck, all LEDs on, the static board, native scroll. Nothing to tear down.
+    restoreY();
     if (!motion) { root.classList.add('go'); return; }
 
     let dead = false;
     const off = [];
     const on = (el, type, fn, opt) => { el.addEventListener(type, fn, opt); off.push(() => el.removeEventListener(type, fn, opt)); };
-    const T = Object.fromEntries(['up', 'chase', 'fold', 'led', 'word', 'frame'].map((k) => [k, parseFloat(read(`--d-${k}`))]));
+    const T = Object.fromEntries(['chase', 'fold', 'led', 'word', 'press', 'frame'].map((k) => [k, parseFloat(read(`--d-${k}`))]));
     const h2 = $('.h2'), feats = $$('.feat'), list = $('.feats'), keys = $$('.key'), dips = $$('.dip');
     root.classList.add('fx'); // pins the well and gives each feature its share of scroll
     well.size();
@@ -930,13 +938,13 @@
     /* ---------- Pointer: pulses along the traces ---------- */
     const pc = $('.pulses'), pg = pc.getContext('2d');
     const { T: TILE, adj, via, delta } = board;
-    const TAIL = 5, MAX = 24;
+    const TAIL = 6, MAX = 24;
     let pulses = [], awake = false, inView = true, acc = 0, pw = 0, ph = 0, lastVia = -1, lastAt = 0, lastXY = null, pcol = [];
     const sizePulses = () => {
       const dpr = Math.min(2, window.devicePixelRatio || 1);
       pw = pc.clientWidth; ph = pc.clientHeight;
       pc.width = Math.round(pw * dpr); pc.height = Math.round(ph * dpr);
-      pcol = [1, 1, 2, 3, 4].map((k) => read(`--pulse-${k}`)); // the head holds the top level for two cells
+      pcol = [1, 1, 2, 2, 3, 4].map((k) => read(`--pulse-${k}`)); // six cells lit: four hard levels, the first two held for two cells
     };
     sizePulses();
     const pro = new ResizeObserver(sizePulses);
@@ -988,7 +996,7 @@
       pg.lineWidth = c < 12 ? 2 : 3;
       const r = c < 12 ? 2.5 : 3.5, h = c < 12 ? 2 : 2.5;
       for (const p of pulses) {
-        for (let k = TAIL - 1; k >= 0; k--) { // tail first, so the head is drawn over it: four hard levels, no gradient
+        for (let k = TAIL - 1; k >= 0; k--) { // tail first, so the head is drawn over it: hard levels, no gradient
           const b = p.head - k, a = b - 1;
           if (a < 0 || b >= p.path.length) continue;
           const [x0, y0] = p.path[a], [x1, y1, v] = p.path[b];
@@ -1011,10 +1019,10 @@
     io.observe(sec);
     off.push(() => io.disconnect());
 
-    // One pulse for about every three cells of travel, and no faster than every 50ms.
+    // One pulse for about every two cells of travel, and no faster than every 40ms.
     const point = (cx, cy, force) => {
       const r = sec.getBoundingClientRect(), x = cx - r.left, y = cy - r.top, now = performance.now();
-      if (!force && lastXY && (now - lastAt < 50 || Math.hypot(x - lastXY[0], y - lastXY[1]) < 3 * board.cell)) return;
+      if (!force && lastXY && (now - lastAt < 40 || Math.hypot(x - lastXY[0], y - lastXY[1]) < 2 * board.cell)) return;
       lastXY = [x, y]; lastAt = now;
       inject(x, y);
     };
@@ -1085,11 +1093,12 @@
       [0, 1, 0, 1].forEach((v) => { tl.call(() => leds.forEach((l) => l.classList.toggle('is-on', !!v)), null, t); t += T.led; }); // two blinks together
       tl.call(() => { testing = false; paint(); }, null, t); // back to what the well really holds
       // Rolling fingers: each word drops 3px and is back 2 frames later, 40ms after the one before it.
-      words.forEach((w, i) => tl.set(w, { y: 3 }, t + i * T.word).set(w, { y: 0 }, t + i * T.word + .066));
-      tl.call(() => root.classList.add('go'), null, t + words.length * T.word + .066); // the rest cuts in hard
+      words.forEach((w, i) => tl.set(w, { y: 3 }, t + i * T.word).set(w, { y: 0 }, t + i * T.word + T.press));
+      tl.call(() => root.classList.add('go'), null, t + (words.length - 1) * T.word + T.press); // the rest cuts in hard, as the last word comes back up
     }));
 
     return () => {
+      keepY = window.scrollY;
       dead = true;
       off.forEach((f) => f());
       stopFx(); sleep(); pulses = [];

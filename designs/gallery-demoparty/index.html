@@ -83,7 +83,7 @@
     --d-flip: .16s;          /* chip bit flip, two frames */
     --d-blink: .32s;         /* tile tag, two blinks */
     --d-ripple: .24s;        /* one sine cycle of one letter */
-    --d-ripple-gap: .022s;   /* delay from letter to letter */
+    --d-ripple-span: .28s;   /* delay from a link's first letter to its last, so any link takes about 0.5s */
     --d-weave: .35s;         /* dialog shutters, steps(8) */
     --d-idle: .2s;           /* one frame of the idle bob (5 frames a second) */
   }
@@ -145,7 +145,8 @@
   .copper, .crunch { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
   .copper { isolation: isolate; }
   /* One bar: seven hard bands. The script copies this computed background into the headline, so the bars that
-     show through the letters are these bars. Outer bands stay at or above 3:1 on the screen (red, the weakest: 3.0:1). */
+     show through the letters are these bars. Inside the letters every band stays at or above 3:1 on the screen
+     (the weakest is red: outer band 3.05:1, second band 3.79:1, hue 4.66:1). */
   .bar {
     --b1: color-mix(in srgb, var(--hue) 67%, var(--bar-shade));
     --b2: color-mix(in srgb, var(--hue) 84%, var(--bar-shade));
@@ -266,9 +267,9 @@
   .lnk-t { padding-bottom: 3px; border-bottom: 2px solid var(--soft); }
   .lnk .w { display: inline-block; white-space: nowrap; }
   .lnk .ch { display: inline-block; }
-  .lnk:focus-visible .ch, .lnk.is-rip .ch { animation: ripple var(--d-ripple) steps(1, end) calc(var(--i) * var(--d-ripple-gap)) 1 both; }
+  .lnk:focus-visible .ch, .lnk.is-rip .ch { animation: ripple var(--d-ripple) steps(1, end) calc(var(--i) / var(--n) * var(--d-ripple-span)) 1 both; }
   @media (hover: hover) {
-    .lnk:hover .ch { animation: ripple var(--d-ripple) steps(1, end) calc(var(--i) * var(--d-ripple-gap)) 1 both; }
+    .lnk:hover .ch { animation: ripple var(--d-ripple) steps(1, end) calc(var(--i) / var(--n) * var(--d-ripple-span)) 1 both; }
   }
   /* One sine cycle in eight held frames, 3px each way. */
   @keyframes ripple {
@@ -737,6 +738,7 @@
       for (const ch of word) { const c = document.createElement('span'); c.className = 'ch'; c.style.setProperty('--i', i++); c.textContent = ch; w.append(c); }
       el.append(w);
     });
+    el.style.setProperty('--n', Math.max(1, i - 1));
     el.after(vh);
     const link = el.closest('.lnk'); // touch: the ripple runs once on tap
     link.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'touch') return; link.classList.remove('is-rip'); void link.offsetWidth; link.classList.add('is-rip'); });
@@ -979,7 +981,7 @@
     /* --- Hooks for the plain-JS flows --- */
     const wA = $('.weave-a'), wB = $('.weave-b');
     fx = {
-      resize() { measure(); AMP = px('--bar-amp'); if (ampTo) ampTo = Math.min(ampTo, AMP); if (!armed) paintBars(restYs(), REST); else { anchor = cy - sec.getBoundingClientRect().top; draw(); } },
+      resize() { measure(); AMP = px('--bar-amp'); if (ampTo) ampTo = Math.min(ampTo, AMP); if (!armed) paintBars(restYs(), REST); else { anchor = cy - sec.getBoundingClientRect().top; draw(); } st?.refresh(); },
       // Filtered-out tiles drop to 1-bit for a frame, are an empty frame for a frame, then leave; the grid
       // reflows at once. Tiles that come back are blank, so the observer builds them as they appear.
       filter(out, apply) {

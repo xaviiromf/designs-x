@@ -17,7 +17,7 @@
     --off: #1A120B;         /* a tube that is switched off (decorative ground) */
     --bezel: #8A6E52;       /* monitor bezel and the dialog rim (3.7:1 on smoke, 3.3:1 on glass; not text) */
     --ink: #FFF1DC;         /* warm white text (15.6:1 / 14.0:1); the chosen booth segment (smoke on it 15.6:1) */
-    --dim: #CBB59A;         /* secondary text, field and segment outlines (8.8:1 / 7.9:1) */
+    --dim: #D6C2A8;         /* secondary text, field and segment outlines (10.1:1 / 9.0:1) */
     --amber: #FFB23E;       /* phosphor amber: prices (8.7:1 on glass), the primary action (smoke on it 9.7:1), the by-the-hour tag */
     --amber-hot: #FFD88F;   /* the primary action lit up on hover and focus (smoke on it 12.8:1) */
     --green: #7CFF9B;       /* phosphor green: free seats, success, lit links, focused fields (13.8:1 / 12.4:1) */
@@ -29,10 +29,25 @@
     --paper-dim: #5E4630;   /* receipt terms (7.9:1 on paper) */
     --burn: #FFFFFF;        /* the two-frame overexposure when a booth segment burns in; never behind text at rest */
     --scrim: rgb(20 13 8 / .86);   /* dialog backdrop, and the roll bar that crosses the dialog */
-    --mask-a: .08;          /* static scanline mask on the tubes: 1px in 4 at 8% black. Worst text under mask + hum: dim on glass 6.1:1 */
-    --hum-a: .08;           /* hum bar: at most 8% black */
+    /* Overlays on text. Worst cases, computed per pixel row: dark text on the pink tag on a mask row under the hum
+       bar 5.0:1; an amber price over the refresh line with the hum bar's edge on the same row 4.6:1. */
+    --mask-a: .08;          /* static scanline mask on the tubes: 1px in 4 (the 4th row) at 8% black */
+    --hum-a: .08;           /* hum bar: 8% black, flat */
+    --hum-edge: color-mix(in srgb, var(--ink) 10%, transparent);   /* the hum bar's 1px leading edge */
     --hum-h: 120px;         /* hum bar height */
     --hum-rate: .5;         /* hum bar travel down the screen per scrolled pixel */
+    /* Refresh line: amber, under the text, on rows 1-2 of the 4px raster (never a mask row). Body alphas run from
+       the line back through three afterglow rows; the caps sit in the tube's side padding, where there is no text. */
+    --line-4: color-mix(in srgb, var(--amber) 18%, transparent);
+    --line-3: color-mix(in srgb, var(--amber) 10%, transparent);
+    --line-2: color-mix(in srgb, var(--amber) 6%, transparent);
+    --line-1: color-mix(in srgb, var(--amber) 3%, transparent);
+    --cap-4: color-mix(in srgb, var(--amber) 90%, transparent);
+    --cap-3: color-mix(in srgb, var(--amber) 50%, transparent);
+    --cap-2: color-mix(in srgb, var(--amber) 30%, transparent);
+    --cap-1: color-mix(in srgb, var(--amber) 15%, transparent);
+    --cap-w: 12px;          /* cap width; keep it inside the tube's side padding (16px on phones) */
+    --refresh-rate: 2;      /* refresh line travel down the tube per scrolled pixel */
 
     /* Type */
     --font-display: "Handjet", "Arial Narrow", sans-serif;
@@ -77,6 +92,8 @@
     --d-hold-out: .24s;
     --d-feed: .06s;         /* receipt: one line of paper */
     --d-pulse: .06s;        /* keyboard: one frame of the split pulse */
+    --d-tear: .2s;          /* fine print tunes in: 3 frames of tracking tear */
+    --d-tear-gap: .07s;     /* between fine-print lines that tune in together */
     --half-split: .14s;     /* half-life of the pointer's energy; the split is 0 at rest */
     --split-max: 5;         /* px, pointer split */
     --split-reach: 360;     /* px from a text box at which the pointer stops reaching it */
@@ -94,9 +111,11 @@
   /* Hidden only when the script runs, and only until the load sequence takes over (it sets the same states inline). */
   html.js:not(.go) .head { visibility: hidden; }
   html.js:not(.go) .tube { clip-path: inset(50%); }
+  html.js:not(.go) .fine-list li { opacity: 0; }
   @media (prefers-reduced-motion: reduce) {
     html.js:not(.go) .head { visibility: visible; }
     html.js:not(.go) .tube { clip-path: none; }
+    html.js:not(.go) .fine-list li { opacity: 1; }
   }
 
   *, *::before, *::after { box-sizing: border-box; }
@@ -127,17 +146,14 @@
   }
   @media (max-width: 599px) { .pricing { padding-inline: var(--s3); } }
   .wrap { position: relative; z-index: 1; }
-  /* Hum bar: a dark band in hard steps (3%, 6%, 8%) that rolls with the scroll. Only with the motion layer. */
+  /* Hum bar: a flat 8% dark band with a 1px lighter leading edge, placed by the scroll. Only with the motion layer. */
   .hum {
     display: none;
     position: absolute; left: 0; right: 0; top: 0;
     height: var(--hum-h);
     z-index: 2;
     pointer-events: none;
-    background: linear-gradient(to bottom,
-      rgb(0 0 0 / calc(var(--hum-a) * .4)) 0 16.6%, rgb(0 0 0 / calc(var(--hum-a) * .75)) 16.6% 33.3%,
-      rgb(0 0 0 / var(--hum-a)) 33.3% 66.6%,
-      rgb(0 0 0 / calc(var(--hum-a) * .75)) 66.6% 83.3%, rgb(0 0 0 / calc(var(--hum-a) * .4)) 83.3% 100%);
+    background: linear-gradient(to bottom, rgb(0 0 0 / var(--hum-a)) 0 calc(100% - 1px), var(--hum-edge) calc(100% - 1px) 100%);
   }
   html.fx .hum { display: block; }
 
@@ -227,11 +243,29 @@
   .tube::after {   /* static scanline mask: 1px in 4, 8% black; text under it stays far above AA */
     content: "";
     position: absolute; inset: 0;
+    z-index: 3;
     pointer-events: none;
     background: repeating-linear-gradient(to bottom, transparent 0 3px, rgb(0 0 0 / var(--mask-a)) 3px 4px);
   }
-  .flash { position: absolute; inset: 0; background: var(--ink); opacity: 0; pointer-events: none; }
-  .tube-in { display: flex; flex-direction: column; height: 100%; padding: var(--s4); }
+  .flash { position: absolute; inset: 0; z-index: 2; background: var(--ink); opacity: 0; pointer-events: none; }
+  /* Refresh line: over the glass, under the content. The script moves it with the scroll in whole raster rows.
+     From the top: three afterglow rows, then the line; the script flips it when the scroll turns round. */
+  .refresh {
+    display: none;
+    position: absolute; left: 0; right: 0; top: 0;
+    height: 14px;
+    pointer-events: none;
+    background: linear-gradient(to bottom, var(--line-1) 0 2px, transparent 2px 4px, var(--line-2) 4px 6px, transparent 6px 8px, var(--line-3) 8px 10px, transparent 10px 12px, var(--line-4) 12px 14px);
+  }
+  .refresh::before, .refresh::after {
+    content: "";
+    position: absolute; top: 0; bottom: 0; width: var(--cap-w);
+    background: linear-gradient(to bottom, var(--cap-1) 0 2px, transparent 2px 4px, var(--cap-2) 4px 6px, transparent 6px 8px, var(--cap-3) 8px 10px, transparent 10px 12px, var(--cap-4) 12px 14px);
+  }
+  .refresh::before { left: 0; }
+  .refresh::after { right: 0; }
+  html.fx .refresh { display: block; }
+  .tube-in { position: relative; z-index: 1; display: flex; flex-direction: column; height: 100%; padding: var(--s4); }
   .plan-b { display: flex; flex-direction: column; flex: 1; }
   @container (min-width: 620px) {   /* a single wide monitor (tablets): price left, terms right */
     .tube-in { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: var(--s6); padding: var(--s5); }
@@ -362,6 +396,16 @@
   .fine-list li { position: relative; max-width: 62ch; padding-left: var(--s4); scroll-margin-top: var(--s6); }
   .fine-list li::before { content: ""; position: absolute; left: 0; top: .55em; width: var(--cell); height: var(--cell); background: var(--bezel); }
   .fine-list b { color: var(--ink); font-weight: 600; }
+  /* Tuning in: for three frames the line is shown as three slices of itself, torn sideways, with colour ghosts. */
+  .fine-list li.is-tear, .fine-list li.is-tear > b { color: transparent; }
+  .fine-list li.is-tear .tear {
+    position: absolute; inset: 0;
+    padding-left: var(--s4);
+    color: var(--dim);
+    pointer-events: none;
+    filter: drop-shadow(-2px 0 0 var(--pink)) drop-shadow(2px 0 0 var(--cyan));
+  }
+  .fine-list li.is-tear .tear b { color: var(--ink); }
   .fine-list li:target { color: var(--ink); }                       /* the line a link pointed at: an instant cut */
   .fine-list li:target::before { background: var(--green); }
 
@@ -495,6 +539,7 @@
     <div class="plans" id="plans">
       <article class="plan" data-plan="hour" style="--tag: var(--amber)">
         <div class="bezel"><div class="screen"><div class="tube">
+          <span class="refresh" aria-hidden="true"></span>
           <div class="tube-in">
             <div class="plan-a">
               <p class="tag">Any time of day</p>
@@ -523,6 +568,7 @@
 
       <article class="plan" data-plan="night" style="--tag: var(--pink)">
         <div class="bezel"><div class="screen"><div class="tube">
+          <span class="refresh" aria-hidden="true"></span>
           <div class="tube-in">
             <div class="plan-a">
               <p class="tag">22:00 to 08:00</p>
@@ -552,6 +598,7 @@
 
       <article class="plan" data-plan="card" style="--tag: var(--violet)">
         <div class="bezel"><div class="screen"><div class="tube">
+          <span class="refresh" aria-hidden="true"></span>
           <div class="tube-in">
             <div class="plan-a">
               <p class="tag">Valid for 60 days</p>
@@ -841,6 +888,7 @@
   });
   let played = false;           // the degauss runs once per page
   const lit = new Set();        // tubes that are already on; they stay on across matchMedia changes
+  const tuned = new Set();      // fine-print lines that have tuned in
 
   const mm = gsap.matchMedia();
   mm.add({
@@ -858,7 +906,7 @@
     let dead = false;
     const off = [];
     const on = (el, type, fn, opt) => { el.addEventListener(type, fn, opt); off.push(() => el.removeEventListener(type, fn, opt)); };
-    const T = Object.fromEntries(['degauss', 'line-on', 'open', 'flash', 'stagger', 'scan', 'burn', 'glitch', 'drop', 'hold-in', 'hold-out', 'feed', 'pulse']
+    const T = Object.fromEntries(['degauss', 'line-on', 'open', 'flash', 'stagger', 'scan', 'burn', 'glitch', 'drop', 'hold-in', 'hold-out', 'feed', 'pulse', 'tear', 'tear-gap']
       .map((k) => [k, parseFloat(read(`--d-${k}`))]));
     const HALF = parseFloat(read('--half-split')), MAX = parseFloat(read('--split-max')), REACH = parseFloat(read('--split-reach'));
     const clamp = gsap.utils.clamp;
@@ -946,8 +994,28 @@
       const vh = innerHeight, onScreen = (window.scrollY * humRate + vh * .3) % (vh + humH) - humH;
       hum.style.transform = `translateY(${Math.round((onScreen - sec.getBoundingClientRect().top) / 4) * 4}px)`;
     };
-    on(window, 'scroll', humAt, { passive: true });
-    on(window, 'resize', humAt);
+
+    /* ---------- Refresh line: each tube's line is placed by the scroll position, in whole raster rows ----------
+       It travels down the glass as the page scrolls down and back up as it scrolls up, wraps at the bottom, and
+       stands still when the page does. The three tubes are a third of a pass apart. Its rows are multiples of
+       4px from the tube's top, so it never lands on a scanline-mask row. */
+    const lineRate = parseFloat(read('--refresh-rate'));
+    const lines = plans.map((pl, i) => ({ el: $('.refresh', pl), tube: $('.tube', pl), i, span: 0 }));
+    let lastY = window.scrollY, down = true;
+    const linesAt = () => {
+      const y = window.scrollY;
+      if (y !== lastY) { down = y > lastY; lastY = y; }
+      for (const l of lines) {
+        const at = (Math.floor(y * lineRate / 4) * 4 + Math.round(l.span * (.2 + l.i / 3) / 4) * 4) % l.span;
+        l.el.style.transform = `translateY(${at - 12}px)` + (down ? '' : ' scaleY(-1)'); // the afterglow trails the travel
+      }
+    };
+    const ro = new ResizeObserver(() => { lines.forEach((l) => { l.span = Math.ceil((l.tube.offsetHeight + 16) / 4) * 4; }); linesAt(); });
+    ro.observe(sec);
+    off.push(() => ro.disconnect());
+    const onScroll = () => { humAt(); if (lines[0].span) linesAt(); };
+    on(window, 'scroll', onScroll, { passive: true });
+    on(window, 'resize', onScroll);
     humAt();
 
     /* ---------- Buttons: glitch slices on hover and focus, signal dropout on press ---------- */
@@ -1034,6 +1102,39 @@
         .call(() => { flash.style.opacity = ''; }, null, `+=${T.flash / 2}`);
     };
 
+    /* ---------- Fine print tunes in: three frames of tracking tear, then the line locks clean ----------
+       The line is copied into three slices cut at two random heights; each frame moves every slice sideways by a
+       smaller amount (up to 8, 6, then 3px) with a pink and a cyan ghost. Then the copies are removed. Once per line. */
+    const fineItems = $$('.fine-list li');
+    let tearSlot = 0;
+    const tuneIn = (li) => {
+      if (tuned.has(li)) return;
+      tuned.add(li);
+      const now = gsap.ticker.time, at = Math.max(now, tearSlot);
+      tearSlot = at + T['tear-gap'];
+      gsap.delayedCall(at - now, () => {
+        if (dead) return;
+        const html = li.innerHTML, slices = [0, 1, 2].map(() => {
+          const sl = document.createElement('span');
+          sl.className = 'tear'; sl.setAttribute('aria-hidden', 'true'); sl.innerHTML = html;
+          return sl;
+        });
+        const tear = (amp) => {
+          const a = 20 + Math.random() * 25, b = 55 + Math.random() * 25, cuts = [0, a, b, 100];
+          slices.forEach((sl, k) => {
+            sl.style.clipPath = `inset(${cuts[k]}% -12px ${100 - cuts[k + 1]}% -12px)`;
+            sl.style.transform = `translateX(${(Math.random() < .5 ? -1 : 1) * (k % 2 ? amp : amp - 2)}px)`;
+          });
+        };
+        const lock = () => { slices.forEach((sl) => sl.remove()); li.classList.remove('is-tear'); };
+        tear(8);
+        li.append(...slices); li.classList.add('is-tear'); li.style.opacity = '';
+        gsap.delayedCall(T.tear / 3, () => tear(6));
+        gsap.delayedCall(T.tear * 2 / 3, () => tear(3));
+        gsap.delayedCall(T.tear, lock);
+      });
+    };
+
     /* ---------- Load: degauss. Nine decaying frames of skew and shake while the ghosts converge from 8px. ---------- */
     const degauss = () => {
       const K = [1, -.8, .65, -.5, .38, -.27, .17, -.08, 0], n = K.length;
@@ -1093,9 +1194,11 @@
         const [tube, inner, flash] = parts(pl);
         tube.style.clipPath = 'inset(50%)'; inner.style.opacity = 0; flash.style.opacity = 0; // opacity, not visibility: the button stays focusable, and focus scrolls the tube into view
       });
+      fineItems.forEach((li) => { if (!tuned.has(li)) li.style.opacity = 0; });
       root.classList.add('go');
-      if (!played) { played = true; degauss(); slot = gsap.ticker.time + .2; }
+      if (!played) { played = true; degauss(); slot = gsap.ticker.time + .2; tearSlot = gsap.ticker.time + T.degauss; }
       plans.forEach((pl) => ScrollTrigger.create({ trigger: pl, start: 'top 88%', once: true, onEnter: () => powerOn(pl) }));
+      fineItems.forEach((li) => ScrollTrigger.create({ trigger: li, start: 'top 92%', once: true, onEnter: () => tuneIn(li) }));
     }));
 
     return () => {
@@ -1107,6 +1210,8 @@
       gsap.ticker.lagSmoothing(500, 33);
       lenis.destroy(); lenis = null;
       plans.forEach((pl) => { pl.scan?.kill(); clearTube(pl); lit.add(pl); });
+      fineItems.forEach((li) => { $$('.tear', li).forEach((sl) => sl.remove()); li.classList.remove('is-tear'); li.style.opacity = ''; tuned.add(li); });
+      lines.forEach((l) => { l.el.style.transform = ''; });
       gsap.killTweensOf([dlg, roll, paper]);
       gsap.set([dlg, roll, paper], { clearProps: 'all' });
       wrap.style.transform = ''; hum.style.transform = '';
