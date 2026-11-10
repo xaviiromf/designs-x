@@ -74,8 +74,8 @@
     --scan: 4px;             /* one interlace line on the dialog shutters */
 
     /* Motion: a machine with a frame rate. One frame is 80ms unless stated. */
-    --d-frame: .08s;         /* single-frame events: the white cut, the button inversion */
-    --d-crunch: .8s;         /* decrunch: 14 stepped frames of border stripes */
+    --d-frame: .08s;         /* single-frame events: the cut line that ends the decrunch, the button inversion */
+    --d-crunch: .84s;        /* decrunch: three stripe patterns of 0.28s each, every one rolled in five steps */
     --d-depth: .12s;         /* between bit depths: 1-bit, 2-bit, full */
     --d-col: .07s;           /* bit-depth stagger per grid column */
     --d-drop: .07s;          /* one frame of a filtered-out tile */
@@ -164,11 +164,17 @@
   .bar:nth-child(5) { top: calc(var(--frame-y) + 520px); }
   .bar:nth-child(6) { bottom: calc(var(--frame-y) / 2 - var(--bar-h) / 2); }
   .copper.is-live .bar { top: 0; bottom: auto; }
-  /* Decrunch: a strip of random stripes that jumps by whole frames; one white frame ends it. */
+  /* Decrunch: one long strip of random stripes. The script shows three stretches of it in turn and rolls each
+     upward in whole-pixel steps, so the pattern travels instead of flashing. It ends on one frame with a single
+     thin line of text colour in the top border. */
   .crunch { display: none; overflow: clip; }
   .crunch i { position: absolute; left: 0; right: 0; top: 0; }
-  .party.is-white .crunch { background: var(--text); }
-  .party.is-white .crunch i { visibility: hidden; }
+  .party.is-cut .crunch i { visibility: hidden; }
+  .party.is-cut .crunch::after {
+    content: ""; position: absolute; left: 0; right: 0;
+    top: calc(var(--frame-y) / 2 - var(--band)); height: calc(2 * var(--band));
+    background: var(--text);
+  }
 
   .screen {
     position: relative; z-index: 1;
@@ -1013,7 +1019,7 @@
 
     /* --- Load: decrunch --- */
     const go = () => {
-      root.classList.add('go'); sec.classList.remove('is-white');
+      root.classList.add('go'); sec.classList.remove('is-cut');
       played = true; armed = true;
       measure(); AMP = ampTo = px('--bar-amp');
       const a = h2.getBoundingClientRect(); // until a pointer arrives, the bars weave through the headline
@@ -1026,20 +1032,26 @@
     Promise.all([fontsReady, visible]).then(() => ctx.add(() => {
       if (dead) return;
       if (played) return go();
-      // For 0.8s the border is stripes of random heights in the seven hues, 14 frames; the screen stays blank.
-      // The strip is drawn once and jumps by whole frames (transform only). One white frame, then everything.
+      // For 0.84s the border is stripes of random heights (20 to 52px) in the seven hues; the screen stays blank.
+      // Flash safety: the pattern changes only twice (three patterns, 0.28s each). In between, the stripes roll
+      // upward 4px per step, five steps a pattern, so any point sees under four colour changes in the whole
+      // sequence: fewer than two flashes, inside the three-per-second limit. Do not add patterns or speed up the roll.
+      const PATTERNS = 3, ROLLS = 5, STEP = 4;
       const strip = $('.crunch i'), L = Math.max(innerHeight, 480), stops = [];
-      for (let y = 0, last = -1; y < L;) {
+      for (let y = 0, last = -1; y < L * (PATTERNS + 1);) {
         let k; do k = Math.floor(Math.random() * 7); while (k === last); last = k;
-        const h = 4 + 4 * Math.floor(Math.random() * 9);
-        stops.push(`var(--${HUES[k]}) ${y}px ${Math.min(L, y + h)}px`); y += h;
+        const h = 20 + 4 * Math.floor(Math.random() * 9);
+        stops.push(`var(--${HUES[k]}) ${y}px ${y + h}px`); y += h;
       }
-      strip.style.height = 2 * L + 'px';
-      strip.style.background = `linear-gradient(${stops.join(',')}) 0 0 / 100% ${L}px repeat-y`;
+      strip.style.height = L * (PATTERNS + 1) + 'px'; // one viewport of stripes per pattern, plus room to roll
+      strip.style.background = `linear-gradient(${stops.join(',')})`;
       const p = { n: 0 }; let frame = -1;
       gsap.timeline()
-        .to(p, { n: 14, duration: T('crunch'), ease: 'none', onUpdate: () => { const f = Math.floor(p.n); if (f !== frame) { frame = f; gsap.set(strip, { y: -4 * Math.floor(Math.random() * L / 4) }); } } })
-        .add(() => sec.classList.add('is-white'))
+        .to(p, { n: PATTERNS * ROLLS, duration: T('crunch'), ease: 'none', onUpdate: () => {
+          const f = Math.min(PATTERNS * ROLLS - 1, Math.floor(p.n));
+          if (f !== frame) { frame = f; gsap.set(strip, { y: -(Math.floor(f / ROLLS) * L + (f % ROLLS) * STEP) }); } // transform only
+        } })
+        .add(() => sec.classList.add('is-cut')) // one frame: plain border with a single thin line of text colour
         .add(go, '+=' + T('frame'));
     }));
 
@@ -1060,7 +1072,7 @@
       if (big.img) show(big, 3);
       applyFilter();
       root.classList.remove('fx');
-      sec.classList.remove('is-white');
+      sec.classList.remove('is-cut');
       restBars();
     };
   });

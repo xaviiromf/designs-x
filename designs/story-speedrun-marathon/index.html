@@ -139,7 +139,8 @@
   }
   .btn-brick { --bw: 0px; --rim: var(--brick-dark); --fill: var(--brick); --hot: var(--brick-lite); --ink: var(--plum); }
   .btn-line { --bw: 2px; --rim: var(--mist); --fill: var(--plum); --hot: var(--ruin); --ink: var(--cream); }
-  .btn:hover .inner, .btn:focus-visible .inner, .btn.is-down .inner { background: var(--hot); }
+  .btn:focus-visible .inner, .btn:active .inner, .btn.is-down .inner { background: var(--hot); }
+  @media (hover: hover) { .btn:hover .inner { background: var(--hot); } }   /* no sticky hover after a tap */
   /* Press: the face drops 2px into its own bottom edge. A state, so it also works without the motion layer. */
   .btn:active .inner, .btn.is-down .inner { transform: translateY(2px); }
   .btn.is-bump .face { animation: bump var(--d-bump) steps(1); }
@@ -203,7 +204,8 @@
     clip-path: inset(0 100% 0 0);
     transition: clip-path var(--d-trail) steps(var(--n, 8), end);
   }
-  .u:hover::after, .u:focus-visible::after, .u:active::after { clip-path: inset(0); }
+  .u:focus-visible::after, .u:active::after { clip-path: inset(0); }
+  @media (hover: hover) { .u:hover::after { clip-path: inset(0); } }
   button.u { min-height: 44px; margin: 0; }
 
   /* ---------- The run ---------- */
@@ -954,7 +956,7 @@
     const f = () => { if (document.visibilityState === 'visible') { document.removeEventListener('visibilitychange', f); r(); } };
     document.addEventListener('visibilitychange', f);
   });
-  let played = false;
+  let played = false, keep = null; // keep: where the visitor was when a breakpoint changed the branch
 
   const mm = gsap.matchMedia();
   mm.add({
@@ -1028,10 +1030,7 @@
       ro.observe(sec);
       on(window, 'resize', () => { if (Math.abs(innerHeight - lastH) >= 90) { layout(); ScrollTrigger.refresh(); } });
       off.push(() => ro.disconnect());
-    } else {
-      on(window, 'resize', () => stage.fit(0));
-      still();
-    }
+    } else still();
 
     /* ---------- Interactive items ---------- */
     // Brick bump: the brick hops and gives up one gem per hover or focus; a press cracks it. Touch gets all of it on pointerdown.
@@ -1073,6 +1072,12 @@
       if (pin) { layout(); ScrollTrigger.refresh(); }
       if (how === 'timeout') document.fonts.ready.then(() => { if (!dead && pin) { layout(); ScrollTrigger.refresh(); } });
       const r = canvas.getBoundingClientRect();
+      if (keep) {   // a breakpoint or a rotation rebuilt this branch: put the visitor back at the same moment of the run
+        const y = st && keep.p > 0 && keep.p < 1 ? st.start + keep.p * (st.end - st.start) : keep.y;
+        keep = null;
+        lenis.scrollTo(y, { immediate: true, force: true });
+        ScrollTrigger.update();
+      }
       if (played || r.top > innerHeight - 40 || r.bottom < 40) {   // already played, or the stage is not on screen: no opening
         played = true; root.classList.add('go');
         if (st) update(st.progress);
@@ -1097,6 +1102,7 @@
 
     return () => {
       dead = true;
+      keep = { y: scrollY, p: st ? st.progress : 0 };
       off.forEach((f) => f());
       fx = null;
       st?.kill();
