@@ -1,0 +1,1076 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Kestrel Row team select</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Handjet:ELGR,ELSH,wght@1..2,0..16,100..900&family=Host+Grotesk:wght@300..800&display=swap">
+<style>
+  :root {
+    /* Colour: a character-select screen. Seven hues, one job each. */
+    --wine: #2B0F1E;        /* ground; also the text on every filled colour below */
+    --panel: #3A1630;       /* raised tiles: the selected-person panel, slot name bars, the form */
+    --booth: #6B2F5C;       /* backdrop behind every portrait; decorative (1.84:1 on wine) */
+    --ink: #12060D;         /* sprite outlines, pupils and shut eyes; never text */
+    --bone: #FFF3E2;        /* text (16.1:1 on wine, 14.3:1 on panel); lock-on brackets, stat pips, eye whites */
+    --mist: #D2B5C2;        /* secondary text and control outlines (9.4:1 on wine, 8.3:1 on panel) */
+    --p1: #FF4D4D;          /* player one, "you": selection cursor, locked slot, primary button, field focus, our side (5.4:1 on wine, 4.8:1 on panel; wine text on it 5.4:1) */
+    --p2: #4D9BFF;          /* player two, the other side: opponents in results, secondary button (6.3:1 on wine, 5.6:1 on panel; wine on it 6.3:1) */
+    --call: #FFE14A;        /* round calls (SET 1, GO, VS) and the focus ring (13.6:1 on wine; wine on it 13.6:1) */
+    --hp: #A6FF4D;          /* health: the bars in results, nothing else (14.3:1 on wine as a graphic) */
+    --hit: #FF9C33;         /* damage: the ghost behind a draining bar, clash sparks, block-stun flash, error text (8.5:1 on wine, 7.5:1 on panel) */
+    --staff: #FF4FCB;       /* staff: the coach and analyst tag, slot corner and shirts (wine text on it 6.1:1) */
+    /* Portrait tones: read by the sprite builder only, never used for interface */
+    --skin-1: #F7D2B6; --skin-2: #E2AC80; --skin-3: #C4875A; --skin-4: #99603D; --skin-5: #6B3F2A;
+    --hair-1: #2B2140;      /* black */
+    --hair-2: #6A3B1F;      /* brown */
+    --hair-3: #A9482B;      /* auburn */
+    --hair-4: #BDB3BE;      /* grey */
+    --hair-5: #F0D48A;      /* bleached */
+    --gear: #C9C0D4;        /* headsets and earrings */
+
+    /* Type */
+    --font-display: "Handjet", "Arial Narrow", sans-serif;
+    --font-text: "Host Grotesk", system-ui, sans-serif;
+    --modules: "ELSH" 2, "ELGR" 1;   /* square Handjet modules */
+    --t-small: 13px;
+    --t-body: 17px;
+    --t-lede: 22.5px;
+    --t-h3: 30px;
+    --t-score: 56px;
+    --t-handle: clamp(56px, 6.2vw, 88px);
+    --t-h2: clamp(48px, 7.4vw, 108px);
+    --lh-body: 1.55;
+    --lh-lede: 1.45;
+
+    /* Space: whole and half 12px cells (8px cells on phones) */
+    --cell: 12px;
+    --s1: 6px; --s2: 12px; --s3: 24px; --s4: 36px;
+    --s5: 48px; --s6: 72px; --s7: 96px; --s8: 144px;
+    --tap: 48px;            /* button and field height */
+    --big: 240px;           /* the large portrait: always a whole multiple of the 20px sprite */
+    --max-w: 1296px;        /* content width, 108 cells */
+
+    /* Motion: a machine with a frame rate. CSS and the script both read these. */
+    --d-frame: .06s;        /* one frame of the slam, the shakes, the pips and the recoil */
+    --d-lock: .15s;         /* lock-on brackets contracting, three steps */
+    --d-hitstop: .08s;      /* a pressed button holds inverted this long */
+    --d-hit: .06s;          /* one segment of the three-hit underline */
+    --d-stun: .32s;         /* block stun: two orange flashes */
+    --d-p1: .8s;            /* the 1P tag's two-frame blink */
+    --d-bob: .52s;          /* the selected portrait's two-frame idle */
+    --d-call: .45s;         /* how long SET 1 holds */
+    --d-drain: .5s;         /* a health bar draining */
+    --d-ghost-lag: .35s;    /* how far the damage ghost trails */
+    --d-ghost: .4s;         /* the ghost catching up */
+  }
+  @media (max-width: 1199px) { :root { --big: 200px; } }
+  @media (max-width: 959px) { :root { --big: 160px; } }
+  @media (max-width: 599px) {
+    :root { --cell: 8px; --t-body: 16px; --t-score: 40px; --big: 100px; --s7: 72px; --s6: 56px; }
+  }
+
+  /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+
+  /* Hidden only when the script runs, and only until the round call says GO. */
+  html.js:not(.go) .intro .lock { visibility: hidden; }
+  @media (prefers-reduced-motion: reduce) { html.js:not(.go) .intro .lock { visibility: visible; } }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { background: var(--wine); }
+  body {
+    margin: 0;
+    background: var(--wine);
+    color: var(--bone);
+    font: 400 var(--t-body)/var(--lh-body) var(--font-text);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  :focus-visible { outline: 2px solid var(--call); outline-offset: 3px; }
+  ::selection { background: var(--call); color: var(--wine); }
+  .vh {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+  }
+  p, h3, h4, dl, dd, ol { margin: 0; }
+  canvas { display: block; image-rendering: crisp-edges; image-rendering: pixelated; }
+
+  .team { position: relative; overflow-x: clip; isolation: isolate; }
+  .wrap { padding-inline: max(var(--s3), (100% - var(--max-w)) / 2); }
+  .h3 { font: 600 var(--t-h3)/1.15 var(--font-text); letter-spacing: -.01em; }
+  .sub { margin-top: var(--s2); max-width: 58ch; color: var(--mist); }
+
+  /* ---------- Intro ---------- */
+  .intro { padding-block: var(--s7) var(--s6); }
+  .h2 {
+    margin: 0;
+    max-width: 14ch;
+    font: 700 var(--t-h2)/.95 var(--font-display);
+    font-variation-settings: var(--modules);
+    text-wrap: balance;
+  }
+  .lede { margin-top: var(--s4); max-width: 56ch; font-size: var(--t-lede); line-height: var(--lh-lede); }
+  .actions { display: flex; flex-wrap: wrap; gap: var(--s4); margin-top: var(--s5); }
+  @media (min-width: 960px) {
+    .intro { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); column-gap: var(--s5); align-items: end; }
+    .lede { margin-top: 0; }
+    .actions { margin-top: var(--s4); }
+  }
+
+  /* ---------- Buttons: hard-edged tiles with four lock-on brackets ---------- */
+  .btn {
+    position: relative;
+    display: inline-flex; align-items: center; justify-content: center;
+    min-height: var(--tap);
+    padding: 0 var(--s3);
+    border: 2px solid var(--c);
+    border-radius: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font: 600 var(--t-body)/1.2 var(--font-text);
+    text-decoration: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-p1 { --c: var(--p1); --bg: var(--p1); --fg: var(--wine); }
+  .btn-p2 { --c: var(--p2); --bg: var(--wine); --fg: var(--p2); }
+  /* The brackets rest 9px outside the corners and come in by three whole 3px steps, then blink once. */
+  .lock { position: absolute; inset: -2px; pointer-events: none; }
+  .lock i {
+    position: absolute;
+    width: 10px; height: 10px;
+    border: 0 solid var(--bone);
+    transform: translate(calc(var(--x) * 9px), calc(var(--y) * 9px));
+    transition: transform var(--d-lock) steps(3, end);
+  }
+  .lock i:nth-child(1) { --x: -1; --y: -1; left: 0; top: 0; border-width: 3px 0 0 3px; }
+  .lock i:nth-child(2) { --x: 1; --y: -1; right: 0; top: 0; border-width: 3px 3px 0 0; }
+  .lock i:nth-child(3) { --x: -1; --y: 1; left: 0; bottom: 0; border-width: 0 0 3px 3px; }
+  .lock i:nth-child(4) { --x: 1; --y: 1; right: 0; bottom: 0; border-width: 0 3px 3px 0; }
+  @keyframes lock-blink { 0% { opacity: 0; } 50%, 100% { opacity: 1; } }
+  .btn:focus-visible .lock i, .btn.is-lock .lock i { transform: none; animation: lock-blink .12s steps(1) var(--d-lock) 1; }
+  .btn-p1:focus-visible, .btn-p1.is-lock { --bg: var(--wine); --fg: var(--p1); }
+  .btn-p2:focus-visible, .btn-p2.is-lock { --bg: var(--p2); --fg: var(--wine); }
+  @media (hover: hover) {
+    .btn:hover .lock i { transform: none; animation: lock-blink .12s steps(1) var(--d-lock) 1; }
+    .btn-p1:hover { --bg: var(--wine); --fg: var(--p1); }
+    .btn-p2:hover { --bg: var(--p2); --fg: var(--wine); }
+  }
+  /* Hit-stop: the pressed button inverts and nothing on it moves. The script holds .is-hit for --d-hitstop
+     and then recoils; without the motion layer :active gives the inverted frame alone. */
+  .btn.is-hit, html:not(.fx) .btn:active { filter: invert(1); }
+  .btn.is-hit .lock i { transition: none; animation: none; }
+  html.js.go .intro .lock i { animation: lock-blink .12s steps(1) 1; }
+
+  /* ---------- Text links: three-hit underline ---------- */
+  .u {
+    position: relative;
+    display: inline-block;
+    min-height: 44px;
+    padding: 10px 0;
+    color: var(--bone);
+    font-weight: 600; line-height: 1.4;
+    text-decoration: none;
+    white-space: nowrap;
+    /* at rest: a row of 2px dashes, so it reads as a link before anything lands on it */
+    background: repeating-linear-gradient(90deg, var(--mist) 0 4px, transparent 4px 8px) 0 calc(100% - 8px) / 100% 2px no-repeat;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .hits { position: absolute; left: 0; right: 0; bottom: 8px; height: 2px; display: grid; grid-template-columns: repeat(3, 1fr); pointer-events: none; }
+  .hits i { background: var(--p1); opacity: 0; transform-origin: 50% 0; }
+  .hits i:nth-child(2) { --k: 1; }
+  .hits i:nth-child(3) { --k: 2; }
+  @keyframes hit-heavy { from, to { transform: scaleY(1.5); } }   /* the third hit is a pixel thicker for one frame */
+  .u:focus-visible .hits i, .u:active .hits i { opacity: 1; transition: opacity 0s linear calc(var(--d-hit) * var(--k, 0)); }
+  .u:focus-visible .hits i:nth-child(3), .u:active .hits i:nth-child(3) { animation: hit-heavy var(--d-hit) steps(1) calc(var(--d-hit) * 2) 1; }
+  @media (hover: hover) {
+    .u:hover .hits i { opacity: 1; transition: opacity 0s linear calc(var(--d-hit) * var(--k, 0)); }
+    .u:hover .hits i:nth-child(3) { animation: hit-heavy var(--d-hit) steps(1) calc(var(--d-hit) * 2) 1; }
+  }
+
+  /* ---------- Round call (load) ---------- */
+  .call {
+    --fs: clamp(72px, min(20vh, 26vw), 184px);
+    position: fixed; left: 0; right: 0; top: 50%;
+    z-index: 30;
+    display: none; place-items: center;
+    height: calc(var(--fs) * 1.25);
+    margin-top: calc(var(--fs) * -.625);
+    border-block: var(--cell) solid var(--call);
+    background: var(--call);
+    color: var(--wine);
+    font: 900 var(--fs)/1 var(--font-display);
+    font-variation-settings: var(--modules);
+    pointer-events: none;
+  }
+  .call.is-on { display: grid; }
+  .call.is-thin { transform: scaleY(.16); }
+  .call.is-thin .call-t { visibility: hidden; }
+  .call.is-inv { background: var(--wine); color: var(--call); }
+  .call.is-inv .call-t { transform: scale(1.35); }
+
+  /* ---------- Versus band ---------- */
+  /* Base (no libraries, reduced motion): a static banner with the two sides met. With the motion layer it
+     becomes a 100svh sticky layer over the roster and the script slides the sides in whole 24px steps. */
+  .versus {
+    position: relative;
+    height: clamp(168px, 24vw, 288px);
+    overflow: clip;
+    container-type: size;
+    --u: 3cqmin;
+  }
+  .vs-side {
+    position: absolute; inset: 0;
+    display: flex;
+    padding: 6cqh max(var(--s3), 4cqw);
+    color: var(--wine);
+    font: 800 min(30cqh, 9cqw)/.85 var(--font-display);
+    font-variation-settings: var(--modules);
+  }
+  .vs-side span { max-width: 44cqw; }
+  .vs-us { background: var(--p1); clip-path: var(--seam-us, polygon(0 0, 57% 0, 43% 100%, 0 100%)); }
+  .vs-them {
+    align-items: flex-end; justify-content: flex-end; text-align: right;
+    background: var(--p2);
+    clip-path: var(--seam-them, polygon(57% 0, 100% 0, 100% 100%, 43% 100%));
+  }
+  .vs-mark {
+    position: absolute; left: 50%; top: 50%;
+    padding: 0 .16em;
+    background: var(--wine);
+    color: var(--call);
+    font: 900 min(44cqh, 17cqw)/1 var(--font-display);
+    font-variation-settings: var(--modules);
+    transform: translate(-50%, -50%);
+  }
+  .versus.is-pop .vs-mark { background: var(--call); color: var(--wine); }   /* first frame of the clash */
+  .vs-spark {
+    position: absolute; left: 50%; top: 50%;
+    width: calc(var(--u) * .7); height: calc(var(--u) * .7);
+    margin: calc(var(--u) * -.35);
+    visibility: hidden;
+    color: var(--hit);
+  }
+  .vs-spark-a { box-shadow:
+    calc(var(--u) * -5) calc(var(--u) * -7) 0 0, calc(var(--u) * 5) calc(var(--u) * 7) 0 0,
+    calc(var(--u) * 7) calc(var(--u) * -3) 0 2px, calc(var(--u) * -7) calc(var(--u) * 3) 0 2px,
+    calc(var(--u) * 2) calc(var(--u) * -8) 0 -2px, calc(var(--u) * -2) calc(var(--u) * 8) 0 -2px; }
+  .vs-spark-b { box-shadow:
+    calc(var(--u) * -8) calc(var(--u) * -11) 0 -2px, calc(var(--u) * 8) calc(var(--u) * 11) 0 -2px,
+    calc(var(--u) * 12) calc(var(--u) * -5) 0 0, calc(var(--u) * -12) calc(var(--u) * 5) 0 0,
+    calc(var(--u) * 4) calc(var(--u) * -13) 0 -3px, calc(var(--u) * -4) calc(var(--u) * 13) 0 -3px,
+    calc(var(--u) * 10) calc(var(--u) * 2) 0 -3px, calc(var(--u) * -10) calc(var(--u) * -2) 0 -3px,
+    calc(var(--u) * -1) calc(var(--u) * -10) 0 1px, calc(var(--u) * 1) calc(var(--u) * 10) 0 1px; }
+  .versus.is-a .vs-spark-a, .versus.is-b .vs-spark-b { visibility: visible; }
+  html.fx .versus { position: sticky; top: 0; z-index: 5; height: 100vh; height: 100svh; pointer-events: none; }
+  html.fx .versus:not(.is-met) .vs-mark { visibility: hidden; }
+  @media (max-width: 599px) {
+    .vs-side { font-size: min(30cqh, 13cqw); }
+    .vs-mark { font-size: min(44cqh, 24cqw); }
+  }
+
+  /* ---------- Roster stage ---------- */
+  .roster { padding-block: var(--s6) var(--s7); }
+  .stage { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s4); }
+  .hint { margin-top: var(--s2); max-width: 44ch; color: var(--mist); }
+  .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s2); max-width: 560px; margin-top: var(--s4); }
+  @media (min-width: 960px) {
+    .stage { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); column-gap: var(--s5); align-items: start; }
+    .pick { grid-column: 2; grid-row: 1; }
+    .panel { grid-column: 1; grid-row: 1; }
+  }
+  .slot {
+    position: relative;
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 0; border-radius: 0;
+    background: var(--panel);
+    color: var(--mist);
+    font: 600 var(--t-small)/1 var(--font-text);
+    text-align: center;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* The sprite is drawn at 20px and shown at the largest whole multiple that fits, so every pixel is square. */
+  .booth { display: flex; align-items: flex-end; justify-content: center; aspect-ratio: 1; background: var(--booth); }
+  .booth canvas { width: 100%; width: round(down, 100%, 20px); height: auto; aspect-ratio: 1; }
+  .slot-name { display: block; padding: 8px 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .slot[aria-pressed="true"] { background: var(--p1); color: var(--wine); }   /* locked in by player one */
+  .slot.is-staff::before { content: ""; position: absolute; right: 0; top: 0; width: var(--cell); height: var(--cell); background: var(--staff); }
+  /* Player-one cursor: four corner brackets and a 1P tag. It is toggled, never tweened, so it jumps. */
+  .cur { position: absolute; inset: -5px; z-index: 2; display: none; pointer-events: none; }
+  .slot.is-cur .cur { display: block; }
+  .cur i { position: absolute; width: 14px; height: 14px; border: 0 solid var(--p1); }
+  .cur i:nth-child(1) { left: 0; top: 0; border-width: 3px 0 0 3px; }
+  .cur i:nth-child(2) { right: 0; top: 0; border-width: 3px 3px 0 0; }
+  .cur i:nth-child(3) { left: 0; bottom: 0; border-width: 0 0 3px 3px; }
+  .cur i:nth-child(4) { right: 0; bottom: 0; border-width: 0 3px 3px 0; }
+  .cur b { position: absolute; left: 10px; top: -9px; padding: 2px 4px; background: var(--p1); color: var(--wine); font: 700 12px/1 var(--font-text); }
+  @keyframes p1-blink { 0% { opacity: 1; } 50%, 100% { opacity: .3; } }
+  html.fx .cur b { animation: p1-blink var(--d-p1) steps(1) infinite; }
+  html.fx .is-away .cur b { animation-play-state: paused; }
+  .stage.is-wait .cur { display: none; }
+  .stage.is-wait .panel-in { visibility: hidden; }
+
+  .panel { padding: var(--s3); background: var(--panel); overflow: clip; }
+  .panel-in {
+    display: grid;
+    grid-template-columns: var(--big) minmax(0, 1fr);
+    grid-template-areas: "face who" "facts facts" "stats stats" "about about";
+    gap: var(--s3);
+    align-items: start;
+  }
+  @media (min-width: 960px) {
+    .panel-in { grid-template-areas: "face who" "face facts" "stats about"; column-gap: var(--s4); }
+  }
+  .big { grid-area: face; width: var(--big); }
+  .big.is-flash canvas, .done-face.is-flash canvas { filter: brightness(0) invert(1); }   /* the sprite turns white for one frame */
+  .who { grid-area: who; min-width: 0; }
+  .handle {
+    font: 800 var(--t-handle)/.85 var(--font-display);
+    font-variation-settings: var(--modules);
+    overflow-wrap: anywhere;
+  }
+  .real { margin-top: var(--s2); font-size: var(--t-lede); line-height: 1.3; }
+  .tag { display: inline-block; margin-top: var(--s1); padding: 1px 8px; border: 2px solid var(--mist); font: 600 var(--t-small)/1.5 var(--font-text); vertical-align: middle; }
+  .tag.is-staff { border-color: var(--staff); background: var(--staff); color: var(--wine); }
+  .facts { grid-area: facts; display: grid; gap: var(--s1); }
+  .facts > div { display: grid; grid-template-columns: 10.5em minmax(0, 1fr); gap: var(--s2); }
+  .facts dt { color: var(--mist); }
+  .facts dd { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .stats { grid-area: stats; display: grid; gap: var(--s1); }
+  .stats > div { display: flex; justify-content: space-between; align-items: center; gap: var(--s2); max-width: 320px; }
+  .stats dt { color: var(--mist); }
+  .pips { display: flex; gap: 4px; }
+  .pips i { width: var(--s2); height: var(--s2); border: 2px solid var(--mist); }
+  .pips i.on { border-color: var(--bone); background: var(--bone); }
+  .about { grid-area: about; }
+  .about p { max-width: 52ch; }
+  .about .u { margin-top: var(--s1); }
+  @media (max-width: 599px) {
+    .panel { padding: var(--s2); }
+    .real { font-size: var(--t-body); }
+    .facts > div { grid-template-columns: 9em minmax(0, 1fr); }
+    .cur { inset: -4px; }
+    .cur i { width: 10px; height: 10px; }
+  }
+
+  /* ---------- Results: two health bars per set ---------- */
+  .results { padding-bottom: var(--s7); scroll-margin-top: var(--s4); }
+  .res-list { margin-top: var(--s4); padding: 0; list-style: none; }
+  .res { display: grid; gap: var(--s2); padding-block: var(--s3); border-top: 2px solid var(--panel); }
+  .res:last-child { border-bottom: 2px solid var(--panel); }
+  .res-event { font: 600 var(--t-lede)/1.25 var(--font-text); }
+  .res-meta { color: var(--mist); font-variant-numeric: tabular-nums; }
+  .duel { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); column-gap: var(--s3); row-gap: var(--s1); align-items: end; }
+  .side { font-weight: 600; line-height: 1.3; }
+  .side-us { color: var(--p1); }
+  .side-them { grid-column: 3; color: var(--p2); text-align: right; }
+  .score {
+    grid-column: 2; grid-row: 1 / 3;
+    display: flex; align-items: center; gap: var(--s1);
+    align-self: center;
+    font: 800 var(--t-score)/.8 var(--font-display);
+    font-variation-settings: var(--modules);
+    font-variant-numeric: tabular-nums;
+  }
+  .dash { width: var(--s2); height: 4px; background: var(--mist); }
+  .bar { position: relative; grid-row: 2; height: 18px; border: 2px solid var(--mist); background: var(--wine); }
+  .bar-them { grid-column: 3; }
+  .bar i { position: absolute; inset: 0; transform: scaleX(var(--f)); transform-origin: 100% 50%; }   /* what is left hugs the score */
+  .bar-them i { transform-origin: 0 50%; }
+  .ghost { background: var(--hit); }
+  .hp { background: var(--hp); }
+  @media (min-width: 960px) {
+    .res { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); column-gap: var(--s5); align-items: center; }
+  }
+
+  /* ---------- Coaching set ---------- */
+  .coach { display: grid; gap: var(--s4); padding-bottom: var(--s7); scroll-margin-top: var(--s4); }
+  .coach-copy p { margin-top: var(--s3); max-width: 50ch; }
+  .coach-copy .u { margin-top: var(--s1); }
+  @media (min-width: 960px) { .coach { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); column-gap: var(--s5); } }
+  .swap { display: grid; padding: var(--s4); background: var(--panel); }
+  .swap > * { grid-area: 1 / 1; align-self: start; min-width: 0; }
+  .swap > .is-off { visibility: hidden; }
+  .f { min-width: 0; margin: 0 0 var(--s2); padding: 0; border: 0; }
+  .lbl { display: block; padding: 0; font-weight: 600; }
+  .tag1p { display: inline-block; margin-left: var(--s1); padding: 2px 4px; background: var(--p1); color: var(--wine); font: 700 12px/1 var(--font-text); vertical-align: 2px; visibility: hidden; }
+  .f:focus-within .tag1p { visibility: visible; }   /* player one is on this field */
+  .ctl { position: relative; margin-top: var(--s1); }
+  .ctl::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; z-index: 1; width: 4px; background: var(--p1); opacity: 0; pointer-events: none; }
+  .f:focus-within .ctl::before { opacity: 1; }
+  .ctl::after { content: ""; position: absolute; inset: 0; background: var(--hit); opacity: 0; pointer-events: none; }
+  @keyframes stun { 0%, 50% { opacity: .6; } 25%, 75%, 100% { opacity: 0; } }
+  .f.is-stun .ctl::after { animation: stun var(--d-stun) steps(1) 1; }
+  .ctl input, .ctl select {
+    display: block;
+    width: 100%; height: var(--tap);
+    padding: 0 var(--s2) 0 calc(var(--s2) + 4px);
+    border: 2px solid var(--mist);
+    border-radius: 0;
+    background-color: var(--wine);
+    color: var(--bone);
+    font: inherit;
+    appearance: none;
+  }
+  .ctl select {
+    padding-right: var(--s5);
+    cursor: pointer;
+    background-image: linear-gradient(var(--bone), var(--bone)), linear-gradient(var(--bone), var(--bone)), linear-gradient(var(--bone), var(--bone));
+    background-size: 10px 2px, 6px 2px, 2px 2px;
+    background-position: right 16px top 19px, right 18px top 21px, right 20px top 23px;
+    background-repeat: no-repeat;
+  }
+  .ctl option { background: var(--wine); color: var(--bone); }
+  .ctl input:hover, .ctl select:hover { border-color: var(--bone); }
+  .f.is-bad .ctl input, .f.is-bad .ctl select { border-color: var(--hit); }
+  .err { min-height: calc(var(--t-small) * 1.45); margin-top: var(--s1); color: var(--hit); font-size: var(--t-small); line-height: 1.45; font-weight: 500; }
+  /* Level: four radios drawn as a staircase of pips; picking one fills every step up to it. */
+  .levels { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s1); padding-left: 10px; }
+  .lvl { position: relative; display: grid; grid-template-rows: 48px auto; gap: var(--s1); align-items: end; min-height: 44px; padding: var(--s1) 2px; color: var(--mist); font-size: var(--t-small); line-height: 1.3; cursor: pointer; }
+  .lvl input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+  .pip { display: block; height: calc(var(--n) * 12px); border: 2px solid var(--mist); background: var(--wine); }
+  .lvl:hover .pip { border-color: var(--bone); }
+  .lvl input:checked + .pip, .lvl:has(~ .lvl input:checked) .pip { border-color: var(--p1); background: var(--p1); }
+  .lvl:has(input:checked) { color: var(--bone); font-weight: 600; }
+  .lvl:has(input:focus-visible) { outline: 2px solid var(--call); outline-offset: 1px; }
+  .f.is-bad .pip { border-color: var(--hit); }
+  .set .btn { margin: var(--s2) 9px 9px; }
+  .done { display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: var(--s4); align-items: start; }
+  .done-face { width: 160px; }
+  .done h4 { font: 800 var(--t-handle)/.85 var(--font-display); font-variation-settings: var(--modules); }
+  .next { margin-top: var(--s3); padding: var(--s3) 0 0 1.4em; border-top: 2px solid var(--booth); max-width: 44ch; }
+  .next li { padding-left: var(--s1); }
+  .next li + li { margin-top: var(--s1); }
+  .next li::marker { color: var(--mist); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .done h4:focus { outline: none; }   /* focus lands here only to announce the result; it is not a control */
+  .done p { margin-top: var(--s2); max-width: 44ch; }
+  .done b { font-weight: 600; overflow-wrap: anywhere; }
+  .done .btn { margin: var(--s4) 9px 9px; }
+  @media (max-width: 599px) {
+    .h3 { font-size: var(--t-lede); }
+    .lede { font-size: var(--t-body); line-height: 1.5; }
+    .swap { padding: var(--s3) var(--s2); }
+    .done { grid-template-columns: minmax(0, 1fr); gap: var(--s3); }
+    .done-face { width: 100px; }
+    .actions { flex-direction: column; align-items: stretch; padding-inline: 9px; }
+    .set .btn { display: flex; margin-inline: 9px; }
+    .side { font-size: var(--t-small); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0s !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<section class="team" aria-labelledby="team-title">
+  <div class="call" aria-hidden="true"><span class="call-t">SET 1</span></div>
+
+  <div class="wrap intro">
+    <h2 class="h2" id="team-title">The eight people of Kestrel Row.</h2>
+    <div class="intro-side">
+    <p class="lede">Kestrel Row is a fighting-game team from Valparaíso. Six players, one coach and one analyst share a practice room on Cerro Alegre and travel to brackets across South America. Pick a portrait to meet them.</p>
+    <div class="actions">
+      <a class="btn btn-p1" href="#coach">Request a coaching set<span class="lock" aria-hidden="true"><i></i><i></i><i></i><i></i></span></a>
+      <a class="btn btn-p2" href="#results">See 2026 results<span class="lock" aria-hidden="true"><i></i><i></i><i></i><i></i></span></a>
+    </div>
+    </div>
+  </div>
+
+  <div class="arena">
+    <div class="versus" aria-hidden="true">
+      <div class="vs-side vs-us"><span>Kestrel Row</span></div>
+      <div class="vs-side vs-them"><span>the bracket</span></div>
+      <div class="vs-spark vs-spark-a"></div>
+      <div class="vs-spark vs-spark-b"></div>
+      <div class="vs-mark">VS</div>
+    </div>
+
+    <div class="wrap roster">
+      <div class="stage" id="stage">
+        <div class="pick">
+          <h3 class="h3" id="pick-title">Choose a team member</h3>
+          <p class="hint" id="pick-hint">Pick a portrait. On a keyboard, the arrow keys move the cursor and Enter selects.</p>
+          <div class="grid" id="grid" role="group" aria-labelledby="pick-title" aria-describedby="pick-hint">
+            <button class="slot is-cur" type="button" aria-pressed="true" tabindex="0"><span class="booth"><canvas width="20" height="20" aria-hidden="true"></canvas></span><span class="slot-name">Pelicana</span><span class="vh">, captain</span><span class="cur" aria-hidden="true"><i></i><i></i><i></i><i></i><b>1P</b></span></button>
+            <button class="slot" type="button" aria-pressed="false" tabindex="-1"><span class="booth"><canvas width="20" height="20" aria-hidden="true"></canvas></span><span class="slot-name">Cerro9</span><span class="vh">, player</span><span class="cur" aria-hidden="true"><i></i><i></i><i></i><i></i><b>1P</b></span></button>
+            <button class="slot" type="button" aria-pressed="false" tabindex="-1"><span class="booth"><canvas width="20" height="20" aria-hidden="true"></canvas></span><span class="slot-name">Lobomar</span><span class="vh">, player</span><span class="cur" aria-hidden="true"><i></i><i></i><i></i><i></i><b>1P</b></span></button>
+            <button class="slot" type="button" aria-pressed="false" tabindex="-1"><span class="booth"><canvas width="20" height="20" aria-hidden="true"></canvas></span><span class="slot-name">Trole</span><span class="vh">, player</span><span class="cur" aria-hidden="true"><i></i><i></i><i></i><i></i><b>1P</b></span></button>
+            <button class="slot" type="button" aria-pressed="false" tabindex="-1"><span class="booth"><canvas width="20" height="20" aria-hidden="true"></canvas></span><span class="slot-name">Vaguada</span><span class="vh">, player</span><span class="cur" aria-hidden="true"><i></i><i></i><i></i><i></i><b>1P</b></span></button>
+            <button class="slot" type="button" aria-pressed="false" tabindex="-1"><span class="booth"><canvas width="20" height="20" aria-hidden="true"></canvas></span><span class="slot-name">Ascensor</span><span class="vh">, player</span><span class="cur" aria-hidden="true"><i></i><i></i><i></i><i></i><b>1P</b></span></button>
+            <button class="slot is-staff" type="button" aria-pressed="false" tabindex="-1"><span class="booth"><canvas width="20" height="20" aria-hidden="true"></canvas></span><span class="slot-name">Faro</span><span class="vh">, coach</span><span class="cur" aria-hidden="true"><i></i><i></i><i></i><i></i><b>1P</b></span></button>
+            <button class="slot is-staff" type="button" aria-pressed="false" tabindex="-1"><span class="booth"><canvas width="20" height="20" aria-hidden="true"></canvas></span><span class="slot-name">Tabla</span><span class="vh">, analyst</span><span class="cur" aria-hidden="true"><i></i><i></i><i></i><i></i><b>1P</b></span></button>
+          </div>
+        </div>
+
+        <div class="panel" id="panel" aria-live="polite">
+          <div class="panel-in">
+            <div class="big booth"><canvas id="big" width="20" height="20" role="img" aria-label="Pixel portrait of Pelicana"></canvas></div>
+            <div class="who">
+              <h4 class="handle" id="p-handle">Pelicana</h4>
+              <p class="real"><span id="p-name">Antonia Vergara</span><br><span class="tag" id="p-role">Captain, player</span></p>
+            </div>
+            <dl class="facts">
+              <div><dt>Games</dt><dd id="p-plays">2D fighters</dd></div>
+              <div><dt>With the team since</dt><dd id="p-since">2019</dd></div>
+              <div><dt>Best result in 2026</dt><dd id="p-best">1st at Puerto Open</dd></div>
+            </dl>
+            <dl class="stats">
+              <div><dt>Offence</dt><dd><span class="vh">4 of 5</span><span class="pips" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span></dd></div>
+              <div><dt>Defence</dt><dd><span class="vh">3 of 5</span><span class="pips" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span></dd></div>
+              <div><dt>Adaptation</dt><dd><span class="vh">5 of 5</span><span class="pips" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></dd></div>
+            </dl>
+            <div class="about">
+              <p id="p-bio">Antonia started Kestrel Row in a cybercafé on Avenida Pedro Montt and still runs Thursday practice. She plays slow, patient characters and wins the last game on reads.</p>
+              <a class="u" id="p-link" href="https://www.twitch.tv/" target="_blank" rel="noopener"><span id="p-link-t">Watch Pelicana on Twitch</span><span class="vh"> (opens in a new tab)</span><span class="hits" aria-hidden="true"><i></i><i></i><i></i></span></a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap results" id="results">
+    <h3 class="h3">Five sets from 2026</h3>
+    <p class="sub">Every set here was first to three games. Each bar shows how much room that side had left when the set ended.</p>
+    <ol class="res-list">
+      <li class="res">
+        <div><p class="res-event">Puerto Open</p><p class="res-meta">Won the grand final. Valparaíso, 14 March.</p></div>
+        <div class="duel"><span class="side side-us">Kestrel Row</span><span class="score"><span>3</span><span class="vh"> to </span><span class="dash" aria-hidden="true"></span><span>1</span></span><span class="side side-them">Salt Circuit</span>
+          <span class="bar bar-us" style="--f:.667" aria-hidden="true"><i class="ghost"></i><i class="hp"></i></span><span class="bar bar-them" style="--f:0" aria-hidden="true"><i class="ghost"></i><i class="hp"></i></span></div>
+      </li>
+      <li class="res">
+        <div><p class="res-event">Cordillera Cup</p><p class="res-meta">Won the semi-final. Santiago, 9 May.</p></div>
+        <div class="duel"><span class="side side-us">Kestrel Row</span><span class="score"><span>3</span><span class="vh"> to </span><span class="dash" aria-hidden="true"></span><span>2</span></span><span class="side side-them">Nine Volt Club</span>
+          <span class="bar bar-us" style="--f:.333" aria-hidden="true"><i class="ghost"></i><i class="hp"></i></span><span class="bar bar-them" style="--f:0" aria-hidden="true"><i class="ghost"></i><i class="hp"></i></span></div>
+      </li>
+      <li class="res">
+        <div><p class="res-event">Litoral Clash</p><p class="res-meta">Lost the winners final. Montevideo, 27 June.</p></div>
+        <div class="duel"><span class="side side-us">Kestrel Row</span><span class="score"><span>1</span><span class="vh"> to </span><span class="dash" aria-hidden="true"></span><span>3</span></span><span class="side side-them">Río Ancho</span>
+          <span class="bar bar-us" style="--f:0" aria-hidden="true"><i class="ghost"></i><i class="hp"></i></span><span class="bar bar-them" style="--f:.667" aria-hidden="true"><i class="ghost"></i><i class="hp"></i></span></div>
+      </li>
+      <li class="res">
+        <div><p class="res-event">Sur Major</p><p class="res-meta">Won the quarter-final. Buenos Aires, 22 August.</p></div>
+        <div class="duel"><span class="side side-us">Kestrel Row</span><span class="score"><span>3</span><span class="vh"> to </span><span class="dash" aria-hidden="true"></span><span>0</span></span><span class="side side-them">Dead Angle</span>
+          <span class="bar bar-us" style="--f:1" aria-hidden="true"><i class="ghost"></i><i class="hp"></i></span><span class="bar bar-them" style="--f:0" aria-hidden="true"><i class="ghost"></i><i class="hp"></i></span></div>
+      </li>
+      <li class="res">
+        <div><p class="res-event">Muelle Invitational</p><p class="res-meta">Won the grand final. Valparaíso, 3 October.</p></div>
+        <div class="duel"><span class="side side-us">Kestrel Row</span><span class="score"><span>3</span><span class="vh"> to </span><span class="dash" aria-hidden="true"></span><span>2</span></span><span class="side side-them">Tercer Round</span>
+          <span class="bar bar-us" style="--f:.333" aria-hidden="true"><i class="ghost"></i><i class="hp"></i></span><span class="bar bar-them" style="--f:0" aria-hidden="true"><i class="ghost"></i><i class="hp"></i></span></div>
+      </li>
+    </ol>
+  </div>
+
+  <div class="wrap coach" id="coach">
+    <div class="coach-copy">
+      <h3 class="h3" id="coach-title">Request a coaching set</h3>
+      <p>A coaching set is one hour, online or in our room on Cerro Alegre. You play a first-to-five against one of us, then we go through the replays together and you leave with three things to practise.</p>
+      <p>It is free for players from the Valparaíso region. Everyone else is asked for a donation to the travel fund.</p>
+      <a class="u" href="https://discord.com/" target="_blank" rel="noopener">Ask a question on Discord first<span class="vh"> (opens in a new tab)</span><span class="hits" aria-hidden="true"><i></i><i></i><i></i></span></a>
+    </div>
+    <div class="swap">
+      <form class="set" id="set" aria-labelledby="coach-title">
+        <div class="f" id="f-name">
+          <label class="lbl" for="c-name">Your name or handle<span class="tag1p" aria-hidden="true">1P</span></label>
+          <div class="ctl"><input id="c-name" name="name" type="text" autocomplete="name" required></div>
+          <p class="err" id="c-name-err"></p>
+        </div>
+        <div class="f" id="f-email">
+          <label class="lbl" for="c-email">Email address<span class="tag1p" aria-hidden="true">1P</span></label>
+          <div class="ctl"><input id="c-email" name="email" type="email" autocomplete="email" spellcheck="false" required></div>
+          <p class="err" id="c-email-err"></p>
+        </div>
+        <div class="f" id="f-who">
+          <label class="lbl" for="c-who">Who you want to learn from<span class="tag1p" aria-hidden="true">1P</span></label>
+          <div class="ctl"><select id="c-who" name="who" required>
+            <option value="">Choose someone</option>
+            <option value="6">Faro, coach (2D and tag fighters)</option>
+            <option value="0">Pelicana (2D fighters)</option>
+            <option value="1">Cerro9 (2D fighters)</option>
+            <option value="2">Lobomar (3D fighters)</option>
+            <option value="3">Trole (tag fighters)</option>
+            <option value="4">Vaguada (platform fighters)</option>
+            <option value="5">Ascensor (tag fighters)</option>
+          </select></div>
+          <p class="err" id="c-who-err"></p>
+        </div>
+        <fieldset class="f" id="f-level" role="radiogroup" aria-labelledby="c-level-lbl">
+          <legend class="lbl" id="c-level-lbl">Your level<span class="tag1p" aria-hidden="true">1P</span></legend>
+          <div class="ctl levels">
+            <label class="lvl"><input type="radio" name="level" value="New to fighters" required><span class="pip" style="--n:1"></span><span>New to fighters</span></label>
+            <label class="lvl"><input type="radio" name="level" value="Play with friends"><span class="pip" style="--n:2"></span><span>Play with friends</span></label>
+            <label class="lvl"><input type="radio" name="level" value="Enter local brackets"><span class="pip" style="--n:3"></span><span>Enter local brackets</span></label>
+            <label class="lvl"><input type="radio" name="level" value="Travel to majors"><span class="pip" style="--n:4"></span><span>Travel to majors</span></label>
+          </div>
+          <p class="err" id="c-level-err"></p>
+        </fieldset>
+        <button class="btn btn-p1" type="submit">Request the set<span class="lock" aria-hidden="true"><i></i><i></i><i></i><i></i></span></button>
+      </form>
+      <div class="done is-off" id="done" inert>
+        <div class="done-face booth"><canvas id="done-face" width="20" height="20" role="img" aria-label="Pixel portrait of Faro"></canvas></div>
+        <div>
+          <h4 id="done-title" tabindex="-1">Set requested</h4>
+          <p><b id="d-who">Faro</b> will write to <b id="d-mail">ana@example.com</b> within three days to agree a time.</p>
+          <p>Requested by <b id="d-name">Ana</b>. Level: <b id="d-level">Enter local brackets</b>.</p>
+          <ol class="next">
+            <li>Reply to the email with two times that suit you, and say whether you want to play online or in the room.</li>
+            <li>Bring the controller you normally use. We have monitors and a spare stick.</li>
+            <li>After the set you get the replays and three things to practise.</li>
+          </ol>
+          <button class="btn btn-p2" id="again" type="button">Request another set<span class="lock" aria-hidden="true"><i></i><i></i><i></i><i></i></span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  const root = document.documentElement;
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const lib = !!(window.gsap && window.ScrollTrigger && window.Lenis);
+  if (lib) root.classList.add('js'); // CDN blocked: no class, everything is visible and still works
+
+  const sec = $('.team'), stage = $('#stage'), grid = $('#grid'), slots = $$('.slot', grid), band = $('.versus');
+  let lenis = null, fx = null; // fx: hooks set by the motion branch; null means instant
+
+  /* ---------- The eight people. f is the feature data the sprite builder reads. ---------- */
+  const ST = ['Offence', 'Defence', 'Adaptation'];
+  const P = [
+    { h: 'Pelicana', n: 'Antonia Vergara', r: 'Captain, player', plays: '2D fighters', since: '2019', best: '1st at Puerto Open', st: [4, 3, 5], ch: 'Twitch',
+      bio: 'Antonia started Kestrel Row in a cybercafé on Avenida Pedro Montt and still runs Thursday practice. She plays slow, patient characters and wins the last game on reads.',
+      f: { skin: 3, hair: ['long', 1], set: 1, shirt: 'p1', trim: 'bone', mouth: 'smile' } },
+    { h: 'Cerro9', n: 'Matías Oyarzún', r: 'Player', plays: '2D fighters', since: '2021', best: '3rd at Litoral Clash', st: [5, 2, 3], ch: 'Twitch',
+      bio: 'Matías rushes in from the first second and would rather lose fast than play the timer. He streams his training-mode sessions most weeknights.',
+      f: { skin: 1, hair: ['crop', 2], specs: 1, shirt: 'p1', trim: 'bone', mouth: 'grin' } },
+    { h: 'Lobomar', n: 'Kiri Paillalef', r: 'Player', plays: '3D fighters', since: '2020', best: '2nd at Cordillera Cup', st: [3, 5, 4], ch: 'YouTube',
+      bio: 'Kiri has the best defence on the team and sidesteps for a living. He writes the movement drills that everyone else complains about.',
+      f: { skin: 4, hair: ['crop', 1], cap: 'p1', shirt: 'p1', trim: 'bone', mouth: 'small' } },
+    { h: 'Trole', n: 'Catalina Soto', r: 'Player', plays: 'Tag fighters', since: '2023', best: '5th at Sur Major', st: [4, 2, 4], ch: 'Twitch',
+      bio: 'Catalina joined after beating two of us at a local in Quilpué. She plans her three-character teams on paper before she touches a controller.',
+      f: { skin: 2, hair: ['bun', 5], ring: 1, shirt: 'p1', trim: 'bone', mouth: 'grin' } },
+    { h: 'Vaguada', n: 'Wideline Joseph', r: 'Player', plays: 'Platform fighters', since: '2022', best: '1st at Muelle Invitational', st: [4, 4, 3], ch: 'Twitch',
+      bio: 'Wideline is our only platform-fighter player and our most consistent winner. On Saturdays she coaches the juniors group at the practice room.',
+      f: { skin: 5, hair: ['afro', 1], ring: 1, shirt: 'p1', trim: 'bone', mouth: 'smile' } },
+    { h: 'Ascensor', n: 'Tomás Kim', r: 'Player', plays: 'Tag fighters', since: '2025', best: '9th at Sur Major', st: [3, 3, 5], ch: 'YouTube',
+      bio: 'Tomás came up from the juniors group in one season and is the newest player here. He takes notes between games, on paper, in three colours.',
+      f: { skin: 2, hair: ['curtains', 1], set: 1, shirt: 'p1', trim: 'bone', mouth: 'small' } },
+    { h: 'Faro', n: 'Rodrigo Elgueta', r: 'Coach', staff: 1, plays: '2D and tag fighters', since: '2019', best: 'Two players in a top eight', st: [5, 4, 3], sk: ['Patience', 'Preparation', 'Pep talks'], ch: 'YouTube',
+      bio: 'Rodrigo competed for ten years before his wrists asked him to stop. He runs replay review on Mondays and sits behind whoever is on stage.',
+      f: { skin: 4, hair: ['short', 4], beard: 1, shirt: 'staff', mouth: 'smile' } },
+    { h: 'Tabla', n: 'Amira Hasbún', r: 'Analyst', staff: 1, plays: 'All four genres', since: '2022', best: '41 opponents scouted', st: [5, 5, 2], sk: ['Footage', 'Spreadsheets', 'Sleep'], ch: 'YouTube',
+      bio: 'Amira watches every opponent\'s last three brackets and turns them into one page per match-up. She has never entered a tournament and plans to keep it that way.',
+      f: { skin: 3, hair: ['bob', 3], specs: 1, shirt: 'staff', mouth: 'small' } }
+  ];
+  const LINK = { Twitch: 'https://www.twitch.tv/', YouTube: 'https://www.youtube.com/' };
+
+  /* ---------- Portraits: 20x20 sprites built from the feature data, colours from the tokens ---------- */
+  const css = getComputedStyle(root), tok = (n) => css.getPropertyValue('--' + n).trim();
+  const C = {};
+  ['wine', 'ink', 'bone', 'p1', 'staff', 'gear', 'skin-1', 'skin-2', 'skin-3', 'skin-4', 'skin-5', 'hair-1', 'hair-2', 'hair-3', 'hair-4', 'hair-5'].forEach((n) => { C[n] = tok(n); });
+  const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const mix = (a, b, t) => { const A = rgb(a), B = rgb(b); return `rgb(${A.map((v, i) => Math.round(v + (B[i] - v) * t)).join(',')})`; };
+  // Rectangles as [x, y, w, h]. The face is x 5-14, y 4-14; the eyes (x 6-8 and 11-13, y 8-9) are left clear,
+  // because they are painted per frame.
+  const TOP = [[6, 2, 8, 1], [5, 3, 10, 2]];
+  const HAIR = {
+    crop: [...TOP, [5, 5, 1, 2], [14, 5, 1, 2], [5, 5, 4, 1]],
+    short: [...TOP, [5, 5, 1, 1], [14, 5, 1, 1]],
+    long: [...TOP, [5, 5, 2, 1], [13, 5, 2, 1], [4, 3, 1, 1], [15, 3, 1, 1], [3, 4, 2, 13], [15, 4, 2, 13]],
+    bob: [...TOP, [4, 3, 1, 10], [15, 3, 1, 10], [3, 6, 1, 6], [16, 6, 1, 6], [5, 5, 10, 1], [5, 6, 1, 2], [14, 6, 1, 2]],
+    afro: [[6, 0, 8, 1], [4, 1, 12, 1], [3, 2, 14, 3], [3, 5, 3, 4], [14, 5, 3, 4], [6, 5, 8, 1]],
+    bun: [...TOP, [8, 0, 4, 2], [5, 5, 2, 1], [13, 5, 2, 1], [4, 5, 1, 3], [15, 5, 1, 3]],
+    curtains: [...TOP, [4, 4, 1, 5], [15, 4, 1, 5], [5, 5, 4, 1], [5, 6, 2, 1], [5, 7, 1, 1], [11, 5, 4, 1], [13, 6, 2, 1], [14, 7, 1, 1]]
+  };
+  const CAP = [[6, 1, 8, 1], [5, 2, 10, 3]];
+  const SPECS = [[6, 7, 3, 1], [11, 7, 3, 1], [6, 10, 3, 1], [11, 10, 3, 1], [5, 8, 1, 2], [9, 8, 1, 2], [10, 8, 1, 2], [14, 8, 1, 2], [4, 8, 1, 1], [15, 8, 1, 1]];
+  const HEADSET = [[6, 1, 8, 1], [5, 2, 1, 1], [14, 2, 1, 1], [4, 3, 1, 4], [15, 3, 1, 4], [3, 7, 2, 4], [15, 7, 2, 4], [4, 11, 1, 1], [5, 12, 1, 1], [6, 13, 2, 1]];
+  const MOUTH = { smile: [[8, 12, 4, 1], [7, 11, 1, 1], [12, 11, 1, 1]], small: [[9, 12, 2, 1], [8, 11, 1, 1], [11, 11, 1, 1]], grin: [[7, 11, 1, 1], [12, 11, 1, 1], [8, 13, 4, 1]] };
+  const BEARD = [[5, 11, 1, 3], [14, 11, 1, 3], [6, 13, 8, 2], [6, 12, 2, 1], [12, 12, 2, 1], [7, 11, 6, 1]];
+
+  // b is the head's 1px drop: frame two of the idle bob and of the nod. Shoulders stay still.
+  const sprite = (f, b) => {
+    const px = new Array(400).fill(''), skin = C['skin-' + f.skin], hair = C['hair-' + f.hair[1]];
+    const shade = mix(skin, C.ink, .22), lip = mix(skin, C.wine, .65);
+    const put = (c, x, y, w = 1, h = 1) => { for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) if (i >= 0 && i < 20 && j >= 0 && j < 20) px[j * 20 + i] = c; };
+    const head = (c, rects) => rects.forEach(([x, y, w, h]) => put(c, x, y + b, w, h));
+    put(C[f.shirt], 4, 16, 12); put(C[f.shirt], 2, 17, 16, 3);
+    if (f.trim) put(C[f.trim], 2, 18, 16);
+    put(shade, 8, 15, 4); put(skin, 9, 16, 2);
+    head(skin, [[6, 4, 8, 1], [5, 5, 10, 9], [6, 14, 8, 1], [4, 9, 1, 2], [15, 9, 1, 2]]);
+    head(mix(hair, C.ink, .4), [[6, 7, 3, 1], [11, 7, 3, 1]]);     // brows
+    head(shade, [[9, 10, 2, 1]]);                                   // nose
+    if (f.mouth === 'grin') head(C.bone, [[8, 12, 4, 1]]);          // teeth
+    head(lip, MOUTH[f.mouth]);
+    if (f.beard) head(hair, BEARD);
+    head(f.cap ? C[f.cap] : hair, f.cap ? CAP : HAIR[f.hair[0]]);
+    if (f.cap) { head(mix(C[f.cap], C.ink, .35), [[4, 5, 12, 1]]); head(hair, [[5, 6, 1, 2], [14, 6, 1, 2]]); head(C.bone, [[9, 3, 2, 1]]); }
+    if (f.specs) head(C.ink, SPECS);
+    if (f.set) head(C.gear, HEADSET);
+    if (f.ring) head(C.gear, [[4, 11, 1, 1], [15, 11, 1, 1]]);
+    // One ink pixel around the silhouette, so every skin and hair tone reads on the same booth colour.
+    const out = px.slice();
+    px.forEach((c, k) => {
+      if (c) return;
+      const x = k % 20, y = (k / 20) | 0;
+      if ((x > 0 && px[k - 1]) || (x < 19 && px[k + 1]) || (y > 0 && px[k - 20]) || (y < 19 && px[k + 20])) out[k] = C.ink;
+    });
+    const cv = document.createElement('canvas'), g = cv.getContext('2d');
+    cv.width = cv.height = 20;
+    out.forEach((c, k) => { if (c) { g.fillStyle = c; g.fillRect(k % 20, (k / 20) | 0, 1, 1); } });
+    return cv;
+  };
+  P.forEach((p) => { p.base = [sprite(p.f, 0), sprite(p.f, 1)]; p.lid = mix(C['skin-' + p.f.skin], C.ink, .22); });
+
+  // A view is one canvas showing one person. gx, gy pick one of the 3x3 pupil positions: the pupil sits in
+  // one of three columns, and is the top pixel, both pixels (straight ahead) or the bottom pixel of its eye.
+  const view = (c, i) => ({ c, g: c.getContext('2d'), i, gx: 0, gy: 0, bob: 0, blink: 0 });
+  const paint = (v) => {
+    const p = P[v.i], g = v.g, b = v.bob;
+    g.clearRect(0, 0, 20, 20);
+    g.drawImage(p.base[b], 0, 0);
+    for (const x of [6, 11]) {
+      if (v.blink === 2) { g.fillStyle = p.lid; g.fillRect(x, 8 + b, 3, 2); g.fillStyle = C.ink; g.fillRect(x, 9 + b, 3, 1); continue; }
+      g.fillStyle = C.bone; g.fillRect(x, 8 + b, 3, 2);
+      if (v.blink) { g.fillStyle = p.lid; g.fillRect(x, 8 + b, 3, 1); }
+      g.fillStyle = C.ink;
+      if (v.gy <= 0 && !v.blink) g.fillRect(x + 1 + v.gx, 8 + b, 1, 1);
+      if (v.gy >= 0 || v.blink) g.fillRect(x + 1 + v.gx, 9 + b, 1, 1);
+    }
+  };
+  const views = slots.map((s, i) => view($('canvas', s), i)), bigV = view($('#big'), 0), doneV = view($('#done-face'), 6);
+  [...views, bigV, doneV].forEach(paint);
+
+  /* ---------- Roster: one tab stop, arrow keys rove, click or Enter locks (works without the libraries) ---------- */
+  const el = Object.fromEntries(['handle', 'name', 'role', 'plays', 'since', 'best', 'bio', 'link', 'link-t'].map((k) => [k, $('#p-' + k)]));
+  const rows = $$('.stats > div').map((d) => ({ dt: $('dt', d), n: $('.vh', d), pips: $$('.pips i', d) }));
+  let sel = 0;
+  const fill = (i, empty) => { // empty: leave the pips off, the slam fills them
+    const p = P[i];
+    el.handle.textContent = p.h; el.name.textContent = p.n; el.role.textContent = p.r;
+    el.role.classList.toggle('is-staff', !!p.staff);
+    el.plays.textContent = p.plays; el.since.textContent = p.since; el.best.textContent = p.best; el.bio.textContent = p.bio;
+    el.link.href = LINK[p.ch]; el['link-t'].textContent = `Watch ${p.h} on ${p.ch}`;
+    rows.forEach((r, j) => {
+      r.dt.textContent = (p.sk || ST)[j]; r.n.textContent = `${p.st[j]} of 5`;
+      r.pips.forEach((pip, q) => pip.classList.toggle('on', !empty && q < p.st[j]));
+    });
+    bigV.i = i; bigV.c.setAttribute('aria-label', 'Pixel portrait of ' + p.h); paint(bigV);
+  };
+  const cursorTo = (i) => slots.forEach((s, k) => s.classList.toggle('is-cur', k === i));
+  const rove = (i) => slots.forEach((s, k) => { s.tabIndex = k === i ? 0 : -1; });
+  const select = (i) => {
+    sel = i;
+    slots.forEach((s, k) => s.setAttribute('aria-pressed', k === i));
+    stage.classList.remove('is-wait');
+    cursorTo(i);
+    fx ? fx.slam(i) : fill(i);
+  };
+  slots.forEach((s, i) => {
+    s.addEventListener('click', () => select(i));
+    s.addEventListener('focus', () => { rove(i); cursorTo(i); });
+    s.addEventListener('pointerenter', (e) => { if (e.pointerType !== 'touch') cursorTo(i); });
+  });
+  // The cursor goes home to the locked slot when neither the pointer nor the focus is on the grid.
+  grid.addEventListener('pointerleave', () => cursorTo(grid.contains(document.activeElement) ? slots.indexOf(document.activeElement) : sel));
+  grid.addEventListener('focusout', (e) => { if (!grid.contains(e.relatedTarget)) { rove(sel); cursorTo(sel); } });
+  grid.addEventListener('keydown', (e) => {
+    const i = slots.indexOf(document.activeElement);
+    if (i < 0) return;
+    const n = { ArrowRight: i % 4 === 3 ? i - 3 : i + 1, ArrowLeft: i % 4 === 0 ? i + 3 : i - 1, ArrowDown: (i + 4) % 8, ArrowUp: (i + 4) % 8, Home: 0, End: 7 }[e.key];
+    if (n === undefined) return;
+    e.preventDefault();
+    slots[n].focus();
+  });
+
+  /* ---------- Versus seam: a stair of ten steps, leaning more on narrow screens ---------- */
+  const narrow = matchMedia('(max-width: 599px)');
+  const seam = () => {
+    const lean = narrow.matches ? 16 : 7, n = 10, pts = [];
+    for (let k = 0; k < n; k++) {
+      const x = (50 + lean - 2 * lean * k / (n - 1)).toFixed(2);
+      pts.push(`${x}% ${k * 100 / n}%`, `${x}% ${(k + 1) * 100 / n}%`);
+    }
+    band.style.setProperty('--seam-us', `polygon(0 0, ${pts.join(', ')}, 0 100%)`);
+    band.style.setProperty('--seam-them', `polygon(100% 0, ${pts.join(', ')}, 100% 100%)`);
+  };
+  seam();
+  narrow.addEventListener('change', seam);
+
+  /* ---------- Coaching form (works without the libraries; nothing is sent) ---------- */
+  const form = $('#set'), done = $('#done'), doneTitle = $('#done-title'), who = $('#c-who');
+  form.noValidate = true;
+  const MAIL = 'like ana@example.com.';
+  const fields = [
+    { box: $('#f-name'), el: $('#c-name'), val: () => $('#c-name').value.trim(), test: (v) => v ? '' : 'Enter your name or handle, so we know who is asking.' },
+    { box: $('#f-email'), el: $('#c-email'), val: () => $('#c-email').value.trim(),
+      test: (v) => !v ? 'Enter your email address, ' + MAIL : /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(v) ? '' : 'This address needs an @ and a domain, ' + MAIL },
+    { box: $('#f-who'), el: who, val: () => who.value, test: (v) => v ? '' : 'Choose who you want to learn from.' },
+    { box: $('#f-level'), el: $('#f-level'), first: form.elements.level[0], val: () => form.elements.level.value, test: (v) => v ? '' : 'Pick the level that sounds most like you.' }
+  ];
+  const mark = (f, msg, stun) => {
+    const err = $('.err', f.box);
+    err.textContent = msg; // cleared too, so assistive tech never finds a stale message
+    f.box.classList.toggle('is-bad', !!msg);
+    f.box.classList.remove('is-stun');
+    if (msg) {
+      f.el.setAttribute('aria-invalid', 'true'); f.el.setAttribute('aria-describedby', err.id);
+      if (stun) { void f.box.offsetWidth; f.box.classList.add('is-stun'); } // block stun: restart the two orange flashes
+    } else { f.el.removeAttribute('aria-invalid'); f.el.removeAttribute('aria-describedby'); }
+  };
+  fields.forEach((f) => ['input', 'change'].forEach((t) => f.box.addEventListener(t, () => { if (f.box.classList.contains('is-bad') && !f.test(f.val())) mark(f, ''); })));
+  const swap = (toDone) => {
+    const from = toDone ? form : done, to = toDone ? done : form;
+    from.classList.add('is-off'); from.inert = true;
+    to.classList.remove('is-off'); to.inert = false;
+    if (toDone) { doneTitle.focus(); fx?.nod(); } else { who.value = ''; who.focus(); }
+  };
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    let bad = null;
+    fields.forEach((f) => { const msg = f.test(f.val()); mark(f, msg, true); if (msg && !bad) bad = f; });
+    if (bad) { (bad.first || bad.el).focus(); return; }
+    const p = P[+who.value];
+    $('#d-who').textContent = p.h; $('#d-mail').textContent = fields[1].val(); $('#d-name').textContent = fields[0].val(); $('#d-level').textContent = fields[3].val();
+    doneV.i = +who.value; doneV.c.setAttribute('aria-label', 'Pixel portrait of ' + p.h); paint(doneV);
+    swap(true);
+  });
+  $('#again').addEventListener('click', () => { if (!done.classList.contains('is-off')) swap(false); });
+
+  if (!lib) return;
+
+  /* ---------- Motion ---------- */
+  gsap.registerPlugin(ScrollTrigger);
+  const num = (n) => parseFloat(tok(n));
+  const fontsReady = Promise.race([
+    Promise.all([document.fonts.ready, document.fonts.load('900 100px "Handjet"'), document.fonts.load('700 100px "Handjet"')]).then(() => 1, () => 1),
+    new Promise((r) => setTimeout(r, 1500))
+  ]);
+  // Start the round call only on a visible page: with lagSmoothing(0), a timeline started in a background tab
+  // would jump to its end on return.
+  const visible = new Promise((r) => {
+    if (document.visibilityState === 'visible') return r();
+    const f = () => { if (document.visibilityState === 'visible') { document.removeEventListener('visibilitychange', f); r(); } };
+    document.addEventListener('visibilitychange', f);
+  });
+  const call = $('.call'), callT = $('.call-t'), intro = $('.intro'), arena = $('.arena'), usP = $('.vs-us'), themP = $('.vs-them');
+  const inner = $('.panel-in'), bigBox = $('.big'), doneBox = $('.done-face'), btns = $$('.btn');
+  let played = false, landed = false;
+
+  const mm = gsap.matchMedia();
+  mm.add({
+    motion: '(prefers-reduced-motion: no-preference)',
+    reduce: '(prefers-reduced-motion: reduce)',
+    fine: '(hover: hover) and (pointer: fine)'
+  }, (ctx) => {
+    const { motion, fine } = ctx.conditions;
+    // Reduced motion: final states, native scroll, the versus band as a static banner, eyes straight ahead.
+    if (!motion) { root.classList.add('go'); return; }
+
+    let dead = false;
+    const off = [];
+    const on = (el, type, fn, opt) => { el.addEventListener(type, fn, opt); off.push(() => el.removeEventListener(type, fn, opt)); };
+    const F = num('d-frame'), HS = num('d-hitstop');
+    root.classList.add('fx');
+
+    // Lenis on GSAP's clock. Touch keeps native scrolling.
+    lenis = new Lenis({ lerp: .1, smoothWheel: true, autoRaf: false, anchors: true });
+    lenis.on('scroll', ScrollTrigger.update);
+    const tick = (t) => lenis.raf(t * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
+
+    /* Eye tracking. Nothing runs per frame: a pointer, touch, focus or scroll event asks for one pass, and a
+       portrait is repainted only when its quantised gaze changes. Blink and bob are timers that stop off screen. */
+    const live = [...views, bigV];
+    let aim = null, aimEl = null, raf = 0, inView = true, bobT = 0;
+    const look = () => {
+      raf = 0;
+      let t = aim;
+      if (aimEl) { const a = aimEl.getBoundingClientRect(); t = [a.left + a.width / 2, a.top + a.height / 2]; }
+      live.forEach((v) => {
+        let gx = 0, gy = 0;
+        if (t) {
+          const r = v.c.getBoundingClientRect(), dx = t[0] - (r.left + r.width / 2), dy = t[1] - (r.top + r.height * .45), d = Math.hypot(dx, dy);
+          if (d > r.width * .55) { gx = Math.abs(dx / d) > .38 ? Math.sign(dx) : 0; gy = Math.abs(dy / d) > .38 ? Math.sign(dy) : 0; } // eight directions; on the portrait itself, straight ahead
+        }
+        if (gx !== v.gx || gy !== v.gy) { v.gx = gx; v.gy = gy; paint(v); }
+      });
+    };
+    const want = () => { if (!raf && inView) raf = requestAnimationFrame(look); };
+    const point = (e) => { aimEl = null; aim = [e.clientX, e.clientY]; want(); };
+    if (fine) on(sec, 'pointermove', point);
+    on(sec, 'pointerdown', point);                                    // touch: they look at the last touch point
+    on(sec, 'pointerleave', (e) => { if (e.pointerType !== 'touch') { aim = null; want(); } });
+    on(sec, 'focusin', (e) => { if (e.target.matches(':focus-visible')) { aimEl = e.target; want(); } });   // keyboard: they look at the focused control
+    on(window, 'scroll', want, { passive: true });
+
+    const timers = new Set();
+    const later = (fn, ms) => { const id = setTimeout(() => { timers.delete(id); fn(); }, ms); timers.add(id); };
+    const setAll = (i, key, val) => live.forEach((v) => { if (v.i === i && v[key] !== val) { v[key] = val; paint(v); } });
+    const blink = () => later(() => {
+      const i = (Math.random() * P.length) | 0;
+      setAll(i, 'blink', 1); later(() => setAll(i, 'blink', 2), 70); later(() => setAll(i, 'blink', 0), 170);
+      blink();
+    }, 700 + Math.random() * 1800);
+    const sleep = () => {
+      timers.forEach(clearTimeout); timers.clear(); clearInterval(bobT);
+      live.forEach((v) => { if (v.blink || v.bob) { v.blink = v.bob = 0; paint(v); } });
+    };
+    const wake = () => {
+      blink();
+      bobT = setInterval(() => { // the locked-in person breathes: head down one pixel, and back
+        const b = bigV.bob ^ 1;
+        live.forEach((v) => { const n = v.i === sel ? b : 0; if (v.bob !== n) { v.bob = n; paint(v); } });
+      }, num('d-bob') * 1000);
+    };
+    const io = new IntersectionObserver(([e]) => { inView = e.isIntersecting; stage.classList.toggle('is-away', !inView); sleep(); if (inView) { wake(); want(); } });
+    io.observe(stage);
+
+    /* Buttons: hit-stop, then a two-frame recoil. Touch also gets the lock-on that hover and focus get in CSS. */
+    btns.forEach((b) => {
+      let tl = null;
+      const hit = () => {
+        tl?.kill();
+        b.classList.add('is-hit');
+        tl = gsap.timeline()
+          .call(() => b.classList.remove('is-hit'), null, HS)
+          .set(b, { y: -2 }, HS).set(b, { y: 1 }, HS + F).set(b, { clearProps: 'transform' }, HS + 2 * F);
+      };
+      on(b, 'pointerdown', (e) => {
+        if (e.pointerType === 'touch') { b.classList.add('is-lock'); gsap.delayedCall(.5, () => b.classList.remove('is-lock')); }
+        hit();
+      });
+      on(b, 'keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) hit(); });
+    });
+
+    /* Hooks for the plain-JS flows */
+    let slamTl = null;
+    fx = {
+      // Impact slam: new content cuts in at x -48, -16, 0; the sprite is white for one frame; the stage shakes
+      // for four; then the pips fill one per frame.
+      slam(i) {
+        slamTl?.kill();
+        bigBox.classList.remove('is-flash');
+        fill(i, true);
+        live.forEach((v) => { if (v.bob) { v.bob = 0; paint(v); } });
+        gsap.set(inner, { x: -48 });
+        slamTl = gsap.timeline()
+          .set(inner, { x: -16 }, F).set(inner, { clearProps: 'transform' }, 2 * F)
+          .call(() => bigBox.classList.add('is-flash'), null, 2 * F).call(() => bigBox.classList.remove('is-flash'), null, 3 * F)
+          .set(stage, { x: 2, y: -2 }, 3 * F).set(stage, { x: -2, y: 2 }, 4 * F).set(stage, { x: 2, y: 2 }, 5 * F).set(stage, { x: -2, y: -2 }, 6 * F)
+          .set(stage, { clearProps: 'transform' }, 7 * F);
+        for (let k = 0; k < 5; k++) slamTl.call(() => rows.forEach((r, j) => { if (k < P[i].st[j]) r.pips[k].classList.add('on'); }), null, (7 + k) * F);
+      },
+      // The chosen coach looks at the visitor and nods three times: two frames, head down and back.
+      nod() {
+        doneBox.classList.add('is-flash');
+        const tl = gsap.timeline().call(() => doneBox.classList.remove('is-flash'), null, F);
+        for (let k = 0; k < 6; k++) tl.call(() => { doneV.bob = (k + 1) % 2; paint(doneV); }, null, .2 + k * .16);
+      }
+    };
+
+    /* Versus clash. The band is a sticky layer; one ScrollTrigger maps scroll to the sides' offset, snapped to
+       24px. They close while the band rises, meet as it sticks (half way), hold, then part over the roster,
+       which has been scrolling up underneath. */
+    const STEP = 24;
+    let met = false, lastO = -1, sparkTl = null;
+    const land = () => { landed = true; stage.classList.remove('is-wait'); cursorTo(sel); fx.slam(sel); };
+    const clash = (self) => {
+      const vh = innerHeight, mid = vh / (vh + band.offsetHeight), hold = .2, p = self.progress;
+      const D = Math.ceil(band.offsetWidth * .68 / STEP) * STEP;
+      const t = p < mid ? 1 - p / mid : p < mid + hold ? 0 : (p - mid - hold) / (1 - mid - hold);
+      const o = Math.round(t * D / STEP) * STEP;
+      if (o !== lastO) { lastO = o; usP.style.transform = `translate3d(${-o}px,0,0)`; themP.style.transform = `translate3d(${o}px,0,0)`; }
+      if ((o === 0) !== met) {
+        met = o === 0;
+        band.classList.toggle('is-met', met);
+        if (met) { // two-frame spark burst; VS is inverted for the first
+          sparkTl?.kill();
+          band.classList.remove('is-b'); band.classList.add('is-a', 'is-pop');
+          sparkTl = gsap.timeline()
+            .call(() => { band.classList.remove('is-a', 'is-pop'); band.classList.add('is-b'); }, null, F * 1.5)
+            .call(() => band.classList.remove('is-b'), null, F * 3);
+        }
+      }
+      // The cursor lands and the first person slams in once the sides are nearly half open.
+      if (!landed && p >= mid + hold && t > .45) land();
+    };
+    if (!landed) stage.classList.add('is-wait');
+    const vst = ScrollTrigger.create({ trigger: arena, start: 'top bottom', end: () => '+=' + (innerHeight + band.offsetHeight), onUpdate: clash, onRefresh: clash });
+    // Keyboard focus must never sit under the closed sides: jump past the clash.
+    on(stage, 'focusin', (e) => { if (e.target.matches(':focus-visible') && vst.progress < 1) lenis.scrollTo(vst.end + 1, { immediate: true, force: true }); });
+
+    /* Results: both bars drain from full in steps; the orange ghost trails and catches up; an empty bar blinks twice. */
+    const DRAIN = num('d-drain'), LAG = num('d-ghost-lag'), GHOST = num('d-ghost');
+    const bars = $$('.bar'), barBits = $$('.bar i');
+    gsap.set(barBits, { scaleX: 1 });
+    $$('.res').forEach((row) => ScrollTrigger.create({
+      trigger: row, start: 'top 82%', once: true,
+      onEnter: () => ctx.add(() => $$('.bar', row).forEach((b) => {
+        const f = parseFloat(b.style.getPropertyValue('--f')), end = .15 + LAG + GHOST;
+        if (f === 1) return;
+        const tl = gsap.timeline()
+          .to($('.hp', b), { scaleX: f, duration: DRAIN, ease: `steps(${Math.round((1 - f) * 9)})` }, .15)
+          .to($('.ghost', b), { scaleX: f, duration: GHOST, ease: 'steps(4)' }, .15 + LAG);
+        if (!f) tl.set(b, { opacity: .2 }, end + .1).set(b, { opacity: 1 }, end + .2).set(b, { opacity: .2 }, end + .3).set(b, { clearProps: 'opacity' }, end + .4);
+      }))
+    }));
+
+    /* Load: the round call crosses the middle of the viewport. SET 1 (thin bar, then the band), GO (inverted
+       and oversized, then settled), cut. On GO the buttons' brackets appear and the intro takes four frames of shake. */
+    Promise.all([fontsReady, visible]).then(() => ctx.add(() => {
+      if (dead) return;
+      if (played || sec.getBoundingClientRect().top < -innerHeight / 2) { played = true; root.classList.add('go'); return; }
+      const show = (text, cls) => { callT.textContent = text; call.className = 'call is-on ' + cls; };
+      const t1 = .2 + F * 1.5, t2 = t1 + num('d-call'), t3 = t2 + F * 1.5, t4 = t3 + .36;
+      gsap.timeline({ onComplete: () => { played = true; } })
+        .call(show, ['SET 1', 'is-thin'], .2).call(show, ['SET 1', ''], t1)
+        .call(show, ['GO', 'is-inv'], t2).call(show, ['GO', ''], t3)
+        .call(() => { call.className = 'call'; root.classList.add('go'); }, null, t4)
+        .set(intro, { x: 2 }, t4).set(intro, { x: -2 }, t4 + F).set(intro, { x: 2 }, t4 + 2 * F).set(intro, { x: -2 }, t4 + 3 * F)
+        .set(intro, { clearProps: 'transform' }, t4 + 4 * F);
+    }));
+
+    return () => {
+      dead = true;
+      off.forEach((f) => f());
+      io.disconnect(); sleep(); cancelAnimationFrame(raf);
+      fx = null; slamTl?.kill(); sparkTl?.kill();
+      gsap.ticker.remove(tick);
+      gsap.ticker.lagSmoothing(500, 33);
+      lenis.destroy(); lenis = null;
+      gsap.killTweensOf([intro, stage, inner, ...btns, ...bars, ...barBits]);
+      gsap.set([intro, stage, inner, ...btns, ...bars, ...barBits], { clearProps: 'transform,opacity' });
+      usP.style.transform = themP.style.transform = '';
+      band.classList.remove('is-met', 'is-a', 'is-b', 'is-pop');
+      call.className = 'call';
+      stage.classList.remove('is-wait', 'is-away');
+      [bigBox, doneBox].forEach((b) => b.classList.remove('is-flash'));
+      btns.forEach((b) => b.classList.remove('is-hit', 'is-lock'));
+      [...live, doneV].forEach((v) => { v.gx = v.gy = v.bob = v.blink = 0; paint(v); });
+      fill(sel);
+      root.classList.remove('fx');
+      root.classList.add('go');
+    };
+  });
+})();
+</script>
+</body>
+</html>

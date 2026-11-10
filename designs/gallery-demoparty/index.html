@@ -1,0 +1,1068 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Rasterline 2026 winners</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Handjet:ELGR,ELSH,wght@1..2,0..16,100..900&family=Host+Grotesk:wght@300..800&display=swap">
+<style>
+  :root {
+    /* Colour: an 8-bit home-computer display. A border area, an opaque screen, and seven bright hues with jobs.
+       All colour tokens are 6-digit hex because the still renderer parses them. */
+    --screen: #231C6B;      /* the screen: ground under all text */
+    --frame: #3A31A0;       /* the border area around the screen; decorative (1.47:1), never under text */
+    --ink: #0E0A38;         /* darkest: text on bright fills, canvas black, the scroller band (1.30:1 on screen) */
+    --line: #7D74E8;        /* tile and outline-button edges at rest (3.82:1 on screen) */
+    --text: #F0EEFF;        /* text (12.68:1 on screen, 16.42:1 on ink) */
+    --soft: #BDB7EE;        /* secondary text (7.71:1 on screen) */
+    /* The seven hues. On screen / with ink text on them: */
+    --red: #FF5470;         /* 4.66:1 / 6.03:1 */
+    --orange: #FF9F45;      /* 7.10:1 / 9.20:1 */
+    --yellow: #FFE566;      /* 11.48:1 / 14.88:1 */
+    --green: #62F5A6;       /* 10.44:1 / 13.52:1 */
+    --cyan: #52DBFF;        /* 8.92:1 / 11.56:1 */
+    --violet: #A580FF;      /* 4.92:1 / 6.37:1 */
+    --pink: #FF82D8;        /* 6.51:1 / 8.43:1 */
+    /* Jobs: colour means competition. Each competition owns one hue: its chip, its tile tag, its copper bar. */
+    --c-64k: var(--cyan);   /* 64k intro */
+    --c-4k: var(--orange);  /* 4k intro */
+    --c-old: var(--green);  /* Oldschool demo */
+    --c-pix: var(--pink);   /* Pixel graphics */
+    --c-mus: var(--violet); /* Tracked music */
+    --c-wild: var(--red);   /* Wild */
+    --go: var(--yellow);    /* reserved: the primary action */
+    --focus: var(--yellow); /* reserved: focus rings */
+    --scrim: rgb(14 10 56 / .84);   /* dialog backdrop (ink) */
+
+    /* Type */
+    --font-display: "Handjet", "Arial Narrow", sans-serif;
+    --font-text: "Host Grotesk", system-ui, sans-serif;
+    --modules: "ELSH" 2, "ELGR" 1;   /* square Handjet modules */
+    --t-small: 14px;
+    --t-body: 17px;
+    --t-lede: 21px;
+    --t-h3: 28px;
+    --t-title: 44px;                 /* entry title in the dialog */
+    --t-place: 30px;                 /* place numeral on a tile */
+    --t-h2: clamp(52px, 8.6vw, 128px);
+    --t-greets: 64px;                /* the sine scroller */
+    --t-greets-still: clamp(26px, 3.2vw, 40px);   /* the same line when it does not move */
+    --lh-body: 1.55;
+    --lh-lede: 1.45;
+
+    /* Space: one 8px cell */
+    --cell: 8px;
+    --s1: 4px; --s2: 8px; --s3: 16px; --s4: 24px; --s5: 32px; --s6: 48px; --s7: 64px; --s8: 96px;
+    --frame-x: clamp(16px, 5vw, 96px);    /* border area at the sides */
+    --frame-y: clamp(40px, 8vw, 120px);   /* border area top and bottom, thicker like the real thing */
+    --pad: clamp(16px, 3.6vw, 56px);      /* screen padding */
+    --notch: 4px;            /* pixel corner on the primary button */
+    --tap: 48px;             /* button height */
+    --hit: 44px;             /* minimum target */
+    --greets-h: 144px;       /* scroller band while it moves */
+
+    /* Copper bars: 7 hard bands, shade / mid / hue / light / hue / mid / shade */
+    --band: 5px;
+    --bar-h: calc(7 * var(--band));   /* 35px */
+    --bar-shade: var(--frame);        /* what the outer bands mix towards */
+    --bar-amp: 76px;         /* how far the bars weave either side of the pointer */
+    --sine-amp: 22px;        /* scroller wave height */
+    --cyc: 6px;              /* one colour-cycling band on the primary button */
+    --scan: 4px;             /* one interlace line on the dialog shutters */
+
+    /* Motion: a machine with a frame rate. One frame is 80ms unless stated. */
+    --d-frame: .08s;         /* single-frame events: the white cut, the button inversion */
+    --d-crunch: .8s;         /* decrunch: 14 stepped frames of border stripes */
+    --d-depth: .12s;         /* between bit depths: 1-bit, 2-bit, full */
+    --d-col: .07s;           /* bit-depth stagger per grid column */
+    --d-drop: .07s;          /* one frame of a filtered-out tile */
+    --d-cycle: .583s;        /* 7 bands at 12 frames a second */
+    --d-flip: .16s;          /* chip bit flip, two frames */
+    --d-blink: .32s;         /* tile tag, two blinks */
+    --d-ripple: .24s;        /* one sine cycle of one letter */
+    --d-ripple-gap: .022s;   /* delay from letter to letter */
+    --d-weave: .35s;         /* dialog shutters, steps(8) */
+    --d-idle: .2s;           /* one frame of the idle bob (5 frames a second) */
+  }
+  @media (max-width: 599px) {
+    :root { --t-body: 16px; --t-lede: 18px; --t-h3: 24px; --t-title: 36px; --t-greets: 44px; --greets-h: 104px;
+      --band: 4px; --bar-amp: 52px; --sine-amp: 14px; }
+  }
+
+  /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+
+  /* Hidden only when the script runs, and only until the decrunch ends: a blank screen in a striped border. */
+  html.js:not(.go) .screen > * { visibility: hidden; }
+  html.js:not(.go) .copper { visibility: hidden; }
+  html.js:not(.go) .crunch { display: block; }
+  @media (prefers-reduced-motion: reduce) {
+    html.js:not(.go) .screen > *, html.js:not(.go) .copper { visibility: visible; }
+    html.js:not(.go) .crunch { display: none; }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { background: var(--frame); }
+  body {
+    margin: 0;
+    background: var(--frame);
+    color: var(--text);
+    font: 400 var(--t-body)/var(--lh-body) var(--font-text);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+  ::selection { background: var(--yellow); color: var(--ink); }
+  .vh {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+  }
+  [hidden] { display: none !important; }
+
+  /* Colour means competition: one rule gives a chip, a tile, a bar, a rule row or the dialog its hue. */
+  [data-comp="all"] { --hue: var(--text); }
+  [data-comp="64k"] { --hue: var(--c-64k); }
+  [data-comp="4k"] { --hue: var(--c-4k); }
+  [data-comp="old"] { --hue: var(--c-old); }
+  [data-comp="pix"] { --hue: var(--c-pix); }
+  [data-comp="mus"] { --hue: var(--c-mus); }
+  [data-comp="wild"] { --hue: var(--c-wild); }
+
+  /* ---------- The machine: border area, copper layer, opaque screen ---------- */
+  .party {
+    position: relative;
+    isolation: isolate;
+    overflow: clip;
+    padding: var(--frame-y) var(--frame-x);
+    background: var(--frame);
+  }
+  .copper, .crunch { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+  .copper { isolation: isolate; }
+  /* One bar: seven hard bands. The script copies this computed background into the headline, so the bars that
+     show through the letters are these bars. Outer bands stay at or above 3:1 on the screen (red, the weakest: 3.0:1). */
+  .bar {
+    --b1: color-mix(in srgb, var(--hue) 67%, var(--bar-shade));
+    --b2: color-mix(in srgb, var(--hue) 84%, var(--bar-shade));
+    --b4: color-mix(in srgb, var(--hue) 45%, var(--text));
+    position: absolute; left: 0; right: 0;
+    height: var(--bar-h);
+    background: linear-gradient(to bottom, var(--b1) 0 calc(var(--band) * 1), var(--b2) 0 calc(var(--band) * 2), var(--hue) 0 calc(var(--band) * 3), var(--b4) 0 calc(var(--band) * 4), var(--hue) 0 calc(var(--band) * 5), var(--b2) 0 calc(var(--band) * 6), var(--b1) 0);
+    will-change: transform;
+  }
+  /* Without JavaScript the bars rest here; the script then places them with whole-pixel transforms. */
+  .bar:nth-child(1) { top: calc(var(--frame-y) / 2 - var(--bar-h) / 2); }
+  .bar:nth-child(2) { top: calc(var(--frame-y) + 96px); }
+  .bar:nth-child(3) { top: calc(var(--frame-y) + 176px); }
+  .bar:nth-child(4) { top: calc(var(--frame-y) + 256px); }
+  .bar:nth-child(5) { top: calc(var(--frame-y) + 520px); }
+  .bar:nth-child(6) { bottom: calc(var(--frame-y) / 2 - var(--bar-h) / 2); }
+  .copper.is-live .bar { top: 0; bottom: auto; }
+  /* Decrunch: a strip of random stripes that jumps by whole frames; one white frame ends it. */
+  .crunch { display: none; overflow: clip; }
+  .crunch i { position: absolute; left: 0; right: 0; top: 0; }
+  .party.is-white .crunch { background: var(--text); }
+  .party.is-white .crunch i { visibility: hidden; }
+
+  .screen {
+    position: relative; z-index: 1;
+    padding: var(--s6) var(--pad) var(--s7);
+    background: var(--screen);
+  }
+
+  /* ---------- Headline: the bars pass behind the screen and show through the type ---------- */
+  .h2 {
+    margin: -.06em 0; padding: .06em 0;   /* the clipped background must reach the whole glyph */
+    max-width: 16ch;
+    font: 800 var(--t-h2)/.92 var(--font-display);
+    font-variation-settings: var(--modules);
+    letter-spacing: 0;
+    text-wrap: balance;
+  }
+  /* The script supplies background-image (six bars, front to back, then a flat text-colour layer) and
+     background-position (each bar's Y in headline space). Where no bar is, the letters are plain --text. */
+  .h2.is-live {
+    color: transparent;
+    -webkit-background-clip: text; background-clip: text;
+    background-repeat: no-repeat;
+    background-size: 100% var(--bar-h), 100% var(--bar-h), 100% var(--bar-h), 100% var(--bar-h), 100% var(--bar-h), 100% var(--bar-h), 100% 100%;
+  }
+  @media (forced-colors: active) { .h2.is-live { color: CanvasText; background: none !important; } }
+  .lede { margin: var(--s5) 0 0; max-width: 60ch; font-size: var(--t-lede); line-height: var(--lh-lede); }
+  .actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s5); margin-top: var(--s5); }
+  .h3 { margin: 0; font: 600 var(--t-h3)/1.15 var(--font-text); letter-spacing: -.01em; }
+
+  /* ---------- Primary button: colour cycling ---------- */
+  .btn {
+    display: inline-block;
+    color: var(--ink); text-decoration: none;
+    font: 600 var(--t-body)/1.2 var(--font-text);
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* The stepped corners live on .face, never on the link, so the focus ring is not clipped. */
+  .face {
+    position: relative;
+    display: flex; align-items: center;
+    min-height: var(--tap);
+    padding: calc(2 * var(--cyc)) var(--s3);   /* two cycling bands show above and below the plate */
+    background: var(--go);   /* ink label on yellow 14.88:1 */
+    overflow: hidden; isolation: isolate;
+    clip-path: polygon(0 var(--notch), var(--notch) var(--notch), var(--notch) 0, calc(100% - var(--notch)) 0, calc(100% - var(--notch)) var(--notch), 100% var(--notch), 100% calc(100% - var(--notch)), calc(100% - var(--notch)) calc(100% - var(--notch)), calc(100% - var(--notch)) 100%, var(--notch) 100%, var(--notch) calc(100% - var(--notch)), 0 calc(100% - var(--notch)));
+  }
+  .bands {
+    position: absolute; left: 0; right: 0; top: 0; z-index: -1;
+    height: calc(100% + 7 * var(--cyc));
+    visibility: hidden;
+    background: repeating-linear-gradient(to bottom, var(--red) 0 calc(var(--cyc) * 1), var(--orange) 0 calc(var(--cyc) * 2), var(--yellow) 0 calc(var(--cyc) * 3), var(--green) 0 calc(var(--cyc) * 4), var(--cyan) 0 calc(var(--cyc) * 5), var(--violet) 0 calc(var(--cyc) * 6), var(--pink) 0 calc(var(--cyc) * 7));
+  }
+  .plate { position: relative; padding: var(--s1) var(--s2); }
+  /* Hover or focus: the bands flow up one band per frame; the label moves onto a screen-coloured plate (12.68:1). */
+  .btn:focus-visible .bands { visibility: visible; animation: cycle var(--d-cycle) steps(7) infinite; }
+  .btn:focus-visible .plate { background: var(--screen); color: var(--text); }
+  @media (hover: hover) {
+    .btn:hover .bands { visibility: visible; animation: cycle var(--d-cycle) steps(7) infinite; }
+    .btn:hover .plate { background: var(--screen); color: var(--text); }
+  }
+  @media (hover: none) {
+    .btn:active .bands { visibility: visible; }
+    .btn:active .plate { background: var(--screen); color: var(--text); }
+  }
+  /* Press: the bands freeze and the face inverts for one frame. */
+  .btn:active .bands { animation-play-state: paused; }
+  .btn:active .face { animation: invert-frame var(--d-frame) steps(1, end) 1; }
+  @keyframes cycle { to { transform: translateY(calc(-7 * var(--cyc))); } }
+  @keyframes invert-frame { from { filter: invert(1); } }
+
+  /* ---------- Outline buttons (Previous, Next): instant states only ---------- */
+  .btn2 {
+    min-height: var(--tap);
+    padding: 0 var(--s3);
+    border: 2px solid var(--line); border-radius: 0;
+    background: var(--screen); color: var(--text);
+    font: 600 var(--t-body)/1.2 var(--font-text);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn2:hover, .btn2:focus-visible { border-color: var(--text); background: var(--text); color: var(--ink); }
+  .btn2:active { transform: translateY(2px); }
+  .btn2:disabled { border-color: var(--frame); background: var(--screen); color: var(--soft); cursor: default; transform: none; }
+
+  /* ---------- Text links: a static 2px line; the letters ripple ---------- */
+  .lnk {
+    display: inline-block;
+    min-height: var(--hit); min-width: var(--hit);
+    padding: 10px 0;
+    border: 0; background: none;
+    color: var(--text); text-decoration: none;
+    font: inherit; line-height: 1.4; font-weight: 600;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .lnk-t { padding-bottom: 3px; border-bottom: 2px solid var(--soft); }
+  .lnk .w { display: inline-block; white-space: nowrap; }
+  .lnk .ch { display: inline-block; }
+  .lnk:focus-visible .ch, .lnk.is-rip .ch { animation: ripple var(--d-ripple) steps(1, end) calc(var(--i) * var(--d-ripple-gap)) 1 both; }
+  @media (hover: hover) {
+    .lnk:hover .ch { animation: ripple var(--d-ripple) steps(1, end) calc(var(--i) * var(--d-ripple-gap)) 1 both; }
+  }
+  /* One sine cycle in eight held frames, 3px each way. */
+  @keyframes ripple {
+    0% { transform: translateY(-2px); } 12.5% { transform: translateY(-3px); } 25% { transform: translateY(-2px); }
+    37.5% { transform: translateY(0); } 50% { transform: translateY(2px); } 62.5% { transform: translateY(3px); }
+    75% { transform: translateY(2px); } 87.5%, 100% { transform: translateY(0); }
+  }
+
+  /* ---------- Sine scroller ---------- */
+  .greets {
+    position: relative;
+    margin: var(--s6) calc(-1 * var(--pad)) 0;
+    padding: var(--s3) var(--pad);
+    border-block: 2px solid var(--frame);
+    background: var(--ink);
+    overflow: clip;
+  }
+  .sine {
+    margin: 0;
+    color: var(--text);
+    font: 700 var(--t-greets-still)/1.15 var(--font-display);
+    font-variation-settings: var(--modules);
+  }
+  .sine .w { display: inline-block; white-space: nowrap; }
+  .sine .g { display: inline-block; }
+  /* Moving version: one line, positioned by the script from the scroll position. */
+  html.fx .greets { height: var(--greets-h); padding-block: 0; }
+  html.fx .sine {
+    position: absolute; left: 0; top: 50%;
+    margin-top: calc(var(--t-greets) * -.56);
+    font-size: var(--t-greets); line-height: 1.1;
+    white-space: nowrap;
+    will-change: transform;
+  }
+
+  /* ---------- Winners: chips and grid ---------- */
+  .winners { margin-top: var(--s6); scroll-margin-top: var(--s4); }
+  .chips { display: flex; flex-wrap: wrap; gap: var(--s2); margin-top: var(--s4); }
+  .chip {
+    display: inline-flex; align-items: center; gap: var(--s2);
+    min-height: var(--hit);
+    padding: 0 var(--s3);
+    border: 2px solid var(--hue); border-radius: 0;
+    background: var(--screen); color: var(--text);
+    font: 600 var(--t-body)/1.2 var(--font-text);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .chip .n { color: var(--hue); font-variant-numeric: tabular-nums; }
+  .chip:hover:not([aria-pressed="true"]), .chip:focus-visible:not([aria-pressed="true"]) { box-shadow: inset 0 -4px 0 var(--hue); }
+  /* Active: the competition hue becomes the ground, with ink text (6.03:1 or better). */
+  .chip[aria-pressed="true"] { background: var(--hue); color: var(--ink); }
+  .chip[aria-pressed="true"] .n { color: var(--ink); }
+  /* Bit flip: frame one is every bit inverted, one cell left; frame two is one cell right; then it rests. */
+  .chip.is-flip { animation: flip var(--d-flip) steps(1, end) 1; }
+  @keyframes flip {
+    0% { transform: translateX(calc(-1 * var(--cell))); filter: invert(1); }
+    50% { transform: translateX(var(--cell)); filter: none; }
+    100% { transform: none; }
+  }
+  .status { margin: var(--s3) 0 0; color: var(--soft); font-size: var(--t-small); }
+
+  .grid {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s3);
+    margin: var(--s3) 0 0; padding: 0;
+    list-style: none;
+  }
+  @media (min-width: 1024px) { .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s4); } }
+  .tile {
+    display: flex; flex-direction: column;
+    width: 100%; height: 100%;
+    padding: var(--s2) var(--s2) var(--s3);
+    border: 2px solid var(--line); border-radius: 0;
+    background: var(--screen); color: var(--text);
+    font: inherit; text-align: left;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .still {
+    display: block; width: 100%; aspect-ratio: 3 / 2;
+    background: var(--ink);
+    image-rendering: pixelated;
+  }
+  .t-title { display: block; margin-top: var(--s3); font: 600 var(--t-lede)/1.2 var(--font-text); letter-spacing: -.01em; }
+  .t-group { display: block; margin-top: var(--s1); color: var(--soft); }
+  .t-meta { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--s2); margin-top: auto; padding-top: var(--s3); }
+  .tag { display: inline-flex; align-items: center; gap: var(--s2); color: var(--hue); font: 600 var(--t-small)/1.3 var(--font-text); }
+  .tag::before { content: ""; flex: none; width: var(--cell); height: var(--cell); background: var(--hue); }
+  .place { font: 700 var(--t-place)/.8 var(--font-display); font-variation-settings: var(--modules); }
+  /* Hover or focus: the frame takes the competition hue (2px border plus a hard 2px ring) and the tag blinks twice. */
+  .tile:focus-visible { border-color: var(--hue); box-shadow: 0 0 0 2px var(--hue); outline-offset: 5px; }
+  .tile:focus-visible .tag { animation: blink var(--d-blink) steps(1, end) 1; }
+  @media (hover: hover) {
+    .tile:hover { border-color: var(--hue); box-shadow: 0 0 0 2px var(--hue); }
+    .tile:hover .tag { animation: blink var(--d-blink) steps(1, end) 1; }
+  }
+  .tile:active { border-color: var(--hue); box-shadow: 0 0 0 2px var(--hue); background: var(--ink); }
+  .tile.is-gone > * { visibility: hidden; }   /* second frame of a filtered-out tile: an empty frame */
+  @keyframes blink { 0%, 50% { opacity: 0; } 25%, 75%, 100% { opacity: 1; } }
+
+  /* ---------- Rules ---------- */
+  .rules { margin-top: var(--s7); padding-top: var(--s5); border-top: 2px solid var(--frame); scroll-margin-top: var(--s4); }
+  .rules .h3:focus { outline: none; }   /* focus lands here only so reading continues from the rules */
+  .rules-intro { margin: var(--s2) 0 0; max-width: 60ch; color: var(--soft); }
+  .rule-list { display: grid; gap: var(--s3) var(--s6); margin: var(--s4) 0 var(--s3); }
+  @media (min-width: 900px) { .rule-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .rule-list dt { font-weight: 600; }
+  .rule-list dt.tag { font-size: var(--t-body); }
+  .rule-list dd { margin: var(--s1) 0 0; max-width: 52ch; font-variant-numeric: tabular-nums; }
+
+  /* ---------- Entry dialog ---------- */
+  .entry {
+    width: min(920px, 100% - 2 * var(--s3)); max-width: none;
+    max-height: calc(100dvh - 2 * var(--s3));
+    margin: auto; padding: 0; border: 0;
+    background: none; color: var(--text);
+    overflow-y: auto; overscroll-behavior: contain;
+  }
+  .entry::backdrop { background: var(--scrim); }
+  .panel {
+    position: relative; overflow: clip;
+    padding: var(--s3) var(--s4) var(--s4);
+    border: 4px solid var(--hue);
+    background: var(--screen);
+  }
+  .e-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); }
+  .e-body { display: grid; gap: var(--s4); margin-top: var(--s2); }
+  @media (min-width: 760px) { .e-body { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: var(--s5); } }
+  .e-title { margin: 0; font: 700 var(--t-title)/.95 var(--font-display); font-variation-settings: var(--modules); }
+  .e-group { margin: var(--s2) 0 0; color: var(--soft); }
+  .facts { display: grid; gap: var(--s1); margin: var(--s3) 0 0; }
+  .facts > div { display: grid; grid-template-columns: 7em minmax(0, 1fr); gap: var(--s2); }
+  .facts dt { font-weight: 600; }
+  .facts dd { margin: 0; font-variant-numeric: tabular-nums; }
+  .e-desc { margin: var(--s3) 0 0; max-width: 46ch; }
+  .e-links { display: flex; flex-wrap: wrap; gap: 0 var(--s4); margin-top: var(--s2); }
+  .e-nav { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3); margin-top: var(--s4); padding-top: var(--s3); border-top: 2px solid var(--frame); }
+  .e-count { margin: 0 auto 0 0; color: var(--soft); font-variant-numeric: tabular-nums; }
+  /* Interlace weave: two shutters, odd lines in the competition hue and even lines in the border colour.
+     Together they cover the panel; the script slides them out in opposite directions in eight steps. */
+  .weave { display: none; position: absolute; inset: 0; pointer-events: none; }
+  .weave-a { background: repeating-linear-gradient(to bottom, var(--hue) 0 var(--scan), transparent 0 calc(2 * var(--scan))); }
+  .weave-b { background: repeating-linear-gradient(to bottom, transparent 0 var(--scan), var(--frame) 0 calc(2 * var(--scan))); }
+
+  /* ---------- Narrow screens ---------- */
+  @media (max-width: 599px) {
+    .screen { padding-block: var(--s5) var(--s6); }
+    .actions { display: grid; justify-items: start; }
+    .btn { width: 100%; }
+    .face { justify-content: center; }
+    .chip { padding: 0 var(--s2); }
+    .grid { gap: var(--s2); }
+    .tile { padding: var(--s1) var(--s1) var(--s2); }
+    .t-title { margin-top: var(--s2); font-size: var(--t-body); }
+    .t-group, .tag { font-size: 13px; }
+    .t-meta { padding-top: var(--s2); }
+    .panel { padding: var(--s2) var(--s3) var(--s3); }
+    .e-nav .btn2 { flex: 1 1 0; padding: 0 var(--s2); }
+    .e-count { flex-basis: 100%; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bands, .btn:active .face, .lnk .ch, .chip.is-flip, .tile .tag { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<section class="party" aria-labelledby="party-title">
+  <div class="copper" aria-hidden="true">
+    <i class="bar" data-comp="64k"></i><i class="bar" data-comp="4k"></i><i class="bar" data-comp="old"></i>
+    <i class="bar" data-comp="pix"></i><i class="bar" data-comp="mus"></i><i class="bar" data-comp="wild"></i>
+  </div>
+  <div class="crunch" aria-hidden="true"><i></i></div>
+
+  <div class="screen">
+    <h2 class="h2" id="party-title">The twelve winners of Rasterline 2026.</h2>
+    <p class="lede">Rasterline is a demoparty held in Bergen every Easter. From 2 to 5 April, 97 entries ran on the big screen in six competitions and the hall voted. These twelve took the podium places. Pick a competition, or open an entry to see what it ran on and how small it is.</p>
+    <div class="actions">
+      <a class="btn" id="rules-link" href="#rules"><span class="face"><span class="bands" aria-hidden="true"></span><span class="plate">See the 2027 entry rules</span></span></a>
+      <a class="lnk" href="https://www.scene.org/" target="_blank" rel="noopener"><span class="lnk-t">Browse earlier years in the archive</span><span class="vh"> (opens in a new tab)</span></a>
+    </div>
+
+    <div class="greets">
+      <p class="vh">Greetings to Nullvektor, Tessel8, Mosaik, Arpeggia and everyone who stayed up for the prizegiving.</p>
+      <p class="sine" aria-hidden="true">Greetings to Nullvektor, Tessel8, Mosaik, Arpeggia and everyone who stayed up for the prizegiving.</p>
+    </div>
+
+    <div class="winners" id="winners">
+      <h3 class="h3" id="winners-title">Winners by competition</h3>
+      <div class="chips" role="group" aria-labelledby="winners-title">
+        <button class="chip" type="button" data-comp="all" aria-pressed="true">All <span class="n" aria-hidden="true">12</span><span class="vh">, 12 entries</span></button>
+        <button class="chip" type="button" data-comp="64k" aria-pressed="false">64k intro <span class="n" aria-hidden="true">3</span><span class="vh">, 3 entries</span></button>
+        <button class="chip" type="button" data-comp="4k" aria-pressed="false">4k intro <span class="n" aria-hidden="true">2</span><span class="vh">, 2 entries</span></button>
+        <button class="chip" type="button" data-comp="old" aria-pressed="false">Oldschool demo <span class="n" aria-hidden="true">2</span><span class="vh">, 2 entries</span></button>
+        <button class="chip" type="button" data-comp="pix" aria-pressed="false">Pixel graphics <span class="n" aria-hidden="true">2</span><span class="vh">, 2 entries</span></button>
+        <button class="chip" type="button" data-comp="mus" aria-pressed="false">Tracked music <span class="n" aria-hidden="true">2</span><span class="vh">, 2 entries</span></button>
+        <button class="chip" type="button" data-comp="wild" aria-pressed="false">Wild <span class="n" aria-hidden="true">1</span><span class="vh">, 1 entry</span></button>
+      </div>
+      <p class="status" id="status" role="status">Showing all 12 entries.</p>
+
+      <!-- Each tile carries its whole entry: data-fx names the still, the other data attributes fill the dialog. -->
+      <ul class="grid" id="grid">
+        <li><button class="tile" type="button" aria-haspopup="dialog" data-comp="64k" data-fx="tunnel" data-place="1" data-platform="PC, 64-bit" data-bytes="65412" data-desc="A flooded warehouse tunnel that keeps turning while the water level follows the bassline. Every texture and all six minutes of music are generated at start-up.">
+          <canvas class="still" width="96" height="64" role="img" aria-label="Still: a tunnel of checkered rings receding to a point."></canvas>
+          <span class="t-title">Low tide at Bryggen</span><span class="t-group"><span class="vh">by </span>Halvtone</span>
+          <span class="t-meta"><span class="tag">64k intro</span><span class="place">1st<span class="vh"> place</span></span></span>
+        </button></li>
+        <li><button class="tile" type="button" aria-haspopup="dialog" data-comp="64k" data-fx="plasma" data-place="2" data-platform="PC, 64-bit" data-bytes="65536" data-desc="A weather diary told in colour fields, one palette for each season. It fills the size limit to the last byte.">
+          <canvas class="still" width="96" height="64" role="img" aria-label="Still: a plasma of curved colour bands."></canvas>
+          <span class="t-title">Seven hundred rainy days</span><span class="t-group"><span class="vh">by </span>Nullvektor</span>
+          <span class="t-meta"><span class="tag">64k intro</span><span class="place">2nd<span class="vh"> place</span></span></span>
+        </button></li>
+        <li><button class="tile" type="button" aria-haspopup="dialog" data-comp="64k" data-fx="blobs" data-place="3" data-platform="PC, 64-bit" data-bytes="64988" data-desc="Blobs of molten glass merge and split over a harbour drawn from distance fields. It is the crew's first entry in this competition.">
+          <canvas class="still" width="96" height="64" role="img" aria-label="Still: four metaballs merging, in contour bands."></canvas>
+          <span class="t-title">Glass harbour</span><span class="t-group"><span class="vh">by </span>Ostinato Crew</span>
+          <span class="t-meta"><span class="tag">64k intro</span><span class="place">3rd<span class="vh"> place</span></span></span>
+        </button></li>
+        <li><button class="tile" type="button" aria-haspopup="dialog" data-comp="4k" data-fx="fire" data-place="1" data-platform="PC, 64-bit" data-bytes="4089" data-desc="A fire burns down a line of sums until only the answer is left. The four kilobytes include the crackle.">
+          <canvas class="still" width="96" height="64" role="img" aria-label="Still: a row of pixel flames."></canvas>
+          <span class="t-title">Ember arithmetic</span><span class="t-group"><span class="vh">by </span>Kilobyte Kitchen</span>
+          <span class="t-meta"><span class="tag">4k intro</span><span class="place">1st<span class="vh"> place</span></span></span>
+        </button></li>
+        <li><button class="tile" type="button" aria-haspopup="dialog" data-comp="4k" data-fx="roto" data-place="2" data-platform="PC, 64-bit" data-bytes="4096" data-desc="One checkerboard, rotated and zoomed until it folds into itself. The whole intro is a single loop and a sine table.">
+          <canvas class="still" width="96" height="64" role="img" aria-label="Still: a rotated, zoomed checkerboard."></canvas>
+          <span class="t-title">Fold</span><span class="t-group"><span class="vh">by </span>Tessel8</span>
+          <span class="t-meta"><span class="tag">4k intro</span><span class="place">2nd<span class="vh"> place</span></span></span>
+        </button></li>
+        <li><button class="tile" type="button" aria-haspopup="dialog" data-comp="old" data-fx="bars" data-place="1" data-platform="8-bit home computer, 64 KB" data-bytes="48211" data-desc="Raster bars leave the screen and keep going in the border, where the machine was never meant to draw. It loads from tape in under three minutes.">
+          <canvas class="still" width="96" height="64" role="img" aria-label="Still: wavy raster bars crossing each other."></canvas>
+          <span class="t-title">Border patrol</span><span class="t-group"><span class="vh">by </span>Datasette Union</span>
+          <span class="t-meta"><span class="tag">Oldschool demo</span><span class="place">1st<span class="vh"> place</span></span></span>
+        </button></li>
+        <li><button class="tile" type="button" aria-haspopup="dialog" data-comp="old" data-fx="twister" data-place="2" data-platform="16-bit home computer, 512 KB" data-bytes="187904" data-desc="A twisting column of dough that never tears, on five bitplanes at fifty frames a second. This is the bakery's ninth twister in nine years.">
+          <canvas class="still" width="96" height="64" role="img" aria-label="Still: a twisting four-sided column."></canvas>
+          <span class="t-title">Twist of salt</span><span class="t-group"><span class="vh">by </span>Bitplane Bakery</span>
+          <span class="t-meta"><span class="tag">Oldschool demo</span><span class="place">2nd<span class="vh"> place</span></span></span>
+        </button></li>
+        <li><button class="tile" type="button" aria-haspopup="dialog" data-comp="pix" data-fx="voxel" data-place="1" data-platform="320 x 256 pixels, 32 colours" data-bytes="11304" data-desc="The mountain above Bergen under a winter sky, placed pixel by pixel over eleven evenings. It was handed in with all four working stages.">
+          <canvas class="still" width="96" height="64" role="img" aria-label="Still: a voxel mountain landscape under a moon."></canvas>
+          <span class="t-title">Ulriken by night</span><span class="t-group"><span class="vh">by </span>Mosaik</span>
+          <span class="t-meta"><span class="tag">Pixel graphics</span><span class="place">1st<span class="vh"> place</span></span></span>
+        </button></li>
+        <li><button class="tile" type="button" aria-haspopup="dialog" data-comp="pix" data-fx="moire" data-place="2" data-platform="320 x 200 pixels, 16 colours" data-bytes="7926" data-desc="Two sets of rings drawn by hand until they interfere. No circle tool was used, and the working stages prove it.">
+          <canvas class="still" width="96" height="64" role="img" aria-label="Still: two sets of concentric rings making a moire pattern."></canvas>
+          <span class="t-title">Interference</span><span class="t-group"><span class="vh">by </span>Stipple</span>
+          <span class="t-meta"><span class="tag">Pixel graphics</span><span class="place">2nd<span class="vh"> place</span></span></span>
+        </button></li>
+        <li><button class="tile" type="button" aria-haspopup="dialog" data-comp="mus" data-fx="dots" data-place="1" data-platform="Four-channel tracker module" data-bytes="61222" data-desc="A four-channel module written on the night train to the party. The dots are its samples, drawn by the competition player while it ran.">
+          <canvas class="still" width="96" height="64" role="img" aria-label="Still: coloured dots along looping sine curves."></canvas>
+          <span class="t-title">Four channels, no sleep</span><span class="t-group"><span class="vh">by </span>Modulo Nine</span>
+          <span class="t-meta"><span class="tag">Tracked music</span><span class="place">1st<span class="vh"> place</span></span></span>
+        </button></li>
+        <li><button class="tile" type="button" aria-haspopup="dialog" data-comp="mus" data-fx="stars" data-place="2" data-platform="Eight-channel tracker module" data-bytes="118470" data-desc="Slow chords and one arpeggio that never resolves, written for the last ferry out of the harbour. The starfield ran behind it on the big screen.">
+          <canvas class="still" width="96" height="64" role="img" aria-label="Still: a starfield streaking out from the centre."></canvas>
+          <span class="t-title">Ferry to nowhere</span><span class="t-group"><span class="vh">by </span>Arpeggia</span>
+          <span class="t-meta"><span class="tag">Tracked music</span><span class="place">2nd<span class="vh"> place</span></span></span>
+        </button></li>
+        <li><button class="tile" type="button" aria-haspopup="dialog" data-comp="wild" data-fx="cube" data-place="1" data-platform="Graphing calculator, 96 x 64 pixels" data-bytes="2304" data-desc="A rotating wireframe cube on a school calculator, filmed on stage with the lights off. It runs at eleven frames a second on four penlight batteries.">
+          <canvas class="still" width="96" height="64" role="img" aria-label="Still: a wireframe cube."></canvas>
+          <span class="t-title">Cube on a calculator</span><span class="t-group"><span class="vh">by </span>Solder &amp; Sons</span>
+          <span class="t-meta"><span class="tag">Wild</span><span class="place">1st<span class="vh"> place</span></span></span>
+        </button></li>
+      </ul>
+    </div>
+
+    <div class="rules" id="rules">
+      <h3 class="h3" id="rules-title" tabindex="-1">Entry rules for Rasterline 2027</h3>
+      <p class="rules-intro">Rasterline 2027 runs from Thursday 25 to Sunday 28 March in Bergen. You can enter from the hall or from home.</p>
+      <dl class="rule-list">
+        <div data-comp="64k"><dt class="tag">64k intro</dt><dd>One executable of 65,536 bytes or less. It must run offline and end by itself within 8 minutes.</dd></div>
+        <div data-comp="4k"><dt class="tag">4k intro</dt><dd>One executable of 4,096 bytes or less. No files other than the executable may be read.</dd></div>
+        <div data-comp="old"><dt class="tag">Oldschool demo</dt><dd>Any home computer released before 1995, with no added memory or accelerator. One disk or tape image.</dd></div>
+        <div data-comp="pix"><dt class="tag">Pixel graphics</dt><dd>At most 320 x 256 pixels and 32 colours, placed by hand. Hand in four working stages with the picture.</dd></div>
+        <div data-comp="mus"><dt class="tag">Tracked music</dt><dd>One module of 4 to 8 channels, 3 minutes 30 seconds at most. Samples must be your own or free to use.</dd></div>
+        <div data-comp="wild"><dt class="tag">Wild</dt><dd>Anything that fits no other competition, shown as a video capture of 5 minutes at most.</dd></div>
+        <div><dt>Deadline</dt><dd>Upload by Friday 26 March 2027 at 22:00, Bergen time. Later entries are shown out of competition.</dd></div>
+        <div><dt>All competitions</dt><dd>One entry per group in each competition, never released or shown before the party.</dd></div>
+      </dl>
+      <a class="lnk" href="#winners"><span class="lnk-t">Back to the winners</span></a>
+    </div>
+  </div>
+</section>
+
+<dialog class="entry" id="entry" aria-labelledby="entry-title" data-comp="64k" data-lenis-prevent>
+  <div class="panel">
+    <div class="e-head">
+      <p class="tag" id="entry-comp">64k intro</p>
+      <button class="lnk" id="entry-close" type="button"><span class="lnk-t">Close</span></button>
+    </div>
+    <div class="e-body">
+      <div>
+        <canvas class="still" id="entry-still" width="96" height="64" role="img" aria-label=""></canvas>
+        <div class="e-links">
+          <a class="lnk" href="https://www.youtube.com/" target="_blank" rel="noopener"><span class="lnk-t">Watch the capture</span><span class="vh"> (opens in a new tab)</span></a>
+          <a class="lnk" href="https://www.scene.org/" target="_blank" rel="noopener"><span class="lnk-t">Download from the archive</span><span class="vh"> (opens in a new tab)</span></a>
+        </div>
+      </div>
+      <div>
+        <h2 class="e-title" id="entry-title">Low tide at Bryggen</h2>
+        <p class="e-group" id="entry-group">by Halvtone</p>
+        <dl class="facts">
+          <div><dt>Competition</dt><dd id="entry-comp2">64k intro</dd></div>
+          <div><dt>Place</dt><dd id="entry-place">1st place</dd></div>
+          <div><dt>Platform</dt><dd id="entry-platform">PC, 64-bit</dd></div>
+          <div><dt>Size</dt><dd id="entry-bytes">65,412 bytes</dd></div>
+        </dl>
+        <p class="e-desc" id="entry-desc"></p>
+      </div>
+    </div>
+    <div class="e-nav">
+      <p class="e-count" id="entry-count" aria-live="polite">Entry 1 of 12</p>
+      <button class="btn2" id="entry-prev" type="button">Previous entry</button>
+      <button class="btn2" id="entry-next" type="button">Next entry</button>
+    </div>
+    <i class="weave weave-a" aria-hidden="true"></i><i class="weave weave-b" aria-hidden="true"></i>
+  </div>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  const root = document.documentElement;
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const lib = !!(window.gsap && window.ScrollTrigger && window.Lenis);
+  if (lib) root.classList.add('js'); // CDN blocked: no class, everything is visible and still works
+
+  const sec = $('.party'), copper = $('.copper'), bars = $$('.bar'), h2 = $('.h2'), greets = $('.greets'), sine = $('.sine');
+  const tiles = $$('.tile'), chips = $$('.chip'), status = $('#status'), rulesTitle = $('#rules-title');
+  const dlg = $('#entry'), E = Object.fromEntries(['still', 'title', 'group', 'comp', 'comp2', 'place', 'platform', 'bytes', 'desc', 'count', 'prev', 'next', 'close'].map((k) => [k, $('#entry-' + k)]));
+  let lenis = null, fx = null; // fx: hooks set by the motion branch; null means instant
+
+  /* ---------- Colours come from the tokens ---------- */
+  const read = (n) => getComputedStyle(root).getPropertyValue(n).trim();
+  const rgb = (n) => { const v = parseInt(read(n).slice(1), 16); return [v >> 16, v >> 8 & 255, v & 255]; };
+  const HUES = ['red', 'orange', 'yellow', 'green', 'cyan', 'violet', 'pink'];
+  const K = Object.fromEntries(['ink', 'frame', 'soft', 'text', ...HUES].map((k) => [k, rgb('--' + k)]));
+  const mix = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
+  const lum = (c) => { const [r, g, b] = c.map((v) => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; }); return .2126 * r + .7152 * g + .0722 * b; };
+
+  /* ---------- The twelve stills: classic effects, computed once on a 96 x 64 indexed bitmap ---------- */
+  const SW = 96, SH = 64;
+  const each = (fn) => { const p = new Uint8Array(SW * SH); for (let y = 0, i = 0; y < SH; y++) for (let x = 0; x < SW; x++, i++) p[i] = fn(x, y); return p; };
+  const plot = (p, x, y, c) => { x = Math.round(x); y = Math.round(y); if (x >= 0 && x < SW && y >= 0 && y < SH) p[y * SW + x] = c; };
+  const line = (p, x0, y0, x1, y1, c) => { const n = Math.ceil(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0))) || 1; for (let k = 0; k <= n; k++) plot(p, x0 + (x1 - x0) * k / n, y0 + (y1 - y0) * k / n, c); };
+  const rnd = (s) => () => { s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  const ramp = (h) => [K.ink, mix(K.ink, h, .3), mix(K.ink, h, .6), h, mix(h, K.text, .55), K.text]; // six steps of one hue
+  const mod = (v, n) => ((v % n) + n) % n;
+  const STILL = {
+    plasma: () => ({ pal: [K.ink, mix(K.ink, K.violet, .5), K.violet, mix(K.violet, K.cyan, .5), K.cyan, K.green, K.pink, K.text],
+      px: each((x, y) => {
+        const v = Math.sin(x * .11) + Math.sin(y * .15 + 1.3) + Math.sin((x + y) * .08 + 2) + Math.sin(Math.hypot(x - 70, y - 12) * .17);
+        const k = mod(Math.floor((v / 5.2 + .5) * 20), 14); // 14 steps up and down the palette, so no band is wide
+        return k < 8 ? k : 14 - k;
+      }) }),
+    tunnel: () => ({ pal: ramp(K.cyan), px: each((x, y) => {
+      const dx = x - 54, dy = y - 28, d = Math.max(1, Math.hypot(dx, dy));
+      const c = (Math.floor(260 / d) + Math.floor((Math.atan2(dy, dx) / Math.PI + 1) * 8)) & 1, depth = Math.min(4, Math.floor(d / 8));
+      return d < 5 ? 0 : c ? depth + 1 : Math.max(0, depth - 1);
+    }) }),
+    blobs: () => { const B = [[28, 24, 13], [56, 38, 16], [76, 18, 10], [42, 50, 8]];
+      return { pal: [K.ink, mix(K.ink, K.cyan, .3), mix(K.ink, K.cyan, .6), K.cyan, K.pink, K.text], px: each((x, y) => {
+        let f = 0; for (const [bx, by, r] of B) f += r * r / ((x - bx) ** 2 + (y - by) ** 2 + 1);
+        return f < .45 ? 0 : f < .7 ? 1 : f < 1 ? 2 : f < 1.6 ? 3 : f < 2.8 ? 4 : 5;
+      }) }; },
+    fire: () => { // the classic: seed the bottom rows, then every cell is the cooled average of the cells under it
+      const r = rnd(7), b = new Float32Array(SW * (SH + 2));
+      for (let n = 0; n < 70; n++) {
+        for (let x = 0; x < SW; x += 3) { const v = r() > .42 ? 1 : 0; for (let k = 0; k < 3; k++) b[SH * SW + x + k] = b[(SH + 1) * SW + x + k] = v; }
+        for (let y = 0; y < SH; y++) for (let x = 0; x < SW; x++) b[y * SW + x] = Math.max(0, (b[(y + 1) * SW + (x + SW - 1) % SW] + b[(y + 1) * SW + x] + b[(y + 1) * SW + (x + 1) % SW] + b[(y + 2) * SW + x]) / 4.1 - r() * .012);
+      }
+      return { pal: [K.ink, mix(K.ink, K.red, .5), K.red, K.orange, K.yellow, K.text], px: each((x, y) => Math.max(0, Math.min(5, Math.floor(b[y * SW + x] * 7.5 - .5)))) };
+    },
+    roto: () => { const ca = Math.cos(.45), sa = Math.sin(.45);
+      return { pal: [K.ink, mix(K.ink, K.orange, .45), K.orange, K.text], px: each((x, y) => {
+        const s = 7 + (x + y) * .075, u = ((x - 40) * ca - (y - 30) * sa) / s, v = ((x - 40) * sa + (y - 30) * ca) / s;
+        const big = (Math.floor(u) + Math.floor(v)) & 1, rim = mod(u, 1) < .14 || mod(v, 1) < .14;
+        return big ? (rim ? 3 : 2) : (rim ? 1 : 0);
+      }) }; },
+    bars: () => { // seven wavy bars in three hues, painted back to front
+      const pal = [K.ink, K.text, mix(K.ink, K.green, .5), K.green, mix(K.ink, K.violet, .5), K.violet, mix(K.ink, K.orange, .5), K.orange];
+      const p = new Uint8Array(SW * SH), prof = [0, 1, 1, -1, 1, 1, 0];
+      [...Array(7).keys()].sort((a, b) => Math.cos(a * 1.9) - Math.cos(b * 1.9)).forEach((k) => {
+        for (let x = 0; x < SW; x++) { const y0 = Math.round(29 + 24 * Math.sin(k * 1.9 + .6) + 3 * Math.sin(x * .09 + k * 1.3)); prof.forEach((s, j) => plot(p, x, y0 + j, s < 0 ? 1 : 2 + (k % 3) * 2 + s)); }
+      });
+      return { pal, px: p };
+    },
+    twister: () => { const p = new Uint8Array(SW * SH);
+      for (let y = 0; y < SH; y++) {
+        const a = y * .05 + Math.sin(y * .13) * 2.2, cx = 48 + Math.sin(y * .05 + 1) * 6, xs = [0, 1, 2, 3].map((k) => cx + 22 * Math.sin(a + k * Math.PI / 2));
+        for (let k = 0; k < 4; k++) { const x0 = Math.round(xs[k]), x1 = Math.round(xs[(k + 1) % 4]); if (x1 <= x0) continue;
+          for (let x = x0; x < x1; x++) plot(p, x, y, 1 + k); plot(p, x0, y, 5); } // one shade per face, a light edge
+      }
+      return { pal: ramp(K.green), px: p };
+    },
+    voxel: () => { // height field marched near to far, column by column
+      const p = new Uint8Array(SW * SH), r = rnd(3), hf = (x, z) => .5 + .24 * Math.sin(x * .13) * Math.cos(z * .07) + .18 * Math.sin(z * .11 + x * .05) + .08 * Math.sin(x * .31 + z * .23);
+      for (let n = 0; n < 16; n++) plot(p, r() * SW, r() * 22, r() > .5 ? 5 : 2);
+      for (let y = 5; y < 16; y++) for (let x = 68; x < 80; x++) if (Math.hypot(x - 74, y - 10) < 5) p[y * SW + x] = 5;
+      for (let x = 0; x < SW; x++) { let top = SH;
+        for (let z = 7; z < 110 && top > 0; z++) { const h = hf((x - 48) * z / 50 + 30, z), sy = Math.max(0, Math.floor(21 + (1.25 - h) * 330 / z));
+          if (sy >= top) continue; const wx = (x - 48) * z / 50 + 30, lit = hf(wx - 3, z) - hf(wx + 3, z); // slopes facing the moon are lighter
+          const c = h > .84 ? 5 : Math.max(1, (lit > .03 ? 4 : lit < -.03 ? 1 : 2) + (Math.floor(h * 14) % 3 ? 0 : 1) - (z > 64 ? 1 : 0)); for (let y = sy; y < top; y++) p[y * SW + x] = c; top = sy; } }
+      return { pal: [K.ink, mix(K.ink, K.pink, .3), mix(K.ink, K.pink, .6), K.pink, mix(K.pink, K.text, .5), K.text], px: p };
+    },
+    moire: () => ({ pal: [K.ink, mix(K.ink, K.pink, .5), K.pink, K.text], px: each((x, y) => {
+      const a = Math.floor(Math.hypot(x - 30, y - 26) / 2.6) & 1, b = Math.floor(Math.hypot(x - 67, y - 40) / 2.6) & 1;
+      return a & b ? 3 : a ^ b ? 2 : (x + y) % 9 ? 0 : 1;
+    }) }),
+    dots: () => { const p = new Uint8Array(SW * SH);
+      for (let i = 0; i < 300; i++) { const t = i * .045, x = 48 + 40 * Math.sin(t * 1.3) * Math.cos(t * .31), y = 32 + 26 * Math.sin(t * 2.1 + .7) * Math.cos(t * .17), c = 1 + (i >> 3) % 7;
+        plot(p, x, y, c); if (i % 4 === 0) { plot(p, x + 1, y, c); plot(p, x, y + 1, c); plot(p, x + 1, y + 1, c); } }
+      return { pal: [K.ink, K.violet, K.pink, K.cyan, K.violet, K.text, K.green, K.orange], px: p };
+    },
+    stars: () => { const p = new Uint8Array(SW * SH), r = rnd(11);
+      for (let n = 0; n < 130; n++) { const a = r() * 6.283, d = 7 + r() * r() * 62, len = 1 + Math.floor(d / 11), c = d < 11 ? 1 : d < 24 ? 2 : r() > .75 ? 4 : 3;
+        for (let k = 0; k < len; k++) plot(p, 48 + Math.cos(a) * (d + k) * 1.3, 32 + Math.sin(a) * (d + k), c); }
+      return { pal: [K.ink, K.frame, K.soft, K.text, K.violet], px: p };
+    },
+    cube: () => { const p = new Uint8Array(SW * SH), V = [];
+      for (let i = 0; i < 8; i++) { let x = i & 1 ? 1 : -1, y = i & 2 ? 1 : -1, z = i & 4 ? 1 : -1;
+        [x, z] = [x * Math.cos(.7) - z * Math.sin(.7), x * Math.sin(.7) + z * Math.cos(.7)]; [y, z] = [y * Math.cos(.5) - z * Math.sin(.5), y * Math.sin(.5) + z * Math.cos(.5)];
+        const f = 50 / (3.6 + z); V.push([48 + x * f, 32 + y * f, z]); }
+      const edges = []; for (let i = 0; i < 8; i++) for (const b of [1, 2, 4]) if (!(i & b)) edges.push([V[i], V[i | b]]);
+      edges.sort((a, b) => (b[0][2] + b[1][2]) - (a[0][2] + a[1][2])).forEach(([a, b]) => line(p, a[0], a[1], b[0], b[1], a[2] + b[2] > 0 ? 1 : 2)); // far edges first, dimmer
+      V.forEach(([x, y, z]) => { if (z <= 0) { plot(p, x, y, 3); plot(p, x + 1, y, 3); plot(p, x, y + 1, 3); plot(p, x + 1, y + 1, 3); } });
+      return { pal: [K.ink, mix(K.ink, K.red, .55), K.red, K.text], px: p };
+    }
+  };
+  // Three bakes of each still: 1-bit (ink and the competition hue), 2-bit (four steps of that hue), full palette.
+  // The low depths are an ordered dither of each pixel's luminance, the way a 4-colour screen would show it.
+  const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+  const bake = (s, hue, depth) => {
+    const img = new ImageData(SW, SH), d = img.data, l0 = lum(K.ink), l1 = lum(K.text);
+    const to = depth === 1 ? [K.ink, hue] : depth === 2 ? [K.ink, mix(K.ink, hue, .5), hue, K.text] : null;
+    const L = s.pal.map((c) => Math.sqrt(Math.max(0, (lum(c) - l0) / (l1 - l0))));
+    for (let i = 0; i < SW * SH; i++) {
+      const c = to ? to[Math.min(to.length - 1, Math.floor(L[s.px[i]] * (to.length - 1) + (BAYER[((i / SW | 0) & 3) << 2 | (i % SW) & 3] + .5) / 16))] : s.pal[s.px[i]];
+      d[i * 4] = c[0]; d[i * 4 + 1] = c[1]; d[i * 4 + 2] = c[2]; d[i * 4 + 3] = 255;
+    }
+    return img;
+  };
+  // A view is a canvas plus its three bakes. Depth 0 is a blank screen, 3 the full palette.
+  const show = (v, depth) => { v.depth = depth; if (depth) v.g.putImageData(v.img[depth], 0, 0); else { v.g.fillStyle = read('--ink'); v.g.fillRect(0, 0, SW, SH); } };
+  const view = new Map();
+  tiles.forEach((t) => {
+    const s = STILL[t.dataset.fx](), hue = rgb('--c-' + t.dataset.comp);
+    const v = { g: $('canvas', t).getContext('2d'), img: [null, bake(s, hue, 1), bake(s, hue, 2), bake(s, hue, 3)], depth: 3, built: true };
+    view.set(t, v); show(v, 3);
+  });
+  const big = { g: E.still.getContext('2d'), img: null, depth: 3 };
+
+  /* ---------- Letters: text links (for the ripple) and the greetings line (for the wave) ---------- */
+  // The split copy is aria-hidden; a visually hidden copy of the same text keeps the accessible name whole.
+  $$('.lnk-t').forEach((el) => {
+    const text = el.textContent; let i = 0;
+    const vh = document.createElement('span'); vh.className = 'vh'; vh.textContent = text;
+    el.textContent = ''; el.setAttribute('aria-hidden', 'true');
+    text.split(' ').forEach((word, n) => {
+      if (n) el.append(' ');
+      const w = document.createElement('span'); w.className = 'w';
+      for (const ch of word) { const c = document.createElement('span'); c.className = 'ch'; c.style.setProperty('--i', i++); c.textContent = ch; w.append(c); }
+      el.append(w);
+    });
+    el.after(vh);
+    const link = el.closest('.lnk'); // touch: the ripple runs once on tap
+    link.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'touch') return; link.classList.remove('is-rip'); void link.offsetWidth; link.classList.add('is-rip'); });
+  });
+  { // the scroller's letters take the seven hues in rotation
+    const text = sine.textContent; let i = 0; sine.textContent = '';
+    text.split(' ').forEach((word, n) => {
+      if (n) sine.append(' ');
+      const w = document.createElement('span'); w.className = 'w';
+      for (const ch of word) { const g = document.createElement('span'); g.className = 'g'; g.style.color = `var(--${HUES[i++ % 7]})`; g.textContent = ch; w.append(g); }
+      sine.append(w);
+    });
+  }
+
+  /* ---------- Copper bars: one set of Y values drives the border bars and the headline's clipped background ---------- */
+  const geo = { top: 0, h: 0, H: 0, bar: 35 };
+  let barImg = [], textLayer = '', sig = '', orderSig = '';
+  const measure = () => {
+    const r = sec.getBoundingClientRect(), a = h2.getBoundingClientRect();
+    geo.top = Math.round(a.top - r.top); geo.h = a.height; geo.H = r.height; geo.bar = bars[0].offsetHeight;
+    barImg = bars.map((b) => getComputedStyle(b).backgroundImage); // the same seven bands, resolved
+    textLayer = `linear-gradient(${read('--text')}, ${read('--text')})`;
+    sig = orderSig = '';
+  };
+  // ys: each bar's top in section pixels (whole numbers). order: bar indices from back to front.
+  const paintBars = (ys, order) => {
+    const s = ys.join(), o = order.join();
+    if (s === sig && o === orderSig) return;
+    order.forEach((i, z) => { bars[i].style.transform = `translateY(${ys[i]}px)`; bars[i].style.zIndex = z; });
+    const front = order.slice().reverse(); // CSS paints the first background layer on top
+    if (o !== orderSig) h2.style.backgroundImage = front.map((i) => barImg[i]).join(', ') + ', ' + textLayer;
+    h2.style.backgroundPosition = front.map((i) => `0 ${ys[i] - geo.top}px`).join(', ') + ', 0 0';
+    sig = s; orderSig = o;
+  };
+  // At rest: one bar in the top border, three through the headline, one beside the scroller, one in the bottom border.
+  const REST = [0, 1, 2, 3, 4, 5];
+  const restYs = () => {
+    const r = sec.getBoundingClientRect(), g = greets.getBoundingClientRect(), fy = parseFloat(getComputedStyle(sec).paddingTop);
+    const n = Math.max(1, Math.round(geo.h / parseFloat(getComputedStyle(h2).lineHeight))); // headline lines: bars cross letters, not the gaps
+    return [fy / 2, geo.top + geo.h * .5 / n, geo.top + geo.h * ((n >> 1) + .3) / n, geo.top + geo.h * (n - .26) / n, g.top - r.top + g.height / 2, geo.H - fy / 2].map((y) => Math.round(y - geo.bar / 2));
+  };
+  const restBars = () => { measure(); paintBars(restYs(), REST); };
+  copper.classList.add('is-live'); h2.classList.add('is-live');
+  restBars();
+  new ResizeObserver(() => { fx ? fx.resize() : restBars(); }).observe(sec);
+
+  /* ---------- Filters (work without the libraries) ---------- */
+  let filter = 'all';
+  const matches = (t) => filter === 'all' || t.dataset.comp === filter;
+  const shown = () => tiles.filter((t) => !t.parentElement.hidden);
+  const applyFilter = () => {
+    tiles.forEach((t) => { t.parentElement.hidden = !matches(t); });
+    const n = shown().length, chip = chips.find((c) => c.dataset.comp === filter);
+    status.textContent = filter === 'all' ? `Showing all ${n} entries.` : `Showing ${n} of ${tiles.length} entries: ${chip.firstChild.textContent.trim()}.`;
+  };
+  chips.forEach((chip) => {
+    chip.addEventListener('click', () => {
+      const next = chip.dataset.comp === filter ? 'all' : chip.dataset.comp; // pressing the active competition again returns to All
+      if (next === filter) return;
+      filter = next;
+      chips.forEach((c) => {
+        const on = c.dataset.comp === filter, was = c.getAttribute('aria-pressed') === 'true';
+        c.setAttribute('aria-pressed', on);
+        if (on !== was) { c.classList.remove('is-flip'); void c.offsetWidth; c.classList.add('is-flip'); } // CSS bit flip
+      });
+      const out = shown().filter((t) => !matches(t));
+      fx ? fx.filter(out, applyFilter) : applyFilter();
+    });
+    chip.addEventListener('animationend', () => chip.classList.remove('is-flip'));
+  });
+
+  /* ---------- Entry dialog ---------- */
+  let cur = null, opener = null, closing = false, downOn = null;
+  const ORD = ['', '1st', '2nd', '3rd'];
+  const fill = (t) => {
+    const d = t.dataset, list = shown(), comp = $('.tag', t).textContent, v = view.get(t);
+    cur = t;
+    dlg.dataset.comp = d.comp; // the panel border, the tag and one shutter take the competition hue
+    E.title.textContent = $('.t-title', t).textContent;
+    E.group.textContent = 'by ' + $('.t-group', t).lastChild.textContent;
+    E.comp.textContent = E.comp2.textContent = comp;
+    E.place.textContent = ORD[d.place] + ' place';
+    E.platform.textContent = d.platform;
+    E.bytes.textContent = Number(d.bytes).toLocaleString('en-GB') + ' bytes';
+    E.desc.textContent = d.desc;
+    E.still.setAttribute('aria-label', $('canvas', t).getAttribute('aria-label'));
+    E.count.textContent = `Entry ${list.indexOf(t) + 1} of ${list.length}` + (filter === 'all' ? '' : ` in ${comp}`);
+    E.prev.disabled = E.next.disabled = list.length < 2;
+    big.img = v.img; show(big, 3);
+  };
+  const stepEntry = (dir) => {
+    const list = shown(); if (list.length < 2) return;
+    fill(list[(list.indexOf(cur) + dir + list.length) % list.length]); // a hard cut
+    fx?.swap();
+  };
+  // Recover from any close, even one the browser forces mid-animation.
+  const settle = () => { closing = false; fx?.dialogReset(); };
+  tiles.forEach((t) => t.addEventListener('click', () => {
+    if (dlg.open) return;
+    settle(); opener = t; fill(t);
+    dlg.showModal();
+    lenis?.stop();
+    fx?.dialogIn();
+  }));
+  const closeDialog = () => {
+    if (!dlg.open || closing) return;
+    closing = true;
+    const end = () => { closing = false; dlg.close(); opener?.focus(); };
+    fx ? fx.dialogOut(end) : end();
+  };
+  E.close.addEventListener('click', closeDialog);
+  E.prev.addEventListener('click', () => stepEntry(-1));
+  E.next.addEventListener('click', () => stepEntry(1));
+  dlg.addEventListener('keydown', (e) => { if (e.key === 'ArrowLeft') stepEntry(-1); else if (e.key === 'ArrowRight') stepEntry(1); });
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); closeDialog(); });
+  // Close on a backdrop click only when the press also started on the backdrop.
+  dlg.addEventListener('pointerdown', (e) => { downOn = e.target; });
+  dlg.addEventListener('click', (e) => { if (e.target === dlg && downOn === dlg) closeDialog(); });
+  dlg.addEventListener('close', () => { settle(); lenis?.start(); fx?.resume(); });
+
+  // The rules link is a plain anchor; focus follows it (after the browser's own fragment navigation, which
+  // would clear it) so keyboard reading continues from the rules.
+  $('#rules-link').addEventListener('click', () => setTimeout(() => rulesTitle.focus({ preventScroll: true }), 0));
+
+  if (!lib) return;
+
+  /* ---------- Motion ---------- */
+  gsap.registerPlugin(ScrollTrigger);
+  const fontsReady = Promise.race([
+    Promise.all([document.fonts.ready, document.fonts.load('800 100px "Handjet"'), document.fonts.load('700 100px "Handjet"')]).then(() => 'fonts', () => 'fonts'),
+    new Promise((r) => setTimeout(() => r('timeout'), 1500))
+  ]);
+  // Decrunch only on a visible page: with lagSmoothing(0) a background tab would skip straight to its end.
+  const visible = new Promise((r) => {
+    if (document.visibilityState === 'visible') return r();
+    const f = () => { if (document.visibilityState === 'visible') { document.removeEventListener('visibilitychange', f); r(); } };
+    document.addEventListener('visibilitychange', f);
+  });
+  let played = false;
+
+  const mm = gsap.matchMedia();
+  mm.add({
+    motion: '(prefers-reduced-motion: no-preference)',
+    reduce: '(prefers-reduced-motion: reduce)',
+    fine: '(hover: hover) and (pointer: fine)'
+  }, (ctx) => {
+    const { motion, fine } = ctx.conditions;
+    // Reduced motion: the plain script above already left everything in its final state (bars at rest in the
+    // border and the headline, a static greetings line, full-palette stills). Native scroll, no loops.
+    if (!motion) { root.classList.add('go'); return; }
+
+    let dead = false;
+    const off = [], calls = new Set();
+    const on = (el, type, fn, opt) => { el.addEventListener(type, fn, opt); off.push(() => el.removeEventListener(type, fn, opt)); };
+    const later = (t, fn) => { const c = gsap.delayedCall(t, () => { calls.delete(c); fn(); }); calls.add(c); return c; };
+    const T = (k) => parseFloat(read('--d-' + k));
+    const px = (k) => parseFloat(read(k));
+    root.classList.add('fx');
+
+    // Lenis on GSAP's clock. Touch keeps native scrolling.
+    lenis = new Lenis({ lerp: .1, smoothWheel: true, autoRaf: false, anchors: true });
+    lenis.on('scroll', ScrollTrigger.update);
+    const tick = (t) => lenis.raf(t * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
+
+    /* --- Copper bars follow the visitor (signature) ---
+       Each bar is a spring towards anchor + amp * sin(phase): six phases a sixth of a turn apart, so the bars
+       weave around the pointer like a turning barrel, and cos(phase) gives the stacking order. While input
+       arrives the loop runs every frame; 1.4s after the last input it drops to a five-frames-a-second bob. */
+    const N = bars.length, pos = restYs(), vel = pos.map(() => 0);
+    const STIFF = [70, 96, 60, 112, 82, 66], DAMP = [13, 16, 11, 17, 14, 12];
+    let anchor = 0, cy = 0, amp = 0, ampTo = 0, AMP = 0, t = .4, lastIn = 0, mode = 0, idle = null, inView = true, held = false, armed = false;
+    const phase = (i) => t * (1 + i * .06) + i * Math.PI / 3;
+    const goal = (i) => gsap.utils.clamp(0, geo.H - geo.bar, anchor + amp * Math.sin(phase(i)) - geo.bar / 2);
+    const order = () => REST.slice().sort((a, b) => Math.cos(phase(a)) - Math.cos(phase(b)));
+    const draw = () => paintBars(pos.map(Math.round), order());
+    const follow = (time, dms) => {
+      const dt = Math.min(dms, 50) / 1000;
+      t += dt * 1.7; amp += (ampTo - amp) * Math.min(1, dt * 6);
+      for (let i = 0; i < N; i++) { vel[i] += ((goal(i) - pos[i]) * STIFF[i] - vel[i] * DAMP[i]) * dt; pos[i] += vel[i] * dt; }
+      draw();
+      if (performance.now() - lastIn > 1400) setMode(2);
+    };
+    const bob = () => { // stepped: the bars jump straight to their place, five times a second
+      t += .09; amp = ampTo;
+      for (let i = 0; i < N; i++) { pos[i] = goal(i); vel[i] = 0; }
+      draw();
+      idle = gsap.delayedCall(T('idle'), bob);
+    };
+    const setMode = (m) => { // 0 asleep, 1 following, 2 idle bob
+      if (m && (!armed || !inView || held)) m = 0;
+      if (m === mode) return;
+      if (mode === 1) gsap.ticker.remove(follow);
+      if (mode === 2) { idle?.kill(); idle = null; }
+      mode = m;
+      if (m === 1) gsap.ticker.add(follow);
+      if (m === 2) idle = gsap.delayedCall(T('idle'), bob);
+    };
+    const poke = (clientY, gather) => { // input: where the visitor is; gather pulls the bars together (keyboard)
+      cy = clientY;
+      anchor = clientY - sec.getBoundingClientRect().top;
+      if (gather !== undefined) ampTo = gather ? AMP * .3 : AMP;
+      lastIn = performance.now();
+      setMode(1);
+    };
+    const io = new IntersectionObserver(([e]) => { inView = e.isIntersecting; setMode(inView ? 2 : 0); });
+    io.observe(sec);
+    off.push(() => io.disconnect());
+    if (fine) on(sec, 'pointermove', (e) => { if (e.pointerType !== 'touch') poke(e.clientY, false); });
+    on(sec, 'touchstart', (e) => poke(e.touches[0].clientY, false), { passive: true });
+    on(sec, 'touchmove', (e) => poke(e.touches[0].clientY, false), { passive: true });
+    on(window, 'scroll', () => { if (armed) poke(cy); }, { passive: true }); // a still pointer over a moving page
+    on(sec, 'focusin', (e) => { if (!e.target.matches(':focus-visible')) return; const r = e.target.getBoundingClientRect(); poke(r.top + r.height / 2, true); });
+
+    /* --- Sine scroller: position and phase are functions of the scroll position, nothing else --- */
+    const letters = $$('.g', sine);
+    let st = null;
+    const wave = (self) => {
+      const bw = greets.clientWidth, tw = sine.scrollWidth, A = px('--sine-amp'), ph = self.scroll() * .013;
+      sine.style.transform = `translate3d(${Math.round((bw * .05 + (bw * .9 - tw) * self.progress) / 2) * 2}px,0,0)`;
+      letters.forEach((g, i) => { g.style.transform = `translateY(${Math.round(A * Math.sin(i * .42 - ph) / 2) * 2}px)`; });
+    };
+
+    /* --- Tiles build by bit depth: 1-bit, 2-bit, full palette --- */
+    const build = (v, delay = 0) => {
+      v.calls?.forEach((c) => { c.kill(); calls.delete(c); });
+      show(v, 0);
+      const d = T('depth');
+      v.calls = [1, 2, 3].map((depth, k) => later(delay + k * d, () => show(v, depth)));
+    };
+    const column = (t) => [...new Set(shown().map((x) => x.offsetLeft))].sort((a, b) => a - b).indexOf(t.offsetLeft);
+    const seen = new IntersectionObserver((entries) => entries.forEach((e) => {
+      const v = view.get(e.target);
+      if (!e.isIntersecting || v.built) return;
+      v.built = true; build(v, column(e.target) * T('col'));
+    }), { rootMargin: '0px 0px -10% 0px' }); // a tile coming up from below builds once its still is in view
+    off.push(() => seen.disconnect());
+
+    /* --- Hooks for the plain-JS flows --- */
+    const wA = $('.weave-a'), wB = $('.weave-b');
+    fx = {
+      resize() { measure(); AMP = px('--bar-amp'); if (ampTo) ampTo = Math.min(ampTo, AMP); if (!armed) paintBars(restYs(), REST); else { anchor = cy - sec.getBoundingClientRect().top; draw(); } },
+      // Filtered-out tiles drop to 1-bit for a frame, are an empty frame for a frame, then leave; the grid
+      // reflows at once. Tiles that come back are blank, so the observer builds them as they appear.
+      filter(out, apply) {
+        if (!out.length) return apply();
+        out.forEach((t) => { const v = view.get(t); v.calls?.forEach((c) => c.kill()); show(v, 1); });
+        later(T('drop'), () => out.forEach((t) => t.classList.add('is-gone')));
+        later(T('drop') * 2, () => {
+          apply();
+          out.forEach((t) => { const v = view.get(t); t.classList.remove('is-gone'); if (t.parentElement.hidden) { v.built = false; show(v, 0); } else build(v, column(t) * T('col')); });
+        });
+      },
+      dialogReset() { gsap.killTweensOf([wA, wB]); gsap.set([wA, wB], { clearProps: 'all' }); },
+      // Interlace weave: odd lines leave to the left, even lines to the right, in eight steps.
+      dialogIn() {
+        held = true; setMode(0);
+        gsap.set([wA, wB], { display: 'block', xPercent: 0 });
+        gsap.to(wA, { xPercent: -100, duration: T('weave'), ease: 'steps(8)' });
+        gsap.to(wB, { xPercent: 100, duration: T('weave'), ease: 'steps(8)', onComplete: () => gsap.set([wA, wB], { display: 'none' }) });
+        build(big, T('weave') * .5);
+      },
+      dialogOut(end) {
+        gsap.set([wA, wB], { display: 'block' });
+        gsap.fromTo(wA, { xPercent: -100 }, { xPercent: 0, duration: T('weave'), ease: 'steps(8)', overwrite: true });
+        gsap.fromTo(wB, { xPercent: 100 }, { xPercent: 0, duration: T('weave'), ease: 'steps(8)', overwrite: true, onComplete: end });
+      },
+      swap() { build(big); },
+      resume() { held = false; setMode(2); }
+    };
+
+    /* --- Load: decrunch --- */
+    const go = () => {
+      root.classList.add('go'); sec.classList.remove('is-white');
+      played = true; armed = true;
+      measure(); AMP = ampTo = px('--bar-amp');
+      const a = h2.getBoundingClientRect(); // until a pointer arrives, the bars weave through the headline
+      cy = a.top + a.height / 2; anchor = cy - sec.getBoundingClientRect().top;
+      restYs().forEach((y, i) => { pos[i] = y; });
+      lastIn = performance.now(); setMode(1);
+      st = ScrollTrigger.create({ trigger: greets, start: 'clamp(top bottom)', end: 'bottom top', onUpdate: wave, onRefresh: wave });
+      tiles.forEach((t) => { const v = view.get(t); v.built = false; show(v, 0); seen.observe(t); });
+    };
+    Promise.all([fontsReady, visible]).then(() => ctx.add(() => {
+      if (dead) return;
+      if (played) return go();
+      // For 0.8s the border is stripes of random heights in the seven hues, 14 frames; the screen stays blank.
+      // The strip is drawn once and jumps by whole frames (transform only). One white frame, then everything.
+      const strip = $('.crunch i'), L = Math.max(innerHeight, 480), stops = [];
+      for (let y = 0, last = -1; y < L;) {
+        let k; do k = Math.floor(Math.random() * 7); while (k === last); last = k;
+        const h = 4 + 4 * Math.floor(Math.random() * 9);
+        stops.push(`var(--${HUES[k]}) ${y}px ${Math.min(L, y + h)}px`); y += h;
+      }
+      strip.style.height = 2 * L + 'px';
+      strip.style.background = `linear-gradient(${stops.join(',')}) 0 0 / 100% ${L}px repeat-y`;
+      const p = { n: 0 }; let frame = -1;
+      gsap.timeline()
+        .to(p, { n: 14, duration: T('crunch'), ease: 'none', onUpdate: () => { const f = Math.floor(p.n); if (f !== frame) { frame = f; gsap.set(strip, { y: -4 * Math.floor(Math.random() * L / 4) }); } } })
+        .add(() => sec.classList.add('is-white'))
+        .add(go, '+=' + T('frame'));
+    }));
+
+    return () => {
+      dead = true;
+      off.forEach((f) => f());
+      calls.forEach((c) => c.kill());
+      setMode(0); armed = false;
+      st?.kill();
+      fx = null;
+      gsap.ticker.remove(tick);
+      gsap.ticker.lagSmoothing(500, 33);
+      lenis.destroy(); lenis = null;
+      gsap.killTweensOf([wA, wB, $('.crunch i')]);
+      gsap.set([wA, wB], { clearProps: 'all' });
+      [sine, ...letters].forEach((el) => { el.style.transform = ''; }); // the letters keep their inline colours
+      tiles.forEach((t) => { const v = view.get(t); v.built = true; show(v, 3); t.classList.remove('is-gone'); });
+      if (big.img) show(big, 3);
+      applyFilter();
+      root.classList.remove('fx');
+      sec.classList.remove('is-white');
+      restBars();
+    };
+  });
+})();
+</script>
+</body>
+</html>

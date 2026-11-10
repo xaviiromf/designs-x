@@ -1,0 +1,1131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Late Apex league night</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Handjet:ELGR,ELSH,wght@1..2,0..16,100..900&family=Host+Grotesk:wght@300..800&display=swap">
+<style>
+  :root {
+    /* Colour: a ring road at dusk. Seven hues, each with a fixed job. */
+    --night: #0F2140;        /* night-highway blue: page ground, sky, text on bright faces */
+    --asphalt-1: #1C2F57;    /* road band A; field fill; pit-board surface (ice on it 11.9:1, dim 6.6:1) */
+    --asphalt-2: #223A6B;    /* road band B; unlit lamps and bar cells; outline-button hover (ice 10.0:1, cyan 7.3:1) */
+    --verge-1: #0B1830;      /* land beside the road, band A (canvas only) */
+    --verge-2: #0D1D3A;      /* land beside the road, band B (canvas only) */
+    --city-far: #1B2E58;     /* far skyline (canvas only) */
+    --city-near: #081428;    /* near skyline, car glass and tyres, start-light housing */
+    --pole: #4F6AA3;         /* light poles, gantry posts, lit windows (canvas only) */
+    --ice: #EEF3FF;          /* text (14.4:1 on night); the car body; flag and grid checks */
+    --dim: #A9B8DA;          /* secondary text (8.1:1 on night); field lines, outline-button rim, car shading */
+    --magenta: #FF4D8D;      /* sunset: the sun's top bands and the one primary button (night text 5.1:1) */
+    --magenta-hot: #FF9CC0;  /* the primary button's hover face (night text 8.2:1) */
+    --tangerine: #FF8A3D;    /* the sun's lower bands and every rumble strip (decorative, 6.8:1) */
+    --yellow: #FFD447;       /* centre line: road dashes, focused field line, HUD speed, checkpoints (11.3:1) */
+    --cyan: #46E3FF;         /* roadside lamps, focus ring, hovered link and button labels (10.4:1 on night) */
+    --mint: #5CF2B0;         /* GO: the start call and success (11.3:1 on night, 13.0:1 on the housing) */
+    --red: #FF5A5A;          /* stop: start lamps, the car's tail lamps, errors (5.2:1 on night) */
+    --ghost-1: rgb(238 243 255 / .28);   /* far ghost of a headline line as it streaks in */
+    --ghost-2: rgb(238 243 255 / .55);   /* near ghost */
+    --scrim: rgb(8 20 40 / .8);          /* dialog backdrop */
+
+    /* Type */
+    --font-display: "Handjet", "Arial Narrow", sans-serif;
+    --font-text: "Host Grotesk", system-ui, sans-serif;
+    --modules: "ELSH" 2, "ELGR" 1;   /* square Handjet modules */
+    --t-small: 13px;
+    --t-body: 17px;
+    --t-lede: 19px;
+    --t-hud: 20px;                   /* diegetic HUD text */
+    --t-h3: 28px;
+    --t-speed: 40px;                 /* HUD speed numeral */
+    --t-h2: clamp(40px, 5vw, 72px);
+    --lh-body: 1.5;
+
+    /* Space: an 8px cell, the size of one checker square */
+    --cell: 8px;
+    --s1: 4px; --s2: 8px; --s3: 16px; --s4: 24px;
+    --s5: 32px; --s6: 48px; --s7: 64px; --s8: 96px;
+    --notch: 4px;            /* pixel corner on buttons and the pit board */
+    --tap: 48px;             /* button and field height */
+    --hit: 44px;             /* minimum target */
+    --max-w: 1296px;
+    --gutter: max(var(--s4), (100% - var(--max-w)) / 2);
+    --lap: 120vh;            /* scroll distance the stage stays pinned for: one lap */
+
+    /* Motion: everything is stepped (CSS and the script read these) */
+    --d-wipe: .28s;          /* checker wipe across a button, 7 columns */
+    --d-zip: .24s;           /* speed lines across a pressed button */
+    --d-tach: .24s;          /* tach strip under a link, 8 segments */
+    --d-march: .48s;         /* one dash period of the marching centre line */
+    --d-check: .09s;         /* second frame of the checkbox checker */
+    --d-board-in: .44s;      /* pit board drop (5 steps) and its two-frame bounce */
+    --d-board-out: .25s;
+    --d-flag: .6s;           /* one wave period of the flag; it waves twice */
+    --d-lamp: .15s;          /* one start lamp */
+    --d-go: .4s;             /* how long GO shows */
+    --d-streak: .05s;        /* one ghost step of a headline line */
+    --d-flash: .13s;         /* HUD checkpoint flash: two frames */
+  }
+  @media (max-width: 599px) {
+    :root { --t-body: 16px; --t-lede: 17px; --t-h3: 24px; --s8: 64px; }
+  }
+
+  /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+
+  /* Hidden only when the script runs, and only until the start lights take over. Hard cuts, so visibility. */
+  html.js:not(.go) .h2, html.js:not(.go) .lede, html.js:not(.go) .actions,
+  html.js:not(.go) .hint, html.js:not(.go) .hud { visibility: hidden; }
+  @media (prefers-reduced-motion: reduce) {
+    html.js:not(.go) .h2, html.js:not(.go) .lede, html.js:not(.go) .actions,
+    html.js:not(.go) .hint, html.js:not(.go) .hud { visibility: visible; }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { background: var(--night); }
+  body {
+    margin: 0;
+    background: var(--night);
+    color: var(--ice);
+    font: 400 var(--t-body)/var(--lh-body) var(--font-text);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  :focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+  ::selection { background: var(--cyan); color: var(--night); }
+  .vh {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+  }
+
+  /* ---------- Stage: copy on the sky, road below ---------- */
+  .hero { position: relative; overflow: clip; background: var(--night); }
+  .stage { position: relative; display: flex; flex-direction: column; min-height: 100svh; background: var(--night); }
+  /* One lap of scrolling: the stage sticks while the spacer passes. Only with the motion layer. If the stage
+     is taller than the viewport (small phones), it sticks by its bottom edge so the road stays in view. */
+  .fx .stage { position: sticky; top: min(0px, 100svh - var(--stage-h, 100svh)); }
+  .fx .track::after { content: ""; display: block; height: var(--lap); }
+
+  .top { position: relative; z-index: 1; padding: var(--s5) var(--gutter) 0; }
+  .h2 {
+    margin: 0;
+    max-width: 15em;
+    font: 700 var(--t-h2)/.95 var(--font-display);
+    font-variation-settings: var(--modules);
+    letter-spacing: 0;
+    text-wrap: balance;
+  }
+  .lede { margin: var(--s3) 0 0; max-width: 64ch; font-size: var(--t-lede); line-height: 1.45; }
+  .actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s3); margin-top: var(--s4); }
+  .hint { margin: 0; color: var(--dim); font-size: var(--t-small); }
+
+  /* The headline arrives as a speed streak: each line steps in from the right through three ghost offsets. */
+  .h2 .w { display: inline-block; }
+  .h2 .w.s0 { visibility: hidden; }
+  .h2 .w.s3 { transform: translateX(calc(var(--cell) * 15)); filter: drop-shadow(calc(var(--cell) * 5) 0 0 var(--ghost-2)) drop-shadow(calc(var(--cell) * 5) 0 0 var(--ghost-1)); }
+  .h2 .w.s2 { transform: translateX(calc(var(--cell) * 7)); filter: drop-shadow(calc(var(--cell) * 4) 0 0 var(--ghost-2)); }
+  .h2 .w.s1 { transform: translateX(calc(var(--cell) * 2)); filter: drop-shadow(calc(var(--cell) * 2) 0 0 var(--ghost-1)); }
+
+  /* ---------- HUD: diegetic, small, one line on narrow screens ---------- */
+  .hud {
+    display: flex; align-items: center; gap: var(--s3);
+    width: fit-content;
+    margin-top: var(--s4);
+    padding: var(--s1) var(--s2);
+    color: var(--dim);
+    font: 500 var(--t-hud)/1 var(--font-display);
+    font-variation-settings: var(--modules);
+  }
+  .hud p { margin: 0; white-space: nowrap; }
+  .hud-speed b { display: inline-block; min-width: 3ch; text-align: right; color: var(--yellow); font-weight: 700; font-size: 28px; }
+  .hud-bar { display: flex; gap: 2px; }
+  .hud-bar i { width: 6px; height: var(--cell); background: var(--asphalt-2); }
+  .hud-bar i.on { background: var(--ice); }
+  .hud-bar i.cp { background: var(--yellow); }   /* the two checkpoints along the lap */
+  /* Checkpoint: the whole HUD cuts to yellow for two frames. */
+  .hud.is-flash { background: var(--yellow); color: var(--night); }
+  .hud.is-flash b, .hud.is-flash .hud-bar i.on { color: var(--night); }
+  .hud.is-flash .hud-bar i { background: var(--night); }
+
+  /* ---------- The road ---------- */
+  .scene {
+    --hzp: 40%;
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 260px;
+    margin-top: var(--s3);
+    overflow: hidden;
+    touch-action: pan-y;
+    /* Without JavaScript: a flat horizon and a straight road, drawn in CSS. The canvas covers it. */
+    background: linear-gradient(var(--night) 0 var(--hzp), var(--verge-1) 0);
+  }
+  .scene::before {
+    content: ""; position: absolute; inset: var(--hzp) 0 0;
+    background: var(--asphalt-1);
+    clip-path: polygon(49% 0, 51% 0, 96% 100%, 4% 100%);
+  }
+  .road { position: absolute; left: 0; top: 0; display: block; image-rendering: pixelated; pointer-events: none; }
+
+  /* Start lights: five lamps, then GO. Shown only by the load sequence. */
+  .lights {
+    position: absolute; left: 50%; top: max(var(--s2), var(--hz, 240px) * .5 - 36px);
+    display: flex; gap: var(--s2);
+    padding: var(--s2);
+    background: var(--city-near);
+    transform: translateX(-50%);
+  }
+  .lights[hidden] { display: none; }
+  .lights i { width: var(--s5); height: var(--s5); background: var(--asphalt-2); }
+  .lights i.on { background: var(--red); }
+  .lights b {
+    position: absolute; inset: 0;
+    display: grid; place-items: center;
+    visibility: hidden;
+    color: var(--mint);
+    font: 800 48px/1 var(--font-display);
+    font-variation-settings: var(--modules);
+    letter-spacing: .12em; text-indent: .12em;
+  }
+  .lights.is-go i { visibility: hidden; }
+  .lights.is-go b { visibility: visible; }
+
+  /* Wide and tall enough: the road fills the stage and the copy sits on its sky. The script puts the horizon
+     under the copy (never above 45% of the stage). */
+  @media (min-width: 900px) and (min-height: 700px) {
+    .stage { height: 100svh; }
+    .top { padding-top: var(--s6); }
+    .copy { max-width: 66%; }
+    .scene { --hzp: 45%; position: absolute; inset: 0; min-height: 0; margin: 0; }
+    .hud {
+      position: absolute; top: var(--s6); right: var(--gutter);
+      display: grid; justify-items: end; gap: var(--s2);
+      margin: 0;
+    }
+    .hud-speed b { font-size: var(--t-speed); }
+  }
+
+  /* ---------- Buttons: pixel-cornered tiles ---------- */
+  .btn, .board {
+    --corners: polygon(0 var(--notch), var(--notch) var(--notch), var(--notch) 0, calc(100% - var(--notch)) 0, calc(100% - var(--notch)) var(--notch), 100% var(--notch), 100% calc(100% - var(--notch)), calc(100% - var(--notch)) calc(100% - var(--notch)), calc(100% - var(--notch)) 100%, var(--notch) 100%, var(--notch) calc(100% - var(--notch)), 0 calc(100% - var(--notch)));
+  }
+  .btn {
+    display: inline-block;
+    padding: 0; border: 0; background: none;
+    color: inherit; text-decoration: none;
+    font: 600 var(--t-body)/1.2 var(--font-text);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .face { display: block; padding: var(--bw); background: var(--rim); clip-path: var(--corners); }
+  .inner {
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+    min-height: calc(var(--tap) - 2 * var(--bw));
+    padding: 0 var(--s4);
+    background: var(--ground);
+    clip-path: var(--corners);
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .label { position: relative; color: var(--ink); }
+  .btn-go { --bw: 0px; --rim: var(--magenta); --ground: var(--magenta); --hot: var(--magenta-hot); --ink: var(--night); }
+  .btn-line { --bw: 2px; --rim: var(--dim); --ground: var(--night); --hot: var(--asphalt-2); --ink: var(--ice); }
+
+  /* Checker wipe: a strip seven columns wide (six of solid hover colour, one of 8px checker at its leading
+     edge) steps across the face one column at a time. Only transform moves. */
+  .wipe {
+    position: absolute; left: 0; top: 0; bottom: 0; z-index: -1;
+    width: calc(100% * 7 / 6);
+    background:
+      linear-gradient(var(--hot), var(--hot)) 0 0 / calc(100% * 6 / 7) 100% no-repeat,
+      repeating-conic-gradient(var(--hot) 0 25%, transparent 0 50%) 0 0 / calc(var(--cell) * 2) calc(var(--cell) * 2);
+    transform: translateX(-100%);
+    transition: transform var(--d-wipe) steps(7, end);
+    pointer-events: none;
+  }
+  /* Launch: four speed lines, above and below the label, shoot across while the face is held 3px right. */
+  .zip {
+    position: absolute; inset: 0; z-index: -1;
+    background:
+      linear-gradient(var(--ink), var(--ink)) 10% 8px / 46% 2px no-repeat,
+      linear-gradient(var(--ink), var(--ink)) 70% 14px / 22% 2px no-repeat,
+      linear-gradient(var(--ink), var(--ink)) 30% calc(100% - 14px) / 30% 2px no-repeat,
+      linear-gradient(var(--ink), var(--ink)) 90% calc(100% - 8px) / 40% 2px no-repeat;
+    transform: translateX(-101%);
+    pointer-events: none;
+  }
+  @keyframes zip { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+  .btn:focus-visible .wipe, .btn.is-tap .wipe { transform: none; }
+  .btn-line:focus-visible, .btn-line.is-tap { --ink: var(--cyan); --rim: var(--cyan); }
+  @media (hover: hover) {
+    .btn:hover .wipe { transform: none; }
+    .btn-line:hover { --ink: var(--cyan); --rim: var(--cyan); }
+  }
+  .btn:active .face, .btn.is-tap .face { transform: translateX(3px); }
+  .btn:active .zip, .btn.is-tap .zip { animation: zip var(--d-zip) steps(6, end) both; }
+
+  /* ---------- Text links: a tach strip of eight segments (3 mint, 3 yellow, 2 red) ---------- */
+  .tl {
+    position: relative;
+    display: inline-block;
+    min-width: var(--hit);
+    padding: 10px 0 14px;
+    border: 0; background: none;
+    color: var(--ice);
+    font: inherit; font-weight: 600; line-height: 1.4;
+    text-decoration: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .tl::before, .tl::after {
+    content: "";
+    position: absolute; left: 0; right: 0; bottom: 7px;
+    height: 4px;
+    -webkit-mask: linear-gradient(90deg, #000 0 calc(100% - 2px), transparent 0) 0 0 / 12.5% 100%;
+            mask: linear-gradient(90deg, #000 0 calc(100% - 2px), transparent 0) 0 0 / 12.5% 100%;
+  }
+  .tl::before { background: var(--dim); }   /* the strip at rest marks the link */
+  .tl::after {
+    background: linear-gradient(90deg, var(--mint) 0 37.5%, var(--yellow) 0 75%, var(--red) 0);
+    clip-path: inset(0 100% 0 0);
+    transition: clip-path var(--d-tach) steps(8, end);   /* lights left to right, goes out right to left */
+  }
+  .tl:focus-visible, .tl.is-tap { color: var(--cyan); }
+  .tl:focus-visible::after, .tl.is-tap::after { clip-path: inset(0); }
+  @media (hover: hover) {
+    .tl:hover { color: var(--cyan); }
+    .tl:hover::after { clip-path: inset(0); }
+  }
+
+  /* ---------- Booking block ---------- */
+  .kerb { height: var(--cell); background: repeating-linear-gradient(90deg, var(--tangerine) 0 calc(var(--cell) * 3), var(--ice) 0 calc(var(--cell) * 6)); }
+  .book {
+    display: grid; grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--s7);
+    padding: var(--s8) var(--gutter);
+    scroll-margin-top: var(--s3);
+  }
+  @media (min-width: 900px) {
+    .book { grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); column-gap: var(--s8); }
+  }
+  .book h3, .board h2 { margin: 0; font: 600 var(--t-h3)/1.15 var(--font-text); letter-spacing: -.01em; }
+  .facts { display: grid; gap: var(--s3); margin: var(--s4) 0 0; }
+  .facts > div { display: grid; grid-template-columns: 7em minmax(0, 1fr); gap: var(--s3); }
+  .facts dt { font-weight: 600; }
+  .facts dd { margin: 0; font-variant-numeric: tabular-nums; }
+  .where { margin: var(--s5) 0 0; max-width: 52ch; color: var(--dim); }
+  .links { display: flex; flex-wrap: wrap; gap: 0 var(--s5); margin: var(--s2) 0 0; padding: 0; list-style: none; }
+  @media (max-width: 599px) { .facts > div { grid-template-columns: 6em minmax(0, 1fr); } }
+
+  /* ---------- Form ---------- */
+  .swap { display: grid; }
+  .swap > * { grid-area: 1 / 1; align-self: start; min-width: 0; }
+  .swap > .is-off { visibility: hidden; }
+  .lbl { display: block; margin-top: var(--s3); font-weight: 600; }
+  .lbl small { font-weight: 400; font-size: var(--t-small); color: var(--dim); }
+  .field { position: relative; margin-top: var(--s1); }
+  .field input, .field select {
+    display: block;
+    width: 100%; height: var(--tap);
+    padding: 0 var(--s3);
+    border: 0;
+    border-radius: 0;
+    background: var(--asphalt-1);
+    color: var(--ice);
+    font: inherit;
+    appearance: none;
+  }
+  .field select {
+    padding-right: var(--s6);
+    cursor: pointer;
+    /* a stepped pixel chevron */
+    background:
+      linear-gradient(var(--ice), var(--ice)) right 14px top 20px / 12px 2px no-repeat,
+      linear-gradient(var(--ice), var(--ice)) right 16px top 22px / 8px 2px no-repeat,
+      linear-gradient(var(--ice), var(--ice)) right 18px top 24px / 4px 2px no-repeat,
+      var(--asphalt-1);
+  }
+  .field option { background: var(--asphalt-1); color: var(--ice); }
+  /* The bottom border is the road's centre line: solid at rest, marching yellow dashes while the field has
+     focus, a red and ice rumble strip while it is wrong. */
+  .cl { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; overflow: hidden; background: var(--dim); pointer-events: none; }
+  .cl::after {
+    content: "";
+    position: absolute; top: 0; bottom: 0; left: calc(var(--cell) * -3); right: 0;
+    background: repeating-linear-gradient(90deg, var(--yellow) 0 calc(var(--cell) * 1.5), var(--asphalt-1) 0 calc(var(--cell) * 3));
+    visibility: hidden;
+  }
+  .field :hover ~ .cl { background: var(--ice); }
+  .field :focus ~ .cl::after { visibility: visible; animation: march var(--d-march) steps(4, end) infinite; }
+  @keyframes march { to { transform: translateX(calc(var(--cell) * 3)); } }
+  .field [aria-invalid="true"] ~ .cl { height: 4px; background: repeating-linear-gradient(90deg, var(--red) 0 var(--cell), var(--ice) 0 calc(var(--cell) * 2)); }
+  .field [aria-invalid="true"] ~ .cl::after { visibility: hidden; animation: none; }
+  .err {
+    min-height: calc(var(--t-small) * 1.45);
+    margin: var(--s1) 0 0;
+    color: var(--red);
+    font-size: var(--t-small); line-height: 1.45; font-weight: 500;
+  }
+  .check {
+    position: relative;
+    display: flex; gap: var(--s3); align-items: flex-start;
+    min-height: var(--hit);
+    margin-top: var(--s2);
+    padding: 10px 0;
+    cursor: pointer;
+  }
+  .check input {
+    flex: none;
+    width: var(--s4); height: var(--s4);
+    margin: 0;
+    border: 2px solid var(--dim);
+    border-radius: 0;
+    background: var(--asphalt-1);
+    appearance: none;
+    cursor: pointer;
+  }
+  .check:hover input, .check input:checked { border-color: var(--ice); }
+  /* Checked is a 2x2 checker, drawn in two frames: one square, then its diagonal partner. */
+  .box { position: absolute; left: 4px; top: 14px; width: calc(var(--cell) * 2); height: calc(var(--cell) * 2); pointer-events: none; }
+  .box i { position: absolute; width: var(--cell); height: var(--cell); background: var(--ice); opacity: 0; }
+  .box i:first-child { left: 0; top: 0; }
+  .box i:last-child { right: 0; bottom: 0; }
+  .check input:checked ~ .box i { opacity: 1; }
+  .check input:checked ~ .box i:last-child { transition: opacity 0s linear var(--d-check); }
+  .form-hint { margin: var(--s1) 0 0; color: var(--dim); font-size: var(--t-small); line-height: 1.45; max-width: 44ch; }
+  .seat .btn { margin-top: var(--s4); }
+
+  /* ---------- Confirmation ---------- */
+  .done p { margin: var(--s2) 0 0; max-width: 44ch; }
+  .done b { font-weight: 600; overflow-wrap: anywhere; }
+  .done .held { display: flex; align-items: center; gap: var(--s2); margin: var(--s4) 0 var(--s1); color: var(--mint); font-weight: 600; }
+  .done .held::before { content: ""; width: var(--s3); height: var(--s3); background: var(--mint); }
+  .done h3:focus { outline: none; }   /* focus lands here only to announce the result */
+  .done .tl { margin-top: var(--s2); }
+  /* A pixel flag: eight columns of 8px checks on a pole. Each column rides a stepped sine, a little later
+     and a little higher than the one before it, for two periods; then it rests flat. */
+  .flag { position: relative; display: flex; width: fit-content; height: calc(var(--cell) * 8); padding-left: var(--s1); }
+  .flag::before { content: ""; position: absolute; left: 0; top: 0; width: var(--s1); height: 100%; background: var(--dim); }
+  .flag i {
+    --a: calc(1px + var(--i) * .5px);
+    width: var(--cell); height: calc(var(--cell) * 5);
+    background: repeating-linear-gradient(var(--ice) 0 var(--cell), var(--asphalt-2) 0 calc(var(--cell) * 2)) 0 calc(var(--i) * var(--cell));
+  }
+  .flag.is-waving i { animation: wave var(--d-flag) steps(1, end) 2; animation-delay: calc(var(--i) * var(--d-flag) / -8); }
+  @keyframes wave {
+    0% { transform: translateY(0); } 12.5% { transform: translateY(calc(var(--a) * -1)); }
+    25% { transform: translateY(calc(var(--a) * -2)); } 37.5% { transform: translateY(calc(var(--a) * -1)); }
+    50% { transform: translateY(0); } 62.5% { transform: translateY(var(--a)); }
+    75% { transform: translateY(calc(var(--a) * 2)); } 87.5% { transform: translateY(var(--a)); }
+  }
+
+  /* ---------- Standings: a pit board lowered from the top on two poles ---------- */
+  .board {
+    width: min(560px, 100% - 2 * var(--s3));
+    max-width: none;
+    margin: auto;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--ice);
+    overflow: visible;
+    --notch: var(--cell);
+  }
+  .board::backdrop { background: var(--scrim); }
+  .board::before, .board::after { content: ""; position: absolute; bottom: calc(100% - var(--cell)); width: var(--s1); height: 100vh; background: var(--dim); }
+  .board::before { left: 14%; }
+  .board::after { right: 14%; }
+  .board[open] { animation: board-in var(--d-board-in) steps(1, end) both; }
+  .board.is-closing { animation: board-out var(--d-board-out) steps(5, end) both; }
+  /* Five drops of a fifth of the viewport, a 2px overshoot, a 1px rebound, rest. */
+  @keyframes board-in {
+    0% { transform: translateY(-100vh); } 13.6% { transform: translateY(-80vh); } 27.3% { transform: translateY(-60vh); }
+    40.9% { transform: translateY(-40vh); } 54.5% { transform: translateY(-20vh); }
+    68.2% { transform: translateY(2px); } 84.1% { transform: translateY(-1px); } 100% { transform: translateY(0); }
+  }
+  @keyframes board-out { to { transform: translateY(-100vh); } }
+  .board-rim { position: relative; padding: 2px; background: var(--ice); clip-path: var(--corners); }
+  .board-in {
+    max-height: calc(100dvh - 2 * var(--s4));
+    padding: var(--s4);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    background: var(--asphalt-1);
+    clip-path: var(--corners);
+  }
+  .board-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s3); }
+  .board-note { margin: var(--s1) 0 var(--s3); max-width: 46ch; color: var(--dim); }
+  .standings { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  .standings th, .standings td { padding: var(--s2) var(--s2) var(--s2) 0; text-align: left; vertical-align: baseline; }
+  .standings thead th { color: var(--dim); font-size: var(--t-small); font-weight: 600; border-bottom: 2px solid var(--asphalt-2); }
+  .standings tbody tr + tr > * { border-top: 2px solid var(--asphalt-2); }
+  .standings tbody th { width: 2.4em; font: 700 24px/1 var(--font-display); font-variation-settings: var(--modules); }
+  .standings td:nth-child(2) { font-weight: 600; overflow-wrap: anywhere; }
+  .standings :is(th, td):last-child { padding-right: 0; text-align: right; }
+  .standings small { display: block; color: var(--dim); font-size: var(--t-small); }
+
+  /* ---------- Narrow screens ---------- */
+  @media (max-width: 599px) {
+    .top { padding-top: var(--s4); }
+    .actions { display: grid; gap: var(--s2); }
+    .hint { margin: var(--s1) 0 0; }
+    .seat .btn { display: block; }
+    .hud { gap: var(--s2); padding-inline: 0; }
+    .hud.is-flash { box-shadow: calc(var(--s2) * -1) 0 0 var(--yellow), var(--s2) 0 0 var(--yellow); }
+    .board-in { padding: var(--s3); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0s !important; transition-delay: 0s !important; }
+    .board[open], .board.is-closing, .flag.is-waving i, .btn:active .zip, .btn.is-tap .zip, .field :focus ~ .cl::after { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<section class="hero" aria-labelledby="hero-title">
+  <div class="track" id="track">
+    <div class="stage" id="stage">
+      <div class="top">
+        <div class="copy" id="copy">
+          <h2 class="h2" id="hero-title">Thursday is league night. Eight seats, one lap record.</h2>
+          <p class="lede">Late Apex is a racing arcade in Turin. Eight linked cabinets, a heat every 20 minutes from 19:00, EUR 6 a seat. The lap to beat is 1:42.318.</p>
+          <div class="actions">
+            <a class="btn btn-go" id="book-link" href="#book"><span class="face"><span class="inner"><span class="wipe"></span><span class="zip"></span><span class="label">Book a seat for Thursday</span></span></span></a>
+            <button class="btn btn-line" id="standings-open" type="button" aria-haspopup="dialog" aria-controls="standings"><span class="face"><span class="inner"><span class="wipe"></span><span class="zip"></span><span class="label">See last week's standings</span></span></span></button>
+            <p class="hint" id="hint" hidden></p>
+          </div>
+        </div>
+        <div class="hud" id="hud" aria-hidden="true">
+          <p class="hud-speed"><b id="kmh">80</b> km/h</p>
+          <div class="hud-bar" id="bar"><i></i><i></i><i></i><i></i><i></i><i class="cp"></i><i></i><i></i><i></i><i></i><i class="cp"></i><i></i><i></i><i></i><i></i><i></i></div>
+          <p class="hud-heat">Heat 4 of 12</p>
+        </div>
+      </div>
+      <div class="scene" id="scene" aria-hidden="true">
+        <canvas class="road" id="road"></canvas>
+        <div class="lights" id="lights" hidden><i></i><i></i><i></i><i></i><i></i><b>GO</b></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="kerb" aria-hidden="true"></div>
+  <div class="book" id="book">
+    <div class="about">
+      <h3>How league night runs</h3>
+      <dl class="facts">
+        <div><dt>When</dt><dd>Every Thursday, 19:00 to 23:00</dd></div>
+        <div><dt>Heats</dt><dd>12 a night, one every 20 minutes, eight drivers in each</dd></div>
+        <div><dt>Price</dt><dd>EUR 6 a heat, paid at the desk</dd></div>
+        <div><dt>Cabinets</dt><dd>Eight linked sit-down cabinets with wheel, pedals and a six-speed shifter</dd></div>
+        <div><dt>Lap record</dt><dd>1:42.318, held by nonna_turbo</dd></div>
+      </dl>
+      <p class="where">Late Apex is at Via Baretti 14 in San Salvario, Turin. Every heat goes out live, and the league talks tyres all week.</p>
+      <ul class="links">
+        <li><a class="tl" href="https://www.twitch.tv/" target="_blank" rel="noopener">Watch the heats on Twitch<span class="vh"> (opens in a new tab)</span></a></li>
+        <li><a class="tl" href="https://discord.com/" target="_blank" rel="noopener">Join the league on Discord<span class="vh"> (opens in a new tab)</span></a></li>
+      </ul>
+    </div>
+
+    <div class="swap">
+      <form class="seat" id="seat" aria-labelledby="seat-title">
+        <h3 id="seat-title">Book a seat for Thursday</h3>
+        <label class="lbl" for="driver">Name or driver tag <small>(shown on the grid screen)</small></label>
+        <div class="field">
+          <input id="driver" name="driver" type="text" autocomplete="nickname" spellcheck="false" maxlength="24" required>
+          <span class="cl" aria-hidden="true"></span>
+        </div>
+        <p class="err" id="driver-err" aria-live="polite"></p>
+        <label class="lbl" for="email">Email address</label>
+        <div class="field">
+          <input id="email" name="email" type="email" autocomplete="email" spellcheck="false" required>
+          <span class="cl" aria-hidden="true"></span>
+        </div>
+        <p class="err" id="email-err" aria-live="polite"></p>
+        <label class="lbl" for="heat">Heat time</label>
+        <div class="field">
+          <select id="heat" name="heat" required>
+            <option value="">Choose a heat</option>
+            <option>19:00</option><option>19:20</option><option>19:40</option>
+            <option>20:00</option><option>20:20</option><option>20:40</option>
+            <option>21:00</option><option>21:20</option><option>21:40</option>
+            <option>22:00</option><option>22:20</option><option>22:40</option>
+          </select>
+          <span class="cl" aria-hidden="true"></span>
+        </div>
+        <p class="err" id="heat-err" aria-live="polite"></p>
+        <label class="check">
+          <input type="checkbox" name="practice">
+          <span class="box" aria-hidden="true"><i></i><i></i></span>
+          <span>I'm new, give me a practice lap first</span>
+        </label>
+        <p class="form-hint">We hold your seat until 10 minutes before the heat. You pay EUR 6 at the desk.</p>
+        <button class="btn btn-line" id="seat-submit" type="submit"><span class="face"><span class="inner"><span class="wipe"></span><span class="zip"></span><span class="label">Book my seat</span></span></span></button>
+      </form>
+      <div class="done is-off" id="done" inert>
+        <div class="flag" id="flag" aria-hidden="true"><i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i><i style="--i:3"></i><i style="--i:4"></i><i style="--i:5"></i><i style="--i:6"></i><i style="--i:7"></i></div>
+        <p class="held">Seat held</p>
+        <h3 id="done-title" tabindex="-1">You're on the grid.</h3>
+        <p><b id="done-name">nonna_turbo</b>, you race in the <b id="done-heat">20:00</b> heat this Thursday. Your confirmation goes to <b id="done-mail">ana@example.com</b>.</p>
+        <p id="done-practice" hidden>Come 15 minutes early. Your practice lap runs before the heat.</p>
+        <button class="tl" id="again" type="button">Book another seat</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<dialog class="board" id="standings" aria-labelledby="standings-title" data-lenis-prevent>
+  <div class="board-rim"><div class="board-in">
+    <div class="board-head">
+      <h2 id="standings-title">Last week's standings</h2>
+      <button class="tl" id="standings-close" type="button">Close</button>
+    </div>
+    <p class="board-note">Round 41. Points come from the finals; the lap is each driver's best of the night.</p>
+    <table class="standings">
+      <thead>
+        <tr><th scope="col">Pos</th><th scope="col">Driver tag</th><th scope="col">Best lap</th><th scope="col">Points</th></tr>
+      </thead>
+      <tbody>
+        <tr><th scope="row">1</th><td>nonna_turbo</td><td>1:42.318 <small>New lap record</small></td><td>10</td></tr>
+        <tr><th scope="row">2</th><td>PoLine</td><td>1:42.960</td><td>8</td></tr>
+        <tr><th scope="row">3</th><td>gigi_derapata</td><td>1:43.104</td><td>6</td></tr>
+        <tr><th scope="row">4</th><td>tram_15</td><td>1:43.377</td><td>5</td></tr>
+        <tr><th scope="row">5</th><td>bicerin</td><td>1:43.415</td><td>4</td></tr>
+        <tr><th scope="row">6</th><td>Vanchiglia_K</td><td>1:43.882</td><td>3</td></tr>
+        <tr><th scope="row">7</th><td>la_mole</td><td>1:44.020</td><td>2</td></tr>
+        <tr><th scope="row">8</th><td>zero_grip</td><td>1:45.596</td><td>1</td></tr>
+      </tbody>
+    </table>
+  </div></div>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  const root = document.documentElement;
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const lib = !!(window.gsap && window.ScrollTrigger && window.Lenis);
+  if (lib) root.classList.add('js'); // CDN blocked: no class, everything is visible and still works
+
+  const track = $('#track'), stage = $('#stage'), copy = $('#copy'), scene = $('#scene'), canvas = $('#road');
+  const h2 = $('#hero-title'), lede = $('.lede'), actions = $('.actions'), hint = $('#hint');
+  const hud = $('#hud'), kmh = $('#kmh'), bar = $$('#bar i'), lights = $('#lights');
+  const bookLink = $('#book-link'), openBtn = $('#standings-open'), closeBtn = $('#standings-close'), dlg = $('#standings');
+  const form = $('#seat'), done = $('#done'), doneTitle = $('#done-title'), again = $('#again'), flag = $('#flag');
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+  let lenis = null, fx = null; // fx: hooks set by the motion branch; null means nothing is running
+
+  /* ---------- Booking form (works without the libraries; nothing is sent) ---------- */
+  form.noValidate = true;
+  const F = {
+    driver: (v) => !v ? 'Enter a name or driver tag, like nonna_turbo.' : v.length > 16 ? 'Use 16 characters or fewer. The grid screen has no room for more.' : '',
+    email: (v) => !v ? 'Enter your email address, like ana@example.com.' : !/^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(v) ? 'This address needs an @ and a domain, like ana@example.com.' : '',
+    heat: (v) => v ? '' : 'Choose a heat time between 19:00 and 22:40.'
+  };
+  const val = (k) => form.elements[k].value.trim();
+  const mark = (k, msg) => {
+    const el = form.elements[k], err = $(`#${k}-err`);
+    err.textContent = msg; // cleared too, so assistive tech never finds a stale message
+    if (msg) { el.setAttribute('aria-invalid', 'true'); el.setAttribute('aria-describedby', `${k}-err`); }
+    else { el.removeAttribute('aria-invalid'); el.removeAttribute('aria-describedby'); }
+    return !msg;
+  };
+  const swap = (toDone) => {
+    const from = toDone ? form : done, to = toDone ? done : form;
+    from.classList.add('is-off'); from.inert = true;
+    to.classList.remove('is-off'); to.inert = false;
+    flag.classList.remove('is-waving');
+    if (toDone) { void flag.offsetWidth; flag.classList.add('is-waving'); } // the flag waves for two periods, then rests
+    (toDone ? doneTitle : form.elements.driver).focus();
+  };
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const bad = Object.keys(F).filter((k) => !mark(k, F[k](val(k))));
+    if (bad.length) { form.elements[bad[0]].focus(); return; }
+    $('#done-name').textContent = val('driver');
+    $('#done-heat').textContent = val('heat');
+    $('#done-mail').textContent = val('email');
+    $('#done-practice').hidden = !form.elements.practice.checked;
+    swap(true);
+  });
+  Object.keys(F).forEach((k) => ['input', 'change'].forEach((t) => form.elements[k].addEventListener(t, () => {
+    if (form.elements[k].hasAttribute('aria-invalid') && !F[k](val(k))) mark(k, '');
+  })));
+  again.addEventListener('click', () => {
+    if (done.classList.contains('is-off')) return;
+    form.elements.heat.value = ''; // another seat: keep the driver and email, choose a new heat
+    swap(false);
+  });
+
+  /* ---------- Standings dialog: the pit board drops in and leaves upward (CSS); focus returns ---------- */
+  let closing = false, downOn = null;
+  const settle = () => { closing = false; dlg.classList.remove('is-closing'); };
+  openBtn.addEventListener('click', () => {
+    if (dlg.open) return;
+    settle();
+    dlg.showModal();
+    lenis?.stop();
+    fx?.hold(true); // the road waits behind the scrim
+  });
+  const closeBoard = () => {
+    if (!dlg.open || closing) return;
+    const end = () => { if (!dlg.open) return; settle(); dlg.close(); openBtn.focus(); };
+    if (reduced.matches) return end();
+    closing = true;
+    dlg.classList.add('is-closing');
+    dlg.addEventListener('animationend', end, { once: true });
+    setTimeout(end, 400); // if the animation never runs
+  };
+  closeBtn.addEventListener('click', closeBoard);
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); closeBoard(); });
+  // Close on a backdrop click only when the press also started on the backdrop.
+  dlg.addEventListener('pointerdown', (e) => { downOn = e.target; });
+  dlg.addEventListener('click', (e) => { if (e.target === dlg && downOn === dlg) closeBoard(); });
+  dlg.addEventListener('close', () => { settle(); lenis?.start(); fx?.hold(false); });
+
+  /* ---------- Press: .is-tap covers touch and Enter, where :active is unreliable ---------- */
+  $$('.btn, .tl').forEach((el) => {
+    const up = () => el.classList.remove('is-tap');
+    el.addEventListener('pointerdown', () => el.classList.add('is-tap'));
+    el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') el.classList.add('is-tap'); });
+    ['pointerup', 'pointerleave', 'pointercancel', 'keyup', 'blur'].forEach((t) => el.addEventListener(t, up));
+  });
+
+  /* ---------- The road: a segment-projected raster road on a low-resolution canvas ----------
+     The track is a loop of 200-unit segments, each with a curve and a height. Every frame the segments ahead
+     of the camera are projected to the screen and filled one pixel row at a time with whole-pixel rectangles,
+     so every edge is hard. Sprites (poles, gantries) are drawn back to front and clipped by the crests in
+     front of them. Colours come from the :root tokens. This part is plain JavaScript: without the libraries
+     it draws one still frame. */
+  const road = (() => {
+    const g = canvas.getContext('2d', { alpha: false });
+    const SEG = 200, HALF = 1000, DRAW = 150, NEAR = 60, BAND = 3, SKY_W = 384, SKY_MAX = 12;
+    // pos: distance along the lap. x: lateral offset (-1 to 1, road edges). lean: -1, 0, 1. sun: sink step 0 to 8.
+    const S = { pos: 0, x: 0, lean: 0, sun: 4, sky: 0, bob: 0, gates: [] };
+    const P = new Array(DRAW);
+    let C = null, W = 0, H = 0, hz = 0, px = 4, foc = 0, camH = 0, sunR = 0;
+
+    // The ring road: [segments, curve, height at the end]. Curves ease in and out; heights ease between ends.
+    const segs = [], ease = (t) => .5 - .5 * Math.cos(Math.PI * t);
+    [[30, 0, 0], [70, 1.6, 700], [40, 0, 200], [60, -2.4, -500], [30, 0, 0], [80, 1.2, 800], [50, -1.8, 200], [40, 2.6, -300], [50, 0, 0]]
+      .forEach(([n, curve, y]) => {
+        const y0 = segs.length ? segs[segs.length - 1].y2 : 0;
+        for (let i = 0; i < n; i++) {
+          const t = i / n, k = t < .3 ? ease(t / .3) : t > .7 ? ease((1 - t) / .3) : 1;
+          segs.push({ c: curve * k, y1: y0 + (y - y0) * ease(t), y2: y0 + (y - y0) * ease((i + 1) / n) });
+        }
+      });
+    const N = segs.length;
+    segs[6].grid = true; // the start line, just ahead of the car at rest
+
+    // The skyline: one strip of seeded buildings that repeats, with a spire. It pans with the road's curve.
+    const rnd = ((s) => () => { s = (s + 0x6D2B79F5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; })(1961);
+    const city = { far: [], near: [], win: [] };
+    for (let x = 0; x < SKY_W;) {
+      const w = 5 + (rnd() * 9 | 0), h = 3 + (rnd() * 8 | 0);
+      city.far.push([x, w, h]);
+      if (h > 5) for (let i = 0; i < 2; i++) city.win.push([x + 1 + (rnd() * (w - 2) | 0), 2 + (rnd() * (h - 3) | 0)]);
+      x += w + (rnd() < .35 ? 2 + (rnd() * 5 | 0) : 0);
+    }
+    city.far.push([148, 9, 8], [150, 5, 11], [152, 1, SKY_MAX]);
+    for (let x = 3; x < SKY_W;) { const w = 4 + (rnd() * 8 | 0); city.near.push([x, w, 2 + (rnd() * 4 | 0)]); x += w + (rnd() * 12 | 0); }
+
+    // The car: a small hatchback from behind. i ice, d shade, k glass and tyres, r tail lamps.
+    const CAR = [
+      '...........iiiiiiiiiiii...........',
+      '.........iiiiiiiiiiiiiiii.........',
+      '........iikkkkkkkkkkkkkkii........',
+      '.......iikkkkkkkkkkkkddkkii.......',
+      '.......ikkkkkkkkkkkkddkkkki.......',
+      '......iikkkkkkkkkkkkkkkkkkii......',
+      '.....iiiiiiiiiiiiiiiiiiiiiiii.....',
+      '...iiiiiiiiiiiiiiiiiiiiiiiiiiii...',
+      '..iiiiiiiiiiiiiiiiiiiiiiiiiiiiii..',
+      '..irrrrrriiiiiiiiiiiiiiiirrrrrri..',
+      '..irrrrrriiiddddddddddiiirrrrrri..',
+      '..iiiiiiiiiiddddddddddiiiiiiiiii..',
+      '..dddddddddddddddddddddddddddddd..',
+      '..dkkkkkkkkkkkkkkkkkkkkkkkkkkkkd..',
+      '...kkkkkkk..............kkkkkkk...',
+      '...kkkkkkk..............kkkkkkk...',
+      '....kkkkk................kkkkk....'
+    ];
+    // Three lean frames from one drawing: the roof and glass shift 2px into the turn, the shoulders 1px.
+    const frames = [-1, 0, 1].map((d) => {
+      const runs = [];
+      CAR.forEach((row, y) => {
+        const sh = y < 6 ? 2 * d : y < 9 ? d : 0;
+        for (let x = 0; x < row.length;) {
+          let n = 1;
+          while (row[x + n] === row[x]) n++;
+          if (row[x] !== '.') runs.push([x + sh, y, n, row[x]]);
+          x += n;
+        }
+      });
+      return runs;
+    });
+
+    function build() {
+      const st = getComputedStyle(root), v = (n) => st.getPropertyValue(n).trim();
+      C = { sky: v('--night'), a1: v('--asphalt-1'), a2: v('--asphalt-2'), v1: v('--verge-1'), v2: v('--verge-2'),
+        far: v('--city-far'), near: v('--city-near'), pole: v('--pole'), ice: v('--ice'), dim: v('--dim'),
+        sun: v('--magenta'), kerb: v('--tangerine'), line: v('--yellow'), lamp: v('--cyan'), stop: v('--red') };
+      const r = scene.getBoundingClientRect();
+      if (!r.width || !r.height) return;
+      const overlay = getComputedStyle(scene).position === 'absolute';
+      px = Math.max(2, Math.round(r.width / 300)); // one canvas pixel is 2 to 5 CSS pixels: about 320 wide
+      W = Math.ceil(r.width / px); H = Math.ceil(r.height / px);
+      if (canvas.width !== W || canvas.height !== H) {
+        canvas.width = W; canvas.height = H;
+        canvas.style.width = W * px + 'px'; canvas.style.height = H * px + 'px';
+      }
+      // Full-stage layout: the horizon sits under the copy with room for the tallest building, and never
+      // above 45% of the stage. Stacked layout: the sky is just tall enough for the whole sun.
+      const need = copy.getBoundingClientRect().bottom - r.top + SKY_MAX * px + 16;
+      sunR = Math.round(Math.min(W * .085, H * .16));
+      hz = overlay ? Math.round(Math.min(r.height * .7, Math.max(r.height * .45, need)) / px) : Math.min(Math.round(H * .45), 2 * sunR + 6);
+      sunR = Math.min(sunR, Math.round(hz * .3));
+      foc = .42 * W;                              // focal length in canvas pixels
+      camH = HALF * (H - hz) / (.46 * W);         // camera height: the road spans 92% of the bottom row
+      scene.style.setProperty('--hz', hz * px + 'px');
+    }
+
+    const rect = (x, y, w, h, c, clip) => { if (y + h > clip) h = clip - y; if (w > 0 && h > 0) { g.fillStyle = c; g.fillRect(x, y, w, h); } };
+
+    // A banded setting sun: magenta above, tangerine below, cut by sky slices that thicken toward its foot.
+    function sun() {
+      const R = sunR, cx = Math.round(W * .72), step = Math.max(2, Math.round(R * .2));
+      const cy = hz - Math.round(R * .75) + S.sun * step, period = Math.max(4, Math.round(R * .3));
+      for (let dy = -R; dy < R; dy++) {
+        const y = cy + dy, q = (dy + R) / (2 * R);
+        if (y < 0 || y >= hz) continue;
+        if (q > .42 && (dy + R) % period < 1 + Math.floor((q - .42) * 5)) continue;
+        const hw = Math.round(Math.sqrt(R * R - (dy + .5) * (dy + .5)));
+        g.fillStyle = q < .5 ? C.sun : C.kerb;
+        g.fillRect(cx - hw, y, 2 * hw, 1);
+      }
+    }
+    function skyline() {
+      const off = ((Math.round(S.sky) % SKY_W) + SKY_W) % SKY_W;
+      const layer = (list, col) => { g.fillStyle = col; for (const [x, w, h] of list) for (let a = x - off; a < W; a += SKY_W) if (a + w > 0) g.fillRect(a, hz - h, w, h); };
+      layer(city.far, C.far);
+      g.fillStyle = C.pole;
+      for (const [x, y] of city.win) for (let a = x - off; a < W; a += SKY_W) g.fillRect(a, hz - y, 1, 1);
+      layer(city.near, C.near);
+    }
+    // Nothing beside the road stands higher than the camera, so nothing but the sun and the skyline ever
+    // rises into the sky where the copy sits. A light pole: post, arm toward the road, one cyan lamp. Far away
+    // it is a post stub with a cyan pixel.
+    function pole([x, y, w, clip], side) {
+      const k = w / HALF, h = Math.round(.92 * camH * k);
+      if (h < 1) return;
+      const bx = Math.round(x + side * w * 1.9), top = Math.round(y) - h;
+      const t = Math.max(1, Math.round(45 * k)), arm = Math.round(560 * k);
+      const lw = Math.max(1, Math.round(150 * k)), lh = Math.max(1, Math.round(55 * k));
+      rect(bx, top, t, h, C.pole, clip);
+      rect(side < 0 ? bx : bx - arm, top, arm + t, t, C.pole, clip);
+      rect(side < 0 ? bx + arm + t - lw : bx - arm, top + t, lw, lh, C.lamp, clip);
+    }
+    // A gantry over the road, just below the camera: the car passes under it and the camera over it, so its
+    // beam sweeps down the screen as it rushes past. Checkpoint: a yellow beam with ten dark blocks. Finish:
+    // two rows of checks.
+    function gantry([x, y, w, clip], type) {
+      const k = w / HALF, xl = Math.round(x - w * 1.3), xr = Math.round(x + w * 1.3), span = xr - xl;
+      const t = Math.max(1, Math.round(120 * k)), top = Math.round(y - .95 * camH * k), bh = Math.max(2, Math.round(.4 * camH * k));
+      rect(xl - t, top, t, Math.round(y) - top, C.pole, clip);
+      rect(xr, top, t, Math.round(y) - top, C.pole, clip);
+      if (type === 'finish') {
+        const c = Math.max(1, bh >> 1);
+        for (let j = Math.max(0, Math.floor(-xl / c)); j * c < span && xl + j * c < W; j++) for (let q = 0; q < 2; q++) rect(xl + j * c, top + q * c, Math.min(c, span - j * c), c, (j + q) % 2 ? C.ice : C.near, clip);
+      } else {
+        rect(xl, top, span, bh, C.line, clip);
+        if (bh > 4) for (let j = 0; j < 10; j++) rect(Math.round(xl + (1 + 2 * j) * span / 21), top + Math.round(bh * .3), Math.max(1, Math.round(span / 21)), Math.max(1, Math.round(bh * .4)), C.sky, clip);
+      }
+    }
+
+    function draw() {
+      if (!W) return;
+      const L = N * SEG, pos = ((S.pos % L) + L) % L, base = Math.floor(pos / SEG), frac = pos - base * SEG;
+      const zCar = foc * camH / (H - 4 - hz); // distance from the camera to the car's wheels
+      const cs = segs[(base + Math.floor((frac + zCar) / SEG)) % N], ct = ((frac + zCar) % SEG) / SEG;
+      const camY = camH + cs.y1 + (cs.y2 - cs.y1) * ct, camX = S.x * HALF;
+
+      g.fillStyle = C.sky; g.fillRect(0, 0, W, hz);
+      sun(); skyline();
+      g.fillStyle = C.v1; g.fillRect(0, hz, W, H - hz);
+
+      const gate = {}, over = [];
+      for (const q of S.gates) {
+        const n = Math.floor((q.z - S.pos + frac) / SEG);
+        if (n > 0 && n < DRAW) q.z - S.pos < zCar ? over.push([n, q.type]) : gate[n] = q.type;
+      }
+
+      // Front to back: each segment fills the rows between its two projected ends, up to the highest row
+      // already drawn (maxy), so a crest hides what is behind it.
+      let maxy = H, x = 0, dx = -segs[base].c * frac / SEG;
+      for (let n = 0; n < DRAW; n++) {
+        const i = (base + n) % N, s = segs[i];
+        let z1 = n * SEG - frac, x1 = x, yw = s.y1;
+        const z2 = z1 + SEG, x2 = x + dx;
+        x = x2; dx += s.c; P[n] = null;
+        if (z2 <= NEAR) continue;
+        if (z1 < NEAR) { const t = (NEAR - z1) / SEG; x1 += (x2 - x1) * t; yw += (s.y2 - yw) * t; z1 = NEAR; }
+        const k1 = foc / z1, k2 = foc / z2;
+        const ax = W / 2 + (x1 - camX) * k1, ay = hz + (camY - yw) * k1, aw = HALF * k1;
+        const bx = W / 2 + (x2 - camX) * k2, by = hz + (camY - s.y2) * k2, bw = HALF * k2;
+        P[n] = [ax, ay, aw, maxy];
+        const top = Math.max(0, Math.round(by)), bot = Math.min(maxy, Math.round(ay));
+        if (bot <= top) continue;
+        const band = Math.floor(i / BAND) % 2;
+        g.fillStyle = band ? C.v2 : C.v1; g.fillRect(0, top, W, bot - top);
+        for (let r = top; r < bot; r++) {
+          const t = Math.min(1, Math.max(0, (ay - r - .5) / (ay - by))), cx = ax + (bx - ax) * t, w = aw + (bw - aw) * t;
+          const l = Math.round(cx - w), rr = Math.round(cx + w), e = Math.max(1, Math.round(w * .13));
+          g.fillStyle = band ? C.kerb : C.ice; g.fillRect(l - e, r, rr - l + 2 * e, 1);   // rumble strips
+          if (s.grid) {
+            for (let c = 0; c < 8; c++) {
+              const xa = Math.round(cx - w + c * w / 4), xb = Math.round(cx - w + (c + 1) * w / 4);
+              g.fillStyle = (c + (t > .5 ? 1 : 0)) % 2 ? C.ice : C.near; g.fillRect(xa, r, xb - xa, 1);
+            }
+            continue;
+          }
+          g.fillStyle = band ? C.a2 : C.a1; g.fillRect(l, r, rr - l, 1);                   // asphalt
+          if (band && w > 5) { const lw = Math.max(1, Math.round(w * .04)); g.fillStyle = C.line; g.fillRect(Math.round(cx - lw / 2), r, lw, 1); }
+        }
+        maxy = top;
+      }
+      // Back to front: poles every eighth segment on both sides, and any gantry on its way.
+      for (let n = DRAW - 1; n > 0; n--) {
+        if (!P[n]) continue;
+        if ((base + n) % N % 8 === 4) { pole(P[n], -1); pole(P[n], 1); }
+        if (gate[n]) gantry(P[n], gate[n]);
+      }
+      const ink = { i: C.ice, d: C.dim, k: C.near, r: C.stop };
+      const ox = Math.round(W / 2 - CAR[0].length / 2), oy = H - CAR.length - 3 + S.bob;
+      for (const [cx, cy, n, ch] of frames[S.lean + 1]) { g.fillStyle = ink[ch]; g.fillRect(ox + cx, oy + cy, n, 1); }
+      for (const [n, type] of over) if (P[n]) gantry([P[n][0], P[n][1], P[n][2], H], type); // between the camera and the car
+    }
+
+    const curve = () => segs[(Math.floor(S.pos / SEG) % N + N + 4) % N].c; // the bend under the car
+    const still = () => { S.pos = 0; S.x = 0; S.lean = 0; S.sun = 4; S.sky = 0; S.bob = 0; S.gates.length = 0; };
+    return { S, SEG, build, draw, curve, still, get carZ() { return foc * camH / (H - 4 - hz); } };
+  })();
+  const S = road.S;
+  const redraw = () => { road.build(); road.draw(); };
+  redraw();
+  // The canvas follows the stage and the copy (the horizon sits under the copy; fonts change its height).
+  if (window.ResizeObserver) { const ro = new ResizeObserver(redraw); ro.observe(stage); ro.observe(copy); }
+  else window.addEventListener('resize', redraw);
+
+  if (!lib) return;
+
+  /* ---------- Motion ---------- */
+  gsap.registerPlugin(ScrollTrigger);
+  const css = (n) => getComputedStyle(root).getPropertyValue(n).trim();
+  const fontsReady = Promise.race([
+    Promise.all([document.fonts.ready, document.fonts.load('700 100px "Handjet"')]).then(() => 'fonts', () => 'fonts'),
+    new Promise((r) => setTimeout(() => r('timeout'), 1500))
+  ]);
+  // Start the lights only on a visible page: with lagSmoothing(0), a timeline started in a background tab
+  // would have finished before anyone saw it.
+  const visible = new Promise((r) => {
+    if (document.visibilityState === 'visible') return r();
+    const f = () => { if (document.visibilityState === 'visible') { document.removeEventListener('visibilitychange', f); r(); } };
+    document.addEventListener('visibilitychange', f);
+  });
+  const CRUISE = 80, TOP = 280, KMH = 43; // km/h; one km/h is 43 track units a second
+  const POINTS = [.3, .62, .9];           // lap progress of the two checkpoints and the finish
+  const title = h2.textContent;
+  let played = false;
+
+  const mm = gsap.matchMedia();
+  mm.add({
+    motion: '(prefers-reduced-motion: no-preference)',
+    reduce: '(prefers-reduced-motion: reduce)',
+    fine: '(hover: hover) and (pointer: fine)'
+  }, (ctx) => {
+    const { motion, fine } = ctx.conditions;
+    if (!motion) {
+      // Reduced motion: one composed still frame (sun mid-sky, car centred), everything visible, native scroll, no pin.
+      root.classList.add('go');
+      road.still(); redraw();
+      return;
+    }
+
+    let dead = false, tl = null;
+    const off = [];
+    const on = (el, type, fn, opt) => { el.addEventListener(type, fn, opt); off.push(() => el.removeEventListener(type, fn, opt)); };
+    const T = Object.fromEntries(['lamp', 'go', 'streak', 'flash'].map((k) => [k, parseFloat(css(`--d-${k}`))]));
+
+    root.classList.add('fx'); // pins the stage for one lap of scrolling
+    hint.textContent = fine ? 'Move the pointer to steer. Scroll to accelerate.' : 'Drag sideways to steer. Scroll to accelerate.';
+    hint.hidden = false;
+
+    // Lenis on GSAP's clock. Touch keeps native scrolling.
+    lenis = new Lenis({ lerp: .1, smoothWheel: true, autoRaf: false, anchors: true });
+    lenis.on('scroll', ScrollTrigger.update);
+    const tick = (t) => lenis.raf(t * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
+
+    /* Scroll progress through the pinned stage is distance along the lap. */
+    let prev = 0, cells = -1;
+    const armed = POINTS.map(() => true);
+    const lap = (p) => {
+      S.sun = Math.round(p * 8); // the sun sinks one slice at a time
+      const n = Math.round(p * bar.length);
+      if (n !== cells) { cells = n; bar.forEach((el, i) => el.classList.toggle('on', i < n)); }
+      POINTS.forEach((pt, i) => {
+        if (p < pt - .05) armed[i] = true;
+        else if (armed[i] && prev < pt && p >= pt) { armed[i] = false; S.gates.push({ z: S.pos + 28 * road.SEG, type: i === 2 ? 'finish' : 'check' }); }
+      });
+      prev = p;
+    };
+    const st = ScrollTrigger.create({
+      trigger: track,
+      start: () => `top+=${Math.max(0, stage.offsetHeight - window.innerHeight)} top`,
+      end: 'bottom bottom',
+      onUpdate: (self) => lap(self.progress),
+      onRefresh: (self) => { prev = self.progress; lap(self.progress); }
+    });
+    const pin = () => { stage.style.setProperty('--stage-h', stage.offsetHeight + 'px'); };
+    const ro = new ResizeObserver(() => { pin(); ScrollTrigger.refresh(); });
+    ro.observe(stage);
+    pin();
+
+    /* The drive loop: 30 frames a second, only while the stage is on screen and no dialog covers it.
+       The car always cruises, so the loop has no idle state while visible. */
+    let go = false, speed = 0, vel = 0, lastY = window.scrollY, acc = 0, clock = 0, hudAt = 0, shown = -1;
+    let ptr = null, key = null, release = null, kick = 0;
+    const frame = (t, dms) => {
+      acc += dms;
+      if (acc < 30) return;
+      const dt = Math.min(acc, 100) / 1000;
+      acc = 0; clock += dt;
+      // Scroll is the throttle: scroll speed (either way) adds up to 200 km/h on top of the cruise.
+      const y = window.scrollY, v = Math.abs(y - lastY) / dt;
+      lastY = y;
+      vel += (v - vel) * Math.min(1, dt * 8);
+      let want = go ? CRUISE + Math.min(TOP - CRUISE, vel * .08) : 0;
+      if (S.gates.length) want = Math.max(want, 190); // surge to the gantry, so it rushes past
+      if (kick > 0) { kick -= dt; want = Math.max(want, 160); } // the launch overshoots the cruise
+      speed += (want - speed) * Math.min(1, dt * (want > speed ? 3.2 : 1.1));
+      S.pos += speed * KMH * dt;
+      // Steering: keyboard lane, else pointer, else a slow weave about the centre.
+      const aim = key !== null ? key : ptr !== null ? ptr : go ? Math.sin(clock * .8) * .22 : 0;
+      const d = aim - S.x, c = road.curve();
+      S.x += d * Math.min(1, dt * 4.5);
+      S.lean = d > .05 ? 1 : d < -.05 ? -1 : speed > 60 && Math.abs(c) > 1 ? Math.sign(c) : 0;
+      S.sky += c * speed / TOP * dt * 16;
+      S.bob = speed > 20 && Math.floor(S.pos / 240) % 5 === 0 ? 1 : 0; // road buzz: one pixel, now and then
+      // A gantry passes the car: the HUD cuts to yellow for two frames.
+      for (let i = S.gates.length - 1; i >= 0; i--) {
+        const q = S.gates[i], gap = q.z - S.pos;
+        if (gap < road.SEG) { S.gates.splice(i, 1); continue; } // it has passed under the camera
+        if (gap > road.carZ || q.hit) continue;
+        q.hit = true;
+        hud.classList.add('is-flash');
+        gsap.delayedCall(T.flash, () => hud.classList.remove('is-flash'));
+      }
+      // The speed reads as a gauge: whole numbers, ten updates a second at most.
+      if (clock - hudAt >= .1) { hudAt = clock; const n = Math.round(speed); if (n !== shown) { shown = n; kmh.textContent = n; } }
+      road.draw();
+    };
+    let awake = false, inView = true, held = false;
+    const sync = () => {
+      const run = inView && !held;
+      if (run && !awake) { awake = true; acc = 0; lastY = window.scrollY; gsap.ticker.add(frame); }
+      else if (!run && awake) { awake = false; gsap.ticker.remove(frame); }
+    };
+    const io = new IntersectionObserver(([e]) => { inView = e.isIntersecting; sync(); });
+    io.observe(stage);
+    fx = { hold(v) { held = v; sync(); } };
+
+    /* Pointer X steers. Touch: a sideways drag. Keyboard: the two hero buttons are the two lanes. */
+    const lane = (x) => { const r = stage.getBoundingClientRect(); return gsap.utils.clamp(-.7, .7, ((x - r.left) / r.width * 2 - 1) * .8); };
+    if (fine) {
+      on(stage, 'pointermove', (e) => { if (e.pointerType !== 'touch') ptr = lane(e.clientX); });
+      on(stage, 'pointerleave', () => { ptr = null; });
+    }
+    let x0 = 0, s0 = 0;
+    on(stage, 'touchstart', (e) => { release?.kill(); x0 = e.touches[0].clientX; s0 = S.x; }, { passive: true });
+    on(stage, 'touchmove', (e) => { ptr = gsap.utils.clamp(-.7, .7, s0 + (e.touches[0].clientX - x0) / (stage.offsetWidth * .35)); }, { passive: true });
+    on(stage, 'touchend', () => { release?.kill(); release = gsap.delayedCall(1.2, () => { ptr = null; }); }, { passive: true });
+    [[bookLink, -.5], [openBtn, .5]].forEach(([el, x]) => {
+      on(el, 'focus', () => { if (el.matches(':focus-visible')) key = x; });
+      on(el, 'blur', () => { key = null; });
+    });
+
+    /* ---------- Load: five red lamps, lights out, GO, launch ---------- */
+    const cut = [lede, actions, hint, hud];
+    const streak = () => {
+      // The headline is split into words only to find its lines; each line steps in from the right through
+      // three ghost offsets (s3, s2, s1) and locks. The plain text is put back afterwards.
+      h2.textContent = '';
+      const words = title.split(' ').map((w, i) => {
+        const el = document.createElement('span');
+        el.className = 'w s0'; el.textContent = w;
+        if (i) h2.append(' ');
+        h2.append(el);
+        return el;
+      });
+      gsap.set(h2, { clearProps: 'visibility' });
+      const lines = [];
+      words.forEach((el) => { const last = lines[lines.length - 1]; if (last && last[0].offsetTop === el.offsetTop) last.push(el); else lines.push([el]); });
+      tl = gsap.timeline();
+      lines.forEach((line, i) => ['s3', 's2', 's1', ''].forEach((c, j) => tl.call(() => line.forEach((el) => { el.className = `w ${c}`; }), null, (i * 2 + j) * T.streak)));
+      tl.call(() => { h2.textContent = title; played = true; }, null, (lines.length * 2 + 3) * T.streak);
+    };
+    Promise.all([fontsReady, visible]).then(() => ctx.add(() => {
+      if (dead) return;
+      redraw(); ScrollTrigger.refresh();
+      // Reloaded part-way down the page, or already played: no lights, straight to cruising.
+      if (played || window.scrollY > 40) { root.classList.add('go'); played = true; go = true; speed = CRUISE; return; }
+      gsap.set([h2, ...cut], { visibility: 'hidden' });
+      root.classList.add('go');
+      const lamps = $$('i', lights), t0 = .25, out = t0 + lamps.length * T.lamp + .25;
+      lights.classList.remove('is-go'); lamps.forEach((l) => l.classList.remove('on'));
+      lights.hidden = false;
+      tl = gsap.timeline();
+      lamps.forEach((l, i) => tl.call(() => l.classList.add('on'), null, t0 + i * T.lamp));
+      // Lights out and GO on the same frame: the car launches past its cruise and settles back.
+      tl.call(() => { lights.classList.add('is-go'); go = true; kick = .7; }, null, out);
+      // GO disappears: lede, buttons, hint and HUD cut in on that frame, and the headline streaks in.
+      tl.call(() => { lights.hidden = true; gsap.set(cut, { clearProps: 'visibility' }); streak(); }, null, out + T.go);
+    }));
+
+    return () => {
+      dead = true;
+      off.forEach((f) => f());
+      io.disconnect(); ro.disconnect();
+      if (awake) gsap.ticker.remove(frame);
+      fx = null;
+      tl?.kill(); release?.kill(); st.kill();
+      gsap.ticker.remove(tick);
+      gsap.ticker.lagSmoothing(500, 33);
+      lenis.destroy(); lenis = null;
+      root.classList.remove('fx');
+      stage.style.removeProperty('--stage-h');
+      hint.hidden = true; lights.hidden = true;
+      hud.classList.remove('is-flash');
+      bar.forEach((el) => el.classList.remove('on'));
+      kmh.textContent = CRUISE;
+      h2.textContent = title;
+      gsap.set([h2, ...cut], { clearProps: 'visibility' });
+      road.still(); redraw();
+    };
+  });
+})();
+</script>
+</body>
+</html>

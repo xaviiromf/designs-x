@@ -1,0 +1,1114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Softlock Week: one run, start to finish</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Handjet:ELGR,ELSH,wght@1..2,0..16,100..900&family=Host+Grotesk:wght@300..800&display=swap">
+<style>
+  :root {
+    /* Colour: a platformer at dusk. Every hue has one job (contrast is against --plum unless noted). */
+    --plum: #27143A;        /* page ground */
+    --sky: #1B0E2B;         /* stage sky, timer panel, field and dialog ground */
+    --hill: #2D1848;        /* far hills on the stage; decorative (1.07:1 on sky) */
+    --ruin: #44285F;        /* mid ruins, crates, row separators, resting input cells; decorative (1.3:1) */
+    --cream: #FFF2DC;       /* text (15.3:1 on plum, 16.5:1 on sky) and the runner */
+    --mist: #CDB8DC;        /* secondary text, outlines, resting underline squares, waiting splits (9.1:1, 9.8:1 on sky) */
+    --brick: #F0763C;       /* ground tiles and the primary button (plum text on it 5.9:1) */
+    --brick-dark: #A9461B;  /* the tiles' lower course, the 4px bottom edge of a brick button; decorative */
+    --brick-lite: #FFA06B;  /* the tiles' cap row, a hovered brick button (plum text on it 8.2:1) */
+    --gold: #FFD34D;        /* best-ever: gold splits, gems, the current chapter; also the focus ring (11.9:1, 12.8:1 on sky) */
+    --green: #58E08A;       /* ahead of pace (10.1:1, 10.9:1 on sky) */
+    --red: #FF5F5F;         /* behind pace, and form errors (5.8:1, 6.3:1 on sky) */
+    --cyan: #62D6FF;        /* light: links, lantern light, water surface, lit inputs (10.0:1, 10.8:1 on sky) */
+    --water: #1F5D85;       /* the body of the water under the gaps; decorative */
+    --lilac: #C3A6FF;       /* the ghost only: the personal-best runner and its key in the timer (8.3:1 on sky) */
+
+    /* Type */
+    --font-display: "Handjet", "Arial Narrow", sans-serif;
+    --font-text: "Host Grotesk", system-ui, sans-serif;
+    --modules: "ELSH" 2, "ELGR" 1;   /* square Handjet modules */
+    --t-small: 14px;
+    --t-body: 17px;
+    --t-lede: 21px;
+    --t-h3: 28px;
+    --t-h2: clamp(52px, 7vw, 104px);
+    --t-clock: 72px;         /* the main timer, Handjet */
+    --t-call: clamp(22px, 2.6vw, 38px);   /* diegetic calls over the stage */
+    --lh-body: 1.55;
+
+    /* Space: one 8px cell (half a level tile at 1x) drives every step */
+    --cell: 8px;
+    --s1: calc(var(--cell) * .5); --s2: var(--cell); --s3: calc(var(--cell) * 2); --s4: calc(var(--cell) * 3);
+    --s5: calc(var(--cell) * 4); --s6: calc(var(--cell) * 6); --s7: calc(var(--cell) * 8); --s8: calc(var(--cell) * 12);
+    --notch: 4px;            /* pixel corner on buttons and panels */
+    --edge: 4px;             /* the darker bottom edge of a brick */
+    --tap: 48px;             /* button and field height */
+    --max-w: 1296px;
+    --gutter: clamp(16px, 4vw, 48px);
+
+    /* Motion: a machine with a frame rate. One frame is 80ms; everything is a whole number of frames. */
+    --frame: .08s;
+    --d-build: .7s;          /* tile columns placed left to right at load */
+    --d-bump: .16s;          /* brick bump, 2 frames */
+    --d-pop: .4s;            /* the gem and its +1, 4 steps */
+    --d-crack: .16s;         /* press crack, 2 frames */
+    --d-trail: .3s;          /* gem-trail underline */
+    --d-sel: .56s;           /* field selector blink loop, 2 frames */
+    --d-buzz: .16s;          /* error buzz, 2 frames */
+    --d-blink: .32s;         /* a split cutting into the timer: off, on, off, on */
+    --d-dlg: .16s;           /* pause menu, 2 frames */
+    --d-hold: .12s;          /* how long an input stays lit after the pointer stops */
+    --d-decay: .08s;         /* the dithered frame an input shows as it lets go */
+  }
+  @media (max-width: 599px) {
+    :root { --t-body: 16px; --t-lede: 17px; --t-h3: 24px; --t-clock: 56px; }
+  }
+
+  /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+
+  /* Hidden only when the libraries loaded, and only until the load sequence takes over. */
+  html.js:not(.go) .cut { visibility: hidden; }
+  @media (prefers-reduced-motion: reduce) { html.js:not(.go) .cut { visibility: visible; } }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { background: var(--plum); }
+  body {
+    margin: 0;
+    background: var(--plum);
+    color: var(--cream);
+    font: 400 var(--t-body)/var(--lh-body) var(--font-text);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  :focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+  ::selection { background: var(--gold); color: var(--plum); }
+  .vh { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+  i { font-style: normal; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  .story { padding: var(--s7) max(var(--gutter), (100% - var(--max-w)) / 2) var(--s8); }
+  .wrap { position: relative; }
+
+  /* ---------- Intro ---------- */
+  .intro { display: grid; gap: var(--s4); }
+  .h2 {
+    margin: 0;
+    font: 700 var(--t-h2)/.92 var(--font-display);
+    font-variation-settings: var(--modules);
+    text-wrap: balance;
+  }
+  .lede { margin: 0; max-width: 46ch; font-size: var(--t-lede); line-height: 1.45; }
+  .actions { display: flex; flex-wrap: wrap; gap: var(--s3); margin-top: var(--s5); }
+  @media (min-width: 960px) {
+    .intro { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); column-gap: var(--s6); align-items: end; }
+  }
+
+  /* ---------- Buttons: brick tiles ---------- */
+  .btn, .hud, .pad, .sched {
+    --corners: polygon(0 var(--notch), var(--notch) var(--notch), var(--notch) 0, calc(100% - var(--notch)) 0, calc(100% - var(--notch)) var(--notch), 100% var(--notch), 100% calc(100% - var(--notch)), calc(100% - var(--notch)) calc(100% - var(--notch)), calc(100% - var(--notch)) 100%, var(--notch) 100%, var(--notch) calc(100% - var(--notch)), 0 calc(100% - var(--notch)));
+  }
+  .btn {
+    position: relative;
+    display: inline-block;
+    padding: 0; border: 0; background: none;
+    color: var(--ink); text-decoration: none;
+    font: 600 var(--t-body)/1.2 var(--font-text);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* .face is the rim and the bottom edge, .inner the brick's face; the corners live here so focus rings are never clipped. */
+  .face { display: block; padding: var(--bw) var(--bw) calc(var(--bw) + var(--edge)); background: var(--rim); clip-path: var(--corners); }
+  .inner {
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+    min-height: calc(var(--tap) - 2 * var(--bw) - var(--edge));
+    padding: 0 var(--s4);
+    background: var(--fill);
+    clip-path: var(--corners);
+  }
+  .btn-brick { --bw: 0px; --rim: var(--brick-dark); --fill: var(--brick); --hot: var(--brick-lite); --ink: var(--plum); --crack: var(--brick-dark); }
+  .btn-line { --bw: 2px; --rim: var(--mist); --fill: var(--plum); --hot: var(--ruin); --ink: var(--cream); --crack: var(--mist); }
+  .btn:hover .inner, .btn:focus-visible .inner, .btn.is-down .inner { background: var(--hot); }
+  /* Press: the face drops 2px into its own bottom edge. A state, so it also works without the motion layer. */
+  .btn:active .inner, .btn.is-down .inner { transform: translateY(2px); }
+  .btn.is-bump .face { animation: bump var(--d-bump) steps(1); }
+  @keyframes bump { 0% { transform: translateY(-4px); } 50% { transform: translateY(-2px); } 100% { transform: none; } }
+  /* The gem that a bumped brick gives up, with its +1 (added by the script, once per hover). */
+  .pop {
+    position: absolute; left: var(--s4); bottom: 100%;
+    display: flex; align-items: center; gap: var(--s1);
+    color: var(--gold);
+    font: 700 22px/1 var(--font-display); font-variation-settings: var(--modules);
+    visibility: hidden; pointer-events: none;
+  }
+  .btn.is-pop .pop { animation: pop var(--d-pop) steps(1); }
+  @keyframes pop {
+    0% { transform: translateY(6px); visibility: visible; } 25% { transform: translateY(-2px); visibility: visible; }
+    50% { transform: translateY(-10px); visibility: visible; } 75% { transform: translateY(-18px); visibility: visible; }
+    100% { transform: translateY(-18px); visibility: hidden; }
+  }
+  /* Press crack: two frames of 2px pixels drawn with hard box-shadows; the second frame extends the first. */
+  .crack { position: absolute; left: 50%; top: 0; visibility: hidden; pointer-events: none; }
+  .crack i { position: absolute; left: 0; top: 0; width: 2px; height: 2px; background: var(--crack); }
+  .crack i:first-child { box-shadow: 2px 2px var(--crack), 0 4px var(--crack), -2px 6px var(--crack), -2px 8px var(--crack), 4px 4px var(--crack); }
+  .crack i:last-child { background: none; box-shadow: 0 10px var(--crack), 2px 12px var(--crack), 0 14px var(--crack), 2px 16px var(--crack), 4px 18px var(--crack), 6px 6px var(--crack), 8px 8px var(--crack), -4px 10px var(--crack), -6px 12px var(--crack), -6px 14px var(--crack), 2px 20px var(--crack), 4px 22px var(--crack), 4px 24px var(--crack), 10px 10px var(--crack), 2px 26px var(--crack), 2px 28px var(--crack), 0 30px var(--crack); }
+  .btn.is-down .crack { visibility: visible; }
+  .btn.is-down .crack i:last-child { animation: crack var(--d-crack) steps(1) both; }
+  @keyframes crack { 0% { opacity: 0; } 50%, 100% { opacity: 1; } }
+
+  /* ---------- Gems ---------- */
+  .gem {
+    --gem: polygon(33.3% 0, 66.7% 0, 66.7% 16.7%, 83.3% 16.7%, 83.3% 33.3%, 100% 33.3%, 100% 66.7%, 83.3% 66.7%, 83.3% 83.3%, 66.7% 83.3%, 66.7% 100%, 33.3% 100%, 33.3% 83.3%, 16.7% 83.3%, 16.7% 66.7%, 0 66.7%, 0 33.3%, 16.7% 33.3%, 16.7% 16.7%, 33.3% 16.7%);
+    position: relative; flex: none;
+    display: inline-block; width: 12px; height: 12px;
+    background: var(--gold);
+    clip-path: var(--gem);
+  }
+  /* A resting gem is hollow; a current one is solid gold. The change is a hard cut. */
+  .gem-rest { background: var(--mist); }
+  .gem-rest::after { content: ""; position: absolute; inset: 2px; background: var(--plum); clip-path: var(--gem); }
+  .is-now .gem-rest { background: var(--gold); }
+  .is-now .gem-rest::after { content: none; }
+
+  /* ---------- Text links: gem-trail underline ---------- */
+  .u {
+    --trail: 0 0 / 6px 3px repeat-x;
+    position: relative;
+    display: inline-block;
+    padding: 10px 0 13px; margin: -10px 0 -13px;
+    border: 0; background: none;
+    color: var(--cyan);
+    font: inherit; font-weight: 600; line-height: 1.4;
+    text-decoration: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .u::before, .u::after { content: ""; position: absolute; left: 0; right: 0; bottom: 8px; height: 3px; }
+  .u::before { background: linear-gradient(90deg, var(--mist) 3px, transparent 0) var(--trail); }
+  /* The gold row lies over the resting row and is uncovered one square per step (--n is set by the script to the
+     number of squares; 8 is the fallback). Leaving runs the same steps backwards, right to left. */
+  .u::after {
+    background: linear-gradient(90deg, var(--gold) 3px, transparent 0) var(--trail);
+    clip-path: inset(0 100% 0 0);
+    transition: clip-path var(--d-trail) steps(var(--n, 8), end);
+  }
+  .u:hover::after, .u:focus-visible::after, .u:active::after { clip-path: inset(0); }
+  button.u { min-height: 44px; margin: 0; }
+
+  /* ---------- The run ---------- */
+  .play { margin-top: var(--s6); }
+  .stage-wrap { background: var(--plum); }
+  .stage { position: relative; background: var(--sky); }
+  .level { display: block; width: 100%; aspect-ratio: 12 / 5; image-rendering: pixelated; }
+  .call {
+    position: absolute; left: var(--s3); top: var(--s2);
+    margin: 0;
+    color: var(--cream);
+    font: 700 var(--t-call)/1 var(--font-display); font-variation-settings: var(--modules);
+    pointer-events: none;
+  }
+  .call[data-tone="wait"] { color: var(--mist); }
+  .call[data-tone="gold"] { color: var(--gold); }
+  .call[data-tone="ahead"] { color: var(--green); }
+
+  /* The split timer: real text. */
+  .hud {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "id id" "splits splits" "inputs clock";
+    gap: var(--s3);
+    margin-top: var(--s3);
+    padding: var(--s3) var(--s3) var(--s4);
+    background: var(--sky);
+    clip-path: var(--corners);
+  }
+  .hud p { margin: 0; }
+  .hud-id { grid-area: id; display: flex; flex-wrap: wrap; gap: 0 var(--s3); color: var(--mist); font-size: var(--t-small); }
+  .hud-run { flex-basis: 100%; color: var(--cream); font-size: var(--t-lede); font-weight: 600; line-height: 1.3; }
+  .hud-pb { flex-basis: 100%; }
+  .key { display: inline-block; width: 10px; height: 10px; margin-right: var(--s2); background: conic-gradient(var(--lilac) 25%, transparent 0 50%, var(--lilac) 0 75%, transparent 0) 0 0 / 4px 4px; }
+  .splits { grid-area: splits; margin: 0; padding: 0; list-style: none; }
+  .split {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto 4.6em; column-gap: var(--s3); align-items: center;
+    min-height: 34px;
+    border-top: 2px solid var(--plum);
+    font-variant-numeric: tabular-nums;
+  }
+  .s-name { font-weight: 600; }
+  .s-delta { display: inline-flex; align-items: center; gap: var(--s2); }
+  .s-time { text-align: right; }
+  .is-behind .s-delta { color: var(--red); }
+  .is-ahead .s-delta { color: var(--green); }
+  .is-gold .s-delta { color: var(--gold); }
+  .is-wait .s-name, .is-wait .s-time { color: var(--mist); }
+  .split.is-blink { animation: blink var(--d-blink) steps(1); }
+  @keyframes blink { 0%, 50% { opacity: 0; } 25%, 75%, 100% { opacity: 1; } }
+  .clock {
+    grid-area: clock; align-self: end;
+    font: 700 var(--t-clock)/.72 var(--font-display); font-variation-settings: var(--modules);
+    font-variant-numeric: tabular-nums;
+    text-align: right; white-space: nowrap;
+  }
+  /* Every character of the timer sits in its own fixed cell, so the figures never shift while it is scrubbed. */
+  .digits i { display: inline-block; width: .5em; text-align: center; }
+  .digits i.p { width: .22em; }
+  .clock[data-pace="behind"] { color: var(--red); }
+  .clock[data-pace="ahead"] { color: var(--green); }
+  .clock[data-pace="pb"] { color: var(--gold); }
+
+  /* Input display: a pixel controller that shows the visitor's own inputs. */
+  .inputs { grid-area: inputs; align-self: end; display: flex; flex-direction: column; gap: var(--s1); color: var(--mist); font-size: var(--t-small); line-height: 1.2; }
+  .pad {
+    display: flex; align-items: center; justify-content: space-between;
+    width: 96px; height: 46px; padding: 0 9px;
+    background: var(--mist);
+    clip-path: var(--corners);
+    --notch: 2px;
+  }
+  .dpad { display: grid; grid-template: repeat(3, 10px) / repeat(3, 10px); }
+  .dpad i, .ab i { background: var(--sky); }
+  .dpad [data-k="u"] { grid-area: 1 / 2; } .dpad [data-k="l"] { grid-area: 2 / 1; } .dpad .hub { grid-area: 2 / 2; }
+  .dpad [data-k="r"] { grid-area: 2 / 3; } .dpad [data-k="d"] { grid-area: 3 / 2; }
+  .ab { display: flex; gap: 5px; }
+  .ab i {
+    display: grid; place-items: center;
+    width: 16px; height: 16px;
+    color: var(--mist);
+    font: 700 15px/1 var(--font-display); font-variation-settings: var(--modules);
+  }
+  .ab [data-k="b"] { transform: translateY(5px); } .ab [data-k="a"] { transform: translateY(-5px); }
+  .pad .is-on { background: var(--cyan); color: var(--sky); }
+  .pad .is-fade { background: conic-gradient(var(--cyan) 25%, var(--sky) 0 50%, var(--cyan) 0 75%, var(--sky) 0) 0 0 / 4px 4px; }
+
+  /* Chapters */
+  .chapters { position: relative; margin-top: var(--s6); display: grid; gap: var(--s6); }
+  .chapter h3 { display: flex; align-items: center; gap: var(--s3); margin: 0; font: 600 var(--t-h3)/1.15 var(--font-text); letter-spacing: -.01em; }
+  .chapter h3 .gem { width: 18px; height: 18px; }
+  .chapter h3 .gem::after { inset: 3px; }
+  .chapter p { margin: var(--s3) 0 0; max-width: 54ch; }
+
+  @media (min-width: 960px) {
+    /* Static (reduced motion, blocked CDN): stage on top, chapters left, timer right. */
+    .play { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); column-gap: var(--s6); }
+    .frame { display: contents; }
+    .stage-wrap { grid-column: 1 / -1; }
+    .hud { grid-column: 2; grid-row: 2; align-self: start; margin-top: var(--s5); }
+    .chapters { grid-column: 1; grid-row: 2; margin-top: var(--s5); }
+    .chapter p { max-width: 44ch; font-size: var(--t-lede); line-height: 1.45; }
+  }
+
+  /* Pinned (motion allowed, viewport tall enough): the frame is a viewport-high sticky layer whose upper part is
+     opaque; the chapters scroll up underneath it and vanish behind the stage. */
+  .pin .play { display: block; }
+  .pin .frame { position: sticky; top: 0; z-index: 2; display: block; height: 100vh; height: 100svh; pointer-events: none; }
+  .pin .stage-wrap { padding-top: var(--s2); pointer-events: auto; }
+  .pin .hud { pointer-events: auto; }
+  .pin .chapters { z-index: 1; display: block; margin-top: calc(var(--top-h, 60vh) - 100vh); margin-top: calc(var(--top-h, 60svh) - 100svh); }
+  .pin .chapter { min-height: calc((100vh - var(--top-h, 60vh)) * 1.2); min-height: calc((100svh - var(--top-h, 60svh)) * 1.2); padding-top: var(--s3); }
+  .pin .chapter:last-child { min-height: calc((100vh - var(--top-h, 60vh)) * .95); min-height: calc((100svh - var(--top-h, 60svh)) * .95); }
+  @media (min-width: 960px) {
+    .pin .frame { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); grid-template-rows: auto minmax(0, 1fr); column-gap: var(--s6); }
+    .pin .stage-wrap { padding-bottom: var(--s4); }
+    .pin .hud { margin-top: 0; }
+    .pin .chapters { width: calc((100% - var(--s6)) * 7 / 12); }
+    .pin .chapter { padding-top: 0; }
+  }
+  @media (max-width: 959px) {
+    /* Phones and tablets: the timer collapses to one line under the stage; the inputs and the estimate share a second. */
+    .pin .hud {
+      grid-template-areas: "splits clock" "inputs id"; align-items: center; gap: var(--s1) var(--s3);
+      margin: 0; padding: var(--s2) 0;
+      background: var(--plum); border-bottom: 2px solid var(--ruin);
+      clip-path: none;
+    }
+    .pin .hud-run, .pin .hud-runner, .pin .hud-pb, .pin .split:not(.is-now), .pin .s-time { display: none; }
+    .pin .hud-id { justify-content: flex-end; }
+    .pin .split { grid-template-columns: auto auto; justify-content: start; border: 0; min-height: 0; }
+    .pin .clock { align-self: center; font-size: 44px; }
+    .pin .inputs { flex-direction: row; align-items: center; gap: var(--s2); }
+    .pin .pad { height: 36px; }
+    .pin .dpad { grid-template: repeat(3, 8px) / repeat(3, 8px); }
+    .pin .ab [data-k="b"] { transform: translateY(3px); } .pin .ab [data-k="a"] { transform: translateY(-3px); }
+  }
+
+  /* ---------- After the run ---------- */
+  .after { display: grid; gap: var(--s6); margin-top: var(--s8); scroll-margin-top: var(--s5); }
+  .after h3, .done h3 { margin: 0; font: 600 var(--t-h3)/1.15 var(--font-text); letter-spacing: -.01em; }
+  .after-copy p { margin: var(--s3) 0 0; max-width: 46ch; }
+  .after-copy .btn { margin-top: var(--s5); }
+  .after-copy .ask { margin-top: var(--s4); }
+  @media (min-width: 960px) { .after { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); column-gap: var(--s6); } }
+
+  .form { display: grid; gap: var(--s2) var(--s4); }
+  @media (min-width: 600px) { .form { grid-template-columns: 1fr 1fr; } .fld-wide { grid-column: 1 / -1; } }
+  .fld { position: relative; min-width: 0; }
+  .lbl { display: block; margin-bottom: var(--s1); font-weight: 600; }
+  /* The selector: a stepped triangle in the left gutter, like the cursor of a menu. */
+  .sel {
+    position: absolute; left: -13px; top: .5em;
+    width: 9px; height: 10px;
+    background: var(--gold);
+    clip-path: polygon(0 0, 33.3% 0, 33.3% 20%, 66.7% 20%, 66.7% 40%, 100% 40%, 100% 60%, 66.7% 60%, 66.7% 80%, 33.3% 80%, 33.3% 100%, 0 100%);
+    visibility: hidden;
+  }
+  .fld:focus-within .sel { visibility: visible; animation: sel var(--d-sel) steps(1) infinite; }
+  @keyframes sel { 0% { opacity: 1; } 50% { opacity: 0; } }
+  .fld input, .fld select {
+    display: block; width: 100%; height: var(--tap);
+    padding: 0 var(--s3);
+    border: 2px solid var(--mist); border-radius: 0;
+    background: var(--sky); color: var(--cream);
+    font: inherit;
+    appearance: none;
+  }
+  .fld input:hover, .fld select:hover { border-color: var(--cream); }
+  .fld input:focus, .fld select:focus { border-color: var(--gold); }
+  .pick { position: relative; display: block; }
+  .pick::after {   /* a stepped arrow for the select */
+    content: ""; position: absolute; right: var(--s3); top: 50%; width: 10px; height: 6px; margin-top: -3px;
+    background: var(--mist); pointer-events: none;
+    clip-path: polygon(0 0, 100% 0, 100% 33.3%, 80% 33.3%, 80% 66.7%, 60% 66.7%, 60% 100%, 40% 100%, 40% 66.7%, 20% 66.7%, 20% 33.3%, 0 33.3%);
+  }
+  .err { min-height: calc(var(--t-small) * 2.9); margin: var(--s1) 0 0; color: var(--red); font-size: var(--t-small); line-height: 1.45; font-weight: 500; }
+  .fld.is-bad input, .fld.is-bad select { border-color: var(--red); }
+  .fld.is-bad .sel { visibility: visible; background: var(--red); }
+  .fld.is-buzz .sel { animation: buzz var(--d-buzz) steps(1); }
+  @keyframes buzz { 0% { transform: translateX(-4px); } 50% { transform: translateX(4px); } 100% { transform: none; } }
+  .form .btn { justify-self: start; }
+
+  .done h3:focus { outline: none; }   /* focus lands here only to announce the result */
+  .done > p { margin: var(--s4) 0 var(--s2); max-width: 46ch; }
+  .done b { font-weight: 600; overflow-wrap: anywhere; }
+  .done-row { position: relative; margin-top: 78px; }
+  .mini { position: absolute; right: var(--s5); bottom: 100%; width: 48px; height: 78px; image-rendering: pixelated; }
+
+  /* Schedule rows: the dialog's table and the confirmation's single row share these. */
+  .tbl { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  .tbl th, .tbl td { padding: 11px var(--s3) 11px 0; text-align: left; vertical-align: top; border-top: 2px solid var(--ruin); }
+  .tbl thead th { border-top: 0; padding-block: 0 var(--s2); color: var(--mist); font-size: var(--t-small); font-weight: 600; }
+  .tbl th:last-child, .tbl td:last-child { padding-right: 0; text-align: right; }
+  .tbl td:first-child { white-space: nowrap; }
+  .tbl b { font-weight: 600; }
+  .tbl .gem { margin-right: var(--s2); }
+  .done .tbl tbody td { border-top-color: var(--mist); border-bottom: 2px solid var(--ruin); }
+  .is-story td:first-child, .done .tbl td:first-child { color: var(--gold); font-weight: 600; }
+
+  /* ---------- Schedule dialog: a pause menu ---------- */
+  .sched {
+    width: min(640px, 100% - 2 * var(--s3)); max-width: none; max-height: calc(100dvh - 2 * var(--s3));
+    margin: auto; padding: 2px; border: 0;
+    background: var(--mist); color: var(--cream);
+    clip-path: var(--corners);
+    overflow-y: auto; overscroll-behavior: contain;
+  }
+  /* The backdrop is a hard 50% checker of the ground colour: a pattern that cuts in, never an alpha fade. */
+  .sched::backdrop { background: conic-gradient(var(--plum) 25%, transparent 0 50%, var(--plum) 0 75%, transparent 0) 0 0 / 4px 4px; }
+  .sched[open] { animation: dlg var(--d-dlg) steps(1); }
+  @keyframes dlg { 0% { transform: scale(.96); } 50% { transform: scale(.98); } 100% { transform: none; } }
+  .panel { padding: var(--s5); background: var(--sky); clip-path: var(--corners); }
+  .panel-head { display: flex; justify-content: space-between; align-items: center; gap: var(--s3); }
+  .panel h2 { margin: 0; font: 700 44px/1 var(--font-display); font-variation-settings: var(--modules); }
+  .panel-intro { margin: var(--s2) 0 var(--s4); max-width: 48ch; color: var(--mist); }
+  @media (max-width: 599px) {
+    .story { padding-top: var(--s6); }
+    .actions { display: grid; margin-top: var(--s4); }
+    .panel { padding: var(--s4) var(--s3); }
+    .panel h2 { font-size: 36px; }
+    .tbl th, .tbl td { padding-right: var(--s2); }
+    .form .btn { justify-self: stretch; }
+    .form .btn, .after-copy .btn { display: block; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition-duration: 0s !important; }
+  }
+</style>
+</head>
+<body>
+
+<section class="story" id="softlock" aria-labelledby="story-title">
+  <div class="wrap">
+    <header class="intro">
+      <h2 class="h2 cut" id="story-title">One run, start to finish.</h2>
+      <div>
+        <p class="lede cut">Softlock Week is seven days of speedruns in Gothenburg, <a class="u" href="https://www.twitch.tv/" target="_blank" rel="noopener">live on Twitch<span class="vh"> (opens in a new tab)</span></a>, raising money for the city's children's hospital fund. Scroll to play Saturday's run: Lanternfall any% by mossgiant, estimate 11:40.</p>
+        <div class="actions cut">
+          <a class="btn btn-brick" href="#submit"><span class="face"><span class="inner"><span class="label">Submit a run for 2027</span></span></span></a>
+          <button class="btn btn-line" type="button" data-schedule aria-haspopup="dialog" aria-controls="schedule"><span class="face"><span class="inner"><span class="label">See Saturday's schedule</span></span></span></button>
+        </div>
+      </div>
+    </header>
+
+    <div class="play" id="run">
+      <div class="frame">
+        <div class="stage-wrap">
+          <div class="stage">
+            <canvas class="level" width="384" height="160" aria-hidden="true"></canvas>
+            <p class="call" aria-hidden="true"></p>
+          </div>
+        </div>
+        <div class="hud cut">
+          <div class="hud-id">
+            <p class="hud-run">Lanternfall, any%</p>
+            <p class="hud-runner">Runner mossgiant</p>
+            <p class="hud-est num">Estimate 11:40</p>
+            <p class="hud-pb num"><i class="key" aria-hidden="true"></i>Lilac ghost: personal best 11:36.9</p>
+          </div>
+          <ol class="splits" aria-label="Splits">
+            <li class="split is-behind"><span class="s-name">Mossgate</span><span class="s-delta">+3.1<span class="vh"> behind</span></span><span class="s-time">2:44.1</span></li>
+            <li class="split is-gold"><span class="s-name">Cistern</span><span class="s-delta"><i class="gem" aria-hidden="true"></i>−1.4<span class="vh"> ahead, best segment ever</span></span><span class="s-time">5:56.9</span></li>
+            <li class="split is-ahead"><span class="s-name">Bell stair</span><span class="s-delta">−5.8<span class="vh"> ahead</span></span><span class="s-time">8:43.7</span></li>
+            <li class="split is-ahead is-now"><span class="s-name">Beacon</span><span class="s-delta">−5.7<span class="vh"> ahead</span></span><span class="s-time">11:31.2</span></li>
+          </ol>
+          <p class="clock" data-pace="pb"><span class="vh" id="clock-sr">Final time 11:31.2</span><span class="digits" id="clock" aria-hidden="true">11:31.2</span></p>
+          <div class="inputs" aria-hidden="true">
+            <div class="pad">
+              <div class="dpad"><i data-k="u"></i><i data-k="l"></i><i class="hub"></i><i data-k="r"></i><i data-k="d"></i></div>
+              <div class="ab"><i data-k="b">B</i><i data-k="a">A</i></div>
+            </div>
+            <span>Your inputs</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="chapters cut">
+        <article class="chapter">
+          <h3><i class="gem gem-rest" aria-hidden="true"></i>The estimate</h3>
+          <p>Every run on the schedule is booked by its estimate. mossgiant asked for 11:40 for Lanternfall any%, and the next runner starts setting up the moment that slot ends. Go over, and the overrun comes out of someone else's time.</p>
+        </article>
+        <article class="chapter">
+          <h3><i class="gem gem-rest" aria-hidden="true"></i>The splits</h3>
+          <p>The timer cuts the run into four splits and compares each one with the runner's personal best, the lilac ghost on the stage. Red is behind that pace, green is ahead. Gold is rarer: the fastest this runner has ever played that segment, on any day.</p>
+        </article>
+        <article class="chapter">
+          <h3><i class="gem gem-rest" aria-hidden="true"></i>The skip</h3>
+          <p>Past the cistern the route climbs the bell stair. Unless you jump into the corner under the ledge on one of two frames, a thirtieth of a second, and come out on the far side of the wall. Hit it and save 38 seconds. Miss it, drop back, take the stairs anyway and lose 12.</p>
+        </article>
+        <article class="chapter">
+          <h3><i class="gem gem-rest" aria-hidden="true"></i>The incentive</h3>
+          <p>Donations decide how a run is played. At 5,000 kr the last room is played blindfolded, and the chat got there with three minutes to spare. From the door on, mossgiant counts steps and listens for the lanterns.</p>
+        </article>
+        <article class="chapter">
+          <h3><i class="gem gem-rest" aria-hidden="true"></i>Time</h3>
+          <p>11:31.2. A personal best by 5.7 seconds and 8.8 under the estimate, with the last room played blind. While the run was on screen it raised 18,460 kr for the children's hospital fund, and the next runner started on schedule.</p>
+        </article>
+      </div>
+    </div>
+
+    <div class="after" id="submit">
+      <div class="after-copy">
+        <h3 id="submit-title">Submit a run for 2027</h3>
+        <p>Softlock Week 2027 runs from Sunday 7 to Saturday 13 November. Submissions close on 31 January, and the schedule team answers every one by 1 March.</p>
+        <p>Pick an estimate you can hit nine times out of ten. Saturday shows what a good one looks like.</p>
+        <button class="btn btn-line" type="button" data-schedule aria-haspopup="dialog" aria-controls="schedule"><span class="face"><span class="inner"><span class="label">See Saturday's schedule</span></span></span></button>
+        <p class="ask">Not sure which category fits? <a class="u" href="https://discord.com/" target="_blank" rel="noopener">Ask the schedule team on Discord<span class="vh"> (opens in a new tab)</span></a></p>
+      </div>
+
+      <div class="swap">
+        <form class="form" id="run-form" aria-labelledby="submit-title">
+          <div class="fld fld-wide">
+            <label class="lbl" for="f-game"><i class="sel" aria-hidden="true"></i>Game</label>
+            <input id="f-game" name="game" type="text" autocomplete="off" required>
+            <p class="err" id="f-game-err"></p>
+          </div>
+          <div class="fld">
+            <label class="lbl" for="f-category"><i class="sel" aria-hidden="true"></i>Category</label>
+            <span class="pick"><select id="f-category" name="category" required>
+              <option value="">Choose one</option>
+              <option>Any%</option><option>100%</option><option>Glitchless</option><option>All bosses</option><option>Low%</option>
+            </select></span>
+            <p class="err" id="f-category-err"></p>
+          </div>
+          <div class="fld">
+            <label class="lbl" for="f-estimate"><i class="sel" aria-hidden="true"></i>Estimate, as mm:ss</label>
+            <input id="f-estimate" name="estimate" type="text" inputmode="numeric" autocomplete="off" required>
+            <p class="err" id="f-estimate-err"></p>
+          </div>
+          <div class="fld">
+            <label class="lbl" for="f-handle"><i class="sel" aria-hidden="true"></i>Runner handle</label>
+            <input id="f-handle" name="handle" type="text" autocomplete="nickname" spellcheck="false" required>
+            <p class="err" id="f-handle-err"></p>
+          </div>
+          <div class="fld">
+            <label class="lbl" for="f-email"><i class="sel" aria-hidden="true"></i>Email address</label>
+            <input id="f-email" name="email" type="email" autocomplete="email" spellcheck="false" required>
+            <p class="err" id="f-email-err"></p>
+          </div>
+          <button class="btn btn-brick" type="submit"><span class="face"><span class="inner"><span class="label">Submit this run</span></span></span></button>
+        </form>
+
+        <div class="done" id="done" hidden>
+          <h3 id="done-title" tabindex="-1">Run submitted</h3>
+          <div class="done-row">
+            <canvas class="mini" width="16" height="26" aria-hidden="true"></canvas>
+            <table class="tbl">
+              <thead><tr><th scope="col">Status</th><th scope="col">Run</th><th scope="col">Estimate</th></tr></thead>
+              <tbody><tr><td><i class="gem" aria-hidden="true"></i>Submitted</td><td><b id="done-game">Lanternfall</b>, <span id="done-cat">Any%</span> by <span id="done-handle">mossgiant</span></td><td id="done-est">11:40</td></tr></tbody>
+            </table>
+          </div>
+          <p>We'll email <b id="done-mail">ana@example.com</b> by 1 March 2027 with a yes, a no, or a question about the category.</p>
+          <button class="u" id="again" type="button">Submit another run</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<dialog class="sched" id="schedule" aria-labelledby="schedule-title" data-lenis-prevent>
+  <div class="panel">
+    <div class="panel-head">
+      <h2 id="schedule-title">Saturday's schedule</h2>
+      <button class="u" id="schedule-close" type="button">Close</button>
+    </div>
+    <p class="panel-intro">Saturday 14 November, the last day of Softlock Week 2026. Times are local to Gothenburg.</p>
+    <table class="tbl">
+      <thead><tr><th scope="col">Start</th><th scope="col">Run</th><th scope="col">Estimate</th></tr></thead>
+      <tbody>
+        <tr><td>18:00</td><td><b>Tidewrack</b>, Any% by fjordbyte</td><td>24:00</td></tr>
+        <tr><td>18:30</td><td><b>Brass Orchard</b>, All keys by saltlakrits</td><td>41:00</td></tr>
+        <tr><td>19:20</td><td><b>Pocket Glacier</b>, Glitchless by runevik</td><td>38:00</td></tr>
+        <tr class="is-story"><td><i class="gem" aria-hidden="true"></i>20:10</td><td><b>Lanternfall</b>, Any% by mossgiant<span class="vh"> (the run in this story)</span></td><td>11:40</td></tr>
+        <tr><td>20:30</td><td><b>Night Ferry 2</b>, 100% by okapi_run</td><td>72:00</td></tr>
+        <tr><td>21:50</td><td><b>Hollow Signal</b>, Any% relay by pilsnerkatt and four more</td><td>52:00</td></tr>
+      </tbody>
+    </table>
+  </div>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  const root = document.documentElement;
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const lib = !!(window.gsap && window.ScrollTrigger && window.Lenis);
+  if (lib) root.classList.add('js'); // CDN blocked: no class, everything is visible and still works
+  const css = (n) => getComputedStyle(root).getPropertyValue(n).trim();
+  const secs = (n) => parseFloat(css(n)) || 0;
+  const clamp = (a, b, v) => Math.min(b, Math.max(a, v));
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+  const restart = (el, cls) => { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
+  // Piecewise-linear lookup through [[x, y], ...]; clamps at both ends.
+  const through = (pts, v) => {
+    if (v <= pts[0][0]) return pts[0][1];
+    for (let i = 1; i < pts.length; i++) if (v <= pts[i][0]) { const [a, b] = pts[i - 1], [c, d] = pts[i]; return c === a ? d : b + (d - b) * (v - a) / (c - a); }
+    return pts[pts.length - 1][1];
+  };
+
+  const sec = $('.story'), canvas = $('.level'), call = $('.call'), play = $('.play'), frame = $('.frame');
+  const stageWrap = $('.stage-wrap'), hud = $('.hud'), chapters = $$('.chapter'), mini = $('.mini');
+  let lenis = null, fx = null; // fx: hooks set by the motion branch; null means instant
+
+  /* ---------- The run: one any% of Lanternfall, as data ---------- */
+  // World x in level pixels (tiles are 16px). The runner starts at X0 and stops at XE, beside the beacon.
+  const X0 = 56, XE = 1556, BLIND_X = 1056, STILL_X = 862;
+  const CHAPTER_X = [X0, 400, 740, 1040, 1500];   // where in the level each chapter begins
+  const GHOST_PX = 6;                             // level pixels the ghost leads or trails per second of delta
+  const SPLITS = [   // x of the split's lantern post, run time in seconds, delta against the personal best, meaning
+    { x: 432, t: 164.1, d: 3.1, k: 'red' },
+    { x: 672, t: 356.9, d: -1.4, k: 'gold' },
+    { x: 992, t: 523.7, d: -5.8, k: 'green' },
+    { x: XE, t: 691.2, d: -5.7, k: 'green' }];
+  const timeAt = (x) => through([[X0, 0], ...SPLITS.map((s) => [s.x, s.t])], x);
+  const deltaAt = (x) => through([[X0, 0], ...SPLITS.map((s) => [s.x, s.d])], x);
+  const fmt = (t) => { const n = Math.round(t * 10), m = Math.floor(n / 600), r = n - m * 600; return `${m}:${String(Math.floor(r / 10)).padStart(2, '0')}.${r % 10}`; };
+
+  /* ---------- The stage: a low-resolution canvas, drawn in whole pixels and scaled up ---------- */
+  const stage = (() => {
+    const g = canvas.getContext('2d'), T = 16, GY = 128, FULL = 160; // tile, ground line, full view height
+    const GAPS = [[14, 15], [30, 32], [70, 71], [77, 80]];                 // tile columns with water instead of ground
+    const SLABS = [[336, 32, 3], [736, 30, 2], [784, 44, 2], [848, 64, 2], [1032, 56, 3], [1248, 16, 2]]; // x, top above ground, tiles
+    const WALL = 880, DOOR = [1040, 1064], BEACON = 1584;
+    const CRATES = [[144, 1], [608, 2], [1408, 1]];
+    const POSTS = [[32], [288], [432, 0], [560], [672, 1], [768], [992, 2], [1180, -1], [1340, -1]];     // x, split index (-1 hangs from above)
+    const GEMS = [[240, 36], [360, 40], [504, 36], [616, 50], [752, 34, 1], [800, 48, 1], [1136, 34], [1264, 26], [1416, 34]]; // x, height, 1 = on the stairs the skip skips
+    // The route: [x, feet above ground, arc of the jump to the next node]. 0 is a run; 'clip' is the ledge clip.
+    const PATH = [[56, 0, 0], [126, 0, 26], [178, 0, 0], [214, 0, 24], [266, 0, 0], [306, 0, 14], [342, 32, 0], [378, 32, 8], [420, 0, 0],
+      [470, 0, 30], [538, 0, 0], [584, 0, 42], [648, 0, 0], [846, 0, 10], [874, 42, 'clip'], [918, 42, 4], [944, 0, 0],
+      [1110, 0, 24], [1162, 0, 0], [1220, 0, 12], [1254, 16, 0], [1274, 16, 10], [1308, 0, 0], [1390, 0, 26], [1442, 0, 0], [XE, 0, 0]];
+    const HILL = [22, 22, 30, 38, 38, 46, 54, 54, 46, 38, 38, 30, 22, 14, 14, 22, 30, 30, 38, 30, 22, 14, 14, 14]; // far skyline, 8px strips
+    const RUINS = [[24, 62, 10, 94], [21, 66, 16, 4], [70, 62, 10, 94], [67, 66, 16, 4], [21, 74, 62, 8], [150, 34, 10, 66], [146, 38, 18, 4],
+      [230, 80, 12, 112], [226, 84, 20, 4], [290, 22, 66, 54], [290, 30, 10, 8], [309, 30, 10, 8], [328, 30, 10, 8], [346, 30, 10, 8], [404, 50, 10, 82], [401, 54, 16, 4]]; // x, top, w, h
+    const PERIOD = 448;
+    // The runner: a hooded figure with a lantern. c cloak, d shade, k face, e eye. Legs are swapped per frame.
+    const BODY = ['....ccccc...', '...ccccccc..', '..ccccccccc.', '.cccckkkkkc.', 'ccccckkekec.', '.dccckkkkkc.', '..dccccccc..', '..dcccccccc.', '.ddccccccccc', '.ddcccccccc.', '.dccccccccc.', '..dccccccc..'];
+    const LEGS = {
+      a: ['..ccc..ccc..', '.ccc....ccc.', '.dd......dd.', 'ddd......ddd'], b: ['...cccccc...', '....cccc....', '....ddd.....', '....dddd....'],
+      c: ['...cc..ccc..', '..cc....cc..', '..dd....dd..', '.ddd....ddd.'], d: ['...ccccc....', '....cccc....', '.....ddd....', '.....dddd...'],
+      j: ['..cccccccc..', '.dd.cccc.dd.', '.dd......dd.', '............'], q: ['............', '............', '.ddd....ddd.', 'dddd....dddd'] };
+    let W = 384, VH = FULL, S = 3, C = null, img = {}, cache = new Map(), inView = true, dirty = false;
+    // What the stage shows. build: 0..1 while the tiles are placed at load (null = built).
+    const s = { x: STILL_X, build: null, runner: true, drop: 0, land: '', hop: null };
+    const R = (q, col, x, y, w, h) => { q.fillStyle = col; q.fillRect(x, y, w, h); };
+    const mk = (w, h, fn) => { const c = document.createElement('canvas'); c.width = w; c.height = h; fn(c.getContext('2d')); return c; };
+
+    // Colours come from the tokens, never from literals; the tiles are drawn once into small canvases.
+    function load() {
+      C = Object.fromEntries(['sky', 'hill', 'ruin', 'cream', 'mist', 'brick', 'brick-dark', 'brick-lite', 'gold', 'green', 'red', 'cyan', 'water', 'lilac', 'plum'].map((k) => [k, css('--' + k)]));
+      const B = C.brick, BD = C['brick-dark'], BL = C['brick-lite'];
+      const course = (q, cap) => { R(q, B, 0, 0, 16, 16); if (cap) R(q, BL, 0, 0, 16, 2); R(q, BD, 0, 8, 16, 1); R(q, BD, 0, 15, 16, 1); R(q, BD, 7, cap ? 2 : 0, 1, 8); R(q, BD, 15, cap ? 2 : 0, 1, 8); R(q, BD, 3, 9, 1, 6); R(q, BD, 11, 9, 1, 6); };
+      img = {
+        top: mk(16, 16, (q) => course(q, true)), mid: mk(16, 16, (q) => course(q, false)),
+        fill: mk(16, 16, (q) => { R(q, BD, 0, 0, 16, 16); R(q, C.plum, 0, 7, 16, 1); R(q, C.plum, 0, 15, 16, 1); R(q, C.plum, 7, 0, 1, 7); R(q, C.plum, 15, 8, 1, 7); }),
+        slab: mk(16, 8, (q) => { R(q, B, 0, 0, 16, 8); R(q, BL, 0, 0, 16, 2); R(q, BD, 0, 6, 16, 2); R(q, BD, 15, 2, 1, 4); }),
+        crate: mk(16, 16, (q) => { R(q, C.mist, 1, 1, 14, 15); R(q, C.ruin, 3, 3, 10, 11); for (let i = 0; i < 10; i++) { R(q, C.mist, 3 + i, 3 + i, 1, 1); R(q, C.mist, 12 - i, 3 + i, 1, 1); } }),
+        gem: mk(7, 7, (q) => { [[3, 1], [2, 3], [1, 5], [0, 7], [1, 5], [2, 3], [3, 1]].forEach(([x, w], y) => R(q, C.gold, x, y, w, 1)); R(q, C.cream, 2, 2, 1, 2); })
+      };
+      cache = new Map();
+    }
+    // One frame of the runner, composed from body, legs and lantern. mode 1 = dithered (inside the wall), 2 = the ghost.
+    function sprite(f, blind, mode) {
+      const key = f + blind + mode;
+      if (!cache.has(key)) cache.set(key, mk(16, 20, (q) => {
+        const col = { c: C.cream, d: C.mist, k: C.sky, e: C.cyan };
+        const px = (x, y, ch) => { if (ch === '.' || (mode && (x + y) % 2)) return; R(q, mode === 2 ? C.lilac : col[ch], x, y, 1, 1); };
+        const put = (rows, ox, oy) => rows.forEach((r, y) => [...r].forEach((ch, x) => px(ox + x, oy + y, ch)));
+        const squash = f === 'q', win = f === 'w', bob = f === 'b' || f === 'd' ? -1 : 0;
+        let body = BODY.slice();
+        if (blind) { body[4] = 'dddddddddd..'; body[5] = 'ddcckkkkkc..'; }   // the blindfold: a band round the hood, its knot behind
+        if (win) body[8] = '.ddcccccccc.';
+        if (squash) body = body.filter((_, i) => i !== 6 && i !== 10);
+        put(body, 1, squash ? 8 : 4 + bob);
+        put(LEGS[win ? 'b' : f], 1, 16);
+        const lx = win ? 12 : 13, ly = win ? 0 : squash ? 15 : 13 + bob;   // the lantern hangs from the arm, or is held up
+        if (win) ['c', 'c', 'c', 'c'].forEach((ch, i) => px(12, 8 + i, ch)); else px(13, ly - 1, 'c');
+        for (let y = 0; y < 3; y++) for (let x = 0; x < 3; x++) px(lx + x, ly + y + (win ? 4 : 0), x === 1 && y === 1 ? 'c' : 'e');
+      }));
+      return cache.get(key);
+    }
+    // Where the runner is on the route at x, and which frame: the run cycle steps by distance travelled.
+    function pose(x) {
+      if (x <= X0) return { h: 0, f: 'b' };
+      if (x >= XE) return { h: 0, f: 'w' };
+      let i = 0;
+      while (i < PATH.length - 2 && x >= PATH[i + 1][0]) i++;
+      const [xa, ha, arc] = PATH[i], [xb, hb] = PATH[i + 1], t = (x - xa) / (xb - xa);
+      if (arc === 'clip') return { h: ha, f: 'ac'[Math.floor(x / 4) % 2], clip: 1 };
+      if (!arc) return { h: ha, f: 'abcd'[Math.floor(x / 7) % 4] };
+      return { h: ha + (hb - ha) * t + 4 * arc * t * (1 - t), f: 'j' };
+    }
+
+    function render() {
+      if (!C) return;
+      if (!inView) { dirty = true; return; }
+      dirty = false;
+      const x = s.x, cam = Math.round(x - W * .3), oy = FULL - VH;
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      R(g, C.sky, 0, 0, W, VH);
+      for (let i = 0; i < 26; i++) R(g, i % 3 ? C.mist : C.cream, (i * 89 + 17) % W, (i * 37 + 5) % Math.max(24, VH - 76), 1, 1);
+      g.translate(0, -oy);
+      // Three layers moved by the game camera in whole pixels: far hills, mid ruins, tiles.
+      const fo = Math.floor(cam * .2), ro = Math.floor(cam * .5), n = HILL.length;
+      for (let i = Math.floor(fo / 8); i * 8 < fo + W; i++) { const h = HILL[((i % n) + n) % n]; R(g, C.hill, i * 8 - fo, GY - h, 8, FULL - GY + h); }
+      for (let k = Math.floor(ro / PERIOD) - 1; k * PERIOD < ro + W; k++) for (const [rx, top, w, h] of RUINS) R(g, C.ruin, k * PERIOD + rx - ro, GY - top, w, h);
+
+      // Load: columns are placed left to right; the newest one is still a tile height above its place.
+      const c0 = Math.floor(cam / T) - 1, c1 = Math.floor((cam + W) / T) + 1;
+      const k = s.build == null ? Infinity : Math.floor(s.build * (c1 - c0 + 2));
+      const at = (wx) => { const i = Math.floor(wx / T) - c0; return i < k - 1 ? 0 : i === k - 1 ? -T : null; };
+      const tile = (im, wx, y, dy) => g.drawImage(im, wx - cam, y + dy);
+      for (let c = c0; c <= c1; c++) {
+        const dy = at(c * T), X = c * T - cam;
+        if (dy == null) continue;
+        if (GAPS.some(([a, b]) => c >= a && c <= b)) {   // water: the surface notch moves with the camera, not with time
+          R(g, C.water, X, GY + 18 + dy, T, 14); R(g, C.cyan, X, GY + 18 + dy, T, 2); R(g, C.water, X + ((c * 5 + (cam >> 3)) % 4) * 4, GY + 18 + dy, 4, 1);
+        } else { g.drawImage(img.top, X, GY + dy); g.drawImage(img.fill, X, GY + T + dy); }
+      }
+      for (const [sx, top, m] of SLABS) for (let i = 0; i < m; i++) { const dy = at(sx + i * T); if (dy != null) tile(img.slab, sx + i * T, GY - top, dy); }
+      for (let c = 0; c < 2; c++) for (let r = 0; r < 4; r++) { const dy = at(WALL + c * T); if (dy != null) tile(r === 3 ? img.top : img.mid, WALL + c * T, GY - T * (r + 1), dy); }
+      for (const dx of DOOR) for (let r = 0; r < 3; r++) { const dy = at(dx); if (dy != null) g.drawImage(img.mid, 0, 0, 8, 16, dx - cam, GY - T * (r + 1) + dy, 8, 16); }
+      for (const [cx, m] of CRATES) for (let i = 0; i < m; i++) { const dy = at(cx); if (dy != null) tile(img.crate, cx, GY - T * (i + 1), dy); }
+      // Lantern posts light as the runner's lantern passes them; a split's post also raises a pennant in the split's colour.
+      for (const [px, sp] of POSTS) {
+        const dy = at(px), X = px - cam;
+        if (dy == null || X < -12 || X > W + 12) continue;
+        const lit = s.runner && x >= px - 6, hang = sp === -1, top = (hang ? GY - 70 : GY - (sp >= 0 ? 36 : 26)) + dy;
+        if (hang) R(g, C.mist, X, 0, 1, top); else R(g, C.mist, X, top + 6, 2, GY + dy - top - 6);
+        if (lit) { R(g, C.cyan, X - 2, top, 6, 6); R(g, C.cream, X, top + 2, 2, 2); R(g, C.cyan, X - 4, top + 2, 1, 2); R(g, C.cyan, X + 5, top + 2, 1, 2); R(g, C.cyan, X, hang ? top + 7 : top - 2, 2, 1); }
+        else { R(g, C.mist, X - 2, top, 6, 6); R(g, C.sky, X - 1, top + 1, 4, 4); }
+        if (sp >= 0 && lit) { R(g, C[SPLITS[sp].k], X + 2, top - 9, 6, 5); R(g, C.mist, X, top - 9, 2, 7); }
+      }
+      { // The beacon: the run ends when the lantern lights it.
+        const dy = at(BEACON), X = BEACON - cam;
+        if (dy != null) {
+          tile(img.mid, BEACON, GY - T, dy); R(g, C.mist, X - 2, GY - 20 + dy, 20, 4);
+          if (s.runner && x >= XE) { R(g, C.cyan, X + 2, GY - 30 + dy, 12, 10); R(g, C.cyan, X + 4, GY - 36 + dy, 8, 6); R(g, C.cyan, X + 6, GY - 41 + dy, 4, 5); R(g, C.cream, X + 5, GY - 28 + dy, 6, 7); R(g, C.cream, X + 6, GY - 32 + dy, 4, 4);
+            [[-4, -34], [18, -34], [-7, -26], [21, -26], [7, -46]].forEach(([a, b]) => R(g, C.cyan, X + a, GY + b + dy, 2, 2)); }
+        }
+      }
+      for (const [gx, h, keep] of GEMS) { const dy = at(gx); if (dy != null && (keep || !s.runner || x < gx - 2)) tile(img.gem, gx - 3, GY - h - 7, dy); }
+      if (s.runner) {
+        // The ghost is the personal best: it leads when the run is behind and trails when it is ahead.
+        const gx = clamp(X0, XE, x + deltaAt(x) * GHOST_PX), gp = pose(gx);
+        if (!s.drop) g.drawImage(sprite(gp.f, 0, 2), Math.round(gx) - 7 - cam, GY - 20 - Math.round(gp.h));
+        const p = pose(x), f = s.hop != null ? (s.hop ? 'w' : 'q') : s.land || p.f, h = p.h + s.drop + (s.hop ? [0, 8, 4][s.hop] : 0);
+        g.drawImage(sprite(f, x >= BLIND_X ? 1 : 0, p.clip ? 1 : 0), Math.round(x) - 7 - cam, GY - 20 - Math.round(h));
+      }
+    }
+    // Whole-pixel fit: the canvas is W x VH level pixels shown at S css pixels each. frac caps its height while pinned.
+    function fit(frac) {
+      const cw = canvas.parentElement.clientWidth;
+      if (!cw) return;
+      if (!C) load();
+      S = cw >= 1100 ? 3 : 2;
+      const w = Math.floor(cw / S), vh = frac ? clamp(96, FULL, Math.floor(Math.min(innerHeight, 1100) * frac / S)) : cw < 600 ? 128 : FULL;
+      if (w !== W || vh !== VH || !canvas.style.width) {
+        W = w; VH = vh;
+        canvas.width = W; canvas.height = VH;
+        canvas.style.width = W * S + 'px'; canvas.style.height = VH * S + 'px';
+      }
+      render();
+    }
+    // The small runner that stands on the confirmation row.
+    function small(f, up) {
+      if (!C) load();
+      const q = mini.getContext('2d');
+      q.clearRect(0, 0, 16, 26); q.drawImage(sprite(f, 0, 0), 0, 6 - up);
+    }
+    new IntersectionObserver(([e]) => { inView = e.isIntersecting; if (inView && dirty) render(); }).observe(canvas);
+    return { s, fit, render, small };
+  })();
+
+  /* ---------- The split timer ---------- */
+  const rows = $$('.split'), fin = rows.map((r) => [$('.s-delta', r).innerHTML, $('.s-time', r).textContent, $('.s-name', r).textContent]);
+  const clockP = $('.clock'), digits = $('#clock'), clockSr = $('#clock-sr');
+  digits.textContent = '';
+  const cells = Array.from({ length: 7 }, (_, i) => { const c = document.createElement('i'); if (i === 2 || i === 5) c.className = 'p'; return digits.appendChild(c); });
+  let shown = -1;
+  // live: the run is being scrubbed (unreached splits are blank). Otherwise the finished run. blink: a split just landed.
+  function setHud(x, live, blink) {
+    const n = live ? SPLITS.filter((sp) => x >= sp.x).length : 4;
+    const str = fmt(n === 4 ? SPLITS[3].t : timeAt(x)).padStart(7, ' ');
+    cells.forEach((c, i) => { if (c.textContent !== str[i]) c.textContent = str[i]; });
+    if (n === shown) return;
+    rows.forEach((r, i) => {
+      const on = i < n;
+      r.classList.toggle('is-wait', !on);
+      r.classList.toggle('is-now', i === Math.max(0, n - 1));
+      $('.s-delta', r).innerHTML = on ? fin[i][0] : '';
+      $('.s-time', r).textContent = on ? fin[i][1] : '-:--.-';
+      if (on && blink && i >= shown) restart(r, 'is-blink');   // the split cuts in with a blink
+    });
+    clockSr.textContent = n === 4 ? 'Final time 11:31.2' : n ? `Run time ${fin[n - 1][1]} at ${fin[n - 1][2]}` : 'Run time 0:00.0';
+    clockP.dataset.pace = n === 4 ? 'pb' : !n ? '' : SPLITS[n - 1].d > 0 ? 'behind' : 'ahead';
+    shown = n;
+  }
+  // Short diegetic calls over the stage, cut in and out by position.
+  const CALLS = [[X0 + .5, 130, 'GO', ''], [672, 740, 'GOLD SPLIT', 'gold'], [846, 968, 'CLIP: 38 S SAVED', 'ahead'], [BLIND_X, 1230, 'BLINDFOLD ON', ''], [XE, 1e9, 'TIME 11:31.2', 'gold']];
+  function setCall(x, live) {
+    const c = !live ? null : x <= X0 ? [0, 0, 'READY', 'wait'] : CALLS.find(([a, b]) => x >= a && x < b);
+    if (call.textContent !== (c ? c[2] : '')) { call.textContent = c ? c[2] : ''; call.dataset.tone = c ? c[3] : ''; }
+  }
+  let nowCh = -1;
+  function setChapter(i) {
+    if (i === nowCh) return;
+    chapters.forEach((c, j) => { c.classList.toggle('is-now', j === i); j === i ? c.setAttribute('aria-current', 'true') : c.removeAttribute('aria-current'); });
+    nowCh = i;
+  }
+  // One composed still: the runner mid-jump at the ledge, the finished splits. Used without the libraries and under reduced motion.
+  function still() {
+    Object.assign(stage.s, { x: STILL_X, build: null, runner: true, drop: 0, land: '', hop: null });
+    setHud(XE, false); setCall(0, false); setChapter(-1);
+    stage.fit(0);
+  }
+  still();
+  stage.small('b', 0);
+  window.addEventListener('resize', () => { if (!root.classList.contains('pin')) stage.fit(0); });
+  // Classes that start a one-shot CSS animation are removed when it ends, so the next one can start.
+  const ONCE = { blink: 'is-blink', buzz: 'is-buzz', bump: 'is-bump', pop: 'is-pop' };
+  document.addEventListener('animationend', (e) => { const cls = ONCE[e.animationName]; if (cls) e.target.closest('.' + cls)?.classList.remove(cls); });
+
+  /* ---------- Input display: the controller shows the visitor's own inputs (a state, so it runs everywhere) ---------- */
+  {
+    const key = Object.fromEntries($$('.pad [data-k]').map((el) => [el.dataset.k, el]));
+    const HOLD = secs('--d-hold') * 1000, DECAY = secs('--d-decay') * 1000, held = {}, timers = {};
+    const set = (k, on) => {
+      const el = key[k];
+      clearTimeout(timers[k]);
+      if (on) { el.classList.remove('is-fade'); el.classList.add('is-on'); return; }
+      if (!el.classList.contains('is-on')) return;
+      el.classList.remove('is-on');
+      if (reduced.matches) return;   // reduced motion: lit or not, no decay frame
+      el.classList.add('is-fade');
+      timers[k] = setTimeout(() => el.classList.remove('is-fade'), DECAY);
+    };
+    // Movement is quantised to eight directions; a diagonal lights two arms. It holds for --d-hold after the last move.
+    const DIRS = ['r', 'rd', 'd', 'ld', 'l', 'lu', 'u', 'ru'];
+    let holdT = 0, last = null, acc = [0, 0], downAt = 0;
+    const point = (dx, dy) => {
+      const on = DIRS[Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) & 7];
+      for (const k of 'udlr') set(k, on.includes(k) || !!held[k]);
+      clearTimeout(holdT);
+      holdT = setTimeout(() => { for (const k of 'udlr') if (!held[k]) set(k, false); }, HOLD);
+    };
+    const move = (x, y) => {
+      if (last) { acc[0] += x - last[0]; acc[1] += y - last[1]; if (Math.hypot(acc[0], acc[1]) >= 6) { point(acc[0], acc[1]); acc = [0, 0]; } }
+      last = [x, y];
+    };
+    sec.addEventListener('pointermove', (e) => { if (e.pointerType !== 'touch') move(e.clientX, e.clientY); });
+    sec.addEventListener('pointerleave', () => { last = null; });
+    // Touch: a swipe is a direction (the finger moves, the page scrolls), a tap is button A.
+    sec.addEventListener('touchstart', (e) => { last = [e.touches[0].clientX, e.touches[0].clientY]; acc = [0, 0]; }, { passive: true });
+    sec.addEventListener('touchmove', (e) => move(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
+    sec.addEventListener('pointerdown', () => { downAt = performance.now(); set('a', true); });
+    const up = () => { if (!held.a) timers.a = setTimeout(() => set('a', false), Math.max(0, HOLD - (performance.now() - downAt))); };
+    ['pointerup', 'pointercancel'].forEach((t) => window.addEventListener(t, up));
+    // Keys light the pad too. Their default behaviour is never prevented.
+    const KEYS = { ArrowUp: 'u', ArrowDown: 'd', ArrowLeft: 'l', ArrowRight: 'r', ' ': 'a', Enter: 'b' };
+    document.addEventListener('keydown', (e) => { const k = KEYS[e.key]; if (k) { held[k] = true; set(k, true); } });
+    document.addEventListener('keyup', (e) => { const k = KEYS[e.key]; if (k) { held[k] = false; set(k, false); } });
+    window.addEventListener('blur', () => { for (const k in key) { held[k] = false; set(k, false); } });
+  }
+
+  /* ---------- Submit a run (works without the libraries; nothing is sent) ---------- */
+  const form = $('#run-form'), done = $('#done'), doneTitle = $('#done-title'), swapBox = $('.swap');
+  form.noValidate = true;
+  const RULES = {
+    game: (v) => !v ? 'Enter the game\'s title, like Lanternfall.' : v.length > 60 ? 'Keep the title under 60 characters.' : '',
+    category: (v) => v ? '' : 'Choose the category you will run.',
+    estimate: (v) => {
+      if (!v) return 'Enter an estimate in minutes and seconds, like 11:40.';
+      const m = /^(\d{1,3}):(\d\d)$/.exec(v);
+      if (!m) return 'Write the estimate as mm:ss with a colon, like 11:40.';
+      if (+m[2] > 59) return `Seconds stop at 59. ${m[1]}:${m[2]} would be ${+m[1] + 1}:${String(m[2] - 60).padStart(2, '0')}.`;
+      const total = m[1] * 60 + +m[2];
+      if (total < 60) return 'Estimates start at 1:00. Shorter runs go in the bonus block.';
+      if (total > 7200) return 'The longest slot is 120:00. Pick a shorter category or split the run.';
+      return '';
+    },
+    handle: (v) => !v ? 'Enter the handle you run under, like mossgiant.' : !/^\w{2,24}$/.test(v) ? 'Handles are 2 to 24 letters, numbers or underscores.' : '',
+    email: (v) => !v ? 'Enter your email address, like ana@example.com.' : !/^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(v) ? 'This address needs an @ and a domain, like ana@example.com.' : ''
+  };
+  const field = (name) => form.elements[name], val = (name) => field(name).value.trim();
+  const mark = (name, msg, buzz) => {
+    const el = field(name), fld = el.closest('.fld'), err = $('.err', fld);
+    err.textContent = msg; // cleared too, so assistive tech never finds a stale message
+    fld.classList.toggle('is-bad', !!msg);
+    if (msg) { el.setAttribute('aria-invalid', 'true'); el.setAttribute('aria-describedby', err.id); if (buzz) restart(fld, 'is-buzz'); }
+    else { el.removeAttribute('aria-invalid'); el.removeAttribute('aria-describedby'); }
+    return !msg;
+  };
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const bad = Object.keys(RULES).filter((name) => !mark(name, RULES[name](val(name)), true));
+    if (bad.length) { field(bad[0]).focus(); return; }
+    $('#done-game').textContent = val('game'); $('#done-cat').textContent = val('category');
+    $('#done-handle').textContent = val('handle'); $('#done-est').textContent = val('estimate'); $('#done-mail').textContent = val('email');
+    swapBox.style.minHeight = swapBox.offsetHeight + 'px';   // the page keeps its height, so nothing jumps
+    form.hidden = true; done.hidden = false;
+    stage.small(reduced.matches ? 'w' : 'b', 0);
+    doneTitle.focus();
+    fx?.success();   // the runner's victory hop, on the stage and on the row
+  });
+  for (const name of Object.keys(RULES)) {
+    const clear = () => { if (field(name).hasAttribute('aria-invalid') && !RULES[name](val(name))) mark(name, ''); };
+    field(name).addEventListener('input', clear); field(name).addEventListener('change', clear);
+  }
+  $('#again').addEventListener('click', () => {
+    ['game', 'category', 'estimate'].forEach((name) => { field(name).value = ''; });   // the handle and the address stay
+    done.hidden = true; form.hidden = false;
+    field('game').focus();
+  });
+
+  /* ---------- Schedule dialog: a pause menu. Hard cuts in and out, so there is nothing to wait for. ---------- */
+  const dlg = $('#schedule');
+  let opener = null, downOn = null;
+  $$('[data-schedule]').forEach((b) => b.addEventListener('click', () => {
+    if (dlg.open) return;
+    opener = b;
+    dlg.showModal();
+    lenis?.stop();   // the page is paused behind the menu
+  }));
+  $('#schedule-close').addEventListener('click', () => dlg.close());
+  // Close on a backdrop click only when the press also started on the backdrop.
+  dlg.addEventListener('pointerdown', (e) => { downOn = e.target; });
+  dlg.addEventListener('click', (e) => { if (e.target === dlg && downOn === dlg) dlg.close(); });
+  dlg.addEventListener('close', () => { lenis?.start(); opener?.focus(); });   // Close, Escape and the backdrop all end here
+
+  if (!lib) return;
+
+  /* ---------- Motion ---------- */
+  gsap.registerPlugin(ScrollTrigger);
+  const F = secs('--frame');
+  const fontsReady = Promise.race([
+    Promise.all([document.fonts.ready, document.fonts.load('700 100px "Handjet"')]).then(() => 'fonts', () => 'fonts'),
+    new Promise((r) => setTimeout(() => r('timeout'), 1500))
+  ]);
+  // Start the opening only on a visible page: with lagSmoothing(0) a timeline started in a background tab would
+  // jump to its end on return.
+  const visible = new Promise((r) => {
+    if (document.visibilityState === 'visible') return r();
+    const f = () => { if (document.visibilityState === 'visible') { document.removeEventListener('visibilitychange', f); r(); } };
+    document.addEventListener('visibilitychange', f);
+  });
+  let played = false;
+
+  const mm = gsap.matchMedia();
+  mm.add({
+    motion: '(prefers-reduced-motion: no-preference)',
+    reduce: '(prefers-reduced-motion: reduce)',
+    fine: '(hover: hover) and (pointer: fine)',
+    tall: '(min-height: 560px)',
+    wide: '(min-width: 960px)'
+  }, (ctx) => {
+    const { motion, fine, tall, wide } = ctx.conditions;
+    if (!motion) {
+      // Reduced motion: final states, native scroll, no pin, the composed still. The flows above are already instant.
+      root.classList.add('go');
+      still();
+      return () => {};
+    }
+    let dead = false, st = null, ths = [0, .2, .4, .6, .8], pf = .9, lastW = 0, lastH = 0;
+    const off = [];
+    const on = (el, type, fn, opt) => { el.addEventListener(type, fn, opt); off.push(() => el.removeEventListener(type, fn, opt)); };
+    const s = stage.s, pin = tall;   // a very short viewport has no room under a pinned stage: it gets the still
+    root.classList.add('fx');
+    root.classList.toggle('pin', pin);
+
+    // Lenis on GSAP's clock. Touch keeps native scrolling.
+    lenis = new Lenis({ lerp: .1, smoothWheel: true, autoRaf: false, anchors: true });
+    lenis.on('scroll', ScrollTrigger.update);
+    const tick = (t) => lenis.raf(t * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
+
+    /* Scroll plays the run. There is no loop: the stage is redrawn only when the scroll position changes. */
+    // The scrubbed position: progress -> level x, through the points where each chapter's heading reaches the
+    // reading line. The same thresholds turn the chapter's gem gold, so text and stage cannot drift apart.
+    const xAt = (p) => through([[0, X0], ...[1, 2, 3, 4].map((i) => [ths[i], CHAPTER_X[i]]), [pf, XE], [1, XE]], p);
+    const update = (p, forward) => {
+      const x = p <= 0 ? X0 : xAt(p);
+      s.x = x;
+      setHud(x, true, forward && played);
+      setCall(x, played);
+      setChapter(ths.reduce((a, t, i) => p >= t ? i : a, 0));
+      stage.render();
+    };
+    const topH = () => (wide ? stageWrap : hud).getBoundingClientRect().bottom - frame.getBoundingClientRect().top;
+    const layout = () => {
+      stage.fit(wide ? .52 : .3);
+      root.style.setProperty('--top-h', Math.round(topH()) + 'px');
+      lastW = sec.offsetWidth; lastH = innerHeight;
+    };
+    if (pin) {
+      layout();
+      const READ = .4;   // the reading line: 40% down the space under the stage
+      st = ScrollTrigger.create({
+        trigger: play, end: 'bottom bottom',
+        // The run starts a little before the stage pins, when the first chapter's heading is on the reading line.
+        start: () => 'top top+=' + Math.round(READ * (frame.offsetHeight - topH())),
+        onRefresh: (self) => {
+          const top = topH(), refY = top + READ * (frame.offsetHeight - top), len = self.end - self.start;
+          const t = chapters.map((c, i) => i ? clamp(0, 1, (c.getBoundingClientRect().top + scrollY - refY - self.start) / len) : 0);
+          const ok = len > 0 && t.every((v, i) => !i || v > t[i - 1]) && t[4] < 1;
+          ths = ok ? t : [0, .2, .4, .6, .8];
+          pf = ths[4] + (1 - ths[4]) * .6;   // the beacon lights 60% of the way through the last chapter
+          update(self.progress);
+        },
+        onUpdate: (self) => update(self.progress, self.direction > 0)
+      });
+      // Refit when the section's width or the viewport's height really changes (not for a phone's address bar).
+      const ro = new ResizeObserver(() => {
+        if (sec.offsetWidth === lastW && Math.abs(innerHeight - lastH) < 90) return;
+        layout(); ScrollTrigger.refresh();
+      });
+      ro.observe(sec);
+      on(window, 'resize', () => { if (Math.abs(innerHeight - lastH) >= 90) { layout(); ScrollTrigger.refresh(); } });
+      off.push(() => ro.disconnect());
+    } else {
+      on(window, 'resize', () => stage.fit(0));
+      still();
+    }
+
+    /* ---------- Interactive items ---------- */
+    // Brick bump: the brick hops and gives up one gem per hover or focus; a press cracks it. Touch gets all of it on pointerdown.
+    const btns = $$('.btn');
+    btns.forEach((btn) => {
+      btn.insertAdjacentHTML('beforeend', '<span class="pop" aria-hidden="true"><i class="gem"></i>+1</span>');
+      $('.inner', btn).insertAdjacentHTML('beforeend', '<span class="crack" aria-hidden="true"><i></i><i></i></span>');
+      let hot = false;
+      const bump = () => { if (hot) return; hot = true; restart(btn, 'is-bump'); restart(btn, 'is-pop'); };
+      const cool = () => { hot = false; btn.classList.remove('is-down'); };
+      if (fine) on(btn, 'pointerenter', (e) => { if (e.pointerType !== 'touch') bump(); });
+      on(btn, 'pointerleave', cool);
+      on(btn, 'focus', () => { if (btn.matches(':focus-visible')) bump(); });
+      on(btn, 'blur', cool);
+      on(btn, 'pointerdown', (e) => { if (e.pointerType === 'touch') { hot = false; bump(); } btn.classList.add('is-down'); });
+      on(btn, 'keydown', (e) => { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) btn.classList.add('is-down'); });
+      ['pointerup', 'pointercancel', 'keyup'].forEach((t) => on(btn, t, () => btn.classList.remove('is-down')));
+    });
+    // Gem-trail underline: one step per square, counted when the link is entered.
+    const count = (e) => { const u = e.target.closest?.('.u'); if (u) u.style.setProperty('--n', Math.max(2, Math.round(u.offsetWidth / 6))); };
+    on(document, 'pointerover', count); on(document, 'focusin', count); on(document, 'pointerdown', count);
+
+    /* ---------- Hooks for the plain-JS flows ---------- */
+    fx = {
+      // Success: a 3-frame victory hop (crouch, up with the lantern raised, down), on the stage and on the row.
+      success() { ctx.add(() => {
+        const tl = gsap.timeline();
+        [0, 1, 2, null].forEach((h, i) => tl.call(() => {
+          s.hop = h; stage.render();
+          stage.small(h === 0 ? 'q' : 'w', h ? [0, 8, 4][h] : 0);
+        }, null, i * F + .1));
+      }); }
+    };
+
+    /* ---------- Load: the level is built, the runner drops in, the timer starts, the copy cuts in ---------- */
+    const cuts = $$('.cut');
+    Promise.all([fontsReady, visible]).then(([how]) => ctx.add(() => {
+      if (dead) return;
+      if (pin) { layout(); ScrollTrigger.refresh(); }
+      if (how === 'timeout') document.fonts.ready.then(() => { if (!dead && pin) { layout(); ScrollTrigger.refresh(); } });
+      const r = canvas.getBoundingClientRect();
+      if (played || r.top > innerHeight - 40 || r.bottom < 40) {   // already played, or the stage is not on screen: no opening
+        played = true; root.classList.add('go');
+        if (st) update(st.progress);
+        return;
+      }
+      gsap.set(cuts, { visibility: 'hidden' });
+      root.classList.add('go');
+      Object.assign(s, { build: 0, runner: false });
+      stage.render();
+      const show = (sel) => () => gsap.set(cuts.filter((el) => el.matches(sel)), { clearProps: 'visibility' });
+      const land = (f) => () => { s.land = f; stage.render(); };
+      gsap.timeline({ onComplete: () => { played = true; if (st) update(st.progress); } })
+        // Tile build-in: each column appears one tile above its place, then drops in as the next one appears.
+        .to(s, { build: 1, duration: secs('--d-build'), ease: 'none', onUpdate: stage.render })
+        .call(() => Object.assign(s, { build: null, runner: true, drop: 64 }))
+        .to(s, { drop: 0, duration: 4 * F, ease: 'steps(4)', onUpdate: stage.render })
+        .call(land('q')).call(land('a'), null, '+=' + F).call(land(''), null, '+=' + F)   // a 2-frame squash, then standing
+        .call(() => { played = true; if (st) update(st.progress); else { setCall(0, false); } show('.hud')(); })
+        .call(show('.h2'), null, '+=' + F).call(show('.lede'), null, '+=' + F)
+        .call(show('.actions'), null, '+=' + F).call(show('.chapters'), null, '+=' + F);
+    }));
+
+    return () => {
+      dead = true;
+      off.forEach((f) => f());
+      fx = null;
+      st?.kill();
+      gsap.killTweensOf(s);
+      gsap.ticker.remove(tick);
+      gsap.ticker.lagSmoothing(500, 33);
+      lenis.destroy(); lenis = null;
+      gsap.set(cuts, { clearProps: 'visibility' });
+      $$('.pop, .crack').forEach((el) => el.remove());
+      btns.forEach((b) => b.classList.remove('is-down', 'is-bump', 'is-pop'));
+      root.classList.remove('fx', 'pin');
+      root.style.removeProperty('--top-h');
+      played = true;
+      still();
+    };
+  });
+})();
+</script>
+</body>
+</html>
