@@ -314,14 +314,13 @@
   .cur i:nth-child(2) { right: 0; top: 0; border-width: 3px 3px 0 0; }
   .cur i:nth-child(3) { left: 0; bottom: 0; border-width: 0 0 3px 3px; }
   .cur i:nth-child(4) { right: 0; bottom: 0; border-width: 0 3px 3px 0; }
-  /* The tag has two solid frames, both AA: wine on red (5.4:1), and red on wine inside a red rim (5.4:1).
-     The red frame is an overlay whose opacity cuts between 1 and 0; nothing fades. */
-  .cur b { position: absolute; left: 8px; top: -11px; padding: 3px 5px; background: var(--wine); color: var(--p1); box-shadow: inset 0 0 0 2px var(--p1); font: 700 13px/1 var(--font-text); }
-  .cur b::after { content: ""; position: absolute; inset: 0; background: var(--p1); }
-  .cur b span { position: relative; z-index: 1; color: var(--wine); }
+  /* The tag has two solid frames, both AA: wine on red (5.4:1) and wine on bone (16.1:1). The red is a layer
+     behind the text whose opacity cuts between 1 and 0; nothing fades and the text never dims. */
+  .cur b { position: absolute; left: 8px; top: -11px; isolation: isolate; padding: 3px 5px; background: var(--bone); color: var(--wine); font: 700 13px/1 var(--font-text); }
+  .cur b::before { content: ""; position: absolute; inset: 0; z-index: -1; background: var(--p1); }
   @keyframes p1-blink { 0% { opacity: 1; } 50%, 100% { opacity: 0; } }
-  html.fx .cur b::after, html.fx .cur b span { animation: p1-blink var(--d-p1) steps(1) infinite; }
-  html.fx .is-away .cur b::after, html.fx .is-away .cur b span { animation-play-state: paused; }
+  html.fx .cur b::before { animation: p1-blink var(--d-p1) steps(1) infinite; }
+  html.fx .is-away .cur b::before { animation-play-state: paused; }
   .stage.is-wait .cur { display: none; }
   .stage.is-wait .panel-in { visibility: hidden; }
 
@@ -805,11 +804,12 @@
   });
 
   /* ---------- Versus seam: a stair of ten steps, leaning more on narrow screens ---------- */
-  const narrow = matchMedia('(max-width: 599px)');
+  const narrow = matchMedia('(max-width: 599px)'), STAIR = 10;
+  const seamX = (k) => { const lean = narrow.matches ? 16 : 7; return 50 + lean - 2 * lean * k / (STAIR - 1); }; // step k's x, in % of the band
   const seam = () => {
-    const lean = narrow.matches ? 16 : 7, n = 10, pts = [];
+    const n = STAIR, pts = [];
     for (let k = 0; k < n; k++) {
-      const x = (50 + lean - 2 * lean * k / (n - 1)).toFixed(2);
+      const x = seamX(k).toFixed(2);
       pts.push(`${x}% ${k * 100 / n}%`, `${x}% ${(k + 1) * 100 / n}%`);
     }
     band.style.setProperty('--seam-us', `polygon(0 0, ${pts.join(', ')}, 0 100%)`);
@@ -875,6 +875,7 @@
     document.addEventListener('visibilitychange', f);
   });
   const call = $('.call'), callT = $('.call-t'), intro = $('.intro'), arena = $('.arena'), usP = $('.vs-us'), themP = $('.vs-them');
+  const usL = $('span', usP), themL = $('span', themP);
   const inner = $('.panel-in'), bigBox = $('.big'), doneBox = $('.done-face'), btns = $$('.btn');
   let played = false, landed = false;
 
@@ -995,14 +996,31 @@
        24px. They close while the band rises, meet as it sticks (half way), hold, then part over the roster,
        which has been scrolling up underneath. */
     const STEP = 24;
-    let met = false, lastO = -1, sparkTl = null;
+    let met = false, lastO = -1, sparkTl = null, fitUs = 0, fitThem = 0, botUs = 0, botThem = 0, seen = '';
+    // A name is never shown cut by the viewport edge. Each label is counter-moved so it stays at its resting
+    // place, and appears by hard cut only once its side has slid far enough to cover all of it (fitUs and
+    // fitThem are the largest offsets at which that is true, from the seam step that crosses the label) and
+    // the band has risen far enough for the whole label to be on screen (botUs, botThem: the label's bottom edge).
+    const fit = () => {
+      const W = band.offsetWidth, H = band.offsetHeight, step = (y) => Math.min(STAIR - 1, Math.max(0, Math.floor(y / H * STAIR)));
+      fitUs = seamX(step(usL.offsetTop + usL.offsetHeight)) / 100 * W - (usL.offsetLeft + usL.offsetWidth) - STEP;
+      fitThem = themL.offsetLeft - seamX(step(themL.offsetTop)) / 100 * W - STEP;
+      botUs = usL.offsetTop + usL.offsetHeight; botThem = themL.offsetTop + themL.offsetHeight;
+      lastO = -1; seen = '';
+    };
     const land = () => { landed = true; stage.classList.remove('is-wait'); cursorTo(sel); fx.slam(sel); };
     const clash = (self) => {
       const vh = innerHeight, mid = vh / (vh + band.offsetHeight), hold = .2, p = self.progress;
       const D = Math.ceil(band.offsetWidth * .68 / STEP) * STEP;
       const t = p < mid ? 1 - p / mid : p < mid + hold ? 0 : (p - mid - hold) / (1 - mid - hold);
       const o = Math.round(t * D / STEP) * STEP;
-      if (o !== lastO) { lastO = o; usP.style.transform = `translate3d(${-o}px,0,0)`; themP.style.transform = `translate3d(${o}px,0,0)`; }
+      if (o !== lastO) {
+        lastO = o;
+        usP.style.transform = `translate3d(${-o}px,0,0)`; themP.style.transform = `translate3d(${o}px,0,0)`;
+        usL.style.transform = `translateX(${o}px)`; themL.style.transform = `translateX(${-o}px)`;
+      }
+      const top = p < mid ? vh - p * (vh + band.offsetHeight) : 0, a = o <= fitUs && top + botUs <= vh, b = o <= fitThem && top + botThem <= vh;
+      if (seen !== `${a}${b}`) { seen = `${a}${b}`; usL.style.visibility = a ? 'visible' : 'hidden'; themL.style.visibility = b ? 'visible' : 'hidden'; }
       if ((o === 0) !== met) {
         met = o === 0;
         band.classList.toggle('is-met', met);
@@ -1018,7 +1036,7 @@
       if (!landed && p >= mid + hold && t > .45) land();
     };
     if (!landed) stage.classList.add('is-wait');
-    const vst = ScrollTrigger.create({ trigger: arena, start: 'top bottom', end: () => '+=' + (innerHeight + band.offsetHeight), onUpdate: clash, onRefresh: clash });
+    const vst = ScrollTrigger.create({ trigger: arena, start: 'top bottom', end: () => '+=' + (innerHeight + band.offsetHeight), onUpdate: clash, onRefresh: (self) => { fit(); clash(self); } });
     // Keyboard focus must never sit under the closed sides: jump past the clash.
     on(stage, 'focusin', (e) => { if (e.target.matches(':focus-visible') && vst.progress < 1) lenis.scrollTo(vst.end + 1, { immediate: true, force: true }); });
 
@@ -1065,7 +1083,7 @@
       lenis.destroy(); lenis = null;
       gsap.killTweensOf([intro, stage, inner, ...btns, ...bars, ...barBits]);
       gsap.set([intro, stage, inner, ...btns, ...bars, ...barBits], { clearProps: 'transform,opacity' });
-      usP.style.transform = themP.style.transform = '';
+      [usP, themP, usL, themL].forEach((e) => { e.style.transform = e.style.visibility = ''; });
       band.classList.remove('is-met', 'is-a', 'is-b', 'is-pop');
       call.className = 'call';
       intro.classList.remove('is-go');
