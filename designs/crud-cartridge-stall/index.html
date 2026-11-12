@@ -1,0 +1,1613 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Lot 14 stock book</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Handjet:ELGR,ELSH,wght@1..2,0..16,100..900&family=Host+Grotesk:wght@300..800&display=swap">
+<style>
+  :root {
+    /* Colour: a flea-market stall under a rust awning. Every hue has one job; ratios are against --rust unless noted. */
+    --rust: #4D270B;        /* the ground: the awning's shade on the table */
+    --rust-deep: #331905;   /* the same rust, darker: inside the crate, ink on paper and stickers (card on it 14.6:1) */
+    --rust-slat: #6B3A14;   /* the same rust, lighter: crate slats and compartment lines; decorative (1.4:1) */
+    --card: #FBF1E2;        /* paper: text, paper tags, field tags (11.7:1) */
+    --twine: #D9B98C;       /* string: secondary text, rules, tag strings, the focus string (7.0:1) */
+    --cartridge: #6FE0F0;   /* kind: cartridges only, their tile, chip and row mark (8.4:1; rust-deep on it 10.6:1) */
+    --disc: #CDB4FF;        /* kind: discs only (7.2:1; rust-deep on it 9.0:1) */
+    --console: #8CF0B4;     /* kind: consoles only (9.5:1; rust-deep on it 11.9:1) */
+    --accessory: #FF9FC0;   /* kind: accessories only (6.8:1; rust-deep on it 8.6:1) */
+    --price: #FFD93D;       /* money only: prices, totals, the price sticker, "Add an item", tally marks (9.5:1; rust-deep on it 11.9:1) */
+    --price-hi: #FFE98A;    /* the money button's paired face on hover (rust-deep on it 13.5:1) */
+    --fault: #FF8A7A;       /* errors and the delete action only (5.7:1; 7.2:1 on rust-deep) */
+    --unlit-hi: #C27C45;    /* lamps off: every light hue becomes this rust (3.9:1, the headline stays legible) */
+    --unlit-lo: #7E4419;    /* lamps off: string and rules become this rust (1.7:1) */
+    --scrim: rgb(38 18 4 / .86);   /* the rust at dusk, behind the dialog */
+
+    /* Type */
+    --font-display: "Handjet", "Arial Narrow", sans-serif;
+    --font-text: "Host Grotesk", system-ui, sans-serif;
+    --modules: "ELSH" 2, "ELGR" 1;   /* square Handjet modules */
+    --t-tiny: 12.5px;       /* tags, badges */
+    --t-small: 14px;
+    --t-body: 16px;
+    --t-lede: 19px;
+    --t-h3: 24px;
+    --t-fig: clamp(40px, 4.4vw, 60px);                        /* totals, in Handjet */
+    --t-h2: clamp(44px, min(5.6vw, 10.5vh), 88px);
+    --lh-body: 1.5;
+
+    /* Space: a 6px step; the crate cell is sized by the script's --crate-top and the CSS below */
+    --s1: 6px; --s2: 12px; --s3: 24px; --s4: 36px; --s5: 48px; --s6: 72px; --s7: 96px;
+    --gut: clamp(16px, 3.4vw, 48px);
+    --max-w: 1400px;
+    --wall: 10px;           /* the crate's slat wall */
+    --cols: 10;             /* the crate is always ten cells wide */
+    --notch: 4px;           /* stepped corner */
+    --tap: 48px;            /* button and field height */
+    --hit: 44px;            /* minimum target; also the crate row height on phones */
+    --string: 22px;         /* the price tag's string */
+    --tag-w: 168px;         /* the price tag */
+
+    /* Motion: hard cuts on a visible frame rate. CSS and the script read these. */
+    --d-unlit: .4s;         /* the section stays unlit this long */
+    --d-lamp: .15s;         /* left half lit, then the right half this much later */
+    --d-clear: .12s;        /* the crate stands empty before it is dealt */
+    --d-deal: .025s;        /* one tile dealt */
+    --d-tag: .08s;          /* string first, the tag this much later */
+    --d-stamp: .14s;        /* the sticker: small for half of this, then full */
+    --d-hold: .14s;         /* a press is held at least this long */
+    --d-chalk: .06s;        /* the second chalk line */
+    --d-chalk-hold: .2s;    /* a tapped link keeps its chalk */
+    --d-knot: .07s;         /* field: the string, then the knot */
+    --d-peg: .07s;          /* dialog: one frame of the swing */
+    --d-grab: .25s;         /* touch: a tile is held this long before it lifts, so a swipe still scrolls */
+    --d-lift: .08s;         /* a grabbed tile lifts off the floor in two steps */
+    --d-shiver: .16s;       /* one round of the held tile's 1px shiver */
+    --d-back: .16s;         /* a tile that does not fit steps back to its space */
+  }
+  @media (max-width: 599px) {
+    :root { --t-lede: 17px; --t-h3: 21px; --wall: 6px; --tag-w: 132px; }
+  }
+
+  /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+
+  /* Lamps off: before the load sequence, and per half while it runs. Only under html.js, undone for reduced motion. */
+  html.js:not(.go) .stall,
+  .stall.dark-l [data-half="l"],
+  .stall.dark-r [data-half="r"] {
+    --card: var(--unlit-hi); --price: var(--unlit-hi); --price-hi: var(--unlit-hi); --fault: var(--unlit-hi);
+    --cartridge: var(--unlit-hi); --disc: var(--unlit-hi); --console: var(--unlit-hi); --accessory: var(--unlit-hi);
+    --twine: var(--unlit-lo);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html.js:not(.go) .stall {
+      --card: #FBF1E2; --price: #FFD93D; --price-hi: #FFE98A; --fault: #FF8A7A;
+      --cartridge: #6FE0F0; --disc: #CDB4FF; --console: #8CF0B4; --accessory: #FF9FC0; --twine: #D9B98C;
+    }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { background: var(--rust); }
+  body {
+    margin: 0;
+    background: var(--rust);
+    color: var(--card);
+    font: 400 var(--t-body)/var(--lh-body) var(--font-text);
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible { outline: 2px solid var(--twine); outline-offset: 3px; }
+  ::selection { background: var(--twine); color: var(--rust-deep); }
+  .vh {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+  }
+  h3 { margin: 0; font: 650 var(--t-h3)/1.2 var(--font-text); letter-spacing: -.01em; }
+  .sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+  .emb { display: block; fill: currentColor; shape-rendering: crispEdges; }
+  .k-cartridge { --k: var(--cartridge); }
+  .k-disc { --k: var(--disc); }
+  .k-console { --k: var(--console); }
+  .k-accessory { --k: var(--accessory); }
+
+  /* ---------- The stall ---------- */
+  .stall { position: relative; overflow: clip; background: var(--rust); color: var(--card); }
+  /* Text sets its own paper colour (zero specificity), so each half's lamps decide it rather than an inherited value. */
+  :where(.stall) :where(h2, h3, p, li, dt, dd, th, td, caption, label) { color: var(--card); }
+  .wrap { max-width: calc(var(--max-w) + 2 * var(--gut)); margin: 0 auto; padding: var(--s4) var(--gut) var(--s7); }
+
+  .head { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s2) var(--s4); align-items: end; }
+  .h2 {
+    margin: 0;
+    font: 700 var(--t-h2)/.92 var(--font-display);
+    font-variation-settings: var(--modules);
+    letter-spacing: 0;
+    text-wrap: balance;
+  }
+  .lede { margin: 0; max-width: 64ch; font-size: var(--t-lede); line-height: 1.45; }
+  .head .btn { justify-self: start; margin-top: var(--s1); }
+  @media (min-width: 1024px) {
+    .head { grid-template-columns: minmax(0, 1fr) auto; }
+    .h2 { grid-column: 1 / -1; }
+    .head .btn { grid-column: 2; grid-row: 2; margin: 0; }
+  }
+
+  /* ---------- Buttons: paper and sticker faces with a till flag ---------- */
+  .btn {
+    --corners: polygon(0 var(--notch), var(--notch) var(--notch), var(--notch) 0, calc(100% - var(--notch)) 0, calc(100% - var(--notch)) var(--notch), 100% var(--notch), 100% calc(100% - var(--notch)), calc(100% - var(--notch)) calc(100% - var(--notch)), calc(100% - var(--notch)) 100%, var(--notch) 100%, var(--notch) calc(100% - var(--notch)), 0 calc(100% - var(--notch)));
+    position: relative;
+    display: inline-block;
+    padding: 0; border: 0; background: none;
+    color: inherit; text-decoration: none;
+    font: 650 var(--t-body)/1.2 var(--font-text);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .btn-face { display: block; padding: 2px; background: var(--rim); clip-path: var(--corners); }
+  .btn-label {
+    display: flex; align-items: center; justify-content: center;
+    min-height: calc(var(--tap) - 4px);
+    padding: 0 var(--s3);
+    background: var(--face); color: var(--ink);
+    clip-path: var(--corners);
+    white-space: nowrap;
+  }
+  .btn-price { --rim: var(--price); --face: var(--price); --ink: var(--rust-deep); --rim-2: var(--price-hi); --face-2: var(--price-hi); --ink-2: var(--rust-deep); --face-3: var(--rust-deep); --ink-3: var(--price); --rim-3: var(--price); }
+  .btn-line { --rim: var(--twine); --face: var(--rust); --ink: var(--card); --rim-2: var(--card); --face-2: var(--card); --ink-2: var(--rust-deep); --face-3: var(--rust-deep); --ink-3: var(--card); --rim-3: var(--card); }
+  .btn-fault { --rim: var(--fault); --face: var(--rust); --ink: var(--fault); --rim-2: var(--fault); --face-2: var(--fault); --ink-2: var(--rust-deep); --face-3: var(--rust-deep); --ink-3: var(--fault); --rim-3: var(--fault); }
+  /* Hover and keyboard focus: the face swaps to its pair, and a sticker is stamped on the top-right corner. */
+  .btn-sticker {
+    position: absolute; right: -11px; top: -12px; z-index: 2;
+    width: 30px; height: 30px;
+    color: var(--card);
+    pointer-events: none;
+    visibility: hidden;
+  }
+  .btn-sticker svg { display: block; width: 100%; height: 100%; shape-rendering: crispEdges; }
+  .btn-sticker .rim { fill: var(--rust-deep); }
+  .btn-sticker .star { fill: var(--card); }
+  @keyframes stamp { 0% { transform: scale(.5); } 50%, 100% { transform: none; } }
+  @media (hover: hover) {
+    .btn:hover { --rim: var(--rim-2); --face: var(--face-2); --ink: var(--ink-2); }
+    .btn:hover .btn-sticker { visibility: visible; animation: stamp var(--d-stamp) steps(1, end) both; }
+  }
+  .btn:focus-visible { --rim: var(--rim-2); --face: var(--face-2); --ink: var(--ink-2); }
+  .btn:focus-visible .btn-sticker, .btn.is-down .btn-sticker { visibility: visible; animation: stamp var(--d-stamp) steps(1, end) both; }
+  /* Press: the till flag pops up above the top edge and the face inverts, for as long as it is held (140ms at least). */
+  .btn-flag {
+    position: absolute; left: var(--s3); bottom: 100%;
+    width: 30px; height: 20px;
+    pointer-events: none;
+    visibility: hidden;
+    background: linear-gradient(var(--card), var(--card)) 0 0 / 100% 14px no-repeat, linear-gradient(var(--card), var(--card)) 6px 0 / 2px 100% no-repeat;
+  }
+  .btn-flag::after { content: ""; position: absolute; left: 12px; top: 5px; width: 12px; height: 4px; background: var(--rust-deep); }
+  .btn:active, .btn.is-down { --rim: var(--rim-3); --face: var(--face-3); --ink: var(--ink-3); }
+  .btn:active .btn-flag, .btn.is-down .btn-flag { visibility: visible; }
+  .btn[hidden] { display: none; }
+
+  /* ---------- Text actions: chalk lines ---------- */
+  .chalk {
+    position: relative;
+    display: inline-flex; align-items: center;
+    min-height: var(--hit); min-width: var(--hit);
+    padding: 0; border: 0; background: none;
+    color: var(--card);
+    font: inherit; font-weight: 600; text-align: left;
+    text-decoration: underline 1px var(--twine); text-underline-offset: 6px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* Two jagged 2px lines, generated per link (each pixel steps up or down 1px); the second 3px under the first, 60ms later. */
+  .chalk::before, .chalk::after {
+    content: ""; position: absolute; left: 0; right: 0; height: 3px;
+    top: calc(50% + .72em);
+    background: var(--chalk-a) 0 0 / 100% 100% no-repeat;
+    image-rendering: pixelated;
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .chalk::after { top: calc(50% + .72em + 6px); background-image: var(--chalk-b); }
+  .chalk.is-chalked:is(:hover, :focus-visible, .is-held) { text-decoration-color: transparent; }
+  .chalk.is-chalked:is(:hover, :focus-visible, .is-held)::before,
+  .chalk.is-chalked:is(:hover, :focus-visible, .is-held)::after { visibility: visible; }
+  .chalk.is-chalked:is(:hover, :focus-visible, .is-held)::after { transition: visibility 0s linear var(--d-chalk); }
+  .chalk:not(.is-chalked):is(:hover, :focus-visible) { text-decoration-color: var(--card); text-decoration-thickness: 2px; }
+  @media (hover: none) { .chalk.is-chalked:hover:not(.is-held)::before, .chalk.is-chalked:hover:not(.is-held)::after { visibility: hidden; } }
+  .chalk[hidden] { display: none; }
+
+  /* ---------- The bench: crate beside the detail ---------- */
+  .bench { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s4); margin-top: var(--s3); }
+  @media (min-width: 1024px) {
+    .bench { grid-template-columns: minmax(0, 1fr) clamp(300px, 27vw, 380px); gap: var(--s4); }
+  }
+  .crate-col { min-width: 0; container-type: inline-size; }
+  .crate-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s1) var(--s3); margin-bottom: var(--s2); }
+  .sorts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s1); margin: 0; padding: 0; border: 0; min-width: 0; }
+  .sorts-lbl { margin-right: var(--s1); color: var(--twine); font-size: var(--t-small); }
+  .chip {
+    display: inline-flex; align-items: center; gap: var(--s1);
+    min-height: var(--hit); padding: 0 var(--s2);
+    border: 2px solid var(--twine); background: var(--rust); color: var(--card);
+    font: 600 var(--t-small)/1 var(--font-text);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .chip[aria-pressed="true"] { border-color: var(--card); background: var(--card); color: var(--rust-deep); }
+  .dir { display: inline-block; width: 8px; height: 6px; background: currentColor; clip-path: polygon(0 0, 100% 0, 100% 2px, 75% 2px, 75% 4px, 25% 4px, 25% 2px, 0 2px); visibility: hidden; }
+  .dir.is-up { clip-path: polygon(25% 0, 75% 0, 75% 2px, 100% 2px, 100% 100%, 0 100%, 0 2px, 25% 2px); }
+  [aria-pressed="true"] > .dir, .sorter.is-on .dir { visibility: visible; }
+  .tidy-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s1) var(--s2); }
+  .tidy-note { margin: 0; color: var(--twine); font-size: var(--t-small); }
+
+  /* The crate, seen from above: slat walls, a dark floor in compartments, tiles packed first-fit. */
+  .crate {
+    --rows: 6;
+    --cw: calc((100cqw - 2 * var(--wall)) / var(--cols));
+    --c: round(down, clamp(30px, min(var(--cw), (100svh - var(--crate-top, 300px) - 76px) / var(--rows)), 104px), 1px);
+    --ch: max(var(--c), var(--hit));
+    position: relative;
+    width: calc(var(--cols) * var(--c) + 2 * var(--wall));
+    padding: var(--wall);
+    background:
+      linear-gradient(90deg, transparent calc(var(--wall) - 2px), var(--rust-deep) 0 var(--wall), transparent 0 calc(100% - var(--wall)), var(--rust-deep) 0 calc(100% - var(--wall) + 2px), transparent 0),
+      linear-gradient(transparent calc(var(--wall) - 2px), var(--rust-deep) 0 var(--wall), transparent 0 calc(100% - var(--wall)), var(--rust-deep) 0 calc(100% - var(--wall) + 2px), transparent 0),
+      var(--rust-slat);
+  }
+  @media (max-width: 599px) { .crate { --c: round(down, max(28px, var(--cw)), 1px); } }
+  .floor {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(var(--cols), var(--c));
+    grid-template-rows: repeat(var(--rows), var(--ch));
+    background:
+      linear-gradient(90deg, var(--rust-slat) 0 1px, transparent 1px) 0 0 / var(--c) 100%,
+      linear-gradient(var(--rust-slat) 0 1px, transparent 1px) 0 0 / 100% var(--ch),
+      var(--rust-deep);
+  }
+  .floor > [role="row"] { display: contents; }
+  .crate-empty {
+    position: absolute; inset: var(--wall);
+    display: grid; place-content: center; gap: var(--s1);
+    padding: var(--s3);
+    text-align: center;
+  }
+  .crate-empty[hidden] { display: none; }
+  .crate-empty p { margin: 0; max-width: 36ch; }
+  .cell { position: relative; min-width: 0; }
+  .cell:hover, .cell:focus-within { z-index: 4; }
+  .cell.is-sel { z-index: 3; }
+  .tile {
+    position: absolute; inset: 0;
+    display: block; width: 100%; height: 100%;
+    padding: 3px; border: 0; background: none;
+    color: var(--rust-deep);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+    transition: transform var(--d-lift) steps(2, end), filter var(--d-lift) steps(2, end);
+  }
+  .tile:focus-visible { outline-offset: 1px; }
+  .tile-face {
+    --corners: polygon(0 var(--notch), var(--notch) var(--notch), var(--notch) 0, calc(100% - var(--notch)) 0, calc(100% - var(--notch)) var(--notch), 100% var(--notch), 100% calc(100% - var(--notch)), calc(100% - var(--notch)) calc(100% - var(--notch)), calc(100% - var(--notch)) 100%, var(--notch) 100%, var(--notch) calc(100% - var(--notch)), 0 calc(100% - var(--notch)));
+    position: relative;
+    display: grid; place-items: center;
+    width: 100%; height: 100%;
+    background: var(--k);
+    clip-path: var(--corners);
+  }
+  .cell.is-sel .tile-face { background: linear-gradient(var(--rust-deep), var(--rust-deep)) 0 0 / 100% 3px no-repeat, var(--k); }
+  .tile .emb { --px: max(2px, round(down, var(--c) * .06, 1px)); width: calc(var(--px) * var(--bw)); height: calc(var(--px) * var(--bh)); }
+  .tmark { position: absolute; left: 4px; top: 4px; width: 16px; height: 16px; background: var(--rust-deep); }
+  .tmark::after { content: ""; position: absolute; inset: 3px; box-shadow: inset 0 0 0 2px var(--card); }
+  .tmark.is-tested::after { background: var(--card); box-shadow: none; }
+  .qty {
+    position: absolute; right: 3px; bottom: 3px;
+    min-width: 20px; height: 20px; padding: 0 4px;
+    display: grid; place-items: center;
+    background: var(--rust-deep); color: var(--card);
+    font: 700 var(--t-tiny)/1 var(--font-text); font-variant-numeric: tabular-nums;
+  }
+  @media (max-width: 599px) {
+    .tmark { left: 2px; top: 2px; width: 10px; height: 10px; }
+    .tmark::after { inset: 2px; }
+    .qty { right: 1px; bottom: 1px; min-width: 15px; height: 15px; padding: 0 2px; font-size: 11px; }
+  }
+
+  /* Price tag: string first, then the tag. Hover, keyboard focus and selection (pinned) hang it. */
+  .tag { position: absolute; left: calc(100% - 6px); top: 2px; width: 0; height: 0; pointer-events: none; }
+  .tag-string { position: absolute; left: 0; top: 0; width: 2px; height: var(--string); background: var(--twine); visibility: hidden; }
+  .tag-card {
+    position: absolute; left: -11px; top: var(--string);
+    display: grid; gap: 5px;
+    width: var(--tag-w);
+    padding: 16px 8px 8px;
+    background: var(--card); color: var(--rust-deep);
+    clip-path: polygon(0 8px, 4px 8px, 4px 4px, 8px 4px, 8px 0, calc(100% - 8px) 0, calc(100% - 8px) 4px, calc(100% - 4px) 4px, calc(100% - 4px) 8px, 100% 8px, 100% 100%, 0 100%);
+    visibility: hidden;
+  }
+  .tag-card::before { content: ""; position: absolute; left: 8px; top: 4px; width: 8px; height: 8px; background: var(--rust-deep); }
+  .is-flip .tag { left: 4px; }
+  .is-flip .tag-card { left: calc(13px - var(--tag-w)); }
+  .is-flip .tag-card::before { left: auto; right: 8px; }
+  .tag-name { font: 600 13px/1.25 var(--font-text); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .tag-price { justify-self: start; padding: 3px 6px; background: var(--price); color: var(--rust-deep); font: 750 15px/1.1 var(--font-text); font-variant-numeric: tabular-nums; }
+  @media (hover: hover) {
+    .cell:hover .tag-string { visibility: visible; }
+    .cell:hover .tag-card { visibility: visible; transition: visibility 0s linear var(--d-tag); }
+  }
+  .cell:focus-within .tag-string, .cell.is-sel .tag-string { visibility: visible; }
+  .cell:focus-within .tag-card, .cell.is-sel .tag-card { visibility: visible; transition: visibility 0s linear var(--d-tag); }
+
+  /* Drag: the tile lifts off the floor in two steps over a hard rust-at-dusk shadow, and shivers by 1px while held.
+     The cell follows the pointer; a mark on the floor shows where it would land (paper: fits; fault, hatched: does not). */
+  .cell.is-held, .cell.is-back { z-index: 6; }
+  .cell.is-held .tag, .cell.is-back .tag { display: none; }
+  .cell.is-held .tile { transform: translate(-4px, -6px); filter: drop-shadow(4px 6px 0 var(--scrim)); cursor: grabbing; }
+  .cell.is-held .tile-face { animation: shiver var(--d-shiver) steps(1, end) infinite; }
+  @keyframes shiver { 0% { transform: translate(1px, 0); } 25% { transform: translate(0, 1px); } 50% { transform: translate(-1px, 0); } 75% { transform: translate(0, -1px); } }
+  .cell.is-back { transition: transform var(--d-back) steps(4, end); }
+  .drop { position: relative; z-index: 5; pointer-events: none; box-shadow: inset 0 0 0 2px var(--card); }
+  .drop.is-no { box-shadow: inset 0 0 0 2px var(--fault); background: repeating-linear-gradient(-45deg, var(--fault) 0 2px, transparent 0 8px); }
+
+  /* Tidy: the crate stands empty, then the tiles are dealt one at a time in the new order. Hard cuts, nothing travels. */
+  @keyframes deal { from { visibility: hidden; } }
+  html.fx .floor.is-dealing .cell { animation: deal 1ms steps(1, end) both; animation-delay: calc(var(--d-clear) + var(--i) * var(--d-deal)); }
+  html.fx .cell.is-new { animation: deal 1ms steps(1, end) both; animation-delay: var(--d-clear); }
+
+  .status-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--s2); min-height: var(--hit); margin-top: var(--s1); }
+  .status { margin: 0; font-variant-numeric: tabular-nums; }
+  .status b { color: var(--price); font-weight: 650; }
+
+  /* ---------- Detail ---------- */
+  .detail { position: relative; align-self: start; padding: var(--s3) 0 0 var(--s3); border-top: 2px solid var(--twine); border-left: 2px solid var(--twine); min-width: 0; }
+  .detail h3:focus { outline: none; }
+  .detail p { margin: var(--s2) 0 0; max-width: 46ch; }
+  .detail .muted { color: var(--twine); }
+  .legend { list-style: none; margin: var(--s3) 0 0; padding: 0; display: grid; gap: var(--s2); }
+  .legend li { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: var(--s2); align-items: center; }
+  .legend .sw { display: grid; place-items: center; height: 40px; background: var(--k); color: var(--rust-deep); }
+  .legend .emb { --px: 2px; width: calc(var(--px) * var(--bw)); height: calc(var(--px) * var(--bh)); }
+  .legend b { display: block; font-weight: 650; }
+  .legend small { display: block; color: var(--twine); font-size: var(--t-small); }
+  .kindmark { display: inline-flex; align-items: center; gap: var(--s1); font-weight: 600; }
+  .kindmark::before { content: ""; flex: none; width: 14px; height: 14px; background: var(--k); }
+  .d-kind { margin: 0 0 var(--s2); }
+  .d-name { overflow-wrap: anywhere; }
+  .facts { display: grid; gap: var(--s1); margin: var(--s3) 0 0; }
+  .facts > div { display: grid; grid-template-columns: 7.5em minmax(0, 1fr); gap: var(--s2); padding-bottom: var(--s1); border-bottom: 1px solid var(--rust-slat); }
+  .facts dt { color: var(--twine); }
+  .facts dd { margin: 0; font-variant-numeric: tabular-nums; }
+  .money { color: var(--price); }
+  .testmark { display: inline-flex; align-items: center; gap: var(--s1); }
+  .testmark::before { content: ""; flex: none; width: 14px; height: 14px; box-shadow: inset 0 0 0 2px var(--card); }
+  .testmark.is-tested::before { background: var(--card); box-shadow: none; }
+  .actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s3) var(--s2); margin-top: var(--s4); }
+  .confirm { margin-top: var(--s3); padding-top: var(--s2); border-top: 2px solid var(--fault); }
+  .confirm p { margin: 0; font-weight: 600; }
+
+  /* ---------- Stock book ---------- */
+  .book { margin-top: var(--s7); }
+  .book-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--s1) var(--s3); padding-top: var(--s2); border-top: 2px solid var(--twine); }
+  .book-head p { margin: 0; color: var(--twine); }
+  .filters { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3); margin: var(--s3) 0 var(--s2); }
+  .chips { display: flex; flex-wrap: wrap; gap: var(--s1); margin: 0; padding: 0; border: 0; min-width: 0; }
+  .chips legend { float: left; margin-right: var(--s2); padding: 0; line-height: var(--hit); color: var(--twine); font-size: var(--t-small); }
+  .chip.kc { border-color: var(--k); }
+  .chip.kc::before { content: ""; flex: none; width: 12px; height: 12px; box-shadow: inset 0 0 0 2px var(--k); }
+  .chip.kc[aria-pressed="true"] { border-color: var(--k); background: var(--k); color: var(--rust-deep); }
+  .chip.kc[aria-pressed="true"]::before { background: var(--rust-deep); box-shadow: none; }
+  .search { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s1) var(--s2); }
+  .search .lbl { margin: 0; font-size: var(--t-small); color: var(--twine); }
+  .search .ftag { margin-left: 18px; }
+  .tablewrap { min-width: 0; }
+  table.stock { width: 100%; border-collapse: separate; border-spacing: 0; font-variant-numeric: tabular-nums; }
+  .stock caption { text-align: left; padding: 0 0 var(--s1); color: var(--twine); font-size: var(--t-small); }
+  .stock th, .stock td { padding: 0 var(--s3) 0 0; border-bottom: 1px solid var(--rust-slat); text-align: left; vertical-align: middle; font-weight: 400; }
+  .stock thead th { border-bottom: 2px solid var(--twine); color: var(--twine); font-weight: 600; font-size: var(--t-small); height: var(--hit); white-space: nowrap; }
+  .stock .num { text-align: right; }
+  .stock td { height: 48px; }
+  .sorter { display: inline-flex; align-items: center; gap: var(--s1); min-height: var(--hit); padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
+  .sorter.is-on { color: var(--card); }
+  .num .sorter { flex-direction: row-reverse; }
+  .pick {
+    display: flex; align-items: center; gap: var(--s2);
+    width: 100%; min-height: 47px; padding: 0 0 0 var(--s1);
+    border: 0; background: none; color: var(--card);
+    font: 600 var(--t-body)/1.3 var(--font-text); text-align: left;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .pick::before { content: ""; flex: none; width: 6px; align-self: stretch; margin: 8px 0; background: var(--k); }
+  .pick span { overflow-wrap: anywhere; }
+  .pick[aria-pressed="true"] { background: var(--card); color: var(--rust-deep); }
+  .pick:focus-visible { outline-offset: -2px; }
+  .stock .empty td { padding: var(--s3) 0; height: auto; }
+  .stock .empty p { margin: 0 0 var(--s1); }
+
+  /* Phones: stacked records */
+  @media (max-width: 719px) {
+    .stock thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+    .stock, .stock tbody, .stock tr, .stock td, .stock th { display: block; }
+    .stock tbody tr:not(.empty) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px var(--s2); padding: var(--s1) 0 var(--s2); border-bottom: 1px solid var(--twine); }
+    .stock tr > * { border: 0; height: auto; padding: 0; }
+    .stock tbody th { grid-column: 1 / -1; }
+    .stock td[data-label]::before { content: attr(data-label) " "; display: block; color: var(--twine); font-size: var(--t-small); }
+    .stock .num { text-align: left; }
+    .stock caption { display: block; }
+  }
+
+  /* ---------- Fields: paper tags tied on with string ---------- */
+  .lbl { display: block; margin: 0 0 var(--s1); font-weight: 600; }
+  .frow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(8.5em, auto); align-items: center; gap: var(--s2) var(--s3); padding-left: 26px; }
+  .ftag { position: relative; display: block; min-width: 0; }
+  .ftag-paper {
+    position: absolute; inset: 0;
+    background: var(--card);
+    clip-path: polygon(12px 0, 100% 0, 100% 100%, 12px 100%, 12px calc(100% - 4px), 8px calc(100% - 4px), 8px calc(100% - 8px), 4px calc(100% - 8px), 4px calc(100% - 12px), 0 calc(100% - 12px), 0 12px, 4px 12px, 4px 8px, 8px 8px, 8px 4px, 12px 4px);
+    pointer-events: none;
+  }
+  .ftag-hole { position: absolute; left: 10px; top: calc(50% - 4px); width: 8px; height: 8px; background: var(--rust); pointer-events: none; }
+  .f-string, .f-knot { position: absolute; pointer-events: none; visibility: hidden; background: var(--twine); }
+  .f-string { left: -24px; top: calc(50% - 1px); width: 38px; height: 2px; }
+  .f-knot { left: 8px; top: calc(50% - 6px); width: 12px; height: 12px; box-shadow: inset 0 0 0 3px var(--twine); background: linear-gradient(var(--twine), var(--twine)) 4px 4px / 4px 4px no-repeat; }
+  .f-knot::after { content: ""; position: absolute; left: -8px; top: 10px; width: 8px; height: 2px; background: var(--twine); box-shadow: -4px 2px 0 0 var(--twine); }
+  .ftag:focus-within .f-string { visibility: visible; }
+  .ftag:focus-within .f-knot { visibility: visible; transition: visibility 0s linear var(--d-knot); }
+  .ftag input {
+    position: relative;
+    display: block; width: 100%; height: var(--tap);
+    padding: 0 var(--s2) 0 30px;
+    border: 0; border-radius: 0;
+    background: transparent; color: var(--rust-deep);
+    font: 500 var(--t-body)/1 var(--font-text);
+    color-scheme: light;
+    appearance: none;
+  }
+  .ftag input::-webkit-search-cancel-button { appearance: none; }
+  .ftag input::placeholder { color: #8A5A33; } /* rust ink, thinned (4.6:1 on card) */
+  .ftag input:focus { outline: 2px solid var(--twine); outline-offset: 3px; }
+  .fld.is-bad .ftag-paper { background: linear-gradient(var(--fault), var(--fault)) 0 100% / 100% 4px no-repeat, var(--card); }
+  .reading { color: var(--twine); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .reading.is-ok { color: var(--card); font-weight: 600; }
+  .reading .money { font-weight: 700; }
+  .err { min-height: calc(var(--t-small) * 1.45); margin: var(--s1) 0 0 26px; color: var(--fault); font-size: var(--t-small); line-height: 1.45; font-weight: 500; }
+  .err:empty::before { content: "\00a0"; }
+
+  /* Kind: four chips in the kind hues, an instant change */
+  .kinds { margin: 0; padding: 0; border: 0; min-width: 0; }
+  .kinds legend { padding: 0; margin: 0 0 var(--s1); font-weight: 600; }
+  .kopts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s1); }
+  .kopt { position: relative; display: block; cursor: pointer; }
+  .kopt input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+  .kopt-face { display: grid; justify-items: start; gap: 4px; min-height: 76px; padding: var(--s1) var(--s2); border: 2px solid var(--k); color: var(--card); }
+  .kopt-face b { font-weight: 650; }
+  .kopt-face small { color: var(--twine); font-size: var(--t-tiny); }
+  .kopt-face .emb { --px: 2px; width: calc(var(--px) * var(--bw)); height: calc(var(--px) * var(--bh)); color: var(--k); }
+  .kopt input:checked + .kopt-face { background: var(--k); color: var(--rust-deep); }
+  .kopt input:checked + .kopt-face small { color: var(--rust-deep); }
+  .kopt input:checked + .kopt-face .emb { color: var(--rust-deep); }
+  .kopt input:focus-visible + .kopt-face { outline: 2px solid var(--twine); outline-offset: 3px; }
+  .kinds .reading { display: block; margin-top: var(--s1); }
+  .kinds .err { margin-left: 0; }
+
+  /* Tested: the tick block itself */
+  .tick { position: relative; display: inline-flex; align-items: center; gap: var(--s2); min-height: var(--hit); cursor: pointer; font-weight: 600; }
+  .tick input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+  .tick-box { flex: none; position: relative; width: 22px; height: 22px; box-shadow: inset 0 0 0 2px var(--card); }
+  .tick-box svg { position: absolute; inset: 0; width: 100%; height: 100%; visibility: hidden; shape-rendering: crispEdges; }
+  .tick input:checked + .tick-box { background: var(--card); box-shadow: none; }
+  .tick input:checked + .tick-box svg { visibility: visible; }
+  .tick-box path { fill: var(--rust-deep); }
+  .tick input:focus-visible + .tick-box { outline: 2px solid var(--twine); outline-offset: 3px; }
+  .check-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--s3); }
+
+  /* ---------- Totals ---------- */
+  .totals { margin-top: var(--s7); padding-top: var(--s2); border-top: 2px solid var(--twine); }
+  .sums { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s4); margin: var(--s4) 0 0; }
+  @media (min-width: 720px) { .sums { grid-template-columns: minmax(0, 1.6fr) repeat(3, minmax(0, 1fr)); } }
+  .sums dt { color: var(--twine); }
+  .sums dd { margin: var(--s1) 0 0; }
+  .fig { display: block; font: 700 var(--t-fig)/1 var(--font-display); font-variation-settings: var(--modules); font-variant-numeric: tabular-nums; }
+  .items-dd { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--s2) var(--s3); }
+  .tally { display: flex; flex-wrap: wrap; gap: var(--s2) 14px; color: var(--price); min-height: 44px; }
+  .tally svg { display: block; width: 52px; height: 44px; fill: currentColor; shape-rendering: crispEdges; overflow: visible; }
+  .tally .is-struck { fill: var(--fault); }
+  .tally .is-struck .strike { visibility: visible; }
+  .tally .strike { visibility: hidden; }
+
+  /* ---------- End ---------- */
+  .end { margin-top: var(--s7); padding-top: var(--s3); border-top: 2px solid var(--twine); display: grid; gap: var(--s2); }
+  .end-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3); }
+  .end p { margin: 0; max-width: 68ch; }
+  .notice { color: var(--twine); }
+  .notice.is-warn { color: var(--card); }
+  .notice.is-warn::before { content: ""; display: inline-block; width: 12px; height: 12px; margin-right: var(--s1); box-shadow: inset 0 0 0 2px var(--card); vertical-align: -1px; }
+  .about { margin-top: var(--s3) !important; }
+
+  /* ---------- Dialog: hung on a peg ---------- */
+  .dlg {
+    width: min(660px, 100% - 16px); max-width: none;
+    max-height: calc(100dvh - 16px);
+    margin: auto;
+    padding: 12px;
+    border: 0; background: none; color: var(--card);
+    overflow-y: auto; overscroll-behavior: contain;
+  }
+  .dlg::backdrop { background: var(--scrim); }
+  .dlg-in { position: relative; padding: var(--s4) var(--s4) var(--s3); background: var(--rust); border: 2px solid var(--twine); }
+  .peg { position: absolute; left: -9px; top: -9px; width: 16px; height: 16px; background: var(--twine); }
+  .peg::after { content: ""; position: absolute; inset: 5px; background: var(--rust-deep); }
+  .dlg-head { display: flex; justify-content: space-between; align-items: center; gap: var(--s3); }
+  .dlg h2 { margin: 0; font: 650 var(--t-h3)/1.2 var(--font-text); letter-spacing: -.01em; }
+  .dlg-note { margin: var(--s1) 0 var(--s3); color: var(--twine); max-width: 54ch; }
+  .form { display: grid; gap: var(--s1); }
+  .dlg-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3); margin-top: var(--s3); }
+
+  @media (max-width: 599px) {
+    .dlg-in { padding: var(--s3) var(--s2) var(--s2) var(--s3); }
+    .kopts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .frow { grid-template-columns: minmax(0, 1fr); padding-left: 22px; gap: var(--s1); }
+    .err { margin-left: 22px; }
+    .detail { padding-left: var(--s2); }
+    .facts > div { grid-template-columns: 6.5em minmax(0, 1fr); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0s !important; transition-delay: 0s !important; animation: none !important; }
+    .btn:is(:hover, :focus-visible, .is-down) .btn-sticker { transform: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Pixel drawings, filled by the script from bitmaps: the four kind emblems, the sticker, the tick. -->
+<svg class="sprite" aria-hidden="true" focusable="false">
+  <symbol id="e-cartridge" viewBox="0 0 10 11"></symbol>
+  <symbol id="e-disc" viewBox="0 0 10 18"></symbol>
+  <symbol id="e-console" viewBox="0 0 20 14"></symbol>
+  <symbol id="e-accessory" viewBox="0 0 20 9"></symbol>
+  <symbol id="e-star" viewBox="-1 -1 15 15"></symbol>
+</svg>
+
+<section class="stall" id="stall" aria-labelledby="stall-title">
+  <div class="wrap">
+    <header class="head">
+      <h2 class="h2" id="stall-title">What is in the crates at Lot 14</h2>
+      <p class="lede">Our stock book for the Sunday flea market in Bologna. We add an item when we buy it, update it when we test or reprice it, and delete it when it sells.</p>
+      <button class="btn btn-price" id="add" type="button" aria-haspopup="dialog" aria-controls="editor"><span class="btn-flag" aria-hidden="true"></span><span class="btn-face"><span class="btn-label">Add an item</span></span><span class="btn-sticker" aria-hidden="true"><svg viewBox="-1 -1 15 15"><use class="rim" href="#e-star" transform="translate(-1 0)"/><use class="rim" href="#e-star" transform="translate(1 0)"/><use class="rim" href="#e-star" transform="translate(0 -1)"/><use class="rim" href="#e-star" transform="translate(0 1)"/><use class="star" href="#e-star"/></svg></span></button>
+    </header>
+
+    <div class="bench">
+      <div class="crate-col">
+        <div class="crate-bar">
+          <div class="sorts" role="group" aria-labelledby="sorts-lbl">
+            <span class="sorts-lbl" id="sorts-lbl">Sort the crate by</span>
+            <button class="chip" type="button" data-sort="item" aria-pressed="false">Item <span class="dir" aria-hidden="true"></span></button>
+            <button class="chip" type="button" data-sort="kind" aria-pressed="false">Kind <span class="dir" aria-hidden="true"></span></button>
+            <button class="chip" type="button" data-sort="price" aria-pressed="false">Price <span class="dir" aria-hidden="true"></span></button>
+            <button class="chip" type="button" data-sort="bought" aria-pressed="true">Bought on <span class="dir" aria-hidden="true"></span></button>
+          </div>
+          <div class="tidy-row">
+            <p class="tidy-note" id="tidy-note">The crate is tidy.</p>
+            <button class="btn btn-line" id="tidy" type="button" aria-describedby="tidy-note"><span class="btn-flag" aria-hidden="true"></span><span class="btn-face"><span class="btn-label">Tidy the crate</span></span><span class="btn-sticker" aria-hidden="true"><svg viewBox="-1 -1 15 15"><use class="rim" href="#e-star" transform="translate(-1 0)"/><use class="rim" href="#e-star" transform="translate(1 0)"/><use class="rim" href="#e-star" transform="translate(0 -1)"/><use class="rim" href="#e-star" transform="translate(0 1)"/><use class="star" href="#e-star"/></svg></span></button>
+          </div>
+        </div>
+        <h3 class="vh" id="crate-title">The crate</h3>
+        <p class="vh" id="crate-help">Each item is a tile sized by its kind. Use the arrow keys to move between tiles and Enter to select one. Drag a tile, or press Shift with an arrow key, to move it to a free space.</p>
+        <div class="crate" id="crate">
+          <div class="floor" id="floor" role="grid" aria-labelledby="crate-title" aria-describedby="crate-help"></div>
+          <div class="crate-empty" id="crate-empty" hidden><p id="crate-empty-text">The crate is empty.</p></div>
+        </div>
+        <div class="status-row">
+          <p class="status" id="status" role="status">22 items in the crate.</p>
+          <button class="chalk" id="undo" type="button" hidden>Undo</button>
+        </div>
+      </div>
+
+      <aside class="detail" id="detail" aria-labelledby="detail-title">
+        <div id="detail-body">
+          <h3 id="detail-title" tabindex="-1">Pick a tile to see what it is</h3>
+          <p>Every item in the crate takes the space of its kind, and the crate is packed in the order you sort it.</p>
+        </div>
+      </aside>
+    </div>
+
+    <div class="book" id="book" aria-labelledby="book-title">
+      <div class="book-head">
+        <h3 id="book-title">Stock book</h3>
+        <p id="book-count">22 items</p>
+      </div>
+      <div class="filters">
+        <fieldset class="chips">
+          <legend>Show</legend>
+          <button class="chip kc k-cartridge" type="button" data-kind="cartridge" aria-pressed="true">Cartridges</button>
+          <button class="chip kc k-disc" type="button" data-kind="disc" aria-pressed="true">Discs</button>
+          <button class="chip kc k-console" type="button" data-kind="console" aria-pressed="true">Consoles</button>
+          <button class="chip kc k-accessory" type="button" data-kind="accessory" aria-pressed="true">Accessories</button>
+        </fieldset>
+        <label class="tick"><input type="checkbox" id="untested"><span class="tick-box" aria-hidden="true"><svg viewBox="0 0 11 11"><path d="M8 3h1v1h-1zM7 4h1v1h-1zM6 5h1v1h-1zM5 6h1v1h-1zM4 7h1v1h-1zM3 6h1v1h-1zM2 5h1v1h-1z"/></svg></span>Untested only</label>
+        <div class="search fld">
+          <label class="lbl" for="q">Find</label>
+          <span class="ftag" style="width: 15em; max-width: 100%"><span class="ftag-paper" aria-hidden="true"></span><span class="ftag-hole" aria-hidden="true"></span><span class="f-string" aria-hidden="true"></span><span class="f-knot" aria-hidden="true"></span><input id="q" type="search" autocomplete="off" spellcheck="false" placeholder="cartridge, boxed" aria-describedby="q-reading"></span>
+          <span class="reading" id="q-reading">Shows 22 of 22</span>
+        </div>
+        <button class="chalk" id="clear" type="button" hidden>Clear the filters</button>
+      </div>
+      <div class="tablewrap">
+        <table class="stock" id="stock">
+          <caption>Select a row to find it in the crate.</caption>
+          <thead>
+            <tr>
+              <th scope="col" data-sortcol="item"><button class="sorter" type="button" data-sort="item">Item <span class="dir" aria-hidden="true"></span></button></th>
+              <th scope="col" data-sortcol="kind"><button class="sorter" type="button" data-sort="kind">Kind <span class="dir" aria-hidden="true"></span></button></th>
+              <th scope="col" class="num">Quantity</th>
+              <th scope="col" class="num" data-sortcol="price"><button class="sorter" type="button" data-sort="price">Price <span class="dir" aria-hidden="true"></span></button></th>
+              <th scope="col" data-sortcol="bought"><button class="sorter" type="button" data-sort="bought">Bought on <span class="dir" aria-hidden="true"></span></button></th>
+              <th scope="col">Tested</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="totals" id="totals" aria-labelledby="totals-title">
+      <h3 id="totals-title">Totals</h3>
+      <dl class="sums">
+        <div><dt>Items in the stock book</dt><dd class="items-dd"><span class="fig" id="t-items">22</span><span class="tally" id="tally" aria-hidden="true"></span></dd></div>
+        <div><dt>Copies, counting every one</dt><dd><span class="fig" id="t-qty">0</span></dd></div>
+        <div><dt>Stock value at our prices</dt><dd><span class="fig money" id="t-value">EUR 0.00</span></dd></div>
+        <div><dt>Not tested yet</dt><dd><span class="fig" id="t-untested">0</span></dd></div>
+      </dl>
+    </div>
+
+    <div class="end">
+      <div class="end-row">
+        <button class="btn btn-line" id="reset" type="button"><span class="btn-flag" aria-hidden="true"></span><span class="btn-face"><span class="btn-label">Reset to the sample stock</span></span><span class="btn-sticker" aria-hidden="true"><svg viewBox="-1 -1 15 15"><use class="rim" href="#e-star" transform="translate(-1 0)"/><use class="rim" href="#e-star" transform="translate(1 0)"/><use class="rim" href="#e-star" transform="translate(0 -1)"/><use class="rim" href="#e-star" transform="translate(0 1)"/><use class="star" href="#e-star"/></svg></span></button>
+        <p class="notice" id="notice">Changes stay in this tab until you close it. Nothing leaves your browser.</p>
+      </div>
+      <p class="about">Lot 14 is Ilaria and Teo, a folding table and six crates at the Sunday flea market in the old cattle yard, from 7 until 2.</p>
+      <p>We buy on Saturdays and test what we can on a small TV in the van, so the tick on a tag means we saw it run.</p>
+      <p><a class="chalk" href="mailto:lot14@example.com" target="_blank" rel="noopener">Write to the stall<span class="vh"> (opens in a new tab)</span></a></p>
+    </div>
+  </div>
+</section>
+
+<dialog class="dlg" id="editor" aria-labelledby="editor-title" data-lenis-prevent>
+  <div class="dlg-in">
+    <span class="peg" aria-hidden="true"></span>
+    <div class="dlg-head">
+      <h2 id="editor-title">Add an item</h2>
+      <button class="chalk" id="editor-close" type="button">Close</button>
+    </div>
+    <p class="dlg-note" id="editor-note">It goes into the first space in the crate that fits its kind.</p>
+    <form class="form" id="item-form" novalidate aria-labelledby="editor-title">
+      <div class="fld" data-f="item">
+        <label class="lbl" for="f-item">What it is</label>
+        <div class="frow">
+          <span class="ftag"><span class="ftag-paper" aria-hidden="true"></span><span class="ftag-hole" aria-hidden="true"></span><span class="f-string" aria-hidden="true"></span><span class="f-knot" aria-hidden="true"></span><input id="f-item" name="item" type="text" autocomplete="off" spellcheck="false" placeholder="Grey console, no leads"></span>
+          <span class="reading" id="r-item">2 to 40 characters</span>
+        </div>
+        <p class="err" id="e-item"></p>
+      </div>
+      <fieldset class="kinds fld" data-f="kind" id="f-kind">
+        <legend>Kind</legend>
+        <div class="kopts">
+          <label class="kopt k-cartridge"><input type="radio" name="kind" value="cartridge"><span class="kopt-face"><svg class="emb" style="--bw: 10; --bh: 11" aria-hidden="true"><use href="#e-cartridge"/></svg><b>Cartridge</b><small>1 cell</small></span></label>
+          <label class="kopt k-disc"><input type="radio" name="kind" value="disc"><span class="kopt-face"><svg class="emb" style="--bw: 5; --bh: 9" viewBox="0 0 10 18" aria-hidden="true"><use href="#e-disc"/></svg><b>Disc</b><small>1 by 2, tall</small></span></label>
+          <label class="kopt k-console"><input type="radio" name="kind" value="console"><span class="kopt-face"><svg class="emb" style="--bw: 10; --bh: 7" viewBox="0 0 20 14" aria-hidden="true"><use href="#e-console"/></svg><b>Console</b><small>2 by 2</small></span></label>
+          <label class="kopt k-accessory"><input type="radio" name="kind" value="accessory"><span class="kopt-face"><svg class="emb" style="--bw: 10; --bh: 4.5" viewBox="0 0 20 9" aria-hidden="true"><use href="#e-accessory"/></svg><b>Accessory</b><small>2 by 1, wide</small></span></label>
+        </div>
+        <span class="reading" id="r-kind">Pick one: it decides the space it takes</span>
+        <p class="err" id="e-kind"></p>
+      </fieldset>
+      <div class="fld" data-f="qty">
+        <label class="lbl" for="f-qty">How many</label>
+        <div class="frow">
+          <span class="ftag"><span class="ftag-paper" aria-hidden="true"></span><span class="ftag-hole" aria-hidden="true"></span><span class="f-string" aria-hidden="true"></span><span class="f-knot" aria-hidden="true"></span><input id="f-qty" name="qty" type="text" inputmode="numeric" autocomplete="off" placeholder="1"></span>
+          <span class="reading" id="r-qty">1 to 99</span>
+        </div>
+        <p class="err" id="e-qty"></p>
+      </div>
+      <div class="fld" data-f="price">
+        <label class="lbl" for="f-price">Price each, in euros</label>
+        <div class="frow">
+          <span class="ftag"><span class="ftag-paper" aria-hidden="true"></span><span class="ftag-hole" aria-hidden="true"></span><span class="f-string" aria-hidden="true"></span><span class="f-knot" aria-hidden="true"></span><input id="f-price" name="price" type="text" inputmode="decimal" autocomplete="off" placeholder="12.50"></span>
+          <span class="reading" id="r-price">EUR 0.50 to 999.99</span>
+        </div>
+        <p class="err" id="e-price"></p>
+      </div>
+      <div class="fld" data-f="bought">
+        <label class="lbl" for="f-bought">Bought on</label>
+        <div class="frow">
+          <span class="ftag"><span class="ftag-paper" aria-hidden="true"></span><span class="ftag-hole" aria-hidden="true"></span><span class="f-string" aria-hidden="true"></span><span class="f-knot" aria-hidden="true"></span><input id="f-bought" name="bought" type="date"></span>
+          <span class="reading" id="r-bought">Today or earlier</span>
+        </div>
+        <p class="err" id="e-bought"></p>
+      </div>
+      <div class="fld check-row" data-f="tested">
+        <label class="tick"><input type="checkbox" id="f-tested" name="tested"><span class="tick-box" aria-hidden="true"><svg viewBox="0 0 11 11"><path d="M8 3h1v1h-1zM7 4h1v1h-1zM6 5h1v1h-1zM5 6h1v1h-1zM4 7h1v1h-1zM3 6h1v1h-1zM2 5h1v1h-1z"/></svg></span>We saw it work</label>
+        <span class="reading is-ok" id="r-tested">Not tested yet</span>
+      </div>
+      <div class="dlg-actions">
+        <button class="btn btn-price" id="save" type="submit"><span class="btn-flag" aria-hidden="true"></span><span class="btn-face"><span class="btn-label" id="save-label">Put it in the crate</span></span><span class="btn-sticker" aria-hidden="true"><svg viewBox="-1 -1 15 15"><use class="rim" href="#e-star" transform="translate(-1 0)"/><use class="rim" href="#e-star" transform="translate(1 0)"/><use class="rim" href="#e-star" transform="translate(0 -1)"/><use class="rim" href="#e-star" transform="translate(0 1)"/><use class="star" href="#e-star"/></svg></span></button>
+        <button class="chalk" id="cancel" type="button">Close without saving</button>
+      </div>
+    </form>
+  </div>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  const root = document.documentElement;
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const lib = !!(window.gsap && window.ScrollTrigger && window.Lenis);
+  if (lib) root.classList.add('js'); // CDN blocked: no class, nothing is unlit, every flow works
+  const read = (n) => getComputedStyle(root).getPropertyValue(n).trim();
+  const sec = (n) => parseFloat(read(n)) || 0; // a --d-* token in seconds
+
+  /* ================= The records ================= */
+  const COLS = 10, MIN_ROWS = 5, KEY = 'lot14-stock-v1';
+  const KINDS = {
+    cartridge: { label: 'Cartridge', many: 'cartridges', w: 1, h: 1, size: '1 cell' },
+    disc: { label: 'Disc', many: 'discs', w: 1, h: 2, size: '1 by 2 cells, tall' },
+    console: { label: 'Console', many: 'consoles', w: 2, h: 2, size: '2 by 2 cells' },
+    accessory: { label: 'Accessory', many: 'accessories', w: 2, h: 1, size: '2 by 1 cells, wide' }
+  };
+  const KIND_ORDER = ['cartridge', 'disc', 'console', 'accessory'];
+  // id, item (text), kind (choice), qty (integer), price (decimal, kept in cents), bought (date), tested (boolean)
+  const SEED = [
+    ['s01', 'Grey 8-bit console, no leads', 'console', 1, 3500, '2026-10-04', false],
+    ['s02', 'Platformer cartridge, label torn', 'cartridge', 1, 1250, '2026-09-13', true],
+    ['s03', 'Racing disc in a cracked case', 'disc', 1, 600, '2026-10-18', true],
+    ['s04', 'Two-button pad, 2 m cable', 'accessory', 3, 450, '2026-08-30', true],
+    ['s05', 'Handheld, green screen, no back', 'console', 1, 2800, '2026-11-01', false],
+    ['s06', 'Puzzle cartridge, Japanese label', 'cartridge', 2, 900, '2026-07-19', true],
+    ['s07', 'Football disc, no manual', 'disc', 2, 350, '2026-09-27', true],
+    ['s08', 'Light gun, orange tip', 'accessory', 1, 1400, '2026-10-11', false],
+    ['s09', 'Shooter cartridge, boxed with manual', 'cartridge', 1, 2400, '2026-06-14', true],
+    ['s10', 'Black 16-bit console with two pads', 'console', 1, 6500, '2026-10-25', true],
+    ['s11', 'Fighting disc, sleeve only', 'disc', 1, 250, '2026-11-08', false],
+    ['s12', 'RF lead and power brick', 'accessory', 2, 600, '2026-09-06', true],
+    ['s13', 'Sports cartridge, sticker residue', 'cartridge', 3, 300, '2026-08-16', true],
+    ['s14', 'Role-playing disc set, 3 discs', 'disc', 1, 1800, '2026-10-04', true],
+    ['s15', 'White disc console, lid sticks', 'console', 1, 4200, '2026-09-20', false],
+    ['s16', 'Multitap for four players', 'accessory', 1, 1100, '2026-07-05', false],
+    ['s17', 'Maze cartridge, loose', 'cartridge', 4, 200, '2026-05-31', true],
+    ['s18', 'Rhythm disc, case scuffed', 'disc', 1, 1500, '2026-10-18', false],
+    ['s19', 'Steering wheel, pedals missing', 'accessory', 1, 950, '2026-08-09', false],
+    ['s20', 'Pinball cartridge, end label faded', 'cartridge', 1, 750, '2026-11-08', false],
+    ['s21', 'Demo disc from a magazine', 'disc', 5, 100, '2026-06-28', true],
+    ['s22', 'Adventure cartridge, battery dead', 'cartridge', 1, 800, '2026-10-11', false]
+  ].map(([id, item, kind, qty, price, bought, tested]) => ({ id, item, kind, qty, price, bought, tested }));
+
+  /* ---------- Formats ---------- */
+  const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const eur = (cents) => 'EUR ' + (cents / 100).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const day = (iso) => { const [y, m, d] = iso.split('-').map(Number), t = new Date(Date.UTC(y, m - 1, d)); return `${DAYS[t.getUTCDay()]} ${d} ${MONTHS[m - 1]} ${y}`; };
+  const dayShort = (iso) => { const [y, m, d] = iso.split('-').map(Number); return `${d} ${MONTHS[m - 1]} ${y}`; };
+  const todayISO = () => { const t = new Date(); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`; };
+  const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+
+  /* ---------- Parsers: one per type, each with a message that says how to fix the value ---------- */
+  const ok = (value) => ({ ok: true, value }), no = (msg) => ({ ok: false, msg });
+  const parse = {
+    item(v) { // text
+      const s = String(v ?? '').trim().replace(/\s+/g, ' ');
+      if (!s) return no('Write what the item is, like "Grey console, no leads".');
+      if (s.length < 2) return no('Write at least 2 characters, so you can tell it apart in the crate.');
+      if (s.length > 40) return no(`Keep it to 40 characters; this is ${s.length}. The rest can go on the paper tag.`);
+      return ok(s);
+    },
+    kind(v) { // choice
+      return KINDS[v] ? ok(v) : no('Pick a kind; it decides how much of the crate it takes.');
+    },
+    qty(v) { // integer
+      const s = String(v ?? '').trim();
+      if (!s) return no('Write how many you have, like 1.');
+      if (!/^\d+$/.test(s)) return no('Write a whole number in digits, like 3.');
+      const n = Number(s);
+      if (n < 1) return no('Write 1 or more. Sold the last one? Delete the item instead.');
+      if (n > 99) return no('Write 99 or fewer; the stock book counts up to 99 of one thing.');
+      return ok(n);
+    },
+    price(v) { // decimal, two places, kept as whole cents
+      const s = String(v ?? '').trim().replace(/^(eur|€)\s*/i, '').replace(/\s*(eur|€)$/i, '');
+      if (!s) return no('Write the price in euros, like 12.50.');
+      if (!/^\d+([.,]\d{1,2})?$/.test(s)) return no('Write euros, then cents after a point or a comma, like 12.50 or 12,50.');
+      const [e, c = ''] = s.split(/[.,]/), cents = Number(e) * 100 + Number(c.padEnd(2, '0'));
+      if (cents < 50) return no('The lowest price on the table is EUR 0.50.');
+      if (cents > 99999) return no('Keep it to EUR 999.99 or less.');
+      return ok(cents);
+    },
+    bought(v, today = todayISO()) { // date, not in the future
+      const s = String(v ?? '').trim();
+      if (!s) return no('Pick the day you bought it.');
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+      if (!m) return no('Write the date as year-month-day, like 2026-11-08.');
+      const t = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+      if (t.getUTCFullYear() !== +m[1] || t.getUTCMonth() !== +m[2] - 1 || t.getUTCDate() !== +m[3]) return no('That day does not exist. Check the day and the month.');
+      if (+m[1] < 1970) return no('Pick a day from 1970 on.');
+      if (s > today) return no(`That day has not come yet. Pick ${day(today)} or earlier.`);
+      return ok(s);
+    },
+    tested(v) { // boolean
+      return ok(v === true || v === 'true' || v === 'on');
+    }
+  };
+  const FIELDS = ['item', 'kind', 'qty', 'price', 'bought', 'tested'];
+  // A whole record, as typed or as stored. Returns { ok, value } or { ok: false, errors }.
+  const parseRecord = (raw, today) => {
+    const value = {}, errors = {};
+    for (const f of FIELDS) { const r = parse[f](raw[f], today); if (r.ok) value[f] = r.value; else errors[f] = r.msg; }
+    return Object.keys(errors).length ? { ok: false, errors } : { ok: true, value };
+  };
+
+  /* ---------- Pure record functions over { items } ---------- */
+  const addItem = (s, rec) => ({ ...s, items: [...s.items, rec] });
+  const updateItem = (s, id, patch) => ({ ...s, items: s.items.map((r) => (r.id === id ? { ...r, ...patch, id } : r)) });
+  const removeItem = (s, id) => ({ ...s, items: s.items.filter((r) => r.id !== id) });
+  const restoreItem = (s, rec, index) => { const items = s.items.slice(); items.splice(Math.min(index, items.length), 0, rec); return { ...s, items }; };
+  const totals = (items) => items.reduce((t, r) => ({ items: t.items + 1, qty: t.qty + r.qty, value: t.value + r.qty * r.price, untested: t.untested + (r.tested ? 0 : 1) }), { items: 0, qty: 0, value: 0, untested: 0 });
+  const CMP = {
+    item: (a, b) => a.item.localeCompare(b.item, 'en', { sensitivity: 'base' }),
+    kind: (a, b) => KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind),
+    price: (a, b) => a.price - b.price,
+    bought: (a, b) => (a.bought < b.bought ? -1 : a.bought > b.bought ? 1 : 0)
+  };
+  const sortItems = (items, key, dir) => items.map((r, i) => [r, i]).sort(([a, i], [b, j]) => CMP[key](a, b) * dir || CMP.item(a, b) || i - j).map(([r]) => r);
+  const filterItems = (items, f) => {
+    const q = (f.q || '').trim().toLowerCase();
+    return items.filter((r) => f.kinds.includes(r.kind) && (!f.untested || !r.tested) && (!q || r.item.toLowerCase().includes(q)));
+  };
+
+  /* ---------- The packer: first fit, reading order, ten columns ---------- */
+  // A layout is { at: { id: { c, r, w, h } }, rows }. It never changes in place.
+  const occupancy = (at) => { const g = new Set(); for (const p of Object.values(at)) for (let y = p.r; y < p.r + p.h; y++) for (let x = p.c; x < p.c + p.w; x++) g.add(y * COLS + x); return g; };
+  const firstFit = (g, w, h) => {
+    for (let r = 0; ; r++) for (let c = 0; c + w <= COLS; c++) {
+      let free = true;
+      for (let y = r; y < r + h && free; y++) for (let x = c; x < c + w; x++) if (g.has(y * COLS + x)) { free = false; break; }
+      if (free) return { c, r };
+    }
+  };
+  const rowsOf = (at) => Object.values(at).reduce((n, p) => Math.max(n, p.r + p.h), 0);
+  const placeItem = (layout, rec) => {
+    const at = { ...layout.at }, { w, h } = KINDS[rec.kind], g = occupancy(at);
+    const { c, r } = firstFit(g, w, h);
+    at[rec.id] = { c, r, w, h };
+    return { at, rows: rowsOf(at) };
+  };
+  const unplaceItem = (layout, id) => { const at = { ...layout.at }; delete at[id]; return { at, rows: rowsOf(at) }; };
+  // A hand move: the tile's whole footprint inside the crate's rows and on no other tile.
+  const fits = (layout, id, c, r, rows) => {
+    const { w, h } = layout.at[id], g = occupancy(unplaceItem(layout, id).at);
+    if (c < 0 || r < 0 || c + w > COLS || r + h > rows) return false;
+    for (let y = r; y < r + h; y++) for (let x = c; x < c + w; x++) if (g.has(y * COLS + x)) return false;
+    return true;
+  };
+  const moveItem = (layout, id, c, r) => { const at = { ...layout.at, [id]: { ...layout.at[id], c, r } }; return { at, rows: rowsOf(at) }; };
+  const pack = (list) => list.reduce((l, rec) => placeItem(l, rec), { at: {}, rows: 0 });
+  const sameLayout = (a, b) => {
+    const ka = Object.keys(a.at), kb = Object.keys(b.at);
+    return ka.length === kb.length && ka.every((k) => b.at[k] && b.at[k].c === a.at[k].c && b.at[k].r === a.at[k].r && b.at[k].w === a.at[k].w);
+  };
+
+  /* ---------- Self test (#selftest) ---------- */
+  function runSelfTest() {
+    const fails = [];
+    const eq = (a, b, m) => { if (JSON.stringify(a) !== JSON.stringify(b)) fails.push(`${m}: got ${JSON.stringify(a)}, want ${JSON.stringify(b)}`); };
+    const yes = (v, m) => { if (!v) fails.push(m); };
+    eq(parse.item('  Grey   pad  ').value, 'Grey pad', 'item trims and collapses spaces');
+    yes(!parse.item('x').ok && !parse.item('').ok && !parse.item('y'.repeat(41)).ok, 'item length 2 to 40');
+    yes(parse.item('y'.repeat(40)).ok, 'item of 40 characters is fine');
+    yes(parse.kind('disc').ok && !parse.kind('cassette').ok, 'kind is one of four');
+    eq(parse.qty(' 7 ').value, 7, 'qty parses');
+    yes(!parse.qty('0').ok && !parse.qty('100').ok && !parse.qty('2.5').ok && !parse.qty('three').ok, 'qty is a whole number 1 to 99');
+    eq(parse.price('12,5').value, 1250, 'price with a comma');
+    eq(parse.price('EUR 0.50').value, 50, 'price with the currency');
+    eq(parse.price('999.99').value, 99999, 'top price');
+    yes(!parse.price('0.49').ok && !parse.price('1000').ok && !parse.price('1.234').ok && !parse.price('12.').ok, 'price range and format');
+    eq(parse.bought('2026-02-28', '2026-11-10').value, '2026-02-28', 'date parses');
+    yes(!parse.bought('2026-02-30', '2026-11-10').ok, 'impossible date');
+    yes(!parse.bought('2026-11-11', '2026-11-10').ok && parse.bought('2026-11-10', '2026-11-10').ok, 'not in the future');
+    yes(parse.tested(true).value === true && parse.tested(false).value === false, 'boolean');
+    yes(SEED.every((r) => parseRecord({ ...r, price: (r.price / 100).toFixed(2) }, '2026-11-10').ok), 'every seed record is valid');
+    let s = { items: SEED.slice(0, 3) };
+    s = addItem(s, { ...SEED[5], id: 't1' }); eq(s.items.length, 4, 'add');
+    s = updateItem(s, 't1', { qty: 9, id: 'x' }); eq(s.items[3].qty, 9, 'update'); eq(s.items[3].id, 't1', 'update keeps the id');
+    const before = s; s = removeItem(s, 's02'); eq(s.items.map((r) => r.id), ['s01', 's03', 't1'], 'remove');
+    s = restoreItem(s, before.items[1], 1); eq(s.items.map((r) => r.id), ['s01', 's02', 's03', 't1'], 'undo puts it back in place');
+    eq(totals([{ qty: 2, price: 150, tested: true }, { qty: 1, price: 1000, tested: false }]), { items: 2, qty: 3, value: 1300, untested: 1 }, 'totals');
+    eq(sortItems(SEED, 'price', 1)[0].id, 's21', 'cheapest first');
+    eq(sortItems(SEED, 'price', -1)[0].id, 's10', 'dearest first');
+    eq(sortItems(SEED, 'bought', -1)[0].bought, '2026-11-08', 'newest first');
+    eq(filterItems(SEED, { kinds: ['console'], untested: true, q: '' }).map((r) => r.id), ['s01', 's05', 's15'], 'filter by kind and untested');
+    eq(filterItems(SEED, { kinds: KIND_ORDER, untested: false, q: 'CARTRIDGE' }).length, 7, 'text filter ignores case');
+    for (const key of Object.keys(CMP)) for (const dir of [1, -1]) {
+      const list = sortItems(SEED, key, dir), L = pack(list), g = new Set();
+      yes(Object.keys(L.at).length === list.length, `pack places every item (${key})`);
+      for (const p of Object.values(L.at)) {
+        yes(p.c >= 0 && p.c + p.w <= COLS && p.r >= 0, `inside ten columns (${key})`);
+        for (let y = p.r; y < p.r + p.h; y++) for (let x = p.c; x < p.c + p.w; x++) { yes(!g.has(y * COLS + x), `no overlap at ${x},${y} (${key})`); g.add(y * COLS + x); }
+      }
+      eq(pack(list), L, `pack is deterministic (${key})`);
+    }
+    const L = pack(SEED.slice(0, 4)), P = placeItem(unplaceItem(L, 's02'), SEED[1]);
+    eq(P.at.s02, L.at.s02, 'a removed tile goes back to its own space');
+    yes(fits(L, 's02', 9, 4, 5) && !fits(L, 's02', 1, 1, 5) && !fits(L, 's04', 9, 0, 5) && !fits(L, 's02', 0, 5, 5), 'a moved tile fits only in free space inside the crate');
+    eq(moveItem(L, 's02', 9, 4).at.s02, { c: 9, r: 4, w: 1, h: 1 }, 'move');
+    yes(sameLayout(L, pack(SEED.slice(0, 4))) && !sameLayout(L, unplaceItem(L, 's01')), 'layout comparison');
+    if (fails.length) console.error('SELFTEST FAIL\n' + fails.join('\n')); else console.log('SELFTEST PASS');
+    return !fails.length;
+  }
+  window.runSelfTest = runSelfTest;
+  if (location.hash === '#selftest') runSelfTest();
+
+  /* ================= Pixel drawings ================= */
+  // Each bitmap row is a string; "#" is a filled pixel. The paths go into the sprite symbols.
+  const BITS = {
+    cartridge: ['##########', '#.#.#.#.##', '##########', '##......##', '##.####.##', '##.####.##', '##......##', '##########', '##########', '.########.', '.#.#.#.#..'],
+    disc: ['##########', '#........#', '#..####..#', '#.######.#', '#.##..##.#', '#.##..##.#', '#.######.#', '#..####..#', '#........#', '##########', '#........#', '#.######.#', '#........#', '#.####...#', '#........#', '#.#####..#', '#........#', '##########'],
+    console: ['....############....', '....##........##....', '####################', '####################', '##..############..##', '##..############..##', '####################', '####################', '###.#.#.#.#.#.#.####', '####################', '##...##########...##', '##...##########...##', '####################', '.##################.'],
+    accessory: ['..################..', '.##################.', '####.###########.###', '###...#########.#.##', '####.###########.###', '####################', '######........######', '.#####........#####.', '..###..........###..'],
+    star: ['......#......', '.....###.....', '.##..###..##.', '.###.###.###.', '..#########..', '...#######...', '#############', '...#######...', '..#########..', '.###.###.###.', '.##..###..##.', '.....###.....', '......#......']
+  };
+  const toPath = (rows) => rows.map((row, y) => [...row.matchAll(/#+/g)].map((m) => `M${m.index} ${y}h${m[0].length}v1h-${m[0].length}z`).join('')).join('');
+  for (const [k, rows] of Object.entries(BITS)) {
+    const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    p.setAttribute('d', toPath(rows));
+    $(`#e-${k}`).append(p);
+  }
+  const EMB = { cartridge: [10, 11], disc: [10, 18], console: [20, 14], accessory: [20, 9] };
+  const emblem = (kind) => { const [w, h] = EMB[kind]; return `<svg class="emb" viewBox="0 0 ${w} ${h}" style="--bw:${w};--bh:${h}" aria-hidden="true" focusable="false"><use href="#e-${kind}"/></svg>`; };
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  /* ================= Storage: the session, with an in-memory fallback ================= */
+  const store = (() => {
+    let can = true, mem = null;
+    try { sessionStorage.setItem(KEY + '-t', '1'); sessionStorage.removeItem(KEY + '-t'); } catch { can = false; }
+    return {
+      can,
+      load() { let raw = mem; try { if (can) raw = sessionStorage.getItem(KEY); } catch {} return raw; },
+      save(v) { mem = v; if (can) try { sessionStorage.setItem(KEY, v); } catch {} }
+    };
+  })();
+  const loadItems = () => {
+    try {
+      const raw = JSON.parse(store.load() || 'null');
+      if (!Array.isArray(raw)) return null;
+      const seen = new Set();
+      // Every stored record is parsed again; anything that does not parse is dropped, so a bad copy never breaks the page.
+      return raw.filter((r) => r && typeof r.id === 'string' && !seen.has(r.id) && seen.add(r.id) && parseRecord({ ...r, price: (r.price / 100).toFixed(2) }, '9999-12-31').ok);
+    } catch { return null; }
+  };
+
+  /* ================= App state ================= */
+  let state = { items: loadItems() ?? SEED.map((r) => ({ ...r })) };
+  const ui = { sort: { key: 'bought', dir: -1 }, f: { kinds: KIND_ORDER.slice(), untested: false, q: '' }, sel: null, focus: null, confirm: false, undo: null, struck: false };
+  let layout = { at: {}, rows: 0 };
+  let fx = null, lenis = null; // fx: hooks from the motion branch; null means instant
+  let nid = 0;
+  const save = () => store.save(JSON.stringify(state.items));
+  const view = () => filterItems(sortItems(state.items, ui.sort.key, ui.sort.dir), ui.f);
+  const byId = (id) => state.items.find((r) => r.id === id);
+  const sumLine = () => { const t = totals(state.items); return `The crate holds ${plural(t.items, 'item', 'items')} worth <b>${eur(t.value)}</b>.`; };
+
+  // Keep the layout in step with what is shown: hidden items leave a gap, newly shown ones take the first space that fits.
+  const syncLayout = (list) => {
+    const ids = new Set(list.map((r) => r.id));
+    for (const id of Object.keys(layout.at)) if (!ids.has(id)) layout = unplaceItem(layout, id);
+    for (const r of list) {
+      const p = layout.at[r.id];
+      if (p && p.w === KINDS[r.kind].w && p.h === KINDS[r.kind].h) continue;
+      if (p) layout = unplaceItem(layout, r.id);
+      layout = placeItem(layout, r);
+    }
+  };
+
+  /* ================= Rendering ================= */
+  const floor = $('#floor'), crate = $('#crate'), crateEmpty = $('#crate-empty'), tidyNote = $('#tidy-note');
+  const statusEl = $('#status'), undoBtn = $('#undo'), detailBody = $('#detail-body');
+  const rowsEl = $('#rows'), bookCount = $('#book-count'), qReading = $('#q-reading'), clearBtn = $('#clear');
+  const tallyEl = $('#tally');
+  let tallyShown = Infinity; // how many marks the scroll has stamped (everything, without the motion layer)
+
+  function renderCrate(deal) { // deal: 'all' | an item id | undefined
+    const list = view();
+    syncLayout(list);
+    const rows = Math.max(MIN_ROWS, layout.rows);
+    crate.style.setProperty('--rows', rows);
+    const placed = list.filter((r) => layout.at[r.id]).map((r, i) => ({ r, p: layout.at[r.id], i }));
+    placed.sort((a, b) => a.p.r - b.p.r || a.p.c - b.p.c); // reading order: for rows and the arrow keys
+    const cw = floor.clientWidth / COLS || 60, tagCols = Math.ceil(parseFloat(read('--tag-w')) / cw);
+    const tab = ui.focus && layout.at[ui.focus] ? ui.focus : ui.sel && layout.at[ui.sel] ? ui.sel : placed[0]?.r.id;
+    const hadFocus = floor.contains(document.activeElement);
+    let html = '', row = -1;
+    for (const { r, p, i } of placed) {
+      if (p.r !== row) { html += (row >= 0 ? '</div>' : '') + `<div role="row" aria-rowindex="${p.r + 1}">`; row = p.r; }
+      const k = KINDS[r.kind], sel = ui.sel === r.id;
+      const label = `${r.item}. ${k.label}, ${r.qty} in the crate, ${eur(r.price)} each, ${r.tested ? 'tested' : 'not tested yet'}`;
+      html += `<div role="gridcell" class="cell k-${r.kind}${sel ? ' is-sel' : ''}${p.c + p.w + tagCols > COLS ? ' is-flip' : ''}${deal === r.id ? ' is-new' : ''}" aria-selected="${sel}" style="grid-column:${p.c + 1}/span ${p.w};grid-row:${p.r + 1}/span ${p.h};--i:${i}">` +
+        `<button class="tile" type="button" data-id="${r.id}" tabindex="${r.id === tab ? 0 : -1}" aria-pressed="${sel}" aria-label="${esc(label)}">` +
+        `<span class="tile-face">${emblem(r.kind)}<span class="tmark${r.tested ? ' is-tested' : ''}"></span>${r.qty > 1 ? `<span class="qty">${r.qty}</span>` : ''}</span></button>` +
+        `<span class="tag" aria-hidden="true"><span class="tag-string"></span><span class="tag-card"><span class="tag-name">${esc(r.item)}</span><span class="tag-price">${eur(r.price)}</span></span></span></div>`;
+    }
+    if (row >= 0) html += '</div>';
+    floor.innerHTML = html;
+    floor.classList.remove('is-dealing');
+    if (deal === 'all' && fx) { void floor.offsetWidth; floor.classList.add('is-dealing'); }
+    crateEmpty.hidden = placed.length > 0;
+    $('#crate-empty-text').textContent = state.items.length ? 'Nothing in the crate matches the filters below.' : 'The crate is empty. Add an item when you buy one.';
+    if (hadFocus) $(`.tile[tabindex="0"]`, floor)?.focus();
+    // Gaps or an order that no longer matches the sort: say so beside the button.
+    const tidy = sameLayout(layout, pack(list));
+    tidyNote.textContent = tidy ? 'The crate is tidy.' : 'The crate has gaps or is out of order.';
+  }
+
+  function renderTable() {
+    const list = view(), all = state.items.length;
+    if (!list.length) {
+      rowsEl.innerHTML = `<tr class="empty"><td colspan="6"><p>${all ? 'No item matches these filters.' : 'The stock book is empty.'}</p>${all ? '<button class="chalk" type="button" data-clear>Clear the filters</button>' : '<button class="chalk" type="button" data-reset>Reset to the sample stock</button>'}</td></tr>`;
+    } else {
+      rowsEl.innerHTML = list.map((r) => {
+        const sel = ui.sel === r.id, k = KINDS[r.kind];
+        return `<tr class="k-${r.kind}"><th scope="row"><button class="pick" type="button" data-pick="${r.id}" aria-pressed="${sel}"><span>${esc(r.item)}</span></button></th>` +
+          `<td data-label="Kind"><span class="kindmark">${k.label}</span></td><td class="num" data-label="Quantity">${r.qty}</td>` +
+          `<td class="num money" data-label="Price">${eur(r.price)}</td><td data-label="Bought on">${dayShort(r.bought)}</td>` +
+          `<td data-label="Tested"><span class="testmark${r.tested ? ' is-tested' : ''}">${r.tested ? 'Tested' : 'Not yet'}</span></td></tr>`;
+      }).join('');
+    }
+    bookCount.textContent = list.length === all ? plural(all, 'item', 'items') : `${list.length} of ${all} items shown`;
+    qReading.textContent = `Shows ${list.length} of ${all}`;
+    const filtered = ui.f.kinds.length < 4 || ui.f.untested || ui.f.q.trim();
+    clearBtn.hidden = !filtered;
+    // Sort controls: the crate's chips and the table's headers show the same order.
+    $$('[data-sort]').forEach((b) => {
+      const on = b.dataset.sort === ui.sort.key, d = $('.dir', b);
+      if (b.classList.contains('chip')) b.setAttribute('aria-pressed', on);
+      b.classList.toggle('is-on', on);
+      d.classList.toggle('is-up', ui.sort.dir > 0);
+    });
+    $$('[data-sortcol]').forEach((th) => { if (th.dataset.sortcol === ui.sort.key) th.setAttribute('aria-sort', ui.sort.dir > 0 ? 'ascending' : 'descending'); else th.removeAttribute('aria-sort'); });
+    $$('[data-kind]').forEach((b) => b.setAttribute('aria-pressed', ui.f.kinds.includes(b.dataset.kind)));
+  }
+
+  function renderDetail(focus) {
+    const r = ui.sel && byId(ui.sel);
+    if (!r) {
+      const counts = Object.fromEntries(KIND_ORDER.map((k) => [k, state.items.filter((x) => x.kind === k).length]));
+      detailBody.innerHTML = `<h3 id="detail-title" tabindex="-1">Pick a tile to see what it is</h3>
+        <p>Each item takes the space of its kind, and the crate is packed in the order you sort it, filling the first gap that fits.</p>
+        <ul class="legend">${KIND_ORDER.map((k) => `<li class="k-${k}"><span class="sw">${emblem(k)}</span><span><b>${KINDS[k].label}, ${KINDS[k].size}</b><small>${counts[k]} in the stock book</small></span></li>`).join('')}</ul>
+        <p class="muted">A light block on a tile means we tested it; a hollow square means not yet.</p>`;
+    } else {
+      const k = KINDS[r.kind];
+      detailBody.innerHTML = `<p class="d-kind k-${r.kind}"><span class="kindmark">${k.label}, ${k.size}</span></p>
+        <h3 id="detail-title" class="d-name" tabindex="-1">${esc(r.item)}</h3>
+        <dl class="facts">
+          <div><dt>Price each</dt><dd class="money">${eur(r.price)}</dd></div>
+          <div><dt>In the crate</dt><dd>${r.qty}</dd></div>
+          <div><dt>Worth</dt><dd class="money">${eur(r.qty * r.price)}</dd></div>
+          <div><dt>Bought on</dt><dd>${day(r.bought)}</dd></div>
+          <div><dt>Tested</dt><dd><span class="testmark${r.tested ? ' is-tested' : ''}">${r.tested ? 'Yes, we saw it work' : 'Not yet'}</span></dd></div>
+        </dl>
+        ${ui.confirm ? `<div class="confirm" role="group" aria-labelledby="confirm-q"><p id="confirm-q">Delete this from the stock book? Do it when it sells.</p>
+          <div class="actions">${btn('btn-fault', 'Delete it', 'data-do="delete"')}<button class="chalk" type="button" data-do="keep">Keep it</button></div></div>`
+        : `<div class="actions">${btn('btn-line', 'Edit', 'data-do="edit" aria-haspopup="dialog" aria-controls="editor"')}${btn('btn-fault', 'Delete', 'data-do="ask"')}<button class="chalk" type="button" data-do="deselect">Back to the crate guide</button></div>`}`;
+    }
+    if (focus) $(focus, detailBody)?.focus();
+  }
+  // Button markup for buttons made by the script; the static ones in the HTML have the same structure.
+  const STICKER = $('.btn-sticker').innerHTML;
+  const btn = (cls, text, attrs = '') => `<button class="btn ${cls}" type="button" ${attrs}><span class="btn-flag" aria-hidden="true"></span><span class="btn-face"><span class="btn-label">${text}</span></span><span class="btn-sticker" aria-hidden="true">${STICKER}</span></button>`;
+
+  function renderTotals() {
+    const t = totals(state.items);
+    $('#t-items').textContent = t.items;
+    $('#t-qty').textContent = t.qty;
+    $('#t-value').textContent = eur(t.value);
+    $('#t-untested').textContent = t.untested;
+    renderTally();
+  }
+  // Tally marks: four uprights and a diagonal per group of five, in stepped pixels. A struck mark stays until Undo goes.
+  const UP = [6, 18, 30, 42], DIAG = Array.from({ length: 13 }, (_, i) => [i * 4, 36 - Math.round(i * 32 / 12 / 2) * 2]);
+  const markSvg = (k) => (k % 5 < 4
+    ? `<rect x="${UP[k % 5]}" y="2" width="4" height="40"/>`
+    : DIAG.map(([x, y]) => `<rect x="${x}" y="${y}" width="4" height="4"/>`).join(''));
+  function renderTally() {
+    const n = state.items.length, all = n + (ui.struck ? 1 : 0);
+    let html = '';
+    for (let g = 0; g * 5 < all; g++) {
+      html += '<svg viewBox="0 0 52 44">';
+      for (let k = g * 5; k < Math.min(all, g * 5 + 5); k++) {
+        const struck = ui.struck && k === all - 1;
+        html += `<g data-m="${k}" class="${struck ? 'is-struck' : ''}">${markSvg(k)}${struck ? `<rect class="strike" x="${k % 5 < 4 ? UP[k % 5] - 6 : 14}" y="20" width="16" height="4"/>` : ''}</g>`;
+      }
+      html += '</svg>';
+    }
+    tallyEl.innerHTML = html;
+    stampTally();
+  }
+  function stampTally() {
+    $$('g', tallyEl).forEach((g) => { g.style.visibility = +g.dataset.m < tallyShown ? '' : 'hidden'; });
+  }
+
+  const say = (html, undo = false) => { statusEl.innerHTML = html; undoBtn.hidden = !undo; };
+  function renderAll(deal) { renderCrate(deal); renderTable(); renderDetail(); renderTotals(); fx?.layout(); }
+
+  /* ================= Actions ================= */
+  const select = (id, from) => {
+    ui.sel = ui.sel === id ? null : id;
+    ui.confirm = false;
+    if (ui.sel) ui.focus = ui.sel;
+    renderCrate(); renderTable(); renderDetail();
+    if (from === 'pick') $(`[data-pick="${id}"]`, rowsEl)?.focus();
+  };
+  const tidy = (why) => {
+    layout = pack(view());
+    renderCrate('all');
+    const rows = layout.rows, s = ui.sort, names = { item: 'item name', kind: 'kind', price: s.dir > 0 ? 'price, lowest first' : 'price, highest first', bought: s.dir > 0 ? 'oldest first' : 'newest first' };
+    if (why !== 'quiet') say(`Tidied: ${plural(view().length, 'item', 'items')} in ${plural(rows, 'row', 'rows')}, sorted by ${names[s.key]}.`);
+  };
+  const setSort = (key) => {
+    ui.sort = ui.sort.key === key ? { key, dir: -ui.sort.dir } : { key, dir: key === 'bought' || key === 'price' ? -1 : 1 };
+    renderTable(); tidy(); // sorting tidies the crate on its own
+  };
+  const setFilter = (patch) => { Object.assign(ui.f, patch); renderCrate(); renderTable(); fx?.layout(); };
+
+  $$('[data-sort]').forEach((b) => b.addEventListener('click', () => setSort(b.dataset.sort)));
+  $('#tidy').addEventListener('click', () => tidy());
+  $$('[data-kind]').forEach((b) => b.addEventListener('click', () => {
+    const k = b.dataset.kind, on = ui.f.kinds.includes(k);
+    setFilter({ kinds: on ? ui.f.kinds.filter((x) => x !== k) : KIND_ORDER.filter((x) => x === k || ui.f.kinds.includes(x)) });
+  }));
+  $('#untested').addEventListener('change', (e) => setFilter({ untested: e.target.checked }));
+  $('#q').addEventListener('input', (e) => setFilter({ q: e.target.value }));
+  const clearFilters = () => { $('#untested').checked = false; $('#q').value = ''; setFilter({ kinds: KIND_ORDER.slice(), untested: false, q: '' }); };
+  clearBtn.addEventListener('click', clearFilters);
+  rowsEl.addEventListener('click', (e) => {
+    const p = e.target.closest('[data-pick]');
+    if (p) return select(p.dataset.pick, 'pick');
+    if (e.target.closest('[data-clear]')) { clearFilters(); $('#q').focus(); }
+    if (e.target.closest('[data-reset]')) resetStock();
+  });
+
+  // The crate: a grid of real buttons. Arrow keys move in reading order; Enter or Space selects; Escape lets go.
+  floor.addEventListener('click', (e) => { const t = e.target.closest('.tile'); if (t && !dragged) select(t.dataset.id); });
+  floor.addEventListener('focusin', (e) => {
+    const t = e.target.closest('.tile'); if (!t) return;
+    ui.focus = t.dataset.id;
+    $$('.tile', floor).forEach((b) => { b.tabIndex = b === t ? 0 : -1; });
+  });
+  floor.addEventListener('keydown', (e) => {
+    const t = e.target.closest('.tile'); if (!t) return;
+    const tiles = $$('.tile', floor), i = tiles.indexOf(t), P = (b) => layout.at[b.dataset.id];
+    const step = e.shiftKey && { ArrowRight: [1, 0], ArrowLeft: [-1, 0], ArrowDown: [0, 1], ArrowUp: [0, -1] }[e.key];
+    if (step) { e.preventDefault(); const p = P(t); if (!moveTile(t.dataset.id, p.c + step[0], p.r + step[1])) say('It does not fit there.'); return; }
+    let to = null;
+    if (e.key === 'ArrowRight') to = tiles[i + 1];
+    else if (e.key === 'ArrowLeft') to = tiles[i - 1];
+    else if (e.key === 'Home') to = tiles[0];
+    else if (e.key === 'End') to = tiles[tiles.length - 1];
+    else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      const me = P(t), down = e.key === 'ArrowDown';
+      const cand = tiles.filter((b) => (down ? P(b).r > me.r : P(b).r < me.r));
+      if (cand.length) {
+        const rowGoal = down ? Math.min(...cand.map((b) => P(b).r)) : Math.max(...cand.map((b) => P(b).r));
+        to = cand.filter((b) => P(b).r === rowGoal).sort((a, b) => Math.abs(P(a).c - me.c) - Math.abs(P(b).c - me.c))[0];
+      }
+    } else if (e.key === 'Escape' && ui.sel) { e.preventDefault(); select(ui.sel); return; }
+    else return;
+    e.preventDefault();
+    if (to) to.focus();
+  });
+
+  // Moving a tile by hand: it keeps its new space until the crate is tidied or sorted (syncLayout keeps placed tiles).
+  const moveTile = (id, c, r) => {
+    const p = layout.at[id];
+    if (!p || (p.c === c && p.r === r) || !fits(layout, id, c, r, Math.max(MIN_ROWS, layout.rows))) return false;
+    layout = moveItem(layout, id, c, r); ui.focus = id;
+    renderCrate();
+    say(`Moved ${esc(byId(id).item)} to row ${r + 1}, column ${c + 1}.`);
+    return true;
+  };
+  // Drag: mouse and pen lift a tile after 4px of travel (so a click still selects); touch after a --d-grab hold (so a swipe still scrolls).
+  let drag = null, dragged = false, dropMark = null;
+  const dropAt = (d, e) => ({ c: Math.round(d.p.c + (e.clientX - d.x) / d.cw), r: Math.round(d.p.r + (e.clientY - d.y) / d.rh) });
+  const grab = () => {
+    drag.on = dragged = true;
+    drag.cell.classList.add('is-held');
+    dropMark = document.createElement('div'); dropMark.className = 'drop'; dropMark.setAttribute('aria-hidden', 'true');
+    floor.append(dropMark);
+  };
+  const letGo = (e) => {
+    const d = drag; drag = null; clearTimeout(d.hold);
+    if (!d.on) return;
+    dropMark?.remove(); dropMark = null;
+    setTimeout(() => { dragged = false; }); // after the click this release makes
+    const { c, r } = e ? dropAt(d, e) : d.p;
+    if (e && moveTile(d.id, c, r)) return; // re-rendered in its new space: a hard cut, like the deal
+    d.cell.classList.replace('is-held', 'is-back');
+    d.cell.style.transform = '';
+    setTimeout(() => d.cell.classList.remove('is-back'), sec('--d-back') * 1000);
+  };
+  floor.addEventListener('pointerdown', (e) => {
+    const t = e.target.closest('.tile');
+    if (!t || drag || e.button !== 0 || !e.isPrimary) return;
+    const cell = t.parentElement, p = layout.at[t.dataset.id], b = cell.getBoundingClientRect();
+    drag = { id: t.dataset.id, cell, p, x: e.clientX, y: e.clientY, cw: b.width / p.w, rh: b.height / p.h, pid: e.pointerId, touch: e.pointerType === 'touch', on: false };
+    if (drag.touch) drag.hold = setTimeout(grab, sec('--d-grab') * 1000);
+  });
+  window.addEventListener('pointermove', (e) => {
+    if (!drag || e.pointerId !== drag.pid) return;
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (!drag.on) {
+      if (Math.hypot(dx, dy) > (drag.touch ? 8 : 4)) { if (drag.touch) letGo(); else grab(); }
+      if (!drag?.on) return;
+    }
+    drag.cell.style.transform = `translate(${Math.round(dx)}px, ${Math.round(dy)}px)`;
+    const { c, r } = dropAt(drag, e), { w, h } = drag.p, rows = Math.max(MIN_ROWS, layout.rows);
+    const c0 = Math.max(0, c), c1 = Math.min(COLS, c + w), r0 = Math.max(0, r), r1 = Math.min(rows, r + h);
+    dropMark.hidden = c1 <= c0 || r1 <= r0; // clamped to the floor so the grid never grows
+    dropMark.style.gridArea = `${r0 + 1} / ${c0 + 1} / ${r1 + 1} / ${c1 + 1}`;
+    dropMark.classList.toggle('is-no', !fits(layout, drag.id, c, r, rows));
+  });
+  window.addEventListener('pointerup', (e) => { if (drag && e.pointerId === drag.pid) letGo(e); });
+  window.addEventListener('pointercancel', (e) => { if (drag && e.pointerId === drag.pid) letGo(); });
+  window.addEventListener('touchmove', (e) => { if (drag?.on) e.preventDefault(); }, { passive: false }); // a held tile does not scroll the page
+  floor.addEventListener('contextmenu', (e) => { if (drag) e.preventDefault(); });
+
+  detailBody.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-do]'); if (!b) return;
+    const act = b.dataset.do;
+    if (act === 'edit') openEditor(ui.sel, b);
+    if (act === 'ask') { ui.confirm = true; renderDetail('[data-do="keep"]'); }
+    if (act === 'keep') { ui.confirm = false; renderDetail('[data-do="ask"]'); }
+    if (act === 'delete') deleteItem(ui.sel);
+    if (act === 'deselect') { const id = ui.sel; select(id); $(`.tile[data-id="${id}"]`, floor)?.focus(); }
+  });
+
+  function deleteItem(id) {
+    const index = state.items.findIndex((r) => r.id === id), rec = state.items[index];
+    if (!rec) return;
+    ui.undo = { rec, index, pos: layout.at[id] };
+    state = removeItem(state, id);
+    layout = unplaceItem(layout, id); // its space stays empty until the crate is tidied
+    ui.sel = null; ui.confirm = false; ui.struck = true; ui.focus = null;
+    save();
+    renderAll();
+    say(`Deleted ${esc(rec.item)}. ${sumLine()}`, true);
+    undoBtn.focus();
+  }
+  undoBtn.addEventListener('click', () => {
+    const u = ui.undo; if (!u) return;
+    state = restoreItem(state, u.rec, u.index);
+    const free = u.pos && !Object.values(layout.at).some((p) => p.c < u.pos.c + u.pos.w && u.pos.c < p.c + p.w && p.r < u.pos.r + u.pos.h && u.pos.r < p.r + p.h);
+    layout = free ? { at: { ...layout.at, [u.rec.id]: u.pos }, rows: Math.max(layout.rows, u.pos.r + u.pos.h) } : placeItem(layout, u.rec);
+    ui.undo = null; ui.struck = false; ui.sel = u.rec.id; ui.focus = u.rec.id;
+    save();
+    renderAll(u.rec.id);
+    say(`Put back ${esc(u.rec.item)}. ${sumLine()}`);
+    $('#detail-title').focus();
+  });
+  const dropUndo = () => { if (ui.undo || ui.struck) { ui.undo = null; ui.struck = false; undoBtn.hidden = true; } };
+
+  function resetStock() {
+    state = { items: SEED.map((r) => ({ ...r })) };
+    ui.sel = null; ui.confirm = false; dropUndo();
+    save();
+    layout = pack(view());
+    renderAll('all');
+    say(`Back to the sample stock. ${sumLine()}`);
+  }
+  $('#reset').addEventListener('click', resetStock);
+
+  /* ================= The editor dialog ================= */
+  const dlg = $('#editor'), form = $('#item-form'), title = $('#editor-title'), note = $('#editor-note'), saveLabel = $('#save-label');
+  const saveBtn = $('#save');
+  let editing = null, opener = null, closing = false, downOn = null, afterClose = null;
+  const inputs = { item: $('#f-item'), qty: $('#f-qty'), price: $('#f-price'), bought: $('#f-bought'), tested: $('#f-tested') };
+  const rawOf = () => ({ item: inputs.item.value, kind: form.elements.kind.value, qty: inputs.qty.value, price: inputs.price.value, bought: inputs.bought.value, tested: inputs.tested.checked });
+
+  // The live reading beside each field, in its type's format.
+  const READ = {
+    item: (r) => (r.ok ? [`${r.value.length} of 40 characters`, true] : [inputs.item.value.trim() ? `${inputs.item.value.trim().length} of 40 characters` : '2 to 40 characters', false]),
+    kind: (r) => (r.ok ? [`Takes ${KINDS[r.value].size}`, true] : ['Pick one: it decides the space it takes', false]),
+    qty: (r) => (r.ok ? [`${r.value} in the crate`, true] : ['1 to 99', false]),
+    price: (r) => (r.ok ? [`<span class="money">${eur(r.value)}</span>`, true] : ['EUR 0.50 to 999.99', false]),
+    bought: (r) => (r.ok ? [day(r.value), true] : ['Today or earlier', false]),
+    tested: (r) => [r.value ? 'Tested' : 'Not tested yet', true]
+  };
+  const reading = (f) => {
+    const [html, good] = READ[f](parse[f](rawOf()[f]));
+    const el = $(`#r-${f}`); el.innerHTML = html; el.classList.toggle('is-ok', good);
+  };
+  const fieldEl = (f) => (f === 'kind' ? $('#f-kind') : inputs[f]);
+  const showError = (f, msg) => {
+    const el = $(`#e-${f}`), wrap = $(`[data-f="${f}"]`);
+    el.textContent = msg || ''; // cleared too, so no stale message is ever read out
+    wrap.classList.toggle('is-bad', !!msg);
+    const target = f === 'kind' ? $$('input', $('#f-kind')) : [inputs[f]];
+    target.forEach((t) => { if (msg) { t.setAttribute('aria-invalid', 'true'); t.setAttribute('aria-describedby', `e-${f}`); } else { t.removeAttribute('aria-invalid'); t.removeAttribute('aria-describedby'); } });
+  };
+  const live = (f) => {
+    reading(f);
+    if ($(`[data-f="${f}"]`).classList.contains('is-bad') && parse[f](rawOf()[f]).ok) showError(f, ''); // fixed: the message goes at once
+  };
+  ['item', 'qty', 'price', 'bought'].forEach((f) => {
+    inputs[f].addEventListener('input', () => live(f));
+    inputs[f].addEventListener('blur', () => { const v = rawOf()[f]; if (String(v).trim() && !parse[f](v).ok) showError(f, parse[f](v).msg); });
+  });
+  form.addEventListener('change', (e) => { if (e.target.name === 'kind') live('kind'); if (e.target === inputs.tested) live('tested'); });
+
+  function fill(rec) {
+    inputs.item.value = rec?.item ?? '';
+    inputs.qty.value = rec ? String(rec.qty) : '1';
+    inputs.price.value = rec ? (rec.price / 100).toFixed(2) : '';
+    inputs.bought.value = rec?.bought ?? todayISO();
+    inputs.bought.max = todayISO();
+    inputs.tested.checked = !!rec?.tested;
+    $$('input[name=kind]', form).forEach((i) => { i.checked = rec ? i.value === rec.kind : false; });
+    FIELDS.forEach((f) => { if (f !== 'tested') showError(f, ''); reading(f); });
+  }
+  function openEditor(id, from) {
+    if (dlg.open) return;
+    settle();
+    editing = id ? byId(id) : null;
+    opener = from;
+    title.textContent = editing ? 'Change this item' : 'Add an item';
+    note.textContent = editing ? 'If you change its kind, it moves to the first space that fits the new size.' : 'It goes into the first space in the crate that fits its kind.';
+    saveLabel.textContent = editing ? 'Save the changes' : 'Put it in the crate';
+    saveBtn.classList.toggle('btn-price', !editing); saveBtn.classList.toggle('btn-line', !!editing);
+    fill(editing);
+    dlg.showModal();
+    lenis?.stop();
+    inputs.item.focus();
+    fx?.dialogIn();
+  }
+  $('#add').addEventListener('click', (e) => openEditor(null, e.currentTarget));
+
+  const settle = () => { closing = false; fx?.dialogReset(); };
+  const closeEditor = (then) => {
+    if (!dlg.open || closing) return;
+    closing = true; afterClose = then || null;
+    const end = () => { closing = false; dlg.close(); };
+    fx ? fx.dialogOut(end) : end();
+  };
+  $('#editor-close').addEventListener('click', () => closeEditor());
+  $('#cancel').addEventListener('click', () => closeEditor());
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); closeEditor(); });
+  dlg.addEventListener('pointerdown', (e) => { downOn = e.target; });
+  dlg.addEventListener('click', (e) => { if (e.target === dlg && downOn === dlg) closeEditor(); });
+  // Every close ends here, including one the browser forces mid-swing.
+  dlg.addEventListener('close', () => {
+    settle(); lenis?.start();
+    const then = afterClose; afterClose = null;
+    if (then) then(); else if (opener?.isConnected) opener.focus(); else $('#add').focus();
+  });
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const res = parseRecord(rawOf());
+    FIELDS.forEach((f) => { if (f !== 'tested') showError(f, res.ok ? '' : res.errors[f]); });
+    if (!res.ok) {
+      const first = FIELDS.find((f) => res.errors[f]);
+      (first === 'kind' ? $('#f-kind input') : inputs[first]).focus();
+      return;
+    }
+    const v = res.value, was = editing;
+    dropUndo();
+    let id;
+    if (was && byId(was.id)) {
+      id = was.id;
+      state = updateItem(state, id, v);
+      if (was.kind !== v.kind) layout = unplaceItem(layout, id); // a new size takes the first space that fits
+    } else {
+      id = `n${Date.now().toString(36)}${nid++}`;
+      state = addItem(state, { id, ...v });
+    }
+    save();
+    ui.sel = id; ui.focus = id; ui.confirm = false;
+    const shown = view().some((r) => r.id === id);
+    closeEditor(() => {
+      // Success: the tile is dealt into the crate with its tag hung, the tally gains a mark, the status line has the figures.
+      renderAll(id);
+      say(`${was ? 'Saved.' : 'Added.'} ${sumLine()}${shown ? '' : ' It is hidden by the filters in the stock book.'}`);
+      $('#detail-title').focus();
+    });
+  });
+
+  /* ================= Presses, chalk and the crate size (plain JS, so they work without the libraries) ================= */
+  // A press is seen: it is held for at least --d-hold from pointerdown, and touch chalk for --d-chalk-hold.
+  const since = new Map();
+  const press = (el, cls) => { since.set(el, performance.now()); el.classList.add(cls); };
+  const release = (cls, min) => {
+    for (const [el, t0] of since) {
+      if (!el.classList.contains(cls)) continue;
+      since.delete(el);
+      setTimeout(() => el.classList.remove(cls), Math.max(0, min - (performance.now() - t0)));
+    }
+  };
+  document.addEventListener('pointerdown', (e) => {
+    const b = e.target.closest('.btn'); if (b && e.button === 0) press(b, 'is-down');
+    const c = e.target.closest('.chalk'); if (c && e.pointerType !== 'mouse') { chalk(c); press(c, 'is-held'); }
+  });
+  ['pointerup', 'pointercancel'].forEach((t) => document.addEventListener(t, () => { release('is-down', sec('--d-hold') * 1000); release('is-held', sec('--d-chalk-hold') * 1000); }));
+  document.addEventListener('keydown', (e) => { const b = e.target.closest?.('.btn'); if (b && (e.key === ' ' || e.key === 'Enter') && !e.repeat) press(b, 'is-down'); });
+  document.addEventListener('keyup', (e) => { if (e.key === ' ' || e.key === 'Enter') release('is-down', sec('--d-hold') * 1000); });
+
+  // Chalk: two rough lines drawn once per link from a seed of its text, then kept.
+  const seedOf = (s) => { let h = 2166136261; for (const ch of s) h = Math.imul(h ^ ch.charCodeAt(0), 16777619); return h >>> 0; };
+  function chalk(el) {
+    const w = Math.round(el.getBoundingClientRect().width);
+    if (!w || el.dataset.chalkW === String(w)) return;
+    let s = seedOf(el.textContent + w);
+    const rnd = () => { s = (s + 0x6D2B79F5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    const line = () => {
+      const c = document.createElement('canvas'); c.width = w; c.height = 3;
+      const g = c.getContext('2d'); g.fillStyle = read('--card');
+      let y = rnd() < .5 ? 0 : 1;
+      for (let x = 0; x < w; x++) {
+        if (rnd() < .3) y = 1 - y;          // each pixel steps up or down by one
+        if (rnd() < .06) continue;          // the chalk skips now and then
+        g.fillRect(x, y, 1, 2);
+      }
+      return `url(${c.toDataURL()})`;
+    };
+    el.style.setProperty('--chalk-a', line());
+    el.style.setProperty('--chalk-b', line());
+    el.dataset.chalkW = String(w);
+    el.classList.add('is-chalked');
+  }
+  document.addEventListener('pointerover', (e) => { const c = e.target.closest?.('.chalk'); if (c) chalk(c); });
+  document.addEventListener('focusin', (e) => { const c = e.target.closest?.('.chalk'); if (c) chalk(c); });
+
+  // The crate sizes its cells to the room below its top edge, so it stays above the fold on short, wide windows.
+  const fitCrate = () => { crate.style.setProperty('--crate-top', Math.round(crate.getBoundingClientRect().top + window.scrollY) + 'px'); };
+  let lastW = 0;
+  window.addEventListener('resize', () => { if (innerWidth === lastW) return; lastW = innerWidth; fitCrate(); renderCrate(); });
+  document.fonts?.ready.then(() => { fitCrate(); renderCrate(); });
+
+  /* ---------- First render ---------- */
+  if (!store.can) {
+    const n = $('#notice');
+    n.textContent = 'This browser is not letting the page keep a copy, so your changes last only until you reload or close the tab.';
+    n.classList.add('is-warn');
+  }
+  fitCrate(); lastW = innerWidth;
+  layout = pack(view());
+  renderAll();
+  say(`${sumLine()}${store.can ? '' : ' Changes last until you reload.'}`);
+
+  if (!lib) return;
+
+  /* ================= Motion ================= */
+  gsap.registerPlugin(ScrollTrigger);
+  const fontsReady = Promise.race([
+    Promise.all([document.fonts.ready, document.fonts.load('700 80px "Handjet"')]).then(() => 1, () => 1),
+    new Promise((r) => setTimeout(r, 1500))
+  ]);
+  // Start the lamps only on a visible page: with lagSmoothing(0), a background tab would jump past them.
+  const visible = new Promise((r) => {
+    if (document.visibilityState === 'visible') return r();
+    const f = () => { if (document.visibilityState === 'visible') { document.removeEventListener('visibilitychange', f); r(); } };
+    document.addEventListener('visibilitychange', f);
+  });
+  const stall = $('#stall');
+  let lit = false;
+
+  const mm = gsap.matchMedia();
+  mm.add({ motion: '(prefers-reduced-motion: no-preference)', reduce: '(prefers-reduced-motion: reduce)' }, (ctx) => {
+    const { motion } = ctx.conditions;
+    if (!motion) { // reduced motion: lit at once, every tally mark shown, native scroll, instant changes
+      root.classList.add('go');
+      tallyShown = Infinity; stampTally();
+      return;
+    }
+    let dead = false;
+    const off = [], calls = [];
+    const later = (t, fn) => { const c = gsap.delayedCall(t, fn); calls.push(c); return c; };
+    const T = Object.fromEntries(['unlit', 'lamp', 'peg'].map((k) => [k, sec(`--d-${k}`)]));
+    root.classList.add('fx');
+
+    // Lenis on GSAP's clock. Touch keeps native scrolling.
+    lenis = new Lenis({ lerp: .1, smoothWheel: true, autoRaf: false, anchors: true });
+    lenis.on('scroll', ScrollTrigger.update);
+    const tick = (t) => lenis.raf(t * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
+
+    /* ---------- Scroll: the tally is stamped as the totals rise from the bottom of the viewport to its middle ---------- */
+    const st = ScrollTrigger.create({
+      trigger: tallyEl, start: 'top bottom', end: 'top center', scrub: true,
+      onUpdate: (self) => { const n = Math.floor(self.progress * (state.items.length + (ui.struck ? 1 : 0)) + 1e-6); if (n !== tallyShown) { tallyShown = n; stampTally(); } },
+      onRefresh: (self) => { tallyShown = Math.floor(self.progress * (state.items.length + (ui.struck ? 1 : 0)) + 1e-6); stampTally(); }
+    });
+    tallyShown = Math.floor(st.progress * state.items.length + 1e-6); stampTally();
+    const ro = new ResizeObserver(() => ScrollTrigger.refresh());
+    ro.observe($('.wrap'));
+    off.push(() => ro.disconnect());
+
+    /* ---------- Hooks for the plain-JS flows ---------- */
+    let swing = null;
+    fx = {
+      layout() { if (st.progress >= 1) { tallyShown = Infinity; stampTally(); } }, // a new mark is stamped at once when the tally is already full
+      dialogReset() { swing?.kill(); swing = null; gsap.set(dlg, { clearProps: 'transform' }); },
+      dialogIn() { // hung on a peg: 4 degrees, 2 degrees, level, 70ms apart
+        swing?.kill();
+        swing = gsap.timeline()
+          .set(dlg, { rotation: 4, transformOrigin: '0px 0px' }, 0)
+          .set(dlg, { rotation: 2 }, T.peg)
+          .set(dlg, { clearProps: 'transform' }, 2 * T.peg);
+      },
+      dialogOut(end) { // and back off the peg in two
+        swing?.kill();
+        swing = gsap.timeline({ onComplete: end })
+          .set(dlg, { rotation: 2, transformOrigin: '0px 0px' }, 0)
+          .set(dlg, { rotation: 4 }, T.peg)
+          .set({}, {}, 2 * T.peg);
+      }
+    };
+
+    /* ---------- Load: the lamps come on, the left half, then the right ---------- */
+    const halves = () => {
+      const r = stall.getBoundingClientRect(), mid = r.left + r.width / 2;
+      const mark = (el, parent) => {
+        let b = el.getBoundingClientRect();
+        if (!el.children.length && el.firstChild) { const rg = document.createRange(); rg.selectNodeContents(el); b = rg.getBoundingClientRect(); } // text: where its words are, not its box
+        let h;
+        if (parent === 'r') h = 'r';
+        else if (b.left < mid - 1 && b.right > mid + 1 && el.children.length) h = 'l'; // spans both: its children decide
+        else h = b.left + b.width / 2 < mid ? 'l' : 'r';
+        el.dataset.half = h;
+        for (const c of el.children) mark(c, h);
+      };
+      for (const c of stall.children) mark(c, 'l');
+    };
+    Promise.all([fontsReady, visible]).then(() => ctx.add(() => {
+      if (dead) return;
+      fitCrate(); renderCrate();
+      ScrollTrigger.refresh();
+      if (lit) { root.classList.add('go'); return; }
+      lit = true;
+      halves();
+      stall.classList.add('dark-l', 'dark-r');
+      root.classList.add('go');           // the pre-load rule lets go; the halves hold the dark
+      later(T.unlit, () => stall.classList.remove('dark-l'));
+      later(T.unlit + T.lamp, () => { stall.classList.remove('dark-r'); $$('[data-half]', stall).forEach((el) => el.removeAttribute('data-half')); });
+    }));
+
+    return () => {
+      dead = true;
+      off.forEach((f) => f());
+      calls.forEach((c) => c.kill());
+      stall.classList.remove('dark-l', 'dark-r');
+      fx.dialogReset(); fx = null;
+      st.kill();
+      gsap.ticker.remove(tick);
+      gsap.ticker.lagSmoothing(500, 33);
+      lenis.destroy(); lenis = null;
+      root.classList.remove('fx');
+      root.classList.add('go');
+      tallyShown = Infinity; stampTally();
+    };
+  });
+})();
+</script>
+</body>
+</html>

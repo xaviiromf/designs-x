@@ -1,0 +1,1693 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Haruka Lindner, game translator</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<style>
+  @font-face {
+    font-family: "Departure Mono";
+    src: url("https://cdn.jsdelivr.net/npm/@proj-airi/font-departure-mono@0.17.0/dist/files/DepartureMono-Regular.woff2") format("woff2");
+    font-weight: 400; font-style: normal; font-display: swap;
+  }
+
+  :root {
+    /* Ground: burgundy, a dyed-cloth red. Contrast figures are against --ground unless noted. */
+    --ground: #5A1626;      /* page ground */
+    --well: #3C0D19;        /* wells: text boxes, fields, the strip, the scrim's base */
+    --plate: #742236;       /* raised plates: chosen tabs, a picked year, sorted tiles */
+    --paper: #F3E9DC;       /* text (11.1:1; 13.9:1 on well; 8.6:1 on plate) */
+    --tea: #D8BFB0;         /* secondary text, outlines, struck drafts (7.6:1; 9.5:1 on well; 5.9:1 on plate) */
+
+    /* Ten ink hues and a seal, one job each */
+    --gold-leaf: #D9B45A;   /* 1 the primary action and focus rings (6.7:1; ground text on it 6.7:1) */
+    --navy: #2B3F78;        /* 2 the English line, as a filled block (paper text on it 8.4:1) */
+    --navy-ink: #9FB3E6;    /* 2 the English line where it carries text or an edge (6.4:1; 8.0:1 on well) */
+    --green: #1F6B4A;       /* 3 the German line, as a filled block (paper text on it 5.4:1) */
+    --green-ink: #8FD1AE;   /* 3 the German line where it carries text or an edge (7.5:1; 9.4:1 on well) */
+    --ochre: #CF8F40;       /* 4 the Japanese source line (4.9:1; 6.1:1 on well) */
+    --rose: #D99AA5;        /* 5 chapter 1 and the first stage, source (5.8:1) */
+    --slate: #8FA3C2;       /* 6 chapter 2 and the second stage, rough (5.2:1) */
+    --sage: #A9BF8F;        /* 7 chapter 3 and the third stage, edit (6.7:1) */
+    --plum: #BA92CC;        /* 8 chapter 4 and the fourth stage, fit to box (5.1:1) */
+    --brick: #E0836A;       /* 9 chapter 5 and the fifth stage, in the game; also overflow (4.8:1; 6.0:1 on well) */
+    --teal-grey: #7FB3B0;   /* 10 the glossary and the dialogue-choice toy (5.7:1; 7.1:1 on well) */
+    --seal: #E0533D;        /* 11 the success seal only; a graphic (3.5:1) */
+    --scrim: rgb(60 13 25 / .88);  /* the dialog backdrop: well, flat */
+    --hatch: repeating-linear-gradient(135deg, var(--paper) 0 2px, transparent 2px 5px);  /* error bar: hard stops, a pixel pattern */
+
+    /* Type: Departure Mono only, on its 11px grid */
+    --font: "Departure Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --t-mark: 11px;          /* decorative marks only */
+    --t-small: 13.75px;
+    --t-body: 16.5px;
+    --t-lede: 22px;
+    --t-h3: 33px;
+    --t-display: 44px;       /* the h2: 44, 55, 66 or 88 by breakpoint */
+    --t-box: 22px;           /* text inside the hero's dialogue box */
+    --t-tile: 66px;          /* the sign-off tiles: 66, 110, 88, 110 or 176 by breakpoint */
+    --lh-small: 22px;
+    --lh-body: 27.5px;
+    --lh-lede: 33px;
+    --lh-h3: 38.5px;
+    --lh-box: 33px;
+
+    /* Space: an 11px cell */
+    --cell: 11px;
+    --s1: 5.5px; --s2: 11px; --s3: 22px; --s4: 33px; --s5: 44px; --s6: 66px; --s7: 88px; --s8: 132px;
+    --gutter: 16px;
+    --max-w: 1320px;
+    --notch: 4px;            /* the stepped pixel corner */
+    --tap: 48px;             /* button and field height */
+    --hit: 44px;             /* minimum target for text actions */
+    --block: 11px;           /* one chart block: 10,000 words (8px from 600px, 6px on phones) */
+    --bar-h: 33px;           /* the strings-done strip at the bottom edge */
+    --stage-len: 45svh;      /* scroll length of one stage while the story is pinned */
+
+    /* Motion: one frame is 80ms; everything is whole frames */
+    --d-frame: .08s;
+    --d-press: .16s;         /* minimum time a press is shown */
+    --d-advance: .5s;        /* the advance mark: two positions, four changes a second */
+    --d-ribbon: .16s;        /* bookmark: 6 to 10 to 14px */
+    --d-gloss: .16s;         /* link tag: outline, then word */
+    --d-gloss-hold: .4s;     /* touch: the tag stays after the finger lifts */
+    --d-stamp: .16s;         /* checkbox: two frames */
+    --d-page: .24s;          /* dialog: three steps */
+    --d-seal: .32s;          /* success seal: hollow frame, then the full seal */
+    --d-lay: .4s;            /* the box frame laid cell by cell at load */
+    --d-row: .12s;           /* one text row cutting in */
+    --d-sort: .16s;          /* one frame of the name being sorted, when replayed */
+  }
+  @media (min-width: 600px) {
+    :root { --gutter: 33px; --t-display: 55px; --t-tile: 110px; }
+  }
+  @media (min-width: 768px) {
+    :root { --t-display: 66px; --t-tile: 88px; }
+  }
+  @media (min-width: 1100px) {
+    :root { --gutter: 44px; --t-display: 55px; }
+  }
+  @media (min-width: 1240px) and (min-height: 800px) {
+    :root { --t-display: 66px; }
+  }
+  @media (min-width: 1100px) {
+    :root { --t-tile: 110px; }
+  }
+  @media (min-width: 1280px) {
+    :root { --t-tile: 176px; }
+  }
+  @media (min-width: 1400px) and (min-height: 860px) {
+    :root { --gutter: 66px; --t-display: 88px; }
+  }
+  @media (max-width: 599px) {
+    :root { --t-box: 13.75px; --lh-box: 22px; --t-h3: 22px; --lh-h3: 27.5px; --t-lede: 16.5px; --lh-lede: 27.5px; --block: 6px; }
+  }
+  @media (min-width: 600px) and (max-width: 767px) {
+    :root { --block: 8px; }
+  }
+
+  /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+
+  /* Hidden only when the libraries loaded, and only until the load sequence takes over. */
+  html.js:not(.go) .cut, html.js:not(.go) .ln, html.js:not(.go) .gl { visibility: hidden; }
+  @media (prefers-reduced-motion: reduce) {
+    html.js:not(.go) .cut, html.js:not(.go) .ln, html.js:not(.go) .gl { visibility: visible; }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { background: var(--ground); font-synthesis: none; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--paper);
+    font: 400 var(--t-body)/var(--lh-body) var(--font);
+    -webkit-font-smoothing: none;
+  }
+  html.js body { padding-bottom: var(--bar-h); }
+  h2, h3, h4, b, strong, th, dt, legend, summary { font-weight: 400; }
+  :focus-visible { outline: 2px solid var(--gold-leaf); outline-offset: 3px; }
+  ::selection { background: var(--gold-leaf); color: var(--ground); }
+  [hidden] { display: none !important; }
+  .vh { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+  i { font-style: normal; }
+  p { margin: 0; }
+
+  .me { position: relative; overflow: clip; }
+  .wrap { width: 100%; max-width: calc(var(--max-w) + 2 * var(--gutter)); margin: 0 auto; padding: 0 var(--gutter); }
+
+  /* ---------- Buttons: primary (the advance mark) and secondary (the bookmark) ---------- */
+  .btn, .b-face, .b-in, .terms .pg, .terms .pg-edge {
+    --corners: polygon(0 var(--notch), var(--notch) var(--notch), var(--notch) 0, calc(100% - var(--notch)) 0, calc(100% - var(--notch)) var(--notch), 100% var(--notch), 100% calc(100% - var(--notch)), calc(100% - var(--notch)) calc(100% - var(--notch)), calc(100% - var(--notch)) 100%, var(--notch) 100%, var(--notch) calc(100% - var(--notch)), 0 calc(100% - var(--notch)));
+  }
+  .btn {
+    position: relative;
+    display: inline-block;
+    padding: 0; border: 0; background: none;
+    color: inherit; text-decoration: none;
+    font: inherit;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .b-face { position: relative; z-index: 1; display: block; padding: 2px; background: var(--rim); clip-path: var(--corners); }
+  .b-in {
+    position: relative;
+    display: flex; align-items: center;
+    min-height: calc(var(--tap) - 4px);
+    padding: 0 calc(var(--s4) + 4px) 0 var(--s3);
+    background: var(--face);
+    color: var(--ink);
+    clip-path: var(--corners);
+    white-space: nowrap;
+  }
+  .b1 { --rim: var(--gold-leaf); --face: var(--gold-leaf); --ink: var(--ground); }
+  .b2 { --rim: var(--paper); --face: var(--ground); --ink: var(--paper); }
+  .b2 .b-in { padding-right: var(--s3); }
+  /* Primary: a downward chevron block waits in the corner, like a text box waiting for input. */
+  .adv {
+    position: absolute; right: 7px; bottom: 9px;
+    width: 12px; height: 6px;
+    background: currentColor;
+    clip-path: polygon(0 0, 100% 0, 100% 33.3%, 80% 33.3%, 80% 66.7%, 60% 66.7%, 60% 100%, 40% 100%, 40% 66.7%, 20% 66.7%, 20% 33.3%, 0 33.3%);
+  }
+  /* Hover and focus: the corner becomes a well, as in a box waiting for the player, and the mark bobs. */
+  .b1 .b-in::before { content: ""; position: absolute; right: 4px; bottom: 4px; width: 18px; height: 16px; background: var(--well); visibility: hidden; }
+  .b1:focus-visible .b-in::before { visibility: visible; }
+  .b1:focus-visible .adv { color: var(--gold-leaf); }
+  @media (hover: hover) { .b1:hover .b-in::before { visibility: visible; } .b1:hover .adv { color: var(--gold-leaf); } }
+  .b1.is-press .b-in::before { visibility: hidden; }
+  @keyframes advance { 0% { transform: none; } 50% { transform: translateY(2px); } }
+  @media (hover: hover) { .b1:hover .adv { animation: advance var(--d-advance) steps(1) infinite; } }
+  .b1:focus-visible .adv { animation: advance var(--d-advance) steps(1) infinite; }
+  /* Press: the frame doubles (an inner border cuts in) and the face inverts. */
+  .b1.is-press { --face: var(--ground); --ink: var(--gold-leaf); }
+  .b1.is-press .adv { animation: none; transform: translateY(2px); }
+  .b1 .b-in::after { content: ""; position: absolute; inset: 4px; border: 2px solid var(--gold-leaf); visibility: hidden; pointer-events: none; }
+  .b1.is-press .b-in::after { visibility: visible; }
+  /* Secondary: a ribbon bookmark hangs below the right end. It lives under the face, so it can only show below it. */
+  .rib {
+    position: absolute; right: var(--s3); top: calc(100% - 14px);
+    width: 11px; height: 14px;
+    background: var(--tea);
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 50% calc(100% - 4px), 0 100%);
+    transform: translateY(6px);
+    pointer-events: none;
+  }
+  @keyframes rib-out { 0% { transform: translateY(6px); } 50% { transform: translateY(10px); } 100% { transform: translateY(14px); } }
+  @media (hover: hover) {
+    .b2:hover { --face: var(--plate); }
+    .b2:hover .rib { transform: translateY(14px); animation: rib-out var(--d-ribbon) steps(1) both; }
+  }
+  .b2:focus-visible { --face: var(--plate); }
+  .b2:focus-visible .rib { transform: translateY(14px); animation: rib-out var(--d-ribbon) steps(1) both; }
+  .b2.is-press { --face: var(--paper); --ink: var(--ground); }
+  .b2.is-press .rib { transform: none; animation: none; }
+
+  /* ---------- Text links: the gloss ---------- */
+  .u {
+    position: relative;
+    display: inline-flex; align-items: center;
+    min-height: var(--hit);
+    padding: 0; border: 0; background: none;
+    color: var(--paper);
+    font: inherit;
+    text-decoration: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .u-t {
+    padding-bottom: 3px;
+    background: linear-gradient(90deg, var(--tea) 2px, transparent 2px) 0 100% / 4px 2px repeat-x;
+  }
+  .u:hover .u-t, .u:focus-visible .u-t, .u.is-hold .u-t { background: linear-gradient(var(--paper), var(--paper)) 0 100% / 100% 2px no-repeat; }
+  @media (hover: none) { .u:hover .u-t { background: linear-gradient(90deg, var(--tea) 2px, transparent 2px) 0 100% / 4px 2px repeat-x; } }
+  .u-tag {
+    position: absolute; left: -2px; bottom: calc(100% - 8px);
+    padding: 0 var(--s1);
+    border: 2px solid var(--gl-ink);
+    background: var(--well);
+    color: var(--gl-ink);
+    font-size: var(--t-small); line-height: var(--lh-small);
+    white-space: nowrap;
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .u-tag[data-lang="de"] { --gl-ink: var(--green-ink); }
+  .u-tag[data-lang="en"] { --gl-ink: var(--navy-ink); }
+  .u-word { visibility: hidden; }
+  @keyframes tag-word { 0% { visibility: hidden; } 50%, 100% { visibility: visible; } }
+  @media (hover: hover) {
+    .u:hover .u-tag { visibility: visible; }
+    .u:hover .u-word { visibility: visible; animation: tag-word var(--d-gloss) steps(1) both; }
+  }
+  .u:focus-visible .u-tag, .u.is-hold .u-tag { visibility: visible; }
+  .u:focus-visible .u-word, .u.is-hold .u-word { visibility: visible; animation: tag-word var(--d-gloss) steps(1) both; }
+
+  /* ---------- 1. Top ---------- */
+  .top { padding-block: var(--s5) var(--s6); }
+  .top-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s6); }
+  @media (min-width: 1100px) {
+    .top { min-height: calc(100svh - var(--bar-h)); display: flex; align-items: center; padding-block: var(--s4); }
+    .top .wrap { width: 100%; }
+    .top-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 580px); column-gap: var(--s5); align-items: center; }
+  }
+  .who { display: flex; flex-wrap: wrap; gap: 0 var(--s3); color: var(--tea); }
+  .who-name { color: var(--paper); }
+  .h2 {
+    margin: var(--s3) 0 0;
+    font-size: var(--t-display);
+    line-height: calc(var(--t-display) + 22px);
+  }
+  .ln { display: block; white-space: nowrap; }
+  .gw { position: relative; display: inline-block; }
+  .gl {
+    position: absolute; left: 0; top: calc(.17em - 5px);
+    color: var(--green-ink);
+    font-size: var(--t-small); line-height: var(--lh-small);
+    white-space: nowrap;
+  }
+  .lede { margin-top: var(--s3); max-width: 56ch; font-size: var(--t-lede); line-height: var(--lh-lede); }
+  .lede-de { color: var(--green-ink); }
+  .actions { display: flex; flex-wrap: wrap; gap: var(--s3); margin-top: var(--s4); padding-bottom: 14px; }
+  @media (min-width: 1100px) and (max-height: 760px) {
+    .top { padding-block: var(--s3); }
+    .h2 { margin-top: var(--s2); }
+    .lede { font-size: var(--t-body); line-height: var(--lh-body); }
+    .actions { margin-top: var(--s3); }
+  }
+
+  /* The engine: a dialogue box drawn in character cells */
+  .engine { min-width: 0; }
+  .tabs { display: flex; flex-wrap: wrap; gap: var(--s1); }
+  .tab {
+    min-height: var(--hit);
+    padding: 0 var(--s2);
+    border: 2px solid var(--tea); border-radius: 0;
+    background: var(--ground); color: var(--paper);
+    font: inherit; font-size: var(--t-small);
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: var(--s1);
+  }
+  .tab .sw { width: 11px; height: 11px; border: 2px solid var(--sw-ink); background: var(--sw-ink); }
+  .tab[data-lang="ja"] { --sw-ink: var(--ochre); }
+  .tab[data-lang="en"] { --sw-ink: var(--navy-ink); }
+  .tab[data-lang="de"] { --sw-ink: var(--green-ink); }
+  .tab:hover { border-color: var(--paper); }
+  .tab[aria-selected="true"] { background: var(--plate); border-color: var(--sw-ink); }
+  .tab[aria-selected="true"][data-lang="en"] { background: var(--navy); }
+  .tab[aria-selected="true"][data-lang="de"] { background: var(--green); }
+  .tab[aria-selected="true"][data-lang="ja"] { background: var(--well); }
+  .tb-panel { margin-top: var(--s3); }
+  .tb-speaker { color: var(--tea); font-size: var(--t-small); line-height: var(--lh-small); }
+  .tb-zone { margin-top: var(--s1); padding-block: var(--s1); touch-action: pan-y; cursor: ew-resize; }
+  .tb-hold { position: relative; min-height: calc(var(--lh-box) * (4 + var(--over-rows, 2))); font-size: var(--t-box); line-height: var(--lh-box); }
+  .tb { position: relative; z-index: 1; }
+  /* The spill: where rows that do not fit land, drawn as an empty dashed well under the widest box */
+  .spill {
+    position: absolute; left: 0; top: calc(var(--lh-box) * 4 + 4px);
+    width: 36ch; height: calc(var(--lh-box) * var(--over-rows, 2) - 4px);
+    border: 2px dashed var(--plate); border-top: 0;
+    display: flex; align-items: flex-end; justify-content: flex-end;
+    padding: 0 var(--s1) 2px;
+    color: var(--tea); font-size: var(--t-small); line-height: var(--lh-small);
+  }
+  .tb {
+    --ink: var(--navy-ink);
+    --fw: 1ch; --fh: calc(var(--lh-box) / 2);
+    display: grid;
+    grid-template-columns: var(--fw) repeat(var(--w, 26), 1ch) var(--fw);
+    grid-template-rows: var(--fh) repeat(3, var(--lh-box)) var(--fh);
+    grid-auto-rows: var(--lh-box);
+    width: max-content;
+    font-size: var(--t-box); line-height: var(--lh-box);
+  }
+  .tb:focus-visible { outline-offset: 4px; }
+  .tb[data-lang="ja"] { --ink: var(--ochre); }
+  .tb[data-lang="de"] { --ink: var(--green-ink); }
+  .fc { background: var(--well); }
+  .ft { background: linear-gradient(var(--ink), var(--ink)) 0 50% / calc(100% - 2px) 4px no-repeat var(--well); }
+  .fs { background: linear-gradient(var(--ink), var(--ink)) 50% 0 / 4px calc(100% - 2px) no-repeat var(--well); }
+  .fk { background: linear-gradient(var(--ink), var(--ink)) 50% 50% / 8px 8px no-repeat var(--well); }
+  .tr { grid-column: span var(--w, 26); white-space: pre; overflow: hidden; background: var(--well); color: var(--paper); }
+  .orow { grid-column: 2 / span var(--w, 26); display: flex; }
+  .oc { width: 1ch; color: var(--well); background: linear-gradient(var(--brick), var(--brick)) 0 0 / calc(100% - 1px) calc(100% - 2px) no-repeat; white-space: pre; }
+  .tb-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s2) var(--s3); margin-top: var(--s2); }
+  .tb-count { font-size: var(--t-small); line-height: var(--lh-small); }
+  .tb-fit[data-over] { color: var(--brick); }
+  .steps { display: flex; align-items: center; gap: var(--s2); font-size: var(--t-small); }
+  .step {
+    min-width: var(--hit); min-height: var(--hit);
+    padding: 0 var(--s2);
+    border: 2px solid var(--tea); border-radius: 0;
+    background: var(--ground); color: var(--paper);
+    font: inherit; cursor: pointer;
+    touch-action: manipulation;
+  }
+  .step:hover { border-color: var(--paper); }
+  .step.is-press { background: var(--paper); color: var(--ground); }
+  .hint { margin-top: var(--s2); color: var(--tea); max-width: 56ch; }
+
+  /* ---------- Parts ---------- */
+  .part { padding-block: var(--s7); border-top: 2px solid var(--plate); }
+  .part-head { display: grid; gap: var(--s2); max-width: 64ch; }
+  .part h3 { margin: 0; font-size: var(--t-h3); line-height: var(--lh-h3); }
+  .part-intro { color: var(--tea); }
+
+  /* 2. Now */
+  .now-list { display: grid; gap: var(--s3); margin: var(--s5) 0 0; }
+  .now-list > div { display: grid; gap: var(--s1); }
+  .now-list dt { color: var(--tea); }
+  .now-list dd { margin: 0; max-width: 60ch; }
+  @media (min-width: 900px) {
+    .now-list { grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: var(--s5); }
+  }
+
+  /* 3. The story so far: one line, five drafts */
+  .story { padding-block: 0; }
+  .scene { padding-block: var(--s7); }
+  .scene-grid { display: grid; gap: var(--s5); margin-top: var(--s4); }
+  @media (min-width: 1000px) { .scene-grid { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); column-gap: var(--s5); } }
+  .rail { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--s1); margin: var(--s4) 0 0; padding: 0; list-style: none; font-size: var(--t-small); line-height: var(--lh-small); }
+  .rail li { display: grid; gap: var(--s1); color: var(--tea); }
+  .rail i { display: block; height: 22px; border: 2px solid var(--hue); }
+  .rail .is-done i, .rail [aria-current] i { background: var(--hue); }
+  .rail [aria-current] { color: var(--paper); }
+  .rail [aria-current] span { background: var(--paper); color: var(--ground); padding: 0 var(--s1); justify-self: start; }
+  [data-hue="1"] { --hue: var(--rose); } [data-hue="2"] { --hue: var(--slate); } [data-hue="3"] { --hue: var(--sage); }
+  [data-hue="4"] { --hue: var(--plum); } [data-hue="5"] { --hue: var(--brick); }
+  .sheet { min-width: 0; }
+  .st { width: 100%; border-collapse: collapse; font-size: var(--t-small); line-height: var(--lh-small); table-layout: fixed; }
+  .st caption { text-align: left; color: var(--tea); padding-bottom: var(--s2); }
+  .st th, .st td { padding: var(--s1) var(--s2) var(--s1) 0; text-align: left; vertical-align: top; border-top: 2px solid var(--plate); }
+  .st thead th { border-top: 0; color: var(--tea); }
+  .st .c-id { width: 11ch; } .st .c-who { width: 8ch; } .st .c-n { width: 7ch; text-align: right; padding-right: 0; }
+  .st td.c-n { text-align: right; padding-right: 0; }
+  .st td { overflow-wrap: anywhere; }
+  .st .is-prev td { color: var(--tea); }
+  .st .is-prev .c-line { text-decoration: line-through; text-decoration-thickness: 2px; }
+  .st .is-prev.is-empty td { visibility: hidden; }
+  .st .is-cur td { background: var(--well); }
+  .st .is-cur td:first-child { box-shadow: inset 11px 0 0 var(--hue); padding-left: calc(11px + var(--s2)); }
+  .st .is-cur .c-line { color: var(--paper); }
+  .st .over { color: var(--brick); }
+  .lang-ja { color: var(--ochre); }
+  .cards { position: relative; min-width: 0; }
+  .card { display: grid; gap: var(--s2); padding-top: var(--s3); border-top: 4px solid var(--hue); }
+  .card + .card { margin-top: var(--s5); }
+  .card h4 { margin: 0; font-size: var(--t-lede); line-height: var(--lh-lede); display: flex; flex-wrap: wrap; gap: 0 var(--s2); align-items: baseline; }
+  .card-stage { background: var(--hue); color: var(--ground); padding: 0 var(--s1); font-size: var(--t-small); line-height: var(--lh-small); }
+  .card-years { color: var(--tea); font-size: var(--t-small); line-height: var(--lh-small); }
+  .card p { max-width: 52ch; }
+  .card-draft { color: var(--tea); }
+  .mini { margin-top: var(--s3); }
+    .mini-cap { color: var(--tea); font-size: var(--t-small); line-height: var(--lh-small); margin-bottom: var(--s1); }
+  /* Pinned (motion allowed, viewport tall enough): the scene is a viewport-high sticky layer; scroll picks the stage. */
+  .pin .story { height: calc(100svh + 5 * var(--stage-len)); }
+  .pin .scene { position: sticky; top: 0; height: 100svh; height: calc(100svh - var(--bar-h)); padding-block: var(--s5); overflow: clip; display: flex; flex-direction: column; justify-content: center; }
+  .pin .scene > .wrap { width: 100%; }
+  .pin .card { display: none; }
+  .pin .card.is-on { display: grid; }
+  .pin .card + .card { margin-top: 0; }
+  .pin .card-draft { display: none; }
+  .mini[hidden] { display: none !important; }
+  @media (max-width: 999px) {
+    .pin .scene { padding-block: var(--s3); }
+    .pin .scene .part-intro { display: none; }
+    .pin .scene-grid { margin-top: var(--s2); gap: var(--s3); }
+    .pin .rail { margin-top: var(--s2); }
+    .pin .st tr:not(.is-near) { display: none; }
+    .pin .mini { margin-top: var(--s2); }
+  }
+  @media (min-width: 1000px) and (min-height: 800px) {
+    .st { font-size: var(--t-body); line-height: var(--lh-body); }
+    .st th, .st td { padding-block: var(--s1); }
+    .card p { font-size: var(--t-body); }
+  }
+  @media (max-width: 699px) { .st { table-layout: auto; } .st .c-id { display: none; } .st .c-who, .st .c-n { width: 1%; white-space: nowrap; } .st .c-line { width: auto; } .st .is-cur td:nth-child(2) { box-shadow: inset 11px 0 0 var(--hue); padding-left: calc(11px + var(--s2)); } }
+  @media (min-width: 1000px) and (max-height: 720px) {
+    .pin .scene { padding-block: var(--s3); }
+    .pin .scene-grid { margin-top: var(--s3); }
+    .pin .rail { margin-top: var(--s3); }
+    .pin .part-intro { display: none; }
+  }
+
+  /* 4. By the numbers */
+  .legend { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s4); margin: var(--s4) 0 0; padding: 0; list-style: none; font-size: var(--t-small); line-height: var(--lh-small); }
+  .legend li { display: flex; align-items: center; gap: var(--s2); }
+  .k { display: inline-block; width: 11px; height: 11px; }
+  .k-en { background: var(--navy-ink); } .k-de { background: var(--green-ink); } .k-ed { border: 2px solid var(--tea); }
+  .chart-wrap { display: grid; gap: var(--s4); margin-top: var(--s4); }
+  @media (min-width: 1000px) { .chart-wrap { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); column-gap: var(--s5); align-items: start; } }
+  .chart { display: grid; gap: 2px; min-width: 0; }
+  .yr {
+    display: grid; grid-template-columns: 5ch minmax(0, 1fr); align-items: center; column-gap: var(--s2);
+    width: 100%; min-height: var(--hit);
+    padding: 2px var(--s2) 2px 0;
+    border: 0; border-radius: 0; background: none; color: var(--paper);
+    font: inherit; font-size: var(--t-small); line-height: var(--lh-small);
+    text-align: left; cursor: pointer;
+    touch-action: manipulation;
+  }
+  .yr-y { padding-left: var(--s1); }
+  .yr[aria-checked="true"] { background: var(--plate); }
+  .yr[aria-checked="true"] .yr-y { background: var(--paper); color: var(--ground); }
+  .yr:focus-visible { outline-offset: -2px; }
+  .bars { display: grid; gap: 2px; min-width: 0; }
+  .row-b { display: flex; flex-wrap: nowrap; gap: 2px; height: var(--block); }
+  .row-b i { flex: none; width: var(--block); height: var(--block); }
+  .row-b .en { background: var(--navy-ink); }
+  .row-b .de { background: var(--green-ink); }
+  .row-b .ed { border: 2px solid var(--tea); }
+  @media (max-width: 599px) { .yr { grid-template-columns: minmax(0, 1fr); row-gap: 2px; padding-block: var(--s1); } .yr-y { justify-self: start; } }
+  .readout { min-height: calc(var(--lh-body) * 4); }
+  .readout b { color: var(--paper); }
+  .ro-en { color: var(--navy-ink); } .ro-de { color: var(--green-ink); } .ro-ed { color: var(--tea); }
+  .disc { margin-top: var(--s3); }
+  .disc summary { display: inline-flex; align-items: center; min-height: var(--hit); cursor: pointer; list-style: none; }
+  .disc summary::-webkit-details-marker { display: none; }
+  .disc summary .u-t::before { content: "+ "; }
+  .disc[open] summary .u-t::before { content: "- "; }
+  .ftab { width: 100%; border-collapse: collapse; font-size: var(--t-small); line-height: var(--lh-small); }
+  .ftab th, .ftab td { padding: var(--s1) var(--s2) var(--s1) 0; border-top: 2px solid var(--plate); text-align: right; }
+  .ftab th:first-child, .ftab td:first-child { text-align: left; }
+  .ftab thead th { border-top: 0; color: var(--tea); }
+
+  /* 5. A toy: the choice menu */
+  .toy-grid { display: grid; gap: var(--s4); }
+  @media (min-width: 1000px) { .toy-grid { grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--s6); align-items: start; } }
+  .menu-box {
+    position: relative;
+    width: min(100%, calc(41ch + 4px));
+    font-size: var(--t-lede); line-height: var(--lh-lede);
+    background:
+      linear-gradient(90deg, var(--teal-grey) calc(1ch - 2px), transparent 0) 0 0 / 1ch 4px repeat-x,
+      linear-gradient(90deg, var(--teal-grey) calc(1ch - 2px), transparent 0) 0 100% / 1ch 4px repeat-x,
+      linear-gradient(var(--teal-grey) calc(var(--lh-lede) / 2 - 2px), transparent 0) 0 0 / 4px calc(var(--lh-lede) / 2) repeat-y,
+      linear-gradient(var(--teal-grey) calc(var(--lh-lede) / 2 - 2px), transparent 0) 100% 0 / 4px calc(var(--lh-lede) / 2) repeat-y,
+      var(--well);
+    padding: var(--s3) 2ch;
+    min-height: calc(var(--lh-lede) * 9 + var(--s3) * 2);
+  }
+  .mb-who { color: var(--teal-grey); font-size: var(--t-small); line-height: var(--lh-small); }
+  .choices { margin: var(--s1) 0 0; padding: 0; list-style: none; }
+  .choice {
+    position: relative;
+    display: block; width: 100%;
+    min-height: var(--hit);
+    padding: var(--s1) 1.5ch;
+    border: 0; border-radius: 0; background: none; color: var(--paper);
+    font: inherit; text-align: left; cursor: pointer;
+    touch-action: manipulation;
+  }
+  .choice-t { position: relative; }
+  .choice-t::before, .choice-t::after { display: inline-block; width: 1.5ch; color: var(--teal-grey); visibility: hidden; }
+  .choice-t::before { content: "["; margin-left: -1.5ch; }
+  .choice-t::after { content: "]"; margin-right: -1.5ch; text-align: right; }
+  .choice.is-sel .choice-t::before, .choice.is-sel .choice-t::after { visibility: visible; }
+  .choice.is-sel { color: var(--paper); }
+  .choice:focus-visible { outline-offset: -2px; }
+  .answer p { max-width: 58ch; }
+  .ans-q { color: var(--teal-grey); font-size: var(--t-small); line-height: var(--lh-small); }
+  .ans-q:focus { outline: none; }
+  .ans-text { margin-top: var(--s2); }
+  .ans-text .row { display: block; white-space: pre; }
+  .ans-text .row.is-wait { visibility: hidden; }
+  .answer .u { margin-top: var(--s2); }
+
+  /* 6. Things I use */
+  .uses { display: grid; gap: 0; margin: var(--s5) 0 0; padding: 0; list-style: none; }
+  .uses li { display: grid; gap: var(--s1) var(--s5); padding-block: var(--s3); border-top: 2px solid var(--plate); }
+  .uses li:last-child { border-bottom: 2px solid var(--plate); }
+  @media (min-width: 900px) { .uses li { grid-template-columns: minmax(0, 4fr) minmax(0, 6fr) minmax(0, 3fr); align-items: start; } }
+  .use-name { color: var(--paper); }
+  .use-note { color: var(--tea); max-width: 56ch; }
+  .uses .u { margin-top: var(--s4); }
+  @media (min-width: 900px) { .uses .u { margin-top: 0; justify-self: start; } }
+
+  /* 7. Say hello */
+  .hello-grid { display: grid; gap: var(--s6); margin-top: var(--s5); }
+  @media (min-width: 1000px) { .hello-grid { grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); column-gap: var(--s6); } }
+  .contact { display: grid; gap: 0; margin: var(--s3) 0 0; padding: 0; list-style: none; }
+  .hello-side > p { max-width: 44ch; }
+  .hello-side .u { margin-top: var(--s2); }
+  .form { display: grid; gap: var(--s2); min-width: 0; }
+  .fld { position: relative; display: grid; gap: var(--s1); min-width: 0; }
+  .fld > label, .pair legend { color: var(--paper); }
+  .opt { color: var(--tea); }
+  .fld input[type="text"], .fld input[type="email"], .fld textarea {
+    display: block; width: 100%; max-width: calc(40ch + 26px);
+    height: var(--tap);
+    padding: 0 11px;
+    border: 2px solid var(--tea); border-radius: 0;
+    background: var(--well); color: var(--paper);
+    font: inherit;
+    appearance: none;
+  }
+  .fld #f-email { max-width: calc(60ch + 26px); }
+  .fld #f-words { max-width: calc(11ch + 26px); }
+  .fld textarea { height: auto; min-height: calc(var(--lh-body) * 5 + 22px); padding: 11px; resize: vertical; line-height: var(--lh-body); overflow-wrap: anywhere; }
+  .fld input:hover, .fld textarea:hover { border-color: var(--paper); }
+  .fld input:focus, .fld textarea:focus { border-color: var(--gold-leaf); outline: none; }
+  .fld input:focus-visible, .fld textarea:focus-visible { outline: 2px solid var(--gold-leaf); outline-offset: 3px; }
+  .fld.is-bad input, .fld.is-bad textarea { border-color: var(--paper); border-left-width: 11px; }
+  /* The character budget: one cell per character, the same width as a character */
+  .budget { display: flex; flex-wrap: wrap; max-width: calc(40ch + 26px); padding: 0 13px; row-gap: 3px; }
+  .budget i { width: 1ch; height: 6px; background: linear-gradient(var(--plate), var(--plate)) 0 0 / calc(100% - 2px) 100% no-repeat; }
+  .budget i.end { background: linear-gradient(var(--brick), var(--brick)) 0 0 / calc(100% - 2px) 100% no-repeat; clip-path: polygon(0 0, calc(100% - 2px) 0, calc(100% - 2px) 100%, 0 100%, 0 0, 1px 1px, 1px calc(100% - 1px), calc(100% - 3px) calc(100% - 1px), calc(100% - 3px) 1px, 1px 1px); }
+  .budget i.on { background: linear-gradient(var(--tea), var(--tea)) 0 0 / calc(100% - 2px) 100% no-repeat; clip-path: none; }
+  .budget i.end.on { background: linear-gradient(var(--brick), var(--brick)) 0 0 / calc(100% - 2px) 100% no-repeat; }
+  .budget-n { color: var(--tea); font-size: var(--t-small); line-height: var(--lh-small); }
+  .err { min-height: var(--lh-small); color: var(--paper); font-size: var(--t-small); line-height: var(--lh-small); display: flex; gap: var(--s2); align-items: flex-start; }
+  .err.is-on::before { content: ""; flex: none; width: 22px; height: 11px; margin-top: 5.5px; background: var(--hatch); }
+  .err.is-note { color: var(--tea); }
+  .err.is-note::before { background: var(--brick); height: 6px; margin-top: 8px; }
+  .pair { margin: 0; padding: 0; border: 0; min-width: 0; }
+  .pair legend { padding: 0; margin-bottom: var(--s1); }
+  .rtabs { display: flex; flex-wrap: wrap; gap: var(--s1); }
+  .rt { position: relative; display: block; cursor: pointer; }
+  .rt input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+  .rt-face {
+    display: flex; align-items: center; gap: var(--s2);
+    min-height: var(--tap);
+    padding: 0 var(--s3) 0 var(--s2);
+    border: 2px solid var(--tea);
+    background: var(--ground);
+    pointer-events: none;
+  }
+  .rt-face .sw { width: 11px; height: 22px; background: var(--sw-ink); }
+  .rt[data-lang="en"] { --sw-ink: var(--navy-ink); --sw-block: var(--navy); }
+  .rt[data-lang="de"] { --sw-ink: var(--green-ink); --sw-block: var(--green); }
+  .rt[data-lang="ed"] { --sw-ink: var(--tea); --sw-block: var(--plate); }
+  .rt:hover .rt-face { border-color: var(--paper); }
+  .rt input:checked + .rt-face { background: var(--sw-block); border-color: var(--sw-ink); }
+  .rt input:checked + .rt-face .sw { width: 22px; background: var(--paper); }
+  .rt input:focus-visible + .rt-face { outline: 2px solid var(--gold-leaf); outline-offset: 3px; }
+  .pair.is-bad .rt-face { border-style: dashed; border-color: var(--paper); }
+  .ck { position: relative; display: flex; align-items: center; gap: var(--s2); min-height: var(--hit); cursor: pointer; justify-self: start; }
+  .ck input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+  .ck-box { position: relative; flex: none; width: 22px; height: 22px; border: 2px solid var(--tea); background: var(--well); pointer-events: none; }
+  .ck-box i { position: absolute; inset: 3px; background: var(--paper); visibility: hidden; }
+  .ck:hover .ck-box { border-color: var(--paper); }
+  .ck input:checked + .ck-box { border-color: var(--paper); }
+  .ck input:checked + .ck-box i { visibility: visible; animation: stamp var(--d-stamp) steps(1) both; }
+  @keyframes stamp { 0% { transform: scale(.5); } 50%, 100% { transform: none; } }
+  .ck input:focus-visible + .ck-box { outline: 2px solid var(--gold-leaf); outline-offset: 3px; }
+  .ck span:last-child { pointer-events: none; }
+  .form .b1 { justify-self: start; margin-top: var(--s2); }
+  .swap { min-width: 0; }
+  .done h4 { margin: 0; font-size: var(--t-lede); line-height: var(--lh-lede); }
+  .done h4:focus { outline: none; }
+  .done-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s3); }
+  .seal { flex: none; width: 66px; height: 66px; transform: rotate(4deg); }
+  .seal rect, .seal path { fill: var(--seal); }
+  .seal .frame { fill: none; stroke: var(--seal); stroke-width: 6; }
+  .done.is-stamp .seal { animation: seal-turn var(--d-seal) steps(1) both; }
+  .done.is-stamp .seal .ink { animation: seal-ink var(--d-seal) steps(1) both; }
+  @keyframes seal-turn { 0% { transform: none; visibility: visible; } 50%, 100% { transform: rotate(4deg); } }
+  @keyframes seal-ink { 0% { visibility: hidden; } 50%, 100% { visibility: visible; } }
+  .echo { display: grid; gap: var(--s1); margin: var(--s3) 0 0; }
+  .echo > div { display: grid; grid-template-columns: 14ch minmax(0, 1fr); gap: var(--s2); }
+  .echo dt { color: var(--tea); }
+  .echo dd { margin: 0; overflow-wrap: anywhere; white-space: pre-line; }
+  .done > p { margin-top: var(--s3); max-width: 56ch; }
+  .done .u { margin-top: var(--s2); }
+  @media (max-width: 599px) { .echo > div { grid-template-columns: minmax(0, 1fr); gap: 0; } }
+
+  /* 8. Sign-off: HARUKA sorted. Six square tiles across the full content width (two rows of three under 768px). */
+  .signoff { min-height: calc(100svh - var(--bar-h)); padding-block: var(--s5) var(--s6); border-top: 2px solid var(--plate); }
+  .signoff .wrap { container-type: inline-size; }
+  .mark {
+    --cols: 6; --rows: 1; --gap: 11px; --mk: 33px;
+    --tw: calc((100cqw - (var(--cols) - 1) * var(--gap)) / var(--cols));
+    --lift-room: calc(var(--tw) * .25);
+    position: relative;
+    height: calc(var(--lift-room) + var(--rows) * (var(--tw) + var(--mk)));
+  }
+  .tile {
+    position: absolute; left: 0; top: var(--lift-room);
+    width: var(--tw); height: var(--tw);
+    display: grid; place-items: center;
+    background: var(--well); color: var(--tea);
+    font-size: var(--t-tile); line-height: 1;
+    transform: translate(calc(var(--c, 0) * (100% + var(--gap))), calc(var(--r, 0) * (100% + var(--mk)) - var(--lift, 0) * 25%));
+  }
+  .tile.is-home { background: var(--plate); color: var(--paper); }
+  .pos { position: absolute; left: 8px; top: 6px; font-size: var(--t-small); line-height: 1; color: var(--paper); visibility: hidden; }
+  .tile:hover .pos, .mark.show-pos .pos { visibility: visible; }
+  .marker {
+    position: absolute; left: 0; top: calc(var(--lift-room) + var(--tw) + 5.5px);
+    width: calc(var(--tw) / 2); height: 22px;
+    font-size: var(--t-small); line-height: 22px; text-align: center;
+    transform: translate(calc(var(--c, 0) * (var(--tw) + var(--gap))), calc(var(--r, 0) * (var(--tw) + var(--mk))));
+  }
+  .marker.w { background: var(--paper); color: var(--ground); }
+  .marker.r { border: 2px solid var(--tea); line-height: 18px; color: var(--paper); margin-left: calc(var(--tw) / 2); }
+  .marker[hidden] { display: none; }
+  .mark-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s3); margin-top: var(--s3); }
+  .mark-read { color: var(--tea); }
+  .colophon { margin-top: var(--s5); color: var(--tea); max-width: 72ch; }
+  @media (max-width: 767px) { .mark { --cols: 3; --rows: 2; } }
+  @media (max-width: 599px) { .mark { --gap: 6px; } }
+
+  /* ---------- The strings-done strip: 40 blocks along the bottom edge ---------- */
+  .strip { display: none; }
+  html.js .strip {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 5;
+    display: flex; align-items: center; gap: var(--s2);
+    height: var(--bar-h);
+    padding: 0 var(--gutter);
+    background: var(--well);
+    border-top: 2px solid var(--plate);
+    font-size: var(--t-small); line-height: 1;
+  }
+  .strip-lbl { flex: none; color: var(--tea); white-space: nowrap; }
+  .blocks { display: flex; gap: 2px; flex: 1; min-width: 0; }
+  .blocks i { flex: 1 1 0; max-width: 22px; height: 11px; border: 2px solid var(--plate); }
+  .blocks i.on { background: var(--hue, var(--tea)); border-color: var(--hue, var(--tea)); }
+  .blocks i[data-hue="0"] { --hue: var(--tea); } .blocks i[data-hue="t"] { --hue: var(--teal-grey); }
+  @media (max-width: 599px) { .strip-lbl .long { display: none; } .blocks { gap: 1px; } }
+
+  /* ---------- Dialog: the next page ---------- */
+  .terms {
+    width: min(660px, 100% - 2 * var(--gutter)); max-width: none;
+    max-height: none;
+    margin: auto; padding: 0; border: 0;
+    background: none; color: var(--paper);
+    overflow: visible;
+  }
+  .terms::backdrop { background: var(--scrim); }
+  .pg-edge { position: absolute; inset: 0; background: var(--ground); clip-path: var(--corners); transform: translate(0, 0); }
+  .pg {
+    position: relative;
+    max-height: calc(100dvh - 2 * var(--s4));
+    overflow-y: auto; overscroll-behavior: contain;
+    padding: var(--s5);
+    background: var(--plate);
+    clip-path: var(--corners);
+  }
+  .terms[open] .pg { animation: pg-in var(--d-page) steps(1) both; }
+  .terms[open] .pg-edge { animation: edge-in var(--d-page) steps(1) both; }
+  .terms.is-closing .pg { animation: pg-out var(--d-page) steps(1) both; }
+  .terms.is-closing .pg-edge { animation: edge-out var(--d-page) steps(1) both; }
+  @keyframes pg-in { 0% { transform: translate(24px, 12px); } 33.3% { transform: translate(16px, 8px); } 66.6% { transform: translate(8px, 4px); } 100% { transform: none; } }
+  @keyframes edge-in { 0% { transform: translate(28px, 16px); } 33.3% { transform: translate(19px, 11px); } 66.6% { transform: translate(9px, 5px); } 100% { transform: none; } }
+  @keyframes pg-out { 0% { transform: none; } 33.3% { transform: translate(8px, 4px); } 66.6% { transform: translate(16px, 8px); } 100% { transform: translate(24px, 12px); visibility: hidden; } }
+  @keyframes edge-out { 0% { transform: none; } 33.3% { transform: translate(9px, 5px); } 66.6% { transform: translate(19px, 11px); } 100% { transform: translate(28px, 16px); visibility: hidden; } }
+  .pg-head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--s3); }
+  .pg h2 { margin: 0; font-size: var(--t-h3); line-height: var(--lh-h3); }
+  .pg-intro { margin-top: var(--s2); max-width: 56ch; color: var(--tea); }
+  .terms-list { display: grid; gap: var(--s2); margin: var(--s4) 0 0; }
+  .terms-list > div { display: grid; grid-template-columns: 13ch minmax(0, 1fr); gap: var(--s2); padding-top: var(--s2); border-top: 2px solid var(--ground); }
+  .terms-list dt { color: var(--tea); }
+  .terms-list dd { margin: 0; }
+  @media (max-width: 599px) {
+    .pg { padding: var(--s3); }
+    .terms-list > div { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    .actions { display: grid; }
+    .actions .btn .b-in { justify-content: center; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<section class="me" id="me" aria-labelledby="me-title">
+
+  <!-- 1. Top -->
+  <header class="top" data-part="top">
+    <div class="wrap top-grid">
+      <div class="top-copy">
+        <p class="who cut"><span class="who-name">Haruka Lindner</span><span>Game translator in Düsseldorf</span></p>
+        <h2 class="h2" id="me-title"><span class="ln">Every <span class="gw">line<span class="gl" aria-hidden="true">Zeile</span></span></span> <span class="ln">has to <span class="gw">fit<span class="gl" aria-hidden="true">passen</span></span></span> <span class="ln">in its <span class="gw">box<span class="gl" aria-hidden="true">Kasten</span></span>.</span></h2>
+        <p class="lede cut">I translate role-playing and adventure games from Japanese into German and English, and I edit other translators' scripts. Most days the work is one sentence and one box of fixed width. The small words above the headline are my German for it: <span class="lede-de" lang="de">Zeile</span> for line, <span class="lede-de" lang="de">passen</span> for fit, <span class="lede-de" lang="de">Kasten</span> for box.</p>
+        <div class="actions cut">
+          <a class="btn b1" href="#hello"><span class="b-face"><span class="b-in"><span class="b-lbl">Ask for a quote</span><i class="adv" aria-hidden="true"></i></span></span></a>
+          <button class="btn b2" type="button" data-terms aria-haspopup="dialog" aria-controls="terms"><span class="b-face"><span class="b-in"><span class="b-lbl">Read my working terms</span></span></span><i class="rib" aria-hidden="true"></i></button>
+        </div>
+      </div>
+
+      <div class="engine" id="box">
+        <div class="tabs cut" role="tablist" aria-label="Language of the line">
+          <button class="tab" type="button" role="tab" id="tab-ja" data-lang="ja" aria-selected="false" aria-controls="tb-panel" tabindex="-1"><i class="sw" aria-hidden="true"></i>Japanese source</button>
+          <button class="tab" type="button" role="tab" id="tab-en" data-lang="en" aria-selected="true" aria-controls="tb-panel"><i class="sw" aria-hidden="true"></i>English</button>
+          <button class="tab" type="button" role="tab" id="tab-de" data-lang="de" aria-selected="false" aria-controls="tb-panel" tabindex="-1"><i class="sw" aria-hidden="true"></i>German</button>
+        </div>
+        <div class="tb-panel" id="tb-panel" role="tabpanel" aria-labelledby="tab-en">
+          <p class="tb-speaker cut" id="tb-speaker">Mira, the innkeeper</p>
+          <div class="tb-zone" id="tb-zone">
+            <div class="tb-hold">
+              <span class="spill" aria-hidden="true">Rows that don't fit land here</span>
+              <div class="tb" id="tb" data-lang="en" role="slider" tabindex="0" aria-label="Width of the text box, in characters" aria-valuemin="14" aria-valuemax="34" aria-valuenow="22" aria-valuetext="22 characters wide" aria-describedby="tb-line"></div>
+            </div>
+          </div>
+          <p class="vh" id="tb-line" lang="en">One room left. Breakfast isn't included, mind.</p>
+        </div>
+        <div class="tb-foot cut">
+          <p class="tb-count"><span id="tb-w">22</span> characters wide. <span class="tb-fit" id="tb-fit">Fits in three rows.</span></p>
+          <div class="steps">
+            <button class="step" type="button" id="tb-prev" aria-label="Previous line">Prev</button>
+            <span id="tb-n">Line 1 of 6</span>
+            <button class="step" type="button" id="tb-next" aria-label="Next line">Next</button>
+          </div>
+        </div>
+        <p class="hint cut" id="tb-hint">Move or drag across the box: its right edge follows you, one character at a time. With a keyboard, focus the box and use the arrow keys.</p>
+      </div>
+    </div>
+  </header>
+
+  <!-- 2. Now -->
+  <section class="part now" id="now" data-part="now" aria-labelledby="now-title">
+    <div class="wrap">
+      <div class="part-head">
+        <h3 id="now-title">Now</h3>
+        <p class="part-intro">Autumn 2026.</p>
+      </div>
+      <dl class="now-list">
+        <div><dt>On my desk</dt><dd>Tidewater Lantern, a fishing-village role-playing game from Studio Kanabun in Kyoto: 41,000 words of quest text into German, due on 9 January.</dd></div>
+        <div><dt>Reading</dt><dd>A 1931 book of Rhine barge slang, for a river-trade game that starts in spring. Half of it is insults.</dd></div>
+        <div><dt>Available</dt><dd>From 12 January 2027, for one role-playing game or two short adventure games. Editing jobs fit in sooner.</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <!-- 3. The story so far -->
+  <section class="part story" id="story" data-part="story" aria-labelledby="story-title">
+    <div class="scene">
+      <div class="wrap">
+        <div class="part-head">
+          <h3 id="story-title">The story so far</h3>
+          <p class="part-intro">One line from Hollow Weir, a game I worked on, through the five drafts every line goes through. They are also my five chapters.</p>
+        </div>
+        <ol class="rail" id="rail">
+          <li data-hue="1"><i></i><span>Source</span></li>
+          <li data-hue="2"><i></i><span>Rough</span></li>
+          <li data-hue="3"><i></i><span>Edit</span></li>
+          <li data-hue="4"><i></i><span>Fit to box</span></li>
+          <li data-hue="5"><i></i><span>In the game</span></li>
+        </ol>
+        <div class="scene-grid">
+          <div class="sheet">
+            <table class="st" id="st">
+              <caption class="vh">String table for Hollow Weir, scene 7. Box limit: 66 characters, three rows of 22.</caption>
+              <thead><tr><th class="c-id" scope="col">ID</th><th class="c-who" scope="col">Who</th><th class="c-line" scope="col">Line</th><th class="c-n" scope="col">Chars</th></tr></thead>
+              <tbody>
+                <tr><td class="c-id">HW_031</td><td class="c-who">Teo</td><td class="c-line">The bridge is out. We go round by the mill.</td><td class="c-n">43/66</td></tr>
+                <tr><td class="c-id">HW_032</td><td class="c-who">Sena</td><td class="c-line">Round by the mill? That's half a day.</td><td class="c-n">37/66</td></tr>
+                <tr><td class="c-id">HW_033</td><td class="c-who">Teo</td><td class="c-line">Then we'd better start walking.</td><td class="c-n">31/66</td></tr>
+                <tr class="is-prev is-near" id="st-prev"><td class="c-id">HW_034</td><td class="c-who">Sena</td><td class="c-line"></td><td class="c-n"></td></tr>
+                <tr class="is-cur is-near" id="st-cur"><td class="c-id">HW_034</td><td class="c-who">Sena</td><td class="c-line"></td><td class="c-n"></td></tr>
+                <tr><td class="c-id">HW_035</td><td class="c-who">Teo</td><td class="c-line">Fine. But I'm not carrying the lantern.</td><td class="c-n">39/66</td></tr>
+                <tr><td class="c-id">HW_036</td><td class="c-who">System</td><td class="c-line">Sena joined the party.</td><td class="c-n">22/66</td></tr>
+                <tr><td class="c-id">HW_037</td><td class="c-who">Sena</td><td class="c-line">Keep up, then.</td><td class="c-n">14/66</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="cards" id="cards">
+            <article class="card" data-hue="1">
+              <h4><span class="card-stage">Source</span>Reading the source</h4>
+              <p class="card-years">2010 to 2014</p>
+              <p>I studied Japanese in Bonn and spent a year in Sendai, reading game scripts to learn how people really talk: shop talk, threats, jokes. My first paid work was checking a farming game for a small German publisher, line by line, against the build.</p>
+              <p class="card-draft"></p>
+            </article>
+            <article class="card" data-hue="2">
+              <h4><span class="card-stage">Rough</span>Fast and literal</h4>
+              <p class="card-years">2014 to 2017</p>
+              <p>Three years in-house at a localisation agency in Hamburg. I wrote rough drafts for 11 games, about 1.1 million words, and learned that a rough draft is for the editor, never for the player.</p>
+              <p class="card-draft"></p>
+            </article>
+            <article class="card" data-hue="3">
+              <h4><span class="card-stage">Edit</span>Other people's lines</h4>
+              <p class="card-years">2017 to 2020</p>
+              <p>I moved to editing other translators' scripts for meaning, voice and consistency. I wrote the agency's first style sheet, and I started sending back lines that were correct but dead.</p>
+              <p class="card-draft"></p>
+            </article>
+            <article class="card" data-hue="4">
+              <h4><span class="card-stage">Fit to box</span>Twenty-two characters</h4>
+              <p class="card-years">2020 to 2023</p>
+              <p>Freelance from Düsseldorf. My first job with a hard limit was a handheld role-playing game with three rows of 22 characters. I built the overlay I still use, and cut 4,000 lines to fit without shrinking the font.</p>
+              <p class="card-draft"></p>
+            </article>
+            <article class="card" data-hue="5">
+              <h4><span class="card-stage">In the game</span>Lines people play</h4>
+              <p class="card-years">2023 to now</p>
+              <p>Credited on 14 shipped games, working directly with studios in Japan. I play every scene in the build before I sign it off, because a line can read well in a spreadsheet and still break in the box.</p>
+              <p class="card-draft"></p>
+            </article>
+            <div class="mini" id="mini" hidden>
+              <p class="mini-cap">In the box, 22 characters wide</p>
+              <div class="tb" id="mini-tb" data-lang="en" aria-hidden="true"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. By the numbers -->
+  <section class="part numbers" id="numbers" data-part="numbers" aria-labelledby="num-title">
+    <div class="wrap">
+      <div class="part-head">
+        <h3 id="num-title">By the numbers</h3>
+        <p class="part-intro">Words I translated each year, into English and into German, and words I edited for other translators. One block is 10,000 words. 2026 runs to the end of October.</p>
+      </div>
+      <ul class="legend" aria-hidden="true">
+        <li><i class="k k-en"></i>Into English</li>
+        <li><i class="k k-de"></i>Into German</li>
+        <li><i class="k k-ed"></i>Edited for others</li>
+      </ul>
+      <div class="chart-wrap">
+        <div class="chart" id="chart" role="radiogroup" aria-label="Pick a year to read its figures" aria-describedby="readout"></div>
+        <div>
+          <p class="readout" id="readout" aria-live="polite"></p>
+          <details class="disc">
+            <summary class="u"><span class="u-t">Read the figures as a table</span></summary>
+            <table class="ftab" id="ftab">
+              <caption class="vh">Words per year, in thousands</caption>
+              <thead><tr><th scope="col">Year</th><th scope="col">Into English</th><th scope="col">Into German</th><th scope="col">Edited</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </details>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. A toy -->
+  <section class="part toy" id="toy" data-part="toy" aria-labelledby="toy-title">
+    <div class="wrap toy-grid">
+      <div class="part-head">
+        <h3 id="toy-title">Ask me something</h3>
+        <p class="part-intro">The four questions studios ask me first, as a dialogue menu in a box 34 characters wide. Point at one or use the arrow keys, then choose it.</p>
+      </div>
+      <div class="menu-box" id="menu-box">
+        <div id="menu">
+          <p class="mb-who">You</p>
+          <ul class="choices" id="choices">
+            <li><button class="choice" type="button" data-q="0"><span class="choice-t">How many words a day can you translate?</span></button></li>
+            <li><button class="choice" type="button" data-q="1"><span class="choice-t">Do you work from the build or a spreadsheet?</span></button></li>
+            <li><button class="choice" type="button" data-q="2"><span class="choice-t">Can you keep the names fans already use?</span></button></li>
+            <li><button class="choice" type="button" data-q="3"><span class="choice-t">What if a line doesn't fit the box?</span></button></li>
+          </ul>
+        </div>
+        <div class="answer" id="answer" hidden>
+          <p class="ans-q" id="ans-q" tabindex="-1"></p>
+          <p class="ans-text" id="ans-text"></p>
+          <button class="u" type="button" id="ask-again"><span class="u-t">Ask something else</span></button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. Things I use -->
+  <section class="part use" id="use" data-part="use" aria-labelledby="use-title">
+    <div class="wrap">
+      <div class="part-head">
+        <h3 id="use-title">Things I use</h3>
+        <p class="part-intro">Six things on my desk every day. Point at a link to see my German for it.</p>
+      </div>
+      <ul class="uses">
+        <li><span class="use-name">Two paper dictionaries</span><span class="use-note">A Japanese to German one from 1994 with tape on the spine, and a Japanese to English one for idioms. Any word I'm unsure of gets looked up in both.</span><a class="u" href="#hello" data-gl="Welche Ausgaben?"><span class="u-t">Ask me which editions</span></a></li>
+        <li><span class="use-name">A style sheet per game</span><span class="use-note">Names, forms of address, how each character swears, and the words that never get translated. One page, kept next to the script.</span><button class="u" type="button" data-terms aria-haspopup="dialog" aria-controls="terms" data-gl="Meine Bedingungen"><span class="u-t">Read my working terms</span></button></li>
+        <li><span class="use-name">A character-count overlay</span><span class="use-note">It draws the game's box over the script at its real width, so I see a bad break before a player does.</span><a class="u" href="#box" data-gl="Probier den Kasten"><span class="u-t">Try the box at the top</span></a></li>
+        <li><span class="use-name">The build, not only the spreadsheet</span><span class="use-note">A line read in its scene is a different line. I play every scene I translate before I sign it off.</span><a class="u" href="#story" data-gl="Eine Zeile, fünf Fassungen"><span class="u-t">Follow one line through five drafts</span></a></li>
+        <li><span class="use-name">A plain-text glossary</span><span class="use-note">One term per line, source and target, with the scene where it first appears. It has survived four changes of tools.</span><a class="u" href="#toy" data-gl="Fragen zu Namen"><span class="u-t">Ask about names</span></a></li>
+        <li><span class="use-name">Tea, a lot of it</span><span class="use-note">Genmaicha in the morning, East Frisian black tea with rock sugar after lunch. The kettle goes on at half past eight.</span><a class="u" href="#hello" data-gl="Schick mir ein Skript"><span class="u-t">Send me a script</span></a></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 7. Say hello -->
+  <section class="part hello" id="hello" data-part="hello" aria-labelledby="hello-title">
+    <div class="wrap">
+      <div class="part-head">
+        <h3 id="hello-title">Say hello</h3>
+        <p class="part-intro">Tell me about the game. I answer within two working days, in English or German.</p>
+      </div>
+      <div class="hello-grid">
+        <div class="hello-side">
+          <p>Or write to me directly:</p>
+          <ul class="contact" id="contact"></ul>
+          <p style="margin-top: var(--s4)">Studios usually want my terms before a quote.</p>
+          <button class="u" type="button" data-terms aria-haspopup="dialog" aria-controls="terms"><span class="u-t">Read my working terms first</span></button>
+        </div>
+        <div class="swap">
+          <form class="form" id="enquiry" aria-labelledby="form-title" novalidate>
+            <h4 class="vh" id="form-title">Ask for a quote</h4>
+            <div class="fld">
+              <label for="f-name">Your name</label>
+              <input id="f-name" name="name" type="text" autocomplete="name" data-budget="40">
+              <span class="budget" aria-hidden="true"></span>
+              <p class="err" id="f-name-err"></p>
+            </div>
+            <div class="fld">
+              <label for="f-email">Email address</label>
+              <input id="f-email" name="email" type="email" autocomplete="email" spellcheck="false" data-budget="60">
+              <span class="budget" aria-hidden="true"></span>
+              <p class="err" id="f-email-err"></p>
+            </div>
+            <fieldset class="pair" id="f-pair" aria-describedby="f-pair-err">
+              <legend>Language pair</legend>
+              <div class="rtabs">
+                <label class="rt" data-lang="en"><input type="radio" name="pair" value="Japanese to English"><span class="rt-face"><i class="sw" aria-hidden="true"></i>Japanese to English</span></label>
+                <label class="rt" data-lang="de"><input type="radio" name="pair" value="Japanese to German"><span class="rt-face"><i class="sw" aria-hidden="true"></i>Japanese to German</span></label>
+                <label class="rt" data-lang="ed"><input type="radio" name="pair" value="Editing only"><span class="rt-face"><i class="sw" aria-hidden="true"></i>Editing only</span></label>
+              </div>
+              <p class="err" id="f-pair-err"></p>
+            </fieldset>
+            <div class="fld">
+              <label for="f-words">Word count <span class="opt">(optional)</span></label>
+              <input id="f-words" name="words" type="text" inputmode="numeric" autocomplete="off" data-budget="9">
+              <span class="budget" aria-hidden="true"></span>
+              <p class="err" id="f-words-err"></p>
+            </div>
+            <label class="ck" for="f-guide"><input type="checkbox" id="f-guide" name="guide"><span class="ck-box" aria-hidden="true"><i></i></span><span>There is a style guide for this game</span></label>
+            <div class="fld">
+              <label for="f-msg">About the game <span class="opt">(20 to 600 characters)</span></label>
+              <textarea id="f-msg" name="message" rows="5" data-budget="600"></textarea>
+              <span class="budget" aria-hidden="true"></span>
+              <p class="budget-n" id="f-msg-n" aria-live="off">0 of 600</p>
+              <p class="err" id="f-msg-err"></p>
+            </div>
+            <button class="btn b1" type="submit"><span class="b-face"><span class="b-in"><span class="b-lbl">Send my enquiry</span><i class="adv" aria-hidden="true"></i></span></span></button>
+          </form>
+          <div class="done" id="done" hidden>
+            <div class="done-head">
+              <h4 id="done-title" tabindex="-1">Thank you. Your enquiry is in my queue.</h4>
+              <svg class="seal" viewBox="0 0 66 66" aria-hidden="true">
+                <rect class="frame" x="3" y="3" width="60" height="60"/>
+                <g class="ink">
+                  <rect x="14" y="14" width="38" height="6"/>
+                  <rect x="30" y="20" width="6" height="32"/>
+                  <rect x="14" y="30" width="12" height="6"/>
+                  <path d="M40 30h12v6h-6v16h-6z"/>
+                </g>
+              </svg>
+            </div>
+            <dl class="echo" id="echo"></dl>
+            <p>Nothing has been sent from this page. On a real site this is where I would get your message; I answer within two working days.</p>
+            <button class="u" type="button" id="change"><span class="u-t">Change this</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. Sign-off -->
+  <footer class="signoff" id="signoff" data-part="signoff" aria-labelledby="so-title">
+    <div class="wrap">
+      <h3 class="vh" id="so-title">Haruka Lindner</h3>
+      <div class="mark" id="mark" aria-hidden="true">
+        <span class="tile" data-l="H"><i class="pos"></i>H</span>
+        <span class="tile" data-l="A"><i class="pos"></i>A</span>
+        <span class="tile" data-l="R"><i class="pos"></i>R</span>
+        <span class="tile" data-l="U"><i class="pos"></i>U</span>
+        <span class="tile" data-l="K"><i class="pos"></i>K</span>
+        <span class="tile" data-l="A"><i class="pos"></i>A</span>
+        <span class="marker w" id="mk-w" hidden>write</span>
+        <span class="marker r" id="mk-r" hidden>read</span>
+      </div>
+      <div class="mark-foot">
+        <p class="mark-read" id="mark-read">Sorted: H A R U K A.</p>
+        <button class="btn b2" type="button" id="shuffle"><span class="b-face"><span class="b-in"><span class="b-lbl">Shuffle and sort again</span></span></span><i class="rib" aria-hidden="true"></i></button>
+      </div>
+      <p class="colophon">Haruka Lindner, game translator, Düsseldorf. Japanese into German and English since 2014. Set in Departure Mono. The studios, games, lines and figures on this page are made up for this design.</p>
+    </div>
+  </footer>
+</section>
+
+<div class="strip" aria-hidden="true">
+  <span class="strip-lbl"><span id="strip-n">0</span> of 40 strings<span class="long"> done</span></span>
+  <span class="blocks" id="blocks"></span>
+</div>
+
+<dialog class="terms" id="terms" aria-labelledby="terms-title" data-lenis-prevent>
+  <div class="pg-edge" aria-hidden="true"></div>
+  <div class="pg">
+    <div class="pg-head">
+      <h2 id="terms-title">My working terms</h2>
+      <button class="u" type="button" id="terms-close"><span class="u-t">Close</span></button>
+    </div>
+    <p class="pg-intro">These are the terms I quote from. A studio's own contract can replace them; tell me early and I'll read it before I quote.</p>
+    <dl class="terms-list">
+      <div><dt>Translation</dt><dd>0.11 EUR per Japanese source character, into German or English. A script of 120,000 characters comes to 13,200 EUR.</dd></div>
+      <div><dt>Editing</dt><dd>52 EUR an hour, about 2,500 words of German or English an hour.</dd></div>
+      <div><dt>Minimum</dt><dd>150 EUR for any job, including a single patch.</dd></div>
+      <div><dt>What I need</dt><dd>A playable build or video of every scene, the string table with IDs and box limits, and the series glossary if there is one.</dd></div>
+      <div><dt>Pace</dt><dd>About 3,000 words a day of story text, five days a week. Songs and puns take longer, and I'll say which.</dd></div>
+      <div><dt>Credit</dt><dd>My name in the credits under localisation, as Haruka Lindner.</dd></div>
+      <div><dt>Payment</dt><dd>Half at the start for jobs over 5,000 EUR. The rest within 30 days of delivery.</dd></div>
+    </dl>
+  </div>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  /* ---------- What the owner edits ---------- */
+  // Words per year, in thousands: into English, into German, edited for other translators.
+  const DATA = [
+    { year: 2015, en: 180, de: 40, ed: 0 },
+    { year: 2016, en: 210, de: 90, ed: 20 },
+    { year: 2017, en: 160, de: 150, ed: 60 },
+    { year: 2018, en: 120, de: 180, ed: 140 },
+    { year: 2019, en: 90, de: 200, ed: 210 },
+    { year: 2020, en: 140, de: 170, ed: 180 },
+    { year: 2021, en: 150, de: 230, ed: 90 },
+    { year: 2022, en: 110, de: 260, ed: 120 },
+    { year: 2023, en: 170, de: 240, ed: 100 },
+    { year: 2024, en: 130, de: 280, ed: 150 },
+    { year: 2025, en: 160, de: 250, ed: 190 },
+    { year: 2026, en: 120, de: 210, ed: 160 }
+  ];
+  // Delete a line to remove a link. Known keys: email, whatsapp, github, mastodon, instagram, itch;
+  // any other key with a full URL becomes a link named after the key.
+  const CONTACT = {
+    email: 'hallo@harukalindner.example',
+    mastodon: 'https://mastodon.social/@harukalindner',
+    github: 'https://github.com/harukalindner'
+  };
+
+  const root = document.documentElement;
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const lib = !!(window.gsap && window.ScrollTrigger && window.Lenis);
+  if (lib) root.classList.add('js'); // CDN blocked: no class, everything is visible and still works
+  const css = (n) => getComputedStyle(root).getPropertyValue(n).trim();
+  const ms = (n) => { const v = css(n); return parseFloat(v) * (v.endsWith('ms') ? 1 : 1000) || 0; };
+  const clamp = (a, b, v) => Math.min(b, Math.max(a, v));
+  const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const fmt = (n) => n.toLocaleString('en-GB');
+  let lenis = null;
+
+  /* ---------- Greedy word wrap in whole characters (shared by the box, the story and the toy) ---------- */
+  const wrap = (text, w) => {
+    const out = [];
+    for (const para of text.split('\n')) {
+      let row = '';
+      for (let word of para.split(' ')) {
+        while (word.length > w) { if (row) { out.push(row); row = ''; } out.push(word.slice(0, w)); word = word.slice(w); }
+        if (!row) row = word;
+        else if (row.length + 1 + word.length <= w) row += ' ' + word;
+        else { out.push(row); row = word; }
+      }
+      out.push(row);
+    }
+    return out;
+  };
+
+  /* ---------- A box drawn in character cells: frame cells in clockwise order, three rows, overflow below ---------- */
+  const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  const drawBox = (el, rows, w) => {
+    el.style.setProperty('--w', w);
+    const n = 2 * (w + 2) + 6; // frame cells
+    let h = '', k = 0;
+    const cell = (cls, o) => `<i class="fc ${cls}" data-o="${o}"></i>`;
+    // top row, left to right
+    for (let c = 0; c < w + 2; c++) h += cell(c === 0 || c === w + 1 ? 'fk' : 'ft', k++);
+    // three rows: left side (counted on the way back up), text, right side (counted on the way down)
+    for (let r = 0; r < 3; r++) {
+      h += cell('fs', 2 * (w + 2) + 3 + (2 - r));
+      h += `<span class="tr" data-r="${r}">${esc(rows[r] || '')}</span>`;
+      h += cell('fs', w + 2 + r);
+    }
+    // bottom row, counted right to left
+    for (let c = 0; c < w + 2; c++) h += cell(c === 0 || c === w + 1 ? 'fk' : 'ft', w + 2 + 3 + (w + 1 - c));
+    // rows that do not fit: every cell marked
+    for (const row of rows.slice(3)) h += `<span class="orow">${[...row].map((ch) => `<i class="oc">${esc(ch)}</i>`).join('')}</span>`;
+    el.innerHTML = h;
+    return n;
+  };
+
+  /* ---------- 1. The engine: six lines, three languages, a width in whole characters ---------- */
+  const LINES = [
+    { who: 'Mira, the innkeeper',
+      ja: 'Heya wa hitotsu dake aite iru yo. Asagohan wa tsukanai kedo ne.',
+      en: "One room left. Breakfast isn't included, mind.",
+      de: 'Ein Zimmer ist noch frei. Frühstück gibt es aber nicht.' },
+    { who: 'The ferryman',
+      ja: 'Kaze ga yamu made fune wa denai. Matsu ka, oyogu ka da.',
+      en: 'No boat leaves till the wind drops. Wait, or swim.',
+      de: 'Bis der Wind nachlässt, fährt kein Boot. Warte oder schwimm.' },
+    { who: 'Captain Reyes',
+      ja: 'Kono mon o tooritai nara, mazu ore o taose.',
+      en: 'You want through this gate? Go through me first.',
+      de: 'Wer durch dieses Tor will, muss erst an mir vorbei.' },
+    { who: 'Item description',
+      ja: 'Furui kagi. Sabite ite, mou mawaranai ka mo.',
+      en: "An old key. It's rusted and may not turn any more.",
+      de: 'Ein alter Schlüssel, verrostet. Er dreht sich wohl nicht mehr.' },
+    { who: 'Save menu',
+      ja: 'Kiroku shimasu ka? Mae no kiroku wa kiemasu.',
+      en: 'Save your progress? Your last save will be replaced.',
+      de: 'Fortschritt speichern? Der letzte Spielstand wird überschrieben.' },
+    { who: 'Pim, aged seven',
+      ja: 'Neko, mita? Shiroi no. Shippo ga mijikai no.',
+      en: 'Have you seen my cat? White one. Short tail.',
+      de: 'Hast du meine Katze gesehen? Eine weiße. Kurzer Schwanz.' }
+  ];
+  const LANG_TAG = { ja: 'ja-Latn', en: 'en', de: 'de' };
+  const WMIN = 14, WMAX = 34;
+  const tb = $('#tb'), zone = $('#tb-zone'), tabs = $$('.tab'), panel = $('#tb-panel');
+  const eng = { line: 0, lang: 'en', w: 22, lock: false };
+  // Reserve room under the box for the most rows that can ever overflow, so nothing below it jumps.
+  const maxOver = Math.max(1, ...LINES.flatMap((l) => ['ja', 'en', 'de'].map((k) => wrap(l[k], WMIN).length - 3)));
+  $('.tb-hold').style.setProperty('--over-rows', maxOver);
+  const renderBox = () => {
+    const L = LINES[eng.line], text = L[eng.lang], rows = wrap(text, eng.w);
+    const over = rows.slice(3).join(' ').length;
+    tb.dataset.lang = eng.lang;
+    drawBox(tb, rows, eng.w);
+    $('#tb-speaker').textContent = L.who;
+    $('#tb-w').textContent = eng.w;
+    const fit = $('#tb-fit');
+    fit.textContent = over ? `${over} over.` : 'Fits in three rows.';
+    over ? fit.setAttribute('data-over', '') : fit.removeAttribute('data-over');
+    tb.setAttribute('aria-valuenow', eng.w);
+    tb.setAttribute('aria-valuetext', `${eng.w} characters wide. ${over ? `${over} characters do not fit.` : 'The line fits in three rows.'}`);
+    const line = $('#tb-line');
+    line.textContent = text; line.lang = LANG_TAG[eng.lang];
+    $('#tb-n').textContent = `Line ${eng.line + 1} of ${LINES.length}`;
+  };
+  const setWidth = (w) => { w = clamp(WMIN, WMAX, Math.round(w)); if (w === eng.w || eng.lock) return; eng.w = w; renderBox(); };
+  const chOf = (el) => el.getBoundingClientRect().width / ((parseInt(el.style.getPropertyValue('--w')) || 26) + 2);
+  const widthAt = (x) => { const r = tb.getBoundingClientRect(), ch = chOf(tb); return (x - r.left) / ch - 1.5; };
+  zone.addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse' || e.pointerType === 'pen' || e.buttons) setWidth(widthAt(e.clientX)); });
+  zone.addEventListener('pointerdown', (e) => { setWidth(widthAt(e.clientX)); });
+  tb.addEventListener('keydown', (e) => {
+    const d = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1, PageUp: 5, PageDown: -5 }[e.key];
+    if (d) { e.preventDefault(); setWidth(eng.w + d); }
+    else if (e.key === 'Home') { e.preventDefault(); setWidth(WMIN); }
+    else if (e.key === 'End') { e.preventDefault(); setWidth(WMAX); }
+  });
+  const selectTab = (t, focus) => {
+    tabs.forEach((x) => { const on = x === t; x.setAttribute('aria-selected', on); x.tabIndex = on ? 0 : -1; });
+    panel.setAttribute('aria-labelledby', t.id);
+    eng.lang = t.dataset.lang;
+    if (focus) t.focus();
+    renderBox();
+  };
+  tabs.forEach((t, i) => {
+    t.addEventListener('click', () => selectTab(t));
+    t.addEventListener('keydown', (e) => {
+      const n = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
+      if (n) { e.preventDefault(); selectTab(tabs[(i + n + tabs.length) % tabs.length], true); }
+      else if (e.key === 'Home') { e.preventDefault(); selectTab(tabs[0], true); }
+      else if (e.key === 'End') { e.preventDefault(); selectTab(tabs[tabs.length - 1], true); }
+    });
+  });
+  $('#tb-prev').addEventListener('click', () => { eng.line = (eng.line + LINES.length - 1) % LINES.length; renderBox(); });
+  $('#tb-next').addEventListener('click', () => { eng.line = (eng.line + 1) % LINES.length; renderBox(); });
+  renderBox();
+
+  /* ---------- 3. The story: one line, five drafts ---------- */
+  const LIMIT = 66;
+  const DRAFTS = [
+    { text: 'Mou nigeru no wa yameta. Kecchaku wa koko de tsukeru.', ja: true },
+    { text: 'I have quit the running away. The settlement will be attached here.' },
+    { text: "I'm done running away. We settle this here, now." },
+    { text: 'No more running. We end this here.' },
+    { text: 'No more running.\nWe end this here.' }
+  ];
+  const shown = (t) => t.replace('\n', '\\n');
+  const count = (t) => t.length;
+  const rail = $$('#rail li'), cards = $$('.card'), prevRow = $('#st-prev'), curRow = $('#st-cur'), mini = $('#mini');
+  cards.forEach((c, i) => { $('.card-draft', c).textContent = `The line at this stage: ${shown(DRAFTS[i].text)}`; });
+  let stage = -1;
+  const setStage = (i) => {
+    if (i === stage) return;
+    stage = i;
+    const d = DRAFTS[i], p = DRAFTS[i - 1];
+    const cl = $('.c-line', curRow), cn = $('.c-n', curRow);
+    cl.textContent = shown(d.text); cl.className = 'c-line' + (d.ja ? ' lang-ja' : ''); cl.lang = d.ja ? 'ja-Latn' : 'en';
+    cn.textContent = `${count(d.text)}/${LIMIT}`; cn.classList.toggle('over', count(d.text) > LIMIT);
+    curRow.dataset.hue = i + 1;
+    prevRow.classList.toggle('is-empty', !p);
+    $('.c-line', prevRow).textContent = p ? shown(p.text) : '';
+    $('.c-line', prevRow).lang = p && p.ja ? 'ja-Latn' : 'en';
+    $('.c-n', prevRow).textContent = p ? `${count(p.text)}/${LIMIT}` : '';
+    rail.forEach((li, k) => { li.classList.toggle('is-done', k < i); k === i ? li.setAttribute('aria-current', 'step') : li.removeAttribute('aria-current'); });
+    cards.forEach((c, k) => c.classList.toggle('is-on', k === i));
+    mini.hidden = i < 3;
+    if (i >= 3) drawBox($('#mini-tb'), wrap(d.text, 22), 22);
+  };
+  setStage(4);
+
+  /* ---------- 4. By the numbers: rows of blocks, one block per 10,000 words ---------- */
+  const chart = $('#chart'), readout = $('#readout');
+  const blocks = (n, cls) => Array.from({ length: n }, () => `<i class="${cls}"></i>`).join('');
+  chart.innerHTML = DATA.map((d, i) => `<button class="yr" type="button" role="radio" aria-checked="false" tabindex="-1" data-i="${i}" aria-label="${d.year}">` +
+    `<span class="yr-y">${d.year}</span><span class="bars" aria-hidden="true">` +
+    `<span class="row-b">${blocks(Math.round(d.en / 10), 'en')}${blocks(Math.round(d.de / 10), 'de')}</span>` +
+    `<span class="row-b">${blocks(Math.round(d.ed / 10), 'ed')}</span></span></button>`).join('');
+  $('#ftab tbody').innerHTML = DATA.map((d) => `<tr><th scope="row">${d.year}</th><td>${fmt(d.en * 1000)}</td><td>${fmt(d.de * 1000)}</td><td>${fmt(d.ed * 1000)}</td></tr>`).join('');
+  const yrs = $$('.yr', chart);
+  const pickYear = (i, focus) => {
+    const d = DATA[i];
+    yrs.forEach((b, k) => { b.setAttribute('aria-checked', k === i); b.tabIndex = k === i ? 0 : -1; });
+    if (focus) yrs[i].focus();
+    readout.innerHTML = `<b>${d.year}</b>: <span class="ro-en">${fmt(d.en * 1000)} words into English</span>, <span class="ro-de">${fmt(d.de * 1000)} into German</span>, and <span class="ro-ed">${fmt(d.ed * 1000)} edited for others</span>. ${fmt((d.en + d.de) * 1000)} translated in all.`;
+  };
+  yrs.forEach((b, i) => {
+    b.addEventListener('click', () => pickYear(i));
+    b.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') pickYear(i); });
+    b.addEventListener('keydown', (e) => {
+      const n = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 }[e.key];
+      if (n) { e.preventDefault(); pickYear((i + n + yrs.length) % yrs.length, true); }
+      else if (e.key === 'Home') { e.preventDefault(); pickYear(0, true); }
+      else if (e.key === 'End') { e.preventDefault(); pickYear(yrs.length - 1, true); }
+    });
+  });
+  pickYear(DATA.length - 3);
+
+  /* ---------- 5. The toy: a dialogue choice menu ---------- */
+  const ANSWERS = [
+    'About 3,000 words a day of story text, fewer for songs and puns. I would rather give you a delivery date than a speed.',
+    'From both. I ask for a build and the string table. A line read in its scene is a different line from the same words in a cell.',
+    'Yes. Send me the old glossary. I flag the names I would change and say why, and you decide.',
+    'I rewrite it until it fits. I do not shrink the font, and I do not cut what the line means.'
+  ];
+  const choices = $$('.choice'), menu = $('#menu'), answer = $('#answer'), ansQ = $('#ans-q'), ansText = $('#ans-text');
+  let sel = 0, asked = -1, rowTimers = [];
+  const select = (i, focus) => { sel = i; choices.forEach((c, k) => c.classList.toggle('is-sel', k === i)); if (focus) choices[i].focus(); };
+  const boxChars = () => {
+    const probe = document.createElement('span');
+    probe.textContent = '0'.repeat(10); probe.style.cssText = 'position:absolute;visibility:hidden;white-space:pre';
+    ansText.appendChild(probe);
+    const ch = probe.getBoundingClientRect().width / 10;
+    probe.remove();
+    return Math.max(16, Math.floor(ansText.getBoundingClientRect().width / ch));
+  };
+  const layAnswer = (animate) => {
+    rowTimers.forEach(clearTimeout); rowTimers = [];
+    const rows = wrap(ANSWERS[asked], boxChars());
+    ansText.innerHTML = rows.map((r) => `<span class="row${animate ? ' is-wait' : ''}">${esc(r)}</span>`).join('');
+    if (animate) $$('.row', ansText).forEach((r, k) => rowTimers.push(setTimeout(() => r.classList.remove('is-wait'), (k + 1) * ms('--d-row'))));
+  };
+  const ask = (i) => {
+    asked = i;
+    menu.hidden = true; answer.hidden = false;
+    ansQ.textContent = `You asked: ${$('.choice-t', choices[i]).textContent}`;
+    layAnswer(!reduced());
+    ansQ.focus();
+  };
+  choices.forEach((c, i) => {
+    c.addEventListener('pointerenter', () => select(i));
+    c.addEventListener('focus', () => select(i));
+    c.addEventListener('click', () => { select(i); ask(i); });
+    c.addEventListener('keydown', (e) => {
+      const n = { ArrowDown: 1, ArrowUp: -1 }[e.key];
+      if (n) { e.preventDefault(); select((i + n + choices.length) % choices.length, true); }
+    });
+  });
+  $('#ask-again').addEventListener('click', () => { rowTimers.forEach(clearTimeout); answer.hidden = true; menu.hidden = false; asked = -1; select(sel, true); });
+  new ResizeObserver(() => { if (asked >= 0) layAnswer(false); }).observe($('#menu-box'));
+  select(0);
+
+  /* ---------- Text links: the gloss tag (decorative; the link text says everything) ---------- */
+  $$('.u[data-gl]').forEach((u) => {
+    u.insertAdjacentHTML('beforeend', `<span class="u-tag" data-lang="de" aria-hidden="true" lang="de"><span class="u-word">${esc(u.dataset.gl)}</span></span>`);
+  });
+  // Touch: the tag shows on press and stays 400ms after the finger lifts.
+  const holdGloss = (u) => {
+    let t = 0;
+    u.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'touch') return; clearTimeout(t); u.classList.remove('is-hold'); void u.offsetWidth; u.classList.add('is-hold'); });
+    const up = () => { clearTimeout(t); t = setTimeout(() => u.classList.remove('is-hold'), ms('--d-gloss-hold')); };
+    ['pointerup', 'pointercancel'].forEach((ev) => u.addEventListener(ev, up));
+  };
+
+  /* ---------- Presses are held long enough to be seen ---------- */
+  const holdPress = (el) => {
+    let t0 = 0, t = 0, down = false;
+    const on = () => { clearTimeout(t); down = true; t0 = performance.now(); el.classList.add('is-press'); };
+    const off = () => { if (!down) return; down = false; t = setTimeout(() => el.classList.remove('is-press'), Math.max(0, ms('--d-press') - (performance.now() - t0))); };
+    el.addEventListener('pointerdown', on);
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach((ev) => el.addEventListener(ev, off));
+    el.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) on(); });
+    el.addEventListener('keyup', off);
+    el.addEventListener('blur', off);
+  };
+
+  /* ---------- 7. Contact links from CONTACT ---------- */
+  const NAMES = { email: 'Email', whatsapp: 'WhatsApp', github: 'GitHub', mastodon: 'Mastodon', instagram: 'Instagram', itch: 'itch.io' };
+  const hrefOf = (k, v) => k === 'email' ? `mailto:${v}` : k === 'whatsapp' ? `https://wa.me/${String(v).replace(/\D/g, '')}` : v;
+  const labelOf = (k, v) => {
+    if (k === 'email') return `Email ${v}`;
+    if (k === 'whatsapp') return 'Message me on WhatsApp';
+    const name = NAMES[k] || k.charAt(0).toUpperCase() + k.slice(1);
+    let where = ''; try { where = new URL(v).pathname.replace(/^\/|\/$/g, ''); } catch { /* not a URL */ }
+    return where ? `${name}, ${where}` : name;
+  };
+  $('#contact').innerHTML = Object.entries(CONTACT)
+    .filter(([k, v]) => v && (k === 'email' || k === 'whatsapp' || /^https?:\/\//.test(v)))
+    .map(([k, v]) => `<li><a class="u" href="${esc(hrefOf(k, v))}" target="_blank" rel="noopener"><span class="u-t">${esc(labelOf(k, v))}</span><span class="vh"> (opens in a new tab)</span></a></li>`).join('');
+  $$('.u').forEach(holdGloss);
+  $$('.btn, .step').forEach(holdPress);
+
+  /* ---------- 7. The enquiry form, with a character budget under each field ---------- */
+  const form = $('#enquiry'), done = $('#done'), doneTitle = $('#done-title');
+  form.noValidate = true;
+  const F = { name: $('#f-name'), email: $('#f-email'), words: $('#f-words'), msg: $('#f-msg') };
+  const pairs = $$('input[name="pair"]'), pairSet = $('#f-pair'), guide = $('#f-guide');
+  const errEl = (el) => $(`#${el.id}-err`);
+  const fillBudget = (el) => {
+    const b = el.parentElement.querySelector('.budget'), n = +el.dataset.budget, len = el.value.length;
+    $$('i', b).forEach((c, k) => c.classList.toggle('on', k < len));
+    if (el === F.msg) $('#f-msg-n').textContent = `${len} of ${n}`;
+  };
+  $$('[data-budget]').forEach((el) => {
+    const n = +el.dataset.budget, b = el.parentElement.querySelector('.budget');
+    b.innerHTML = Array.from({ length: n }, (_, k) => `<i${k >= n - 5 ? ' class="end"' : ''}></i>`).join('');
+    const note = () => { const e = errEl(el); if (e.classList.contains('is-on')) return; e.textContent = `This box holds ${n} characters.`; e.classList.add('is-note'); };
+    const unnote = () => { const e = errEl(el); if (e.classList.contains('is-note')) { e.textContent = ''; e.classList.remove('is-note'); } };
+    el.addEventListener('beforeinput', (e) => {
+      if (!e.inputType.startsWith('insert')) { unnote(); return; }
+      const add = (e.data ?? '').length || (e.inputType === 'insertLineBreak' || e.inputType === 'insertParagraph' ? 1 : 0);
+      const cut = el.selectionEnd - el.selectionStart;
+      if (el.value.length - cut + add > n) { e.preventDefault(); note(); }
+    });
+    el.addEventListener('input', () => {
+      if (el.value.length > n) { el.value = el.value.slice(0, n); note(); } else if (el.value.length < n) unnote();
+      fillBudget(el);
+      if (el.getAttribute('aria-invalid') && !check[el.name]()) setErr(el, '');
+    });
+    fillBudget(el);
+  });
+  const EMAIL = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
+  const parseWords = (v) => {
+    const s = v.trim().replace(/[\s,.'’_]/g, '');
+    if (!s) return { ok: true, n: null };
+    if (!/^\d+$/.test(s)) return { ok: false, msg: 'Write the word count as a whole number, like 42000.' };
+    const n = parseInt(s, 10);
+    if (n < 1 || n > 5000000) return { ok: false, msg: 'Write a word count between 1 and 5,000,000.' };
+    return { ok: true, n };
+  };
+  const check = {
+    name: () => F.name.value.trim() ? '' : 'Write your name, so I know who to answer.',
+    email: () => { const v = F.email.value.trim(); if (!v) return 'Write your email address, like mika@example.com.'; return EMAIL.test(v) ? '' : 'This address needs an @ and a domain, like mika@example.com.'; },
+    pair: () => pairs.some((p) => p.checked) ? '' : 'Choose a language pair, or Editing only.',
+    words: () => parseWords(F.words.value).msg || '',
+    message: () => {
+      const n = F.msg.value.trim().length;
+      if (!n) return 'Tell me about the game in at least 20 characters.';
+      return n < 20 ? `Add ${20 - n} more character${20 - n === 1 ? '' : 's'}: at least 20, so I know what the game is.` : '';
+    }
+  };
+  const setErr = (el, msg) => {
+    const e = el === pairSet ? $('#f-pair-err') : errEl(el), box = el === pairSet ? pairSet : el.closest('.fld');
+    e.textContent = msg; e.classList.toggle('is-on', !!msg); e.classList.remove('is-note');
+    box.classList.toggle('is-bad', !!msg);
+    if (el === pairSet) { pairs.forEach((p) => msg ? p.setAttribute('aria-invalid', 'true') : p.removeAttribute('aria-invalid')); return; }
+    if (msg) { el.setAttribute('aria-invalid', 'true'); el.setAttribute('aria-describedby', e.id); }
+    else { el.removeAttribute('aria-invalid'); el.removeAttribute('aria-describedby'); }
+  };
+  pairs.forEach((p) => p.addEventListener('change', () => { if (pairSet.classList.contains('is-bad')) setErr(pairSet, ''); }));
+  const refOf = (email) => {
+    let h = 0; for (const c of email) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+    const d = new Date(), pad = (n) => String(n).padStart(2, '0');
+    return `HL-${String(d.getFullYear()).slice(2)}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${String(h % 1000).padStart(3, '0')}`;
+  };
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const order = [[F.name, 'name'], [F.email, 'email'], [pairSet, 'pair'], [F.words, 'words'], [F.msg, 'message']];
+    let first = null;
+    for (const [el, k] of order) { const m = check[k](); setErr(el, m); if (m && !first) first = el; }
+    if (first) { (first === pairSet ? pairs[0] : first).focus(); return; }
+    const words = parseWords(F.words.value).n;
+    const rows = [
+      ['Reference', refOf(F.email.value.trim())],
+      ['Name', F.name.value.trim()],
+      ['Email', F.email.value.trim()],
+      ['Language pair', pairs.find((p) => p.checked).value],
+      ['Word count', words ? fmt(words) : 'Not given'],
+      ['Style guide', guide.checked ? 'Yes, there is one' : 'No'],
+      ['About the game', F.msg.value.trim()]
+    ];
+    $('#echo').innerHTML = rows.map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join('');
+    doneTitle.textContent = `Thank you, ${F.name.value.trim().split(/\s+/)[0]}. Your enquiry is in my queue.`;
+    form.hidden = true; done.hidden = false;
+    done.classList.remove('is-stamp'); void done.offsetWidth; done.classList.add('is-stamp');
+    doneTitle.focus();
+  });
+  $('#change').addEventListener('click', () => { done.hidden = true; form.hidden = false; done.classList.remove('is-stamp'); F.name.focus(); });
+
+  /* ---------- Dialog: the terms arrive as a page laid over the last one ---------- */
+  const dlg = $('#terms'), closeBtn = $('#terms-close');
+  let opener = null, closing = false, downOn = null, closeT = 0;
+  const settle = () => { closing = false; clearTimeout(closeT); dlg.classList.remove('is-closing'); };
+  $$('[data-terms]').forEach((b) => b.addEventListener('click', () => {
+    if (dlg.open) return;
+    settle(); opener = b;
+    dlg.showModal();
+    lenis?.stop();
+  }));
+  const closeDialog = () => {
+    if (!dlg.open || closing) return;
+    closing = true;
+    const end = () => { if (!closing) return; settle(); dlg.close(); opener?.focus(); };
+    if (reduced()) return end();
+    dlg.classList.add('is-closing');
+    closeT = setTimeout(end, ms('--d-page') + 40);
+  };
+  closeBtn.addEventListener('click', closeDialog);
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); closeDialog(); });
+  dlg.addEventListener('pointerdown', (e) => { downOn = e.target; });
+  dlg.addEventListener('click', (e) => {
+    if (downOn !== dlg || e.target !== dlg) return;
+    const r = $('.pg', dlg).getBoundingClientRect();
+    if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) closeDialog();
+  });
+  dlg.addEventListener('close', () => { settle(); lenis?.start(); });
+
+  /* ---------- 8. The sign-off: HARUKA sorted by a read marker and a write marker ---------- */
+  const TARGET = 'HARUKA';
+  const tiles = $$('.tile'), mark = $('#mark'), mkW = $('#mk-w'), mkR = $('#mk-r'), markRead = $('#mark-read');
+  // Frames of a selection sort: the write marker holds a place, the read marker looks for its letter and the two swap.
+  const sortFrames = (start) => {
+    // start: tile indices in place order. Tile k carries TARGET[k].
+    const order = start.slice(), F2 = [], swaps = [];
+    const push = (w, r, lift, n) => F2.push({ order: order.slice(), w, r, lift, n });
+    let n = 0;
+    push(0, 0, null, 0);
+    for (let w = 0; w < order.length; w++) {
+      let r = w;
+      for (; r < order.length; r++) { push(w, r, null, n); if (TARGET[order[r]] === TARGET[w]) break; }
+      if (r !== w) {
+        push(w, r, [order[w], order[r]], n);            // both tiles lift
+        const a = order[w]; order[w] = order[r]; order[r] = a;
+        n++; push(w, r, [order[w], order[r]], n);       // across, still lifted
+        push(w, r, null, n);                            // set down
+        swaps.push([w, r]);
+      }
+    }
+    F2.push({ order: order.slice(), w: -1, r: -1, lift: null, n });
+    return { frames: F2, swaps: n };
+  };
+  const ALPHA = [1, 5, 0, 4, 2, 3]; // A A H K R U
+  let sorting = sortFrames(ALPHA), frameNo = -1, startOrder = ALPHA;
+  const lettersOf = (order) => order.map((k) => TARGET[k]).join(' ');
+  const showFrame = (i) => {
+    i = clamp(0, sorting.frames.length - 1, i);
+    if (i === frameNo) return;
+    frameNo = i;
+    const f = sorting.frames[i];
+    const cols = parseInt(getComputedStyle(mark).getPropertyValue('--cols')) || 6;
+    const at = (el, p) => { el.style.setProperty('--c', p % cols); el.style.setProperty('--r', Math.floor(p / cols)); };
+    f.order.forEach((k, p) => {
+      const t = tiles[k];
+      at(t, p);
+      t.style.setProperty('--lift', f.lift && f.lift.includes(k) ? 1 : 0);
+      t.classList.toggle('is-home', TARGET[k] === TARGET[p] && (f.w < 0 || p < f.w || (p === f.w && !f.lift && f.r === f.w)));
+      $('.pos', t).textContent = p + 1;
+    });
+    mkW.hidden = mkR.hidden = f.w < 0;
+    if (f.w >= 0) { at(mkW, f.w); at(mkR, f.r); }
+    markRead.textContent = f.w < 0
+      ? `Sorted from ${lettersOf(startOrder)} in ${sorting.swaps} swaps.`
+      : `Swap ${f.n} of ${sorting.swaps}: ${lettersOf(f.order)}`;
+  };
+  showFrame(sorting.frames.length - 1);
+  let markCols = 0;
+  new ResizeObserver(() => { const c = getComputedStyle(mark).getPropertyValue('--cols'); if (c !== markCols) { markCols = c; const n = frameNo; frameNo = -1; showFrame(n); } }).observe(mark);
+  let replay = 0, replaying = false;
+  const shuffle = () => {
+    let o;
+    do { o = [0, 1, 2, 3, 4, 5].sort(() => Math.random() - .5); } while (o.map((k) => TARGET[k]).join('') === TARGET || sortFrames(o).swaps < 3);
+    startOrder = o; sorting = sortFrames(o); frameNo = -1;
+    clearInterval(replay);
+    if (reduced()) { showFrame(sorting.frames.length - 1); return; }
+    replaying = true;
+    let i = 0;
+    showFrame(0);
+    replay = setInterval(() => { showFrame(++i); if (i >= sorting.frames.length - 1) { clearInterval(replay); replaying = false; } }, ms('--d-sort'));
+  };
+  $('#shuffle').addEventListener('click', shuffle);
+  $('#shuffle').addEventListener('focus', () => mark.classList.add('show-pos'));
+  $('#shuffle').addEventListener('blur', () => mark.classList.remove('show-pos'));
+  let posT = 0;
+  mark.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'touch') return; mark.classList.add('show-pos'); clearTimeout(posT); posT = setTimeout(() => mark.classList.remove('show-pos'), 1200); });
+
+  /* ---------- The strip: 40 blocks, one hue per part or chapter ---------- */
+  const blocksEl = $('#blocks');
+  blocksEl.innerHTML = '<i></i>'.repeat(40);
+  const cellsS = $$('i', blocksEl), stripN = $('#strip-n');
+
+  if (!lib) return;
+
+  /* ====================== Motion ====================== */
+  gsap.registerPlugin(ScrollTrigger);
+  const fontsReady = Promise.race([
+    Promise.all([document.fonts.ready, document.fonts.load('16px "Departure Mono"')]).then(() => 'fonts', () => 'fonts'),
+    new Promise((r) => setTimeout(() => r('timeout'), 1500))
+  ]);
+  const visible = new Promise((r) => {
+    if (document.visibilityState === 'visible') return r();
+    const f = () => { if (document.visibilityState === 'visible') { document.removeEventListener('visibilitychange', f); r(); } };
+    document.addEventListener('visibilitychange', f);
+  });
+  let played = false;
+  const story = $('#story'), signoff = $('#signoff');
+
+  const mm = gsap.matchMedia();
+  mm.add({
+    motion: '(prefers-reduced-motion: no-preference)',
+    reduce: '(prefers-reduced-motion: reduce)',
+    tall: '(min-height: 560px)'
+  }, (ctx) => {
+    const { motion, tall } = ctx.conditions;
+    let dead = false;
+    const off = [], sts = [];
+    const on = (el, type, fn, opt) => { el.addEventListener(type, fn, opt); off.push(() => el.removeEventListener(type, fn, opt)); };
+    const pin = motion && tall;
+    root.classList.toggle('pin', pin);
+
+    if (motion) {
+      lenis = new Lenis({ lerp: .12, smoothWheel: true, autoRaf: false, anchors: true });
+      lenis.on('scroll', ScrollTrigger.update);
+    }
+    const tick = (t) => lenis && lenis.raf(t * 1000);
+    if (motion) { gsap.ticker.add(tick); gsap.ticker.lagSmoothing(0); }
+
+    /* The story: scroll picks the stage while the scene is pinned (CSS sticky). */
+    if (pin) {
+      sts.push(ScrollTrigger.create({
+        trigger: story, start: 'top top', end: 'bottom bottom',
+        onUpdate: (self) => setStage(Math.min(4, Math.floor(self.progress * 5))),
+        onRefresh: (self) => setStage(Math.min(4, Math.floor(self.progress * 5)))
+      }));
+    } else setStage(4);
+
+    /* The strip: blocks fill in whole blocks with page progress; each takes the hue of the part it covers. */
+    let hues = [];
+    const mapHues = () => {
+      const max = Math.max(1, document.documentElement.scrollHeight - innerHeight), parts = $$('[data-part]');
+      const sr = story.getBoundingClientRect(), sTop = sr.top + scrollY, sLen = Math.max(1, story.offsetHeight - innerHeight);
+      hues = cellsS.map((_, i) => {
+        const y = (i + 1) / 40 * max, mid = y + innerHeight / 2;
+        let part = parts[0];
+        for (const p of parts) if (p.getBoundingClientRect().top + scrollY <= mid) part = p;
+        const k = part.dataset.part;
+        if (k === 'story') return String(1 + clamp(0, 4, Math.floor((pin ? (y - sTop) / sLen : (mid - sTop) / story.offsetHeight) * 5)));
+        return k === 'toy' ? 't' : '0';
+      });
+      cellsS.forEach((c, i) => { c.dataset.hue = hues[i]; });
+    };
+    let filled = -1;
+    const fillStrip = () => {
+      const max = Math.max(1, document.documentElement.scrollHeight - innerHeight);
+      const n = clamp(0, 40, Math.floor(scrollY / max * 40 + .001));
+      if (n === filled) return;
+      filled = n;
+      cellsS.forEach((c, i) => c.classList.toggle('on', i < n));
+      stripN.textContent = n;
+    };
+    sts.push(ScrollTrigger.create({ trigger: document.body, start: 0, end: 'max', onUpdate: fillStrip, onRefresh: () => { mapHues(); filled = -1; fillStrip(); } }));
+
+    /* The sign-off: scrubbed by scroll, one whole frame of the sort at a time. */
+    if (motion) {
+      sts.push(ScrollTrigger.create({
+        trigger: mark, start: () => 'bottom bottom-=' + (parseFloat(css('--bar-h')) + 11), endTrigger: signoff, end: 'bottom bottom',
+        onUpdate: (self) => { if (!replaying) showFrame(Math.floor(self.progress * (sorting.frames.length - 1) + .0001)); },
+        onRefresh: (self) => { if (!replaying) showFrame(Math.floor(self.progress * (sorting.frames.length - 1) + .0001)); }
+      }));
+    }
+
+    if (!motion) {
+      root.classList.add('go');
+      return () => { dead = true; off.forEach((f) => f()); sts.forEach((s) => s.kill()); };
+    }
+
+    /* The chart builds in whole blocks the first time it comes into view. */
+    const rowsB = $$('.row-b', chart);
+    gsap.set(rowsB, { clipPath: 'inset(0 100% 0 0)' });
+    sts.push(ScrollTrigger.create({
+      trigger: chart, start: 'top 80%', once: true,
+      onEnter: () => rowsB.forEach((r, k) => {
+        const n = Math.max(1, r.children.length);
+        gsap.to(r, { clipPath: 'inset(0 0% 0 0)', duration: n * .025, ease: `steps(${n})`, delay: Math.floor(k / 2) * .08, clearProps: 'clipPath' });
+      })
+    }));
+
+    /* Load: the box opens. Its frame is laid cell by cell clockwise from the top-left, then its three rows cut in. */
+    const lns = $$('.ln'), gls = $$('.gl'), cuts = $$('.top .cut');
+    Promise.all([fontsReady, visible]).then(([how]) => ctx.add(() => {
+      if (dead) return;
+      ScrollTrigger.refresh();
+      if (how === 'timeout') document.fonts.ready.then(() => { if (!dead) { renderBox(); ScrollTrigger.refresh(); } });
+      if (played || scrollY > innerHeight * .5) { played = true; root.classList.add('go'); return; }
+      const FR = ms('--d-frame') / 1000, LAY = ms('--d-lay') / 1000, ROW = ms('--d-row') / 1000;
+      eng.lock = true;
+      renderBox();
+      const fcs = $$('.fc', tb).sort((a, b) => a.dataset.o - b.dataset.o), trs = $$('.tr', tb), ors = $$('.orow', tb);
+      gsap.set([...lns, ...gls, ...cuts, ...fcs, ...trs, ...ors], { visibility: 'hidden' });
+      root.classList.add('go');
+      const show = (els) => () => gsap.set(els, { visibility: 'visible' });
+      const tl = gsap.timeline({ onComplete: () => { played = true; eng.lock = false; gsap.set([...lns, ...gls, ...cuts, ...fcs, ...trs, ...ors], { clearProps: 'visibility' }); } });
+      tl.call(show($$('.who'))).addLabel('h', FR);
+      // Headline: its lines cut in one at a time; each gloss a frame after its line.
+      lns.forEach((l, i) => { tl.call(show(l), null, `h+=${i * 2 * FR}`); tl.call(show(gls[i]), null, `h+=${i * 2 * FR + FR}`); });
+      tl.call(show($$('.lede, .actions')), null, `h+=${lns.length * 2 * FR}`);
+      // The frame: ten laying steps, clockwise.
+      const STEPS = 10, per = Math.ceil(fcs.length / STEPS);
+      for (let s = 0; s < STEPS; s++) tl.call(show(fcs.slice(s * per, (s + 1) * per)), null, `h+=${FR + s * LAY / STEPS}`);
+      // Then the rows, whole rows, one at a time.
+      tl.call(show($('#tb-speaker')), null, `h+=${FR + LAY}`);
+      trs.forEach((r, i) => tl.call(show(r), null, `h+=${FR + LAY + (i + 1) * ROW}`));
+      tl.call(show(ors), null, `h+=${FR + LAY + 4 * ROW}`);
+      tl.call(show($$('.tabs')), null, `h+=${FR + LAY + 5 * ROW}`);
+      tl.call(show($$('.tb-foot, .hint')), null, `h+=${FR + LAY + 6 * ROW}`);
+    }));
+
+    const ro = new ResizeObserver(() => ScrollTrigger.refresh());
+    ro.observe(document.body);
+    off.push(() => ro.disconnect());
+
+    return () => {
+      dead = true;
+      off.forEach((f) => f());
+      sts.forEach((s) => s.kill());
+      gsap.ticker.remove(tick);
+      gsap.ticker.lagSmoothing(500, 33);
+      lenis?.destroy(); lenis = null;
+      gsap.set($$('.row-b'), { clearProps: 'clipPath' });
+      root.classList.remove('pin');
+      eng.lock = false;
+      played = true;
+      setStage(4);
+    };
+  });
+})();
+</script>
+</body>
+</html>

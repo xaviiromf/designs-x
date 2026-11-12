@@ -32,6 +32,7 @@ const widths = [
   </header>
 
   <section class="stage" aria-label="Live preview">
+    <div class="tools">
     <fieldset class="widths">
       <legend class="visually-hidden">Preview width</legend>
       {widths.map((w, i) => (
@@ -41,7 +42,10 @@ const widths = [
         </label>
       ))}
     </fieldset>
+    <button type="button" class="pill fs-open" hidden>Fullscreen</button>
+    </div>
     <div class="frame-wrap">
+      <button type="button" class="pill fs-quit">Quit fullscreen</button>
       <div class="proof frame">
         <iframe src={raw} title={`Live preview of ${data.title}`} loading="lazy"></iframe>
       </div>
@@ -95,6 +99,18 @@ const widths = [
       setTimeout(() => (status.textContent = ''), 2500);
     });
   }
+
+  // Site chrome, not part of any design. Hidden where the Fullscreen API is missing (iPhone Safari).
+  const fsOpen = document.querySelector<HTMLButtonElement>('.fs-open')!;
+  const fsQuit = document.querySelector<HTMLButtonElement>('.fs-quit')!;
+  const wrap = document.querySelector<HTMLElement>('.frame-wrap')!;
+  if (document.fullscreenEnabled) {
+    fsOpen.hidden = false;
+    fsOpen.addEventListener('click', () => wrap.requestFullscreen().catch(() => {}));
+    fsQuit.addEventListener('click', () => document.exitFullscreen());
+    // Esc is handled by the browser, even with focus inside the iframe; this keeps focus in sync.
+    document.addEventListener('fullscreenchange', () => (document.fullscreenElement === wrap ? fsQuit : fsOpen).focus());
+  }
 </script>
 
 <style>
@@ -113,7 +129,17 @@ const widths = [
   .widths input:checked + span .muted { color: inherit; opacity: 0.75; }
   .widths input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 3px; }
 
+  .tools { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--sp-1); margin: 0 0 var(--sp-3); }
+  .tools .widths { margin: 0; }
   .frame-wrap { padding: 14px; }
+  .fs-quit { display: none; }
+  .frame-wrap:fullscreen { padding: 0; background: var(--paper); overflow: auto; }
+  .frame-wrap:fullscreen .frame { height: 100%; }
+  .frame-wrap:fullscreen iframe { height: 100%; }
+  .frame-wrap:fullscreen .fs-quit {
+    display: block; position: fixed; top: max(12px, env(safe-area-inset-top)); left: max(12px, env(safe-area-inset-left)); z-index: 1;
+    min-height: 44px; min-width: 44px; background: var(--paper); box-shadow: 0 2px 10px rgb(0 0 0 / 0.35);
+  }
   .frame { margin-inline: auto; width: 100%; transition: width 0.3s ease; }
   .frame iframe { width: 100%; height: min(85vh, 56rem); border: 0; background: #fff; }
   .stage:has(#w-tablet:checked) .frame { width: min(100%, 768px); }
@@ -135,8 +161,9 @@ const widths = [
   .source-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-1) var(--sp-3); margin-bottom: var(--sp-2); }
   .source-head h2 { font-size: var(--s-3); margin: 0; }
   .source-head p { margin: 0; font-size: var(--s-0); }
-  .copy { font: inherit; font-size: var(--s-0); color: var(--ink); background: transparent; border: 1px solid var(--ink); border-radius: 999px; padding: 0.35em 0.9em; cursor: pointer; }
-  .copy:hover { background: var(--ink); color: var(--paper); }
+  .pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .copy, .pill { font: inherit; font-size: var(--s-0); color: var(--ink); background: transparent; border: 1px solid var(--ink); border-radius: 999px; padding: 0.35em 0.9em; cursor: pointer; }
+  .copy:hover, .pill:hover { background: var(--ink); color: var(--paper); }
   .status { font-size: var(--s-0); color: var(--muted); }
   pre { margin: 0; background: var(--sheet); padding: var(--sp-3); max-height: 36rem; overflow: auto; line-height: 1.55; tab-size: 2; border-left: 2px solid var(--rule); }
 </style>

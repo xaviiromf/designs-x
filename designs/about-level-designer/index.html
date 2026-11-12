@@ -1,0 +1,1731 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Tomás Ibarra, level designer</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<style>
+  @font-face {
+    font-family: "Departure Mono";
+    src: url("https://cdn.jsdelivr.net/npm/@proj-airi/font-departure-mono@0.17.0/dist/files/DepartureMono-Regular.woff2") format("woff2");
+    font-weight: 400; font-style: normal; font-display: swap;
+  }
+  :root {
+    /* Ground: vermilion, the colour of a tile editor's empty canvas. Four tones of one hue. */
+    --ground: #B8300F;      /* page ground */
+    --well: #7A1C06;        /* every canvas, fields, cards, the dialog: the surface tiles are laid on (1.74:1 on ground; a surface, not an edge) */
+    --plate: #D94A22;       /* raised plate: rules between rows, rooms not reached yet, the dialog's tile backs; decorative (1.43:1 on ground, 2.48:1 on well) */
+    --deep: #5A1203;        /* ink on bright faces (10.8:1 on spawn), shadow in the lighting layer, hovered plates, the scrim's base */
+    --scrim: rgb(90 18 3 / .88);   /* dialog backdrop: the deep tone, cut in, never faded */
+    --white: #FFF6EE;       /* text (5.67:1 on ground, 9.85:1 on well), the difficulty line, selection frames */
+    --sand: #FFDCC6;        /* secondary text, field and button rims, dotted underlines, dust (4.70:1 on ground, 8.17:1 on well) */
+
+    /* Ten tile hues. Each is one tile type in the editor and one kind of thing on this page. Hues sit on the well
+       unless noted; contrast is against the well, then the ground. */
+    --spawn: #FFE44D;       /* 1 the player: the start tile, the marker that walks and hops, the primary action, focus (8.24:1, 4.75:1) */
+    --spawn-hot: #FFF3A6;   /*   a tint of spawn: the primary button while pointed at (deep ink on it 12.23:1) */
+    --solid: #FFE8BD;       /* 2 solid ground tiles; chapter 1 (8.78:1) */
+    --ladder: #3FE0FF;      /* 3 ladders; chapter 2 (6.67:1) */
+    --water: #86A8FF;       /* 4 water; chapter 3 (4.54:1) */
+    --moss: #7CFF6B;        /* 5 moss platforms; chapter 4 (8.20:1) */
+    --key: #FF7AD9;         /* 6 keys and secrets; chapter 5 (4.53:1) */
+    --spike: #450C00;       /* 7 hazards in the chart, always with a 1px sand edge (the edge is 8.17:1) */
+    --coin: #FFB238;        /* 8 collectibles: in the chart, in the finished room, over the confirmation (5.85:1, 3.37:1) */
+    --door: #B79CFF;        /* 9 doors and exits: in the rooms, in the chart, the flag at the exit; and the camera on the minimap (4.62:1) */
+    --light: #8CFFD9;       /* 10 the lighting layer in the layers panel (8.73:1) */
+    --fault: #FFD9E2;       /* 11 errors: a hatched bar and its message; the ground is red, so hatch and words carry it (4.69:1 on ground) */
+
+    /* Type: one family, drawn on an 11px grid. Sizes are 11px multiples or its quarter steps; line heights are 5.5px multiples. */
+    --font: "Departure Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --t-mark: 11px;         /* decorative marks only (brush key digits) */
+    --t-small: 13.75px;
+    --t-body: 16.5px;
+    --t-lede: 22px;
+    --t-h3: 33px;
+    --t-h2: 33px;           /* display: 33 on phones, 55 from 600, 66 from 1024; beside the editor 44 on one line, 66 on two when the window is 760 tall */
+    --t-top: var(--t-body); /* the lede under the headline */
+    --lh-small: 22px;
+    --lh-body: 27.5px;
+    --lh-lede: 33px;
+    --lh-h3: 38.5px;
+    --lh-top: var(--lh-body);
+    --ch: 10.5px;           /* one character cell at body size (7/11 of 16.5px) */
+
+    /* Space: one 11px cell */
+    --cell: 11px;
+    --s1: 5.5px; --s2: 11px; --s3: 22px; --s4: 33px; --s5: 44px; --s6: 66px; --s7: 88px; --s8: 132px;
+    --gap-part: var(--s7);  /* between the parts of the page */
+    --gl: 16px;             /* left gutter */
+    --gr: 16px;             /* right gutter: wider on desktop, where the minimap lives */
+    --max-w: 1320px;        /* 120 cells */
+    --notch: 4px;           /* stepped corner of the buttons */
+    --tap: 48px;            /* button and field height */
+    --hit: 44px;            /* minimum target */
+    --strip: 52px;          /* height of the minimap strip on phones and tablets */
+    --mm-w: 55px; --mm-h: 24px; --mm-gap: 5px;   /* a minimap block on desktop */
+    --plot-h: 176px;        /* chart: the height of 16 attempts */
+    --pip: 5px;             /* chart: one marker */
+    --pip-row: 24px;        /* chart: one row of markers */
+    --step-px: 22px;        /* story: scroll distance for one tile of the walk */
+
+    /* Motion. A frame is 80ms; everything is a hard cut on a whole number of frames unless it has its own token. */
+    --frame: .08s;
+    --d-col: .025s;         /* load: one column of the level entering the editor */
+    --d-hop: .4s;           /* primary button: up, up, down, land with dust, dust away (5 frames) */
+    --d-press: .14s;        /* minimum time a press state is held */
+    --d-key: .24s;          /* secondary button: the key reaches the lock in 3 steps */
+    --d-crumb: .06s;        /* text link: one hop of two dots */
+    --d-tap: .9s;           /* text link: how long the trail stays after a tap */
+    --d-ring: .06s;         /* dialog: one ring of tiles */
+    --d-dither: .07s;       /* layers panel: one dither step */
+    --d-solo: .2s;          /* layers panel: minimum time a solo is shown */
+    --d-flag: .24s;         /* success: the flag climbs the pole in 3 steps */
+    --d-coin: .16s;         /* success: gap between collectibles */
+    --d-knock: .16s;        /* wordmark: how long a knocked block stays one cell up */
+    --d-rebuild: 1.6s;      /* wordmark: the drop replayed by the Rebuild button */
+  }
+  @media (min-width: 600px) {
+    :root { --t-h2: 55px; --t-top: var(--t-lede); --lh-top: var(--lh-lede); --gl: 33px; --gr: 33px; --gap-part: var(--s8); --plot-h: 220px; --pip: 6px; --pip-row: 28px; }
+  }
+  @media (min-width: 1024px) {
+    :root { --t-h2: 66px; --gl: max(44px, (100% - var(--max-w)) / 2); --gr: max(77px, (100% - var(--max-w)) / 2); --strip: 0px; --step-px: 30px; --plot-h: 264px; --pip: 8px; --pip-row: 34px; }
+  }
+  /* The curve grows with the window's height, in steps of 64px (4px per attempt), so it fills its screen. */
+  @media (min-width: 1024px) and (min-height: 700px) { :root { --plot-h: 320px; } }
+  @media (min-width: 1024px) and (min-height: 780px) { :root { --plot-h: 384px; --pip: 10px; --pip-row: 40px; } }
+  @media (min-width: 1024px) and (min-height: 860px) { :root { --plot-h: 448px; } }
+  @media (min-width: 1024px) and (min-height: 960px) { :root { --plot-h: 512px; } }
+  @media (min-width: 1280px) { :root { --t-h2: 44px; --t-top: var(--t-body); --lh-top: var(--lh-body); } }
+  @media (min-width: 1366px) { :root { --t-top: var(--t-lede); --lh-top: var(--lh-lede); } }
+  @media (min-width: 1280px) and (min-height: 760px) { :root { --t-h2: 66px; } }
+
+  /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+
+  /* Hidden only when the libraries loaded, and only until the load sequence takes over. */
+  html.js:not(.go) .cut, html.js:not(.go) .h2, html.js:not(.go) .ed { visibility: hidden; }
+  @media (prefers-reduced-motion: reduce) {
+    html.js:not(.go) .cut, html.js:not(.go) .h2, html.js:not(.go) .ed { visibility: visible; }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { background: var(--ground); }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--white);
+    font: 400 var(--t-body)/var(--lh-body) var(--font);
+    -webkit-font-smoothing: antialiased;
+  }
+  h2, h3, h4, b, th, dt, legend { font-weight: 400; }
+  i { font-style: normal; }
+  p { margin: 0; }
+  [hidden] { display: none !important; }
+  :focus-visible { outline: 2px solid var(--spawn); outline-offset: 3px; }
+  ::selection { background: var(--spawn); color: var(--deep); }
+  .vh { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+  svg { display: block; fill: currentColor; shape-rendering: crispEdges; }
+
+  .about { position: relative; overflow: clip; padding: 0 var(--gr) 0 var(--gl); }
+  .part { margin-top: calc(var(--gap-part) - var(--s4)); padding-top: var(--s4); }
+  .h3 { margin: 0; font-size: var(--t-h3); line-height: var(--lh-h3); }
+  .intro { margin-top: var(--s3); max-width: 60ch; }
+  .duo { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s3) var(--s4); }
+  @media (min-width: 1024px) { .duo { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); } }
+
+  /* ---------- The camera: a minimap of the page, fixed at the right edge (a strip along the bottom on phones) ---------- */
+  .mm { position: fixed; z-index: 20; left: 0; right: 0; bottom: 0; padding: 4px; background: var(--well); font-size: var(--t-small); line-height: var(--lh-small); }
+  .mm ol { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin: 0; padding: 0; list-style: none; }
+  .mm a { display: grid; place-items: center; height: var(--hit); background: var(--ground); color: var(--sand); text-decoration: none; -webkit-tap-highlight-color: transparent; }
+  .mm a[aria-current] { color: var(--white); }
+  .mm a:focus-visible { outline-offset: -4px; }
+  @media (hover: hover) { .mm a:hover { background: var(--deep); color: var(--white); } }
+  .mm a.is-down { background: var(--white); color: var(--ground); }
+  /* The camera frames the block of the part on screen and moves in whole blocks: a cut, never a slide. */
+  .cam {
+    position: absolute; left: 1px; top: 1px;
+    width: calc((100% - 32px) / 7 + 6px); height: calc(var(--hit) + 6px);
+    border: 2px solid var(--door);
+    transform: translateX(calc(var(--at, 0) * (100% - 2px)));
+    pointer-events: none;
+  }
+  @media (min-width: 1024px) {
+    .mm { left: auto; right: 6px; bottom: auto; top: 50%; transform: translateY(-50%); }
+    .mm ol { grid-template-columns: var(--mm-w); gap: var(--mm-gap); }
+    .mm a { height: var(--mm-h); }
+    .cam { width: calc(var(--mm-w) + 6px); height: calc(var(--mm-h) + 6px); transform: translateY(calc(var(--at, 0) * (var(--mm-h) + var(--mm-gap)))); }
+  }
+
+  /* ---------- 1. Top ---------- */
+  .top { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s5) var(--s4); margin-top: 0; }
+  /* Beside the editor (1280 and up): the name and the claim run across the top, the lede and the buttons sit left of the room. */
+  @media (min-width: 1280px) {
+    .top { grid-template-columns: minmax(0, 1fr) 720px; grid-template-rows: auto auto auto auto 1fr; row-gap: 0; align-items: start; }
+    .top-copy { display: contents; }
+    .top .who, .top .h2 { grid-column: 1 / -1; }
+    .top .h2 { margin-bottom: var(--s4); }
+    .top .lede { grid-area: 3 / 1; margin-top: 4px; }
+    .top .actions { grid-area: 4 / 1; }
+    .top .editor { grid-area: 3 / 2 / 6 / 3; }
+  }
+  @media (min-width: 1280px) and (max-height: 759px) {   /* short, wide windows: the whole room and its readout stay above the fold */
+    .top { padding-top: var(--s3); }
+    .top .h2 { margin: var(--s2) 0 var(--s3); }
+    .top .ed-bar { margin-bottom: var(--s2); }
+    .top .ed-read { margin-top: var(--s2); }
+  }
+  .who { display: flex; flex-wrap: wrap; gap: 0 var(--s3); }
+  .who span { color: var(--sand); }
+  .h2 { position: relative; margin: var(--s3) 0 0; font-size: var(--t-h2); line-height: 1; text-wrap: balance; }
+  .h2 .w { display: inline-block; }
+  .h2.is-split .w { visibility: hidden; }
+  .h2.is-split .w.on { visibility: visible; }
+  .cbox { position: absolute; border: 3px solid var(--spawn); pointer-events: none; }   /* a headline line's collision box */
+  .lede { margin-top: var(--s3); max-width: 46ch; font-size: var(--t-top); line-height: var(--lh-top); }
+  .actions { display: flex; flex-wrap: wrap; gap: var(--s3); margin-top: var(--s4); }
+
+  /* The grey box: a tile editor. The canvas is 6 art pixels per tile, scaled by a whole number. */
+  .editor { min-width: 0; }
+  .ed-frame { width: fit-content; max-width: 100%; background: var(--well); }
+  .ed { display: block; width: 100%; aspect-ratio: 20 / 9; image-rendering: pixelated; touch-action: pan-y; cursor: crosshair; }
+  .ed-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3); margin: 4px 0 var(--s3) 4px; }
+  .brushes { display: flex; gap: var(--s2); }
+  .brush {
+    position: relative; flex: none;
+    width: var(--hit); height: var(--hit);
+    padding: 0; border: 0;
+    background: var(--well); color: var(--sand);
+    font: inherit; cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .brush canvas { position: absolute; left: 10px; top: 4px; width: 24px; height: 24px; image-rendering: pixelated; }
+  .brush .k { position: absolute; left: 0; right: 0; bottom: 2px; font-size: var(--t-mark); line-height: 11px; text-align: center; }
+  @media (hover: hover) { .brush:hover { background: var(--deep); } }
+  .brush.is-down canvas { transform: translateY(2px); }
+  /* The active brush wears a selection frame; the form's swatches and the chart's tabs and columns reuse it. */
+  .brush[aria-pressed="true"]::after, .sw input:checked + .tile::after, .tab:has(input:checked)::after {
+    content: ""; position: absolute; inset: -4px; border: 2px solid var(--white); pointer-events: none;
+  }
+  .brush[aria-pressed="true"] { color: var(--white); }
+  .ed-read { margin-top: var(--s3); }
+  .ed-read, .ed-help { margin-top: var(--s2); color: var(--sand); font-size: var(--t-small); line-height: var(--lh-small); max-width: 82ch; }
+  .ed-read { color: var(--white); }
+
+  /* ---------- Buttons: tiles with stepped corners. The corners live on .face and .inner, never on the control. ---------- */
+  .btn {
+    --corners: polygon(0 var(--notch), var(--notch) var(--notch), var(--notch) 0, calc(100% - var(--notch)) 0, calc(100% - var(--notch)) var(--notch), 100% var(--notch), 100% calc(100% - var(--notch)), calc(100% - var(--notch)) calc(100% - var(--notch)), calc(100% - var(--notch)) 100%, var(--notch) 100%, var(--notch) calc(100% - var(--notch)), 0 calc(100% - var(--notch)));
+    position: relative;
+    display: inline-block;
+    padding: 0; border: 0; background: none;
+    color: var(--ink); text-decoration: none;
+    font: inherit; line-height: 16.5px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .face { display: block; padding: var(--bw); background: var(--rim); clip-path: var(--corners); }
+  .inner {
+    display: flex; align-items: center; justify-content: center;
+    min-height: calc(var(--tap) - 2 * var(--bw));
+    padding: 0 var(--s3);
+    background: var(--fill);
+    clip-path: var(--corners);
+  }
+  /* Primary, the jump: the whole tile hops once when pointed at, lands with two dust blocks, and squashes while pressed. */
+  .btn-jump { --bw: 0px; --rim: var(--spawn); --fill: var(--spawn); --ink: var(--deep); }
+  .btn-jump:focus-visible, .btn-jump.is-down { --fill: var(--spawn-hot); --rim: var(--spawn-hot); }
+  @media (hover: hover) { .btn-jump:hover { --fill: var(--spawn-hot); --rim: var(--spawn-hot); } }
+  .dust { position: absolute; bottom: 0; width: 8px; height: 8px; background: var(--sand); visibility: hidden; pointer-events: none; }
+  .dust.l { left: -12px; }
+  .dust.r { right: -12px; }
+  .btn-jump.is-down .face { transform: scale(var(--sx, 1.02), var(--sy, .92)); transform-origin: 50% 100%; }
+  .btn-jump.is-down .dust { visibility: visible; }
+  html.fx .btn-jump.is-hop .face { animation: hop var(--d-hop) steps(1); }
+  html.fx .btn-jump.is-hop .dust.l { animation: dust-l var(--d-hop) steps(1); }
+  html.fx .btn-jump.is-hop .dust.r { animation: dust-r var(--d-hop) steps(1); }
+  @keyframes hop { 0% { transform: translateY(-3px); } 20% { transform: translateY(-6px); } 40% { transform: translateY(-3px); } 60%, 100% { transform: none; } }
+  @keyframes dust-l { 0% { visibility: hidden; } 60% { visibility: visible; transform: none; } 80%, 100% { visibility: visible; transform: translate(-7px, -5px) scale(.67); } }
+  @keyframes dust-r { 0% { visibility: hidden; } 60% { visibility: visible; transform: none; } 80%, 100% { visibility: visible; transform: translate(7px, -5px) scale(.67); } }
+  /* Secondary, key and lock: a key at the left end of a lane under the label, a lock at the right end. Pointing sends the
+     key to the lock in three steps; pressing opens the lock and inverts the face. */
+  .btn-lock { --bw: 2px; --rim: var(--sand); --fill: var(--ground); --ink: var(--white); }
+  .btn-lock .inner { display: grid; grid-template-rows: 16.5px 15px; row-gap: 2px; align-content: center; justify-items: stretch; padding: 0 var(--s2); }
+  .btn-lock .label { text-align: center; padding: 0 var(--s2); }
+  .lane { position: relative; height: 15px; }
+  .run { position: absolute; left: 0; right: 51px; top: 0; bottom: 0; }
+  html.fx .run { transition: transform var(--d-key) steps(3, end); }
+  .keyi { position: absolute; left: 0; top: 2px; width: 30px; height: 12px; }
+  .locki { position: absolute; right: 0; top: 0; width: 15px; height: 15px; }
+  .locki.open { display: none; }
+  .btn-lock:focus-visible .run, .btn-lock.is-down .run { transform: translateX(100%); }
+  .btn-lock:focus-visible { --rim: var(--white); }
+  @media (hover: hover) { .btn-lock:hover .run { transform: translateX(100%); } .btn-lock:hover { --rim: var(--white); } }
+  .btn-lock.is-down { --fill: var(--white); --rim: var(--white); --ink: var(--ground); }
+  .btn-lock.is-down .locki.shut { display: none; }
+  .btn-lock.is-down .locki.open { display: block; }
+
+  /* ---------- Text links, breadcrumbs: one dot per character cell; the player hops along them two at a time ---------- */
+  .u {
+    position: relative;
+    display: inline-block;
+    padding: 11px 0; margin: -11px 0;
+    border: 0;
+    color: var(--white);
+    font: inherit;
+    text-decoration: none; text-align: left;
+    cursor: pointer;
+    background: linear-gradient(90deg, var(--sand) 0 3px, transparent 3px 10px, var(--sand) 10px 13px, transparent 13px) 0 calc(100% - 12px) / calc(2 * var(--ch)) 3px repeat-x;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .u::before, .u::after { content: ""; position: absolute; visibility: hidden; pointer-events: none; }
+  /* The dots already passed, in the player's hue, uncovered up to where the player stands. */
+  .u::before {
+    left: 0; right: 0; bottom: 12px; height: 3px;
+    background: linear-gradient(90deg, var(--spawn) 0 3px, transparent 3px 10px, var(--spawn) 10px 13px, transparent 13px) 0 0 / calc(2 * var(--ch)) 3px repeat-x;
+    clip-path: inset(0 var(--back, 0px) 0 0);
+  }
+  /* The player: a 7px block that stands on a dot. --back is how far it still is from the last dot. */
+  .u::after { left: calc(100% - var(--ch) - 2px); bottom: 10px; width: 7px; height: 7px; background: var(--spawn); transform: translateX(calc(-1 * var(--back, 0px))); }
+  .u:focus-visible::before, .u:focus-visible::after, .u.is-down::before, .u.is-down::after, .u.is-tap::before, .u.is-tap::after { visibility: visible; }
+  @media (hover: hover) { .u:hover::before, .u:hover::after { visibility: visible; } }
+  button.u { min-height: var(--hit); }
+
+  /* ---------- 2. Now ---------- */
+  .facts { margin: 0; border-bottom: 2px solid var(--plate); }
+  .facts > div { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 var(--s4); padding: var(--s3) 0; border-top: 2px solid var(--plate); }
+  @media (min-width: 600px) { .facts > div { grid-template-columns: 12ch minmax(0, 1fr); } }
+  .facts dt { color: var(--sand); }
+  .facts dd { margin: 0; max-width: 62ch; }
+
+  /* ---------- 3. The story so far: five rooms ---------- */
+  .story-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0 var(--s4); }
+  .story-step { color: var(--sand); }
+  .story-stage { display: grid; justify-items: center; margin-top: var(--s3); background: var(--well); }
+  .dungeon { display: block; image-rendering: pixelated; }
+  .chapters { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 286px), 1fr)); gap: var(--s3); margin: var(--s3) 0 0; padding: 0; list-style: none; }
+  .chapter { padding: var(--s3); background: var(--well); }
+  .r0 { --hue: var(--solid); } .r1 { --hue: var(--ladder); } .r2 { --hue: var(--water); } .r3 { --hue: var(--moss); } .r4 { --hue: var(--key); }
+  .tag { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s1) var(--s2); color: var(--sand); font-size: var(--t-small); line-height: var(--lh-small); }
+  .tag span { padding: 0 var(--s1); background: var(--hue); color: var(--deep); }
+  .chapter h4 { margin: var(--s2) 0 0; font-size: var(--t-lede); line-height: var(--lh-body); }
+  .chapter .txt { margin-top: var(--s2); max-width: 62ch; }
+  /* Pinned (motion allowed, viewport tall enough): the scene holds the screen while scroll walks the marker.
+     The chapter cards share one cell; only the room being walked is shown, and it changes with a cut. */
+  .pin .story { height: calc(100vh + var(--walk, 2400px)); height: calc(100svh + var(--walk, 2400px)); padding-top: 0; }
+  .pin .story-pin { position: sticky; top: 0; height: 100vh; height: 100svh; padding: var(--s4) 0 calc(var(--s3) + var(--strip)); }
+  .pin .chapters { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .pin .chapter { grid-area: 1 / 1; }
+  .pin .chapter:not(.is-now) { clip-path: inset(50%); pointer-events: none; }
+  .pin.side .story-pin { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); column-gap: var(--s4); align-items: start; }
+  .pin.side .story-head { grid-column: 1 / -1; }
+  @media (min-width: 768px) {
+    .pin:not(.side) .chapter { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); column-gap: var(--s4); }
+    .pin:not(.side) .chapter .txt { grid-column: 2; grid-row: 1 / 3; margin-top: 0; }
+  }
+  @media (max-width: 599px) {
+    .pin .story-pin { padding-top: var(--s3); }
+    .pin .chapter { padding: var(--s2); }
+    .pin .chapter h4 { margin-top: var(--s1); font-size: var(--t-body); line-height: var(--lh-small); }
+    .pin .chapter .txt { margin-top: var(--s1); }
+    .pin .story-stage, .pin .chapters { margin-top: var(--s2); }
+  }
+
+  /* ---------- 4. By the numbers: a stepped line with three marker rows ---------- */
+  .curve { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s3) var(--s4); }
+  @media (min-width: 1024px) {
+    .curve { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); grid-template-rows: auto 1fr; }
+    .curve-head { grid-area: 1 / 1; }
+    .plot { grid-area: 1 / 2 / 3 / 3; align-self: start; }
+    .curve-read { grid-area: 2 / 1; }
+  }
+  .tabs { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s3); margin: var(--s4) 0 0; padding: 0; border: 0; }
+  .tab { position: relative; display: grid; place-items: center; min-height: var(--hit); padding: 0 var(--s2); background: var(--well); color: var(--sand); cursor: pointer; }
+  .tab input, .sw input, .lever input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+  .tab:has(input:checked) { color: var(--white); }
+  .tab:has(input:focus-visible), .sw input:focus-visible + .tile { outline: 2px solid var(--spawn); outline-offset: 6px; }
+  @media (hover: hover) { .tab:hover, .sw:hover .tile { background: var(--deep); } }
+  .plot { display: grid; grid-template-columns: 3ch minmax(0, 1fr); column-gap: var(--s1); padding: var(--s3) var(--s3) var(--s2) var(--s2); background: var(--well); font-size: var(--t-small); line-height: var(--lh-small); }
+  .yax { display: flex; flex-direction: column; justify-content: space-between; height: calc(var(--plot-h) + 22px); margin-top: -11px; color: var(--sand); text-align: right; }
+  .cols { position: relative; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); }
+  /* Four grid steps of four attempts each, and the base line. */
+  .cols::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: var(--plot-h); background: linear-gradient(var(--ground) 0 2px, transparent 2px) 0 0 / 100% 25%; border-bottom: 2px solid var(--sand); pointer-events: none; }
+  .col {
+    position: relative;
+    display: grid; grid-template-rows: var(--plot-h) repeat(3, var(--pip-row)) 22px; justify-items: center; align-items: center;
+    min-width: 0; padding: 0; border: 0;
+    background: none; color: var(--sand);
+    font: inherit; cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  @media (hover: hover) { .col:hover { background: var(--deep); } }
+  .col.is-down { background: var(--deep); }
+  .col[aria-pressed="true"] { color: var(--white); }
+  .col[aria-pressed="true"]::after { content: ""; position: absolute; inset: 0; border: 2px solid var(--white); pointer-events: none; }
+  .col:focus-visible { outline-offset: 2px; z-index: 1; }
+  .area { position: relative; width: 100%; height: 100%; }
+  .seg, .rise { position: absolute; background: var(--white); }
+  .seg { left: 0; right: 0; height: 4px; bottom: calc(var(--v) / var(--max) * 100%); }
+  .rise { right: 0; width: 4px; bottom: calc(var(--lo) / var(--max) * 100%); height: calc((var(--hi) - var(--lo)) / var(--max) * 100% + 4px); }
+  .pips { display: grid; grid-template-columns: repeat(3, var(--pip)); grid-auto-rows: var(--pip); gap: 1px; align-content: start; height: calc(3 * var(--pip) + 2px); transform: scaleY(-1); }
+  .pips i, .pip { width: var(--pip); height: var(--pip); }
+  .hz i, .pip.hz { background: var(--spike); box-shadow: inset 0 0 0 1px var(--sand); }
+  .co i, .pip.co { background: var(--coin); }
+  .ex i, .pip.ex { background: var(--door); }
+  .legend { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 0 var(--s3); margin: var(--s2) 0 0; padding: 0; list-style: none; color: var(--sand); }
+  .legend li { display: flex; align-items: center; gap: var(--s1); }
+  .legend .ln { width: 14px; height: 4px; background: var(--white); }
+  .readout { min-height: calc(3 * var(--lh-body)); }
+  .note { margin-top: var(--s2); color: var(--sand); max-width: 56ch; }
+  .tbl-d { margin-top: var(--s3); }
+  .tbl-d summary, .rules summary { cursor: pointer; list-style: none; }
+  .tbl-d summary::-webkit-details-marker, .rules summary::-webkit-details-marker { display: none; }
+  .tbl-d summary { display: flex; align-items: center; gap: var(--s2); min-height: var(--hit); width: fit-content; }
+  .tog { flex: none; width: 14px; height: 14px; background: linear-gradient(var(--white) 0 0) 0 6px / 14px 2px no-repeat, linear-gradient(var(--white) 0 0) 6px 0 / 2px 14px no-repeat; }
+  details[open] > summary .tog { background: linear-gradient(var(--white) 0 0) 0 6px / 14px 2px no-repeat; }
+  .tbl { width: 100%; margin-top: var(--s2); border-collapse: collapse; font-size: var(--t-small); line-height: var(--lh-small); }
+  .tbl caption { padding-bottom: var(--s1); color: var(--sand); text-align: left; }
+  .tbl th, .tbl td { padding: 3px var(--s2) 3px 0; border-top: 2px solid var(--plate); text-align: right; }
+  .tbl th:first-child, .tbl td:first-child { text-align: left; }
+  .tbl thead th { border-top: 0; color: var(--sand); vertical-align: bottom; }
+
+  /* ---------- 5. A toy: the layers panel ---------- */
+  .toy-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s3) var(--s4); margin-top: var(--s4); }
+  @media (min-width: 1024px) { .toy-grid { grid-template-columns: auto minmax(0, 1fr); align-items: start; } }
+  .room-frame { width: fit-content; background: var(--well); }
+  .room { display: block; width: 320px; height: 192px; image-rendering: pixelated; }
+  .layers { max-width: 46ch; }
+  .layers ul { display: grid; gap: var(--s1); margin: 0; padding: 0; list-style: none; }
+  .layer { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s1); }
+  .eye {
+    display: flex; align-items: center; gap: var(--s2);
+    min-height: var(--tap); padding: 0 var(--s2); border: 0;
+    background: var(--well); color: var(--white);
+    font: inherit; text-align: left; cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .eye svg { flex: none; width: 27px; height: 15px; }
+  .eye .shut { display: none; }
+  .eye[aria-pressed="false"] { color: var(--sand); }
+  .eye[aria-pressed="false"] .open { display: none; }
+  .eye[aria-pressed="false"] .shut { display: block; }
+  .eye[data-l="3"][aria-pressed="true"] svg { color: var(--light); }
+  .eye.is-down svg { transform: translateY(2px); }
+  .solo {
+    min-width: 66px; min-height: var(--tap); padding: 0 var(--s2);
+    border: 2px solid var(--sand); background: var(--ground); color: var(--white);
+    font: inherit; cursor: pointer;
+    user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  @media (hover: hover) { .eye:hover { background: var(--deep); } .solo:hover { border-color: var(--white); } }
+  .solo.is-solo { border-color: var(--white); background: var(--white); color: var(--ground); }
+  .layers-read { min-height: calc(2 * var(--lh-body)); margin-top: var(--s3); }
+  .layers .note { margin-top: var(--s1); }
+
+  /* ---------- 6. Things I believe ---------- */
+  .rules { margin: 0; padding: 0; list-style: none; border-bottom: 2px solid var(--plate); }
+  .rules li { border-top: 2px solid var(--plate); }
+  .rules summary { display: grid; grid-template-columns: 2ch minmax(0, 1fr) 14px; gap: var(--s3); align-items: start; padding: var(--s3) 0; }
+  .rules .num { color: var(--sand); }
+  .rules .tog { margin-top: 7px; }
+  .rule-body { padding: 0 var(--s4) var(--s3) calc(2 * var(--ch) + var(--s3)); max-width: 70ch; }
+  @media (min-width: 600px) { .rules summary { font-size: var(--t-lede); line-height: var(--lh-lede); grid-template-columns: 2ch minmax(0, 1fr) 14px; } .rules .tog { margin-top: 10px; } .rule-body { padding-left: calc(28px + var(--s3)); } }
+
+  /* ---------- 7. Say hello ---------- */
+  .hello { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s5) var(--s4); }
+  @media (min-width: 1024px) { .hello { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); } }
+  .contact { margin: var(--s3) 0; padding: 0; list-style: none; }
+  .contact li { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 var(--s2); padding: var(--s1) 0; }
+  @media (min-width: 600px) { .contact li { grid-template-columns: 10ch minmax(0, 1fr); } }
+  .contact .ck { color: var(--sand); }
+  .contact a { overflow-wrap: anywhere; }
+  .form { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s1) var(--s4); }
+  @media (min-width: 600px) { .form { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .wide { grid-column: 1 / -1; } }
+  .fld { min-width: 0; margin: 0; padding: 0; border: 0; }
+  .lbl { display: block; margin-bottom: var(--s2); padding: 0; }
+  .lbl i { color: var(--sand); }
+  /* The hit box: on focus the field gains a dashed collision outline 4px outside its border, four corner handles and a
+     readout of its size in characters. These are the field's focus indicator, so the default outline is off. */
+  .box { position: relative; }
+  .box input, .box textarea {
+    display: block; width: 100%; height: var(--tap);
+    padding: 0 var(--s2);
+    border: 2px solid var(--sand); border-radius: 0;
+    background: var(--well); color: var(--white);
+    font: inherit;
+    appearance: none; outline: none;
+  }
+  .box textarea { height: auto; min-height: calc(4 * var(--lh-body) + 26px); padding: 11px var(--s2); resize: none; overflow: hidden; }
+  .box input:hover, .box textarea:hover { border-color: var(--white); }
+  .box input:focus, .box textarea:focus { border-color: var(--spawn); }
+  .hb {
+    position: absolute; inset: -6px; visibility: hidden; pointer-events: none;
+    background:
+      linear-gradient(90deg, var(--spawn) 50%, transparent 0) 0 0 / 8px 2px repeat-x,
+      linear-gradient(90deg, var(--spawn) 50%, transparent 0) 0 100% / 8px 2px repeat-x,
+      linear-gradient(0deg, var(--spawn) 50%, transparent 0) 0 0 / 2px 8px repeat-y,
+      linear-gradient(0deg, var(--spawn) 50%, transparent 0) 100% 0 / 2px 8px repeat-y;
+  }
+  .hb i { position: absolute; width: 6px; height: 6px; background: var(--spawn); visibility: hidden; }
+  .hb i:nth-child(1) { left: -2px; top: -2px; } .hb i:nth-child(2) { right: -2px; top: -2px; }
+  .hb i:nth-child(3) { right: -2px; bottom: -2px; } .hb i:nth-child(4) { left: -2px; bottom: -2px; }
+  .dim { position: absolute; right: -6px; bottom: calc(100% + 9px); color: var(--spawn); font-size: var(--t-small); line-height: 16.5px; visibility: hidden; pointer-events: none; }
+  .box:focus-within .hb, .box:focus-within .hb i, .box:focus-within .dim { visibility: visible; }
+  /* Invalid: the outline becomes a hatched bar under the field, and the message sits beneath it. */
+  .is-bad .box input, .is-bad .box textarea { border-color: var(--fault); }
+  .is-bad .hb { visibility: visible; background: repeating-linear-gradient(135deg, var(--fault) 0 3px, transparent 3px 6px) 0 100% / 100% 6px no-repeat; }
+  .err { min-height: calc(2 * var(--lh-small)); margin-top: 9px; color: var(--fault); font-size: var(--t-small); line-height: var(--lh-small); }
+  @media (min-width: 600px) { .err { min-height: var(--lh-small); } }
+  /* Choice controls. Radios are tile swatches; the chosen one wears the brush's selection frame. */
+  .swatches { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s2) var(--s3); }
+  @media (min-width: 480px) { .swatches { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+  .sw { position: relative; display: flex; align-items: center; gap: var(--s3); min-height: calc(var(--hit) + 8px); padding-left: 4px; cursor: pointer; }
+  .tile { position: relative; flex: none; display: grid; place-items: center; width: var(--hit); height: var(--hit); background: var(--well); }
+  .tile canvas { width: 30px; height: 30px; image-rendering: pixelated; }
+  .kinds.is-bad .swatches { padding-bottom: 12px; background: repeating-linear-gradient(135deg, var(--fault) 0 3px, transparent 3px 6px) 0 100% / 100% 6px no-repeat; }
+  /* The checkbox is a lever with two positions. */
+  .lever { position: relative; display: flex; align-items: center; gap: var(--s2); min-height: var(--tap); margin-top: calc(var(--lh-body) + var(--s2)); cursor: pointer; }
+  .lv { flex: none; width: 44px; height: 30px; color: var(--sand); }
+  .lv .on, .lever .yes { display: none; }
+  .lever input:checked ~ .lv { color: var(--white); }
+  .lever input:checked ~ .lv .on, .lever input:checked ~ .lv-text .yes { display: inline; }
+  .lever input:checked ~ .lv .off, .lever input:checked ~ .lv-text .no { display: none; }
+  .lever input:checked ~ .lv-text .lv-state { color: var(--white); }
+  .lever input:focus-visible ~ .lv { outline: 2px solid var(--spawn); outline-offset: 4px; }
+  .lv-state { color: var(--sand); }
+  .form .btn { justify-self: start; margin-top: var(--s2); }
+  /* Level clear */
+  .done h3 { margin: 0; font-size: var(--t-h3); line-height: var(--lh-h3); }
+  .done h3:focus { outline: none; }   /* focus lands here only so the result is announced */
+  .done > p { margin-top: var(--s2); max-width: 56ch; }
+  .done b, .echo dd { overflow-wrap: anywhere; }
+  .clear { position: relative; display: flex; align-items: flex-end; gap: var(--s2); height: 66px; margin-bottom: var(--s2); padding-left: 44px; }
+  .pole { position: absolute; left: 0; bottom: 0; width: 4px; height: 66px; background: var(--sand); }
+  .pole::after { content: ""; position: absolute; left: -4px; bottom: 0; width: 12px; height: 4px; background: var(--sand); }
+  .flag { position: absolute; left: 4px; top: 0; width: 28px; height: 18px; background: var(--door); clip-path: polygon(0 0, 100% 0, 100% 33.3%, 71.4% 33.3%, 71.4% 66.6%, 100% 66.6%, 100% 100%, 0 100%); }
+  .coin { width: 16px; height: 16px; margin-bottom: 6px; background: var(--coin); clip-path: polygon(25% 0, 75% 0, 75% 25%, 100% 25%, 100% 75%, 75% 75%, 75% 100%, 25% 100%, 25% 75%, 0 75%, 0 25%, 25% 25%); }
+  html.fx .done.is-run .flag { animation: raise var(--d-flag) steps(3, end) both; }
+  html.fx .done.is-run .coin { animation: cut-in 1ms steps(1, end) both; animation-delay: calc(var(--d-flag) + var(--d-coin) * var(--n)); }
+  @keyframes raise { from { transform: translateY(48px); } to { transform: none; } }
+  @keyframes cut-in { from { visibility: hidden; } to { visibility: visible; } }
+  .echo { margin: var(--s3) 0; border-bottom: 2px solid var(--plate); }
+  .echo > div { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 var(--s3); padding: var(--s1) 0; border-top: 2px solid var(--plate); }
+  @media (min-width: 600px) { .echo > div { grid-template-columns: 16ch minmax(0, 1fr); } }
+  .echo dt { color: var(--sand); }
+  .echo dd { margin: 0; }
+
+  /* ---------- The bio dialog: a new room, assembled from a 6 by 4 grid of tiles ---------- */
+  .bio {
+    width: min(682px, 100% - 22px); max-width: none; max-height: calc(100dvh - 44px);
+    margin: auto; padding: 0;
+    border: 2px solid var(--sand);
+    background: var(--well); color: var(--white);
+    overflow-y: auto; overscroll-behavior: contain;
+  }
+  .bio::backdrop { background: var(--scrim); }
+  .bio-panel { padding: var(--s4); }
+  .bio-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s3); }
+  .bio h2 { margin: 0; font-size: var(--t-h3); line-height: var(--lh-h3); }
+  .bio-panel > p { margin-top: var(--s3); max-width: 60ch; }
+  .bio .echo { margin-bottom: 0; }
+  .bio-tiles { position: absolute; inset: 0; display: grid; grid-template: repeat(4, 1fr) / repeat(6, 1fr); pointer-events: none; }
+  .bio-tiles i { visibility: hidden; background: var(--plate); box-shadow: inset 0 0 0 2px var(--ground); }
+  .bio-tiles i.on { visibility: visible; }
+  @media (max-width: 599px) { .bio-panel { padding: var(--s3); } .bio h2 { font-size: var(--t-lede); line-height: var(--lh-lede); } }
+
+  /* ---------- 8. Sign-off: the name in blocks, on a full-width well ---------- */
+  .signoff { margin-top: var(--gap-part); padding: var(--s6) 0 calc(var(--s5) + var(--strip)); background: var(--well); box-shadow: 0 0 0 100vmax var(--well); clip-path: inset(0 -100vmax); }
+  .word { display: block; touch-action: pan-y; }
+  .sign-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s1) var(--s4); margin-top: var(--s4); }
+  .sign-row span { display: flex; flex-wrap: wrap; gap: 0 var(--s4); }
+
+  @media (max-width: 599px) {
+    .h3 { font-size: var(--t-lede); line-height: var(--lh-lede); }
+    .actions { display: grid; }
+    .actions .btn, .form .btn { display: block; justify-self: stretch; }
+    .lever { margin-top: 0; }
+    .plot { padding: var(--s3) var(--s2) var(--s2) var(--s1); }
+    .done h3 { font-size: var(--t-lede); line-height: var(--lh-lede); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition-duration: 0s !important; }
+  }
+</style>
+</head>
+<body>
+
+<section class="about" id="about" aria-labelledby="about-title">
+  <nav class="mm" aria-label="Parts of this page">
+    <ol>
+      <li><a href="#top" aria-current="true">Top</a></li>
+      <li><a href="#now">Now</a></li>
+      <li><a href="#story">Story</a></li>
+      <li><a href="#numbers">Curve</a></li>
+      <li><a href="#toy">Toy</a></li>
+      <li><a href="#rules">Rules</a></li>
+      <li><a href="#hello">Hello</a></li>
+    </ol>
+    <i class="cam" aria-hidden="true"></i>
+  </nav>
+
+  <div class="part top" id="top">
+    <div class="top-copy">
+      <p class="who cut"><b>Tomás Ibarra</b> <span>Level designer in Montevideo</span></p>
+      <h2 class="h2" id="about-title">The first room teaches the whole game.</h2>
+      <p class="lede cut">I build levels for 2D platformers and top-down adventures: grey-box layouts, pacing, secrets and the first hour of play. The room on this page is unfinished on purpose. Paint in it.</p>
+      <div class="actions cut">
+        <a class="btn btn-jump" href="#hello"><span class="face"><span class="inner"><span class="label">Hire me for a level</span></span></span><i class="dust l" aria-hidden="true"></i><i class="dust r" aria-hidden="true"></i></a>
+        <button class="btn btn-lock" type="button" data-bio aria-haspopup="dialog" aria-controls="bio"><span class="face"><span class="inner"><span class="label">Read the short bio</span><span class="lane" aria-hidden="true"><span class="run"><svg class="keyi" viewBox="0 0 10 4"><path d="M1 0h2v1H1zM0 1h1v2H0zM3 1h7v1H3zM3 2h1v1H3zM6 2h1v1H6zM8 2h1v1H8zM1 3h2v1H1z"/></svg></span><svg class="locki shut" viewBox="0 0 5 5"><path d="M1 0h3v1H1zM1 1h1v1H1zM3 1h1v1H3zM0 2h5v1H0zM0 3h2v1H0zM3 3h2v1H3zM0 4h5v1H0z"/></svg><svg class="locki open" viewBox="0 0 5 5"><path d="M0 0h3v1H0zM0 1h1v1H0zM0 2h5v1H0zM0 3h2v1H0zM3 3h2v1H3zM0 4h5v1H0z"/></svg></span></span></span></button>
+      </div>
+    </div>
+
+    <div class="editor" id="editor">
+      <div class="ed-bar cut">
+        <div class="brushes" role="group" aria-label="Brush">
+          <button class="brush" type="button" data-t="1" aria-pressed="true"><canvas width="6" height="6" aria-hidden="true"></canvas><span class="vh">Solid ground, key </span><span class="k">1</span></button>
+          <button class="brush" type="button" data-t="2" aria-pressed="false"><canvas width="6" height="6" aria-hidden="true"></canvas><span class="vh">Ladder, key </span><span class="k">2</span></button>
+          <button class="brush" type="button" data-t="3" aria-pressed="false"><canvas width="6" height="6" aria-hidden="true"></canvas><span class="vh">Water, key </span><span class="k">3</span></button>
+          <button class="brush" type="button" data-t="4" aria-pressed="false"><canvas width="6" height="6" aria-hidden="true"></canvas><span class="vh">Moss platform, key </span><span class="k">4</span></button>
+          <button class="brush" type="button" data-t="5" aria-pressed="false"><canvas width="6" height="6" aria-hidden="true"></canvas><span class="vh">Key, key </span><span class="k">5</span></button>
+          <button class="brush" type="button" data-t="6" aria-pressed="false"><canvas width="6" height="6" aria-hidden="true"></canvas><span class="vh">Eraser, key </span><span class="k">6</span></button>
+        </div>
+        <button class="u" id="ed-reset" type="button">Reset the room</button>
+      </div>
+      <div class="ed-frame"><canvas class="ed" width="240" height="108" tabindex="0" role="application" aria-label="Tile editor: a room of 40 by 18 tiles that you can paint" aria-describedby="ed-help ed-read"></canvas></div>
+      <p class="ed-read cut" id="ed-read">Brush: solid ground.</p>
+      <p class="ed-help cut" id="ed-help">Click or drag over the room to paint with the chosen tile. On touch, drag sideways or tap. With a keyboard: focus the room, arrows move, Space places, 1 to 6 pick a tile.</p>
+      <p class="vh" id="ed-say" aria-live="polite"></p>
+    </div>
+  </div>
+
+  <div class="part duo" id="now">
+    <h3 class="h3">Now</h3>
+    <dl class="facts">
+      <div><dt>Building</dt><dd>The first hour of Saltmarsh Post, a top-down adventure by Tres Mareas: six screens and the lighthouse cellar, due in March 2027.</dd></div>
+      <div><dt>Learning</dt><dd>To write my own auto-tile rules instead of painting corners by hand. The room at the top of this page runs on the simple ones.</dd></div>
+      <div><dt>Available</dt><dd>Booked until February 2027. From March I have room for two projects: one platformer, and one of anything else.</dd></div>
+    </dl>
+  </div>
+
+  <div class="part story" id="story">
+    <div class="story-pin">
+      <div class="story-head">
+        <h3 class="h3">The story so far</h3>
+        <p class="story-step">Five rooms, from 2013 to now</p>
+      </div>
+      <div class="story-stage"><canvas class="dungeon" width="258" height="108" aria-hidden="true"></canvas></div>
+      <ol class="chapters">
+        <li class="chapter r0">
+          <p class="tag"><span>Room 1</span> 2013 to 2015</p>
+          <h4>I walked into walls for a living</h4>
+          <p class="txt">My first job was testing at Cardumen, a studio of twelve in Montevideo. I checked Marea Baja by running at every wall in it and filed 1,140 collision bugs. That is where I learned what a level is under the art: boxes.</p>
+        </li>
+        <li class="chapter r1">
+          <p class="tag"><span>Room 2</span> 2015 to 2017</p>
+          <h4>A ladder is a promise</h4>
+          <p class="txt">Cardumen let me build nine screens of Faro Arriba, a vertical platformer about a lighthouse keeper. My first ladders led nowhere worth going. Now I show the top of every climb before the player starts it.</p>
+        </li>
+        <li class="chapter r2">
+          <p class="tag"><span>Room 3</span> 2017 to 2019</p>
+          <h4>Fourteen floods</h4>
+          <p class="txt">I moved to top-down adventures at Dos Orillas. The flooded archive in Agua Quieta took fourteen layouts before players could read the water level without a line of text. The fifteenth shipped.</p>
+        </li>
+        <li class="chapter r3">
+          <p class="tag"><span>Room 4</span> 2019 to 2022</p>
+          <h4>On my own</h4>
+          <p class="txt">I went freelance with one client and four months of rent. Small studios kept hiring me for the same thing: the first hour, where a game has to teach itself. Eleven games so far.</p>
+        </li>
+        <li class="chapter r4">
+          <p class="tag"><span>Room 5</span> 2022 to now</p>
+          <h4>The room nobody needs</h4>
+          <p class="txt">These days I am asked for openings and for secrets. Kiln Road hides 31 rooms, and players took 16 days to find the last one. Twice a year I teach a short grey-box course in Montevideo.</p>
+        </li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="part curve" id="numbers">
+    <div class="curve-head">
+      <h3 class="h3">By the numbers</h3>
+      <p class="intro">How hard each level turned out, measured after release: the median number of attempts a player needed, level by level. Under the line is what I put in each level.</p>
+      <fieldset class="tabs" id="curve-tabs"><legend class="vh">Game</legend></fieldset>
+    </div>
+    <div class="plot">
+      <div class="yax" aria-hidden="true"><span>16</span><span>12</span><span>8</span><span>4</span><span>0</span></div>
+      <div class="cols" id="curve-cols" role="group" aria-label="Levels 1 to 12. Use the left and right arrow keys to move between levels."></div>
+      <ul class="legend" aria-hidden="true">
+        <li><i class="ln"></i>Median attempts</li>
+        <li><i class="pip hz"></i>Hazards</li>
+        <li><i class="pip co"></i>Collectibles</li>
+        <li><i class="pip ex"></i>Exits</li>
+      </ul>
+    </div>
+    <div class="curve-read">
+      <p class="readout" id="curve-read" aria-live="polite"></p>
+      <p class="note" id="curve-note"></p>
+      <details class="tbl-d">
+        <summary><i class="tog" aria-hidden="true"></i>Read the figures as a table</summary>
+        <table class="tbl">
+          <caption id="curve-cap"></caption>
+          <thead><tr><th scope="col">Level</th><th scope="col">Median attempts</th><th scope="col">Hazards</th><th scope="col">Collectibles</th><th scope="col">Exits</th></tr></thead>
+          <tbody id="curve-rows"></tbody>
+        </table>
+      </details>
+    </div>
+  </div>
+
+  <div class="part" id="toy">
+    <h3 class="h3">The layers panel</h3>
+    <p class="intro">One finished room from Kiln Road, in the four layers I work in. Switch them off from the top down and you are back at the grey box. Hold Solo to see one layer alone.</p>
+    <div class="toy-grid">
+      <div class="room-frame"><canvas class="room" width="160" height="96" role="img" aria-label="A finished room, 20 by 12 tiles: a mossy ledge with a key, a ladder, a floating block, a water pit, two spikes, coins, a door and two hanging lamps."></canvas></div>
+      <div class="layers">
+        <ul>
+          <li class="layer"><button class="eye" type="button" data-l="3" aria-pressed="true"><svg class="open" viewBox="0 0 9 5" aria-hidden="true"><path d="M2 0h5v1H2zM1 1h1v1H1zM7 1h1v1H7zM0 2h1v1H0zM8 2h1v1H8zM3 2h3v1H3zM1 3h1v1H1zM7 3h1v1H7zM2 4h5v1H2z"/></svg><svg class="shut" viewBox="0 0 9 5" aria-hidden="true"><path d="M0 2h9v1H0zM1 3h1v1H1zM4 3h1v1H4zM7 3h1v1H7z"/></svg><span>Lighting</span></button><button class="solo" type="button" data-l="3">Solo<span class="vh"> lighting</span></button></li>
+          <li class="layer"><button class="eye" type="button" data-l="2" aria-pressed="true"><svg class="open" viewBox="0 0 9 5" aria-hidden="true"><path d="M2 0h5v1H2zM1 1h1v1H1zM7 1h1v1H7zM0 2h1v1H0zM8 2h1v1H8zM3 2h3v1H3zM1 3h1v1H1zM7 3h1v1H7zM2 4h5v1H2z"/></svg><svg class="shut" viewBox="0 0 9 5" aria-hidden="true"><path d="M0 2h9v1H0zM1 3h1v1H1zM4 3h1v1H4zM7 3h1v1H7z"/></svg><span>Entities</span></button><button class="solo" type="button" data-l="2">Solo<span class="vh"> entities</span></button></li>
+          <li class="layer"><button class="eye" type="button" data-l="1" aria-pressed="true"><svg class="open" viewBox="0 0 9 5" aria-hidden="true"><path d="M2 0h5v1H2zM1 1h1v1H1zM7 1h1v1H7zM0 2h1v1H0zM8 2h1v1H8zM3 2h3v1H3zM1 3h1v1H1zM7 3h1v1H7zM2 4h5v1H2z"/></svg><svg class="shut" viewBox="0 0 9 5" aria-hidden="true"><path d="M0 2h9v1H0zM1 3h1v1H1zM4 3h1v1H4zM7 3h1v1H7z"/></svg><span>Collision</span></button><button class="solo" type="button" data-l="1">Solo<span class="vh"> collision</span></button></li>
+          <li class="layer"><button class="eye" type="button" data-l="0" aria-pressed="true"><svg class="open" viewBox="0 0 9 5" aria-hidden="true"><path d="M2 0h5v1H2zM1 1h1v1H1zM7 1h1v1H7zM0 2h1v1H0zM8 2h1v1H8zM3 2h3v1H3zM1 3h1v1H1zM7 3h1v1H7zM2 4h5v1H2z"/></svg><svg class="shut" viewBox="0 0 9 5" aria-hidden="true"><path d="M0 2h9v1H0zM1 3h1v1H1zM4 3h1v1H4zM7 3h1v1H7z"/></svg><span>Background</span></button><button class="solo" type="button" data-l="0">Solo<span class="vh"> background</span></button></li>
+        </ul>
+        <p class="layers-read" id="layers-read" aria-live="polite">All four layers: the lit room.</p>
+        <p class="note">The eye switches a layer off and on. Solo shows one layer for as long as you hold the button, with a pointer, a finger or the Space key.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="part duo" id="rules">
+    <h3 class="h3">Six rules I work by</h3>
+    <ol class="rules">
+      <li><details open>
+        <summary><span class="num">1</span><span>The first room teaches the whole game.</span><i class="tog" aria-hidden="true"></i></summary>
+        <div class="rule-body"><p>Everything the player will need in hour ten should be visible, in small, in the first thirty seconds: a jump, a ladder, something out of reach. <a class="u" href="#top">Paint a first room yourself</a></p></div>
+      </details></li>
+      <li><details>
+        <summary><span class="num">2</span><span>Show the key before the lock.</span><i class="tog" aria-hidden="true"></i></summary>
+        <div class="rule-body"><p>A lock met first is an obstacle. A lock met after you have walked past its key is a plan. <a class="u" href="#story">Walk the five rooms again</a></p></div>
+      </details></li>
+      <li><details>
+        <summary><span class="num">3</span><span>Difficulty is a staircase with landings.</span><i class="tog" aria-hidden="true"></i></summary>
+        <div class="rule-body"><p>A curve that only climbs wears people out. Every third or fourth level should be easier than the one before it. <a class="u" href="#numbers">Find the landings in the curve</a></p></div>
+      </details></li>
+      <li><details>
+        <summary><span class="num">4</span><span>Grey box until it is fun.</span><i class="tog" aria-hidden="true"></i></summary>
+        <div class="rule-body"><p>If a room is dull as plain boxes, lighting will not save it. I ask for art only after someone who is not me has played the grey box. <a class="u" href="#toy">Strip a room to its boxes</a></p></div>
+      </details></li>
+      <li><details>
+        <summary><span class="num">5</span><span>Secrets pay curiosity, not patience.</span><i class="tog" aria-hidden="true"></i></summary>
+        <div class="rule-body"><p>A secret behind a wall you must hit forty times rewards stubbornness. One behind a wall that looks slightly wrong rewards looking.</p></div>
+      </details></li>
+      <li><details>
+        <summary><span class="num">6</span><span>Leave one room nobody needs.</span><i class="tog" aria-hidden="true"></i></summary>
+        <div class="rule-body"><p>A dead end with a view, a bench, a strange statue. Rooms without a job are where a level starts to feel like a place. <a class="u" href="#hello">Ask me for one</a></p></div>
+      </details></li>
+    </ol>
+  </div>
+
+  <div class="part hello" id="hello">
+    <div class="hello-copy">
+      <h3 class="h3" id="hello-title">Say hello</h3>
+      <p class="intro">Tell me about the game and where you are stuck. I answer within two working days, in Spanish, English or Portuguese.</p>
+      <ul class="contact" id="contact"></ul>
+      <p>For a programme or a press note: <button class="u" type="button" data-bio aria-haspopup="dialog" aria-controls="bio">Read the short bio</button></p>
+    </div>
+
+    <div class="swap">
+      <form class="form" id="ask" aria-labelledby="hello-title">
+        <div class="fld" data-f="name">
+          <label class="lbl" for="f-name">Your name</label>
+          <div class="box"><input id="f-name" name="name" type="text" autocomplete="name"><i class="hb" aria-hidden="true"><i></i><i></i><i></i><i></i></i><span class="dim" aria-hidden="true"></span></div>
+          <p class="err" id="f-name-err"></p>
+        </div>
+        <div class="fld" data-f="email">
+          <label class="lbl" for="f-email">Email address</label>
+          <div class="box"><input id="f-email" name="email" type="email" autocomplete="email" spellcheck="false"><i class="hb" aria-hidden="true"><i></i><i></i><i></i><i></i></i><span class="dim" aria-hidden="true"></span></div>
+          <p class="err" id="f-email-err"></p>
+        </div>
+        <fieldset class="fld wide kinds" data-f="kind" role="radiogroup" aria-labelledby="f-kind-lbl">
+          <legend class="lbl" id="f-kind-lbl">Kind of game</legend>
+          <div class="swatches">
+            <label class="sw"><input type="radio" name="kind" value="Platformer"><span class="tile"><canvas width="6" height="6" data-t="4" aria-hidden="true"></canvas></span><span>Platformer</span></label>
+            <label class="sw"><input type="radio" name="kind" value="Top-down adventure"><span class="tile"><canvas width="6" height="6" data-t="3" aria-hidden="true"></canvas></span><span>Top-down adventure</span></label>
+            <label class="sw"><input type="radio" name="kind" value="Puzzle"><span class="tile"><canvas width="6" height="6" data-t="5" aria-hidden="true"></canvas></span><span>Puzzle</span></label>
+            <label class="sw"><input type="radio" name="kind" value="Something else"><span class="tile"><canvas width="6" height="6" data-t="1" aria-hidden="true"></canvas></span><span>Something else</span></label>
+          </div>
+          <p class="err" id="f-kind-err"></p>
+        </fieldset>
+        <div class="fld" data-f="levels">
+          <label class="lbl" for="f-levels">Number of levels <i>(optional)</i></label>
+          <div class="box"><input id="f-levels" name="levels" type="text" inputmode="numeric" autocomplete="off"><i class="hb" aria-hidden="true"><i></i><i></i><i></i><i></i></i><span class="dim" aria-hidden="true"></span></div>
+          <p class="err" id="f-levels-err"></p>
+        </div>
+        <div class="fld">
+          <label class="lever"><input type="checkbox" name="build" id="f-build"><svg class="lv" viewBox="0 0 22 15" aria-hidden="true"><path class="off" fill-rule="evenodd" d="M3 12h16v3H3zM9 10h2v2H9zM7 8h2v2H7zM5 6h2v2H5zM1 1h5v5H1zM2 2v3h3V2z"/><path class="on" d="M3 12h16v3H3zM11 10h2v2h-2zM13 8h2v2h-2zM15 6h2v2h-2zM16 1h5v5h-5z"/></svg><span class="lv-text">There is a playable build: <span class="lv-state" aria-hidden="true"><span class="no">no</span><span class="yes">yes</span></span></span></label>
+        </div>
+        <div class="fld wide" data-f="message">
+          <label class="lbl" for="f-message">What is the game, and where are you stuck?</label>
+          <div class="box"><textarea id="f-message" name="message" rows="4"></textarea><i class="hb" aria-hidden="true"><i></i><i></i><i></i><i></i></i><span class="dim" aria-hidden="true"></span></div>
+          <p class="err" id="f-message-err"></p>
+        </div>
+        <button class="btn btn-jump wide" type="submit"><span class="face"><span class="inner"><span class="label">Send the level request</span></span></span><i class="dust l" aria-hidden="true"></i><i class="dust r" aria-hidden="true"></i></button>
+      </form>
+
+      <div class="done" id="done" hidden>
+        <div class="clear" aria-hidden="true"><span class="pole"><i class="flag"></i></span><i class="coin" style="--n: 1"></i><i class="coin" style="--n: 2"></i><i class="coin" style="--n: 3"></i></div>
+        <h3 id="done-title" tabindex="-1">Level request logged.</h3>
+        <p>Thanks, <b id="done-name">Ana</b>. I will write to <b id="done-mail">ana@example.com</b> within two working days.</p>
+        <dl class="echo">
+          <div><dt>Kind of game</dt><dd id="done-kind"></dd></div>
+          <div><dt>Levels</dt><dd id="done-levels"></dd></div>
+          <div><dt>Playable build</dt><dd id="done-build"></dd></div>
+          <div><dt>Your message</dt><dd id="done-msg"></dd></div>
+        </dl>
+        <button class="u" id="again" type="button">Change this</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="signoff">
+    <canvas class="word" aria-hidden="true"></canvas>
+    <div class="sign-row">
+      <p>Tomás Ibarra builds first rooms in Montevideo.</p>
+      <span><button class="u" id="rebuild" type="button" hidden>Rebuild the name</button><a class="u" href="#top">Back to the first room</a></span>
+    </div>
+  </div>
+</section>
+
+<dialog class="bio" id="bio" aria-labelledby="bio-title" data-lenis-prevent>
+  <div class="bio-panel">
+    <div class="bio-head">
+      <h2 id="bio-title">The short bio</h2>
+      <button class="u" id="bio-close" type="button">Close</button>
+    </div>
+    <p>Tomás Ibarra is a level designer from Montevideo, Uruguay. He builds grey-box layouts, pacing and secrets for 2D platformers and top-down adventures, and has shipped eleven games since 2015, among them Faro Arriba, Agua Quieta and Kiln Road. He still tests every room by running at its walls.</p>
+    <dl class="echo">
+      <div><dt>Say it</dt><dd>toh-MAHS ee-BAH-rra</dd></div>
+      <div><dt>Based in</dt><dd>Montevideo, Uruguay (UTC−3)</dd></div>
+      <div><dt>Works in</dt><dd>Spanish, English and Portuguese</dd></div>
+      <div><dt>Credit as</dt><dd>Level design: Tomás Ibarra</dd></div>
+    </dl>
+  </div>
+  <div class="bio-tiles" aria-hidden="true"></div>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  /* ---------- The two objects the owner edits ---------- */
+  // The difficulty curve: three shipped games, twelve levels each. attempts is the median number of tries per level.
+  const DATA = {
+    max: 16,   // top of the attempts scale
+    games: [
+      { id: 'faro', name: 'Faro Arriba', year: 2017, kind: 'vertical platformer',
+        note: 'The dip at level 10 was a mistake I kept: a rest before the summit.',
+        attempts: [1, 2, 2, 3, 5, 4, 6, 8, 7, 9, 12, 10], hazards: [0, 1, 2, 2, 4, 3, 5, 6, 5, 7, 9, 8],
+        collectibles: [3, 4, 4, 5, 5, 6, 4, 6, 7, 5, 6, 9], exits: [1, 1, 1, 1, 2, 1, 1, 2, 1, 1, 1, 1] },
+      { id: 'agua', name: 'Agua Quieta', year: 2019, kind: 'top-down adventure',
+        note: 'Top-down games forgive more. The flooded archive is level 8, and it still shows.',
+        attempts: [1, 1, 2, 2, 3, 3, 4, 6, 5, 7, 6, 9], hazards: [0, 0, 1, 2, 2, 3, 3, 5, 4, 6, 5, 7],
+        collectibles: [2, 3, 3, 4, 6, 5, 6, 7, 8, 7, 9, 9], exits: [1, 2, 2, 1, 2, 3, 2, 2, 3, 2, 2, 1] },
+      { id: 'kiln', name: 'Kiln Road', year: 2024, kind: 'platformer',
+        note: 'Three landings, at levels 4, 7 and 10. Each one comes right after a spike in attempts.',
+        attempts: [1, 2, 3, 2, 4, 6, 5, 8, 11, 7, 13, 15], hazards: [1, 1, 2, 2, 3, 5, 4, 6, 8, 5, 9, 9],
+        collectibles: [4, 4, 5, 6, 6, 7, 7, 8, 8, 9, 9, 9], exits: [1, 1, 2, 1, 2, 2, 3, 2, 2, 3, 2, 1] }
+    ]
+  };
+  // Contact links. Delete a line to remove a link. Known keys: email, whatsapp, github, mastodon, instagram, itch.
+  // Any other key with a full URL becomes a link with the key as its label.
+  const CONTACT = {
+    email: 'hola@tomasibarra.example',
+    mastodon: '@tomas@mastodon.gamedev.place',
+    itch: 'tomasibarra',
+    github: 'tomas-ibarra',
+    'Talk': 'https://vimeo.com/'
+  };
+
+  const root = document.documentElement;
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const lib = !!(window.gsap && window.ScrollTrigger && window.Lenis);
+  if (lib) root.classList.add('js');   // CDN blocked: no class, everything is visible and every flow still works
+  const css = (n) => getComputedStyle(root).getPropertyValue(n).trim();
+  const secs = (n) => parseFloat(css(n)) || 0;
+  const clamp = (a, b, v) => Math.min(b, Math.max(a, v));
+  const restart = (el, cls) => { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
+  const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+  let lenis = null, fx = null;   // fx: hooks set by the motion branch; null means every change is instant
+
+  /* ---------- Colours and tiles: read from the tokens, drawn in whole art pixels ---------- */
+  const C = Object.fromEntries(['ground', 'well', 'plate', 'deep', 'white', 'sand', 'spawn', 'solid', 'ladder', 'water', 'moss', 'key', 'spike', 'coin', 'door', 'light'].map((k) => [k, css('--' + k)]));
+  const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const mix = (a, b, t) => { const p = rgb(a), q = rgb(b); return '#' + p.map((v, i) => Math.round(v + (q[i] - v) * t).toString(16).padStart(2, '0')).join(''); };
+  // The shade of each tile hue: the body of a tile, with the full hue on its exposed edges.
+  const DIM = Object.fromEntries(Object.entries({ solid: .7, ladder: .5, water: .25, moss: .5, key: .5, door: .5, light: .5 }).map(([k, t]) => [k, mix(C[k], C.well, t)]));
+  const R = (g, col, x, y, w, h) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
+  const bits = (g, rows, col, x, y) => rows.forEach((row, j) => { for (let i = 0; i < row.length; i++) if (row[i] === '#') R(g, col, x + i, y + j, 1, 1); });
+  const rle = (s) => s.replace(/(\D)(\d+)/g, (_, c, n) => c.repeat(+n));   // '#1.3#1' -> '#...#'
+  const BIT = {
+    key: ['.##...', '#..###', '.##.#.'],
+    you: [['..##..', '..##..', '.####.', '#.##.#', '.#..#.', '.#..#.'], ['..##..', '..##..', '.####.', '#.##.#', '..##..', '..##..']],
+    coin: ['.##.', '####', '####', '.##.'],
+    spike: ['...##...', '..####..', '.######.', '########']
+  };
+  const TILE = { '#': 1, H: 2, '~': 3, '=': 4, k: 5 };
+  const NAMES = ['empty', 'solid ground', 'ladder', 'water', 'moss platform', 'key', 'eraser'];
+  // One tile of the side-view set, T art pixels square. n = same type to the [N, E, S, W, NE, SE, SW, NW].
+  // Auto-tiling: a solid tile draws a bright edge on every side that is exposed, and a bright pixel in every inner corner.
+  function tile(g, t, x, y, T, n) {
+    const [N, E, S, W] = n;
+    if (t === 1) {
+      R(g, DIM.solid, x, y, T, T);
+      if (!N) R(g, C.solid, x, y, T, 1);
+      if (!S) R(g, C.solid, x, y + T - 1, T, 1);
+      if (!W) R(g, C.solid, x, y, 1, T);
+      if (!E) R(g, C.solid, x + T - 1, y, 1, T);
+      if (N && E && !n[4]) R(g, C.solid, x + T - 1, y, 1, 1);
+      if (S && E && !n[5]) R(g, C.solid, x + T - 1, y + T - 1, 1, 1);
+      if (S && W && !n[6]) R(g, C.solid, x, y + T - 1, 1, 1);
+      if (N && W && !n[7]) R(g, C.solid, x, y, 1, 1);
+    } else if (t === 2) {
+      R(g, C.ladder, x + 1, y, 1, T); R(g, C.ladder, x + T - 2, y, 1, T);
+      for (let r = 1; r < T; r += 3) R(g, DIM.ladder, x + 2, y + r, T - 4, 1);
+    } else if (t === 3) {
+      R(g, DIM.water, x, y, T, T);
+      if (!N) { R(g, C.water, x, y, T, 1); R(g, C.water, x + ((x / T) % 2 ? 1 : T - 3), y + 2, 2, 1); }
+    } else if (t === 4) {
+      const h = T >> 1;
+      R(g, DIM.moss, x, y, T, h); R(g, C.moss, x, y, T, 1);
+      if (!W) R(g, C.moss, x, y, 1, h);
+      if (!E) R(g, C.moss, x + T - 1, y, 1, h);
+      R(g, DIM.moss, x + 1, y + h, 1, 1); R(g, DIM.moss, x + T - 3, y + h, 2, 1);
+    } else if (t === 5) bits(g, BIT.key, C.key, x + ((T - 6) >> 1), y + ((T - 3) >> 1));
+  }
+  const doorTile = (g, x, y, T) => {   // an exit, one tile wide and two tall
+    R(g, C.door, x, y + 1, T, 2 * T - 1); R(g, C.door, x + 1, y, T - 2, 1);
+    R(g, DIM.door, x + 1, y + 2, T - 2, 2 * T - 2); R(g, C.door, x + T - 3, y + T, 1, 1);
+  };
+  // Swatches (brush buttons, the form's radios) are drawn with the same function as the level.
+  $$('canvas[data-t], .brush canvas').forEach((cv) => {
+    const g = cv.getContext('2d'), t = +(cv.dataset.t || cv.parentElement.dataset.t);
+    if (t === 6) { for (let i = 0; i < 6; i += 2) { R(g, C.sand, i, 0, 1, 1); R(g, C.sand, 5, i, 1, 1); R(g, C.sand, 5 - i, 5, 1, 1); R(g, C.sand, 0, 5 - i, 1, 1); } }
+    else tile(g, t, 0, t === 4 ? 2 : 0, 6, [0, 0, 0, 0, 0, 0, 0, 0]);
+  });
+
+  /* ---------- 1. The grey box: a tile editor painted by click and drag ---------- */
+  const editor = (() => {
+    const cv = $('.ed'), g = cv.getContext('2d'), read = $('#ed-read'), say = $('#ed-say'), brushes = $$('.brush');
+    const T = 6, COLS = 40, ROWS = 18, SPAWN = [2, 12], DOOR = [36, 5];
+    // His layout, as far as he got: a spawn, two keys, a ladder to a mossy ledge, a pool, and a door nobody can reach yet.
+    const LEVEL = ['#40', '#1.38#1', '#1.38#1', '#1.26k1.11#1', '#1.25=3.10#1', '#1.38#1', '#1.16H1=5.16#1', '#1.16H1.11#11', '#1.7k1.8H1.11#11',
+      '#1.6=3.7H1.6=2.3#2.8#1', '#1.16H1.11#2.8#1', '#1.10#2.4H1.21#1', '#1.9#3.4H1.5#4.12#1', '#8~2#17~8#5', '#8~2#17~8#5', '#27~8#5', '#40', '#40'].map(rle);
+    const cells = new Uint8Array(COLS * ROWS);
+    let k = 3, vis = COLS, brush = 1, cur = null, build = null, last = null, raf = 0;
+    const reset = () => LEVEL.forEach((row, r) => { for (let c = 0; c < COLS; c++) cells[r * COLS + c] = TILE[row[c]] || 0; });
+    const at = (c, r) => c < 0 || c >= COLS || r < 0 || r >= ROWS ? -1 : cells[r * COLS + c];
+    const fixed = (c, r) => (c === SPAWN[0] && r === SPAWN[1]) || (c === DOOR[0] && (r === DOOR[1] || r === DOOR[1] + 1));
+
+    function draw() {
+      R(g, C.well, 0, 0, cv.width, cv.height);
+      for (let r = 0; r < ROWS; r++) for (let c = 0; c < vis; c++) R(g, C.ground, c * T, r * T, 1, 1);   // one grid dot per tile
+      // At load the level enters from the right edge, one column per step: column c sits at c + shift.
+      const n = build == null ? vis : build, shift = vis - n;
+      for (let r = 0; r < ROWS; r++) for (let c = 0; c < n; c++) {
+        const t = cells[r * COLS + c];
+        if (!t) continue;
+        const same = (dc, dr) => { const v = at(c + dc, r + dr); return v === t || (t === 1 && v === -1); };
+        tile(g, t, (c + shift) * T, r * T, T, [same(0, -1), same(1, 0), same(0, 1), same(-1, 0), same(1, -1), same(1, 1), same(-1, 1), same(-1, -1)]);
+      }
+      if (SPAWN[0] < n) bits(g, BIT.you[0], C.spawn, (SPAWN[0] + shift) * T, SPAWN[1] * T);
+      if (DOOR[0] < n) doorTile(g, (DOOR[0] + shift) * T, DOOR[1] * T, T);
+      if (cur && build == null) {   // the cell cursor: a hollow square in the player's hue
+        const x = cur[0] * T, y = cur[1] * T;
+        R(g, C.spawn, x, y, T, 1); R(g, C.spawn, x, y + T - 1, T, 1); R(g, C.spawn, x, y, 1, T); R(g, C.spawn, x + T - 1, y, 1, T);
+      }
+    }
+    function count() {
+      const n = [0, 0, 0, 0, 0, 0];
+      for (let r = 0; r < ROWS; r++) for (let c = 0; c < vis; c++) n[cells[r * COLS + c]]++;
+      read.textContent = `Brush: ${NAMES[brush]}. In the room: ${n[1]} solid, ${n[2]} ladder, ${n[3]} water, ${n[4]} moss, ${plural(n[5], 'key')}.`;
+    }
+    // Whole-pixel fit: 6 art pixels per tile, scaled by 2, 3 or 4. Narrow screens show the left part of the room.
+    function fit() {
+      const W = cv.closest('.editor').clientWidth;
+      if (!W) return;
+      k = W >= 840 ? 4 : W >= 500 ? 3 : 2;
+      vis = Math.min(COLS, Math.floor(W / (T * k)));
+      if (cv.width !== vis * T || cv.height !== ROWS * T) { cv.width = vis * T; cv.height = ROWS * T; }
+      cv.style.width = vis * T * k + 'px'; cv.style.height = ROWS * T * k + 'px'; cv.style.aspectRatio = 'auto';
+      if (cur) cur[0] = Math.min(cur[0], vis - 1);
+      draw(); count();
+    }
+    const queue = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; draw(); count(); }); };
+    const put = (c, r) => {
+      if (c < 0 || c >= vis || r < 0 || r >= ROWS || fixed(c, r)) return false;
+      const t = brush === 6 ? 0 : brush;
+      if (cells[r * COLS + c] === t) return false;
+      cells[r * COLS + c] = t;
+      return true;
+    };
+    // The brush lays tiles along the whole path between two pointer samples, so a fast hand leaves no gaps.
+    const line = (a, b) => {
+      let [x0, y0] = a; const [x1, y1] = b, dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
+      for (let e = dx + dy, i = 0; i < 200; i++) {
+        put(x0, y0);
+        if (x0 === x1 && y0 === y1) break;
+        const e2 = 2 * e;
+        if (e2 >= dy) { e += dy; x0 += sx; }
+        if (e2 <= dx) { e += dx; y0 += sy; }
+      }
+    };
+    const cellAt = (e) => { const b = cv.getBoundingClientRect(); return [clamp(0, vis - 1, Math.floor((e.clientX - b.left) / (T * k))), clamp(0, ROWS - 1, Math.floor((e.clientY - b.top) / (T * k)))]; };
+    const stroke = (e) => { if (build != null) return; const p = cellAt(e); line(last || p, p); last = p; cur = p; queue(); };
+    // A finger that lands on the room may be starting to scroll the page, so its first tile waits: it is placed when
+    // the finger moves sideways (a drag) or lifts (a tap), and dropped if the browser takes the gesture for a scroll.
+    let pend = null;
+    cv.addEventListener('pointerdown', (e) => { last = null; if (e.button !== 0) return; if (e.pointerType === 'touch') pend = cellAt(e); else stroke(e); });
+    // A hovering mouse or pen only moves the cell cursor; tiles are laid while the button (or finger) is down.
+    cv.addEventListener('pointermove', (e) => {
+      if (pend) { last = pend; pend = null; }
+      if (e.buttons & 1) stroke(e); else if (build == null) { last = null; cur = cellAt(e); queue(); }
+    });
+    cv.addEventListener('pointerup', (e) => { if (pend) { pend = null; last = null; stroke(e); } });
+    cv.addEventListener('pointerleave', () => { last = null; if (document.activeElement !== cv) cur = null; queue(); });
+    cv.addEventListener('pointercancel', () => { last = null; pend = null; });
+    function pick(t) {
+      brush = t;
+      brushes.forEach((b) => b.setAttribute('aria-pressed', +b.dataset.t === t));
+      count();
+    }
+    brushes.forEach((b) => b.addEventListener('click', () => pick(+b.dataset.t)));
+    $('#ed-reset').addEventListener('click', () => { reset(); draw(); count(); say.textContent = 'The room is back to my layout.'; });
+    // Keyboard: arrows move the cell cursor, Space or Enter places, 1 to 6 pick the tile. Tab leaves as usual.
+    cv.addEventListener('keydown', (e) => {
+      const d = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
+      if (build != null) return;
+      cur = cur || [SPAWN[0] + 1, SPAWN[1]];
+      if (d) {
+        e.preventDefault();
+        cur = [clamp(0, vis - 1, cur[0] + d[0]), clamp(0, ROWS - 1, cur[1] + d[1])];
+        say.textContent = `Column ${cur[0] + 1}, row ${cur[1] + 1}: ${fixed(cur[0], cur[1]) ? 'fixed' : NAMES[at(cur[0], cur[1])]}.`;
+      } else if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        say.textContent = put(cur[0], cur[1]) ? `Placed ${NAMES[brush === 6 ? 0 : brush]} at column ${cur[0] + 1}, row ${cur[1] + 1}.` : 'Nothing changed here.';
+      } else if (/^[1-6]$/.test(e.key)) { pick(+e.key); say.textContent = `Brush: ${NAMES[brush]}.`; }
+      else return;
+      queue();
+    });
+    cv.addEventListener('focus', () => { if (!cur) cur = [SPAWN[0] + 1, SPAWN[1]]; queue(); });
+    cv.addEventListener('blur', () => { cur = null; queue(); });
+    reset();
+    return { fit, scroll(n) { build = n; draw(); }, get vis() { return vis; } };
+  })();
+
+  /* ---------- 3. Five rooms: a top-down dungeon, a route found once, drawn at any step ---------- */
+  const dungeon = (() => {
+    const cv = $('.dungeon'), g = cv.getContext('2d'), T = 6, MW = 43, MH = 18;
+    const WALL = 1, FLOOR = 2, DOOR = 3, PROP = 4;
+    const HUES = ['solid', 'ladder', 'water', 'moss', 'key'];
+    const ROOMS = [[1, 1, 10, 8], [4, 11, 11, 6], [18, 5, 11, 9], [31, 1, 11, 7], [32, 10, 10, 7]];   // x, y, w, h, walls included
+    const DOORS = [[6, 8], [14, 13], [24, 5], [37, 7]];   // each sits in the wall of the room it leaves
+    const HALLS = [   // the floor behind each door, ending in an opening in the next room's wall
+      [[6, 9], [6, 10], [6, 11]],
+      [[15, 13], [16, 13], [16, 12], [16, 11], [17, 11], [18, 11]],
+      [[24, 4], [24, 3], [25, 3], [26, 3], [27, 3], [28, 3], [29, 3], [30, 3], [31, 3]],
+      [[37, 8], [37, 9], [37, 10]]];
+    // What stands in each room, drawn with that room's tile and walked around: blocks, ladders, a pool, moss, keys.
+    const PROPS = [[[5, 4], [6, 4], [6, 5], [3, 6]], [[8, 12], [8, 13], [8, 14], [11, 13], [11, 14]],
+      [21, 22, 23, 24, 25].flatMap((x) => [[x, 8], [x, 9], [x, 10]]), [[34, 3], [34, 4], [35, 4], [38, 2], [39, 2]], [[34, 14], [39, 12]]];
+    const STOPS = [[3, 3], [8, 6], [6, 8], [10, 15], [14, 13], [26, 11], [24, 5], [39, 5], [37, 7], [35, 14]];
+    const kind = new Uint8Array(MW * MH), own = new Uint8Array(MW * MH), ix = (c, r) => r * MW + c;
+    ROOMS.forEach(([x, y, w, h], o) => { for (let r = y; r < y + h; r++) for (let c = x; c < x + w; c++) { kind[ix(c, r)] = c === x || c === x + w - 1 || r === y || r === y + h - 1 ? WALL : FLOOR; own[ix(c, r)] = o; } });
+    HALLS.forEach((hall, d) => {
+      hall.forEach(([c, r]) => { kind[ix(c, r)] = FLOOR; own[ix(c, r)] = d + 1; });
+      hall.forEach(([c, r]) => { for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) { const i = ix(c + dc, r + dr); if (!kind[i]) { kind[i] = WALL; own[i] = d + 1; } } });
+    });
+    DOORS.forEach(([c, r]) => { kind[ix(c, r)] = DOOR; });
+    PROPS.forEach((list) => list.forEach(([c, r]) => { kind[ix(c, r)] = PROP; }));
+    // Breadth-first search over floor and door tiles, leg by leg through the stops. Computed once.
+    const bfs = (a, b) => {
+      const prev = new Int32Array(MW * MH).fill(-1), q = [a];
+      prev[a] = a;
+      for (let h = 0; h < q.length && q[h] !== b; h++) {
+        const i = q[h];
+        for (const j of [i + 1, i + MW, i - 1, i - MW]) if (j >= 0 && j < MW * MH && prev[j] === -1 && (kind[j] === FLOOR || kind[j] === DOOR)) { prev[j] = i; q.push(j); }
+      }
+      const path = [];
+      if (prev[b] === -1) return path;
+      for (let i = b; i !== a; i = prev[i]) path.unshift(i);
+      return path;
+    };
+    const route = [ix(...STOPS[0])];
+    for (let i = 1; i < STOPS.length; i++) route.push(...bfs(route[route.length - 1], ix(...STOPS[i])));
+    const N = route.length, doorStep = DOORS.map(([c, r]) => route.indexOf(ix(c, r)));
+    const FLOORS = HUES.map((h) => mix(C[h], C.well, .88)), DOTS = HUES.map((h) => mix(C[h], C.well, .72));
+    let k = 1, vis = MW, step = N - 1, full = true;
+    const roomAt = (s) => doorStep.filter((d) => d >= 0 && s >= d).length;
+
+    // s: the step of the walk. all: every room drawn (the still). Rooms not reached yet are outlines only.
+    function draw(s = step, all = full) {
+      step = s; full = all;
+      const mc = route[s] % MW, mr = (route[s] / MW) | 0, open = all ? 5 : roomAt(s) + 1;
+      const cam = vis < MW ? clamp(0, MW - vis, mc - (vis >> 1)) : 0;   // narrow screens: a camera follows in whole tiles
+      R(g, C.well, 0, 0, cv.width, cv.height);
+      const is = (c, r, kd) => c >= 0 && c < MW && r >= 0 && r < MH && kind[ix(c, r)] === kd;
+      for (let r = 0; r < MH; r++) for (let c = cam; c < cam + vis; c++) {
+        const i = ix(c, r), kd = kind[i];
+        if (!kd) continue;
+        const o = own[i], x = (c - cam) * T, y = r * T, lit = o < open, hue = HUES[o];
+        if (kd === WALL) {
+          if (lit) R(g, DIM[hue], x, y, T, T);
+          const col = lit ? C[hue] : C.plate;
+          if (!is(c, r - 1, WALL)) R(g, col, x, y, T, 1);
+          if (!is(c, r + 1, WALL)) R(g, col, x, y + T - 1, T, 1);
+          if (!is(c - 1, r, WALL)) R(g, col, x, y, 1, T);
+          if (!is(c + 1, r, WALL)) R(g, col, x + T - 1, y, 1, T);
+        } else if (!lit) continue;
+        else if (kd === DOOR) {
+          const d = DOORS.findIndex(([dc, dr]) => dc === c && dr === r), st = all || s >= doorStep[d] ? 2 : s === doorStep[d] - 1 ? 1 : 0;
+          const flat = is(c - 1, r, WALL);   // a door in a top or bottom wall lies flat
+          R(g, st ? FLOORS[Math.min(4, o + 1)] : C.well, x, y, T, T);
+          if (st === 0) { R(g, C.door, flat ? x : x + 1, flat ? y + 1 : y, flat ? T : T - 2, flat ? T - 2 : T); R(g, DIM.door, x + 2, y + 2, T - 4, T - 4); }
+          else if (st === 1) R(g, C.door, flat ? x : x + 1, flat ? y + 1 : y, flat ? 3 : T - 2, flat ? T - 2 : 3);
+          else { R(g, C.door, x, y, flat ? 1 : T, flat ? T : 1); R(g, C.door, flat ? x + T - 1 : x, flat ? y : y + T - 1, flat ? 1 : T, flat ? T : 1); }
+        } else {
+          R(g, FLOORS[o], x, y, T, T); R(g, DOTS[o], x + 2, y + 2, 2, 2);
+          if (kd === PROP) tile(g, o + 1, x, y, T, [is(c, r - 1, PROP), is(c + 1, r, PROP), is(c, r + 1, PROP), is(c - 1, r, PROP), 1, 1, 1, 1]);
+        }
+      }
+      bits(g, BIT.you[s & 1], C.spawn, (mc - cam) * T, mr * T);   // the marker: two frames, one per step
+    }
+    const size = (kk, cols) => {
+      k = kk; vis = cols;
+      if (cv.width !== vis * T) cv.width = vis * T;
+      cv.height = MH * T;
+      cv.style.width = vis * T * k + 'px'; cv.style.height = MH * T * k + 'px';
+    };
+    // The still: the whole map at the largest whole scale that fits, every room drawn, the marker at the end of the walk.
+    function still() {
+      const W = cv.closest('.story-pin').clientWidth;
+      if (!W) return;
+      let kk = 5;
+      while (kk > 1 && MW * T * kk > W) kk--;
+      size(kk, MW);
+      draw(N - 1, true);
+    }
+    // Pinned: choose the scale and whether the chapter card sits under the map or beside it. False if nothing fits.
+    function fitPin(frame) {
+      const cs = getComputedStyle(frame), W = frame.clientWidth, H = frame.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+      const head = $('.story-head').offsetHeight, GAP = W < 600 ? 11 : 22, SIDE = 363;
+      root.classList.remove('side');
+      const best = (h, w, whole) => { for (let kk = 5; kk >= 2; kk--) { const cols = Math.min(MW, Math.floor(w / (T * kk))); if (MH * T * kk <= h && (whole ? cols === MW : cols >= 24)) return kk; } return 0; };
+      const under = best(H - head - $('.chapters').offsetHeight - 2 * GAP, W, false);
+      const beside = W >= 1100 ? best(H - head - GAP, W - SIDE, true) : 0;
+      const side = beside > under || (beside > 0 && beside === under && W - MW * T * beside >= SIDE);
+      const kk = side ? beside : under;
+      if (!kk) return false;
+      root.classList.toggle('side', side);
+      size(kk, Math.min(MW, Math.floor(W / (T * kk))));
+      return true;
+    }
+    return { draw, still, fitPin, roomAt, N };
+  })();
+  const chapters = $$('.chapter'), stepEl = $('.story-step'), STEP_TEXT = stepEl.textContent;
+  function storyGo(s) {
+    dungeon.draw(s, false);
+    const r = dungeon.roomAt(s);
+    chapters.forEach((c, i) => { c.classList.toggle('is-now', i === r); i === r ? c.setAttribute('aria-current', 'step') : c.removeAttribute('aria-current'); });
+    stepEl.textContent = `Room ${r + 1} of 5, step ${s + 1} of ${dungeon.N}`;
+  }
+  function storyStill() {
+    chapters.forEach((c) => { c.classList.remove('is-now'); c.removeAttribute('aria-current'); });
+    stepEl.textContent = STEP_TEXT;
+    dungeon.still();
+  }
+
+  /* ---------- 4. The difficulty curve: a stepped line over three rows of markers ---------- */
+  const curve = (() => {
+    const tabs = $('#curve-tabs'), colsEl = $('#curve-cols'), read = $('#curve-read'), note = $('#curve-note'), rows = $('#curve-rows'), cap = $('#curve-cap');
+    let game = DATA.games[DATA.games.length - 1], at = 8, btns = [];
+    const sentence = (i) => `${game.name}, level ${i + 1} of ${game.attempts.length}: a median of ${plural(game.attempts[i], 'attempt')}, with ${plural(game.hazards[i], 'hazard')}, ${plural(game.collectibles[i], 'collectible')} and ${plural(game.exits[i], 'exit')}.`;
+    function pick(i, focus) {
+      at = clamp(0, btns.length - 1, i);
+      btns.forEach((b, j) => { b.setAttribute('aria-pressed', j === at); b.tabIndex = j === at ? 0 : -1; });
+      read.textContent = sentence(at);
+      if (focus) btns[at].focus();
+    }
+    function build() {
+      const a = game.attempts;
+      colsEl.style.setProperty('--max', DATA.max);
+      colsEl.textContent = '';
+      btns = a.map((v, i) => {
+        const b = document.createElement('button'), nx = i < a.length - 1 ? a[i + 1] : v;
+        b.type = 'button'; b.className = 'col';
+        b.style.cssText = `--v: ${v}; --lo: ${Math.min(v, nx)}; --hi: ${Math.max(v, nx)}`;
+        b.innerHTML = `<span class="area"><span class="seg"></span>${i < a.length - 1 ? '<span class="rise"></span>' : ''}</span>`
+          + ['hazards', 'collectibles', 'exits'].map((key, j) => `<span class="pips ${['hz', 'co', 'ex'][j]}">${'<i></i>'.repeat(game[key][i])}</span>`).join('')
+          + `<span aria-hidden="true">${i + 1}</span><span class="vh">Level ${i + 1}: ${plural(v, 'attempt')}</span>`;
+        b.addEventListener('click', () => pick(i));
+        b.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') pick(i); });
+        colsEl.append(b);
+        return b;
+      });
+      note.textContent = game.note;
+      cap.textContent = `${game.name} (${game.year}, ${game.kind}), levels 1 to ${a.length}`;
+      rows.innerHTML = a.map((v, i) => `<tr><th scope="row">${i + 1}</th><td>${v}</td><td>${game.hazards[i]}</td><td>${game.collectibles[i]}</td><td>${game.exits[i]}</td></tr>`).join('');
+      pick(at);
+    }
+    colsEl.addEventListener('keydown', (e) => {
+      const to = { ArrowLeft: at - 1, ArrowRight: at + 1, Home: 0, End: btns.length - 1 }[e.key];
+      if (to == null) return;
+      e.preventDefault(); pick(to, true);
+    });
+    DATA.games.forEach((gm) => {
+      const l = document.createElement('label');
+      l.className = 'tab';
+      l.innerHTML = `<input type="radio" name="game" value="${gm.id}"${gm === game ? ' checked' : ''}><span>${gm.name}</span>`;
+      $('input', l).addEventListener('change', () => { game = gm; build(); });
+      tabs.append(l);
+    });
+    build();
+  })();
+
+  /* ---------- 5. The layers panel: one room in four layers, each a small canvas of opaque pixels ---------- */
+  const toy = (() => {
+    const cv = $('.room'), g = cv.getContext('2d'), read = $('#layers-read'), eyes = $$('.eye');
+    const W = 160, H = 96, T = 8, LAYERS = ['background', 'collision', 'entities', 'lighting'];
+    const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];   // 4x4 ordered-dither thresholds
+    const ROOM = ['#20', '#1.18#1', '#1.18#1', '#1.1=4H1.13#1', '#1.5H1.5#3.4#1', '#1.5H1.6#2.4#1', '#1.5H1.12#1', '#1.5H1.3=2.7#1', '#1.5H1.12#1', '#1.5H1.12#1', '#7~6#7', '#7~6#7'].map(rle);
+    const LAMPS = [[76, 14], [132, 22]];
+    const mk = (fn) => { const c = document.createElement('canvas'); c.width = W; c.height = H; const q = c.getContext('2d'); fn(q); return q.getImageData(0, 0, W, H).data; };
+    const img = [
+      mk((q) => {   // background: a back wall of bricks and two tall windows, in the ground's own tones
+        const wall = mix(C.well, C.ground, .3), frame = mix(C.well, C.ground, .75);
+        R(q, wall, 0, 0, W, H);
+        for (let y = 0; y < H; y += 8) { R(q, C.well, 0, y + 7, W, 1); for (let x = (y / 8 % 2) * 8; x < W; x += 16) R(q, C.well, x + 7, y, 1, 7); }
+        [[24, 36], [96, 20]].forEach(([x, y]) => { R(q, frame, x - 2, y - 2, 20, 36); R(q, C.deep, x, y, 16, 32); R(q, frame, x + 7, y, 2, 32); R(q, frame, x, y + 15, 16, 2); });
+      }),
+      mk((q) => {   // collision: the grey box, auto-tiled
+        const at = (c, r) => c < 0 || c > 19 || r < 0 || r > 11 ? -1 : TILE[ROOM[r][c]] || 0;
+        for (let r = 0; r < 12; r++) for (let c = 0; c < 20; c++) {
+          const t = at(c, r);
+          if (!t) continue;
+          const same = (dc, dr) => { const v = at(c + dc, r + dr); return v === t || (t === 1 && v === -1); };
+          tile(q, t, c * T, r * T, T, [same(0, -1), same(1, 0), same(0, 1), same(-1, 0), same(1, -1), same(1, 1), same(-1, 1), same(-1, -1)]);
+        }
+      }),
+      mk((q) => {   // entities: the player, a key, coins, spikes with their light edge, the exit
+        bits(q, BIT.you[0], C.spawn, 2 * T + 1, 9 * T + 2);
+        bits(q, BIT.key, C.key, 3 * T + 1, 2 * T + 4);
+        [[10, 6], [11, 6], [13, 3], [16, 8]].forEach(([c, r]) => bits(q, BIT.coin, C.coin, c * T + 2, r * T + 2));
+        [14, 15].forEach((c) => { bits(q, BIT.spike, C.sand, c * T, 9 * T + 4); bits(q, BIT.spike.slice(0, 3), C.spike, c * T, 9 * T + 5); });
+        doorTile(q, 17 * T, 8 * T, T);
+      }),
+      mk((q) => {   // lighting: two lamps, a dithered core of light around each and three dithered bands of shadow far from both
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+          const d = Math.min(...LAMPS.map(([lx, ly]) => Math.hypot(x - lx, (y - ly) * 1.15))), b = BAYER[(y & 3) * 4 + (x & 3)];
+          if (d < 7 ? b < 8 : d < 14 && b < 4) R(q, C.light, x, y, 1, 1);
+          else if (d > 96 ? b < 8 : d > 74 ? b < 4 : d > 54 && b < 2) R(q, C.deep, x, y, 1, 1);
+        }
+        LAMPS.forEach(([lx, ly]) => { R(q, DIM.light, lx, 8, 1, ly - 10); R(q, C.light, lx - 2, ly - 2, 5, 4); R(q, C.white, lx - 1, ly - 1, 3, 2); });
+      })
+    ];
+    const out = g.createImageData(W, H), base = rgb(C.well);
+    const level = [4, 4, 4, 4], timers = [[], [], [], []];   // 0 = off, 1 to 3 = dither steps, 4 = on
+    let solo = null;
+    function compose() {
+      const o = out.data;
+      for (let i = 0; i < o.length; i += 4) { o[i] = base[0]; o[i + 1] = base[1]; o[i + 2] = base[2]; o[i + 3] = 255; }
+      for (let l = 0; l < 4; l++) {
+        const lv = solo == null ? level[l] : l === solo ? 4 : 0, src = img[l], th = lv * 4;
+        if (!lv) continue;
+        for (let y = 0, i = 0; y < H; y++) for (let x = 0; x < W; x++, i += 4) {
+          if (!src[i + 3] || (lv < 4 && BAYER[(y & 3) * 4 + (x & 3)] >= th)) continue;
+          o[i] = src[i]; o[i + 1] = src[i + 1]; o[i + 2] = src[i + 2];
+        }
+      }
+      g.putImageData(out, 0, 0);
+    }
+    const on = (l) => eyes.find((b) => +b.dataset.l === l).getAttribute('aria-pressed') === 'true';
+    function describe() {
+      const shown = [0, 1, 2, 3].filter(on);
+      read.textContent = solo != null ? `Solo: ${LAYERS[solo]} alone.`
+        : shown.length === 4 ? 'All four layers: the lit room.'
+        : !shown.length ? 'Every layer is off: an empty canvas.'
+        : shown.length === 1 && shown[0] === 1 ? 'Collision only: the grey box.'
+        : shown.length === 3 && !on(3) ? 'Lighting off: the flat room.'
+        : `Showing ${shown.map((l) => LAYERS[l]).join(', ')}.`;
+    }
+    // Switching a layer steps it through three ordered-dither levels (25, 50, 75 per cent of its pixels).
+    function set(l, show) {
+      timers[l].forEach(clearTimeout); timers[l] = [];
+      const seq = show ? [1, 2, 3, 4] : [3, 2, 1, 0], d = fx && fx.dither ? secs('--d-dither') * 1000 : 0;
+      if (!d) { level[l] = show ? 4 : 0; compose(); }
+      else seq.forEach((lv, i) => timers[l].push(setTimeout(() => { level[l] = lv; compose(); }, i * d)));
+      describe();
+    }
+    eyes.forEach((b) => b.addEventListener('click', () => {
+      const show = b.getAttribute('aria-pressed') !== 'true';
+      b.setAttribute('aria-pressed', show);
+      set(+b.dataset.l, show);
+    }));
+    function fit() {
+      const W0 = cv.closest('.part').clientWidth;
+      if (!W0) return;
+      const kk = clamp(2, 4, Math.floor(W0 / W));
+      cv.style.width = W * kk + 'px'; cv.style.height = H * kk + 'px';
+    }
+    compose();
+    return { fit, solo(l) { solo = l; compose(); describe(); } };
+  })();
+  // Solo: one layer alone for as long as the button is held, and at least --d-solo so a quick tap is seen.
+  {
+    const MIN = secs('--d-solo') * 1000;
+    $$('.solo').forEach((b) => {
+      let t0 = 0, tm = 0;
+      const down = () => { clearTimeout(tm); t0 = performance.now(); b.classList.add('is-solo'); toy.solo(+b.dataset.l); };
+      const up = (wait) => { if (!b.classList.contains('is-solo')) return; clearTimeout(tm); tm = setTimeout(() => { b.classList.remove('is-solo'); toy.solo(null); }, Math.max(wait || 0, MIN - (performance.now() - t0))); };
+      b.addEventListener('pointerdown', down);
+      ['pointerup', 'pointerleave', 'pointercancel', 'blur', 'keyup'].forEach((t) => b.addEventListener(t, () => up()));
+      b.addEventListener('keydown', (e) => { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) down(); });
+      b.addEventListener('contextmenu', (e) => e.preventDefault());
+      // A click that came with no press (assistive technology): show the layer alone for a second.
+      b.addEventListener('click', () => { if (performance.now() - t0 > 700) { down(); up(1000); } });
+    });
+  }
+
+  /* ---------- 7. Contact links, built from CONTACT ---------- */
+  {
+    const KNOWN = {
+      email: (v) => ['Email', v, 'mailto:' + v],
+      whatsapp: (v) => ['WhatsApp', v, 'https://wa.me/' + v.replace(/\D/g, '')],
+      github: (v) => ['GitHub', v, 'https://github.com/' + v],
+      mastodon: (v) => { const m = /^@?([^@]+)@(.+)$/.exec(v); return m ? ['Mastodon', v, `https://${m[2]}/@${m[1]}`] : null; },
+      instagram: (v) => ['Instagram', '@' + v.replace(/^@/, ''), 'https://www.instagram.com/' + v.replace(/^@/, '') + '/'],
+      itch: (v) => ['itch.io', v + '.itch.io', `https://${v}.itch.io/`]
+    };
+    const list = $('#contact');
+    for (const [key, v] of Object.entries(CONTACT)) {
+      if (!v) continue;
+      const row = KNOWN[key] ? KNOWN[key](String(v)) : /^https?:\/\//.test(v) ? [key, String(v).replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, ''), v] : null;
+      if (!row) continue;
+      const li = document.createElement('li'), k = document.createElement('span'), a = document.createElement('a'), hint = document.createElement('span');
+      k.className = 'ck'; k.textContent = row[0];
+      a.className = 'u'; a.href = row[2]; a.target = '_blank'; a.rel = 'noopener'; a.textContent = row[1];
+      hint.className = 'vh'; hint.textContent = ' (opens in a new tab)';
+      a.append(hint); li.append(k, a); list.append(li);
+    }
+  }
+
+  /* ---------- 7. The level request (validated here; nothing is sent anywhere) ---------- */
+  const form = $('#ask'), done = $('#done'), doneTitle = $('#done-title'), swapBox = $('.swap');
+  form.noValidate = true;
+  const val = (name) => form.elements[name].value.trim();
+  const RULES = {
+    name: (v) => !v ? 'Enter your name, so I know who is asking.' : v.length > 60 ? 'Keep the name under 60 characters.' : '',
+    email: (v) => !v ? 'Enter your email address, like ana@example.com.' : !/^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(v) ? 'This address needs an @ and a domain, like ana@example.com.' : '',
+    kind: (v) => v ? '' : 'Pick the kind of game. Something else is fine.',
+    levels: (v) => !v ? '' : !/^\d+$/.test(v) ? 'Write a whole number, like 6, or leave this empty.' : +v < 1 || +v > 99 ? 'Between 1 and 99. For more, say so in the message.' : '',
+    message: (v) => !v ? 'Write a few lines about the game and the problem.' : v.length < 20 ? `Say a little more: ${20 - v.length} more characters will do.` : v.length > 1200 ? 'Keep it under 1,200 characters. We can talk after.' : ''
+  };
+  const fieldOf = (name) => $(`[data-f="${name}"]`, form);
+  const controlOf = (name) => name === 'kind' ? fieldOf(name) : form.elements[name];
+  function mark(name, msg) {
+    const fld = fieldOf(name), err = $('.err', fld), el = controlOf(name);
+    err.textContent = msg;   // cleared too, so assistive technology never finds a stale message
+    fld.classList.toggle('is-bad', !!msg);
+    if (msg) { el.setAttribute('aria-invalid', 'true'); el.setAttribute('aria-describedby', err.id); }
+    else { el.removeAttribute('aria-invalid'); el.removeAttribute('aria-describedby'); }
+    return !msg;
+  }
+  // The hit box readout: the field's width in character cells, and the rows its text takes.
+  const probe = document.createElement('canvas').getContext('2d');
+  const boxes = $$('.box', form).map((box) => ({ el: $('input, textarea', box), dim: $('.dim', box) }));
+  function measure({ el, dim }) {
+    const cs = getComputedStyle(el), pad = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom), lh = parseFloat(cs.lineHeight) || 27.5;
+    probe.font = `${cs.fontSize} ${cs.fontFamily}`;
+    const cols = Math.max(1, Math.floor((el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)) / (probe.measureText('0').width || 10)));
+    let rows = 1;
+    if (el.tagName === 'TEXTAREA') {   // the box grows with its text, so the hit box is always the text's size
+      el.style.height = '0px';
+      rows = Math.max(1, Math.round((el.scrollHeight - pad) / lh));
+      el.style.height = Math.max(4, rows) * lh + pad + 4 + 'px';
+    }
+    dim.textContent = `${cols} x ${rows}`;
+  }
+  boxes.forEach((b) => ['focus', 'input'].forEach((t) => b.el.addEventListener(t, () => measure(b))));
+  for (const name of Object.keys(RULES)) {
+    const clear = () => { if (fieldOf(name).classList.contains('is-bad') && !RULES[name](val(name))) mark(name, ''); };
+    fieldOf(name).addEventListener('input', clear); fieldOf(name).addEventListener('change', clear);
+  }
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const bad = Object.keys(RULES).filter((name) => !mark(name, RULES[name](val(name))));
+    if (bad.length) { (bad[0] === 'kind' ? form.elements.kind[0] : form.elements[bad[0]]).focus(); return; }
+    $('#done-name').textContent = val('name'); $('#done-mail').textContent = val('email');
+    $('#done-kind').textContent = val('kind'); $('#done-levels').textContent = val('levels') ? plural(+val('levels'), 'level') : 'Not sure yet';
+    $('#done-build').textContent = form.elements.build.checked ? 'Yes, there is one' : 'Not yet';
+    $('#done-msg').textContent = val('message');
+    swapBox.style.minHeight = swapBox.offsetHeight + 'px';   // the page keeps its height, so nothing below jumps
+    form.hidden = true; done.hidden = false;
+    restart(done, 'is-run');   // level clear: the flag climbs and three collectibles cut in (CSS, motion layer only)
+    doneTitle.focus();
+  });
+  $('#again').addEventListener('click', () => {
+    done.hidden = true; form.hidden = false; done.classList.remove('is-run'); swapBox.style.minHeight = '';
+    form.elements.name.focus();
+  });
+
+  /* ---------- The bio dialog ---------- */
+  const dlg = $('#bio'), tiles = $('.bio-tiles');
+  for (let r = 0; r < 4; r++) for (let c = 0; c < 6; c++) {   // 24 tile backs; ring 0 is the centre, ring 2 the two outer columns
+    const t = document.createElement('i');
+    t.dataset.ring = c === 0 || c === 5 ? 2 : (c === 1 || c === 4 || r === 0 || r === 3) ? 1 : 0;
+    tiles.append(t);
+  }
+  let opener = null, closing = false, downOn = null;
+  // Recover from any close, even one the browser forces (a second Escape is not cancelable) in the middle of the rings.
+  const settle = () => { closing = false; fx?.dialogReset(); };
+  $$('[data-bio]').forEach((b) => b.addEventListener('click', () => {
+    if (dlg.open) return;
+    opener = b; settle();
+    dlg.showModal();
+    lenis?.stop();
+    fx?.dialogIn();
+  }));
+  const closeDialog = () => {
+    if (!dlg.open || closing) return;
+    closing = true;
+    const end = () => { closing = false; dlg.close(); };
+    fx ? fx.dialogOut(end) : end();
+  };
+  $('#bio-close').addEventListener('click', closeDialog);
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); closeDialog(); });
+  // Close on a backdrop click only when the press also started on the backdrop (not a text selection that overshot).
+  dlg.addEventListener('pointerdown', (e) => { downOn = e.target; });
+  dlg.addEventListener('click', (e) => { if (e.target === dlg && downOn === dlg) closeDialog(); });
+  dlg.addEventListener('close', () => { settle(); lenis?.start(); opener?.focus(); });
+
+  /* ---------- 8. The name in blocks ---------- */
+  const word = (() => {
+    const cv = $('.word'), g = cv.getContext('2d');
+    const GLYPH = {
+      T: ['#####', '..#..', '..#..', '..#..', '..#..', '..#..', '..#..'],
+      O: ['.###.', '#...#', '#...#', '#...#', '#...#', '#...#', '.###.'],
+      M: ['#...#', '##.##', '#.#.#', '#.#.#', '#...#', '#...#', '#...#'],
+      A: ['.###.', '#...#', '#...#', '#####', '#...#', '#...#', '#...#'],
+      S: ['.####', '#....', '#....', '.###.', '....#', '....#', '####.']
+    };
+    const HUES = ['solid', 'ladder', 'water', 'moss', 'key'];   // five letters, his five tile types
+    const blocks = [];
+    [...'TOMAS'].forEach((ch, li) => {
+      const rows = (ch === 'A' ? ['...#.', '..#..'] : ['.....', '.....']).concat(GLYPH[ch]);   // the accent sits in the two rows above the capitals
+      for (let x = 0; x < 5; x++) for (let y = 8, j = 0; y >= 0; y--) if (rows[y][x] === '#') blocks.push({ c: li * 6 + x, r: y, li, ci: li * 5 + x, j: j++, k: 0 });
+    });
+    const has = new Set(blocks.map((b) => b.c + ',' + b.r));
+    let B = 0, dpr = 1, prog = 1;
+    // p: how far the drop has run, 0 to 1. Each column of each letter falls as a stack, bottom block first, in whole blocks.
+    function draw(p = prog) {
+      prog = p;
+      g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      g.clearRect(0, 0, 29 * B, 10 * B);
+      const e = Math.max(1, Math.round(B / 7));
+      for (const b of blocks) {
+        let up = b.k;
+        if (p < 1) {
+          const loc = clamp(0, 1, (p - b.ci / 25 * .8 - b.j * .01) / .14);
+          if (loc <= 0) continue;
+          up += Math.round((1 - loc) * (b.r + 2));
+        }
+        const x = b.c * B, y = Math.round((b.r + 1 - up) * B), hue = HUES[b.li], n = (dc, dr) => has.has((b.c + dc) + ',' + (b.r + dr));
+        R(g, DIM[hue], x, y, B, B);
+        if (!n(0, -1)) R(g, C[hue], x, y, B, e);
+        if (!n(0, 1)) R(g, C[hue], x, y + B - e, B, e);
+        if (!n(-1, 0)) R(g, C[hue], x, y, e, B);
+        if (!n(1, 0)) R(g, C[hue], x + B - e, y, e, B);
+      }
+    }
+    function fit() {
+      const W = cv.parentElement.clientWidth;
+      if (!W) return;
+      B = Math.max(4, Math.floor(W / 29)); dpr = Math.min(2, window.devicePixelRatio || 1);
+      cv.width = 29 * B * dpr; cv.height = 10 * B * dpr;
+      cv.style.width = 29 * B + 'px'; cv.style.height = 10 * B + 'px';
+      draw();
+    }
+    const hit = (x, y) => { const c = Math.floor(x / B), r = Math.floor(y / B) - 1; return blocks.find((b) => b.c === c && b.r === r); };
+    return { cv, draw, fit, hit, get prog() { return prog; } };
+  })();
+
+  /* ---------- The camera on the minimap: the block of the part on screen ---------- */
+  const mm = $('.mm'), mmLinks = $$('.mm a'), parts = mmLinks.map((a) => $(a.getAttribute('href')));
+  let nowAt = -1;
+  const spot = () => {
+    const line = innerHeight * .4;
+    let i = 0;
+    parts.forEach((p, j) => { if (p.getBoundingClientRect().top <= line) i = j; });
+    if (i === nowAt) return;
+    nowAt = i;
+    mm.style.setProperty('--at', i);
+    mmLinks.forEach((a, j) => { j === i ? a.setAttribute('aria-current', 'true') : a.removeAttribute('aria-current'); });
+  };
+  window.addEventListener('scroll', spot, { passive: true });
+
+  /* ---------- Press states are held for at least --d-press, so a quick tap still shows them ---------- */
+  {
+    const MIN = secs('--d-press') * 1000;
+    $$('.btn, .u, .brush, .eye, .col, .mm a').forEach((el) => {
+      let t0 = 0, tm = 0;
+      const down = () => {
+        clearTimeout(tm); t0 = performance.now();
+        const f = $('.face', el);
+        if (f) { el.style.setProperty('--sx', (f.offsetWidth + 4) / f.offsetWidth); el.style.setProperty('--sy', (f.offsetHeight - 4) / f.offsetHeight); }
+        el.classList.add('is-down');
+      };
+      const up = () => { clearTimeout(tm); tm = setTimeout(() => el.classList.remove('is-down'), Math.max(0, MIN - (performance.now() - t0))); };
+      el.addEventListener('pointerdown', down);
+      ['pointerup', 'pointerleave', 'pointercancel', 'blur', 'keyup'].forEach((t) => el.addEventListener(t, up));
+      el.addEventListener('keydown', (e) => { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) down(); });
+    });
+  }
+
+  /* ---------- First frame: every canvas shows a composed still, with or without the libraries ---------- */
+  const refit = () => { editor.fit(); toy.fit(); word.fit(); if (!root.classList.contains('pin')) storyStill(); spot(); };
+  refit();
+  window.addEventListener('resize', refit);
+
+  if (!lib) return;
+
+  /* ---------- Motion ---------- */
+  gsap.registerPlugin(ScrollTrigger);
+  const F = secs('--frame');
+  const fontsReady = Promise.race([
+    Promise.all([document.fonts.ready, document.fonts.load('16px "Departure Mono"')]).then(() => 'fonts', () => 'fonts'),
+    new Promise((r) => setTimeout(() => r('timeout'), 1500))
+  ]);
+  // Start the opening only on a visible page: with lagSmoothing(0) a timeline started in a background tab would
+  // jump to its end on return.
+  const visible = new Promise((r) => {
+    if (document.visibilityState === 'visible') return r();
+    const f = () => { if (document.visibilityState === 'visible') { document.removeEventListener('visibilitychange', f); r(); } };
+    document.addEventListener('visibilitychange', f);
+  });
+  let played = false;
+
+  const mq = gsap.matchMedia();
+  mq.add({
+    motion: '(prefers-reduced-motion: no-preference)',
+    reduce: '(prefers-reduced-motion: reduce)',
+    fine: '(hover: hover) and (pointer: fine)',
+    tall: '(min-height: 540px)',
+    wide: '(min-width: 1024px)'
+  }, (ctx) => {
+    const { motion, fine, tall } = ctx.conditions;
+    if (!motion) {
+      // Reduced motion: final states, native scroll, no pin, the stills. Every flow above is already instant.
+      root.classList.add('go');
+      return () => {};
+    }
+    let dead = false;
+    const off = [], waits = new Set();
+    const on = (el, type, fn, opt) => { el.addEventListener(type, fn, opt); off.push(() => el.removeEventListener(type, fn, opt)); };
+    const later = (fn, ms) => { const id = setTimeout(() => { waits.delete(id); fn(); }, ms); waits.add(id); return id; };
+    root.classList.add('fx');
+
+    // Lenis on GSAP's clock. Touch keeps native scrolling.
+    lenis = new Lenis({ lerp: .1, smoothWheel: true, autoRaf: false, anchors: true });
+    lenis.on('scroll', ScrollTrigger.update);
+    const tick = (t) => lenis.raf(t * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
+
+    /* The story: scroll is the walk. One tile per --step-px of scroll; nothing is drawn unless the step changes. */
+    const story = $('.story'), frame = $('.story-pin'), N = dungeon.N;
+    let lastStep = -1, lastW = 0, lastH = 0;
+    const walkTo = (p) => {
+      const s = clamp(0, N - 1, Math.floor(p / .96 * (N - 1) + 1e-6));
+      if (s === lastStep) return;
+      lastStep = s; storyGo(s);
+    };
+    const layout = () => {
+      root.classList.add('pin');
+      const ok = tall && dungeon.fitPin(frame);
+      root.classList.toggle('pin', ok);
+      lastStep = -1;
+      if (ok) story.style.setProperty('--walk', Math.round(N * (parseFloat(css('--step-px')) || 30)) + 'px');
+      else { root.classList.remove('side'); story.style.removeProperty('--walk'); storyStill(); }
+      lastW = innerWidth; lastH = innerHeight;
+    };
+    layout();
+    const st = ScrollTrigger.create({
+      trigger: story, start: 'top top', end: 'bottom bottom',
+      onUpdate: (self) => { if (root.classList.contains('pin')) walkTo(self.progress); },
+      onRefresh: (self) => { if (root.classList.contains('pin')) { lastStep = -1; walkTo(self.progress); } }
+    });
+    // Refit when the width or the height really changes (not for a phone's address bar).
+    on(window, 'resize', () => {
+      if (innerWidth === lastW && Math.abs(innerHeight - lastH) < 90) return;
+      layout(); ScrollTrigger.refresh();
+    });
+
+    /* The name: its blocks fall into place as the sign-off scrolls into view, then answer the pointer. */
+    const rebuild = $('#rebuild');
+    let replay = null;
+    const drop = (self) => { if (!replay) word.draw(Math.min(1, self.progress / .9)); };
+    const stW = ScrollTrigger.create({ trigger: $('.signoff'), start: 'top bottom', end: 'bottom bottom', onUpdate: drop, onRefresh: drop });
+    const KN = secs('--d-knock') * 1000;
+    const knock = (e) => {
+      const b = word.cv.getBoundingClientRect(), hit = word.prog >= 1 && word.hit(e.clientX - b.left, e.clientY - b.top);
+      if (!hit || hit.k) return;
+      hit.k = 1; word.draw();                                   // one cell up, at once
+      later(() => { hit.k = .5; word.draw(); }, KN);            // then back in two steps
+      later(() => { hit.k = 0; word.draw(); }, KN + F * 1000);
+    };
+    on(word.cv, 'pointermove', knock);
+    on(word.cv, 'pointerdown', knock);
+    rebuild.hidden = false;
+    on(rebuild, 'click', () => {
+      replay?.kill();
+      const o = { p: 0 };
+      replay = gsap.to(o, { p: 1, duration: secs('--d-rebuild'), ease: 'none', onUpdate: () => word.draw(o.p), onComplete: () => { replay = null; } });
+    });
+
+    /* Primary buttons: one hop when pointed at or focused, and a hop after every press (the jump follows the crouch). */
+    const MIN = secs('--d-press') * 1000;
+    $$('.btn-jump').forEach((b) => {
+      let hot = false;
+      const hop = () => restart(b, 'is-hop');
+      if (fine) on(b, 'pointerenter', (e) => { if (e.pointerType !== 'touch' && !hot) { hot = true; hop(); } });
+      on(b, 'pointerleave', () => { hot = false; });
+      on(b, 'focus', () => { if (b.matches(':focus-visible')) hop(); });
+      on(b, 'pointerdown', () => b.classList.remove('is-hop'));
+      on(b, 'pointerup', () => later(hop, MIN));
+    });
+    on(document, 'animationend', (e) => { if (e.animationName === 'hop') e.target.closest('.btn')?.classList.remove('is-hop'); });
+
+    /* Text links: the player starts on the first dot and hops two dots at a time to the last one. */
+    const CR = secs('--d-crumb') * 1000, TAP = secs('--d-tap') * 1000, runs = new Map();
+    const calm = (u) => { clearInterval(runs.get(u)); runs.delete(u); u.style.removeProperty('--back'); u.classList.remove('is-tap'); };
+    const crumbs = (u) => {
+      if (runs.has(u)) return;
+      const ch = parseFloat(getComputedStyle(u).fontSize) * 7 / 11, n = Math.max(1, Math.round(u.offsetWidth / ch));
+      let back = (n - 1) * ch;
+      u.style.setProperty('--back', back + 'px');
+      runs.set(u, setInterval(() => {
+        back = Math.max(0, back - 2 * ch);
+        u.style.setProperty('--back', back + 'px');
+        if (!back) clearInterval(runs.get(u));
+      }, CR));
+    };
+    const linkOf = (e) => e.target.closest?.('.u');
+    on(document, 'pointerover', (e) => { const u = linkOf(e); if (u && e.pointerType !== 'touch' && !u.contains(e.relatedTarget)) crumbs(u); });
+    on(document, 'pointerout', (e) => { const u = linkOf(e); if (u && e.pointerType !== 'touch' && !u.contains(e.relatedTarget) && !u.matches(':focus-visible')) calm(u); });
+    on(document, 'focusin', (e) => { const u = linkOf(e); if (u && u.matches(':focus-visible')) crumbs(u); });
+    on(document, 'focusout', (e) => { const u = linkOf(e); if (u && !u.matches(':hover')) calm(u); });
+    on(document, 'pointerdown', (e) => {
+      const u = linkOf(e);
+      if (!u || e.pointerType !== 'touch') return;
+      calm(u); u.classList.add('is-tap'); crumbs(u);
+      later(() => calm(u), TAP);
+    });
+
+    /* Hooks for the plain-JS flows */
+    const RING = secs('--d-ring') * 1000, CLIP = ['inset(25% 33.34% 25% 33.34%)', 'inset(0 16.67% 0 16.67%)', ''];
+    const covers = $$('i', tiles);
+    let dT = [];
+    const ring = (n, show) => covers.forEach((c) => { if (+c.dataset.ring === n) c.classList.toggle('on', show); });
+    const dClear = () => { dT.forEach(clearTimeout); dT = []; covers.forEach((c) => c.classList.remove('on')); dlg.style.clipPath = ''; };
+    fx = {
+      dither: true,   // the layers panel steps through its dither levels
+      dialogReset: dClear,
+      // A new room: the centre four tiles first, then the ring around them, then the two outer columns. Each ring
+      // arrives as blank tile backs and turns into the dialog one ring later.
+      dialogIn() {
+        dClear();
+        dlg.style.clipPath = CLIP[0]; ring(0, true);
+        [1, 2].forEach((n) => dT.push(setTimeout(() => { dlg.style.clipPath = CLIP[n]; ring(n - 1, false); ring(n, true); }, n * RING)));
+        dT.push(setTimeout(() => ring(2, false), 3 * RING));
+      },
+      dialogOut(end) {
+        dClear();
+        ring(2, true);
+        [1, 0].forEach((n, i) => dT.push(setTimeout(() => { dlg.style.clipPath = CLIP[n]; ring(n + 1, false); ring(n, true); }, (i + 1) * RING)));
+        dT.push(setTimeout(() => { dClear(); end(); }, 3 * RING));
+      }
+    };
+
+    /* Load: collision boxes for the headline, the level scrolls into the editor, the palette cuts in. */
+    const h2 = $('.h2'), cuts = $$('.cut'), brushes = $$('.brush'), resetBtn = $('#ed-reset');
+    let split = null;
+    const show = (sel) => () => gsap.set(typeof sel === 'string' ? $$(sel) : sel, { clearProps: 'visibility' });
+    Promise.all([fontsReady, visible]).then(([how]) => ctx.add(() => {
+      if (dead) return;
+      refit(); layout(); ScrollTrigger.refresh();
+      if (how === 'timeout') document.fonts.ready.then(() => { if (!dead) { refit(); layout(); ScrollTrigger.refresh(); } });
+      if (played || scrollY > 120) { played = true; root.classList.add('go'); return; }
+
+      // Split the headline into its lines as laid out, and give each line a hollow box that hugs its capitals.
+      const text = h2.textContent.trim(), fs = parseFloat(getComputedStyle(h2).fontSize), lines = [];
+      h2.textContent = '';
+      text.split(/\s+/).forEach((wd, i, a) => { const s = document.createElement('span'); s.className = 'w'; s.textContent = wd; h2.append(s, i < a.length - 1 ? ' ' : ''); });
+      $$('.w', h2).forEach((s) => { const l = lines[lines.length - 1]; if (l && Math.abs(l[0].offsetTop - s.offsetTop) < 4) l.push(s); else lines.push([s]); });
+      const boxes = lines.map((ws) => {
+        const a = ws[0], b = ws[ws.length - 1], el = document.createElement('i');
+        el.className = 'cbox'; el.hidden = true; el.setAttribute('aria-hidden', 'true');
+        Object.assign(el.style, { left: a.offsetLeft - 6 + 'px', top: Math.round(a.offsetTop + fs * .135) - 6 + 'px', width: b.offsetLeft + b.offsetWidth - a.offsetLeft + 12 + 'px', height: Math.round(fs * .73) + 12 + 'px' });
+        h2.append(el);
+        return el;
+      });
+      split = () => { h2.textContent = text; h2.classList.remove('is-split'); split = null; };
+      h2.classList.add('is-split');
+      gsap.set([...cuts, ...brushes, resetBtn], { visibility: 'hidden' });
+      editor.scroll(0);
+      root.classList.add('go');
+
+      const COL = secs('--d-col'), n = editor.vis, t0 = .1, tl = gsap.timeline({ onComplete: () => { played = true; split?.(); } });
+      tl.call(show('.who'), null, t0);
+      // Each line: its collision box alone for two frames, the text cuts in, the box stays one more frame and goes.
+      lines.forEach((ws, i) => {
+        const a = t0 + F + i * 2 * F;
+        tl.call(() => { boxes[i].hidden = false; }, null, a)
+          .call(() => ws.forEach((s) => s.classList.add('on')), null, a + 2 * F)
+          .call(() => boxes[i].remove(), null, a + 3 * F);
+      });
+      const tText = t0 + F + (lines.length - 1) * 2 * F + 4 * F;
+      tl.call(show('.lede'), null, tText).call(show('.actions'), null, tText + F);
+      // The level scrolls into the camera from the right edge: one more column every 25ms, each a hard cut.
+      for (let c = 1; c <= n; c++) tl.call(() => editor.scroll(c), null, t0 + 2 * F + c * COL);
+      const tBar = t0 + 2 * F + (n + 2) * COL;
+      tl.call(() => { editor.scroll(null); show('.ed-bar')(); }, null, tBar);
+      brushes.forEach((b, i) => tl.call(show([b]), null, tBar + (i + 1) * F * .75));
+      tl.call(show([resetBtn, ...cuts]), null, tBar + 8 * F * .75);
+    }));
+
+    return () => {
+      dead = true;
+      off.forEach((f) => f());
+      waits.forEach(clearTimeout);
+      runs.forEach((id, u) => calm(u));
+      dClear(); fx = null;
+      replay?.kill();
+      st.kill(); stW.kill();
+      gsap.ticker.remove(tick);
+      gsap.ticker.lagSmoothing(500, 33);
+      lenis.destroy(); lenis = null;
+      split?.();
+      gsap.set([...cuts, ...brushes, resetBtn], { clearProps: 'visibility' });
+      $$('.is-hop').forEach((b) => b.classList.remove('is-hop'));
+      rebuild.hidden = true;
+      root.classList.remove('fx', 'pin', 'side');
+      story.style.removeProperty('--walk');
+      played = true;
+      editor.scroll(null); word.draw(1); storyStill();
+    };
+  });
+})();
+</script>
+</body>
+</html>

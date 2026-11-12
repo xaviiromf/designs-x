@@ -1,0 +1,1346 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Static Harbour 87.9</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Handjet:ELGR,ELSH,wght@1..2,0..16,100..900&family=Host+Grotesk:wght@300..800&display=swap">
+<style>
+  :root {
+    /* Colour: the back-lit scale of an old receiver, switched off. Every hue has one job. Ratios: on --brass / --brass-plate. */
+    --brass: #3D2C08;        /* the ground: tarnished brass. Page, header and dialog panels */
+    --brass-deep: #271C05;   /* the same brass in shadow: the dial window, the scrim, ink on lit faces (decorative ground) */
+    --brass-plate: #4D3A10;  /* the same brass lit from behind: the scale plate, the display plate, request slips (1.23:1, a surface) */
+    --ivory: #FBF3DC;        /* text, scale numerals and major ticks (12.1:1 / 9.8:1) */
+    --felt: #CFC3A6;         /* secondary text, minor ticks, rules, outlines, the spike (7.7:1 / 6.2:1) */
+    --music: #70E6E0;        /* music programmes only: their band in the strip, schedule chips (9.0:1 / 7.3:1) */
+    --talk: #FF9DBB;         /* talk programmes only (6.9:1 / 5.6:1) */
+    --archive: #C7B6FF;      /* archive programmes only (7.4:1 / 6.0:1) */
+    --needle: #FF8A3D;       /* the tuner needle and the visitor's attention: needle, lock lamp, focus rings, field antenna (5.7:1 / 4.6:1) */
+    --on-air: #FF7A70;       /* live, and only live: the on-air lamp and the Listen live button (5.3:1; brass-deep ink on it 6.6:1) */
+    --scrim: rgb(39 28 5 / .88);   /* dialog backdrop: --brass-deep */
+    --hatch: repeating-linear-gradient(-45deg, var(--ivory) 0 2px, transparent 2px 5px);   /* the error bar: hatched ivory, not red */
+
+    /* Type */
+    --font-display: "Handjet", "Arial Narrow", sans-serif;
+    --font-text: "Host Grotesk", system-ui, sans-serif;
+    --modules: "ELSH" 2, "ELGR" 1;   /* square Handjet modules */
+    --t-small: 14px;
+    --t-body: 17px;
+    --t-lede: 20px;
+    --t-h3: 24px;
+    --t-num: 30px;                         /* scale numerals (Handjet) */
+    --t-mhz: 34px;                         /* the frequency readout (Handjet) */
+    --t-call: clamp(30px, 3.2vw, 46px);    /* the station's name in the header (Handjet h2) */
+    --t-h2: clamp(46px, 6vw, 88px);        /* section headings (Handjet h2) */
+    --lh-body: 1.55;
+    --lh-lede: 1.45;
+
+    /* Space: an 8px cell */
+    --cell: 8px;
+    --s1: 4px; --s2: 8px; --s3: 16px; --s4: 24px;
+    --s5: 32px; --s6: 48px; --s7: 72px; --s8: 96px;
+    --notch: 4px;            /* stepped corner on buttons and plates */
+    --notch-l: 8px;          /* stepped corner on the dial window and dialogs */
+    --tap: 48px;             /* button and field height */
+    --hit: 44px;             /* minimum target for text links and station links */
+    --max-w: 1360px;
+    --bar-h: 72px;           /* the header bar */
+    --track-h: 128px;        /* the scale: numerals 30, ticks 28, strip 6, names 52 */
+    --lock-gap: 64px;        /* a heading locks this far below the header (its frequency label sits above it) */
+    --eye-w: 7px;            /* one block of the tuning eye */
+    --eye-gap: 18px;         /* the eye's gap at rest */
+
+    /* Tuning (the script reads these) */
+    --lock-zone: 3;          /* detents (0.1 MHz) either side of a station that lock to it */
+    --rate-return: 40;       /* detents a second when the needle goes home */
+    --hold: .3;              /* share of the scroll between two headings where the needle stays put */
+
+    /* Motion: durations CSS and the script read */
+    --d-band: 1s;            /* load: the whole band, 87.0 to 108.0 */
+    --d-key: .35s;           /* longest keyboard tune between two stations */
+    --d-eye: 60ms;           /* button hover: one step of the tuning eye */
+    --d-eye-out: 40ms;       /* the eye opening again */
+    --d-press: 140ms;        /* button press: minimum time locked */
+    --d-tap: 200ms;          /* text link press on touch: minimum time whole */
+    --d-link: 100ms;         /* text link: the gap closes in two steps */
+    --d-ant: 50ms;           /* field focus: one antenna segment */
+    --d-frame: 50ms;         /* dialog: one side of the frame switching on */
+    --d-frame-off: 30ms;     /* dialog: one side switching off */
+    --d-drop: 90ms;          /* success: one step of the slip's drop */
+    --d-scroll-min: .7s;     /* scrolled navigation, shortest */
+    --d-scroll-max: 1.8s;    /* scrolled navigation, longest */
+  }
+  @media (max-width: 719px) {
+    :root { --t-body: 16px; --t-lede: 18px; --bar-h: 56px; --track-h: 64px; --t-mhz: 28px; --lock-gap: 48px; --eye-w: 6px; --eye-gap: 16px; }
+  }
+  @media (min-width: 720px) and (max-height: 700px) {
+    :root { --bar-h: 60px; --t-mhz: 30px; }
+  }
+
+  /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+
+  /* Hidden only when the script runs, and only until the band scan takes over (it sets the same states inline). */
+  html.js:not(.go) .st { opacity: 0; }
+  html.js:not(.go) .needle { visibility: hidden; }
+  @media (prefers-reduced-motion: reduce) {
+    html.js:not(.go) .st { opacity: 1; }
+    html.js:not(.go) .needle { visibility: visible; }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { background: var(--brass); }
+  body {
+    margin: 0;
+    background: var(--brass);
+    color: var(--ivory);
+    font: 400 var(--t-body)/var(--lh-body) var(--font-text);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  :focus-visible { outline: 2px solid var(--needle); outline-offset: 3px; }
+  ::selection { background: var(--ivory); color: var(--brass); }
+  .vh {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+  }
+  .btn, .window, .scale, .plate, .frame, .panel, .slip {
+    --corners: polygon(0 var(--n, var(--notch)), var(--n, var(--notch)) var(--n, var(--notch)), var(--n, var(--notch)) 0, calc(100% - var(--n, var(--notch))) 0, calc(100% - var(--n, var(--notch))) var(--n, var(--notch)), 100% var(--n, var(--notch)), 100% calc(100% - var(--n, var(--notch))), calc(100% - var(--n, var(--notch))) calc(100% - var(--n, var(--notch))), calc(100% - var(--n, var(--notch))) 100%, var(--n, var(--notch)) 100%, var(--n, var(--notch)) calc(100% - var(--n, var(--notch))), 0 calc(100% - var(--n, var(--notch))));
+  }
+
+  /* ---------- The receiver: a sticky header that is the whole tuner ---------- */
+  .radio {
+    position: sticky; top: 0; z-index: 10;
+    overflow: clip;
+    padding-inline: max(var(--s3), (100% - var(--max-w)) / 2);
+    padding-bottom: var(--s3);
+    background: var(--brass);
+    border-bottom: 2px solid var(--brass-deep);
+  }
+  .bar {
+    display: flex; align-items: center; gap: var(--s3) var(--s4);
+    min-height: var(--bar-h);
+  }
+  .call {
+    flex: none;
+    margin: 0;
+    font: 700 var(--t-call)/1 var(--font-display);
+    font-variation-settings: var(--modules);
+    letter-spacing: 0;
+    white-space: nowrap;
+  }
+  .call-f { font-variant-numeric: tabular-nums; }
+  .air {
+    flex: 1; min-width: 0;
+    display: flex; align-items: center; gap: var(--s2);
+    margin: 0;
+    color: var(--felt);
+    font-size: var(--t-small); line-height: 1.35;
+    font-variant-numeric: tabular-nums;
+  }
+  .air b { color: var(--ivory); font-weight: 600; }
+  .air-txt { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .air-lamp { flex: none; width: 12px; height: 12px; border: 2px solid var(--felt); }
+  .air-lamp.is-live { border-color: var(--on-air); background: var(--on-air); }
+  .bar .btn-live { flex: none; margin-left: auto; }
+
+  /* The dial window: brass in shadow, with the lit scale plate inside it. */
+  .window {
+    --n: var(--notch-l);
+    position: relative;
+    isolation: isolate;
+    padding: var(--s2) var(--s3) var(--s3);
+  }
+  .window::before { content: ""; position: absolute; inset: 0; z-index: -1; background: var(--brass-deep); clip-path: var(--corners); }
+  .readout {
+    display: flex; align-items: center; gap: var(--s2) var(--s3);
+    min-height: var(--hit);
+  }
+  .lock {
+    flex: none;
+    display: flex; align-items: center; gap: var(--s2);
+    color: var(--felt); font-size: var(--t-small); font-weight: 600;
+  }
+  .lock-lamp { width: 14px; height: 14px; border: 2px solid var(--felt); }
+  .lock.is-on .lock-lamp { border-color: var(--needle); background: var(--needle); }
+  .lock.is-on { color: var(--ivory); }
+  .plate {
+    position: relative; isolation: isolate;
+    flex: 0 1 15em; min-width: 0;
+    margin: 0;
+    padding: 6px var(--s3);
+    font-weight: 600; line-height: 1.3;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .plate::before { content: ""; position: absolute; inset: 0; z-index: -1; background: var(--brass-plate); clip-path: var(--corners); }
+  .mhz {
+    flex: none;
+    margin: 0;
+    display: flex; align-items: baseline; gap: 6px;
+    color: var(--felt); font-size: var(--t-small);
+  }
+  .mhz b {
+    color: var(--ivory);
+    font: 700 var(--t-mhz)/1 var(--font-display);
+    font-variation-settings: var(--modules);
+    font-variant-numeric: tabular-nums;
+    min-width: 2.3em; text-align: right;
+  }
+  .meter { flex: none; display: flex; align-items: flex-end; gap: 3px; height: 20px; }
+  .meter i { width: 5px; background: var(--brass-plate); }
+  .meter i:nth-child(1) { height: 6px; } .meter i:nth-child(2) { height: 9px; } .meter i:nth-child(3) { height: 12px; }
+  .meter i:nth-child(4) { height: 16px; } .meter i:nth-child(5) { height: 20px; }
+  .meter[data-l="1"] i:nth-child(-n+1), .meter[data-l="2"] i:nth-child(-n+2), .meter[data-l="3"] i:nth-child(-n+3),
+  .meter[data-l="4"] i:nth-child(-n+4), .meter[data-l="5"] i { background: var(--ivory); }
+  .side {
+    flex: 1; min-width: 0;
+    display: flex; align-items: center; justify-content: flex-end; gap: var(--s2) var(--s4);
+    color: var(--felt); font-size: var(--t-small); line-height: 1.35;
+  }
+  .hint { margin: 0; text-align: right; }
+  .legend { display: flex; align-items: center; gap: var(--s2); margin: 0; padding: 0; list-style: none; white-space: nowrap; }
+  .legend li { display: flex; align-items: center; gap: 6px; color: var(--ivory); }
+  .legend li::before { content: ""; width: 10px; height: 10px; background: var(--kind); }
+  .legend li:first-child::before { display: none; }
+  .legend li:first-child { color: var(--felt); }
+  .readout .menu-open { display: none; }
+
+  /* The scale plate and its track. Every x on it is a whole pixel set by the script. */
+  .scale {
+    position: relative; isolation: isolate;
+    margin-top: var(--s2);
+    padding: var(--s2) var(--s5) 0;
+  }
+  .scale::before { content: ""; position: absolute; inset: 0; z-index: -1; background: var(--brass-plate); clip-path: var(--corners); }
+  .track {
+    position: relative;
+    height: var(--track-h);
+    touch-action: pan-y;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .track.is-locked { cursor: pointer; }
+  .nums { position: absolute; left: 0; right: 0; top: 0; height: 30px; }
+  .nums span {
+    position: absolute; top: 0;
+    transform: translateX(-50%);
+    font: 600 var(--t-num)/1 var(--font-display);
+    font-variation-settings: var(--modules);
+    font-variant-numeric: tabular-nums;
+    color: var(--ivory);
+  }
+  .ticks { position: absolute; left: 0; top: 32px; width: 100%; height: 28px; display: block; overflow: visible; }
+  .ticks .tk-1 { fill: var(--ivory); }
+  .ticks .tk-2 { fill: var(--felt); }
+  .strip { position: absolute; left: 0; right: 0; top: 62px; height: 6px; }
+  .strip span { position: absolute; top: 0; bottom: 0; background: var(--kind); }
+  .stations { margin: 0; padding: 0; list-style: none; }
+  .stations li { position: absolute; top: 72px; left: 0; }
+  .stations li::before { content: ""; position: absolute; left: -1px; top: -4px; width: 2px; height: 6px; background: var(--felt); }
+  .st {
+    position: relative;
+    display: block;
+    min-height: var(--hit);
+    padding: 3px 6px;
+    transform: translateX(-50%);
+    color: var(--felt);
+    text-align: center; text-decoration: none; white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .st-name { display: block; font-size: 18px; font-weight: 600; line-height: 1.2; }
+  .st-f { display: block; font-size: 13px; line-height: 1.3; font-variant-numeric: tabular-nums; }
+  .st[aria-current] { color: var(--ivory); }
+  .st[aria-current] .st-name { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; }
+  .needle {
+    position: absolute; left: -1px; top: -6px;
+    width: 3px; height: 78px;
+    background: var(--needle);
+    pointer-events: none;
+    will-change: transform;
+  }
+  .needle::before { content: ""; position: absolute; left: -3px; top: 0; width: 9px; height: 6px; background: var(--needle); }
+  .needle::after { content: ""; position: absolute; left: -1px; bottom: -4px; width: 5px; height: 4px; background: var(--needle); }
+
+  /* ---------- Buttons: the tuning eye at the right end ---------- */
+  .btn {
+    position: relative;
+    display: inline-block;
+    padding: 0; border: 0; background: none;
+    color: inherit; text-decoration: none;
+    font: 600 var(--t-body)/1.2 var(--font-text);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    --e: 0px;   /* how far each eye block has moved in: 0, 3, 6, 8 (gaps 18, 12, 6, 2), 9 when pressed (gap 0) */
+  }
+  .face { display: block; padding: var(--bw); background: var(--rim); clip-path: var(--corners); }
+  .inner {
+    display: flex; align-items: center; justify-content: space-between; gap: var(--s3);
+    min-height: calc(var(--tap) - 2 * var(--bw));
+    padding: 0 var(--s3) 0 var(--s4);
+    background: var(--ground);
+    color: var(--ink);
+    clip-path: var(--corners);
+  }
+  .btn-live { --bw: 0px; --rim: var(--on-air); --ground: var(--on-air); --ink: var(--brass-deep); }
+  .btn-line { --bw: 2px; --rim: var(--felt); --ground: var(--brass); --ink: var(--ivory); }
+  .eye { flex: none; display: flex; gap: var(--eye-gap); }
+  .eye i { display: block; width: var(--eye-w); height: 16px; background: currentColor; transform: translateX(var(--e)); }
+  .eye i + i { transform: translateX(calc(-1 * var(--e))); }
+  .btn[data-eye="1"] { --e: 3px; }
+  .btn[data-eye="2"] { --e: 6px; }
+  .btn[data-eye="3"] { --e: 8px; }
+  html:not(.fx) .btn:hover, html:not(.fx) .btn:focus-visible { --e: 8px; }
+  /* Locked: the gap shut and the face inverted, for as long as it is held (at least --d-press). */
+  .btn.is-press { --e: calc(var(--eye-gap) / 2); }
+  .btn.is-press .inner { background: var(--ink); color: var(--ground); }
+  .btn.is-press .face { background: var(--ink); }
+  .btn-live.is-press .face { background: var(--on-air); }
+
+  /* ---------- Text links: a weak signal, the underline broken in the middle ---------- */
+  .u {
+    position: relative;
+    display: inline-block;
+    min-height: var(--hit);
+    padding: 10px 0;
+    border: 0; background: none;
+    color: var(--ivory);
+    font: inherit; font-weight: 600; line-height: 1.4;
+    text-decoration: none; text-align: left;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .u::before, .u::after {
+    content: "";
+    position: absolute; bottom: 8px;
+    width: 50%; height: 2px;
+    background: var(--felt);
+  }
+  .u::before { left: 0; clip-path: inset(0 6px 0 0); }    /* each half stops 6px short: a 12px gap */
+  .u::after { right: 0; clip-path: inset(0 0 0 6px); }
+  html.fx .u::before, html.fx .u::after { transition: clip-path var(--d-link) steps(2, end); }
+  .u:hover::before, .u:hover::after, .u:focus-visible::before, .u:focus-visible::after,
+  .u.is-tap::before, .u.is-tap::after { clip-path: inset(0); background: var(--ivory); }
+  .links { display: flex; flex-wrap: wrap; gap: 0 var(--s4); margin-top: var(--s3); }
+
+  /* ---------- Pages under the dial ---------- */
+  .pages { overflow-x: clip; }
+  .page {
+    min-height: calc(100svh - var(--head-h, 260px));
+    padding: var(--s6) max(var(--s3), (100% - var(--max-w)) / 2) var(--s7);
+    border-top: 2px solid var(--brass-deep);
+  }
+  .page:first-child { border-top: 0; }
+  .page:last-child { min-height: calc(100svh - var(--head-h, 260px) + var(--s4)); }
+  .page-in { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s5) var(--s7); }
+  @media (min-width: 960px) {
+    .page-in { grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); }
+  }
+  .page-f { margin: 0 0 var(--s2); color: var(--felt); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .h2 {
+    margin: 0;
+    font: 700 var(--t-h2)/.95 var(--font-display);
+    font-variation-settings: var(--modules);
+    letter-spacing: 0;
+    scroll-margin-top: var(--lock, 300px);
+  }
+  .h2:focus { outline: none; }   /* focus lands here after a station is chosen, only to move the reading point */
+  .lede { margin: var(--s4) 0 0; max-width: 54ch; font-size: var(--t-lede); line-height: var(--lh-lede); }
+  .note { margin: var(--s3) 0 0; max-width: 56ch; color: var(--felt); }
+  .facts { margin: 0; display: grid; gap: 0; border-top: 2px solid var(--felt); }
+  .facts > div { display: grid; grid-template-columns: 8.5em minmax(0, 1fr); gap: var(--s3); padding: var(--s2) 0; border-bottom: 1px solid var(--felt); }
+  .facts dt { color: var(--felt); }
+  .facts dd { margin: 0; font-variant-numeric: tabular-nums; }
+  .facts dd b { font-weight: 600; }
+  .chip {
+    display: inline-block;
+    padding: 1px var(--s2);
+    background: var(--kind);
+    color: var(--brass-deep);
+    font: 600 var(--t-small)/1.5 var(--font-text);
+  }
+  [data-kind="music"] { --kind: var(--music); }
+  [data-kind="talk"] { --kind: var(--talk); }
+  [data-kind="archive"] { --kind: var(--archive); }
+  .sched { list-style: none; margin: 0; padding: 0; border-top: 2px solid var(--felt); font-variant-numeric: tabular-nums; }
+  .sched li { display: grid; grid-template-columns: 7.2em minmax(0, 1fr) auto; gap: var(--s1) var(--s3); align-items: baseline; padding: var(--s2) 0; border-bottom: 1px solid var(--felt); }
+  .sched time { color: var(--felt); }
+  .sched b { font-weight: 600; }
+  .sched .who { display: block; color: var(--felt); font-size: var(--t-small); }
+  .sched li.is-now { box-shadow: inset 4px 0 0 var(--ivory); padding-left: var(--s3); }
+  .sched li.is-now time { color: var(--ivory); font-weight: 600; }
+  .kinds { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s4); }
+  .kinds h3 { margin: var(--s2) 0 0; font: 600 var(--t-h3)/1.2 var(--font-text); }
+  .kinds p { margin: var(--s1) 0 0; max-width: 52ch; }
+
+  /* ---------- Dialogs: the frame switches on a side at a time ---------- */
+  .dlg {
+    width: min(620px, 100% - 2 * var(--s3));
+    max-width: none;
+    max-height: calc(100dvh - 2 * var(--s3));
+    margin: auto;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--ivory);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .dlg::backdrop { background: var(--scrim); }
+  .frame { --n: var(--notch-l); position: relative; }
+  .e { position: absolute; background: var(--felt); z-index: 2; pointer-events: none; }
+  .e-t { left: var(--n); right: var(--n); top: 0; height: 3px; }
+  .e-r { top: var(--n); bottom: var(--n); right: 0; width: 3px; }
+  .e-b { left: var(--n); right: var(--n); bottom: 0; height: 3px; }
+  .e-l { top: var(--n); bottom: var(--n); left: 0; width: 3px; }
+  .frame::before, .frame::after { content: ""; position: absolute; width: var(--n); height: var(--n); z-index: 2; pointer-events: none;
+    background: linear-gradient(var(--felt), var(--felt)) right bottom / 3px 3px no-repeat; }
+  .frame::before { left: 0; top: 0; }
+  .frame::after { right: 0; bottom: 0; transform: rotate(180deg); }
+  .panel {
+    --n: var(--notch-l);
+    padding: var(--s5);
+    background: var(--brass);
+    clip-path: var(--corners);
+  }
+  /* Switching on (the script sets data-f): top, right, bottom, left, then the ground and the content together. */
+  .dlg[data-f] .e, .dlg[data-f] .frame::before, .dlg[data-f] .frame::after { visibility: hidden; }
+  .dlg[data-f] .panel { opacity: 0; }
+  .dlg[data-f~="t"] .e-t, .dlg[data-f~="r"] .e-r, .dlg[data-f~="b"] .e-b, .dlg[data-f~="l"] .e-l { visibility: visible; }
+  .dlg[data-f~="p"] .frame::before, .dlg[data-f~="p"] .frame::after { visibility: visible; }
+  .dlg[data-f~="p"] .panel { opacity: 1; }
+  .dlg-head { display: flex; justify-content: space-between; align-items: center; gap: var(--s4); }
+  .dlg h2 { margin: 0; font: 700 clamp(36px, 6vw, 52px)/1 var(--font-display); font-variation-settings: var(--modules); }
+  .nownext { margin: var(--s3) 0 0; }
+  .dlg-note { margin: var(--s3) 0 0; color: var(--felt); max-width: 52ch; }
+  .rule { height: 2px; margin: var(--s4) 0; border: 0; background: var(--felt); }
+  .dlg h3, .done h3 { margin: 0; font: 600 var(--t-h3)/1.2 var(--font-text); }
+  .done h3:focus { outline: none; }   /* focus lands here only to announce the result */
+  .req-when { margin: var(--s1) 0 0; color: var(--felt); }
+  .menu-list { list-style: none; margin: var(--s3) 0 0; padding: 0; border-top: 2px solid var(--felt); }
+  .menu-list li { border-bottom: 1px solid var(--felt); }
+  .mn {
+    display: grid; grid-template-columns: 3.4em minmax(0, 1fr); gap: 0 var(--s3); align-items: baseline;
+    min-height: var(--tap); padding: var(--s2) 0;
+    color: var(--ivory); text-decoration: none;
+  }
+  .mn-f { grid-row: span 2; font: 700 28px/1 var(--font-display); font-variation-settings: var(--modules); font-variant-numeric: tabular-nums; color: var(--felt); }
+  .mn-name { font-weight: 600; }
+  .mn-desc { color: var(--felt); font-size: var(--t-small); }
+  .mn[aria-current] .mn-f { color: var(--ivory); }
+  .mn[aria-current] .mn-name { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; }
+
+  /* ---------- Request form ---------- */
+  .rows { display: grid; grid-template-columns: minmax(0, 1fr); column-gap: var(--s4); margin-top: var(--s2); }
+  @media (min-width: 600px) { .rows { grid-template-columns: repeat(2, minmax(0, 1fr)); } .row-wide { grid-column: 1 / -1; } }
+  .lbl { display: block; margin-top: var(--s3); font-weight: 600; }
+  .lbl span { color: var(--felt); font-weight: 400; }
+  .field { position: relative; margin-top: var(--s1); }
+  .field input, .field textarea {
+    display: block;
+    width: 100%; min-height: var(--tap);
+    padding: 0 var(--s3);
+    border: 2px solid var(--felt);
+    border-radius: 0;
+    background: var(--brass-deep);
+    color: var(--ivory);
+    font: inherit;
+    appearance: none;
+  }
+  .field textarea { padding: 10px var(--s3); min-height: 88px; resize: vertical; line-height: 1.45; }
+  .field input:hover, .field textarea:hover { border-color: var(--ivory); }
+  .field input:focus, .field textarea:focus { border-color: var(--ivory); }
+  /* The antenna: three segments of 6px, 3, 2 and 1px thick, rising at 45 degrees out of the top-right corner,
+     one per frame. Visibility transitions with no duration and stepped delays: out in order, back in reverse. */
+  .ant { position: absolute; left: calc(100% - 2px); bottom: calc(100% - 2px); width: 18px; height: 18px; overflow: visible; pointer-events: none; }
+  .ant rect { fill: var(--needle); }
+  .ant g { visibility: hidden; transition: visibility 0s linear; }
+  .ant .a3 { transition-delay: 0s; }
+  .ant .a2 { transition-delay: var(--d-ant); }
+  .ant .a1 { transition-delay: calc(var(--d-ant) * 2); }
+  .field:focus-within .ant g { visibility: visible; }
+  .field:focus-within .ant .a1 { transition-delay: 0s; }
+  .field:focus-within .ant .a2 { transition-delay: var(--d-ant); }
+  .field:focus-within .ant .a3 { transition-delay: calc(var(--d-ant) * 2); }
+  .err {
+    min-height: calc(6px + var(--s1) + var(--t-small) * 1.45 * 2);   /* reserved for a two-line message */
+    margin: var(--s1) 0 0;
+    color: var(--ivory);
+    font-size: var(--t-small); line-height: 1.45; font-weight: 600;
+  }
+  .err:not(:empty)::before { content: ""; display: block; height: 6px; margin-bottom: var(--s1); background: var(--hatch); }
+  .field.is-bad input, .field.is-bad textarea { border-color: var(--ivory); }
+  .req .btn { margin-top: var(--s2); }
+  .swap { display: grid; }
+
+  /* ---------- Success: the slip goes on the spike ---------- */
+  .done p { margin: var(--s3) 0 0; max-width: 52ch; }
+  .done q, .done b { font-weight: 600; overflow-wrap: anywhere; }
+  .desk { position: relative; height: 200px; margin: var(--s4) 0 0; }
+  .rod { position: absolute; left: 50%; top: 70px; width: 3px; height: 118px; margin-left: -1px; background: var(--felt); }
+  .rod::before { content: ""; position: absolute; left: 1px; top: -6px; width: 1px; height: 6px; background: var(--felt); }
+  .base { position: absolute; left: 50%; bottom: 0; width: 132px; height: 12px; margin-left: -66px; background: var(--felt); }
+  .slip {
+    position: absolute; left: 50%; bottom: 12px;
+    width: min(240px, 82%); min-height: 76px;
+    padding: 22px var(--s3) var(--s2);
+    transform: translateX(-50%);
+    clip-path: var(--corners);
+  }
+  .slip-old { background: var(--felt); }
+  .slip-old.o1 { bottom: 12px; margin-left: -10px; }
+  .slip-old.o2 { bottom: 18px; margin-left: 8px; }
+  .slip-new::after { content: ""; position: absolute; left: 50%; top: 9px; width: 9px; height: 9px; margin-left: -4px; background: var(--brass-deep); }
+  .slip-new { bottom: 24px; background: var(--brass-plate); box-shadow: inset 0 0 0 2px var(--ivory); text-align: center; line-height: 1.3; }
+  .slip-new::before { content: ""; position: absolute; left: 50%; top: 9px; width: 3px; height: 9px; margin-left: -1px; background: var(--felt); z-index: 1; }
+  .slip-new b, .slip-new span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .slip-new span { color: var(--felt); font-size: var(--t-small); }
+  .slip-wrap { position: absolute; inset: 0; }
+  .slip-wrap[data-step="0"] .slip-new::before { visibility: hidden; }   /* not pierced yet */
+  .done .btn { margin-top: var(--s4); }
+
+  /* ---------- Narrow screens: the compact dial ---------- */
+  @media (max-width: 1199px) { .hint { display: none; } }
+  @media (max-width: 899px) { .legend { display: none; } }
+  @media (max-width: 719px) {
+    .radio { padding-bottom: var(--s2); }
+    .bar { flex-wrap: wrap; gap: 0 var(--s2); padding: var(--s2) 0; }
+    .call { font-size: 30px; }
+    .air { order: 3; flex-basis: 100%; padding: var(--s1) 0 var(--s2); }
+    .inner { padding: 0 var(--s3); gap: 12px; }
+    .window { padding: var(--s2); }
+    .readout { gap: var(--s2); }
+    .lock-txt { display: none; }
+    .plate { flex: 1 1 auto; padding: 6px var(--s2); font-size: 15px; }
+    .mhz { display: none; }   /* the frequencies are printed on the stations; the plate says the rest */
+    .side, .strip, .nums { display: none; }
+    .readout .menu-open { display: inline-block; flex: none; }
+    .menu-open .inner { padding: 0 12px; }
+    .scale { padding: var(--s1) var(--s1) 0; }
+    .ticks { top: 0; height: 14px; }
+    .stations li { top: 16px; }
+    .stations li::before { display: none; }
+    .st { padding: 4px 2px; min-width: var(--hit); }
+    .st-name { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    .st-f { font: 700 24px/1.5 var(--font-display); font-variation-settings: var(--modules); }
+    .st[aria-current] .st-f { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+    .needle { top: -4px; height: 22px; }
+    .page { padding-top: var(--s5); }
+    .panel { padding: var(--s4) var(--s3); }
+    .facts > div { grid-template-columns: 7em minmax(0, 1fr); }
+    .sched li { grid-template-columns: 6.4em minmax(0, 1fr); }
+    .sched .chip { grid-column: 2; justify-self: start; }
+  }
+  @media (max-width: 380px) {
+    .call { font-size: 26px; }
+    .plate { font-size: 14px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition-duration: 0s !important; transition-delay: 0s !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="radio" id="radio" aria-labelledby="station-title">
+  <div class="bar">
+    <h2 class="call" id="station-title">Static Harbour <span class="call-f">87.9</span></h2>
+    <p class="air" id="air"><span class="air-lamp" id="air-lamp" aria-hidden="true"></span><span class="air-txt"><span id="air-state">On air</span>: <b id="air-show">City Pop Tide</b> <span id="air-meta">with Inès Ferrand, until 21:00</span></span></p>
+    <button class="btn btn-live" id="live-open" type="button" aria-haspopup="dialog" aria-controls="live"><span class="face"><span class="inner"><span class="label">Listen live</span><span class="eye" aria-hidden="true"><i></i><i></i></span></span></span></button>
+  </div>
+
+  <nav class="dial" aria-label="Stations">
+    <div class="window">
+      <div class="readout">
+        <span class="lock" id="lock" aria-hidden="true"><span class="lock-lamp"></span><span class="lock-txt">Lock</span></span>
+        <p class="plate" id="plate">On air</p>
+        <p class="mhz"><b id="mhz">87.9</b><span>MHz</span></p>
+        <span class="meter" id="meter" data-l="5" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+        <div class="side">
+          <p class="hint" id="hint">Arrow keys tune from station to station.</p>
+          <ul class="legend" aria-label="The strip under the scale is today's programmes, 00:00 to 24:00">
+            <li>Today</li><li data-kind="music">Music</li><li data-kind="talk">Talk</li><li data-kind="archive">Archive</li>
+          </ul>
+        </div>
+        <button class="btn btn-line menu-open" id="menu-open" type="button" aria-haspopup="dialog" aria-controls="menu"><span class="face"><span class="inner"><span class="label">Stations</span><span class="eye" aria-hidden="true"><i></i><i></i></span></span></span></button>
+      </div>
+      <div class="scale">
+        <div class="track" id="track">
+          <div class="nums" id="nums" aria-hidden="true"></div>
+          <svg class="ticks" id="ticks" aria-hidden="true"></svg>
+          <div class="strip" id="strip" aria-hidden="true"></div>
+          <ul class="stations">
+            <li><a class="st" href="#on-air" data-f="879"><span class="st-name">On air</span><span class="st-f">87.9<span class="vh"> MHz</span></span></a></li>
+            <li><a class="st" href="#schedule" data-f="915"><span class="st-name">Schedule</span><span class="st-f">91.5<span class="vh"> MHz</span></span></a></li>
+            <li><a class="st" href="#shows" data-f="952"><span class="st-name">Shows</span><span class="st-f">95.2<span class="vh"> MHz</span></span></a></li>
+            <li><a class="st" href="#archive" data-f="986"><span class="st-name">Archive</span><span class="st-f">98.6<span class="vh"> MHz</span></span></a></li>
+            <li><a class="st" href="#support" data-f="1023"><span class="st-name">Support us</span><span class="st-f">102.3<span class="vh"> MHz</span></span></a></li>
+            <li><a class="st" href="#contact" data-f="1064"><span class="st-name">Contact</span><span class="st-f">106.4<span class="vh"> MHz</span></span></a></li>
+          </ul>
+          <span class="needle" id="needle" aria-hidden="true"></span>
+        </div>
+      </div>
+    </div>
+  </nav>
+</header>
+
+<main class="pages" id="pages">
+  <section class="page" id="on-air" aria-labelledby="on-air-h">
+    <div class="page-in">
+      <div>
+        <p class="page-f">87.9 MHz</p>
+        <h2 class="h2" id="on-air-h" tabindex="-1">On air</h2>
+        <p class="lede">Static Harbour has broadcast on 87.9 since 1987, first from the wheelhouse of a trawler called the Marie-Jo, now from a shipping container on the Quai de la Joliette. Live programmes run from 07:00 to 02:00, and the archive fills the night and the afternoon.</p>
+      </div>
+      <div>
+        <dl class="facts" id="nownext-page">
+          <div><dt>Now</dt><dd data-now>City Pop Tide</dd></div>
+          <div><dt>Next</dt><dd data-next>Dedications at 21:00</dd></div>
+          <div><dt>On FM</dt><dd>87.9 MHz across Marseille, from L'Estaque to Les Goudes</dd></div>
+        </dl>
+        <p class="note">Times are Marseille time.</p>
+        <div class="links"><a class="u" href="#schedule">See the whole day</a></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="page" id="schedule" aria-labelledby="schedule-h">
+    <div class="page-in">
+      <div>
+        <p class="page-f">91.5 MHz</p>
+        <h2 class="h2" id="schedule-h" tabindex="-1">Schedule</h2>
+        <p class="lede">The same eight programmes every day of the week, so you always know where to find yours. Public holidays run the Sunday tapes instead.</p>
+      </div>
+      <ol class="sched" id="sched"></ol>
+    </div>
+  </section>
+
+  <section class="page" id="shows" aria-labelledby="shows-h">
+    <div class="page-in">
+      <div>
+        <p class="page-f">95.2 MHz</p>
+        <h2 class="h2" id="shows-h" tabindex="-1">Shows</h2>
+        <p class="lede">Three kinds of programme share the day. Every one of them is made by volunteers, most of them people who wrote in first as listeners.</p>
+      </div>
+      <ul class="kinds">
+        <li data-kind="music"><span class="chip">Music</span><h3>Chiptune and city pop</h3><p>Container Sessions plays chiptune live from the studio; City Pop Tide and Chip Sea take the evening. Nine hours a day.</p></li>
+        <li data-kind="talk"><span class="chip">Talk</span><h3>Phone-ins and the harbour</h3><p>Fish Market Mornings has the auction prices and the weather for the boats; Night Ferry is the phone-in that began on the trawler. Six hours a day.</p></li>
+        <li data-kind="archive"><span class="chip">Archive</span><h3>Tapes from the shelves</h3><p>Old programmes played back by date, every afternoon and every night. Nine hours a day.</p></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="page" id="archive" aria-labelledby="archive-h">
+    <div class="page-in">
+      <div>
+        <p class="page-f">98.6 MHz</p>
+        <h2 class="h2" id="archive-h" tabindex="-1">Archive</h2>
+        <p class="lede">The boat years are on cassette, labelled by date and shelved at the back of the container. Volunteers digitise 40 tapes every Tuesday. Everything since 2004 was recorded as a file.</p>
+      </div>
+      <div>
+        <dl class="facts">
+          <div><dt>Cassettes</dt><dd>4,180, from 1987 to 2004</dd></div>
+          <div><dt>Digitised</dt><dd>2,960 so far</dd></div>
+          <div><dt>Played back</dt><dd>14:00 to 18:00 and 02:00 to 07:00</dd></div>
+        </dl>
+        <p class="note">Ask for a programme by its date and we put it on Harbour Tapes within a month.</p>
+        <div class="links"><a class="u" href="#contact">Ask for a programme</a></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="page" id="support" aria-labelledby="support-h">
+    <div class="page-in">
+      <div>
+        <p class="page-f">102.3 MHz</p>
+        <h2 class="h2" id="support-h" tabindex="-1">Support us</h2>
+        <p class="lede">We carry no advertising. 612 members pay for most of what keeps 87.9 on the air: the container's rent, the transmitter's electricity and the broadcast licence.</p>
+      </div>
+      <div>
+        <dl class="facts">
+          <div><dt>Membership</dt><dd><b>4 euros a month</b>, or 40 euros a year</dd></div>
+          <div><dt>Rent</dt><dd>310 euros a month for the container</dd></div>
+          <div><dt>Licence</dt><dd>1,150 euros a year</dd></div>
+        </dl>
+        <p class="note">Members can download the archive files and get their name read on air once a year, on the night of their choosing.</p>
+        <div class="links"><a class="u" href="mailto:members@staticharbour.fr" target="_blank" rel="noopener">Email us to become a member<span class="vh"> (opens in a new tab)</span></a></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="page" id="contact" aria-labelledby="contact-h">
+    <div class="page-in">
+      <div>
+        <p class="page-f">106.4 MHz</p>
+        <h2 class="h2" id="contact-h" tabindex="-1">Contact</h2>
+        <p class="lede">The studio phone is answered during talk programmes. Any other time, write to us, or come by the container on Saturday between 11:00 and 13:00.</p>
+      </div>
+      <div>
+        <dl class="facts">
+          <div><dt>Studio phone</dt><dd>+33 4 91 55 08 79</dd></div>
+          <div><dt>Email</dt><dd>studio@staticharbour.fr</dd></div>
+          <div><dt>Post</dt><dd>Container 14, Quai de la Joliette, 13002 Marseille</dd></div>
+        </dl>
+        <div class="links">
+          <a class="u" href="tel:+33491550879" target="_blank" rel="noopener">Call the studio<span class="vh"> (opens in a new tab)</span></a>
+          <a class="u" href="mailto:studio@staticharbour.fr" target="_blank" rel="noopener">Write to the studio<span class="vh"> (opens in a new tab)</span></a>
+          <a class="u" href="https://mastodon.social/" target="_blank" rel="noopener">Follow us on Mastodon<span class="vh"> (opens in a new tab)</span></a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<dialog class="dlg" id="live" aria-labelledby="live-title" data-lenis-prevent>
+  <div class="frame">
+    <span class="e e-t" aria-hidden="true"></span><span class="e e-r" aria-hidden="true"></span><span class="e e-b" aria-hidden="true"></span><span class="e e-l" aria-hidden="true"></span>
+    <div class="panel">
+      <div class="dlg-head">
+        <h2 id="live-title">Listen live</h2>
+        <button class="u" id="live-close" type="button">Close</button>
+      </div>
+      <dl class="facts nownext">
+        <div><dt>Now</dt><dd data-now>City Pop Tide</dd></div>
+        <div><dt>Next</dt><dd data-next>Dedications at 21:00</dd></div>
+      </dl>
+      <p class="dlg-note">The stream opens in your own player, such as VLC or your phone's radio app. Its address changes when the container's line does, so we post the current one on Mastodon.</p>
+      <a class="u" href="https://mastodon.social/" target="_blank" rel="noopener">Get the stream address on Mastodon<span class="vh"> (opens in a new tab)</span></a>
+      <hr class="rule">
+      <div class="swap">
+        <form class="req" id="req" novalidate aria-labelledby="req-title">
+          <h3 id="req-title">Request a track</h3>
+          <p class="req-when" id="req-when">We read requests out on the next talk programme.</p>
+          <div class="rows">
+            <div class="row-wide">
+              <label class="lbl" for="f-name">Your name</label>
+              <div class="field"><input id="f-name" name="name" type="text" autocomplete="given-name" spellcheck="false"><svg class="ant" viewBox="0 0 18 18" aria-hidden="true"><g class="a1"><rect x="0" y="15" width="3" height="3"/><rect x="3" y="12" width="3" height="3"/></g><g class="a2"><rect x="6" y="10" width="2" height="2"/><rect x="8" y="8" width="2" height="2"/><rect x="10" y="6" width="2" height="2"/></g><g class="a3"><rect x="12" y="5" width="1" height="1"/><rect x="13" y="4" width="1" height="1"/><rect x="14" y="3" width="1" height="1"/><rect x="15" y="2" width="1" height="1"/><rect x="16" y="1" width="1" height="1"/><rect x="17" y="0" width="1" height="1"/></g></svg></div>
+              <p class="err" id="f-name-err" aria-live="polite"></p>
+            </div>
+            <div>
+              <label class="lbl" for="f-track">Track</label>
+              <div class="field"><input id="f-track" name="track" type="text" autocomplete="off"><svg class="ant" viewBox="0 0 18 18" aria-hidden="true"><g class="a1"><rect x="0" y="15" width="3" height="3"/><rect x="3" y="12" width="3" height="3"/></g><g class="a2"><rect x="6" y="10" width="2" height="2"/><rect x="8" y="8" width="2" height="2"/><rect x="10" y="6" width="2" height="2"/></g><g class="a3"><rect x="12" y="5" width="1" height="1"/><rect x="13" y="4" width="1" height="1"/><rect x="14" y="3" width="1" height="1"/><rect x="15" y="2" width="1" height="1"/><rect x="16" y="1" width="1" height="1"/><rect x="17" y="0" width="1" height="1"/></g></svg></div>
+              <p class="err" id="f-track-err" aria-live="polite"></p>
+            </div>
+            <div>
+              <label class="lbl" for="f-artist">Artist</label>
+              <div class="field"><input id="f-artist" name="artist" type="text" autocomplete="off"><svg class="ant" viewBox="0 0 18 18" aria-hidden="true"><g class="a1"><rect x="0" y="15" width="3" height="3"/><rect x="3" y="12" width="3" height="3"/></g><g class="a2"><rect x="6" y="10" width="2" height="2"/><rect x="8" y="8" width="2" height="2"/><rect x="10" y="6" width="2" height="2"/></g><g class="a3"><rect x="12" y="5" width="1" height="1"/><rect x="13" y="4" width="1" height="1"/><rect x="14" y="3" width="1" height="1"/><rect x="15" y="2" width="1" height="1"/><rect x="16" y="1" width="1" height="1"/><rect x="17" y="0" width="1" height="1"/></g></svg></div>
+              <p class="err" id="f-artist-err" aria-live="polite"></p>
+            </div>
+            <div class="row-wide">
+              <label class="lbl" for="f-ded">Dedication <span>(optional, up to 140 characters)</span></label>
+              <div class="field"><textarea id="f-ded" name="dedication" rows="3"></textarea><svg class="ant" viewBox="0 0 18 18" aria-hidden="true"><g class="a1"><rect x="0" y="15" width="3" height="3"/><rect x="3" y="12" width="3" height="3"/></g><g class="a2"><rect x="6" y="10" width="2" height="2"/><rect x="8" y="8" width="2" height="2"/><rect x="10" y="6" width="2" height="2"/></g><g class="a3"><rect x="12" y="5" width="1" height="1"/><rect x="13" y="4" width="1" height="1"/><rect x="14" y="3" width="1" height="1"/><rect x="15" y="2" width="1" height="1"/><rect x="16" y="1" width="1" height="1"/><rect x="17" y="0" width="1" height="1"/></g></svg></div>
+              <p class="err" id="f-ded-err" aria-live="polite"></p>
+            </div>
+          </div>
+          <button class="btn btn-line" type="submit"><span class="face"><span class="inner"><span class="label">Send the request</span><span class="eye" aria-hidden="true"><i></i><i></i></span></span></span></button>
+        </form>
+        <div class="done" id="done" hidden>
+          <h3 id="done-title" tabindex="-1">Your request is on the spike</h3>
+          <div class="desk" aria-hidden="true">
+            <span class="rod"></span>
+            <span class="slip slip-old o1"></span>
+            <span class="slip slip-old o2"></span>
+            <div class="slip-wrap" id="slip-wrap"><div class="slip slip-new"><b id="s-track">Midnight Ferry</b><span id="s-artist">Lune Basse</span><span id="s-name">for Ana</span></div></div>
+            <span class="base"></span>
+          </div>
+          <p id="done-when">We read it out on Dedications at 21:00 today.</p>
+          <button class="btn btn-line" id="again" type="button"><span class="face"><span class="inner"><span class="label">Request another</span><span class="eye" aria-hidden="true"><i></i><i></i></span></span></span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<dialog class="dlg" id="menu" aria-labelledby="menu-title" data-lenis-prevent>
+  <div class="frame">
+    <span class="e e-t" aria-hidden="true"></span><span class="e e-r" aria-hidden="true"></span><span class="e e-b" aria-hidden="true"></span><span class="e e-l" aria-hidden="true"></span>
+    <div class="panel">
+      <div class="dlg-head">
+        <h2 id="menu-title">All stations</h2>
+        <button class="u" id="menu-close" type="button">Close</button>
+      </div>
+      <ul class="menu-list">
+        <li><a class="mn" href="#on-air"><span class="mn-f">87.9</span><span class="mn-name">On air</span><span class="mn-desc">What is playing now, and what is next</span></a></li>
+        <li><a class="mn" href="#schedule"><span class="mn-f">91.5</span><span class="mn-name">Schedule</span><span class="mn-desc">The eight programmes of the day</span></a></li>
+        <li><a class="mn" href="#shows"><span class="mn-f">95.2</span><span class="mn-name">Shows</span><span class="mn-desc">Music, talk and the archive</span></a></li>
+        <li><a class="mn" href="#archive"><span class="mn-f">98.6</span><span class="mn-name">Archive</span><span class="mn-desc">How the tapes are kept</span></a></li>
+        <li><a class="mn" href="#support"><span class="mn-f">102.3</span><span class="mn-name">Support us</span><span class="mn-desc">Membership, from 4 euros a month</span></a></li>
+        <li><a class="mn" href="#contact"><span class="mn-f">106.4</span><span class="mn-name">Contact</span><span class="mn-desc">Studio phone, email and the container</span></a></li>
+      </ul>
+    </div>
+  </div>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  const root = document.documentElement;
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const lib = !!(window.gsap && window.ScrollTrigger && window.Lenis);
+  if (lib) root.classList.add('js'); // CDN blocked: no class, everything is visible and every flow still works
+
+  /* ---------- The day on 87.9, in Marseille time. Edit this list and every readout follows. ---------- */
+  const SCHEDULE = [
+    { from: '00:00', to: '02:00', show: 'Night Ferry', host: 'Karim Benali', kind: 'talk' },
+    { from: '02:00', to: '07:00', show: 'Harbour Tapes', host: null, kind: 'archive' },
+    { from: '07:00', to: '10:00', show: 'Fish Market Mornings', host: 'Odile Marchetti', kind: 'talk' },
+    { from: '10:00', to: '14:00', show: 'Container Sessions', host: 'Yuna Park', kind: 'music' },
+    { from: '14:00', to: '18:00', show: 'Tape Deck Afternoon', host: null, kind: 'archive' },
+    { from: '18:00', to: '21:00', show: 'City Pop Tide', host: 'Inès Ferrand', kind: 'music' },
+    { from: '21:00', to: '22:00', show: 'Dedications', host: 'Sami Haddad', kind: 'talk' },
+    { from: '22:00', to: '24:00', show: 'Chip Sea', host: 'Théo Lambert', kind: 'music' }
+  ];
+  const KIND = { music: 'Music', talk: 'Talk', archive: 'Archive' };
+  const mins = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+  const clock = () => {
+    const d = new Date();
+    try {
+      const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+        .formatToParts(d).map((x) => [x.type, x.value]));
+      return (+p.hour % 24) * 60 + +p.minute;
+    } catch { return d.getHours() * 60 + d.getMinutes(); }
+  };
+  const slotAt = (m) => SCHEDULE.findIndex((s) => m >= mins(s.from) && m < mins(s.to));
+  const hhmm = (t) => (t === '24:00' ? '00:00' : t);
+
+  /* ---------- On air: the header lamp, both now/next readouts and the schedule (plain JS) ---------- */
+  const sched = $('#sched');
+  sched.innerHTML = '';
+  SCHEDULE.forEach((s) => {
+    const li = document.createElement('li');
+    li.dataset.kind = s.kind;
+    const time = document.createElement('time');
+    time.textContent = `${s.from} to ${hhmm(s.to)}`;
+    const what = document.createElement('span');
+    const b = document.createElement('b'); b.textContent = s.show;
+    const who = document.createElement('span'); who.className = 'who'; who.textContent = s.host ? `with ${s.host}` : 'from the archive';
+    what.append(b, who);
+    const chip = document.createElement('span'); chip.className = 'chip'; chip.textContent = KIND[s.kind];
+    li.append(time, what, chip);
+    sched.append(li);
+  });
+  const strip = $('#strip');
+  strip.innerHTML = SCHEDULE.map((s) => `<span data-kind="${s.kind}" style="left:${mins(s.from) / 14.4}%;width:${(mins(s.to) - mins(s.from)) / 14.4}%"></span>`).join('');
+
+  let airTimer = 0;
+  const nextTalk = (m) => {
+    for (let k = 1; k <= SCHEDULE.length; k++) {
+      const i = (slotAt(m) + k) % SCHEDULE.length, s = SCHEDULE[i];
+      if (s.kind === 'talk') return { s, day: mins(s.from) > m ? 'today' : 'tomorrow' };
+    }
+    return null;
+  };
+  const paintAir = () => {
+    const m = clock(), i = Math.max(0, slotAt(m)), s = SCHEDULE[i], n = SCHEDULE[(i + 1) % SCHEDULE.length];
+    const live = s.kind !== 'archive';
+    $('#air-lamp').classList.toggle('is-live', live);
+    $('#air-state').textContent = live ? 'On air' : 'From the archive';
+    $('#air-show').textContent = s.show;
+    $('#air-meta').textContent = (s.host ? `with ${s.host}, ` : '') + `until ${hhmm(s.to)}`;
+    $$('[data-now]').forEach((el) => { el.textContent = `${s.show}, ${s.host ? `with ${s.host}, ` : 'from the archive, '}until ${hhmm(s.to)}`; });
+    $$('[data-next]').forEach((el) => { el.textContent = `${n.show} at ${n.from}`; });
+    [...sched.children].forEach((li, k) => {
+      li.classList.toggle('is-now', k === i);
+      const old = $('.vh', li); if (old) old.remove();
+      if (k === i) { const v = document.createElement('span'); v.className = 'vh'; v.textContent = ' (on now)'; $('span', li).append(v); }
+    });
+    const t = nextTalk(m);
+    $('#req-when').textContent = t ? `We read requests out on the next talk programme, ${t.s.show}, at ${t.s.from} ${t.day}.` : '';
+    clearTimeout(airTimer); // repaint at the next change of programme; no loop
+    airTimer = setTimeout(paintAir, (mins(s.to) - m) * 60000 - new Date().getSeconds() * 1000 + 1000);
+  };
+  paintAir();
+
+  /* ---------- The dial (plain JS: tuning by pointer, touch, keys and scroll works without the libraries) ---------- */
+  const read = (n) => getComputedStyle(root).getPropertyValue(n).trim();
+  const head = $('#radio'), track = $('#track'), needle = $('#needle'), plate = $('#plate'), mhz = $('#mhz');
+  const lockEl = $('#lock'), meter = $('#meter'), ticks = $('#ticks'), nums = $('#nums'), nav = $('.dial');
+  const LO = 870, HI = 1080;                       // the band in detents of 0.1 MHz
+  const ZONE = parseFloat(read('--lock-zone')) || 3, HOLD = parseFloat(read('--hold')) || .3;
+  const STATIONS = $$('.st').map((a, i) => {
+    const id = a.getAttribute('href').slice(1), sec = document.getElementById(id);
+    return { i, a, id, f: +a.dataset.f, name: $('.st-name', a).textContent, li: a.parentElement, sec, h: $('.h2', sec), mn: $(`.mn[href="#${id}"]`) };
+  });
+  const compactMQ = matchMedia('(max-width: 719px)');
+  // mode: scroll (follows the page), pointer (follows the hand), key (focus), return (going home), hold (waiting for a scroll to land), scan (load)
+  const D = { raw: STATIONS[0].f, mode: 'scroll', scan: false, A: [[LO, 0], [HI, 1]], cur: -1, home: STATIONS[0].f, key: '' };
+  let fx = null, lenis = null; // fx: hooks set by the motion branch; null means every change is instant
+
+  const xOf = (f) => {
+    const A = D.A;
+    for (let k = 1; k < A.length; k++) {
+      if (f <= A[k][0] || k === A.length - 1) { const [f0, x0] = A[k - 1], [f1, x1] = A[k]; return x0 + (x1 - x0) * (f - f0) / (f1 - f0); }
+    }
+    return 0;
+  };
+  const fOf = (x) => {
+    const A = D.A;
+    let f = LO;
+    for (let k = 1; k < A.length; k++) {
+      if (x <= A[k][1] || k === A.length - 1) { const [f0, x0] = A[k - 1], [f1, x1] = A[k]; f = f0 + (f1 - f0) * (x - x0) / (x1 - x0); break; }
+    }
+    return Math.max(LO, Math.min(HI, Math.round(f)));
+  };
+  const lockOf = (f) => (D.scan ? null : STATIONS.find((s) => Math.abs(f - s.f) <= ZONE) || null);
+  const far = (f) => Math.min(...STATIONS.map((s) => Math.abs(f - s.f)));
+
+  // Everything the needle shows is derived from one number: the detent it sits on.
+  const render = () => {
+    const st = lockOf(D.raw), shown = st ? st.f : D.raw, x = Math.round(xOf(shown));
+    const key = `${x}|${st ? st.i : -1}|${D.scan}`;
+    if (key === D.key) return;
+    D.key = key;
+    needle.style.transform = `translateX(${x}px)`;
+    mhz.textContent = (shown / 10).toFixed(1);
+    plate.textContent = D.scan ? 'Scanning the band' : st ? st.name : 'Between stations';
+    lockEl.classList.toggle('is-on', !!st);
+    meter.dataset.l = st ? 5 : far(shown) <= 8 ? 2 : 1;
+    track.classList.toggle('is-locked', !!st);
+  };
+  const reveal = () => STATIONS.forEach((s) => { s.a.style.opacity = ''; });
+
+  // The scale is drawn for its width: whole-pixel ticks, numerals on even MHz, stations hung under their frequencies.
+  // Phones: the six stations at even spacing, piecewise between them.
+  const layout = () => {
+    const W = track.clientWidth;
+    if (!W) return;
+    const compact = compactMQ.matches;
+    D.A = compact
+      ? [[LO, 0], ...STATIONS.map((s, i) => [s.f, Math.round(W * (i + .5) / STATIONS.length)]), [HI, W]]
+      : [[LO, 0], [HI, W]];
+    const H = ticks.getBoundingClientRect().height || 22;
+    let r = '';
+    const tick = (x, h, c) => { r += `<rect class="tk-${c}" x="${Math.round(x) - 1}" y="${H - h}" width="${c === 1 ? 2 : 1}" height="${h}"/>`; };
+    if (compact) {
+      for (let k = 0; k < D.A.length - 1; k++) {
+        const [, x0] = D.A[k], [, x1] = D.A[k + 1];
+        for (let q = 1; q < 4; q++) tick(x0 + (x1 - x0) * q / 4, 5, 2);
+      }
+      STATIONS.forEach((s) => tick(xOf(s.f), H, 1));
+    } else {
+      for (let f = LO; f <= HI; f++) {
+        if (f % 10 === 0) tick(xOf(f), H, 1);
+        else if (f % 5 === 0) tick(xOf(f), Math.round(H * .55), 2);
+        else if (f % 2 === 0 && W > 900) tick(xOf(f), Math.round(H * .3), 2);
+      }
+    }
+    ticks.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    ticks.innerHTML = r;
+    nums.innerHTML = compact ? '' : Array.from({ length: 11 }, (_, k) => 88 + 2 * k).map((n) => `<span style="left:${Math.round(xOf(n * 10))}px">${n}</span>`).join('');
+    STATIONS.forEach((s) => { s.li.style.left = Math.round(xOf(s.f)) + 'px'; });
+    D.key = '';
+    render();
+  };
+
+  /* Scroll: each heading locks its station as it reaches the line under the header. Between two headings the
+     needle holds for the first 30% of the way, then travels to the next station in detents. */
+  let tops = [], lockY = 0;
+  const measure = () => {
+    lockY = head.offsetHeight + (parseFloat(read('--lock-gap')) || 24);
+    root.style.setProperty('--head-h', head.offsetHeight + 'px');
+    root.style.setProperty('--lock', lockY + 'px');
+    tops = STATIONS.map((s) => s.h.getBoundingClientRect().top + window.scrollY - lockY);
+    // The last heading must be able to reach the lock line: lengthen the page's end by exactly what is missing.
+    const maxY = root.scrollHeight - window.innerHeight, need = Math.ceil(tops[tops.length - 1] + 2 - maxY);
+    if (need > 0 || (padEnd && need < -1)) { padEnd = Math.max(0, padEnd + need); pages.style.paddingBottom = padEnd ? padEnd + 'px' : ''; }
+  };
+  let padEnd = 0;
+  const pages = $('#pages');
+  const fromScroll = (y, between) => {
+    let cur = 0;
+    while (cur < tops.length - 1 && y >= tops[cur + 1] - 1) cur++;
+    let f = STATIONS[cur].f;
+    if (between && cur < tops.length - 1 && y > tops[cur]) {
+      const t = (y - tops[cur]) / (tops[cur + 1] - tops[cur]);
+      if (t > HOLD) f += (STATIONS[cur + 1].f - f) * (t - HOLD) / (1 - HOLD);
+    }
+    return { cur, f: Math.round(f) };
+  };
+  const setCurrent = (i) => {
+    D.cur = i;
+    STATIONS.forEach((s) => {
+      s.a.toggleAttribute('aria-current', s.i === i); if (s.i === i) s.a.setAttribute('aria-current', 'location');
+      if (s.mn) { s.mn.toggleAttribute('aria-current', s.i === i); if (s.i === i) s.mn.setAttribute('aria-current', 'location'); }
+    });
+  };
+  const onScroll = () => {
+    const { cur, f } = fromScroll(window.scrollY, !!fx);
+    D.home = f;
+    if (cur !== D.cur) setCurrent(cur);
+    if (D.mode === 'scroll') { D.raw = f; render(); }
+  };
+  window.addEventListener('scroll', () => { if (!fx) onScroll(); }, { passive: true });
+
+  // Going somewhere: tune and scroll. A needle already locked on the station waits there for the page to land.
+  const go = (i) => {
+    const s = STATIONS[i];
+    measure();
+    const y = Math.max(0, Math.round(tops[i]) + 1);
+    if (D.mode !== 'pointer') D.mode = lockOf(D.raw) === s ? 'hold' : 'scroll';
+    fx?.stop();
+    const land = () => { if (D.mode === 'hold') D.mode = 'scroll'; onScroll(); s.h.focus({ preventScroll: true }); };
+    try { history.replaceState(null, '', '#' + s.id); } catch {}
+    if (fx) fx.scrollTo(y, land);
+    else { window.scrollTo(0, y); land(); }
+  };
+  const goHome = () => {
+    if (fx) { D.mode = 'return'; fx.travel(() => D.home, fx.rate, () => { D.mode = 'scroll'; }); }
+    else { D.mode = 'scroll'; D.raw = D.home; render(); }
+  };
+  const endScan = () => { if (!D.scan) return; D.scan = false; reveal(); fx?.stop(); };
+
+  // Pointer: the needle follows the hand in detents. Over a station's name it sits on that station.
+  const at = (e) => {
+    const r = track.getBoundingClientRect(), over = e.target.closest && e.target.closest('.st');
+    const s = over && STATIONS.find((q) => q.a === over);
+    return s ? s.f : fOf(e.clientX - r.left);
+  };
+  const pointTo = (e) => { endScan(); fx?.stop(); D.mode = 'pointer'; D.raw = at(e); render(); };
+  let drag = null;
+  track.addEventListener('pointermove', (e) => {
+    if (e.pointerType !== 'touch') return pointTo(e);
+    if (!drag) return;
+    if (!drag.moved && Math.abs(e.clientX - drag.x) > 6) { drag.moved = true; try { track.setPointerCapture(e.pointerId); } catch {} }
+    if (drag.moved) { endScan(); fx?.stop(); D.mode = 'pointer'; D.raw = fOf(e.clientX - track.getBoundingClientRect().left); render(); }
+  });
+  track.addEventListener('pointerleave', (e) => { if (e.pointerType !== 'touch' && D.mode === 'pointer') goHome(); });
+  track.addEventListener('pointerdown', (e) => { if (e.pointerType === 'touch') drag = { x: e.clientX, moved: false }; });
+  track.addEventListener('pointerup', (e) => {
+    if (e.pointerType !== 'touch' || !drag) return;
+    const d = drag; drag = null;
+    if (d.moved) { const st = lockOf(D.raw); st ? go(st.i) : goHome(); return; }
+    if (!e.target.closest('.st')) { pointTo(e); const st = lockOf(D.raw); st ? go(st.i) : goHome(); }
+  });
+  track.addEventListener('pointercancel', () => { if (drag) { drag = null; if (D.mode === 'pointer') goHome(); } });
+  // A click on the plate while the needle is locked goes to that station; a click on a name is a link.
+  track.addEventListener('click', (e) => {
+    if (e.target.closest('.st') || e.pointerType === 'touch') return;
+    const st = lockOf(D.raw);
+    if (st) go(st.i);
+  });
+
+  // Keyboard: Tab through the stations moves the needle to each; Left and Right tune station to station.
+  STATIONS.forEach((s) => {
+    s.a.addEventListener('focus', () => {
+      if (!s.a.matches(':focus-visible')) return;
+      endScan();
+      D.mode = 'key';
+      if (fx) fx.travel(() => s.f, Math.max(fx.rate, Math.abs(s.f - D.raw) / fx.keyTime));
+      else { D.raw = s.f; render(); }
+    });
+    s.a.addEventListener('keydown', (e) => {
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      e.preventDefault();
+      const j = Math.max(0, Math.min(STATIONS.length - 1, s.i + (e.key === 'ArrowRight' ? 1 : -1)));
+      STATIONS[j].a.focus();
+    });
+  });
+  nav.addEventListener('focusout', (e) => { if (!nav.contains(e.relatedTarget) && D.mode === 'key') goHome(); });
+
+  // Every in-page link to a station goes through the tuner.
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a) return;
+    const s = STATIONS.find((q) => '#' + q.id === a.getAttribute('href'));
+    if (!s) return;
+    e.preventDefault();
+    const dlg = a.closest('dialog');
+    if (dlg) closeDialog(dlg, () => go(s.i)); else go(s.i);
+  });
+
+  const hint = $('#hint');
+  hint.textContent = matchMedia('(hover: hover) and (pointer: fine)').matches
+    ? 'Point along the dial to tune, click to go. Arrow keys work too.'
+    : 'Drag along the dial to tune, or tap a station.';
+
+  const refit = () => { measure(); layout(); onScroll(); };
+  new ResizeObserver(refit).observe(track);
+  new ResizeObserver(() => { measure(); onScroll(); }).observe($('#pages'));
+  compactMQ.addEventListener('change', refit);
+  refit();
+  document.fonts?.ready.then(refit);
+
+  /* ---------- Buttons and links: presses that are always seen (plain JS) ---------- */
+  const hold = (el, cls, min, touchOnly) => {
+    let t0 = 0, timer = 0;
+    const down = (e) => { if (touchOnly && e.pointerType !== 'touch') return; clearTimeout(timer); t0 = performance.now(); el.classList.add(cls); };
+    const up = () => { if (!el.classList.contains(cls)) return; clearTimeout(timer); timer = setTimeout(() => el.classList.remove(cls), Math.max(0, min - (performance.now() - t0))); };
+    el.addEventListener('pointerdown', down);
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach((t) => el.addEventListener(t, up));
+    if (!touchOnly) el.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) { down(e); up(); } });
+  };
+  const pressMin = parseFloat(read('--d-press')) * (read('--d-press').endsWith('ms') ? 1 : 1000) || 140;
+  const tapMin = parseFloat(read('--d-tap')) * (read('--d-tap').endsWith('ms') ? 1 : 1000) || 200;
+  $$('.btn').forEach((b) => hold(b, 'is-press', pressMin, false));
+  $$('.u').forEach((u) => hold(u, 'is-tap', tapMin, true));
+
+  /* ---------- Request a track (plain JS) ---------- */
+  const form = $('#req'), done = $('#done'), doneTitle = $('#done-title');
+  const fName = $('#f-name'), fTrack = $('#f-track'), fArtist = $('#f-artist'), fDed = $('#f-ded');
+  const RULES = [
+    [fName, (v) => !v ? 'Enter your name, so we can say who the request is from.' : v.length < 2 ? 'Use at least 2 letters, like Ana.' : v.length > 40 ? `Keep your name to 40 characters; it has ${v.length}.` : ''],
+    [fTrack, (v) => !v ? 'Enter the title of the track, like Midnight Ferry.' : v.length > 80 ? `Shorten the title to 80 characters; it has ${v.length}.` : ''],
+    [fArtist, (v) => !v ? 'Enter who made it, like Lune Basse. Not sure? Write "not sure".' : v.length > 80 ? `Shorten the artist to 80 characters; it has ${v.length}.` : ''],
+    [fDed, (v) => v.length > 140 ? `Cut the dedication to 140 characters; it has ${v.length}.` : '']
+  ];
+  const showError = (input, msg) => {
+    const err = $('#' + input.id + '-err');
+    err.textContent = msg; // cleared too, so no stale message is left
+    input.closest('.field').classList.toggle('is-bad', !!msg);
+    if (msg) { input.setAttribute('aria-invalid', 'true'); input.setAttribute('aria-describedby', err.id); }
+    else { input.removeAttribute('aria-invalid'); input.removeAttribute('aria-describedby'); }
+  };
+  RULES.forEach(([input, rule]) => input.addEventListener('input', () => {
+    if (input.hasAttribute('aria-invalid') && !rule(input.value.trim())) showError(input, '');
+  }));
+  const showDone = (yes) => {
+    form.hidden = yes; done.hidden = !yes;
+    if (yes) { doneTitle.focus({ preventScroll: true }); fx?.spike(); }
+  };
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const bad = RULES.map(([input, rule]) => { const msg = rule(input.value.trim()); showError(input, msg); return msg ? input : null; }).filter(Boolean);
+    if (bad.length) { bad[0].focus(); return; }
+    const name = fName.value.trim(), trackName = fTrack.value.trim(), artist = fArtist.value.trim(), ded = fDed.value.trim();
+    $('#s-track').textContent = trackName;
+    $('#s-artist').textContent = artist;
+    $('#s-name').textContent = 'for ' + name;
+    const t = nextTalk(clock()), when = $('#done-when');
+    when.textContent = '';
+    const q = document.createElement('q'); q.textContent = trackName; // textContent, never innerHTML: this is what the visitor typed
+    const by = document.createElement('b'); by.textContent = artist;
+    when.append(`${name}, we will read out `, q, ' by ', by, t ? ` on ${t.s.show}, at ${t.s.from} ${t.day}, Marseille time.` : '.');
+    if (ded) { const d = document.createElement('q'); d.textContent = ded; when.append(' With your dedication: ', d, '.'); }
+    showDone(true);
+  });
+  $('#again').addEventListener('click', () => {
+    [fTrack, fArtist, fDed].forEach((f) => { f.value = ''; showError(f, ''); }); // the name is kept
+    showDone(false);
+    fTrack.focus();
+  });
+
+  /* ---------- Dialogs (plain JS) ---------- */
+  const settle = (dlg) => { dlg._closing = false; fx?.frameReset(dlg); };
+  const openDialog = (dlg, opener) => {
+    if (dlg.open) return;
+    settle(dlg);
+    dlg._opener = opener;
+    dlg.showModal();
+    lenis?.stop();
+    fx?.frameOn(dlg);
+  };
+  function closeDialog(dlg, after) {
+    if (!dlg.open || dlg._closing) return;
+    dlg._closing = true;
+    dlg._after = after || null;
+    const end = () => { dlg._closing = false; dlg.close(); };
+    fx ? fx.frameOff(dlg, end) : end();
+  }
+  [['#live', '#live-open', '#live-close'], ['#menu', '#menu-open', '#menu-close']].forEach(([d, o, c]) => {
+    const dlg = $(d), opener = $(o);
+    let downOn = null;
+    opener.addEventListener('click', () => {
+      if (d === '#live' && !done.hidden) showDone(false);
+      openDialog(dlg, opener);
+    });
+    $(c).addEventListener('click', () => closeDialog(dlg));
+    dlg.addEventListener('cancel', (e) => { e.preventDefault(); closeDialog(dlg); });
+    // Close on a backdrop click only when the press also started on the backdrop.
+    dlg.addEventListener('pointerdown', (e) => { downOn = e.target; });
+    dlg.addEventListener('click', (e) => { if (e.target === dlg && downOn === dlg) closeDialog(dlg); });
+    dlg.addEventListener('close', () => {
+      settle(dlg); lenis?.start();
+      const after = dlg._after; dlg._after = null;
+      if (after) after(); else dlg._opener?.focus();
+    });
+  });
+
+  if (!lib) return;
+
+  /* ---------- Motion ---------- */
+  gsap.registerPlugin(ScrollTrigger);
+  const secs = (n) => { const v = read(n); return parseFloat(v) / (v.endsWith('ms') ? 1000 : 1); };
+  const fontsReady = Promise.race([
+    Promise.all([document.fonts.ready, document.fonts.load('700 46px "Handjet"'), document.fonts.load('600 24px "Handjet"')]).then(() => 'fonts', () => 'fonts'),
+    new Promise((r) => setTimeout(() => r('timeout'), 1500))
+  ]);
+  // Start the band scan only on a visible page: with lagSmoothing(0), a scan started in a background tab would
+  // jump to its end on return.
+  const visible = new Promise((r) => {
+    if (document.visibilityState === 'visible') return r();
+    const f = () => { if (document.visibilityState === 'visible') { document.removeEventListener('visibilitychange', f); r(); } };
+    document.addEventListener('visibilitychange', f);
+  });
+  let played = false;
+
+  const mm = gsap.matchMedia();
+  mm.add({
+    motion: '(prefers-reduced-motion: no-preference)',
+    reduce: '(prefers-reduced-motion: reduce)',
+    fine: '(hover: hover) and (pointer: fine)'
+  }, (ctx) => {
+    const { motion } = ctx.conditions;
+    if (!motion) {
+      // Reduced motion: native scroll, the needle sits on the current station, every change is instant.
+      root.classList.add('go');
+      reveal();
+      return;
+    }
+
+    let dead = false;
+    const off = [];
+    const on = (el, type, fn, opt) => { el.addEventListener(type, fn, opt); off.push(() => el.removeEventListener(type, fn, opt)); };
+    const T = Object.fromEntries(['band', 'key', 'eye', 'eye-out', 'frame', 'frame-off', 'drop', 'scroll-min', 'scroll-max'].map((k) => [k, secs(`--d-${k}`)]));
+    const RATE = parseFloat(read('--rate-return')) || 40;
+    root.classList.add('fx');
+
+    // Lenis on GSAP's clock. Touch keeps native scrolling.
+    lenis = new Lenis({ lerp: .1, smoothWheel: true, autoRaf: false, anchors: false });
+    lenis.on('scroll', ScrollTrigger.update);
+    const tick = (t) => lenis.raf(t * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
+
+    /* The tuning motor: moves the needle a whole detent at a time toward a target, at a rate in detents a second.
+       It is on the ticker only while the needle is travelling. */
+    let trav = null, awake = false;
+    const frame = (t, dms) => {
+      if (!trav) return sleep();
+      trav.acc += Math.min(dms, 100) / 1000 * trav.rate;
+      let n = Math.floor(trav.acc);
+      if (!n) return;
+      trav.acc -= n;
+      const target = trav.to(), diff = target - D.raw;
+      D.raw += Math.sign(diff) * Math.min(Math.abs(diff), n);
+      trav.step?.();
+      render();
+      if (D.raw === target) { const done = trav.done; trav = null; sleep(); done?.(); }
+    };
+    const wake = () => { if (awake) return; awake = true; gsap.ticker.add(frame); };
+    const sleep = () => { if (!awake) return; awake = false; gsap.ticker.remove(frame); };
+    const travel = (to, rate, done, step) => {
+      trav = { to, rate, done, step, acc: 0 };
+      if (D.raw === to()) { trav = null; done?.(); return; }
+      wake();
+    };
+
+    // Scroll: ScrollTrigger feeds the tuner on every Lenis frame, so the needle is scrubbed in detents.
+    const st = ScrollTrigger.create({ start: 0, end: 'max', onUpdate: onScroll, onRefresh: () => { measure(); onScroll(); } });
+
+    /* Buttons: the tuning eye closes in three steps (gap 18, 12, 6, 2) on hover and keyboard focus, and opens again
+       in three faster steps. Press (plain JS) shuts it and inverts the face. */
+    $$('.btn').forEach((b) => {
+      let lvl = 0, want = 0, call = null, hover = false, focus = false;
+      const stepTo = () => {
+        call = null;
+        if (lvl === want) return;
+        lvl += Math.sign(want - lvl);
+        lvl ? b.setAttribute('data-eye', lvl) : b.removeAttribute('data-eye');
+        if (lvl !== want) call = gsap.delayedCall(want > lvl ? T.eye : T['eye-out'], stepTo);
+      };
+      const aim = () => {
+        const w = hover || focus ? 3 : 0;
+        if (w === want) return;
+        want = w; call?.kill(); stepTo();
+      };
+      on(b, 'pointerenter', (e) => { if (e.pointerType === 'touch') return; hover = true; aim(); });
+      on(b, 'pointerleave', () => { hover = false; aim(); });
+      on(b, 'focus', () => { focus = b.matches(':focus-visible'); aim(); });
+      on(b, 'blur', () => { focus = false; aim(); });
+      off.push(() => { call?.kill(); b.removeAttribute('data-eye'); });
+    });
+
+    /* ---------- Hooks for the plain-JS flows ---------- */
+    const calls = new Map();
+    const later = (dlg, list) => { calls.set(dlg, list.map(([t, fn]) => gsap.delayedCall(t, fn))); };
+    const slip = $('#slip-wrap');
+    let slipCalls = [];
+    fx = {
+      rate: RATE,
+      keyTime: T.key,
+      travel,
+      stop() { trav = null; sleep(); },
+      scrollTo(y, done) {
+        const dist = Math.abs(y - window.scrollY);
+        lenis.scrollTo(y, {
+          duration: gsap.utils.clamp(T['scroll-min'], T['scroll-max'], dist / 2400),
+          easing: (t) => (t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2),
+          onComplete: done
+        });
+      },
+      // Dialog: the frame is switched on a side at a time, clockwise, then the ground and the content cut in.
+      frameReset(dlg) { (calls.get(dlg) || []).forEach((c) => c.kill()); calls.delete(dlg); delete dlg.dataset.f; },
+      frameOn(dlg) {
+        const seq = ['t', 't r', 't r b', 't r b l', 't r b l p'];
+        dlg.dataset.f = seq[0];
+        later(dlg, seq.slice(1).map((v, k) => [(k + 1) * T.frame, () => { dlg.dataset.f = v; }]).concat([[seq.length * T.frame, () => { delete dlg.dataset.f; }]]));
+      },
+      // Off in the reverse order, faster: the ground and content, then left, bottom, right, top.
+      frameOff(dlg, end) {
+        this.frameReset(dlg);
+        const seq = ['t r b l', 't r b', 't r', 't', ''];
+        dlg.dataset.f = seq[0];
+        later(dlg, seq.slice(1).map((v, k) => [(k + 1) * T['frame-off'], () => { dlg.dataset.f = v; }]).concat([[seq.length * T['frame-off'], end]]));
+      },
+      // Success: the slip drops onto the spike in three steps and rests on the two slips already there.
+      spike() {
+        slipCalls.forEach((c) => c.kill());
+        const ys = [-108, -72, -36, 0];
+        slip.style.transform = `translateY(${ys[0]}px)`;
+        slip.dataset.step = 0; // above the tip: the hole is empty
+        slipCalls = [1, 2, 3].map((k) => gsap.delayedCall(k * T.drop, () => { slip.style.transform = ys[k] ? `translateY(${ys[k]}px)` : ''; slip.dataset.step = k; }));
+      }
+    };
+
+    /* Load: band scan. The needle starts at 87.0 and scans the whole band (about a second), each station's name
+       cutting in as the needle passes it; at 108.0 it wraps to 87.0 and seeks up to the current section's
+       station, where the lamp locks. */
+    const scan = () => {
+      D.scan = true; D.mode = 'scan'; D.raw = LO;
+      STATIONS.forEach((s) => { s.a.style.opacity = 0; });
+      D.key = ''; render();
+      const r = (HI - LO) / T.band;
+      const pass = () => STATIONS.forEach((s) => { if (D.raw >= s.f) s.a.style.opacity = ''; });
+      travel(() => HI, r, () => {
+        reveal();
+        D.raw = LO; D.key = ''; render();
+        travel(() => D.home, r, () => { D.scan = false; D.mode = 'scroll'; D.key = ''; onScroll(); render(); });
+      }, pass);
+    };
+
+    Promise.all([fontsReady, visible]).then(() => ctx.add(() => {
+      if (dead) return;
+      refit();
+      if (!played) { played = true; scan(); }
+      root.classList.add('go');
+    }));
+
+    return () => {
+      dead = true;
+      off.forEach((f) => f());
+      trav = null; sleep();
+      fx = null;
+      gsap.ticker.remove(tick);
+      gsap.ticker.lagSmoothing(500, 33);
+      lenis.destroy(); lenis = null;
+      st.kill();
+      slipCalls.forEach((c) => c.kill()); slip.style.transform = '';
+      $$('dialog').forEach((d) => { (calls.get(d) || []).forEach((c) => c.kill()); delete d.dataset.f; });
+      D.scan = false; D.mode = 'scroll'; reveal();
+      root.classList.remove('fx');
+      onScroll();
+    };
+  });
+})();
+</script>
+</body>
+</html>

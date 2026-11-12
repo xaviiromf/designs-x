@@ -1,0 +1,1478 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>The Coin Door floor plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Handjet:ELGR,ELSH,wght@1..2,0..16,100..900&family=Host+Grotesk:wght@300..800&display=swap">
+<style>
+  :root {
+    /* Colour: a bronze museum plaque gone green, and six rooms. Seven hues, one job each. */
+    --verdigris: #0F4638;   /* ground: the oxidised plaque; page, header and room floors at rest */
+    --deep: #0A3128;        /* darker verdigris: the plan plate, corridor floor, field wells, scrim, and the ink on paper and on lit rooms */
+    --wall: #164F40;        /* lighter verdigris: hover plates, label plates, the booking pass (decorative surface, 1.14:1 on ground) */
+    --plaque: #F4F1E4;      /* the museum's own ink: text, wall lines, the visitor marker, footprints, focus ring, ticket paper, errors (9.5:1 on ground, 12.5:1 on deep, 8.3:1 on wall) */
+    --patina: #A6CBBA;      /* secondary: secondary text, resting rules and field walls, unlit rooms, the second ticket stock (6.1:1 on ground, 8.0:1 on deep, 5.3:1 on wall) */
+    --arcade: #FFCF4A;      /* room 1, Arcade hall, and its ticket desk's date stamp (7.3:1 on ground, 9.6:1 on deep, 6.4:1 on wall) */
+    --consoles: #FF8A5C;    /* room 2, Console gallery (4.6:1 on ground; deep text on it 6.1:1) */
+    --handhelds: #7FE8FF;   /* room 3, Handheld corridor (7.6:1 on ground; deep on it 10.0:1) */
+    --workshop: #FF8FB8;    /* room 4, Workshop (5.1:1 on ground; deep on it 6.7:1) */
+    --reading: #C4A8FF;     /* room 5, Reading room (5.3:1 on ground; deep on it 7.0:1) */
+    --cafe: #A6F28A;        /* room 6, Cafe and shop (8.0:1 on ground; deep on it 10.6:1) */
+    --scrim: rgb(10 49 40 / .88);   /* deep verdigris behind an open dialog */
+
+    /* Type */
+    --font-display: "Handjet", "Arial Narrow", sans-serif;
+    --font-text: "Host Grotesk", system-ui, sans-serif;
+    --modules: "ELSH" 2, "ELGR" 1;  /* square Handjet modules, like floor tiles */
+    --t-small: 13px;
+    --t-ui: 15px;
+    --t-body: 17px;
+    --t-lede: 21px;
+    --t-h3: 24px;
+    --t-wm: 32px;
+    --t-gate: 44px;
+    --t-room: clamp(40px, 4.6vw, 64px);
+    --t-h2: clamp(44px, 5.8vw, 84px);
+    --t-num: clamp(120px, 15vw, 224px);
+    --lh-body: 1.55;
+
+    /* Space: an 8px cell */
+    --cell: 8px;
+    --s1: 4px; --s2: 8px; --s3: 16px; --s4: 24px;
+    --s5: 32px; --s6: 48px; --s7: 64px; --s8: 96px; --s9: 128px;
+    --gutter: 32px;
+    --max-w: 1376px;
+    --tap: 48px;            /* tickets and fields */
+    --hit: 44px;            /* text links and room rows */
+    --notch: 4px;           /* the stepped pixel corner */
+    --mark: 12px;           /* a room's marker square */
+    --sprite: 16px;         /* the visitor at its smallest: 8x8 pixels of 2px */
+    --sprite-l: 24px;       /* the visitor in the desktop minimap: pixels of 3px */
+    --tile-max: 24px;       /* largest floor-plan tile */
+    --list-w: 300px;        /* narrowest room list beside the plan */
+
+    /* Header rows */
+    --bar-h: 76px;
+    --claim-h: 36px;
+    --row3: 52px;           /* room links (desktop) or the minimap strip (narrow) */
+    --hd-full: calc(var(--bar-h) + var(--claim-h) + var(--row3) + 2px);
+    --hd-slim: calc(var(--bar-h) + var(--row3) + 2px);
+
+    /* Motion: whole tiles, whole pixels, a visible frame rate. CSS and the script read these. */
+    --d-tile: 30ms;         /* the visitor crosses one floor tile */
+    --d-cell: 70ms;         /* the minimap marker crosses one cell */
+    --d-cut: 60ms;          /* gap between room links cutting in at load */
+    --d-swatch: 80ms;       /* one frame of a full-height room swatch at load */
+    --d-tear: 120ms;        /* the stub tears in two steps */
+    --d-punch: 140ms;       /* the shortest a punched ticket stays punched */
+    --d-pin: 120ms;         /* the pin drops in two steps */
+    --d-pin-hold: 200ms;    /* the shortest a touched link keeps its pin */
+    --d-door: 120ms;        /* a field's doorway opens in two steps */
+    --d-gate: 70ms;         /* one frame of the swing gate */
+    --d-ink: 160ms;         /* the stamp's outline frame before the solid one */
+    --d-grace: 300ms;       /* the plan stays open this long after the pointer leaves */
+  }
+  @media (max-width: 1199px) { :root { --list-w: 280px; } }
+  @media (max-width: 1023px) { :root { --claim-h: 32px; --row3: 44px; } }
+  @media (max-width: 599px) { :root { --gutter: 16px; --bar-h: 68px; --t-body: 16px; --t-wm: 26px; --t-gate: 36px; } }
+  @media (max-height: 700px) and (min-width: 1024px) { :root { --tile-max: 20px; } }
+
+  /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+
+  /* Hidden only when the script runs, and only until the load sequence cuts them in. */
+  html.js:not(.go) .rooms li { visibility: hidden; }
+  @media (max-width: 1023px) { html.js:not(.go) .mc[data-room] { visibility: hidden; } }
+  @media (prefers-reduced-motion: reduce) {
+    html.js:not(.go) .rooms li, html.js:not(.go) .mc[data-room] { visibility: visible; }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { background: var(--verdigris); }
+  body {
+    --under: var(--verdigris);
+    margin: 0;
+    padding-top: var(--hd-full);
+    background: var(--verdigris);
+    color: var(--plaque);
+    font: 400 var(--t-body)/var(--lh-body) var(--font-text);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: clip;
+  }
+  :focus-visible { outline: 2px solid var(--plaque); outline-offset: 3px; }
+  ::selection { background: var(--plaque); color: var(--deep); }
+  .vh {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+  }
+  p, h2, h3, dl, dd, ol, ul { margin: 0; }
+  [data-room="arcade"] { --hue: var(--arcade); }
+  [data-room="consoles"] { --hue: var(--consoles); }
+  [data-room="handhelds"] { --hue: var(--handhelds); }
+  [data-room="workshop"] { --hue: var(--workshop); }
+  [data-room="reading"] { --hue: var(--reading); }
+  [data-room="cafe"] { --hue: var(--cafe); }
+  .wrap { max-width: var(--max-w); margin: 0 auto; padding-inline: var(--gutter); }
+
+  /* ---------- Header ---------- */
+  .hd {
+    --under: var(--verdigris);
+    --hd-now: var(--hd-full);
+    position: fixed; inset: 0 0 auto; z-index: 20;
+    background: var(--verdigris);
+    border-bottom: 2px solid var(--patina);
+  }
+  .hd.is-slim { --hd-now: var(--hd-slim); }
+  .hd-in {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr) auto auto auto;
+    grid-template-rows: var(--bar-h) var(--claim-h) var(--row3);
+    grid-template-areas: "wm mini . search plan buy" "claim claim claim claim claim claim" "nav nav nav nav nav nav";
+    column-gap: var(--s4);
+    align-items: center;
+    max-width: var(--max-w); margin: 0 auto; padding-inline: var(--gutter);
+  }
+  /* The second row is cut, not slid: after 80px of scroll it is simply gone, and back at the top. */
+  .hd.is-slim .hd-in { grid-template-rows: var(--bar-h) 0 var(--row3); }
+  .hd.is-slim .claim { display: none; }
+  .wm {
+    grid-area: wm;
+    display: inline-flex; align-items: center;
+    min-height: var(--hit);
+    color: var(--plaque);
+    font: 700 var(--t-wm)/1 var(--font-display);
+    font-variation-settings: var(--modules);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .wm:hover { text-decoration: underline 2px; text-underline-offset: 6px; }
+  .claim {
+    grid-area: claim;
+    align-self: start;
+    color: var(--patina);
+    font-size: var(--t-small); line-height: 1.4;
+    overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  }
+  .claim b { color: var(--plaque); font-weight: 600; }
+  .claim .c-long { display: inline; }
+  .search-slot { grid-area: search; width: 248px; align-self: end; padding-bottom: 6px; }
+  .plan-btn { grid-area: plan; }
+  .buy-btn { grid-area: buy; }
+  .plan-btn, .buy-btn { align-self: end; margin-bottom: 4px; }
+
+  /* Room links: each one a label with its room's marker square */
+  .rooms-nav { grid-area: nav; align-self: stretch; }
+  .rooms { display: flex; height: 100%; gap: var(--s1); margin-left: calc(-1 * var(--s2)); padding: 0; list-style: none; }
+  .rl {
+    position: relative;
+    display: flex; align-items: center;
+    height: 100%; min-height: var(--hit);
+    padding: 0 var(--s3) 0 calc(var(--s2) + var(--mark) + var(--s2));
+    color: var(--plaque);
+    font: 600 var(--t-ui)/1.2 var(--font-text);
+    text-decoration: none;
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .sw {
+    position: absolute; inset: 0;
+    background: var(--hue);
+    /* at rest: the small marker square beside the label */
+    clip-path: inset(calc(50% - var(--mark) / 2) calc(100% - var(--s2) - var(--mark)) calc(50% - var(--mark) / 2) var(--s2));
+  }
+  .rl.is-swatch .sw { clip-path: inset(0); }   /* load: one frame as a full-height swatch */
+  .rl.is-swatch { color: transparent; }
+  .rl:hover, .rl:focus-visible, .rl.is-on { background: var(--wall); }
+  .rl:focus-visible { outline-offset: -2px; }
+  .rl[aria-current]::after { content: ""; position: absolute; left: var(--s2); right: var(--s3); bottom: 0; height: 4px; background: var(--plaque); }
+
+  /* Minimap: the plan reduced to one row, six cells and a corridor */
+  .mini {
+    grid-area: mini;
+    --at: 0;
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(7, 22px);
+    grid-template-rows: 14px 28px;
+    align-self: center;
+  }
+  .mini::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--patina); }   /* the corridor */
+  .mc { grid-row: 1 / 3; grid-column: var(--c); display: grid; justify-items: center; align-content: start; }
+  .mc i { width: 14px; height: 14px; border: 2px solid var(--patina); }
+  .mc-in { align-content: end; }
+  .mc-in i { justify-self: start; width: 2px; height: 12px; border: 0; background: var(--patina); }   /* the way in: a door post at the corridor's end */
+  .mc.is-here i { border-color: var(--hue); background: var(--hue); }
+  .mc.is-swatch { background: var(--hue); }
+  .mini-mk {
+    grid-row: 2; grid-column: 1;
+    display: grid; place-items: end center;
+    transform: translateX(calc(var(--at) * 100%));
+    z-index: 1;
+  }
+  .mini-mk svg { width: var(--sprite-l); height: var(--sprite-l); margin-bottom: 2px; fill: var(--plaque); }
+
+  /* ---------- Tickets (every button is one) ---------- */
+  .tk {
+    --paper: var(--plaque);
+    --corners: polygon(0 var(--notch), var(--notch) var(--notch), var(--notch) 0, calc(100% - var(--notch)) 0, calc(100% - var(--notch)) var(--notch), 100% var(--notch), 100% calc(100% - var(--notch)), calc(100% - var(--notch)) calc(100% - var(--notch)), calc(100% - var(--notch)) 100%, var(--notch) 100%, var(--notch) calc(100% - var(--notch)), 0 calc(100% - var(--notch)));
+    position: relative;
+    display: inline-grid;
+    grid-template-columns: 4fr 1fr;   /* the perforation sits one fifth from the right end */
+    padding: 0 6px 4px 0;             /* room inside the button for the torn stub, so the focus ring holds it */
+    border: 0; background: none;
+    color: var(--deep);
+    font: 700 var(--t-ui)/1.1 var(--font-text);
+    text-align: center;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .tk-2 { --paper: var(--patina); }
+  .tk-m { display: block; padding: 2px; background: var(--paper); clip-path: var(--corners); }
+  .tk-l {
+    display: flex; align-items: center; justify-content: center;
+    min-height: calc(var(--tap) - 4px);
+    padding: 0 var(--s3);
+    background: var(--paper);
+    clip-path: var(--corners);
+    white-space: nowrap;
+  }
+  .tk-s {
+    position: relative;
+    min-height: var(--tap);
+    background: repeating-linear-gradient(var(--under) 0 3px, transparent 3px 7px) 0 2px / 2px calc(100% - 4px) no-repeat, var(--paper);
+    clip-path: var(--corners);
+    transition: transform var(--d-tear) steps(2, jump-start);   /* 2px, then 4px across and 2px down */
+  }
+  .tk-h { position: absolute; left: calc(50% - 4px); top: calc(50% - 5px); width: 10px; height: 10px; background: var(--under); visibility: hidden; }
+  .tk:focus-visible .tk-s, .tk.is-tear .tk-s { transform: translate(4px, 2px); }
+  @media (hover: hover) { .tk:hover .tk-s { transform: translate(4px, 2px); } }
+  /* Punched: a square hole through the stub, the main part inverted for as long as it is held */
+  .tk.is-punch .tk-h, html:not(.js) .tk:active .tk-h { visibility: visible; }
+  .tk.is-punch .tk-l, html:not(.js) .tk:active .tk-l { background: var(--deep); color: var(--paper); }
+  .tk[disabled] { cursor: default; }
+
+  /* ---------- Text links: the pin drops ---------- */
+  .ln {
+    position: relative;
+    display: inline-flex; align-items: center;
+    min-height: var(--hit);
+    padding-left: 18px;
+    color: var(--plaque);
+    font-weight: 600;
+    text-decoration: none;
+    overflow-wrap: anywhere;
+    background: linear-gradient(var(--patina), var(--patina)) 18px calc(100% - 9px) / calc(100% - 18px) 2px no-repeat;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .ln::before { content: ""; position: absolute; left: 5px; bottom: 8px; width: 4px; height: 4px; background: var(--patina); }   /* the route's start */
+  .pin { position: absolute; left: 2px; bottom: 10px; width: 10px; height: 14px; fill: var(--plaque); opacity: 0; transform: translateY(-6px); pointer-events: none; }
+  .ln:focus-visible, .ln.is-pin { background: repeating-linear-gradient(90deg, var(--plaque) 0 4px, transparent 4px 8px) 5px calc(100% - 9px) / calc(100% - 5px) 2px no-repeat; }
+  .ln:focus-visible::before, .ln.is-pin::before { background: var(--plaque); }
+  .ln:focus-visible .pin, .ln.is-pin .pin { opacity: 1; transform: none; transition: transform var(--d-pin) steps(2, end); }
+  @media (hover: hover) {
+    .ln:hover { background: repeating-linear-gradient(90deg, var(--plaque) 0 4px, transparent 4px 8px) 5px calc(100% - 9px) / calc(100% - 5px) 2px no-repeat; }
+    .ln:hover::before { background: var(--plaque); }
+    .ln:hover .pin { opacity: 1; transform: none; transition: transform var(--d-pin) steps(2, end); }
+  }
+
+  /* ---------- Fields: a wall with a door ---------- */
+  .fld { position: relative; margin-top: 22px; }
+  .fld input {
+    display: block;
+    width: 100%; height: var(--tap);
+    padding: 0 var(--s3) 0 calc(var(--s3) + 4px);
+    border: 2px solid var(--patina);
+    border-left: 0;
+    border-radius: 0;
+    background: var(--deep);
+    color: var(--plaque);
+    font: 400 var(--t-body)/1.2 var(--font-text);
+    font-variant-numeric: tabular-nums;
+    appearance: none;
+  }
+  .fld input::-webkit-search-cancel-button { appearance: none; }
+  .fld input::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
+  .fld input:hover { border-color: var(--plaque); }
+  .fld input:focus { border-color: var(--plaque); outline: none; }
+  .fld input:focus-visible { outline: 2px solid var(--plaque); outline-offset: 3px; }
+  .door {
+    position: absolute; left: 0; top: 0; bottom: 0;
+    width: 4px;
+    background: var(--patina);
+    pointer-events: none;
+    clip-path: polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 50%, 100% 50%, 100% 50%, 0 50%);
+    transition: clip-path var(--d-door) steps(2, jump-start);   /* 6px, then 12px */
+  }
+  .fld:hover .door { background: var(--plaque); }
+  .fld:focus-within .door {
+    background: var(--plaque);
+    clip-path: polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 calc(50% - 6px), 100% calc(50% - 6px), 100% calc(50% + 6px), 0 calc(50% + 6px));
+  }
+  /* The label plate sits inside the field until the field is used, then cuts to above it. */
+  .plate {
+    position: absolute; left: calc(var(--s3) + 4px); top: 50%;
+    transform: translateY(-50%);
+    color: var(--patina);
+    font-size: var(--t-body); line-height: 1.2;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .fld input:focus ~ .plate, .fld input:not(:placeholder-shown) ~ .plate {
+    left: 0; top: 0;
+    transform: translateY(-100%);
+    padding: 2px var(--s2);
+    background: var(--wall);
+    color: var(--plaque);
+    font-size: var(--t-small); font-weight: 600; line-height: 1.3;
+  }
+  .fld.is-bad input { border-color: var(--plaque); }
+  .fld.is-bad .door { background: var(--plaque); }
+  .err {
+    display: flex; gap: var(--s2); align-items: flex-start;
+    min-height: calc(var(--t-small) * 1.45 * 2);
+    margin-top: var(--s1);
+    color: var(--plaque);
+    font-size: var(--t-small); line-height: 1.45; font-weight: 500;
+  }
+  .err:not(:empty)::before { content: ""; flex: none; width: 24px; height: 12px; margin-top: 3px; background: repeating-linear-gradient(90deg, var(--plaque) 0 2px, transparent 2px 4px); }   /* the hatched error bar */
+  .hint-s { margin-top: var(--s1); color: var(--patina); font-size: var(--t-small); }
+
+  /* ---------- Floor plan panel (desktop) ---------- */
+  .panel {
+    --under: var(--deep);
+    position: absolute; left: 0; right: 0; top: 100%;
+    max-height: calc(100vh - var(--hd-now));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    background: var(--deep);
+    border-bottom: 2px solid var(--plaque);
+  }
+  .panel[hidden] { display: none; }
+  .panel-in { max-width: var(--max-w); margin: 0 auto; padding: var(--s4) var(--gutter) var(--s5); }
+  .plan {
+    display: grid;
+    grid-template-columns: minmax(var(--list-w), 1fr) minmax(0, calc(var(--tile-max) * 28));
+    grid-template-areas: "list map";
+    column-gap: var(--s5);
+    align-items: start;
+  }
+  .plan-list { grid-area: list; min-width: 0; }
+  .plan-map { grid-area: map; min-width: 0; container-type: inline-size; }
+  .q-out { min-height: calc(var(--t-ui) * 1.4); color: var(--patina); font-size: var(--t-ui); line-height: 1.4; overflow-wrap: anywhere; }
+  .pls { display: grid; gap: 2px; margin-top: var(--s2); padding: 0; list-style: none; }
+  .pl {
+    display: grid; grid-template-columns: 28px minmax(0, 1fr); column-gap: var(--s3); align-items: center;
+    min-height: 52px;
+    padding: 6px var(--s2);
+    color: var(--plaque);
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .pl:focus-visible { outline-offset: -2px; }
+  .pl-sw {
+    display: grid; place-items: center;
+    width: 28px; height: 28px;
+    border: 2px solid var(--patina);
+    color: var(--patina);
+    font: 700 var(--t-small)/1 var(--font-text);
+    font-variant-numeric: tabular-nums;
+  }
+  .pl b { font-weight: 600; }
+  .pl-n { color: var(--patina); font-size: var(--t-ui); }
+  .pl.is-lit { background: var(--wall); }
+  .pl.is-lit .pl-sw { border-color: var(--hue); background: var(--hue); color: var(--deep); }
+  .pl[aria-current] b { text-decoration: underline 2px; text-underline-offset: 4px; }
+  @media (hover: hover) { .pl:hover { background: var(--wall); } }
+
+  /* The tile map. Tiles are a whole even number of pixels, so every wall line and sprite pixel is crisp. */
+  .map {
+    --tile: clamp(10px, calc(100cqw / 28), var(--tile-max));
+    --tile: clamp(10px, round(down, 100cqw / 28, 1px), var(--tile-max));
+    display: block;
+    width: calc(var(--tile) * 28); height: calc(var(--tile) * 14);
+    overflow: visible;
+    shape-rendering: crispEdges;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .map .fl { fill: var(--verdigris); }
+  .map .tl { fill: none; stroke: var(--patina); stroke-width: 1px; vector-effect: non-scaling-stroke; }
+  .map .is-lit .tl { fill: var(--hue); stroke: var(--hue); }
+  .map .lb { fill: var(--plaque); font-family: var(--font-text); font-weight: 600; font-size: var(--lb, .55px); }
+  .map .lb-num { display: none; font-weight: 700; }
+  .map.is-small .lb-full { display: none; }
+  .map.is-small .lb-num { display: inline; }
+  .map .walls { fill: none; stroke: var(--plaque); stroke-width: var(--wall-w, 4px); stroke-linecap: square; vector-effect: non-scaling-stroke; }
+  .map .pillar { fill: var(--plaque); }
+  .map .dots { fill: var(--wall); }
+  .map .fp { fill: var(--plaque); }
+  .map .mk { fill: var(--plaque); }
+  .map .rm { cursor: pointer; }
+  .map .rm:focus { outline: none; }
+  .way { margin-top: var(--s2); color: var(--patina); font-size: var(--t-small); }
+  .ro { min-height: calc(var(--t-ui) * 1.45 * 2 + var(--hit)); margin-top: var(--s3); font-size: var(--t-ui); line-height: 1.45; max-width: 62ch; }
+  .ro b { font-weight: 600; }
+  .ro .ln { display: flex; width: max-content; max-width: 100%; }
+  .ro .ln[hidden] { display: none; }
+
+  /* ---------- Dialogs: the swing gate ---------- */
+  .gate {
+    width: min(640px, 100% - 24px);
+    max-width: none;
+    max-height: calc(100dvh - 24px);
+    margin: auto;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--plaque);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    transform-origin: 0 50%;   /* hinged on its left edge */
+  }
+  .gate-menu { width: min(760px, 100% - 24px); }
+  .gate::backdrop { background: var(--scrim); }
+  .gate-in {
+    --under: var(--deep);
+    position: relative;
+    padding: var(--s5) var(--s5) var(--s5) calc(var(--s5) + 6px);
+    background: var(--deep);
+    border: 2px solid var(--plaque);
+    border-left-width: 8px;   /* the gate post */
+  }
+  .gate-head { display: flex; justify-content: space-between; align-items: center; gap: var(--s3); }
+  .gate h2 { font: 700 var(--t-gate)/1 var(--font-display); font-variation-settings: var(--modules); }
+  .gate-intro { margin-top: var(--s3); max-width: 52ch; color: var(--patina); }
+  .gate-intro a { color: var(--plaque); }
+  .menu-search { margin-top: var(--s2); }
+  .menu-search .search { margin-bottom: var(--s3); }
+  .gate .plan { grid-template-columns: minmax(0, 1fr); grid-template-areas: "map" "list"; row-gap: var(--s3); margin-top: var(--s3); }
+  .gate .plan-map { --tile-max: 24px; }
+
+  /* Booking form */
+  .swap { display: grid; margin-top: var(--s3); }
+  .swap > * { grid-area: 1 / 1; min-width: 0; }
+  .swap > .is-off { visibility: hidden; }
+  .book-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: var(--s4); }
+  .book .tk { margin-top: var(--s2); }
+  .done h3:focus { outline: none; }   /* focus lands here only to announce the booking; it is not a control */
+  .done h3 { font: 600 var(--t-h3)/1.2 var(--font-text); }
+  .done p { margin-top: var(--s3); max-width: 50ch; }
+  .done b { font-weight: 600; overflow-wrap: anywhere; }
+  .done .tk { margin-top: var(--s4); }
+  .pass {
+    --corners: polygon(0 var(--notch), var(--notch) var(--notch), var(--notch) 0, calc(100% - var(--notch)) 0, calc(100% - var(--notch)) var(--notch), 100% var(--notch), 100% calc(100% - var(--notch)), calc(100% - var(--notch)) calc(100% - var(--notch)), calc(100% - var(--notch)) 100%, var(--notch) 100%, var(--notch) calc(100% - var(--notch)), 0 calc(100% - var(--notch)));
+    --notch: var(--cell);
+    position: relative;
+    display: grid; grid-template-columns: 4fr 1fr;
+    margin-top: var(--s4);
+  }
+  .pass-m, .pass-s { padding: 2px; background: var(--plaque); clip-path: var(--corners); }
+  .pass-m > div, .pass-s > div { height: 100%; background: var(--wall); clip-path: var(--corners); }
+  .pass-m > div { padding: var(--s4) var(--s9) var(--s4) var(--s4); }
+  .pass-k { color: var(--patina); font-size: var(--t-small); font-weight: 600; }
+  .pass-n { font: 800 72px/.9 var(--font-display); font-variation-settings: var(--modules); font-variant-numeric: tabular-nums; }
+  .pass-date { margin-top: var(--s2); font-weight: 600; }
+  .pass-for, .pass-no { color: var(--patina); font-size: var(--t-ui); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .done .pass p { margin-top: 0; max-width: none; }
+  .stamp { position: absolute; right: 4%; top: 50%; width: 128px; height: 128px; margin-top: -64px; image-rendering: pixelated; pointer-events: none; }
+
+  /* ---------- Page: the welcome and the six rooms ---------- */
+  main { position: relative; }
+  .intro { scroll-margin-top: var(--hd-slim); }
+  .intro .wrap {
+    display: grid; gap: var(--s6);
+    min-height: calc(100svh - var(--hd-full));
+    padding-block: var(--s8) var(--s8);
+    align-content: center;
+  }
+  @media (min-width: 1024px) {
+    .intro .wrap { grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); column-gap: var(--s7); align-items: start; }
+  }
+  @media (max-height: 760px) { .intro .wrap { padding-block: var(--s6); align-content: start; } }
+  .h2 { font: 700 min(var(--t-h2), 11vh)/.95 var(--font-display); font-variation-settings: var(--modules); max-width: 13ch; text-wrap: balance; }
+  .h2:focus { outline: none; }
+  .lede { font-size: var(--t-lede); line-height: 1.45; max-width: 46ch; }
+  .facts { display: grid; gap: var(--s2); margin-top: var(--s4); }
+  .facts > div { display: grid; grid-template-columns: 6.5em minmax(0, 1fr); gap: var(--s3); }
+  .facts dt { color: var(--patina); }
+  .facts dd { font-variant-numeric: tabular-nums; }
+  .hint { margin-top: var(--s4); color: var(--patina); max-width: 48ch; }
+  .hint-touch { display: none; }
+  @media (hover: none), (max-width: 1023px) { .hint-desk { display: none; } .hint-touch { display: inline; } }
+  .links { display: flex; flex-wrap: wrap; column-gap: var(--s5); margin-top: var(--s3); }
+
+  .room { border-top: 2px solid var(--patina); scroll-margin-top: var(--hd-slim); }
+  .room .wrap {
+    display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); column-gap: var(--s6);
+    min-height: 66vh;
+    padding-block: var(--s8);
+    align-content: start;
+  }
+  .num { color: var(--patina); font: 800 var(--t-num)/.8 var(--font-display); font-variation-settings: var(--modules); font-variant-numeric: tabular-nums; }
+  .room h2 { display: flex; align-items: center; gap: var(--s3); font: 700 var(--t-room)/1 var(--font-display); font-variation-settings: var(--modules); }
+  .room h2:focus { outline: none; }
+  .tick { flex: none; width: 20px; height: 20px; background: var(--hue); }   /* the room's heading tick */
+  .room-body { max-width: 60ch; }
+  .room-body > p { margin-top: var(--s4); }
+  .room .facts { margin-top: var(--s4); padding-top: var(--s3); border-top: 2px solid var(--wall); }
+  .room .ln { margin-top: var(--s4); }
+  .closing { padding-block: var(--s8) var(--s9); border-top: 2px solid var(--patina); }
+  .closing p { max-width: 56ch; color: var(--patina); }
+  .closing .ln { margin-top: var(--s2); }
+
+  /* ---------- Narrow: wordmark, Floor plan, Buy tickets; the minimap becomes a strip ---------- */
+  @media (max-width: 1023px) {
+    .hd-in {
+      grid-template-columns: auto minmax(0, 1fr) auto auto;
+      grid-template-areas: "wm . plan buy" "claim claim claim claim" "mini mini mini mini";
+      column-gap: var(--s2);
+    }
+    .rooms-nav, .search-slot { display: none; }
+    .mini { grid-template-columns: repeat(7, minmax(0, 1fr)); grid-template-rows: 12px 22px; width: 100%; }
+    .mc i { width: 12px; height: 12px; }
+    .mc-in i { width: 2px; }
+    .mini-mk svg { width: var(--sprite); height: var(--sprite); }
+    .claim .c-long { display: none; }
+  }
+  @media (max-width: 599px) {
+    .tk { font-size: 14px; }
+    .tk-l { padding: 0 10px; }
+    .plan-btn, .buy-btn { margin-bottom: 6px; }
+    .room .wrap { grid-template-columns: minmax(0, 1fr); min-height: 74vh; padding-block: var(--s7); }
+    .num { font-size: 96px; margin-bottom: var(--s3); }
+    .lede { font-size: var(--t-body); }
+    .gate-in { padding: var(--s4) var(--s3) var(--s4) calc(var(--s3) + 4px); border-left-width: 6px; }
+    .book-row { grid-template-columns: minmax(0, 1fr); }
+    .pass-m > div { padding: var(--s3) var(--s3); }
+    .pass { grid-template-columns: minmax(0, 1fr) 72px; }
+    .stamp { width: 96px; height: 96px; margin-top: -48px; right: 0; }
+    .facts > div { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  }
+  @media (max-width: 380px) {
+    .wm { font-size: 22px; }
+    .tk-l { padding: 0 8px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0s !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="hd" id="hd" aria-labelledby="hd-title">
+  <h2 class="vh" id="hd-title">The Coin Door: rooms, collection search and tickets</h2>
+  <div class="hd-in">
+    <a class="wm" href="#welcome">The Coin Door</a>
+
+    <div class="mini" id="mini" aria-hidden="true">
+      <span class="mc mc-in" style="--c:1"><i></i></span>
+      <span class="mc" data-room="arcade" style="--c:2"><i></i></span>
+      <span class="mc" data-room="consoles" style="--c:3"><i></i></span>
+      <span class="mc" data-room="handhelds" style="--c:4"><i></i></span>
+      <span class="mc" data-room="workshop" style="--c:5"><i></i></span>
+      <span class="mc" data-room="reading" style="--c:6"><i></i></span>
+      <span class="mc" data-room="cafe" style="--c:7"><i></i></span>
+      <span class="mini-mk"><svg viewBox="0 0 8 8" data-sprite></svg></span>
+    </div>
+
+    <div class="search-slot" id="search-slot">
+      <form class="search" id="search" role="search" aria-label="Search the collection" novalidate>
+        <div class="fld">
+          <input id="q" name="q" type="search" autocomplete="off" spellcheck="false" placeholder=" " aria-describedby="q-out">
+          <label class="plate" for="q">Search the collection</label>
+          <i class="door" aria-hidden="true"></i>
+        </div>
+      </form>
+    </div>
+
+    <button class="tk tk-2 plan-btn" id="plan-btn" type="button" aria-expanded="false" aria-controls="plan-panel"><span class="tk-m"><span class="tk-l">Floor plan</span></span><span class="tk-s" aria-hidden="true"><i class="tk-h"></i></span></button>
+    <button class="tk buy-btn" id="buy-btn" type="button" aria-haspopup="dialog" aria-controls="visit"><span class="tk-m"><span class="tk-l">Buy tickets</span></span><span class="tk-s" aria-hidden="true"><i class="tk-h"></i></span></button>
+
+    <p class="claim"><span class="c-long">Arcade and home video games in the 1911 Gerland tram depot, Lyon. </span><b id="today">Open Tuesday to Sunday, 10:00 to 19:00.</b></p>
+
+    <nav class="rooms-nav" aria-label="Rooms">
+      <ul class="rooms">
+        <li><a class="rl" href="#arcade" data-room="arcade"><span class="sw" aria-hidden="true"></span>Arcade hall</a></li>
+        <li><a class="rl" href="#consoles" data-room="consoles"><span class="sw" aria-hidden="true"></span>Console gallery</a></li>
+        <li><a class="rl" href="#handhelds" data-room="handhelds"><span class="sw" aria-hidden="true"></span>Handheld corridor</a></li>
+        <li><a class="rl" href="#workshop" data-room="workshop"><span class="sw" aria-hidden="true"></span>Workshop</a></li>
+        <li><a class="rl" href="#reading" data-room="reading"><span class="sw" aria-hidden="true"></span>Reading room</a></li>
+        <li><a class="rl" href="#cafe" data-room="cafe"><span class="sw" aria-hidden="true"></span>Café and shop</a></li>
+      </ul>
+    </nav>
+  </div>
+
+  <div class="panel" id="plan-panel" data-lenis-prevent hidden>
+    <div class="panel-in" id="panel-in">
+      <nav class="plan" id="plan" aria-label="Floor plan">
+        <div class="plan-list">
+          <p class="q-out" id="q-out" aria-live="polite"><span class="hint-desk">Six rooms on one floor. Point at a room and the visitor walks you to its door.</span><span class="hint-touch">Six rooms on one floor. Tap a room to see the way, then tap its Go link.</span></p>
+          <ol class="pls">
+            <li><a class="pl" href="#arcade" data-room="arcade"><span class="pl-sw" aria-hidden="true">1</span><span><b>Arcade hall.</b> <span class="pl-n">64 cabinets, free play with your ticket</span></span></a></li>
+            <li><a class="pl" href="#consoles" data-room="consoles"><span class="pl-sw" aria-hidden="true">2</span><span><b>Console gallery.</b> <span class="pl-n">41 consoles, the games change every month</span></span></a></li>
+            <li><a class="pl" href="#handhelds" data-room="handhelds"><span class="pl-sw" aria-hidden="true">3</span><span><b>Handheld corridor.</b> <span class="pl-n">230 handhelds under glass, 12 to play</span></span></a></li>
+            <li><a class="pl" href="#workshop" data-room="workshop"><span class="pl-sw" aria-hidden="true">4</span><span><b>Workshop.</b> <span class="pl-n">Watch repairs, Wednesday to Sunday 14:00 to 17:00</span></span></a></li>
+            <li><a class="pl" href="#reading" data-room="reading"><span class="pl-sw" aria-hidden="true">5</span><span><b>Reading room.</b> <span class="pl-n">1,900 magazines and 600 manuals, quiet please</span></span></a></li>
+            <li><a class="pl" href="#cafe" data-room="cafe"><span class="pl-sw" aria-hidden="true">6</span><span><b>Café and shop.</b> <span class="pl-n">Open without a ticket, lunch 11:30 to 14:30</span></span></a></li>
+          </ol>
+        </div>
+        <div class="plan-map">
+          <svg class="map" id="map" viewBox="0 0 28 14" aria-labelledby="map-title"><title id="map-title">Floor plan of the depot: six rooms off one corridor, the way in at the bottom</title></svg>
+          <p class="way" aria-hidden="true">The way in is at the bottom, from rue du Dépôt.</p>
+          <p class="ro" id="ro"><span id="ro-t">You are at the way in on rue du Dépôt.</span> <a class="ln" id="ro-go" href="#arcade" hidden>Go to the Arcade hall</a></p>
+        </div>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<dialog class="gate gate-menu" id="menu" aria-labelledby="menu-title" data-lenis-prevent>
+  <div class="gate-in">
+    <div class="gate-head">
+      <h2 id="menu-title">Floor plan</h2>
+      <button class="tk tk-2" type="button" data-close><span class="tk-m"><span class="tk-l">Close</span></span><span class="tk-s" aria-hidden="true"><i class="tk-h"></i></span></button>
+    </div>
+    <div class="menu-search" id="menu-search"></div>
+    <div id="menu-plan"></div>
+  </div>
+</dialog>
+
+<dialog class="gate" id="visit" aria-labelledby="visit-title" data-lenis-prevent>
+  <div class="gate-in">
+    <div class="gate-head">
+      <h2 id="visit-title">Plan your visit</h2>
+      <button class="tk tk-2" type="button" data-close><span class="tk-m"><span class="tk-l">Close</span></span><span class="tk-s" aria-hidden="true"><i class="tk-h"></i></span></button>
+    </div>
+    <p class="gate-intro">Pick a day and say how many of you are coming. We hold the tickets under your name and you pay at the desk in the Arcade hall: €9 each, €6 for under-18s, free under 6. Groups of 9 or more, write to <a href="mailto:groups@thecoindoor.fr" target="_blank" rel="noopener">groups@thecoindoor.fr<span class="vh"> (opens in a new tab)</span></a>.</p>
+    <div class="swap">
+      <form class="book" id="book" aria-labelledby="visit-title" novalidate>
+        <div class="book-row">
+          <div>
+            <div class="fld" id="f-date">
+              <input id="v-date" name="date" type="date" required>
+              <label class="plate" for="v-date">Day of your visit</label>
+              <i class="door" aria-hidden="true"></i>
+            </div>
+            <p class="err" id="v-date-err"></p>
+          </div>
+          <div>
+            <div class="fld" id="f-n">
+              <input id="v-n" name="tickets" type="number" inputmode="numeric" min="1" max="8" step="1" placeholder=" " required>
+              <label class="plate" for="v-n">Number of tickets</label>
+              <i class="door" aria-hidden="true"></i>
+            </div>
+            <p class="err" id="v-n-err"></p>
+          </div>
+        </div>
+        <div class="fld" id="f-name">
+          <input id="v-name" name="name" type="text" autocomplete="name" placeholder=" " required>
+          <label class="plate" for="v-name">Name for the booking</label>
+          <i class="door" aria-hidden="true"></i>
+        </div>
+        <p class="err" id="v-name-err"></p>
+        <button class="tk" type="submit"><span class="tk-m"><span class="tk-l">Hold these tickets</span></span><span class="tk-s" aria-hidden="true"><i class="tk-h"></i></span></button>
+      </form>
+      <div class="done is-off" id="done" inert>
+        <h3 id="done-title" tabindex="-1">Your tickets are held</h3>
+        <div class="pass">
+          <div class="pass-m"><div>
+            <p class="pass-k">Admit</p>
+            <p class="pass-n" id="d-n">2</p>
+            <p class="pass-date" id="d-date">Saturday 14 November 2026</p>
+            <p class="pass-for">For <b id="d-name">Ana Duarte</b></p>
+            <p class="pass-no">Booking <span id="d-no">0417</span></p>
+          </div></div>
+          <div class="pass-s" aria-hidden="true"><div></div></div>
+          <canvas class="stamp" id="stamp" width="64" height="64" aria-hidden="true"></canvas>
+        </div>
+        <p id="d-pay">Give the name <b>Ana Duarte</b> at the desk in the Arcade hall and pay €18 there. We hold the tickets until 12:00 on the day.</p>
+        <button class="tk tk-2" id="again" type="button"><span class="tk-m"><span class="tk-l">Change this booking</span></span><span class="tk-s" aria-hidden="true"><i class="tk-h"></i></span></button>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<main>
+  <section class="intro" id="welcome" aria-labelledby="welcome-title">
+    <div class="wrap">
+      <h2 class="h2" id="welcome-title" tabindex="-1">Six rooms of video games in an old tram depot.</h2>
+      <div>
+        <p class="lede">The Coin Door keeps 335 games machines in the 1911 Gerland tram depot in Lyon, and 117 of them are switched on for you to play. One ticket covers every room.</p>
+        <dl class="facts">
+          <div><dt>Open</dt><dd>Tuesday to Sunday, 10:00 to 19:00, Thursdays until 22:00</dd></div>
+          <div><dt>Closed</dt><dd>Mondays, 25 December and 1 January</dd></div>
+          <div><dt>Tickets</dt><dd>€9, under-18s €6, under-6s free</dd></div>
+          <div><dt>Address</dt><dd>14 rue du Dépôt, 69007 Lyon, 4 minutes from the Dépôt Gerland tram stop</dd></div>
+        </dl>
+        <p class="hint"><span class="hint-desk">Point at a room name in the bar above, or Tab through them, and the visitor on the floor plan walks you to its door.</span><span class="hint-touch">Open the floor plan, tap a room to see the way there, then tap its Go link.</span></p>
+        <p class="links"><a class="ln" href="#arcade">Start in the Arcade hall</a><a class="ln" href="https://www.openstreetmap.org/" target="_blank" rel="noopener">Find the depot on OpenStreetMap<span class="vh"> (opens in a new tab)</span></a></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="room" id="arcade" data-room="arcade" aria-labelledby="arcade-title">
+    <div class="wrap">
+      <p class="num" aria-hidden="true">1</p>
+      <div class="room-body">
+        <h2 id="arcade-title" tabindex="-1"><span class="tick" aria-hidden="true"></span>Arcade hall</h2>
+        <p>Sixty-four cabinets stand in the old engine shed, from wood-sided uprights of 1978 to four-player machines from the late nineties. Every one is on free play: your ticket is the coin. When a cabinet breaks, it crosses the corridor to the Workshop and a card on the empty spot says when it will be back.</p>
+        <dl class="facts">
+          <div><dt>Cabinets</dt><dd>64, and 3 pinball tables</dd></div>
+          <div><dt>Noise</dt><dd>Loud. Ear defenders are free at the desk.</dd></div>
+          <div><dt>Desk</dt><dd>Booked tickets are collected and paid here</dd></div>
+        </dl>
+        <a class="ln" href="#consoles">Walk on to the Console gallery</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="room" id="consoles" data-room="consoles" aria-labelledby="consoles-title">
+    <div class="wrap">
+      <p class="num" aria-hidden="true">2</p>
+      <div class="room-body">
+        <h2 id="consoles-title" tabindex="-1"><span class="tick" aria-hidden="true"></span>Console gallery</h2>
+        <p>One home console for every year from 1976 to 2016, forty-one in all, each wired to a television sold the same year. Sit at any station and play. The games in the gallery change on the first Sunday of every month, and the list for next month is pinned by the door.</p>
+        <dl class="facts">
+          <div><dt>Stations</dt><dd>41, two players at each</dd></div>
+          <div><dt>New games</dt><dd>First Sunday of the month</dd></div>
+        </dl>
+        <a class="ln" href="#handhelds">Walk on to the Handheld corridor</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="room" id="handhelds" data-room="handhelds" aria-labelledby="handhelds-title">
+    <div class="wrap">
+      <p class="num" aria-hidden="true">3</p>
+      <div class="room-body">
+        <h2 id="handhelds-title" tabindex="-1"><span class="tick" aria-hidden="true"></span>Handheld corridor</h2>
+        <p>The depot's inspection pit, 52 metres long, is now lined with 230 handheld and pocket LCD games under glass. Twelve hang on short chains so you can play them. The plaques beside the rest say who made them and what they cost new.</p>
+        <dl class="facts">
+          <div><dt>Length</dt><dd>52 m, step-free from the corridor</dd></div>
+          <div><dt>Handhelds</dt><dd>230, of which 12 are playable</dd></div>
+        </dl>
+        <a class="ln" href="#workshop">Walk on to the Workshop</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="room" id="workshop" data-room="workshop" aria-labelledby="workshop-title">
+    <div class="wrap">
+      <p class="num" aria-hidden="true">4</p>
+      <div class="room-body">
+        <h2 id="workshop-title" tabindex="-1"><span class="tick" aria-hidden="true"></span>Workshop</h2>
+        <p>Two technicians repair circuit boards, screens and controllers behind a glass wall, and you can watch from the bench. On the last Saturday of each month, bring a broken controller and they will show you how to open it and fix it.</p>
+        <dl class="facts">
+          <div><dt>Watch</dt><dd>Wednesday to Sunday, 14:00 to 17:00</dd></div>
+          <div><dt>Repair day</dt><dd>Last Saturday of the month, 10:00 to 12:00, free with a ticket</dd></div>
+        </dl>
+        <a class="ln" href="#reading">Walk on to the Reading room</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="room" id="reading" data-room="reading" aria-labelledby="reading-title">
+    <div class="wrap">
+      <p class="num" aria-hidden="true">5</p>
+      <div class="room-body">
+        <h2 id="reading-title" tabindex="-1"><span class="tick" aria-hidden="true"></span>Reading room</h2>
+        <p>1,900 magazines and 600 manuals, maps and posters, shelved by year on the depot's old timetable racks. Read anything at the ten tables; nothing leaves the room. Please keep your voice down: the arcade is loud enough for the whole building.</p>
+        <dl class="facts">
+          <div><dt>Shelves</dt><dd>1,900 magazines, 600 manuals and maps</dd></div>
+          <div><dt>Seats</dt><dd>10, no booking</dd></div>
+        </dl>
+        <a class="ln" href="#cafe">Walk on to the Café and shop</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="room" id="cafe" data-room="cafe" aria-labelledby="cafe-title">
+    <div class="wrap">
+      <p class="num" aria-hidden="true">6</p>
+      <div class="room-body">
+        <h2 id="cafe-title" tabindex="-1"><span class="tick" aria-hidden="true"></span>Café and shop</h2>
+        <p>Coffee, crêpes and one lunch plate a day at tables made from old tram seats. The shop sells repair kits, posters by Lyon printmakers and our own guide to the collection for €14. You can use both without a ticket.</p>
+        <dl class="facts">
+          <div><dt>Café</dt><dd>10:00 to 18:30, lunch 11:30 to 14:30</dd></div>
+          <div><dt>Ticket</dt><dd>Not needed for the café or the shop</dd></div>
+        </dl>
+        <a class="ln" href="#welcome">Back to the way in</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="closing">
+    <div class="wrap">
+      <p>The doors close at 19:00, at 22:00 on Thursdays, and the last entry is an hour before. Questions about access, prams or wheelchairs go to the desk.</p>
+      <a class="ln" href="mailto:hello@thecoindoor.fr" target="_blank" rel="noopener">Write to hello@thecoindoor.fr<span class="vh"> (opens in a new tab)</span></a>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  const root = document.documentElement;
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const lib = !!(window.gsap && window.ScrollTrigger && window.Lenis);
+  if (lib) root.classList.add('js'); // CDN blocked: no class, everything is visible and every flow still works
+
+  const css = getComputedStyle(root);
+  const tok = (n) => css.getPropertyValue(n).trim();
+  const secs = (n) => { const v = tok(n); return v.endsWith('ms') ? parseFloat(v) / 1000 : parseFloat(v); };
+  const NS = 'http://www.w3.org/2000/svg';
+  const svgEl = (tag, attrs, parent) => {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.append(e);
+    return e;
+  };
+  let lenis = null, fx = null; // fx: hooks set by the motion branch; null means every change is instant
+
+  /* ---------- The building: 28 by 14 tiles. Boxes are [c0, r0, c1, r1], doors and the way in are [c, r]. ---------- */
+  const COLS = 28, ROWS = 14;
+  const ROOMS = [
+    { id: 'arcade', n: 1, name: 'Arcade hall', note: '64 cabinets, free play with your ticket.', box: [1, 1, 11, 5], door: [9, 6],
+      keys: 'cabinet upright pinball light gun racing seat joystick trackball high score token coin four-player cocktail table vector' },
+    { id: 'consoles', n: 2, name: 'Console gallery', note: '41 home consoles, one for every year from 1976 to 2016.', box: [13, 1, 21, 5], door: [17, 6],
+      keys: 'console cartridge controller gamepad television tv crt disc memory card split screen home system' },
+    { id: 'handhelds', n: 3, name: 'Handheld corridor', note: '230 handhelds under glass, 12 on chains to play.', box: [23, 1, 26, 12], door: [22, 8], two: 'corridor',
+      keys: 'handheld lcd pocket link cable battery portable game watch keychain' },
+    { id: 'workshop', n: 4, name: 'Workshop', note: 'Watch the repairs, Wednesday to Sunday, 14:00 to 17:00.', box: [11, 10, 15, 12], door: [13, 9],
+      keys: 'repair solder circuit board capacitor crt screen controller technician fix spare parts tools' },
+    { id: 'reading', n: 5, name: 'Reading room', note: '1,900 magazines and 600 manuals. Quiet, please.', box: [17, 10, 21, 12], door: [19, 9],
+      keys: 'magazine manual map strategy guide poster fanzine book archive box art timetable' },
+    { id: 'cafe', n: 6, name: 'Café and shop', note: 'Open without a ticket. Lunch from 11:30 to 14:30.', box: [1, 10, 6, 12], door: [3, 9],
+      keys: 'coffee crepe lunch shop poster repair kit guide badge t-shirt gift print' }
+  ];
+  const ROOM = Object.fromEntries(ROOMS.map((r) => [r.id, r]));
+  const HALLS = [[1, 7, 21, 8], [8, 9, 9, 13]];       // the corridor, and the vestibule down to the way in
+  const PILLARS = [[5, 7], [13, 7], [19, 7]];          // the depot's cast-iron columns
+  const WAY_IN = [8, 13];
+  const WALL = 0, WALK = 1, POST = 2;                  // rooms are 10 + their index
+  const grid = new Uint8Array(COLS * ROWS);
+  const K = (c, r) => r * COLS + c;
+  const fill = ([c0, r0, c1, r1], v) => { for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) grid[K(c, r)] = v; };
+  ROOMS.forEach((rm, i) => { fill(rm.box, 10 + i); grid[K(...rm.door)] = WALK; });
+  HALLS.forEach((h) => fill(h, WALK));
+  PILLARS.forEach(([c, r]) => { grid[K(c, r)] = POST; });
+
+  // Breadth-first search over walkable tiles: the shortest way, one whole tile at a time (not including the start).
+  const DIRS = [[0, -1], [0, 1], [-1, 0], [1, 0]];
+  const route = (from, to) => {
+    const start = K(...from), goal = K(...to), prev = new Int16Array(COLS * ROWS).fill(-1), q = [start];
+    prev[start] = start;
+    for (let h = 0; h < q.length && prev[goal] === -1; h++) {
+      const k = q[h], c = k % COLS, r = (k / COLS) | 0;
+      for (const [dc, dr] of DIRS) {
+        const nc = c + dc, nr = r + dr, nk = K(nc, nr);
+        if (nc < 0 || nr < 0 || nc >= COLS || nr >= ROWS || prev[nk] !== -1 || grid[nk] !== WALK) continue;
+        prev[nk] = k; q.push(nk);
+      }
+    }
+    if (prev[goal] === -1) return [];
+    const path = [];
+    for (let k = goal; k !== start; k = prev[k]) path.push([k % COLS, (k / COLS) | 0]);
+    return path.reverse();
+  };
+
+  /* ---------- The visitor: an 8x8 figure in two walking frames ---------- */
+  const SPRITE = [
+    ['...XX...', '...XX...', '..XXXX..', '.X.XX.X.', '...XX...', '..X..X..', '.X....X.', '.X....X.'], // mid-stride
+    ['...XX...', '...XX...', '..XXXX..', '..XXXX..', '..XXXX..', '...XX...', '..X..X..', '..X..X..']  // standing, feet together
+  ];
+  const spritePath = (rows, u) => rows.map((row, y) => {
+    let d = '';
+    row.replace(/X+/g, (run, x) => { d += `M${x * u} ${y * u}h${run.length * u}v${u}h${-run.length * u}z`; return run; });
+    return d;
+  }).join('');
+  $$('[data-sprite]').forEach((s) => { svgEl('path', { d: spritePath(SPRITE[1], 1) }, s); });
+  const miniSprite = $('.mini-mk svg path');
+
+  /* ---------- Draw the plan ---------- */
+  const map = $('#map');
+  const layer = (cls) => svgEl('g', { class: cls }, map);
+  const gRooms = layer('rooms'), gDots = layer('dots'), gWalls = layer('walls-g'), gPrints = layer('prints'), gMk = layer('mk');
+  const mapRooms = ROOMS.map((rm) => {
+    const [c0, r0, c1, r1] = rm.box;
+    const a = svgEl('a', { href: '#' + rm.id, class: 'rm', 'data-room': rm.id, tabindex: '-1', 'aria-label': rm.name }, gRooms);
+    svgEl('rect', { class: 'fl', x: c0 - .5, y: r0 - .5, width: c1 - c0 + 2, height: r1 - r0 + 2 }, a);
+    const top = r0 + (rm.two ? 2 : 1); // the label rows stay plain, so the label never sits on a lit tile
+    let d = '';
+    for (let r = top; r <= r1; r++) for (let c = c0; c <= c1; c++) d += `M${c + .25} ${r + .25}h.5v.5h-.5z`;
+    svgEl('path', { class: 'tl', d }, a);
+    const full = svgEl('text', { class: 'lb lb-full', x: c0 + .15, y: r0 + .72 }, a);
+    full.textContent = `${rm.n} ${rm.two ? rm.name.split(' ')[0] : rm.name}`;
+    if (rm.two) { const t = svgEl('tspan', { x: c0 + .15, dy: 1 }, full); t.textContent = rm.two; }
+    const num = svgEl('text', { class: 'lb lb-num', x: c0 + .2, y: r0 + .85 }, a);
+    num.textContent = rm.n;
+    return a;
+  });
+  (() => {
+    let walls = '', dots = '';
+    const isWall = (c, r) => c >= 0 && r >= 0 && c < COLS && r < ROWS && grid[K(c, r)] === WALL;
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const v = grid[K(c, r)];
+        if (v === WALL) {
+          if (isWall(c + 1, r)) walls += `M${c + .5} ${r + .5}H${c + 1.5}`;
+          if (isWall(c, r + 1)) walls += `M${c + .5} ${r + .5}V${r + 1.5}`;
+        } else if (v === WALK) dots += `M${c + .4375} ${r + .4375}h.125v.125h-.125z`;
+        else if (v === POST) svgEl('rect', { class: 'pillar', x: c + .25, y: r + .25, width: .5, height: .5 }, gWalls);
+      }
+    }
+    svgEl('path', { class: 'walls', d: walls }, gWalls);
+    svgEl('path', { d: dots }, gDots);
+  })();
+  const mkFrames = SPRITE.map((rows) => svgEl('path', { d: spritePath(rows, 1 / 8) }, gMk));
+
+  /* ---------- Plan state (plain JS, works without the libraries) ---------- */
+  const hd = $('#hd'), panel = $('#plan-panel'), panelIn = $('#panel-in'), plan = $('#plan');
+  const planBtn = $('#plan-btn'), buyBtn = $('#buy-btn'), searchForm = $('#search'), q = $('#q'), qOut = $('#q-out');
+  const roT = $('#ro-t'), roGo = $('#ro-go');
+  const navLinks = $$('.rl'), listLinks = $$('.pl');
+  const deskMQ = matchMedia('(min-width: 1024px)'), touchMQ = matchMedia('(hover: none)');
+  const mk = { c: WAY_IN[0], r: WAY_IN[1], f: 1, path: [], prints: [] };
+  const S = { target: null, armed: null, matches: new Set(), open: false, pinned: false, current: -1, pt: '' };
+  let scale = 1, closeT = 0;
+
+  const placeMarker = () => {
+    gMk.setAttribute('transform', `translate(${mk.c + .5} ${mk.r + .5}) scale(${scale}) translate(-.5 -.5)`);
+    mkFrames.forEach((p, i) => p.setAttribute('visibility', i === mk.f ? 'visible' : 'hidden'));
+  };
+  const print = (c, r) => { mk.prints.push(svgEl('rect', { class: 'fp', x: c + .375, y: r + .375, width: .25, height: .25 }, gPrints)); };
+  const clearPrints = () => { mk.prints.forEach((p) => p.remove()); mk.prints = []; };
+  // One step: the tile left behind keeps a footprint; the figure swaps its walking frame.
+  const step = () => {
+    const [c, r] = mk.path.shift();
+    print(mk.c, mk.r);
+    mk.c = c; mk.r = r; mk.f ^= 1;
+    placeMarker();
+  };
+  const arrive = () => { mk.path = []; clearPrints(); mk.f = 1; placeMarker(); };
+  const jumpTo = (dest) => { mk.c = dest[0]; mk.r = dest[1]; arrive(); };
+
+  // Tile size, read from the drawn plan; labels stay 13px and the visitor stays whole pixels.
+  const measure = () => {
+    // The layout width, not the drawn one: a dialog mid-swing is narrower on screen than it is.
+    const w = map.isConnected && map.getClientRects().length ? parseFloat(getComputedStyle(map).width) : 0;
+    if (!w) return;
+    const tile = Math.round(w / COLS), px = Math.max(2, Math.floor(tile / 8));
+    scale = 8 * px / tile;
+    map.style.setProperty('--lb', (13 / tile).toFixed(4) + 'px');
+    // An odd tile has its centre on a half pixel, so its wall line is odd too and stays on whole pixels.
+    map.style.setProperty('--wall-w', (tile >= 20 ? 4 : 2) + (tile % 2) + 'px');
+    map.classList.toggle('is-small', tile < 22);
+    placeMarker();
+  };
+  new ResizeObserver(measure).observe(map);
+
+  const lit = (id) => id === S.target || S.matches.has(id);
+  const paint = () => {
+    mapRooms.forEach((a) => a.classList.toggle('is-lit', lit(a.dataset.room)));
+    listLinks.forEach((a) => a.classList.toggle('is-lit', lit(a.dataset.room)));
+    navLinks.forEach((a) => a.classList.toggle('is-on', S.open && a.dataset.room === S.target));
+  };
+  const readout = () => {
+    const rm = ROOM[S.target];
+    if (!rm) { roT.textContent = 'You are at the way in on rue du Dépôt.'; roGo.hidden = true; return; }
+    roT.innerHTML = '';
+    const b = document.createElement('b');
+    b.textContent = rm.name + '.';
+    roT.append(b, ' ' + rm.note);
+    roGo.hidden = false;
+    roGo.href = '#' + rm.id;
+    roGo.dataset.room = rm.id;
+    roGo.lastChild.nodeValue = 'Go to the ' + rm.name.replace('Café and shop', 'café and shop');
+  };
+  // Send the visitor to a room's door (or back to the way in) by the shortest corridor route.
+  const send = (id) => {
+    if (S.target === id) return;
+    S.target = id;
+    paint(); readout();
+    const dest = id ? ROOM[id].door : WAY_IN;
+    if (fx) fx.walk(route([mk.c, mk.r], dest)); else jumpTo(dest);
+  };
+
+  /* ---------- Desktop panel: opens on a room link's hover or focus, the Floor plan button, or the search ---------- */
+  const openPanel = (pin) => {
+    if (!deskMQ.matches) return;
+    clearTimeout(closeT);
+    if (pin) S.pinned = true;
+    if (S.open) return;
+    S.open = true;
+    panel.hidden = false;
+    planBtn.setAttribute('aria-expanded', 'true');
+    measure(); paint();
+    lenis?.stop();
+  };
+  const closePanel = () => {
+    clearTimeout(closeT);
+    if (!S.open) return;
+    S.open = false; S.pinned = false; S.armed = null;
+    panel.hidden = true;
+    planBtn.setAttribute('aria-expanded', 'false');
+    paint();
+    lenis?.start();
+  };
+  hd.addEventListener('pointerenter', () => clearTimeout(closeT));
+  hd.addEventListener('pointerleave', (e) => {
+    if (e.pointerType === 'touch' || !S.open || S.pinned) return;
+    if (hd.contains(document.activeElement) && document.activeElement.matches(':focus-visible')) return; // keyboard is still in the plan
+    closeT = setTimeout(closePanel, secs('--d-grace') * 1000);
+  });
+  hd.addEventListener('focusout', (e) => {
+    if (!S.open || hd.contains(e.relatedTarget)) return;
+    if (!e.relatedTarget && hd.matches(':hover')) return; // a press on the plan's own background
+    closePanel();
+  });
+  document.addEventListener('pointerdown', (e) => { if (S.open && !hd.contains(e.target)) closePanel(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape' || !S.open) return;
+    const inside = panel.contains(document.activeElement) || document.activeElement === q;
+    closePanel();
+    if (inside) planBtn.focus();
+  });
+
+  /* Room links: header links, the list and the rooms on the map are one nav. Pointing or focusing sends the
+     visitor; a click or Enter goes there. On touch, the first tap sends the visitor and the second (or Go) goes. */
+  const roomEls = [...navLinks, ...listLinks, ...mapRooms];
+  roomEls.forEach((a) => {
+    const id = a.dataset.room, head = a.classList.contains('rl');
+    a.addEventListener('pointerdown', (e) => { S.pt = e.pointerType; });
+    a.addEventListener('pointerenter', (e) => { if (e.pointerType === 'touch') return; if (head) openPanel(); send(id); });
+    a.addEventListener('focus', () => { if (head) openPanel(); send(id); });
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      const touch = S.pt === 'touch';
+      S.pt = '';
+      if (touch && S.armed !== id) { S.armed = id; if (head) openPanel(true); send(id); return; }
+      go(id);
+    });
+  });
+  roGo.addEventListener('click', (e) => { e.preventDefault(); go(roGo.dataset.room); });
+  // Arrow keys move along the header links (left and right) and down the list (up and down).
+  const rove = (els, keys) => (e) => {
+    const i = els.indexOf(document.activeElement);
+    if (i < 0) return;
+    const n = { [keys[0]]: (i + els.length - 1) % els.length, [keys[1]]: (i + 1) % els.length, Home: 0, End: els.length - 1 }[e.key];
+    if (n === undefined) return;
+    e.preventDefault();
+    els[n].focus();
+  };
+  $('.rooms').addEventListener('keydown', rove(navLinks, ['ArrowLeft', 'ArrowRight']));
+  $('.pls').addEventListener('keydown', rove(listLinks, ['ArrowUp', 'ArrowDown']));
+
+  /* ---------- Search the collection: plain filtering, the matching rooms light on the map and the list ---------- */
+  const norm = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+  const KEYS = ROOMS.map((rm) => norm(`${rm.name} ${rm.note} ${rm.keys}`));
+  const defaultHint = qOut.innerHTML;
+  const search = () => {
+    const v = norm(q.value);
+    S.matches = new Set(v.length >= 2 ? ROOMS.filter((rm, i) => KEYS[i].includes(v)).map((rm) => rm.id) : []);
+    paint();
+    const shown = q.value.trim();
+    if (!shown) qOut.innerHTML = defaultHint;
+    else if (v.length < 2) qOut.textContent = 'Keep typing: two letters or more.';
+    else if (!S.matches.size) qOut.textContent = `Nothing in the collection matches “${shown}”. Try a kind of object, like pinball, cartridge or manual.`;
+    else {
+      const names = ROOMS.filter((rm) => S.matches.has(rm.id)).map((rm) => rm.name);
+      qOut.textContent = `${names.length === 1 ? '1 room has' : names.length + ' rooms have'} “${shown}”: ${names.join(', ')}.`;
+    }
+  };
+  q.addEventListener('focus', () => openPanel());
+  q.addEventListener('input', () => { openPanel(); search(); });
+  searchForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    openPanel(true);
+    search();
+    if (!q.value.trim()) { qOut.textContent = 'Type a kind of machine or object, like pinball or manual, then press Enter.'; return; }
+    const first = ROOMS.find((rm) => S.matches.has(rm.id));
+    if (first) send(first.id);
+  });
+
+  /* ---------- Dialogs: native, with the swing gate when the motion layer is on ---------- */
+  const gate = (dlg) => {
+    let closing = false, downOn = null, opener = null;
+    // Recover from any close, even one the browser forces (a second Escape is not cancelable) mid-swing.
+    const settle = () => { closing = false; fx?.gateReset(dlg); };
+    const show = (from) => {
+      if (dlg.open) return;
+      settle();
+      opener = from;
+      fx?.gatePrep(dlg);
+      dlg.showModal();
+      lenis?.stop();
+      fx?.gateIn(dlg);
+    };
+    const hide = (then, refocus = true) => {
+      if (!dlg.open || closing) return;
+      closing = true;
+      const end = () => { closing = false; dlg.close(); if (refocus) opener?.focus(); then?.(); };
+      fx ? fx.gateOut(dlg, end) : end();
+    };
+    dlg.addEventListener('cancel', (e) => { e.preventDefault(); hide(); });
+    dlg.addEventListener('pointerdown', (e) => { downOn = e.target; });
+    dlg.addEventListener('click', (e) => { if (e.target === dlg && downOn === dlg) hide(); });
+    dlg.addEventListener('close', () => { settle(); if (!S.open) lenis?.start(); });
+    $$('[data-close]', dlg).forEach((b) => b.addEventListener('click', () => hide()));
+    return { dlg, show, hide };
+  };
+  const menu = gate($('#menu')), visit = gate($('#visit'));
+
+  planBtn.addEventListener('click', () => {
+    if (!deskMQ.matches) { menu.show(planBtn); measure(); return; }
+    if (S.open && S.pinned) closePanel(); else openPanel(true);
+  });
+  buyBtn.addEventListener('click', () => { closePanel(); visit.show(buyBtn); });
+
+  // One plan, two homes: the desktop panel, or the phone menu dialog.
+  const home = () => {
+    if (deskMQ.matches) {
+      if (menu.dlg.open) menu.dlg.close();
+      $('#search-slot').append(searchForm); panelIn.append(plan);
+      planBtn.setAttribute('aria-controls', 'plan-panel'); planBtn.setAttribute('aria-expanded', String(S.open)); planBtn.removeAttribute('aria-haspopup');
+    } else {
+      closePanel();
+      $('#menu-search').append(searchForm); $('#menu-plan').append(plan);
+      planBtn.setAttribute('aria-controls', 'menu'); planBtn.setAttribute('aria-haspopup', 'dialog'); planBtn.removeAttribute('aria-expanded');
+    }
+    measure();
+  };
+  home();
+  deskMQ.addEventListener('change', home);
+
+  /* ---------- Going to a room ---------- */
+  const slimH = () => parseFloat(getComputedStyle(hd).getPropertyValue('--bar-h')) + parseFloat(getComputedStyle(hd).getPropertyValue('--row3')) + 2;
+  const go = (id) => {
+    const target = document.getElementById(id);
+    if (!target) return;
+    const finish = () => {
+      if (lenis) lenis.scrollTo(target, { offset: -slimH(), duration: 1.1, force: true });
+      else target.scrollIntoView({ block: 'start' });
+      $('h2', target)?.focus({ preventScroll: true });
+      history.replaceState(null, '', '#' + id);
+    };
+    S.armed = null;
+    if (menu.dlg.open) menu.hide(finish, false);
+    else { closePanel(); finish(); }
+  };
+  $$('main a.ln[href^="#"]').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); go(a.getAttribute('href').slice(1)); }));
+  $('.wm').addEventListener('click', (e) => { e.preventDefault(); go('welcome'); });
+
+  /* ---------- You are here: the minimap and aria-current follow the room sections ---------- */
+  const sections = ROOMS.map((rm) => document.getElementById(rm.id));
+  const mini = $('#mini'), cells = $$('.mc', mini);
+  let miniAt = 0;
+  const setMini = (i, walking) => {
+    miniAt = i;
+    mini.style.setProperty('--at', i);
+    cells.forEach((c, k) => c.classList.toggle('is-here', k === i && k > 0));
+    miniSprite.setAttribute('d', spritePath(SPRITE[walking ? i % 2 : 1], 1));
+  };
+  const setCurrent = (i) => {
+    if (i === S.current) return;
+    S.current = i;
+    const id = ROOMS[i]?.id;
+    [...navLinks, ...listLinks].forEach((a) => { if (a.dataset.room === id) a.setAttribute('aria-current', 'location'); else a.removeAttribute('aria-current'); });
+    fx ? fx.mini(i + 1) : setMini(i + 1);
+  };
+  const setSlim = (on) => hd.classList.toggle('is-slim', on);
+  const track = () => {
+    const line = innerHeight * .4;
+    let cur = -1;
+    sections.forEach((s, i) => { if (s.getBoundingClientRect().top <= line) cur = i; });
+    setCurrent(cur);
+    setSlim(window.scrollY > 80);
+  };
+
+  /* ---------- Today's hours in the claim line ---------- */
+  (() => {
+    const d = new Date(), day = d.getDay(), md = `${d.getDate()}/${d.getMonth() + 1}`;
+    const t = $('#today');
+    if (md === '25/12' || md === '1/1') t.textContent = 'Closed today. Open tomorrow from 10:00.';
+    else if (day === 1) t.textContent = 'Closed today, Monday. Open tomorrow from 10:00.';
+    else t.textContent = `Open today 10:00 to ${day === 4 ? '22:00' : '19:00'}.`;
+  })();
+
+  /* ---------- Plan your visit: a booking held at the desk (nothing is sent) ---------- */
+  const book = $('#book'), done = $('#done'), doneTitle = $('#done-title'), again = $('#again');
+  const vDate = $('#v-date'), vN = $('#v-n'), vName = $('#v-name');
+  const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const last = new Date(today); last.setMonth(last.getMonth() + 6);
+  const closedOn = (d) => d.getDay() === 1 || (d.getMonth() === 11 && d.getDate() === 25) || (d.getMonth() === 0 && d.getDate() === 1);
+  const nextOpen = new Date(today);
+  while (closedOn(nextOpen)) nextOpen.setDate(nextOpen.getDate() + 1);
+  vDate.min = iso(today); vDate.max = iso(last); vDate.value = iso(nextOpen);
+  const long = (d) => d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const parseDay = (v) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v); if (!m) return null; const d = new Date(+m[1], m[2] - 1, +m[3]); return d.getDate() === +m[3] ? d : null; };
+  const FIELDS = [
+    { el: vDate, box: $('#f-date'), test: (v) => {
+      if (!v) return 'Pick the day of your visit.';
+      const d = parseDay(v);
+      if (!d) return 'Enter the day as day, month and year, for example 14/11/2026.';
+      if (d < today) return 'That day has passed. Pick today or a later day.';
+      if (d > last) return `Bookings open six months ahead. Pick a day up to ${long(last)}.`;
+      if (d.getDay() === 1) return 'We are closed on Mondays. Pick a Tuesday to Sunday.';
+      if (closedOn(d)) return 'We are closed on 25 December and 1 January. Pick another day.';
+      return '';
+    } },
+    { el: vN, box: $('#f-n'), test: (v) => {
+      if (!v) return 'Enter how many tickets you need, from 1 to 8.';
+      if (!/^\d+$/.test(v)) return 'Use a whole number of tickets, like 2.';
+      const n = +v;
+      if (n < 1) return 'Book at least 1 ticket.';
+      if (n > 8) return 'Up to 8 here. For 9 or more, write to groups@thecoindoor.fr.';
+      return '';
+    } },
+    { el: vName, box: $('#f-name'), test: (v) => {
+      if (!v) return 'Enter the name we should look for at the desk.';
+      if (v.length > 60) return `Keep the name to 60 characters or fewer; this one has ${v.length}.`;
+      return '';
+    } }
+  ];
+  const val = (f) => f.el.value.trim();
+  const mark = (f, msg) => {
+    const err = $('#' + f.el.id + '-err');
+    err.textContent = msg; // cleared too, so assistive tech never finds a stale message
+    f.box.classList.toggle('is-bad', !!msg);
+    if (msg) { f.el.setAttribute('aria-invalid', 'true'); f.el.setAttribute('aria-describedby', err.id); }
+    else { f.el.removeAttribute('aria-invalid'); f.el.removeAttribute('aria-describedby'); }
+  };
+  FIELDS.forEach((f) => ['input', 'change'].forEach((t) => f.el.addEventListener(t, () => { if (f.box.classList.contains('is-bad') && !f.test(val(f))) mark(f, ''); })));
+
+  // The date stamp: drawn in pixels, a ring and a band across it with the day knocked out, at a slight angle.
+  const stampCv = $('#stamp');
+  const drawStamp = (solid, label) => {
+    const N = 64, R = 31, r = 26, a = -14 * Math.PI / 180, ca = Math.cos(a), sa = Math.sin(a);
+    const t = document.createElement('canvas'); t.width = t.height = N;
+    const tg = t.getContext('2d', { willReadFrequently: true });
+    tg.translate(N / 2, N / 2); tg.rotate(a);
+    tg.font = `800 13px ${tok('--font-text')}`; tg.textAlign = 'center'; tg.textBaseline = 'middle';
+    tg.fillText(label, 0, 1);
+    const txt = tg.getImageData(0, 0, N, N).data;
+    const shape = new Uint8Array(N * N), band = new Uint8Array(N * N);
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+      const dx = x + .5 - N / 2, dy = y + .5 - N / 2, d = Math.hypot(dx, dy), u = ca * dx + sa * dy, v = -sa * dx + ca * dy, i = y * N + x;
+      const ring = d <= R && d >= r, b = Math.abs(v) <= 8 && d < r + 1, bars = Math.abs(v) >= 12 && Math.abs(v) <= 14 && Math.abs(u) <= 11;
+      shape[i] = ring || b || bars ? 1 : 0; band[i] = b ? 1 : 0;
+    }
+    const g = stampCv.getContext('2d');
+    g.clearRect(0, 0, N, N);
+    g.fillStyle = tok('--arcade');
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+      const i = y * N + x;
+      if (!shape[i]) continue;
+      const edge = x === 0 || y === 0 || x === N - 1 || y === N - 1 || !shape[i - 1] || !shape[i + 1] || !shape[i - N] || !shape[i + N];
+      const knocked = band[i] && txt[i * 4 + 3] > 110;
+      if (solid ? !knocked : edge) g.fillRect(x, y, 1, 1);
+    }
+  };
+
+  const swap = (toDone) => {
+    const from = toDone ? book : done, to = toDone ? done : book;
+    from.classList.add('is-off'); from.inert = true;
+    to.classList.remove('is-off'); to.inert = false;
+    if (toDone) doneTitle.focus(); else vDate.focus();
+  };
+  book.addEventListener('submit', (e) => {
+    e.preventDefault();
+    let bad = null;
+    FIELDS.forEach((f) => { const msg = f.test(val(f)); mark(f, msg); if (msg && !bad) bad = f; });
+    if (bad) { bad.el.focus(); return; }
+    const d = parseDay(vDate.value), n = +val(FIELDS[1]), who = val(FIELDS[2]);
+    let h = 7;
+    for (const ch of who + vDate.value) h = (h * 31 + ch.charCodeAt(0)) % 9973;
+    $('#d-n').textContent = n;
+    $('#d-date').textContent = long(d);
+    $('#d-name').textContent = who;
+    $('#d-no').textContent = String(h).padStart(4, '0');
+    const pay = $('#d-pay');
+    pay.innerHTML = '';
+    const b = document.createElement('b'); b.textContent = who;
+    pay.append('Give the name ', b, ` at the desk in the Arcade hall and pay €${n * 9} there for ${n === 1 ? 'one ticket' : n + ' tickets'}. Under-18s pay €6: tell the desk and we take off the difference. We hold the tickets until 12:00 on the day.`);
+    const label = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    swap(true);
+    fx ? fx.stamp(label) : drawStamp(true, label);
+  });
+  again.addEventListener('click', () => { if (!done.classList.contains('is-off')) swap(false); });
+
+  /* ---------- Presses that must be seen: held for a minimum time from pointerdown ---------- */
+  const hold = (el, cls, ms, pick) => {
+    let t0 = 0, timer = 0, on = [];
+    const down = (list) => { clearTimeout(timer); t0 = performance.now(); on = list; el.classList.add(...on); };
+    const up = () => { if (!on.length) return; const k = on; clearTimeout(timer); timer = setTimeout(() => { el.classList.remove(...k); }, Math.max(0, ms - (performance.now() - t0))); on = []; };
+    el.addEventListener('pointerdown', (e) => { const list = pick(e); if (list.length) down(list); });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach((t) => el.addEventListener(t, up));
+    return { down, up };
+  };
+  $$('.tk').forEach((b) => {
+    const h = hold(b, null, secs('--d-punch') * 1000, (e) => e.pointerType === 'touch' ? ['is-punch', 'is-tear'] : ['is-punch']);
+    b.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) { h.down(['is-punch']); setTimeout(h.up, 0); } });
+  });
+  // Every text link gets its pixel map pin; on touch the pin drops on press and stays 200ms.
+  $$('.ln').forEach((a) => {
+    const pin = svgEl('svg', { class: 'pin', viewBox: '0 0 5 7', 'aria-hidden': 'true' });
+    svgEl('path', { d: 'M1 0h3v1h1v3h-1v1h-1v2h-1v-2h-1v-1h-1v-3h1zM2 2v1h1v-1z', 'fill-rule': 'evenodd' }, pin);
+    a.prepend(pin);
+    hold(a, null, secs('--d-pin-hold') * 1000, (e) => e.pointerType === 'touch' ? ['is-pin'] : []);
+  });
+
+  measure(); placeMarker(); readout(); setMini(0);
+
+  if (!lib) {
+    // No motion layer: native scroll and plain listeners, every change instant.
+    let raf = 0;
+    const want = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; track(); }); };
+    addEventListener('scroll', want, { passive: true });
+    addEventListener('resize', want);
+    track();
+    drawStamp(true, new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }));
+    return;
+  }
+
+  /* ---------- Motion ---------- */
+  gsap.registerPlugin(ScrollTrigger);
+  const fontsReady = Promise.race([
+    Promise.all([document.fonts.ready, document.fonts.load('700 32px "Handjet"'), document.fonts.load('600 15px "Host Grotesk"')]).then(() => 'fonts', () => 'fonts'),
+    new Promise((r) => setTimeout(() => r('timeout'), 1500))
+  ]);
+  // Start the load only on a visible page: with lagSmoothing(0) a timeline started in a background tab jumps to its end.
+  const visible = new Promise((r) => {
+    if (document.visibilityState === 'visible') return r();
+    const f = () => { if (document.visibilityState === 'visible') { document.removeEventListener('visibilitychange', f); r(); } };
+    document.addEventListener('visibilitychange', f);
+  });
+  let played = false;
+
+  const mm = gsap.matchMedia();
+  mm.add({
+    motion: '(prefers-reduced-motion: no-preference)',
+    reduce: '(prefers-reduced-motion: reduce)'
+  }, (ctx) => {
+    const { motion } = ctx.conditions;
+    let dead = false;
+
+    // You are here: one trigger per room section, and the hard cut of the claim row at 80px.
+    sections.forEach((s, i) => ScrollTrigger.create({
+      trigger: s, start: 'top 40%', end: 'bottom 40%',
+      onToggle: (self) => { if (self.isActive) setCurrent(i); else if (i === 0 && self.direction < 0) setCurrent(-1); }
+    }));
+    ScrollTrigger.create({ start: 0, end: 'max', onUpdate: (self) => setSlim(self.scroll() > 80), onRefresh: (self) => setSlim(self.scroll() > 80) });
+    track();
+    fontsReady.then(() => { if (!dead) { ScrollTrigger.refresh(); measure(); } });
+
+    if (!motion) {
+      // Reduced motion: native scroll, final states; the visitor and the minimap marker jump.
+      root.classList.add('go');
+      return () => { dead = true; };
+    }
+
+    const T = Object.fromEntries(['tile', 'cell', 'cut', 'swatch', 'gate', 'ink'].map((k) => [k, secs('--d-' + k)]));
+
+    // Lenis on GSAP's clock. Touch keeps native scrolling.
+    lenis = new Lenis({ lerp: .1, smoothWheel: true, autoRaf: false, anchors: false });
+    lenis.on('scroll', ScrollTrigger.update);
+    const tick = (t) => lenis.raf(t * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
+    if (S.open || menu.dlg.open || visit.dlg.open) lenis.stop();
+
+    /* The walk: one whole tile every 30ms on the GSAP ticker, which only runs it while the visitor is moving. */
+    let walking = false, acc = 0;
+    const walkTick = (t, dms) => {
+      acc += Math.min(dms, 100) / 1000;
+      while (acc >= T.tile && mk.path.length) { acc -= T.tile; step(); }
+      if (!mk.path.length) { walking = false; gsap.ticker.remove(walkTick); arrive(); }
+    };
+    /* The minimap marker steps cell by cell, swapping its walking frame, at a visible frame rate. */
+    let miniTl = null;
+
+    fx = {
+      walk(path) {
+        mk.path = path;
+        if (!path.length) { arrive(); return; }
+        if (!walking) { walking = true; acc = T.tile; gsap.ticker.add(walkTick); }
+      },
+      mini(to) {
+        miniTl?.kill();
+        const from = miniAt, dir = Math.sign(to - from);
+        if (!dir) return;
+        miniTl = gsap.timeline();
+        for (let k = 1; k <= Math.abs(to - from); k++) miniTl.call(() => setMini(from + dir * k, true), null, (k - 1) * T.cell);
+        miniTl.call(() => setMini(to, false), null, Math.abs(to - from) * T.cell);
+      },
+      // The swing gate: hinged on the left edge, it turns from 90 degrees to 0 in four held frames and back in three.
+      gatePrep(dlg) { gsap.set(dlg, { rotationY: 90, skewY: -8, transformOrigin: '0% 50%' }); },
+      gateIn(dlg) {
+        gsap.timeline()
+          .set(dlg, { rotationY: 67.5, skewY: -6 }, 0)
+          .set(dlg, { rotationY: 45, skewY: -4 }, T.gate)
+          .set(dlg, { rotationY: 22.5, skewY: -2 }, T.gate * 2)
+          .set(dlg, { clearProps: 'transform' }, T.gate * 3);
+      },
+      gateOut(dlg, end) {
+        gsap.timeline({ onComplete: () => { gsap.set(dlg, { clearProps: 'transform' }); end(); } })
+          .set(dlg, { rotationY: 30, skewY: -2 }, 0)
+          .set(dlg, { rotationY: 60, skewY: -5 }, T.gate)
+          .set(dlg, { rotationY: 90, skewY: -8 }, T.gate * 2)
+          .set({}, {}, T.gate * 3);
+      },
+      gateReset(dlg) { gsap.killTweensOf(dlg); gsap.set(dlg, { clearProps: 'transform' }); },
+      // Stamped: a hollow outline first, then the solid ink, in the Arcade hall's yellow.
+      stamp(label) {
+        drawStamp(false, label);
+        gsap.delayedCall(T.ink, () => drawStamp(true, label));
+      }
+    };
+
+    /* Load: the room links cut in from left to right, 60ms apart. Each arrives as a full-height swatch of its
+       room's hue for one frame, then collapses to the small marker beside its label. On narrow screens the
+       minimap's room cells do the same. The wordmark and the tickets are there from the first frame. */
+    Promise.all([fontsReady, visible]).then(() => ctx.add(() => {
+      if (dead) return;
+      if (played) { root.classList.add('go'); return; }
+      const items = deskMQ.matches ? navLinks : cells.slice(1);
+      const boxes = deskMQ.matches ? items.map((a) => a.parentElement) : items;
+      gsap.set(boxes, { visibility: 'hidden' });
+      root.classList.add('go');
+      const tl = gsap.timeline({ onComplete: () => { played = true; } });
+      items.forEach((el, i) => {
+        const at = .1 + i * T.cut;
+        tl.call(() => { gsap.set(boxes[i], { clearProps: 'visibility' }); el.classList.add('is-swatch'); }, null, at)
+          .call(() => el.classList.remove('is-swatch'), null, at + T.swatch);
+      });
+    }));
+
+    return () => {
+      dead = true;
+      fx = null;
+      if (walking) { gsap.ticker.remove(walkTick); walking = false; }
+      if (mk.path.length) jumpTo(mk.path[mk.path.length - 1]);
+      miniTl?.kill(); setMini(S.current + 1);
+      gsap.ticker.remove(tick);
+      gsap.ticker.lagSmoothing(500, 33);
+      lenis.destroy(); lenis = null;
+      [...navLinks, ...cells].forEach((el) => { el.classList.remove('is-swatch'); el.style.visibility = ''; });
+      navLinks.forEach((a) => { a.parentElement.style.visibility = ''; });
+      [menu.dlg, visit.dlg].forEach((d) => gsap.set(d, { clearProps: 'transform' }));
+      root.classList.add('go');
+    };
+  });
+})();
+</script>
+</body>
+</html>

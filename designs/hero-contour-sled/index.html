@@ -1,0 +1,815 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Rodel by Hangwind</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Handjet:ELGR,ELSH,wght@1..2,0..16,100..900&family=Host+Grotesk:wght@300..800&display=swap">
+<style>
+  :root {
+    /* Colour: a contour map of a mountain at night, printed the wrong way round: the paper is the ochre of contour ink.
+       Every hue has one job; ratios are against --ochre unless noted. */
+    --ochre: #6E4A0E;       /* the ground: contour ochre, the ink cartographers draw height in */
+    --umber: #3A2604;       /* the same ochre, burnt: dialog surface, the field, the trailer button, ink on paper faces (paper on it 13.2:1) */
+    --paper: #FFF4E0;       /* words: text, the wishlist face, focus ring (7.3:1) */
+    --dust: #F2D9A6;        /* secondary text, borders, underlines, hachures, the brake claws (5.8:1) */
+    --run: #6FF3FF;         /* the run, and only the run: the fall line, the hut, the start gate, its legend swatch (6.0:1) */
+    --blaze: #C2321E;       /* the trail blaze painted on a control you are about to use (on paper 5.1:1) */
+    --fault: #FFB4A6;       /* errors only (4.7:1; 8.5:1 on umber) */
+    /* Altitude bands: contour lines only (canvas) and their legend swatches. Decorative, aria-hidden. */
+    --b-valley: #9E7A3A;    /* 1,000 to 1,300 m, the valley and the tarn's shore (2.0:1) */
+    --b-forest: #2E3B14;    /* 1,400 to 1,600 m, larch forest (dark, 1.5:1) */
+    --b-scree: #DDB46A;     /* 1,700 to 1,900 m, scree (4.1:1) */
+    --b-rock: #BBA79E;      /* 2,000 m and up, bare rock (3.5:1) */
+    --b-snow: #FFF8EE;      /* above the snowline, wherever scroll puts it (7.5:1) */
+    --scrim: rgb(34 22 2 / .82);   /* the valley after dark, behind the dialog */
+
+    /* Type */
+    --font-display: "Handjet", "Arial Narrow", sans-serif;
+    --font-text: "Host Grotesk", system-ui, sans-serif;
+    --modules: "ELSH" 2, "ELGR" 1;   /* square Handjet modules */
+    --t-small: 14px;
+    --t-body: 16px;
+    --t-lede: 18px;
+    --t-tag: clamp(22px, 2.1vw, 28px);
+    --t-h3: 22px;
+    --t-title: clamp(132px, 17vw, 248px);   /* the name, drawn as contours */
+    --lh-body: 1.5;
+
+    /* Space: a 6px step, the same as the map's grid */
+    --g: 6px;               /* one grid step: the script reads it for marching squares */
+    --s1: 6px; --s2: 12px; --s3: 24px; --s4: 36px; --s5: 48px; --s6: 72px;
+    --gut: clamp(16px, 3.4vw, 48px);
+    --max-w: 1400px;
+    --tap: 48px;            /* button and field height */
+    --hit: 44px;            /* minimum target */
+    --knoll: 96px;          /* radius of the hill the pointer raises */
+
+    /* Motion: hard cuts on a visible frame rate. CSS and the script read these. */
+    --d-plot: .05s;         /* load: one contour interval plotted */
+    --d-uplift: .08s;       /* load: the name rises one contour interval */
+    --d-rise: .045s;        /* a hill rises one interval */
+    --d-sink: .085s;        /* a hill sinks one interval */
+    --d-blaze: .05s;        /* one stroke of the trail blaze */
+    --d-brake: .09s;        /* brake claws: half, then full */
+    --d-hold: .14s;         /* a press is held at least this long */
+    --d-summit: .14s;       /* link: knoll, then summit */
+    --d-hach: .12s;         /* field: hachures in three lengths */
+    --d-sheet: .06s;        /* dialog: one altitude group of map sheets */
+  }
+  @media (max-width: 599px) {
+    :root { --t-lede: 17px; --t-body: 16px; --knoll: 70px; }
+  }
+
+  /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+
+  /* Before the survey: the copy waits for the plot to reach the valley. Only under html.js, undone for reduced motion. */
+  html.js:not(.go) [data-in] { visibility: hidden; }
+  @media (prefers-reduced-motion: reduce) { html.js:not(.go) [data-in] { visibility: visible; } }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { background: var(--ochre); }
+  body {
+    margin: 0;
+    background: var(--ochre);
+    color: var(--paper);
+    font: 400 var(--t-body)/var(--lh-body) var(--font-text);
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible { outline: 2px solid var(--paper); outline-offset: 3px; }
+  ::selection { background: var(--paper); color: var(--umber); }
+  .vh {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+  }
+  p { margin: 0; }
+
+  /* ---------- The hero ---------- */
+  .hero { position: relative; overflow: clip; background: var(--ochre); }
+  .map {
+    position: absolute; left: 0; top: 0;
+    image-rendering: pixelated;      /* one canvas pixel is a 2x2 CSS block: stepped, never smoothed */
+    pointer-events: none;
+  }
+  .top, .foot { position: relative; max-width: calc(var(--max-w) + 2 * var(--gut)); margin: 0 auto; padding: 0 var(--gut); }
+  .top { min-height: 100svh; display: flex; flex-direction: column; justify-content: center; gap: var(--s3); padding-top: var(--s5); padding-bottom: var(--s5); }
+  .copy { max-width: 560px; display: grid; gap: var(--s3); }
+
+  .title {
+    margin: 0; align-self: start;
+    font: 800 var(--t-title)/.8 var(--font-display);
+    font-variation-settings: var(--modules);
+    letter-spacing: .04em;
+    color: var(--paper);
+  }
+  .title .word { display: block; padding: .06em 0 .02em; }
+  html.mapped .title .word { color: transparent; }   /* the canvas draws the name as terrain; the text stays for readers and selection */
+
+  .tag { font: 500 var(--t-tag)/1.22 var(--font-text); letter-spacing: -.01em; max-width: 24ch; text-wrap: balance; }
+  .lede { font-size: var(--t-lede); line-height: 1.5; color: var(--dust); max-width: 52ch; }
+  .asks { display: flex; flex-wrap: wrap; gap: var(--s3) var(--s2); padding-bottom: var(--s1); }
+
+  .facts { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 2px var(--s3); font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+  .facts dt { color: var(--dust); }
+  .facts dd { margin: 0; }
+
+  .readout { font-size: var(--t-small); font-variant-numeric: tabular-nums; padding-left: 18px; position: relative; min-height: 2lh; }
+  .readout::before { content: ""; position: absolute; left: 0; top: .45em; width: 10px; height: 10px; background: var(--run); }
+  .hint { font-size: var(--t-small); color: var(--dust); max-width: 52ch; }
+  .hint .touch { display: none; }
+  @media (hover: none) { .hint .mouse { display: none; } .hint .touch { display: inline; } }
+
+  /* ---------- Buttons: a trail blaze is painted on, brake claws dig in on press ---------- */
+  .btn {
+    position: relative; display: inline-flex; min-height: var(--tap);
+    font: 600 16px/1.2 var(--font-text); text-decoration: none; cursor: pointer;
+    border: 0; padding: 0; background: none; color: inherit;
+    -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+  }
+  .face {
+    display: flex; align-items: center; gap: 12px; width: 100%;
+    min-height: var(--tap); padding: 0 20px 0 14px;
+    border: 2px solid var(--dust);
+  }
+  .btn-main .face { background: var(--paper); color: var(--umber); border-color: var(--paper); }
+  .btn-line .face { background: var(--umber); color: var(--paper); }
+  .blaze { flex: none; display: grid; grid-template-rows: repeat(3, 6px); width: 14px; }
+  .blaze i { visibility: hidden; }
+  .blaze i:nth-child(odd) { background: var(--blaze); }
+  .blaze i:nth-child(2) { background: var(--paper); box-shadow: inset 2px 0 var(--umber), inset -2px 0 var(--umber); }
+  .btn-line .blaze i:nth-child(2) { box-shadow: none; }
+  @keyframes paint { to { visibility: visible; } }
+  .btn:focus-visible .blaze i, .btn.is-down .blaze i { animation: paint 1ms steps(1, end) both; }
+  .blaze i:nth-child(2) { animation-delay: var(--d-blaze) !important; }
+  .blaze i:nth-child(3) { animation-delay: calc(2 * var(--d-blaze)) !important; }
+  @media (hover: hover) { .btn:hover .blaze i { animation: paint 1ms steps(1, end) both; } }
+  .brake::before, .brake::after {
+    content: ""; position: absolute; top: 100%; width: 12px; height: 6px;
+    background: var(--dust); visibility: hidden; transform-origin: top;
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 83.3% 100%, 83.3% 50%, 66.6% 50%, 66.6% 100%, 50% 100%, 50% 50%, 33.3% 50%, 33.3% 100%, 16.6% 100%, 16.6% 50%, 0 50%);
+  }
+  .brake::before { left: 6px; }
+  .brake::after { right: 6px; }
+  @keyframes dig { 0% { transform: scaleY(.5); } 100% { transform: scaleY(1); } }
+  .btn.is-down .brake::before, .btn.is-down .brake::after { visibility: visible; animation: dig var(--d-brake) steps(1, end) both; }
+
+  /* ---------- Text links: the underline rises into a summit ---------- */
+  .tlink {
+    position: relative; display: inline-block; padding: 11px 0 12px; min-height: var(--hit);
+    color: var(--paper); text-decoration: none; font-weight: 600;
+  }
+  .tlink::before { content: ""; position: absolute; left: 0; right: 0; bottom: 6px; height: 2px; background: var(--dust); }
+  .tlink::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: 8px; height: 8px;
+    background: var(--dust); transform: scaleY(0); transform-origin: bottom;
+    clip-path: polygon(30% 100%, 30% 6px, 38% 6px, 38% 4px, 44% 4px, 44% 2px, 48% 2px, 48% 0, 52% 0, 52% 2px, 56% 2px, 56% 4px, 62% 4px, 62% 6px, 70% 6px, 70% 100%);
+  }
+  @keyframes summit { 0% { transform: scaleY(.5); } 100% { transform: scaleY(1); } }
+  .tlink:focus-visible::after, .tlink:active::after { animation: summit var(--d-summit) steps(1, end) both; }
+  @media (hover: hover) { .tlink:hover::after { animation: summit var(--d-summit) steps(1, end) both; } }
+
+  /* ---------- The foot of the mountain: two more tarns ---------- */
+  .foot { display: grid; gap: var(--s5) var(--s6); padding-bottom: var(--s6); }
+  @media (min-width: 900px) { .foot { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; } .mail { justify-self: end; } }
+  .key, .mail { max-width: 520px; display: grid; gap: var(--s2); }
+  .mail { width: 100%; }   /* the tarn keeps its shape when the form swaps for the confirmation */
+  h3 { margin: 0; font: 650 var(--t-h3)/1.2 var(--font-text); letter-spacing: -.01em; }
+  .legend { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(176px, 1fr)); gap: 4px var(--s3); font-size: var(--t-small); }
+  .legend li { display: flex; align-items: center; gap: 10px; }
+  .legend li::before { content: ""; flex: none; width: 18px; height: 2px; background: var(--sw); }
+  .legend .run::before { height: 4px; }
+  .legend .forest::before { box-shadow: 0 0 0 1px var(--dust); }
+  .studio { font-size: var(--t-small); color: var(--dust); }
+  .studio .tlink { font-size: var(--t-small); }
+
+  form { display: grid; gap: var(--s2); }
+  label { font-weight: 600; }
+  .row { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: start; }
+  .field { position: relative; flex: 1 1 220px; }
+  input[type=email] {
+    width: 100%; height: var(--tap); padding: 0 14px;
+    font: 400 16px var(--font-text); color: var(--paper);
+    background: var(--umber); border: 2px solid var(--dust); border-radius: 0;
+  }
+  input[type=email]::placeholder { color: var(--dust); opacity: 1; }
+  input[aria-invalid=true] { border-color: var(--fault); }
+  /* Hachures: the old map-maker's slope ticks step in under the field; a valid address closes them into one line. */
+  .field::after {
+    content: ""; position: absolute; left: 0; right: 0; top: calc(100% + 2px); height: 6px;
+    background: repeating-linear-gradient(90deg, var(--dust) 0 2px, transparent 2px 6px);
+    transform: scaleY(0); transform-origin: top;
+  }
+  @keyframes hach { 0% { transform: scaleY(.34); } 50% { transform: scaleY(.67); } 100% { transform: scaleY(1); } }
+  .field:focus-within::after { animation: hach var(--d-hach) steps(1, end) both; }
+  .field.ok::after { background: var(--paper); height: 2px; transform: none; animation: none; }
+  .err { min-height: 1.5em; font-size: var(--t-small); color: var(--fault); }
+  .done { display: grid; gap: var(--s2); }
+  .done[hidden], form[hidden] { display: none; }
+  .done h3:focus { outline: none; }
+  .done h3:focus-visible { outline: 2px solid var(--paper); }
+
+  /* ---------- Trailer dialog: map sheets cut in from the summit down ---------- */
+  dialog {
+    width: min(620px, calc(100vw - 2 * var(--gut))); max-height: calc(100svh - 32px); overflow: auto;
+    padding: var(--s4); border: 2px solid var(--dust); background: var(--umber); color: var(--paper);
+  }
+  dialog::backdrop { background: var(--scrim); }
+  dialog h2 { margin: 0 0 var(--s2); font: 700 clamp(36px, 5vw, 52px)/.95 var(--font-display); font-variation-settings: var(--modules); }
+  dialog p { color: var(--dust); }
+  .shots { margin: var(--s3) 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: var(--t-small); }
+  .shots li { display: grid; grid-template-columns: 4ch 1fr; gap: var(--s2); }
+  .shots time { color: var(--dust); font-variant-numeric: tabular-nums; }
+  .dlg-actions { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s4); align-items: center; }
+  .sheets { position: absolute; inset: 0; display: none; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(3, 1fr); pointer-events: none; }
+  html.fx .sheets { display: grid; }
+  .sheets i { background: var(--umber); visibility: hidden; }
+  .sheets i.on { visibility: visible; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .blaze i, .btn .blaze i { animation: none !important; }
+    .btn:is(:hover, :focus-visible, .is-down) .blaze i { visibility: visible; }
+    .btn.is-down .brake::before, .btn.is-down .brake::after { animation: none; }
+    .tlink:is(:hover, :focus-visible, :active)::after { animation: none; transform: none; }
+    .field:focus-within::after { animation: none; transform: none; }
+  }
+  @media (max-width: 599px) {
+    .top { justify-content: flex-start; padding-top: var(--s4); }
+    .asks .btn { flex: 1 1 100%; }
+  }
+  @media (max-width: 899px) {
+    :root { --t-title: clamp(132px, 24vw, 210px); }
+    .copy { margin-top: clamp(210px, 34vw, 300px); }   /* a window onto the mountain between the name and the copy */
+  }
+</style>
+</head>
+<body>
+
+<section class="hero" id="rodel" aria-labelledby="rodel-title">
+  <canvas class="map" id="map" aria-hidden="true"></canvas>
+
+  <div class="top">
+    <h2 class="title" id="rodel-title" data-plain><span class="word">Rodel</span><span class="vh">, a night sled game by Hangwind</span></h2>
+
+    <div class="copy" data-tarn>
+      <p class="tag" data-in="1">A new mountain every night, one sled, and a line down that nobody else has ridden.</p>
+      <p class="lede" data-in="2">Rodel is a downhill toboggan game played on a contour map. Read the lines, pick a gully and ride it in one go: fast where the lines crowd, slow where they open out. Reach the tarn by dawn, or dig in and try another line.</p>
+      <div class="asks" data-in="2">
+        <a class="btn btn-main" href="https://store.steampowered.com/" target="_blank" rel="noopener"><span class="face"><span class="blaze" aria-hidden="true"><i></i><i></i><i></i></span>Wishlist on Steam</span><span class="brake" aria-hidden="true"></span><span class="vh"> (opens in a new tab)</span></a>
+        <button class="btn btn-line" id="open-trailer" type="button" aria-haspopup="dialog" aria-controls="trailer"><span class="face"><span class="blaze" aria-hidden="true"><i></i><i></i><i></i></span>Watch the trailer, 1:32</span><span class="brake" aria-hidden="true"></span></button>
+      </div>
+      <dl class="facts" data-in="2">
+        <dt>Out</dt><dd>Thursday 4 February 2027</dd>
+        <dt>Plays on</dt><dd>Windows, Linux and Steam Deck, with a gamepad or keys</dd>
+        <dt>Price</dt><dd>EUR 12 for the whole game</dd>
+      </dl>
+      <p class="readout" id="readout" role="status" data-in="2">Tonight's line: from the hut at 2,430 m to the tarn, 1,470 m down over 2.9 km.</p>
+      <p class="hint" data-in="2"><span class="mouse">Point at the mountain to raise a hill and watch the lines move round it. Click a slope to drop in from there.</span><span class="touch">Drag across the mountain to raise a hill. Tap a slope to drop in from there.</span> On a keyboard, a knoll rises beside the button you are on.</p>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div class="key" data-tarn>
+      <h3>Reading the map</h3>
+      <ul class="legend">
+        <li style="--sw: var(--b-valley)">Valley, 900 m</li>
+        <li class="forest" style="--sw: var(--b-forest)">Larch forest</li>
+        <li style="--sw: var(--b-scree)">Scree</li>
+        <li style="--sw: var(--b-rock)">Rock</li>
+        <li style="--sw: var(--b-snow)" id="snow-key">Snow from 2,200 m</li>
+        <li class="run" style="--sw: var(--run)">The run</li>
+      </ul>
+      <p class="studio">One line every 100 m. Hangwind is three people in a former ski-rental shop in Innsbruck. <a class="tlink" href="mailto:press@hangwind.example">Ask for the press kit</a> or <a class="tlink" href="https://discord.com/" target="_blank" rel="noopener">join the Discord<span class="vh"> (opens in a new tab)</span></a>.</p>
+    </div>
+
+    <div class="mail" data-tarn>
+      <form id="mail-form" novalidate>
+        <h3 id="mail-title">One email, on release day</h3>
+        <label for="email">Your email</label>
+        <div class="row">
+          <span class="field" id="field"><input id="email" name="email" type="email" autocomplete="email" required aria-describedby="email-err" placeholder="you@example.com"></span>
+          <button class="btn btn-main" type="submit"><span class="face"><span class="blaze" aria-hidden="true"><i></i><i></i><i></i></span>Send me the date</span><span class="brake" aria-hidden="true"></span></button>
+        </div>
+        <p class="err" id="email-err" aria-live="polite"></p>
+      </form>
+      <div class="done" id="done" hidden>
+        <h3 tabindex="-1" id="done-title">You're on the list.</h3>
+        <p id="done-text">One email on 4 February 2027, the morning Rodel is out. Nothing else.</p>
+        <p><button class="btn btn-line" id="again" type="button"><span class="face"><span class="blaze" aria-hidden="true"><i></i><i></i><i></i></span>Use a different email</span><span class="brake" aria-hidden="true"></span></button></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<dialog id="trailer" aria-labelledby="trailer-title">
+  <h2 id="trailer-title">Trailer, 1:32</h2>
+  <p>Recorded in the game at 60 frames a second, with no pre-rendered shots. The sound is the sled, the wind and a two-chord theme.</p>
+  <ol class="shots">
+    <li><time>0:00</time> The hut on the summit, lamps out</li>
+    <li><time>0:14</time> Reading tonight's map by head torch</li>
+    <li><time>0:31</time> Into the first gully as the lines crowd together</li>
+    <li><time>0:58</time> A wrong line, into a hollow, and digging out</li>
+    <li><time>1:12</time> Through the larches to the tarn at first light</li>
+    <li><time>1:27</time> Out Thursday 4 February 2027</li>
+  </ol>
+  <div class="dlg-actions">
+    <a class="tlink" href="https://www.youtube.com/" target="_blank" rel="noopener">Watch it on YouTube<span class="vh"> (opens in a new tab)</span></a>
+    <button class="btn btn-line" id="close-trailer" type="button"><span class="face"><span class="blaze" aria-hidden="true"><i></i><i></i><i></i></span>Close</span><span class="brake" aria-hidden="true"></span></button>
+  </div>
+  <div class="sheets" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  const root = document.documentElement;
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const lib = !!(window.gsap && window.ScrollTrigger && window.Lenis);
+  if (lib) root.classList.add('js'); // CDN blocked: no class, nothing waits, every flow works in plain JS
+  const read = (n) => getComputedStyle(root).getPropertyValue(n).trim();
+  const ms = (n) => (parseFloat(read(n)) || 0) * 1000;
+  const reduceMQ = matchMedia('(prefers-reduced-motion: reduce)');
+  const hero = $('#rodel'), cv = $('#map');
+  let lenis = null;
+
+  /* ================= The map: a height field drawn as stepped contour lines ================= */
+  const I = 1 / 16;          // contour interval: 100 m of a 1,600 m mountain
+  const K = 15;              // highest contour
+  const LAKE = I * .5;       // the tarns sit between 900 and 1,000 m: no line crosses them
+  // The name stands on a terrace between the 2nd and 3rd lines, tilted toward the copy's tarn: no line crosses it and a sled that reaches it slides on to the tarn.
+  const P = 2;               // CSS px per canvas pixel: lines are 2px stair steps, never anti-aliased
+  const MPX = 4;             // metres of ground per CSS px, for the readout
+  const alt = (v) => Math.round((900 + v * 1600) / 10) * 10;
+  const fmt = (n) => n.toLocaleString('en-GB');
+  const km = (m) => (m / 1000).toFixed(1);
+
+  const hash = (i, j) => {
+    let n = Math.imul(i, 374761393) ^ Math.imul(j, 668265263) ^ 0x5bd1e995;
+    n = Math.imul(n ^ (n >>> 13), 1274126177);
+    return ((n ^ (n >>> 16)) >>> 0) / 4294967296;
+  };
+  const vnoise = (x, y) => {
+    const i = Math.floor(x), j = Math.floor(y), fx = x - i, fy = y - j;
+    const u = fx * fx * (3 - 2 * fx), v = fy * fy * (3 - 2 * fy);
+    const a = hash(i, j), b = hash(i + 1, j), c = hash(i, j + 1), d = hash(i + 1, j + 1);
+    return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+  };
+  const fbm = (x, y, oct = 4) => { let s = 0, a = .5, f = 1, n = 0; for (let o = 0; o < oct; o++) { s += a * (vnoise(x * f, y * f) * 2 - 1); n += a; a *= .5; f *= 2; } return s / n; };
+
+  // Marching squares for one cell and one level: corner values a (top-left), b (top-right), c (bottom-right), d (bottom-left).
+  // Returns pairs of points in cell units (0..1), or [] if the level does not cross. Saddles are settled by the centre.
+  function cellSegs(a, b, c, d, L) {
+    const e = [];
+    if ((a >= L) !== (b >= L)) e.push([(L - a) / (b - a), 0]);
+    if ((b >= L) !== (c >= L)) e.push([1, (L - b) / (c - b)]);
+    if ((d >= L) !== (c >= L)) e.push([(L - d) / (c - d), 1]);
+    if ((a >= L) !== (d >= L)) e.push([0, (L - a) / (d - a)]);
+    if (e.length === 2) return [e];
+    if (e.length !== 4) return [];
+    const [T, R, B, Lf] = e, hiCentre = (a + b + c + d) / 4 >= L;
+    // high corners TL+BR (a, c) or TR+BL (b, d)
+    const ac = a >= L;
+    return (ac === hiCentre) ? [[T, R], [Lf, B]] : [[T, Lf], [R, B]];
+  }
+
+  const map = (() => {
+    const ctx = cv.getContext('2d');
+    if (!ctx) return null;
+    let G = 6, W = 0, H = 0, cols = 0, rows = 0, cw = 0, ch = 0;
+    let base, plainW, lakeW, titleM, terr, h, skip, img, buf, shore = [], hut = { x: 0, y: 0 };
+    const col = {};
+    const st = { plot: 1, titleAmp: 0, titleMax: 4.4, snowK: 13, knolls: [], start: null, shown: Infinity, path: [], end: '' };
+    let raf = 0, visible = true, dirty = false, changed = true, lastSay = '';
+
+    const rgba = (hex) => { const n = parseInt(hex.slice(1), 16); return (255 << 24 | (n & 255) << 16 | (n >> 8 & 255) << 8 | n >> 16) >>> 0; };
+    const readColours = () => { ['valley', 'forest', 'scree', 'rock', 'snow'].forEach((k) => { col[k] = rgba(read(`--b-${k}`)); }); col.run = rgba(read('--run')); };
+    const band = (k) => k >= st.snowK ? col.snow : k <= 4 ? col.valley : k <= 7 ? col.forest : k <= 10 ? col.scree : col.rock;
+
+    function rects(sel, pad) {
+      const r0 = hero.getBoundingClientRect();
+      return $$(sel, hero).map((el) => { const r = el.getBoundingClientRect(); return { l: r.left - r0.left - pad, t: r.top - r0.top - pad, r: r.right - r0.left + pad, b: r.bottom - r0.top + pad }; });
+    }
+    // The name sits in an oval basin: full weight inside 1.42 radii (the box's corners), none beyond 1.8.
+    const basin = (rs, x, y) => { let w = 0; for (const r of rs) { const e = Math.hypot((x - (r.l + r.r) / 2) / ((r.r - r.l) / 2), (y - (r.t + r.b) / 2) / ((r.b - r.t) / 2)); const t = Math.min(1, Math.max(0, (1.8 - e) / .38)); w = Math.max(w, t * t * (3 - 2 * t)); } return w; };
+    const weight = (rs, x, y, F) => { let w = 0; for (const r of rs) { const dx = Math.max(r.l - x, 0, x - r.r), dy = Math.max(r.t - y, 0, y - r.b), d = Math.hypot(dx, dy); w = Math.max(w, d <= 0 ? 1 : d >= F ? 0 : 1 - d / F); } return w; };
+
+    function build() {
+      G = parseFloat(read('--g')) || 6;
+      readColours();
+      W = hero.clientWidth; H = hero.scrollHeight;
+      cw = Math.ceil(W / P); ch = Math.ceil(H / P);
+      cv.width = cw; cv.height = ch; cv.style.width = cw * P + 'px'; cv.style.height = ch * P + 'px';
+      img = ctx.createImageData(cw, ch); buf = new Uint32Array(img.data.buffer);
+      cols = Math.ceil(W / G) + 1; rows = Math.ceil(H / G) + 1;
+      const N = cols * rows;
+      base = new Float32Array(N); plainW = new Float32Array(N); lakeW = new Float32Array(N); titleM = new Float32Array(N); h = new Float32Array(N); skip = new Uint8Array(N); terr = new Float32Array(N);
+      const tarns = rects('[data-tarn]', 14), plains = rects('[data-plain]', 10);
+      const topH = $('.top', hero).offsetHeight, narrow = W < 900;
+      // On phones the summit stands in the gap the layout leaves between the name and the copy.
+      const gapY = $('.copy', hero).getBoundingClientRect().top - hero.getBoundingClientRect().top - 96;
+      const bx = (tarns[0].l + tarns[0].r) / 2, by = (tarns[0].t + tarns[0].b) / 2;
+      const sx = W * (narrow ? .62 : .75), sy = narrow ? gapY : topH * .32, R = narrow ? Math.max(W * .56, 210) : Math.max(W * .42, topH * .6);
+      for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+        const k = j * cols + i, x = i * G, y = j * G;
+        lakeW[k] = weight(tarns, x, y, 30);
+        terr[k] = I * (2.1 + .8 * Math.min(1, Math.hypot(x - bx, y - by) / (Math.max(W, topH) * .7)));
+        plainW[k] = basin(plains, x, y);
+      }
+      // One mountain per seed: a cone (so the lines step down evenly) with spurs and gullies scaled to its size,
+      // on a valley bowl that drains to the copy's tarn.
+      const mountain = (seed) => {
+        const ox = 3.1 + seed * 7.7, oy = seed * 5.3;
+        let top = 0;
+        for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+          const k = j * cols + i, x = i * G, y = j * G;
+          const m = Math.max(0, 1 - Math.hypot((x - sx) / R, (y - sy) / (R * .9))) ** 1.2;
+          const bowl = Math.min(1, Math.hypot(x - bx, y - by) / (Math.max(W, topH) * .85));
+          base[k] = Math.max(0, m * (.74 + .4 * fbm(x / (R * .5) + ox, y / (R * .5) + oy, 2)) + .16 * bowl + .04 * fbm(x / 130 + oy, y / 130) * (.25 + m));
+          if (!lakeW[k]) top = Math.max(top, base[k]);
+        }
+        for (let k = 0; k < N; k++) base[k] *= .955 / top;   // the hut always stands just above the 15th line
+      };
+      // The name: Handjet 800 drawn at grid resolution, blurred into a ramp so the uplift reads as nested rings.
+      const wd = $('.title .word', hero), wr = wd.getBoundingClientRect(), r0 = hero.getBoundingClientRect();
+      const fs = parseFloat(getComputedStyle(wd).fontSize);
+      const oc = document.createElement('canvas'); oc.width = cols; oc.height = rows;
+      const o = oc.getContext('2d', { willReadFrequently: true });
+      o.font = `800 ${fs / G}px Handjet, "Arial Narrow", sans-serif`;
+      try { o.letterSpacing = `${fs * .04 / G}px`; } catch {}
+      o.textBaseline = 'alphabetic';
+      const mt = o.measureText(wd.textContent);
+      const inkH = mt.actualBoundingBoxAscent + mt.actualBoundingBoxDescent;
+      const cx = (wr.left - r0.left) / G, cy = (wr.top - r0.top + wr.height / 2) / G;
+      o.fillStyle = '#fff';
+      o.fillText(wd.textContent, cx - mt.actualBoundingBoxLeft, cy - inkH / 2 + mt.actualBoundingBoxAscent);
+      const px = o.getImageData(0, 0, cols, rows).data;
+      for (let k = 0; k < N; k++) titleM[k] = px[k * 4 + 3] / 255;
+      const passes = narrow ? 1 : 2, tmp = new Float32Array(N);
+      for (let p = 0; p < passes; p++) {
+        for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) { let s = 0, n = 0; for (let dx = -1; dx <= 1; dx++) { const ii = i + dx; if (ii >= 0 && ii < cols) { s += titleM[j * cols + ii]; n++; } } tmp[j * cols + i] = s / n; }
+        for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) { let s = 0, n = 0; for (let dy = -1; dy <= 1; dy++) { const jj = j + dy; if (jj >= 0 && jj < rows) { s += tmp[jj * cols + i]; n++; } } titleM[j * cols + i] = s / n; }
+      }
+      st.titleMax = narrow ? 3.4 : 4.4;
+      // Cells that touch a tarn draw no contours; the shore is one line where the tarn's weight is one half.
+      shore = [];
+      for (let j = 0; j < rows - 1; j++) for (let i = 0; i < cols - 1; i++) {
+        const k = j * cols + i, a = lakeW[k], b = lakeW[k + 1], c = lakeW[k + cols + 1], d = lakeW[k + cols];
+        if (Math.max(a, b, c, d) > .01) skip[k] = 1;
+        for (const [p, q] of cellSegs(a, b, c, d, .5)) shore.push(i + p[0], j + p[1], i + q[0], j + q[1]);
+      }
+      // Tonight's mountain: the first seed whose line from the hut (on its highest bare ground) reaches the tarn.
+      for (let seed = 0; seed < 8; seed++) {
+        mountain(seed);
+        let best = -1;
+        for (let k = 0; k < N; k++) if (!lakeW[k] && !plainW[k] && base[k] > best) { best = base[k]; hut = { x: k % cols, y: Math.floor(k / cols) }; }
+        field();
+        if (descend(hut.x, hut.y).end === 'tarn') break;
+      }
+      changed = true; request();
+    }
+
+    function field() {
+      const N = cols * rows, ta = st.titleAmp * I;
+      for (let k = 0; k < N; k++) h[k] = base[k] + (terr[k] - base[k]) * plainW[k] + titleM[k] * ta;
+      for (const kn of st.knolls) {
+        if (kn.amp <= 0) continue;
+        const r = kn.r / G, gx = kn.x / G, gy = kn.y / G, A = kn.amp * I;
+        const i0 = Math.max(0, Math.floor(gx - r)), i1 = Math.min(cols - 1, Math.ceil(gx + r)), j0 = Math.max(0, Math.floor(gy - r)), j1 = Math.min(rows - 1, Math.ceil(gy + r));
+        for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) { const d2 = ((i - gx) ** 2 + (j - gy) ** 2) / (r * r); if (d2 < 1) { const t = 1 - d2; h[j * cols + i] += A * t * t; } }
+      }
+      for (let k = 0; k < N; k++) h[k] += (LAKE - h[k]) * lakeW[k];
+    }
+
+    const at = (arr, x, y) => {
+      const i = Math.max(0, Math.min(cols - 2, Math.floor(x))), j = Math.max(0, Math.min(rows - 2, Math.floor(y))), fx = Math.min(1, Math.max(0, x - i)), fy = Math.min(1, Math.max(0, y - j)), k = j * cols + i;
+      const a = arr[k], b = arr[k + 1], c = arr[k + cols], d = arr[k + cols + 1];
+      return a + (b - a) * fx + (c - a) * fy + (a - b - c + d) * fx * fy;
+    };
+
+    // The fall line: a sled with a little momentum follows the steepest way down, half a grid step at a time.
+    function descend(x0, y0) {
+      const pts = [x0, y0]; let x = x0, y = y0, vx = 0, vy = 0, end = 'flat';
+      for (let n = 0; n < 2400; n++) {
+        if (at(lakeW, x, y) > .5) { end = 'tarn'; break; }
+        if (x < 0 || y < 0 || x > cols - 1 || y > rows - 1) { end = 'edge'; break; }
+        const gx = at(h, x + .5, y) - at(h, x - .5, y), gy = at(h, x, y + .5) - at(h, x, y - .5), m = Math.hypot(gx, gy);
+        if (m < 1e-6 && Math.hypot(vx, vy) < .05) break;
+        vx = vx * .6 - (m ? gx / m : 0) * .4; vy = vy * .6 - (m ? gy / m : 0) * .4;
+        const s = Math.hypot(vx, vy) || 1; x += vx / s * .5; y += vy / s * .5;
+        pts.push(x, y);
+        const L = pts.length;
+        if (n > 60 && n % 30 === 0 && Math.hypot(x - pts[L - 62], y - pts[L - 61]) < 2.5) { end = at(h, x, y) > 2 * I ? 'hollow' : 'flat'; break; }
+      }
+      return { pts, end };
+    }
+
+    // Bresenham into the pixel buffer: every line is whole canvas pixels.
+    function line(x0, y0, x1, y1, c, w) {
+      x0 = Math.round(x0); y0 = Math.round(y0); x1 = Math.round(x1); y1 = Math.round(y1);
+      const dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
+      let e = dx + dy;
+      for (;;) {
+        for (let a = 0; a < w; a++) for (let b = 0; b < w; b++) { const X = x0 + a, Y = y0 + b; if (X >= 0 && Y >= 0 && X < cw && Y < ch) buf[Y * cw + X] = c; }
+        if (x0 === x1 && y0 === y1) break;
+        const e2 = 2 * e;
+        if (e2 >= dy) { e += dy; x0 += sx; }
+        if (e2 <= dx) { e += dx; y0 += sy; }
+      }
+    }
+    const block = (x, y, w, hh, c) => { for (let b = 0; b < hh; b++) for (let a = 0; a < w; a++) { const X = Math.round(x) + a, Y = Math.round(y) + b; if (X >= 0 && Y >= 0 && X < cw && Y < ch) buf[Y * cw + X] = c; } };
+
+    function draw() {
+      field();
+      buf.fill(0);
+      const s = G / P;
+      for (let j = 0; j < rows - 1; j++) for (let i = 0; i < cols - 1; i++) {
+        const k = j * cols + i;
+        if (skip[k]) continue;
+        const a = h[k], b = h[k + 1], c = h[k + cols + 1], d = h[k + cols];
+        const lo = Math.min(a, b, c, d), hi = Math.max(a, b, c, d);
+        const k0 = Math.max(st.plot, Math.floor(lo / I) + 1), k1 = Math.min(K, Math.floor(hi / I));
+        for (let lv = k0; lv <= k1; lv++) {
+          const cc = band(lv);
+          for (const [p, q] of cellSegs(a, b, c, d, lv * I)) line((i + p[0]) * s, (j + p[1]) * s, (i + q[0]) * s, (j + q[1]) * s, cc, 1);
+        }
+      }
+      if (st.plot <= 1) for (let n = 0; n < shore.length; n += 4) line(shore[n] * s, shore[n + 1] * s, shore[n + 2] * s, shore[n + 3] * s, col.valley, 1);
+      if (st.plot <= 1 && st.shown > 0) {
+        const from = st.start || hut, run = descend(from.x, from.y);
+        st.path = run.pts; st.end = run.end;
+        const last = Math.min(run.pts.length, Math.floor(st.shown) * 2);
+        for (let n = 2; n < last; n += 2) line(run.pts[n - 2] * s, run.pts[n - 1] * s, run.pts[n] * s, run.pts[n + 1] * s, col.run, 2);
+        if (st.start) { block(from.x * s - 4, from.y * s - 5, 2, 6, col.run); block(from.x * s + 3, from.y * s - 5, 2, 6, col.run); }   // a start gate: two posts
+        else block(hut.x * s - 3, hut.y * s - 3, 6, 6, col.run);   // the hut
+      }
+      ctx.putImageData(img, 0, 0);
+    }
+
+    function say() {
+      if (!st.path.length) return;
+      const p = st.path, n = p.length;
+      let len = 0; for (let i = 2; i < n; i += 2) len += Math.hypot(p[i] - p[i - 2], p[i + 1] - p[i - 1]);
+      const a0 = alt(at(h, p[0], p[1])), a1 = alt(at(h, p[n - 2], p[n - 1]));
+      const where = { tarn: 'to the tarn', edge: 'off the edge of the sheet', hollow: 'into a hollow', flat: 'until the slope runs out' }[st.end];
+      const head = st.start ? `Your line: from ${fmt(a0)} m` : `Tonight's line: from the hut at ${fmt(a0)} m`;
+      const text = `${head} ${where}, ${fmt(Math.max(0, a0 - a1))} m down over ${km(len * G * MPX)} km.`;
+      if (text !== lastSay) { lastSay = text; $('#readout').textContent = text; }
+    }
+
+    const request = () => { if (!visible) { dirty = true; return; } if (!raf) raf = requestAnimationFrame(frame); };
+    function frame(t) {
+      raf = 0;
+      let busy = false;
+      for (const kn of st.knolls) {
+        if (kn.amp === kn.target) continue;
+        busy = true;
+        if (t >= kn.next) { const up = kn.target > kn.amp; kn.amp += up ? 1 : -1; kn.next = t + (up ? T.rise : T.sink); changed = true; }
+      }
+      st.knolls = st.knolls.filter((k) => k.amp > 0 || k.target > 0);
+      if (changed) { changed = false; draw(); }
+      if (st.shown < st.path.length / 2) { st.shown += 6; busy = true; changed = true; }   // the sled advances three grid steps a frame
+      if (busy) request(); else say();
+    }
+    const T = { rise: 45, sink: 85 };
+    const touch = () => { changed = true; request(); };
+    const io = new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible && dirty) { dirty = false; request(); } });
+    io.observe(hero);
+
+    const pos = (e) => { const r = hero.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+    const lakeAt = (x, y) => at(lakeW, x / G, y / G);
+    const knoll = (x, y, target, r) => { const k = { x, y, amp: 0, target, r: r || parseFloat(read('--knoll')) || 96, next: 0 }; st.knolls.push(k); touch(); return k; };
+    const dropIn = (x, y, animate) => { st.start = { x: x / G, y: y / G }; st.shown = animate ? 1 : Infinity; touch(); };
+    const fromHut = (animate) => { st.start = null; st.shown = animate ? 1 : Infinity; touch(); };
+
+    return { build, touch, st, T, pos, lakeAt, knoll, dropIn, fromHut, cellSegs, heightAt: (x, y) => at(h, x / G, y / G), get size() { return { W, H, G }; } };
+  })();
+
+  /* ---------- Map wiring: pointer, touch, keyboard, clicks ---------- */
+  const say = (t) => { $('#readout').textContent = t; };
+  let still = reduceMQ.matches;
+  if (map) {
+    map.T.rise = ms('--d-rise'); map.T.sink = ms('--d-sink');
+    const fontsReady = Promise.race([
+      Promise.all([document.fonts.ready, document.fonts.load('800 100px "Handjet"')]).then(() => 1, () => 1),
+      new Promise((r) => setTimeout(r, 1500))
+    ]);
+    // Before the survey runs (motion and the libraries present), draw nothing; otherwise draw the finished map at once.
+    if (lib && !still) { map.st.plot = K + 1; map.st.titleAmp = 0; map.st.shown = 0; } else { map.st.titleAmp = 4.4; }
+    map.build();
+    if (!(lib && !still)) { map.st.titleAmp = map.st.titleMax; map.touch(); }
+    root.classList.add('mapped');
+    fontsReady.then(() => { map.build(); if (!(lib && !still)) { map.st.titleAmp = map.st.titleMax; map.touch(); } });
+    let rT = 0, lastW = hero.clientWidth;
+    new ResizeObserver(() => { if (hero.clientWidth === lastW && Math.abs(hero.scrollHeight - map.size.H) < 2) return; lastW = hero.clientWidth; clearTimeout(rT); rT = setTimeout(() => { const keep = map.st.titleAmp; map.build(); map.st.titleAmp = Math.min(keep, map.st.titleMax); map.touch(); }, 150); }).observe(hero);
+
+    // Pointer: one hill rides under a mouse or pen and sinks a contour at a time when it leaves.
+    let pk = null;
+    const interactive = (el) => el.closest('a, button, input, label, form, dialog');
+    hero.addEventListener('pointermove', (e) => {
+      if (still) return;
+      if (e.pointerType === 'touch' && !pk) return;
+      const p = map.pos(e);
+      if (!pk) pk = map.knoll(p.x, p.y, 5);
+      else { pk.x = p.x; pk.y = p.y; map.touch(); }
+    });
+    const letGo = () => { if (pk) { pk.target = 0; pk = null; map.touch(); } };
+    hero.addEventListener('pointerleave', letGo);
+    hero.addEventListener('pointerdown', (e) => { if (still || e.pointerType !== 'touch' || interactive(e.target)) return; const p = map.pos(e); letGo(); pk = map.knoll(p.x, p.y, 5); });
+    hero.addEventListener('pointerup', (e) => { if (e.pointerType === 'touch') letGo(); });
+    hero.addEventListener('pointercancel', letGo);
+    // Click or tap: drop in from that spot and the sled traces the fall line from there.
+    hero.addEventListener('click', (e) => {
+      if (interactive(e.target) || window.getSelection()?.toString()) return;
+      const p = map.pos(e);
+      if (map.lakeAt(p.x, p.y) > .5) { say("That is a frozen tarn. Drop in on a slope instead."); return; }
+      map.dropIn(p.x, p.y, !still);
+    });
+    // Keyboard: a knoll rises at the shore beside the focused control and sinks when focus moves on.
+    let fk = null;
+    hero.addEventListener('focusin', (e) => {
+      if (still || !e.target.matches(':focus-visible') || !e.target.matches('a, button, input')) return;
+      const tarn = e.target.closest('[data-tarn]'); if (!tarn) return;
+      const r0 = hero.getBoundingClientRect(), t = tarn.getBoundingClientRect(), c = e.target.getBoundingClientRect(), R = parseFloat(read('--knoll')) || 96;
+      const room = r0.right - t.right > R * .8;
+      const x = room ? t.right - r0.left + 44 + R * .3 : c.left - r0.left + c.width / 2;
+      const y = room ? c.top - r0.top + c.height / 2 : t.top - r0.top - 44 - R * .3;
+      if (fk) fk.target = 0;
+      fk = map.knoll(x, y, 4);
+    });
+    hero.addEventListener('focusout', () => { if (fk) { fk.target = 0; fk = null; map.touch(); } });
+  }
+
+  /* ---------- Buttons: a press is held long enough to see the brakes dig in ---------- */
+  const HOLD = ms('--d-hold');
+  $$('.btn').forEach((b) => {
+    let t0 = 0, tm = 0;
+    const down = () => { clearTimeout(tm); t0 = performance.now(); b.classList.add('is-down'); };
+    const up = () => { tm = setTimeout(() => b.classList.remove('is-down'), Math.max(0, HOLD - (performance.now() - t0))); };
+    b.addEventListener('pointerdown', down);
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach((ev) => b.addEventListener(ev, up));
+    b.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) down(); });
+    b.addEventListener('keyup', (e) => { if (e.key === 'Enter' || e.key === ' ') up(); });
+    b.addEventListener('blur', up);
+  });
+
+  /* ---------- Trailer dialog ---------- */
+  const dlg = $('#trailer'), opener = $('#open-trailer'), sheets = $$('.sheets i', dlg);
+  let fx = null;
+  opener.addEventListener('click', () => { dlg.showModal(); lenis?.stop(); fx?.open(); });
+  const shut = () => { const end = () => { dlg.close(); }; fx ? fx.close(end) : end(); };
+  $('#close-trailer').addEventListener('click', shut);
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); shut(); });
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) { const r = dlg.getBoundingClientRect(); if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) shut(); } });
+  dlg.addEventListener('close', () => { lenis?.start(); sheets.forEach((s) => s.classList.remove('on')); opener.focus(); });
+
+  /* ---------- Release-day email (nothing is sent) ---------- */
+  const form = $('#mail-form'), email = $('#email'), err = $('#email-err'), field = $('#field'), done = $('#done');
+  const valid = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim());
+  email.addEventListener('input', () => {
+    const ok = valid(email.value);
+    field.classList.toggle('ok', ok);
+    if (ok && email.getAttribute('aria-invalid') === 'true') { email.removeAttribute('aria-invalid'); err.textContent = ''; }
+  });
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const v = email.value.trim();
+    if (!valid(v)) {
+      email.setAttribute('aria-invalid', 'true');
+      err.textContent = v ? 'That address is missing part of itself. Write it like name@example.com.' : 'Write your email so we can send you the date.';
+      email.focus();
+      return;
+    }
+    $('#done-text').textContent = `One email to ${v} on 4 February 2027, the morning Rodel is out. Nothing else.`;
+    form.hidden = true; done.hidden = false;
+    $('#done-title').focus();
+    if (map && !still) {
+      // Success: a summit rises on the shore beside the confirmation, and the run is ridden again from the hut.
+      const r0 = hero.getBoundingClientRect(), t = $('.mail', hero).getBoundingClientRect(), c = $('#done-title').getBoundingClientRect(), R = parseFloat(read('--knoll')) || 96;
+      const room = r0.right - t.right > R;
+      const k = map.knoll(room ? t.right - r0.left + 44 + R * .4 : t.left - r0.left + t.width * .7, room ? c.top - r0.top : t.top - r0.top - 44 - R * .4, 6, R * 1.3);
+      setTimeout(() => { k.target = 0; map.touch(); }, 2600);
+      map.fromHut(true);
+    }
+  });
+  $('#again').addEventListener('click', () => { done.hidden = true; form.hidden = false; email.focus(); email.select(); });
+
+  /* ---------- Self test: marching squares and the fall line ---------- */
+  window.runSelfTest = () => {
+    const ok = [];
+    ok.push(map.cellSegs(0, 0, 0, 0, .5).length === 0);
+    ok.push(map.cellSegs(1, 0, 0, 0, .5).length === 1);                  // one corner high: one segment
+    ok.push(map.cellSegs(1, 0, 1, 0, .9).length === 2);                  // saddle, low centre: two segments
+    const s = map.cellSegs(0, 1, 1, 0, .5)[0];                            // right half high: a vertical cut at x = .5
+    ok.push(Math.abs(s[0][0] - .5) < 1e-9 && Math.abs(s[1][0] - .5) < 1e-9);
+    const p = map.st.path, G = map.size.G, n = p.length;                 // the run ends lower than it starts
+    ok.push(n >= 4 && map.heightAt(p[n - 2] * G, p[n - 1] * G) < map.heightAt(p[0] * G, p[1] * G));
+    console.log(ok.every(Boolean) ? 'SELFTEST PASS' : `SELFTEST FAIL ${ok.map(Number).join('')}`);
+  };
+  if (location.hash === '#selftest' && map) setTimeout(window.runSelfTest, 2200);
+
+  if (!lib) return;
+
+  /* ================= Motion ================= */
+  gsap.registerPlugin(ScrollTrigger);
+  const visibleP = new Promise((r) => {
+    if (document.visibilityState === 'visible') return r();
+    const f = () => { if (document.visibilityState === 'visible') { document.removeEventListener('visibilitychange', f); r(); } };
+    document.addEventListener('visibilitychange', f);
+  });
+  const fontsP = Promise.race([
+    Promise.all([document.fonts.ready, document.fonts.load('800 100px "Handjet"')]).then(() => 1, () => 1),
+    new Promise((r) => setTimeout(r, 1500))
+  ]);
+  let surveyed = false;
+  const mm = gsap.matchMedia();
+  mm.add({ motion: '(prefers-reduced-motion: no-preference)', reduce: '(prefers-reduced-motion: reduce)' }, (ctx) => {
+    const { motion } = ctx.conditions;
+    if (!motion) { // reduced motion: the finished map, no hills, native scroll, instant dialog
+      still = true;
+      root.classList.add('go');
+      if (map) { map.st.knolls.length = 0; map.st.plot = 1; map.st.titleAmp = map.st.titleMax; map.st.shown = Infinity; map.st.snowK = 13; map.touch(); }
+      $('#snow-key').textContent = 'Snow from 2,200 m';
+      return;
+    }
+    still = false;
+    let dead = false;
+    const calls = [];
+    const later = (t, fn) => { const c = gsap.delayedCall(t, () => { if (!dead) fn(); }); calls.push(c); return c; };
+    root.classList.add('fx');
+
+    lenis = new Lenis({ lerp: .1, smoothWheel: true, autoRaf: false, anchors: true });
+    lenis.on('scroll', ScrollTrigger.update);
+    const tick = (t) => lenis.raf(t * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
+
+    /* Scroll: the snowline comes down the mountain one contour at a time as the hero scrolls away. */
+    const snowAt = (p) => 13 - Math.round(p * 7);
+    const st = ScrollTrigger.create({
+      trigger: hero, start: 'top top', end: 'bottom top', scrub: true,
+      onUpdate: (self) => {
+        const k = snowAt(self.progress);
+        if (map && k !== map.st.snowK) { map.st.snowK = k; map.touch(); $('#snow-key').textContent = `Snow from ${fmt(900 + k * 100)} m`; }
+      }
+    });
+
+    /* Dialog: the panel's twelve map sheets are uncovered by the altitude of the ground behind them, summit first. */
+    const order = () => {
+      const r0 = hero.getBoundingClientRect();
+      const hs = sheets.map((s) => { const r = s.getBoundingClientRect(); return map ? map.heightAt(r.left + r.width / 2 - r0.left, r.top + r.height / 2 - r0.top) : Math.random(); });
+      const rank = hs.map((v, i) => [v, i]).sort((a, b) => b[0] - a[0]).map(([, i]) => i);
+      return [0, 1, 2, 3].map((g) => rank.slice(g * 3, g * 3 + 3));
+    };
+    const step = ms('--d-sheet') / 1000;
+    fx = {
+      open() {
+        sheets.forEach((s) => s.classList.add('on'));
+        order().forEach((grp, g) => later((g + 1) * step, () => grp.forEach((i) => sheets[i].classList.remove('on'))));
+      },
+      close(end) {
+        order().reverse().forEach((grp, g) => later(g * step, () => grp.forEach((i) => sheets[i].classList.add('on'))));
+        later(4 * step, end);
+      }
+    };
+
+    /* Load: the survey. Contours are plotted from the summit down, the copy cuts in when the plot reaches the valley,
+       the name rises out of the plain one contour at a time, then the sled runs the fall line from the hut. */
+    Promise.all([fontsP, visibleP]).then(() => ctx.add(() => {
+      if (dead || !map) { root.classList.add('go'); return; }
+      if (surveyed) { root.classList.add('go'); map.st.plot = 1; map.st.titleAmp = map.st.titleMax; map.st.shown = Infinity; map.touch(); return; }
+      surveyed = true;
+      map.build();
+      const dp = ms('--d-plot') / 1000, du = ms('--d-uplift') / 1000;
+      for (let k = K; k >= 1; k--) later((K - k) * dp, () => { map.st.plot = k; map.touch(); if (k === 3) root.classList.add('go'); });
+      const t1 = K * dp;
+      const steps = Math.ceil(map.st.titleMax);
+      for (let n = 1; n <= steps; n++) later(t1 + n * du, () => { map.st.titleAmp = Math.min(n, map.st.titleMax); map.touch(); });
+      later(t1 + (steps + 1) * du, () => map.fromHut(true));
+    }));
+
+    return () => {
+      dead = true;
+      calls.forEach((c) => c.kill());
+      st.kill();
+      fx = null;
+      gsap.ticker.remove(tick);
+      gsap.ticker.lagSmoothing(500, 33);
+      lenis.destroy(); lenis = null;
+      root.classList.remove('fx');
+      root.classList.add('go');
+      if (map) { map.st.plot = 1; map.st.titleAmp = map.st.titleMax; map.st.shown = Infinity; map.touch(); }
+    };
+  });
+})();
+</script>
+</body>
+</html>

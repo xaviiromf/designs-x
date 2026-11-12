@@ -1,0 +1,1516 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Juno Achterberg, isometric pixel illustrator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Handjet:ELGR,ELSH,wght@1..2,0..16,100..900&family=Host+Grotesk:wght@300..800&display=swap">
+<style>
+  :root {
+    /* Colour: a sheet of drafting film. Eight hues, each with one job. */
+    --blueprint: #0C3F8F;       /* the ground and the lot: drafting-film cobalt */
+    --deep: #093373;            /* the same blue one step deeper: field wells and the project sheet (paper on it 11.2:1, chalk 7.3:1) */
+    --scrim: rgb(7 38 90 / .9); /* behind the project sheet: the ground, deeper still */
+    --lot-line: #3F6FBE;        /* grid lines only: the lot's tiles, the guide lines, the editor grid on buttons (decorative, 2.0:1; 4.6:1 on paper) */
+    --paper: #F2F6FF;           /* text (9.1:1 on blueprint), the primary button slab, tower outlines */
+    --chalk: #B7CAEE;           /* secondary text (6.0:1), the axis, resting rules and resting edges */
+    --tone-1: #6E93D6;          /* hours floor, phase 1 of 4: four tones from chalk to paper (3.2:1, non-text) */
+    --tone-2: #9DB8E8;          /* hours floor, phase 2 (4.9:1) */
+    --tone-3: #CBDAF5;          /* hours floor, phase 3 (7.0:1) */
+    --tone-4: #F2F6FF;          /* hours floor, phase 4: paper itself */
+    --games: #FFD23F;           /* sodium yellow: a game commission, and nothing else (6.9:1) */
+    --games-side: #C99B14;      /* its shaded face */
+    --editorial: #FF8FC0;       /* hot pink: an editorial commission, and nothing else (4.7:1) */
+    --editorial-side: #C9548A;  /* its shaded face */
+    --maps: #6BF0C2;            /* mint: a wayfinding map commission, and nothing else (7.0:1) */
+    --maps-side: #2FB389;       /* its shaded face */
+    --crane: #FF9A3D;           /* signal orange: work in progress or picked by the visitor: the crane, the focus ring,
+                                   the dimension line, the ruler marker, the lifted tiles' edge, the pennant (4.7:1) */
+    --fault: #FFA8A0;           /* validation errors only (5.4:1 on blueprint, 6.6:1 on deep) */
+
+    /* Type */
+    --font-display: "Handjet", "Arial Narrow", sans-serif;
+    --font-text: "Host Grotesk", system-ui, sans-serif;
+    --modules: "ELSH" 2, "ELGR" 1;    /* square Handjet modules */
+    --t-small: 13px;
+    --t-body: 17px;
+    --t-lede: 19px;
+    --t-h4: 21px;
+    --t-h3: 28px;
+    --t-num: 40px;                    /* Handjet numerals: the readout name, the dimension total */
+    --t-h2: clamp(56px, min(6.2vw, 12svh), 92px);
+    --lh-body: 1.5;
+
+    /* Space: an 8px cell, one lot tile wide at the smallest scale */
+    --cell: 8px;
+    --s1: 4px; --s2: 8px; --s3: 16px; --s4: 24px;
+    --s5: 32px; --s6: 48px; --s7: 64px; --s8: 96px;
+    --notch: 4px;             /* stepped corner on buttons */
+    --nudge: 4px;             /* a button slab's thickness, and how far a press pushes it */
+    --tap: 48px;              /* button and field height */
+    --hit: 44px;              /* minimum target */
+    --max-w: 1392px;
+    --gutter: max(var(--s4), (100% - var(--max-w)) / 2);
+    --build: 70vh;            /* scroll distance the first screen stays pinned while the city is built */
+    --drop: 16px;             /* one step of a headline line landing */
+    --emblem: 132px;          /* a project emblem: 44 canvas pixels at 3x */
+    --floor-w: 492px;         /* the hours floor: 164 canvas pixels at 3x */
+
+    /* Motion: everything is stepped (CSS and the script read these) */
+    --d-zoom: .07s;           /* editor zoom: time on the 16px grid before the 8px grid and the colour swap */
+    --d-hold: .16s;           /* the shortest time a pressed button stays down */
+    --d-stair: .02s;          /* one segment of a link's staircase */
+    --d-tap: .2s;             /* how long a tapped link holds its staircase */
+    --d-stand: .28s;          /* the project sheet stands up: four frames */
+    --d-lie: .21s;            /* the project sheet lies down: three frames */
+    --d-diag: .04s;           /* one row of lot tiles at load */
+    --d-drop: .07s;           /* one step of a headline line dropping */
+    --d-slab: .02s;           /* one slab during a regroup, and one of the first floors at load */
+    --d-floor: .03s;          /* one floor of a surveyed tower stepping apart */
+    --d-sweep: .033s;         /* one diagonal of the hours floor */
+    --d-top: .11s;            /* one floor of the topping-out tower switching on */
+  }
+  @media (max-width: 599px) {
+    :root { --t-body: 16px; --t-lede: 17px; --t-h3: 24px; --t-h4: 19px; --s8: 64px; --gutter: var(--s3); --emblem: 88px; --floor-w: 328px; }
+  }
+  @media (min-width: 1200px) and (max-height: 699px) {
+    :root { --t-lede: 17px; }
+  }
+
+  /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+
+  /* Hidden only when the script runs, and only until the load sequence takes over. Hard cuts, so visibility. */
+  html.js:not(.go) .h2 .ln, html.js:not(.go) .lede, html.js:not(.go) .actions, html.js:not(.go) .hint { visibility: hidden; }
+  @media (prefers-reduced-motion: reduce) {
+    html.js:not(.go) .h2 .ln, html.js:not(.go) .lede, html.js:not(.go) .actions, html.js:not(.go) .hint { visibility: visible; }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { background: var(--blueprint); }
+  body {
+    margin: 0;
+    background: var(--blueprint);
+    color: var(--paper);
+    font: 400 var(--t-body)/var(--lh-body) var(--font-text);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  :focus-visible { outline: 2px solid var(--crane); outline-offset: 3px; }
+  ::selection { background: var(--paper); color: var(--blueprint); }
+  .vh {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+  }
+  canvas { display: block; image-rendering: pixelated; }
+  h3, h4 { margin: 0; letter-spacing: -.01em; }
+  h3 { font: 600 var(--t-h3)/1.15 var(--font-text); }
+  h4 { font: 600 var(--t-h4)/1.2 var(--font-text); }
+
+  /* ---------- First screen: the claim beside the lot ---------- */
+  .folio { position: relative; overflow: clip; background: var(--blueprint); }
+  .stage {
+    display: grid; grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--s6);
+    padding: var(--s5) var(--gutter) var(--s6);
+    background: var(--blueprint);
+  }
+  .h2 {
+    margin: 0;
+    font: 700 var(--t-h2)/.9 var(--font-display);
+    font-variation-settings: var(--modules);
+    letter-spacing: 0;
+  }
+  .h2 .ln { display: block; }
+  .lede { margin: var(--s3) 0 0; max-width: 46ch; font-size: var(--t-lede); line-height: 1.45; }
+  .actions { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s3); margin-top: var(--s4); }
+  .hint { margin: var(--s3) 0 0; color: var(--chalk); font-size: var(--t-small); }
+  @media (min-width: 1200px) {
+    .stage {
+      grid-template-columns: minmax(0, 34fr) minmax(0, 66fr);
+      column-gap: var(--s6);
+      align-items: start;
+      min-height: 100svh;
+      padding-block: clamp(var(--s3), 3.5svh, var(--s5));
+    }
+    /* The first screen holds still while the crane works: sticky for --build of scrolling, only with the motion
+       layer. If it is taller than the window it sticks by its bottom edge, so the lot stays in view. */
+    html.fx .stage { position: sticky; top: min(0px, 100svh - var(--stage-h, 100svh)); }
+    html.fx .track::after { content: ""; display: block; height: var(--build); }
+  }
+
+  /* ---------- Buttons: slabs with a stepped corner and a side face ---------- */
+  .btn, .sheet {
+    --corners: polygon(0 var(--notch), var(--notch) var(--notch), var(--notch) 0, calc(100% - var(--notch)) 0, calc(100% - var(--notch)) var(--notch), 100% var(--notch), 100% calc(100% - var(--notch)), calc(100% - var(--notch)) calc(100% - var(--notch)), calc(100% - var(--notch)) 100%, var(--notch) 100%, var(--notch) calc(100% - var(--notch)), 0 calc(100% - var(--notch)));
+  }
+  .btn {
+    position: relative;
+    display: inline-block;
+    padding: 0 var(--nudge) var(--nudge) 0;   /* room for the side face, so a pressed slab never leaves its box */
+    border: 0; background: none;
+    color: inherit; text-decoration: none;
+    font: 600 var(--t-body)/1.2 var(--font-text);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn::before {   /* the slab's side: the same shape, one nudge down and right */
+    content: "";
+    position: absolute; inset: var(--nudge) 0 0 var(--nudge);
+    background: var(--chalk);
+    clip-path: var(--corners);
+  }
+  .face { position: relative; display: block; padding: 2px; background: var(--rim); clip-path: var(--corners); }
+  .inner {
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+    min-height: calc(var(--tap) - 4px);
+    padding: 0 var(--s4);
+    background: var(--a); color: var(--b);
+    clip-path: var(--corners);
+    overflow: hidden;
+  }
+  .label { position: relative; padding: 2px 6px; background: var(--a); }
+  .btn-slab { --a: var(--paper); --b: var(--blueprint); --rim: var(--paper); }
+  .btn-line { --a: var(--blueprint); --b: var(--paper); --rim: var(--chalk); }
+  /* Editor zoom: a 16px pixel grid cuts in over the face; one step later it is an 8px grid and the face has
+     swapped to its paired colour. The label sits on a plate of the face colour, so no grid line crosses it. */
+  .g {
+    position: absolute; inset: 0;
+    opacity: 0;
+    pointer-events: none;
+    background-image: linear-gradient(var(--lot-line) 1px, transparent 0), linear-gradient(90deg, var(--lot-line) 1px, transparent 0);
+  }
+  .g16 { background-size: calc(var(--cell) * 2) calc(var(--cell) * 2); }
+  .g8 { background-size: var(--cell) var(--cell); }
+  @keyframes zoom16 { from { opacity: 1; } to { opacity: 0; } }
+  .btn:is(:focus-visible, .is-down) :is(.inner, .label) { background: var(--b); color: var(--a); transition: background-color 0s linear var(--d-zoom), color 0s linear var(--d-zoom); }
+  .btn:is(:focus-visible, .is-down) .face { background: var(--paper); transition: background-color 0s linear var(--d-zoom); }
+  .btn:is(:focus-visible, .is-down) .g16 { animation: zoom16 var(--d-zoom) steps(1, end) both; }
+  .btn:is(:focus-visible, .is-down) .g8 { opacity: 1; transition: opacity 0s linear var(--d-zoom); }
+  @media (hover: hover) {
+    .btn:hover :is(.inner, .label) { background: var(--b); color: var(--a); transition: background-color 0s linear var(--d-zoom), color 0s linear var(--d-zoom); }
+    .btn:hover .face { background: var(--paper); transition: background-color 0s linear var(--d-zoom); }
+    .btn:hover .g16 { animation: zoom16 var(--d-zoom) steps(1, end) both; }
+    .btn:hover .g8 { opacity: 1; transition: opacity 0s linear var(--d-zoom); }
+  }
+  /* Nudge: the face jumps one grid cell down and right, onto its own side face, and stays while held. */
+  .btn.is-down .face { transform: translate(var(--nudge), var(--nudge)); }
+
+  /* ---------- Text links: an underline of eight segments that steps up into a staircase ---------- */
+  .tl {
+    position: relative;
+    display: inline-block;
+    min-width: var(--hit);
+    padding: 11px 0 19px;
+    border: 0; background: none;
+    color: var(--paper);
+    font: inherit; font-weight: 600; line-height: 1.3;
+    text-decoration: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .st { position: absolute; left: 0; right: 0; bottom: 8px; display: flex; height: 2px; pointer-events: none; }
+  .st i { flex: 1 1 0; height: 2px; background: var(--chalk); transition: transform 0s linear calc(var(--i) * var(--d-stair)); }
+  .tl:is(:focus-visible, .is-down) .st i { background: var(--paper); transform: translateY(calc(var(--i) * -1px)); }
+  @media (hover: hover) { .tl:hover .st i { background: var(--paper); transform: translateY(calc(var(--i) * -1px)); } }
+  .tl-in { padding: 0 0 10px; vertical-align: top; }   /* a link inside a sentence */
+  .tl-in .st { bottom: 0; }
+  [tabindex="-1"]:focus { outline: none; }             /* a place the page has jumped to, not a control */
+
+  /* ---------- Keys: the grouping toggle, the kind chips, the phase legend. Hard state changes, no motion. ---------- */
+  .key, .chip, .phase {
+    display: inline-flex; align-items: center; gap: var(--s2);
+    min-height: var(--hit);
+    padding: 0 var(--s3);
+    border: 2px solid var(--chalk); border-radius: 0;
+    background: var(--blueprint); color: var(--paper);
+    font: 600 15px/1.2 var(--font-text);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* Under the pointer a key shows the editor grid at once; while it is pressed its rim is the picking orange. */
+  @media (hover: hover) {
+    :is(.key, .chip, .phase):hover {
+      border-color: var(--paper);
+      background-image: linear-gradient(var(--lot-line) 1px, transparent 0), linear-gradient(90deg, var(--lot-line) 1px, transparent 0);
+      background-size: var(--cell) var(--cell);
+    }
+  }
+  .key[aria-pressed="true"] { border-color: var(--paper); background-color: var(--paper); color: var(--blueprint); }
+  :is(.key, .chip, .phase):active { border-color: var(--crane); box-shadow: inset 0 0 0 2px var(--crane); }
+  .seg { display: flex; }
+  .seg .key + .key { margin-left: -2px; }
+  .seg .key[aria-pressed="true"] { position: relative; }
+  .sw { flex: none; display: inline-block; width: 12px; height: 12px; border: 2px solid var(--k); background: var(--k); }
+  .k-games { --k: var(--games); } .k-editorial { --k: var(--editorial); } .k-maps { --k: var(--maps); }
+  .t-0 { --k: var(--tone-1); } .t-1 { --k: var(--tone-2); } .t-2 { --k: var(--tone-3); } .t-3 { --k: var(--tone-4); }
+  .chip { padding: 0 12px; }
+  .chip[aria-pressed="false"] { color: var(--chalk); }
+  .chip[aria-pressed="false"] .sw { background: none; }   /* a hollow swatch for hollow floors */
+  .chips { display: flex; flex-wrap: wrap; gap: var(--s2); }
+
+  /* ---------- Chart A: the commission city ---------- */
+  .city-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s4); }
+  .city-head h3 { margin-right: auto; font-size: var(--t-h4); }
+  .plot { position: relative; margin-top: var(--s2); height: 436px; }
+  .lot { cursor: crosshair; touch-action: pan-y; }
+  .axis-name { position: absolute; left: 0; top: 0; margin: 0; color: var(--chalk); font-size: var(--t-small); line-height: 18px; pointer-events: none; }
+  .ys { position: absolute; left: 0; top: 0; pointer-events: none; }
+  .ys span {
+    position: absolute; right: 0;
+    transform: translateY(-50%);
+    color: var(--chalk);
+    font-size: 12px; line-height: 1; font-variant-numeric: tabular-nums;
+  }
+  /* The picked tower's total, at the head of its orange dimension line. A numeral that acts as a graphic. */
+  .dim {
+    position: absolute;
+    padding: 0 4px;
+    background: var(--blueprint);
+    color: var(--crane);
+    font: 700 var(--t-num)/.8 var(--font-display);
+    font-variation-settings: var(--modules);
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+  .dim.is-left { transform: translate(-100%, -50%); }
+  .dim[hidden] { display: none; }
+  .xs { position: absolute; left: 0; right: 0; height: var(--hit); }
+  .x {
+    position: absolute; top: 0;
+    height: var(--hit);
+    padding: 6px 0 0; border: 0; background: none;
+    color: var(--chalk);
+    font: 600 var(--t-small)/1 var(--font-text); font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .x:focus-visible { outline-offset: -2px; }
+  .x::before { content: ""; position: absolute; left: 50%; top: 4px; width: var(--s3); height: 4px; margin-left: calc(var(--s3) / -2); }
+  .x:hover, .x.is-pick, .x[aria-pressed="true"] { color: var(--paper); }
+  .x.is-pick::before, .x[aria-pressed="true"]::before { background: var(--crane); }
+  .xs:not(.is-tight) .x-s { display: none; }
+  .xs.is-tight .x-l { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  .read { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--s4); align-items: start; margin-top: var(--s2); }
+  .readout { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--s4); }
+  .ro-name { margin: 0; font: 700 var(--t-num)/1 var(--font-display); font-variation-settings: var(--modules); }
+  .ro-counts { display: flex; flex-wrap: wrap; gap: 0 var(--s4); margin: 0; font-variant-numeric: tabular-nums; }
+  .ro-counts div { display: flex; align-items: baseline; gap: 6px; }
+  .ro-counts dt { color: var(--chalk); }
+  .ro-counts dt .sw { margin-right: 6px; }
+  .ro-counts dd { margin: 0; font-weight: 600; }
+  .ro-note { flex-basis: 100%; min-height: 1.45em; margin: 0; color: var(--chalk); font-size: var(--t-small); line-height: 1.45; }
+  .figs[open] { grid-column: 1 / -1; }
+  .figs summary {
+    display: inline-flex; align-items: center; gap: var(--s2);
+    min-height: var(--hit);
+    font-weight: 600;
+    cursor: pointer;
+    list-style: none;
+  }
+  .figs summary::-webkit-details-marker { display: none; }
+  .figs summary::before {   /* a pixel plus, a minus when open */
+    content: ""; flex: none; width: 12px; height: 12px;
+    background: linear-gradient(var(--chalk), var(--chalk)) 0 5px / 12px 2px no-repeat, linear-gradient(var(--chalk), var(--chalk)) 5px 0 / 2px 12px no-repeat;
+  }
+  .figs[open] summary::before { background: linear-gradient(var(--chalk), var(--chalk)) 0 5px / 12px 2px no-repeat; }
+  .figs-body { padding-bottom: var(--s3); }
+  .tbl { width: 100%; max-width: 560px; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  .tbl caption { padding-bottom: var(--s2); color: var(--chalk); font-size: var(--t-small); text-align: left; }
+  .tbl th, .tbl td { padding: 6px 0 6px var(--s3); border-top: 1px solid var(--lot-line); text-align: right; font-weight: 400; }
+  .tbl :is(th, td):first-child { padding-left: 0; text-align: left; }
+  .tbl thead th { border-top: 0; color: var(--chalk); font-size: var(--t-small); font-weight: 600; }
+  .tbl tfoot :is(th, td) { border-top: 2px solid var(--chalk); font-weight: 600; }
+  .floors h4 { margin-top: var(--s4); font-size: var(--t-body); }
+  .floors ol { margin: var(--s2) 0 0; padding-left: 2.2em; max-width: 64ch; font-variant-numeric: tabular-nums; }
+  .floors li { padding: 2px 0; }
+  .floors[hidden] { display: none; }
+  @media (min-width: 1200px) { .ro-name { min-width: 5.2em; } }
+  @media (max-width: 899px) { .read { grid-template-columns: minmax(0, 1fr); } }
+
+  /* ---------- Bands under the first screen ---------- */
+  .band { margin: 0 var(--gutter); padding: var(--s7) 0 var(--s8); border-top: 2px solid var(--chalk); scroll-margin-top: 0; }
+  .band-lede { margin: var(--s2) 0 0; max-width: 60ch; color: var(--chalk); }
+  .kind { display: flex; align-items: center; gap: var(--s2); margin: var(--s1) 0 0; font-size: var(--t-small); font-weight: 600; }
+
+  /* Selected projects */
+  .works { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s6) var(--s6); margin: var(--s6) 0 0; padding: 0; list-style: none; }
+  @media (min-width: 760px) { .works { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 1200px) { .works { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .work { display: grid; grid-template-columns: var(--emblem) minmax(0, 1fr); column-gap: var(--s3); align-items: start; }
+  .emblem { width: var(--emblem); height: var(--emblem); }
+  .work .meta { margin: 2px 0 0; color: var(--chalk); font-variant-numeric: tabular-nums; }
+  .work .line { margin: var(--s2) 0 0; }
+
+  /* Chart B: where the hours go */
+  .split { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s6); margin-top: var(--s5); }
+  @media (min-width: 1000px) { .split { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); column-gap: var(--s8); } }
+  .floor { width: var(--floor-w); height: calc(var(--floor-w) * 88 / 164); cursor: pointer; touch-action: pan-y; }
+  .legend { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s2); margin: 0; padding: 0; list-style: none; max-width: 520px; }
+  .phase { width: 100%; justify-content: flex-start; padding: 0 12px; text-align: left; }
+  .phase b { margin-left: auto; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .phase[aria-pressed="true"] { border-color: var(--crane); }   /* picked by the visitor */
+  .hours-read { min-height: 3em; margin: var(--s3) 0 0; max-width: 52ch; }
+  @media (max-width: 479px) { .legend { grid-template-columns: minmax(0, 1fr); } }
+
+  /* Contact */
+  .links { display: grid; margin: var(--s3) 0 0; padding: 0; list-style: none; }
+  .links li { margin: -4px 0; }
+  .contact p { max-width: 52ch; }
+  .about { margin: var(--s3) 0 0; }
+
+  /* ---------- Enquiry form ---------- */
+  .swap { display: grid; scroll-margin-top: var(--s4); }
+  .swap > * { grid-area: 1 / 1; align-self: start; min-width: 0; }
+  .swap > .is-off { visibility: hidden; }
+  .lbl { display: block; margin-top: var(--s2); font-weight: 600; }
+  .lbl small { font-weight: 400; font-size: var(--t-small); color: var(--chalk); }
+  .field { position: relative; margin-top: var(--s1); }
+  .field :is(input, select, textarea) {
+    display: block;
+    width: 100%; min-height: var(--tap);
+    padding: 0 var(--s3);
+    border: 0; border-bottom: 2px solid var(--chalk); border-radius: 0;
+    background: var(--deep);
+    color: var(--paper);
+    font: inherit;
+    appearance: none;
+  }
+  .field textarea { padding-block: 12px; line-height: 1.45; resize: vertical; }
+  .field select {
+    padding-right: var(--s6);
+    cursor: pointer;
+    background:   /* a stepped pixel chevron */
+      linear-gradient(var(--paper), var(--paper)) right 14px top 20px / 12px 2px no-repeat,
+      linear-gradient(var(--paper), var(--paper)) right 16px top 22px / 8px 2px no-repeat,
+      linear-gradient(var(--paper), var(--paper)) right 18px top 24px / 4px 2px no-repeat,
+      var(--deep);
+  }
+  .field option { background: var(--deep); color: var(--paper); }
+  .field :is(input, select, textarea):hover { border-bottom-color: var(--paper); }
+  /* The drafting ruler: a tick every cell, a taller one every fifth. It starts where the text starts, so the
+     orange marker stands at the end of what has been typed, to the nearest cell. */
+  .ruler {
+    --tick: var(--chalk);
+    position: relative;
+    display: block;
+    height: 10px;
+    margin: 0 var(--s3);
+    visibility: hidden;
+    background:
+      linear-gradient(90deg, var(--tick) 1px, transparent 0) 0 0 / var(--cell) 4px repeat-x,
+      linear-gradient(90deg, var(--tick) 1px, transparent 0) 0 0 / calc(var(--cell) * 5) 9px repeat-x;
+  }
+  .mk { position: absolute; left: 0; top: 0; width: 2px; height: 10px; background: var(--crane); transform: translateX(calc(var(--n, 0) * var(--cell))); }
+  .mk::after { content: ""; position: absolute; left: -2px; top: 6px; width: 6px; height: 4px; background: var(--crane); }
+  .field :focus ~ .ruler, .field [aria-invalid="true"] ~ .ruler { visibility: visible; }
+  .field [aria-invalid="true"] { border-bottom-color: var(--fault); }
+  .field [aria-invalid="true"] ~ .ruler { --tick: var(--fault); }
+  .err { min-height: calc(var(--t-small) * 1.45); margin: 0; color: var(--fault); font-size: var(--t-small); line-height: 1.45; font-weight: 500; }
+  .form-hint { margin: var(--s2) 0 0; color: var(--chalk); font-size: var(--t-small); line-height: 1.45; }
+  .ask .btn { margin-top: var(--s3); }
+
+  /* ---------- Confirmation: a tower with one floor for each answer ---------- */
+  .done { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: var(--s4); align-items: start; }
+  .topout { width: 132px; height: 192px; }
+  .done p { margin: var(--s2) 0 0; }
+  .done b { font-weight: 600; overflow-wrap: anywhere; }
+  .done h4:focus { outline: none; }   /* focus lands here only to announce the result */
+  .facts { display: grid; gap: var(--s1); margin: var(--s3) 0 0; }
+  .facts > div { display: grid; grid-template-columns: 8.5em minmax(0, 1fr); gap: var(--s3); }
+  .facts dt { color: var(--chalk); }
+  .facts dd { margin: 0; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+  @media (max-width: 599px) {
+    .done { grid-template-columns: minmax(0, 1fr); }
+    .topout { width: 88px; height: 128px; margin-bottom: var(--s3); }
+    .facts > div { grid-template-columns: 7em minmax(0, 1fr); }
+  }
+
+  /* ---------- Project sheet: a lot tile that stands up into the screen plane ---------- */
+  .sheet {
+    width: min(640px, 100% - 2 * var(--s3));
+    max-width: none; max-height: none;
+    margin: auto;
+    padding: 0; border: 0;
+    background: none;
+    color: var(--paper);
+    overflow: visible;
+    --notch: var(--cell);
+  }
+  .sheet::backdrop { background: var(--scrim); }
+  .sheet-rim { padding: 2px; background: var(--paper); clip-path: var(--corners); }
+  .sheet-in {
+    max-height: calc(100dvh - 2 * var(--s4));
+    padding: var(--s4);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    clip-path: var(--corners);
+    /* drafting film: the lot's grid, in the ground colour on the deeper blue */
+    background:
+      linear-gradient(var(--blueprint) 1px, transparent 0) 0 0 / calc(var(--cell) * 3) calc(var(--cell) * 3),
+      linear-gradient(90deg, var(--blueprint) 1px, transparent 0) 0 0 / calc(var(--cell) * 3) calc(var(--cell) * 3),
+      var(--deep);
+  }
+  /* Four frames: flat on the lot under the 2:1 matrix, tilting, nearly upright, upright. The content cuts in
+     on the last one. Three frames back down. */
+  @keyframes stand {
+    0% { transform: translateY(12%) matrix(.56, .28, -.56, .28, 0, 0); }
+    25% { transform: translateY(6%) matrix(.76, .2, -.34, .56, 0, 0); }
+    50% { transform: matrix(.93, .07, -.11, .88, 0, 0); }
+    75%, 100% { transform: none; }
+  }
+  @keyframes sheet-ink { 0% { visibility: hidden; } 75%, 100% { visibility: visible; } }
+  @keyframes lie {
+    0% { transform: matrix(.93, .07, -.11, .88, 0, 0); }
+    33.3% { transform: translateY(6%) matrix(.76, .2, -.34, .56, 0, 0); }
+    66.6%, 100% { transform: translateY(12%) matrix(.56, .28, -.56, .28, 0, 0); }
+  }
+  .sheet[open] { animation: stand var(--d-stand) steps(1, end) both; }
+  .sheet[open] .sheet-in > * { animation: sheet-ink var(--d-stand) steps(1, end) both; }
+  .sheet.is-closing { animation: lie var(--d-lie) steps(1, end) both; }
+  .sheet.is-closing .sheet-in > * { animation: none; visibility: hidden; }
+  .sheet-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s3); }
+  .sheet h2 { margin: 0; font: 600 var(--t-h3)/1.15 var(--font-text); letter-spacing: -.01em; }
+  .sheet-head .tl { flex: none; margin: -11px 0 -19px; }
+  .sheet-body { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--s4); align-items: center; margin-top: var(--s3); }
+  .sheet-body .emblem { width: 176px; height: 176px; }
+  .sheet-body .facts { margin: 0; }
+  .sheet-body .facts > div { grid-template-columns: 5.5em minmax(0, 1fr); }
+  .sheet-text { margin: var(--s3) 0 var(--s4); max-width: 60ch; }
+  @media (max-width: 599px) {
+    .sheet-in { padding: var(--s3); }
+    .sheet-body { grid-template-columns: minmax(0, 1fr); gap: var(--s3); }
+    .sheet-body .emblem { width: 132px; height: 132px; }
+    .actions { display: grid; }
+    .ask .btn, .sheet .btn { display: block; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0s !important; transition-delay: 0s !important; }
+    .btn .g16, .sheet[open], .sheet.is-closing, .sheet[open] .sheet-in > * { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<section class="folio" aria-labelledby="folio-title">
+  <div class="track" id="track">
+    <div class="stage" id="stage">
+      <div class="intro">
+        <h2 class="h2" id="folio-title"><span class="ln">I draw cities</span> <span class="ln">one tile</span> <span class="ln">at a time.</span></h2>
+        <p class="lede">I'm Juno Achterberg, an isometric pixel illustrator in Rotterdam. Since 2019 I have drawn <span id="n-all">70</span> commissions: key art and tilesets for indie games, illustrations for magazines, and wayfinding maps for festivals and campuses.</p>
+        <div class="actions">
+          <a class="btn btn-slab" href="#enquiry"><span class="face"><span class="inner"><span class="g g16"></span><span class="g g8"></span><span class="label">Ask for a quote</span></span></span></a>
+          <a class="btn btn-line" href="#projects"><span class="face"><span class="inner"><span class="g g16"></span><span class="g g8"></span><span class="label">See six selected projects</span></span></span></a>
+        </div>
+        <p class="hint" id="hint">Pick a tower, or the label under it, to count its floors.</p>
+      </div>
+
+      <div class="city" id="city">
+        <div class="city-head">
+          <h3 id="city-title">Commission city</h3>
+          <div class="seg" role="group" aria-label="Group the towers">
+            <button class="key" type="button" data-mode="year" aria-pressed="true">By year</button>
+            <button class="key" type="button" data-mode="kind" aria-pressed="false">By client type</button>
+          </div>
+          <div class="chips" id="chips" role="group" aria-label="Fill or hollow the floors of one kind"></div>
+        </div>
+        <div class="plot" id="plot">
+          <canvas class="lot" id="lot" aria-hidden="true"></canvas>
+          <p class="axis-name">One floor is one commission</p>
+          <div class="ys" id="ys" aria-hidden="true"></div>
+          <span class="dim" id="dim" aria-hidden="true" hidden></span>
+          <div class="xs" id="xs" role="group" aria-label="Towers. Arrow keys move the pick, Escape lets go."></div>
+        </div>
+        <div class="read">
+          <div class="readout" id="city-read" aria-live="polite">
+            <p class="ro-name" id="ro-name">2019 to 2026</p>
+            <dl class="ro-counts">
+              <div><dt>Commissions</dt><dd id="ro-total">70</dd></div>
+              <div><dt><i class="sw k-games"></i>Games</dt><dd id="ro-games">26</dd></div>
+              <div><dt><i class="sw k-editorial"></i>Editorial</dt><dd id="ro-editorial">25</dd></div>
+              <div><dt><i class="sw k-maps"></i>Maps</dt><dd id="ro-maps">19</dd></div>
+            </dl>
+            <p class="ro-note" id="ro-note">The whole city. Pick a tower to count its floors.</p>
+          </div>
+          <details class="figs" id="city-figs">
+            <summary>Read the figures as a table</summary>
+            <div class="figs-body" id="city-table">
+              <div class="floors" id="floors" hidden><h4 id="floors-title"></h4><ol id="floors-list"></ol></div>
+            </div>
+          </details>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="band" id="projects">
+    <h3>Six selected projects</h3>
+    <p class="band-lede">Two from each kind of work. Every sheet has the brief, the size of the job and the hours it took. If yours is another kind of job, <a class="tl tl-in" href="#enquiry">ask anyway</a>.</p>
+    <ul class="works" id="works"></ul>
+  </div>
+
+  <div class="band" id="hours">
+    <h3>Where the hours go</h3>
+    <p class="band-lede">A typical commission takes about <span id="n-typical">60</span> hours from the first call to the final file. The floor is that time as 100 tiles. Pick a phase to lift its share.</p>
+    <div class="split">
+      <div>
+        <ul class="legend" id="legend"></ul>
+        <p class="hours-read" id="hours-read" aria-live="polite"></p>
+        <details class="figs" id="hours-figs">
+          <summary>Read the figures as a table</summary>
+          <div class="figs-body" id="hours-table"></div>
+        </details>
+      </div>
+      <canvas class="floor" id="floor" aria-hidden="true"></canvas>
+    </div>
+  </div>
+
+  <div class="band contact" id="contact">
+    <div class="split">
+      <div>
+        <h3>Write to Juno</h3>
+        <p class="about">I take about twelve commissions a year, and the next free slot starts in February 2027. Tell me what you need drawn and I will answer within two working days.</p>
+        <ul class="links" id="links"></ul>
+      </div>
+      <div class="swap" id="enquiry">
+        <form class="ask" id="ask" aria-labelledby="ask-title" novalidate>
+          <h4 id="ask-title">Ask for a quote</h4>
+          <label class="lbl" for="f-name">Your name</label>
+          <div class="field">
+            <input id="f-name" name="name" type="text" autocomplete="name" maxlength="80">
+            <span class="ruler" aria-hidden="true"><i class="mk"></i></span>
+          </div>
+          <p class="err" id="f-name-err" aria-live="polite"></p>
+          <label class="lbl" for="f-email">Email address</label>
+          <div class="field">
+            <input id="f-email" name="email" type="email" autocomplete="email" spellcheck="false">
+            <span class="ruler" aria-hidden="true"><i class="mk"></i></span>
+          </div>
+          <p class="err" id="f-email-err" aria-live="polite"></p>
+          <label class="lbl" for="f-kind">Kind of commission</label>
+          <div class="field">
+            <select id="f-kind" name="kind"><option value="">Choose a kind</option></select>
+            <span class="ruler" aria-hidden="true"><i class="mk"></i></span>
+          </div>
+          <p class="err" id="f-kind-err" aria-live="polite"></p>
+          <label class="lbl" for="f-deadline">Rough deadline <small>(optional)</small></label>
+          <div class="field">
+            <input id="f-deadline" name="deadline" type="date">
+            <span class="ruler" aria-hidden="true"><i class="mk"></i></span>
+          </div>
+          <p class="err" id="f-deadline-err" aria-live="polite"></p>
+          <label class="lbl" for="f-words">A few words about it <small>(optional)</small></label>
+          <div class="field">
+            <textarea id="f-words" name="words" rows="3" maxlength="800"></textarea>
+            <span class="ruler" aria-hidden="true"><i class="mk"></i></span>
+          </div>
+          <p class="err" id="f-words-err" aria-live="polite"></p>
+          <p class="form-hint">I use your address to answer this enquiry and for nothing else.</p>
+          <button class="btn btn-slab" type="submit"><span class="face"><span class="inner"><span class="g g16"></span><span class="g g8"></span><span class="label">Send the enquiry</span></span></span></button>
+        </form>
+        <div class="done is-off" id="done" inert>
+          <canvas class="topout" id="topout" width="44" height="64" aria-hidden="true"></canvas>
+          <div>
+            <h4 id="done-title" tabindex="-1">Your enquiry is in, <span id="done-name">Ana</span>.</h4>
+            <p>It stands <span id="done-n">4 floors</span> tall, one for each answer you gave. I will reply to <b id="done-mail">ana@example.com</b> within two working days.</p>
+            <dl class="facts">
+              <div><dt>Kind</dt><dd id="done-kind"></dd></div>
+              <div><dt>Rough deadline</dt><dd id="done-deadline"></dd></div>
+              <div><dt>Your words</dt><dd id="done-words"></dd></div>
+            </dl>
+            <button class="tl" id="again" type="button">Change this enquiry</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<dialog class="sheet" id="sheet" aria-labelledby="sheet-title" data-lenis-prevent>
+  <div class="sheet-rim"><div class="sheet-in">
+    <div class="sheet-head">
+      <h2 id="sheet-title">Project sheet</h2>
+      <button class="tl" id="sheet-close" type="button">Close</button>
+    </div>
+    <p class="kind" id="sheet-kind"></p>
+    <div class="sheet-body">
+      <canvas class="emblem" id="sheet-emblem" width="44" height="44" aria-hidden="true"></canvas>
+      <dl class="facts" id="sheet-facts"></dl>
+    </div>
+    <p class="sheet-text" id="sheet-text"></p>
+    <a class="btn btn-slab" id="sheet-ask" href="#enquiry"><span class="face"><span class="inner"><span class="g g16"></span><span class="g g8"></span><span class="label">Ask for a quote like this</span></span></span></a>
+  </div></div>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  /* ---------- The owner edits these two constants ----------
+     CONTACT: delete a line to remove a link. email, whatsapp (a phone number), github, instagram and itch take
+     a handle; mastodon takes the profile URL; any other key with a full URL becomes a link named after its key. */
+  const CONTACT = {
+    email: 'hello@junoachterberg.example',
+    mastodon: 'https://mastodon.art/@junoachterberg',
+    instagram: 'juno.achterberg',
+    itch: 'junoachterberg',
+    newsletter: 'https://buttondown.com/junoachterberg'
+  };
+  /* DATA: every figure on the page is computed from these rows. commissions are [year, kind, client, title],
+     oldest first; a tower's floors are stacked in that order. */
+  const DATA = {
+    kinds: {   // key: [tower and chip label, label on a project, option in the enquiry form]
+      games: ['Games', 'Game commission', 'Key art or a tileset for a game'],
+      editorial: ['Editorial', 'Editorial commission', 'An illustration for a magazine'],
+      maps: ['Maps', 'Wayfinding map commission', 'A wayfinding map']
+    },
+    current: 2026,   // the year still in progress: the crane parks over it
+    commissions: [
+      [2019, 'games', 'Pocket Ferry', 'Ferry terminal mock-up, 40 tiles'],
+      [2019, 'editorial', 'Stadsblad', 'Spot: the last corner shop'],
+      [2019, 'editorial', 'Dwars', 'Cover: Rooms for rent'],
+      [2019, 'games', 'Moth and Lantern', 'Cellar tileset, 56 tiles'],
+      [2020, 'games', 'Pocket Ferry', 'Harbour key art'],
+      [2020, 'editorial', 'Stadsblad', 'Spread: The empty office'],
+      [2020, 'games', 'Hollow Reed', 'Greenhouse tileset, 72 tiles'],
+      [2020, 'editorial', 'Fietsblad', 'Cover: Bike sheds of the Randstad'],
+      [2020, 'maps', 'Kromme Tuin', 'Garden trail map'],
+      [2020, 'editorial', 'Dwars', 'Three spots: Working from the attic'],
+      [2021, 'games', 'Moth and Lantern', 'Lantern street key art'],
+      [2021, 'games', 'Twelve Bells', 'Clock tower tileset, 88 tiles'],
+      [2021, 'editorial', 'Plattegrond magazine', 'Cover: The quiet ring road'],
+      [2021, 'maps', 'Zomerdijk Fair', 'Fairground map, 2 gates'],
+      [2021, 'editorial', 'The Ledger Review', 'Spot: Who pays for the bridge'],
+      [2021, 'games', 'Hollow Reed', 'Orchard tileset, 64 tiles'],
+      [2021, 'editorial', 'Fietsblad', 'Spread: A city without kerbs'],
+      [2021, 'maps', 'Havenmuseum', 'Museum quay map'],
+      [2022, 'games', 'Studio Kelderlicht', 'Nachtmarkt tileset, 212 tiles'],
+      [2022, 'games', 'Twelve Bells', 'Belfry key art'],
+      [2022, 'maps', 'Polderpop', 'Festival map, 2 stages'],
+      [2022, 'editorial', 'Plattegrond magazine', 'Six spots: Shared courtyards'],
+      [2022, 'games', 'Greywater Collective', 'Canal lock tileset, 96 tiles'],
+      [2022, 'editorial', 'De Kade Quarterly', 'Cover: The night shift'],
+      [2022, 'maps', 'Kromme Tuin', 'Campus garden map, second edition'],
+      [2022, 'games', 'Kite String Games', 'Rooftop tileset, 80 tiles'],
+      [2022, 'editorial', 'Stadsblad', 'Spread: Where the trams sleep'],
+      [2023, 'games', 'Greywater Collective', 'Pumping station key art'],
+      [2023, 'editorial', 'Plattegrond magazine', 'The 15-minute city, drawn'],
+      [2023, 'maps', 'Veldwerk Festival', 'Site map, 2 stages'],
+      [2023, 'games', 'Loam Interactive', 'Allotment tileset, 120 tiles'],
+      [2023, 'games', 'Kite String Games', 'Rooftop key art'],
+      [2023, 'editorial', 'The Ledger Review', 'Cover: The price of a square metre'],
+      [2023, 'maps', 'Havenmuseum', 'Harbour walk map'],
+      [2023, 'editorial', 'Long Division', 'Spot: The 400-metre queue'],
+      [2023, 'games', 'Studio Kelderlicht', 'Nachtmarkt winter set, 60 tiles'],
+      [2023, 'maps', 'Noorderlicht Weekender', 'Weekender map, 14 venues'],
+      [2023, 'editorial', 'Dwars', 'Spread: One street, forty years'],
+      [2024, 'games', 'Tidewrack Games', 'Saltmarsh Signal tileset, 96 tiles'],
+      [2024, 'maps', 'Veldwerk Festival', 'Veldwerk festival map, 3 stages'],
+      [2024, 'editorial', 'De Kade Quarterly', 'Spread: The longest quay'],
+      [2024, 'games', 'Tidewrack Games', 'Saltmarsh Signal key art'],
+      [2024, 'maps', 'Hogeschool Maasoever', 'Open day route map'],
+      [2024, 'games', 'Loam Interactive', 'Allotment key art'],
+      [2024, 'editorial', 'Long Division', 'Cover: Counting empty homes'],
+      [2024, 'maps', 'Polderpop', 'Festival map, 4 stages'],
+      [2024, 'editorial', 'Fietsblad', 'Six spots: The school run'],
+      [2024, 'editorial', 'Plattegrond magazine', 'Cover: Water squares'],
+      [2024, 'maps', 'Zomerdijk Fair', 'Fairground map, night edition'],
+      [2024, 'games', 'Hollow Reed', 'Tidal mill tileset, 104 tiles'],
+      [2025, 'maps', 'Hogeschool Maasoever', 'Campus Zuid map and 28 pictograms'],
+      [2025, 'games', 'Twelve Bells', 'Carillon tileset, 140 tiles'],
+      [2025, 'editorial', 'De Kade Quarterly', 'Who owns the harbour?'],
+      [2025, 'games', 'Pocket Ferry', 'Night crossing key art'],
+      [2025, 'maps', 'Veldwerk Festival', 'Site map, 4 stages'],
+      [2025, 'editorial', 'The Ledger Review', 'Spread: Rent, drawn to scale'],
+      [2025, 'games', 'Greywater Collective', 'Sluice gate tileset, 90 tiles'],
+      [2025, 'maps', 'Noorderlicht Weekender', 'Weekender map, 19 venues'],
+      [2025, 'editorial', 'Stadsblad', 'Cover: The last free parking space'],
+      [2025, 'games', 'Kite String Games', 'Water tower tileset, 76 tiles'],
+      [2025, 'maps', 'Havenmuseum', 'Dry dock cutaway map'],
+      [2025, 'editorial', 'Long Division', 'Spot: Twelve minutes to anywhere'],
+      [2026, 'games', 'Moth and Lantern', 'Arcade row tileset, 110 tiles'],
+      [2026, 'maps', 'Kromme Tuin', 'Campus map, third edition'],
+      [2026, 'editorial', 'Plattegrond magazine', 'Cover: The stacked street'],
+      [2026, 'games', 'Loam Interactive', 'Market garden key art'],
+      [2026, 'maps', 'Polderpop', 'Festival map, 5 stages'],
+      [2026, 'editorial', 'Dwars', 'Spread: A flat for every decade'],
+      [2026, 'games', 'Tidewrack Games', 'Saltmarsh Signal harbour set, 70 tiles'],
+      [2026, 'maps', 'Zomerdijk Fair', 'Fairground map, 3 gates']
+    ].map(([year, kind, client, title]) => ({ year, kind, client, title })),
+    typical: 60,   // hours in a typical commission
+    hours: [       // shares of that time; they add up to 100, one tile each
+      { phase: 'Brief and sketch', share: 18 },
+      { phase: 'Blocking', share: 22 },
+      { phase: 'Pixelling', share: 46 },
+      { phase: 'Revisions', share: 14 }
+    ],
+    projects: [
+      { title: 'Saltmarsh Signal', client: 'Tidewrack Games', year: 2024, kind: 'games', emblem: 'light', hours: 84,
+        line: 'Key art and a 96-tile coast for a lighthouse-keeping game.',
+        size: '96 tiles at 32 by 16 pixels, 24 colours', files: 'PNG sheets, layered sources, a tiling guide',
+        text: 'Tidewrack wanted a coast that reads at a glance on a handheld screen. I built the marsh from 96 tiles in 24 colours, then drew the store-page key art from the same pieces, so the box and the game match.' },
+      { title: 'Nachtmarkt', client: 'Studio Kelderlicht', year: 2022, kind: 'games', emblem: 'market', hours: 131,
+        line: 'A 212-tile night market for a trading game, stalls and all.',
+        size: '212 tiles at 32 by 16 pixels, 32 colours', files: 'PNG sheets and a tile index',
+        text: 'Players rebuild every stall from parts, so each awning, crate and lamp is its own tile and still lines up on the grid. The set covers four sizes of stall and two times of day.' },
+      { title: 'The 15-minute city, drawn', client: 'Plattegrond magazine', year: 2023, kind: 'editorial', emblem: 'flats', hours: 46,
+        line: 'A cover and six spot illustrations about living close to everything.',
+        size: 'Cover at 2480 by 3248 pixels, six spots', files: 'Layered PNG and a print-ready PDF',
+        text: 'One city block, drawn once and then cut into the cover and six spots, so readers meet the same bakery and the same bike shed all the way through the issue.' },
+      { title: 'Who owns the harbour?', client: 'De Kade Quarterly', year: 2025, kind: 'editorial', emblem: 'harbour', hours: 58,
+        line: 'A double-page cutaway of a container terminal, coloured by owner.',
+        size: 'Spread at 4960 by 3508 pixels', files: 'Layered PNG with the labels on their own layer',
+        text: 'The article follows eleven companies across one terminal. The spread colours every shed, stack and quay by who owns it, with a key the art desk could reset in two languages.' },
+      { title: 'Veldwerk festival map', client: 'Veldwerk Festival', year: 2024, kind: 'maps', emblem: 'stage', hours: 72,
+        line: 'A site map with 3 stages and 41 landmarks, in print and in the app.',
+        size: 'A2 print and a 4096-pixel tile set', files: 'Print PDF, app tiles, a pictogram sheet',
+        text: 'Visitors find their tent by what stands next to it, so the map draws 41 landmarks at the size they matter on site: the water tower is taller than the main stage because everyone walks toward it.' },
+      { title: 'Campus Zuid', client: 'Hogeschool Maasoever', year: 2025, kind: 'maps', emblem: 'campus', hours: 95,
+        line: 'A campus map and 28 pictograms for six buildings and their entrances.',
+        size: 'Six buildings, 28 pictograms, 3 sign sizes', files: 'Vector outlines for the sign maker, PNG for screens',
+        text: 'First-year students kept arriving at the wrong door. The map turns each building to show its real entrance, and the pictograms repeat on the signs, the app and the printed timetable.' }
+    ]
+  };
+
+  const root = document.documentElement;
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const lib = !!(window.gsap && window.ScrollTrigger && window.Lenis);
+  if (lib) root.classList.add('js'); // CDN blocked: no class, everything is visible and every flow still works
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const css = (n) => getComputedStyle(root).getPropertyValue(n).trim();
+  const ms = (n) => parseFloat(css(`--d-${n}`)) * 1000;
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  let lenis = null, fx = null; // fx: hooks set by the motion branch; null means every change is instant
+
+  const KINDS = Object.keys(DATA.kinds);
+  const YEARS = [...new Set(DATA.commissions.map((c) => c.year))].sort();
+  const span = `${YEARS[0]} to ${YEARS[YEARS.length - 1]}`;
+  const tally = (list) => KINDS.reduce((t, k) => ({ ...t, [k]: list.filter((c) => c.kind === k).length }), { total: list.length });
+  const groupBy = (mode) => (mode === 'year' ? YEARS : KINDS).map((key) => ({
+    key, label: mode === 'year' ? String(key) : DATA.kinds[key][0],
+    slabs: DATA.commissions.filter((c) => (mode === 'year' ? c.year : c.kind) === key)
+  }));
+  $('#n-all').textContent = DATA.commissions.length;
+  $('#n-typical').textContent = DATA.typical;
+
+  /* ---------- Press and staircase: plain classes, so they work without the libraries ----------
+     .is-down is held for a minimum time from pointerdown, so a quick tap still shows the whole press. */
+  const HOLD = { btn: ms('hold'), tl: ms('tap') };
+  const wire = (b) => {
+    const hold = b.classList.contains('tl') ? HOLD.tl : HOLD.btn;
+    let t0 = 0, timer = 0;
+    const down = () => { clearTimeout(timer); t0 = performance.now(); b.classList.add('is-down'); };
+    const up = () => { clearTimeout(timer); timer = setTimeout(() => b.classList.remove('is-down'), Math.max(0, hold - (performance.now() - t0))); };
+    b.addEventListener('pointerdown', down);
+    b.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) down(); });
+    ['pointerup', 'pointerleave', 'pointercancel', 'keyup', 'blur'].forEach((t) => b.addEventListener(t, up));
+    if (b.classList.contains('tl')) {   // the underline: eight segments
+      const st = el('span', 'st');
+      st.setAttribute('aria-hidden', 'true');
+      for (let i = 0; i < 8; i++) st.appendChild(el('i')).style.setProperty('--i', i);
+      b.append(st);
+    }
+    return b;
+  };
+  const table = (caption, head, rows, foot) => {
+    const t = el('table', 'tbl'), row = (cells, top) => {
+      const r = el('tr');
+      cells.forEach((c, i) => { const d = el(top || !i ? 'th' : 'td', '', c); if (top) d.scope = 'col'; else if (!i) d.scope = 'row'; r.append(d); });
+      return r;
+    };
+    t.append(el('caption', '', caption), el('thead'), el('tbody'));
+    t.tHead.append(row(head, true));
+    rows.forEach((r) => t.tBodies[0].append(row(r)));
+    if (foot) t.appendChild(el('tfoot')).append(row(foot));
+    return t;
+  };
+
+  /* ---------- Pixel isometry ----------
+     One routine draws every solid on the page: a box in 2:1 isometric projection, in whole pixels. (bx, by) is
+     the lowest pixel of its front corner; wl and wr are the widths of the left and right faces; h is its height.
+     Each column is filled top face first, then the wall, then the outline pixels, so edges are always hard. */
+  let C = null;   // colours, read from the :root tokens
+  const readInk = () => {
+    const st = getComputedStyle(root), v = (n) => st.getPropertyValue(n).trim();
+    const kind = (n) => ({ top: v(`--${n}`), left: v(`--${n}`), right: v(`--${n}-side`), line: v('--paper'), win: v('--blueprint') });
+    C = { ground: v('--blueprint'), lot: v('--lot-line'), paper: v('--paper'), chalk: v('--chalk'), crane: v('--crane'),
+      tone: [1, 2, 3, 4].map((i) => v(`--tone-${i}`)),
+      games: kind('games'), editorial: kind('editorial'), maps: kind('maps'),
+      hollow: { top: v('--blueprint'), left: v('--blueprint'), right: v('--blueprint'), line: v('--paper') },
+      p: { top: v('--paper'), left: v('--chalk'), right: v('--tone-1'), line: v('--blueprint'), win: v('--blueprint') },
+      c: { top: v('--chalk'), left: v('--tone-1'), right: v('--lot-line'), line: v('--blueprint'), win: v('--blueprint') },
+      tile: { top: v('--blueprint'), line: v('--lot-line') } };
+  };
+  function box(g, bx, by, wl, wr, h, p, win) {
+    const T = by - h - (wl >> 1) + 1, Xb = wr - wl, Tb = T - ((wr - 1) >> 1);
+    const r0 = h >= 5 ? 2 : 1, wh = h >= 5 ? 2 : 1;
+    for (let X = -wl; X < wr; X++) {
+      const c = X < 0 ? -1 - X : X, half = c >> 1, x = bx + X;
+      const yb = by - half, yt = yb - h + 1;
+      const yU = X < Xb ? T - ((X + wl) >> 1) : Tb + ((X - Xb) >> 1);
+      g.fillStyle = p.top; g.fillRect(x, yU, 1, yt - yU);
+      if (h > 0) {
+        g.fillStyle = X < 0 ? p.left : p.right; g.fillRect(x, yt, 1, h);
+        // a row of windows: every second column, never the columns at an edge
+        if (win && h >= 3 && (c & 1) && c < (X < 0 ? wl : wr) - 2) { g.fillStyle = p.win; g.fillRect(x, yt + r0, 1, wh); }
+      }
+      g.fillStyle = p.line;
+      g.fillRect(x, yU, 1, 1); g.fillRect(x, yt, 1, 1); g.fillRect(x, yb + 1, 1, 1);
+      if (h > 1 && (X === -wl || X === wr - 1 || X === 0)) g.fillRect(x, yt, 1, h);
+    }
+  }
+
+  /* ---------- Chart A: the commission city ----------
+     A low-resolution canvas (164 to about 440 pixels wide, always 196 tall) scaled up by a whole number.
+     Towers stand in one row along the lot's anti-diagonal, so they share a baseline and read against the
+     y axis like bars. State lives in S; draw() paints the whole frame from it. Plain JavaScript: without
+     the libraries the city is complete and every pick is instant. */
+  const city = (() => {
+    const can = $('#lot'), plot = $('#plot'), col = $('#city'), ys = $('#ys'), xs = $('#xs'), dim = $('#dim');
+    const roName = $('#ro-name'), roTotal = $('#ro-total'), roNote = $('#ro-note');
+    const floors = $('#floors'), floorsTitle = $('#floors-title'), floorsList = $('#floors-list');
+    const g = can.getContext('2d');
+    const H = 196, BY = H - 12, JIB = 14, GAP = 3;
+    // q: slabs placed by scroll (a fraction carries the next one on the hook). cap: slabs allowed by the load
+    // sequence. limit: floors allowed by a regroup. lot: rows of ground tiles laid. sep: floors stepped apart.
+    const S = { mode: 'year', q: 1e9, cap: 1e9, limit: 1e9, lot: 1e9, pick: -1, sep: 1e9, off: {} };
+    let W = 0, px = 2, T = [], order = [], G = null, lock = -1, minP = 0, listed = '';
+
+    function group(mode) {
+      S.mode = mode; T = groupBy(mode); order = [];
+      const max = Math.max(...T.map((t) => t.slabs.length));
+      // the build order: floor by floor, every tower rising together
+      for (let l = 0; l < max; l++) T.forEach((t, i) => { if (l < t.slabs.length) order.push([i, l]); });
+      T.forEach((t) => { t.rank = []; });
+      order.forEach(([i, l], n) => { T[i].rank[l] = n; });
+      minP = order.filter(([, l]) => l < 2).length;   // the lowest two floors stand before any scrolling
+      xs.textContent = '';
+      T.forEach((t, i) => {   // the x axis: one real button per tower, a roving tabindex group
+        const b = el('button', 'x');
+        b.type = 'button'; b.tabIndex = i ? -1 : 0; b.dataset.i = i;
+        b.setAttribute('aria-pressed', 'false');
+        const short = el('span', 'x-s', mode === 'year' ? '’' + String(t.key).slice(2) : t.label);
+        short.setAttribute('aria-hidden', 'true');
+        b.append(short, el('span', 'x-l', t.label), el('span', 'vh', `, ${t.slabs.length} commissions`));
+        xs.append(b);
+      });
+    }
+    const placed = () => Math.max(0, Math.min(order.length, Math.floor(Math.min(S.q, S.cap))));
+    const count = (i, P = placed()) => { const r = T[i].rank; let n = 0; while (n < r.length && r[n] < P) n++; return n; };
+    const standing = (i, P) => Math.min(count(i, P), S.limit);
+    const tall = () => Math.max(...T.map((_, i) => count(i)));
+    // a surveyed tower steps its floors 3 pixels apart, less only if it would leave the canvas
+    const gapOf = (n) => n > 1 ? Math.max(1, Math.min(GAP, Math.floor((BY - 10 - (G.f >> 1) - n * G.fh) / (n - 1)))) : 0;
+
+    function layout() {
+      const n = T.length, max = Math.max(...T.map((t) => t.slabs.length));
+      const AX = W < 220 ? 15 : 22, L = AX + 3, R = W - 14, room = R - L;
+      // footprint in half tiles (8 pixels), pitch in whole tiles (16): the widest towers that still leave a gap, else touching
+      let f = 16, pitch = 16;
+      find: for (const need of [8, 0]) for (const c of n > 3 ? [32, 24, 16] : [40, 32, 24, 16]) {
+        const p = Math.min(n > 3 ? 48 : 96, Math.floor((room - c) / Math.max(1, n - 1) / 16) * 16);
+        if (p >= c + need) { f = c; pitch = p; break find; }
+      }
+      const x0 = L + Math.max(0, (room - (n - 1) * pitch - f) >> 1);
+      const fh = Math.max(3, Math.min(8, Math.floor(96 / max))), step = max <= 14 ? 2 : 5;
+      G = { AX, L, R, f, pitch, fh, step, top: Math.ceil(max / step) * step, bx: T.map((_, i) => x0 + (f >> 1) + i * pitch), r0: -(f >> 3) - 3, r1: 0 };
+      // the labels are DOM text laid over the canvas, so they stay sharp at any scale
+      ys.textContent = ''; ys.style.width = (AX - 5) * px + 'px';
+      for (let k = 0; k <= G.top; k += step) ys.appendChild(el('span', '', k)).style.top = (BY + 1.5 - k * fh) * px + 'px';
+      xs.style.top = H * px + 'px';
+      xs.classList.toggle('is-tight', pitch * px < 44);
+      [...xs.children].forEach((b, i) => { b.style.left = (G.bx[i] - pitch / 2) * px + 'px'; b.style.width = pitch * px + 'px'; });
+    }
+    function measure() {
+      readInk();
+      const w = col.clientWidth;
+      if (!w) return;
+      px = w >= 852 && window.innerHeight >= 800 ? 3 : 2;
+      W = Math.floor(w / px);
+      if (can.width !== W || can.height !== H) { can.width = W; can.height = H; }
+      can.style.width = W * px + 'px'; can.style.height = H * px + 'px';
+      plot.style.width = W * px + 'px'; plot.style.height = H * px + 44 + 'px';
+      layout(); draw();
+    }
+
+    function draw() {
+      if (!W || !G) return;
+      const { AX, L, R, f, fh, bx } = G, hw = f >> 1, P = placed(), mx = W - 10;
+      g.fillStyle = C.ground; g.fillRect(0, 0, W, H);
+      // the lot: 16 by 8 pixel tiles, laid in horizontal rows from the back; every tower's front corner is a tile corner
+      g.fillStyle = C.lot;
+      const s0 = Math.ceil((L + 8 - bx[0]) / 8), s1 = Math.floor((R - 8 - bx[0]) / 8);
+      for (let r = G.r0; r <= Math.min(G.r1, G.r0 + S.lot); r++) {
+        const cy = BY + 1 + 4 * r;
+        for (let s = s0; s <= s1; s++) {
+          if ((s - r) & 1) continue;
+          const cx = bx[0] + 8 * s;
+          for (let d = 0; d < 8; d++) {
+            const k = d >> 1;
+            g.fillRect(cx + d, cy + 1 + k, 1, 1); g.fillRect(cx - 1 - d, cy + 1 + k, 1, 1);
+            g.fillRect(cx - 8 + d, cy + 5 + k, 1, 1); g.fillRect(cx + d, cy + 8 - k, 1, 1);
+          }
+        }
+      }
+      // the y axis: a tick for every commission, a longer one and a dotted guide at every labelled step
+      for (let k = 0; k <= G.top; k++) {
+        const y = BY + 1 - k * fh, major = k % G.step === 0;
+        if (major && k) { g.fillStyle = C.lot; for (let x = AX + 2; x < R; x += 4) g.fillRect(x, y, 2, 1); }
+        g.fillStyle = C.chalk; g.fillRect(AX - (major ? 3 : 1), y, major ? 3 : 1, 1);
+      }
+      g.fillRect(AX, BY + 1 - G.top * fh, 1, G.top * fh + 1);
+      // the crane: a lattice mast at the end of the row, a jib over every tower, a cab and a counterweight
+      g.fillStyle = C.crane;
+      for (let y = JIB - 7; y <= BY - (hw >> 1); y++) { g.fillRect(mx, y, 1, 1); g.fillRect(mx + 3, y, 1, 1); g.fillRect(mx + 1 + ((y >> 1) & 1), y, 1, 1); }
+      g.fillRect(L + 1, JIB, W - 2 - L, 1); g.fillRect(L + 1, JIB + 3, W - 2 - L, 1);
+      for (let x = L + 1; x < W - 1; x++) g.fillRect(x, JIB + 1 + ((x >> 1) & 1), 1, 1);
+      g.fillRect(W - 6, JIB + 4, 5, 5); g.fillRect(mx - 5, JIB + 5, 5, 5);
+      g.fillStyle = C.ground; g.fillRect(mx - 4, JIB + 6, 2, 2);
+      if (S.lot < G.r1 - G.r0) return;   // no building before the lot is laid
+      // foundations, then the towers, back to front within each: every slab is a whole box
+      T.forEach((t, i) => {
+        const n = standing(i, P), gp = i === S.pick ? gapOf(n) : 0;
+        box(g, bx[i], BY, hw, hw, 0, { top: C.ground, line: C.paper });
+        for (let l = 0; l < n; l++) {
+          const hollow = S.off[t.slabs[l].kind];
+          box(g, bx[i], BY - l * fh - gp * Math.min(l, S.sep), hw, hw, fh, hollow ? C.hollow : C[t.slabs[l].kind], !hollow);
+        }
+      });
+      // the hook: parked over the year in progress, or carrying the next slab down in whole-tile steps
+      let tx = S.mode === 'year' ? bx[T.length - 1] : mx - 12, hy = JIB + 9;
+      if (P < order.length && S.limit > 1e8 && S.cap > 1e8) {
+        const [i, l] = order[P], t = T[i], rest = BY - l * fh, from = JIB + 9 + fh + hw, steps = Math.max(1, Math.ceil((rest - from) / 4));
+        const cur = Math.floor((S.q - P) * (steps + 1)), y = cur >= steps ? rest : from + cur * 4, hollow = S.off[t.slabs[l].kind];
+        tx = bx[i]; hy = y - fh - (hw >> 1) - 1;
+        box(g, tx, y, hw, hw, fh, hollow ? C.hollow : C[t.slabs[l].kind], !hollow);
+      }
+      g.fillStyle = C.crane;
+      g.fillRect(tx - 2, JIB + 4, 5, 2); g.fillRect(tx, JIB + 6, 1, hy - JIB - 6); g.fillRect(tx - 1, hy, 3, 2);
+      // the dimension line beside the picked tower: a tick at every floor, the total at its head
+      const i = S.pick, n = i >= 0 ? standing(i, P) : 0;
+      if (n) {
+        const gp = gapOf(n), top = BY + 1 - n * fh - gp * Math.min(n - 1, S.sep), right = bx[i] + hw + 12 < W - 12, x = right ? bx[i] + hw + 2 : bx[i] - hw - 5;
+        g.fillStyle = C.ground; g.fillRect(x - 1, top - 1, 5, BY + 4 - top);
+        g.fillStyle = C.crane; g.fillRect(x + 1, top, 1, BY + 2 - top); g.fillRect(x, top, 3, 1); g.fillRect(x, BY + 1, 3, 1);
+        for (let l = 1; l < n; l++) g.fillRect(x + 1, BY + 1 - l * fh - gp * Math.min(l - 1, S.sep), 2, 1);
+        dim.style.top = top * px + 'px'; dim.style.left = (right ? x + 5 : x - 2) * px + 'px';
+        dim.classList.toggle('is-left', !right);
+        if (dim.textContent !== String(n)) dim.textContent = n;
+      }
+      if (dim.hidden !== !n) dim.hidden = !n;
+    }
+
+    // Isometric hit-testing: a tower owns its footprint diamond extruded straight up, from the 2:1 front edges
+    // of its base to the crane's jib. A short tower is as easy to pick as a tall one, and stepping the floors
+    // apart never moves the tower out from under the pointer. Three pixels of slack below the base for fingers.
+    function hit(x, y) {
+      const { f, bx } = G, hw = f >> 1;
+      if (y < JIB + 6) return -1;
+      for (let i = 0; i < T.length; i++) {
+        const X = Math.floor(x) - bx[i];
+        if (X >= -hw && X < hw && y <= BY + 4 - ((X < 0 ? -1 - X : X) >> 1)) return i;
+      }
+      return -1;
+    }
+
+    function read() {
+      const t = S.pick >= 0 ? T[S.pick] : null, c = tally(t ? t.slabs : DATA.commissions), n = t ? standing(S.pick) : 0;
+      roName.textContent = t ? t.label : S.mode === 'year' ? span : 'All three kinds';
+      roTotal.textContent = c.total;
+      KINDS.forEach((k) => { $(`#ro-${k}`).textContent = c[k]; });
+      roNote.textContent = !t ? 'The whole city. Pick a tower to count its floors.'
+        : n < c.total ? `${n} of its ${c.total} floors are standing. Scroll on to finish the city.`
+        : S.mode === 'year' && t.key === DATA.current ? 'The crane is still over this one: the year is not finished.'
+        : 'The oldest commission is the ground floor.';
+      [...xs.children].forEach((b, i) => { b.classList.toggle('is-pick', i === S.pick); b.setAttribute('aria-pressed', String(i === lock)); });
+      // the floors of the held tower, listed inside the table disclosure
+      const key = lock >= 0 ? S.mode + lock : '';
+      if (key === listed) return;
+      listed = key; floors.hidden = !key; floorsList.textContent = '';
+      if (!key) return;
+      floorsTitle.textContent = `The ${T[lock].slabs.length} floors of ${T[lock].label}, from the ground up`;
+      T[lock].slabs.forEach((s) => floorsList.append(el('li', '', `${s.title}, for ${s.client}${S.mode === 'year' ? ` (${DATA.kinds[s.kind][0].toLowerCase()})` : `, ${s.year}`}`)));
+    }
+    function pick(i) {
+      if (i === S.pick) return;
+      S.pick = i; S.sep = fx && i >= 0 ? 0 : 1e9;
+      draw(); read();
+      if (fx && i >= 0) fx.survey();
+    }
+    const hold = (i) => { lock = i; if (S.pick !== i) pick(i); else read(); };
+    const regroup = (mode) => { lock = -1; S.pick = -1; group(mode); layout(); draw(); read(); };
+    // scroll progress places the slabs: the first two floors always stand, the rest follow the scrub
+    function build(p) {
+      const was = placed();
+      S.q = p >= 1 ? 1e9 : minP + (order.length - minP) * p;
+      draw();
+      if (S.pick >= 0 && placed() !== was) read();
+    }
+
+    // Pointer: a mouse picks by moving and holds by clicking; a finger picks by tapping and lets go by tapping
+    // anywhere else on the lot. Keyboard: the labels under the lot.
+    const at = (e) => { const r = can.getBoundingClientRect(); return hit((e.clientX - r.left) / px, (e.clientY - r.top) / px); };
+    can.addEventListener('pointermove', (e) => { if (e.pointerType === 'touch') return; const i = at(e); pick(i >= 0 ? i : lock); });
+    can.addEventListener('pointerleave', (e) => { if (e.pointerType !== 'touch') pick(lock); });
+    can.addEventListener('click', (e) => { const i = at(e); hold(i === lock ? -1 : i); });
+    xs.addEventListener('pointerover', (e) => { const b = e.target.closest('.x'); if (b && e.pointerType === 'mouse') pick(+b.dataset.i); });
+    xs.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') pick(lock); });
+    xs.addEventListener('click', (e) => { const b = e.target.closest('.x'); if (b) hold(lock === +b.dataset.i ? -1 : +b.dataset.i); });
+    xs.addEventListener('focusin', (e) => { const b = e.target.closest('.x'); if (b && b.matches(':focus-visible')) hold(+b.dataset.i); });
+    xs.addEventListener('keydown', (e) => {
+      const all = [...xs.children], i = all.indexOf(e.target.closest('.x'));
+      if (i < 0) return;
+      if (e.key === 'Escape') { hold(-1); return; }
+      const to = { ArrowRight: i + 1, ArrowUp: i + 1, ArrowLeft: i - 1, ArrowDown: i - 1, Home: 0, End: all.length - 1 }[e.key];
+      if (to === undefined) return;
+      e.preventDefault();
+      const next = all[(to + all.length) % all.length];
+      all.forEach((b) => { b.tabIndex = b === next ? 0 : -1; });
+      next.focus();
+    });
+
+    group('year');
+    return { S, measure, draw, group, layout, regroup, read, build, hold, tall, rows: () => G.r1 - G.r0 + 1, first: () => minP, total: () => order.length };
+  })();
+
+  /* The grouping toggle and the kind chips: hard state changes. */
+  const keys = $$('.key');
+  let wanted = 'year';
+  keys.forEach((k) => k.addEventListener('click', () => {
+    const mode = k.dataset.mode;
+    if (mode === wanted) return;
+    wanted = mode;
+    keys.forEach((b) => b.setAttribute('aria-pressed', String(b === k)));
+    if (fx) fx.regroup(mode); else city.regroup(mode);
+  }));
+  KINDS.forEach((k) => {
+    const b = el('button', `chip k-${k}`);
+    b.type = 'button'; b.setAttribute('aria-pressed', 'true');
+    b.append(el('i', 'sw'), DATA.kinds[k][0]);
+    b.addEventListener('click', () => {
+      const on = b.getAttribute('aria-pressed') !== 'true';
+      b.setAttribute('aria-pressed', String(on));
+      city.S.off[k] = !on;
+      city.draw();
+    });
+    $('#chips').append(b);
+  });
+  $('#city-table').prepend(table(`Commissions by year and kind, ${span}`, ['Year', ...KINDS.map((k) => DATA.kinds[k][0]), 'All'],
+    YEARS.map((y) => { const c = tally(DATA.commissions.filter((r) => r.year === y)); return [y, ...KINDS.map((k) => c[k]), c.total]; }),
+    (() => { const c = tally(DATA.commissions); return [span, ...KINDS.map((k) => c[k]), c.total]; })()));
+
+  /* ---------- Selected projects: an emblem per project, built from the same boxes ----------
+     Each box is [u, v, du, dv, z, h, palette, windows] on a 44-pixel canvas: u runs back to the right, v back to
+     the left, z is the height it stands on. k is the project's kind hue, p paper, c chalk. Listed back to front. */
+  const EMBLEMS = {
+    light: [[0, 0, 16, 16, 0, 2, 'c'], [3, 3, 10, 10, 2, 10, 'k', 1], [4, 4, 8, 8, 12, 7, 'p'], [5, 5, 6, 6, 19, 4, 'k', 1], [6, 6, 4, 4, 23, 2, 'p']],
+    market: [[2, 8, 14, 8, 0, 13, 'c', 1], [12, 0, 4, 6, 0, 4, 'p'], [12, 0, 4, 6, 4, 2, 'k'], [6, 0, 4, 6, 0, 4, 'p'], [6, 0, 4, 6, 4, 2, 'k'], [0, 0, 4, 6, 0, 4, 'p'], [0, 0, 4, 6, 4, 2, 'k']],
+    flats: [[0, 0, 16, 14, 0, 5, 'c', 1], [2, 2, 12, 10, 5, 17, 'k', 1], [4, 4, 6, 4, 22, 3, 'p']],
+    harbour: [[0, 8, 16, 8, 0, 9, 'c', 1], [10, 0, 6, 6, 0, 4, 'p'], [0, 0, 8, 6, 0, 4, 'k'], [0, 0, 8, 6, 4, 4, 'p'], [2, 0, 6, 6, 8, 4, 'k']],
+    stage: [[0, 0, 16, 14, 0, 2, 'c'], [0, 12, 16, 2, 2, 13, 'k'], [14, 0, 2, 2, 2, 13, 'p'], [0, 0, 2, 2, 2, 13, 'p'], [0, 0, 16, 14, 15, 2, 'k']],
+    campus: [[0, 8, 16, 8, 0, 8, 'k', 1], [2, 10, 4, 4, 8, 11, 'p', 1], [10, 0, 6, 8, 0, 6, 'k', 1], [1, 1, 6, 4, 0, 3, 'c']]
+  };
+  const emblem = (can, name, kind) => {
+    const g = can.getContext('2d');
+    can.width = can.height = 44;
+    g.fillStyle = C.ground; g.fillRect(0, 0, 44, 44);
+    box(g, 22, 41, 20, 20, 0, C.tile);   // its own lot tile
+    (EMBLEMS[name] || []).forEach(([u, v, du, dv, z, h, p, win]) => box(g, 22 + u - v, 39 - ((u + v) >> 1) - z, dv, du, h, p === 'k' ? C[kind] : C[p], win));
+  };
+  const kindMark = (p, k) => { p.className = `kind k-${k}`; p.textContent = ''; p.append(el('i', 'sw'), DATA.kinds[k][1]); return p; };
+  const facts = (dl, rows) => { dl.textContent = ''; rows.forEach(([k, v]) => { const d = el('div'); d.append(el('dt', '', k), el('dd', '', v)); dl.append(d); }); };
+
+  /* ---------- Project sheet (native dialog; the standing-up is CSS, so it needs no library) ---------- */
+  const dlg = $('#sheet'), closeBtn = $('#sheet-close'), askLike = $('#sheet-ask');
+  let closing = false, downOn = null, opener = null, shown = null;
+  const settle = () => { closing = false; dlg.classList.remove('is-closing'); }; // recovers from a close the browser forces mid-animation
+  const openSheet = (p, from) => {
+    if (dlg.open) return;
+    shown = p; opener = from;
+    $('#sheet-title').textContent = p.title;
+    kindMark($('#sheet-kind'), p.kind);
+    emblem($('#sheet-emblem'), p.emblem, p.kind);
+    facts($('#sheet-facts'), [['Client', p.client], ['Year', p.year], ['Size', p.size], ['Hours', p.hours], ['Delivered', p.files]]);
+    $('#sheet-text').textContent = p.text;
+    settle();
+    dlg.showModal();
+    lenis?.stop();
+  };
+  const closeSheet = (then) => {
+    if (!dlg.open || closing) return;
+    const end = () => { if (!dlg.open) return; settle(); dlg.close(); lenis?.start(); (then || (() => opener?.focus()))(); };
+    if (reduced.matches) return end();
+    closing = true;
+    dlg.classList.add('is-closing');
+    dlg.addEventListener('animationend', end, { once: true });
+    setTimeout(end, 400); // if the animation never runs
+  };
+  closeBtn.addEventListener('click', () => closeSheet());
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); closeSheet(); });
+  // Close on a backdrop click only when the press also started on the backdrop.
+  dlg.addEventListener('pointerdown', (e) => { downOn = e.target; });
+  dlg.addEventListener('click', (e) => { if (e.target === dlg && downOn === dlg) closeSheet(); });
+  dlg.addEventListener('close', () => { settle(); lenis?.start(); });
+
+  DATA.projects.forEach((p) => {
+    const li = el('li', 'work'), can = el('canvas', 'emblem'), body = el('div'), open = wire(el('button', 'tl', 'Open the project sheet'));
+    can.setAttribute('aria-hidden', 'true'); can.dataset.emblem = p.emblem; can.dataset.kind = p.kind;
+    open.type = 'button'; open.setAttribute('aria-haspopup', 'dialog');
+    open.append(el('span', 'vh', ` for ${p.title}`));
+    open.addEventListener('click', () => openSheet(p, open));
+    body.append(el('h4', '', p.title), el('p', 'meta', `${p.client}, ${p.year}`), kindMark(el('p'), p.kind), el('p', 'line', p.line), open);
+    li.append(can, body);
+    $('#works').append(li);
+  });
+
+  /* ---------- Chart B: where the hours go. A 10 by 10 floor of 16 by 8 pixel tiles, one per hour in a hundred. ---------- */
+  const hours = (() => {
+    const can = $('#floor'), g = can.getContext('2d'), out = $('#hours-read'), legend = $('#legend');
+    const N = 10, W = 164, H = 88, OX = 82, OY = 6, LIFT = 4;
+    const S = { pick: -1, old: -1, sweep: 1e9 };   // tiles on diagonals up to sweep show the new pick
+    const phase = [];
+    DATA.hours.forEach((h, p) => { for (let k = 0; k < h.share; k++) phase.push(p); });
+    can.width = W; can.height = H;
+    function draw() {
+      g.fillStyle = C.ground; g.fillRect(0, 0, W, H);
+      for (let d = 0; d <= 2 * (N - 1); d++) for (let gx = Math.max(0, d - N + 1); gx <= Math.min(N - 1, d); gx++) {
+        const gy = d - gx, p = phase[gy * N + gx];
+        if (p === undefined) continue;
+        const up = (d <= S.sweep ? S.pick : S.old) === p, cx = OX + (gx - gy) * 8, cy = OY + d * 4 - (up ? LIFT : 0);
+        for (let r = 0; r < 7; r++) {   // the tile: rows of 4, 8, 12, 16, 12, 8, 4, less one pixel at each end of its top edges
+          const w = r < 4 ? 2 * (r + 1) : 2 * (7 - r), e = r < 4 ? 1 : 0;
+          g.fillStyle = C.tone[p]; g.fillRect(cx - w + e, cy + r, 2 * (w - e), 1);
+        }
+        if (up) {   // a lifted tile shows its two walls in the picking orange
+          g.fillStyle = C.crane;
+          for (let c = 0; c < 8; c++) { g.fillRect(cx - 1 - c, cy + 7 - (c >> 1), 1, LIFT); g.fillRect(cx + c, cy + 7 - (c >> 1), 1, LIFT); }
+        }
+      }
+    }
+    function read() {
+      const h = DATA.hours[S.pick];
+      out.textContent = h ? `${h.phase}: ${h.share} of every 100 hours. On a ${DATA.typical}-hour commission that is about ${Math.round(h.share * DATA.typical / 100)} hours.`
+        : 'Nearly half of the time is pixelling. The sketch and the blocking decide whether that half goes well.';
+      $$('.phase', legend).forEach((b, i) => b.setAttribute('aria-pressed', String(i === S.pick)));
+    }
+    function pick(p) {
+      if (p === S.pick) p = -1;   // picking the lifted phase again sets it down
+      S.old = S.pick; S.pick = p; S.sweep = fx ? -1 : 1e9;
+      draw(); read();
+      fx?.sweep();
+    }
+    DATA.hours.forEach((h, i) => {
+      const li = el('li'), b = el('button', `phase t-${i}`);
+      b.type = 'button'; b.setAttribute('aria-pressed', 'false');
+      b.append(el('i', 'sw'), el('span', '', h.phase), el('b', '', `${h.share}%`));
+      b.addEventListener('click', () => pick(i));
+      li.append(b); legend.append(li);
+    });
+    can.addEventListener('click', (e) => {   // a tile picks its phase: the inverse of the projection
+      const r = can.getBoundingClientRect(), u = ((e.clientX - r.left) * W / r.width - OX) / 8, v = ((e.clientY - r.top) * H / r.height - OY) / 4;
+      const gx = Math.floor((u + v) / 2), gy = Math.floor((v - u) / 2);
+      if (gx >= 0 && gy >= 0 && gx < N && gy < N && phase[gy * N + gx] !== undefined) pick(phase[gy * N + gx]);
+    });
+    $('#hours-table').append(table(`Share of a typical ${DATA.typical}-hour commission, by phase`, ['Phase', 'Share', 'Hours'],
+      DATA.hours.map((h) => [h.phase, `${h.share}%`, Math.round(h.share * DATA.typical / 100)]), ['All phases', '100%', DATA.typical]));
+    return { S, draw, read, last: 2 * (N - 1) };
+  })();
+
+  /* ---------- Contact links, built from CONTACT ---------- */
+  const LINKS = {
+    email: (v) => [`mailto:${v}`, `Email ${v}`],
+    whatsapp: (v) => [`https://wa.me/${String(v).replace(/\D/g, '')}`, 'Message on WhatsApp'],
+    github: (v) => [`https://github.com/${v}`, `GitHub, ${v}`],
+    mastodon: (v) => [v, 'Mastodon, sketches most days'],
+    instagram: (v) => [`https://www.instagram.com/${v}/`, `Instagram, @${v}`],
+    itch: (v) => [`https://${v}.itch.io/`, 'itch.io, tile packs to buy']
+  };
+  Object.entries(CONTACT).forEach(([k, v]) => {
+    const [href, text] = LINKS[k] ? LINKS[k](v) : /^https?:\/\//.test(v) ? [v, k[0].toUpperCase() + k.slice(1)] : [];
+    if (!href) return;
+    const a = el('a', 'tl', text), li = el('li');
+    a.href = href; a.target = '_blank'; a.rel = 'noopener';
+    a.append(el('span', 'vh', ' (opens in a new tab)'));
+    li.append(wire(a)); $('#links').append(li);
+  });
+
+  /* ---------- Enquiry form (nothing is sent anywhere) ---------- */
+  const form = $('#ask'), done = $('#done'), doneTitle = $('#done-title'), tcan = $('#topout');
+  const CELL = parseFloat(css('--cell'));
+  KINDS.forEach((k) => { const o = el('option', '', DATA.kinds[k][2]); o.value = k; form.elements.kind.append(o); });
+  const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const tomorrow = new Date(); tomorrow.setHours(0, 0, 0, 0); tomorrow.setDate(tomorrow.getDate() + 1);
+  form.elements.deadline.min = iso(tomorrow);
+  const parseDate = (v) => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v);
+    if (!m) return null;
+    const d = new Date(+m[1], +m[2] - 1, +m[3]);
+    return d.getMonth() === +m[2] - 1 && d.getDate() === +m[3] ? d : null;
+  };
+  const F = {
+    name: (v) => !v ? 'Enter your name, so I know who is asking.' : '',
+    email: (v) => !v ? 'Enter your email address, like ana@example.com.' : !/^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(v) ? 'This address needs an @ and a domain, like ana@example.com.' : '',
+    kind: (v) => v ? '' : 'Choose games, editorial or maps. Pick the closest one.',
+    deadline: (v) => { if (!v) return ''; const d = parseDate(v); return !d ? 'Write the date as year-month-day, like 2027-03-15, or leave it empty.' : d < tomorrow ? 'Pick a date after today, or leave it empty.' : ''; },
+    words: (v) => v.length > 600 ? `Shorten this to 600 characters. It is ${v.length} now.` : ''
+  };
+  const val = (k) => form.elements[k].value.trim();
+  const mark = (k, msg) => {
+    const f = form.elements[k], err = $(`#f-${k}-err`);
+    err.textContent = msg; // cleared too, so assistive tech never finds a stale message
+    if (msg) { f.setAttribute('aria-invalid', 'true'); f.setAttribute('aria-describedby', `f-${k}-err`); }
+    else { f.removeAttribute('aria-invalid'); f.removeAttribute('aria-describedby'); }
+    return !msg;
+  };
+  // The ruler's marker: the width of what has been typed, to the nearest cell.
+  const pen = document.createElement('canvas').getContext('2d');
+  const rule = (f) => {
+    const cs = getComputedStyle(f), room = f.clientWidth - 2 * parseFloat(cs.paddingLeft);
+    pen.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+    const text = f.tagName === 'SELECT' ? (f.value ? f.selectedOptions[0].textContent : '') : f.value.split('\n').pop();
+    const w = pen.measureText(text).width;
+    $('.mk', f.parentElement).style.setProperty('--n', Math.round((w > room ? w % room : w) / CELL));
+  };
+  Object.keys(F).forEach((k) => ['input', 'change', 'focus'].forEach((t) => form.elements[k].addEventListener(t, () => {
+    rule(form.elements[k]);
+    if (t !== 'focus' && form.elements[k].hasAttribute('aria-invalid') && !F[k](val(k))) mark(k, '');
+  })));
+  // Topping out: one floor for each answer, in the colour of the kind asked for; lit floors have paper windows.
+  const topout = (n, kind, lit, flag) => {
+    const g = tcan.getContext('2d');
+    g.fillStyle = C.ground; g.fillRect(0, 0, 44, 64);
+    box(g, 22, 61, 20, 20, 0, C.tile);
+    for (let l = 0; l < n; l++) box(g, 22, 58 - l * 7, 12, 12, 7, { ...C[kind], win: l < lit ? C.paper : C.ground }, true);
+    if (!flag) return;
+    const y = 53 - n * 7;   // the pennant, planted in the middle of the roof
+    g.fillStyle = C.chalk; g.fillRect(22, y - 10, 1, 11);
+    g.fillStyle = C.crane; g.fillRect(23, y - 10, 6, 2); g.fillRect(23, y - 8, 4, 2); g.fillRect(23, y - 6, 2, 1);
+  };
+  const swap = (toDone) => {
+    const from = toDone ? form : done, to = toDone ? done : form;
+    from.classList.add('is-off'); from.inert = true;
+    to.classList.remove('is-off'); to.inert = false;
+    (toDone ? doneTitle : form.elements.name).focus();
+  };
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const bad = Object.keys(F).filter((k) => !mark(k, F[k](val(k))));
+    if (bad.length) { form.elements[bad[0]].focus(); return; }
+    const kind = val('kind'), d = parseDate(val('deadline')), n = 3 + (d ? 1 : 0) + (val('words') ? 1 : 0);
+    $('#done-name').textContent = val('name');
+    $('#done-mail').textContent = val('email');
+    $('#done-n').textContent = `${n} floors`;
+    $('#done-kind').textContent = DATA.kinds[kind][2];
+    $('#done-deadline').textContent = d ? d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : 'None given';
+    $('#done-words').textContent = val('words') || 'None given';
+    swap(true);
+    if (fx) fx.topout(n, kind); else topout(n, kind, n, true);
+  });
+  wire($('#again')).addEventListener('click', () => { if (!done.classList.contains('is-off')) swap(false); });
+  // "Ask for a quote like this": the sheet lies down, the form takes the project's kind, focus lands in it.
+  askLike.addEventListener('click', (e) => {
+    e.preventDefault();
+    const kind = shown?.kind;
+    closeSheet(() => {
+      if (!done.classList.contains('is-off')) swap(false);
+      if (kind) { form.elements.kind.value = kind; mark('kind', ''); }
+      go('#enquiry');
+      form.elements.name.focus({ preventScroll: true });
+    });
+  });
+
+  $$('.btn, .tl').forEach((b) => { if (!$('.st', b)) wire(b); });
+
+  /* In-page anchors: a button waits until its press has been seen, then the page moves and focus follows. */
+  const go = (hash) => {
+    const t = $(hash);
+    if (!t) return;
+    t.tabIndex = -1; t.focus({ preventScroll: true });
+    if (lenis) lenis.scrollTo(t, { offset: -parseFloat(css('--s4')) }); else t.scrollIntoView();
+  };
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('a[href^="#"]');
+    if (!a || a === askLike) return;
+    e.preventDefault();
+    setTimeout(() => go(a.hash), a.classList.contains('btn') ? HOLD.btn : 0);
+  });
+
+  /* ---------- First paint: the still frames ---------- */
+  const paint = () => {
+    city.measure();
+    hours.draw();
+    $$('.work .emblem').forEach((c) => emblem(c, c.dataset.emblem, c.dataset.kind));
+    if (shown) emblem($('#sheet-emblem'), shown.emblem, shown.kind);
+  };
+  if (lib && !reduced.matches) { city.S.lot = -1; city.S.cap = 0; }   // the load sequence lays the lot; until then, only the crane
+  paint(); city.read(); hours.read();
+  const hintFor = (fine) => { $('#hint').textContent = fine ? 'Move over a tower to count its floors. Scroll to build the rest of the city.'
+    : window.matchMedia('(hover: none)').matches ? 'Tap a tower to count its floors. Tap the lot to let go.' : 'Pick a tower, or the label under it, to count its floors.'; };
+  hintFor(false);
+  if (window.ResizeObserver) new ResizeObserver(() => city.measure()).observe($('#city'));
+  window.addEventListener('resize', () => city.measure());
+
+  if (!lib) return;
+
+  /* ---------- Motion ---------- */
+  gsap.registerPlugin(ScrollTrigger);
+  const fontsReady = Promise.race([
+    Promise.all([document.fonts.ready, document.fonts.load('700 100px "Handjet"')]).then(() => 'fonts', () => 'fonts'),
+    new Promise((r) => setTimeout(() => r('timeout'), 1500))
+  ]);
+  // Start the load sequence only on a visible page: with lagSmoothing(0), a timeline started in a background
+  // tab would have finished before anyone saw it.
+  const visible = new Promise((r) => {
+    if (document.visibilityState === 'visible') return r();
+    const f = () => { if (document.visibilityState === 'visible') { document.removeEventListener('visibilitychange', f); r(); } };
+    document.addEventListener('visibilitychange', f);
+  });
+  const track = $('#track'), stage = $('#stage'), plot = $('#plot'), hint = $('#hint');
+  const lines = $$('.h2 .ln'), cut = [$('.lede'), $('.actions'), hint];
+  const S = city.S;
+  let played = false;
+
+  const mm = gsap.matchMedia();
+  mm.add({
+    motion: '(prefers-reduced-motion: no-preference)',
+    reduce: '(prefers-reduced-motion: reduce)',
+    fine: '(hover: hover) and (pointer: fine)'
+  }, (ctx) => {
+    const { motion, fine } = ctx.conditions;
+    if (!motion) {
+      // Reduced motion: the finished city, every line in place, native scroll, no pin, instant state changes.
+      root.classList.add('go');
+      S.lot = S.cap = S.q = S.limit = 1e9;
+      city.draw();
+      return;
+    }
+
+    let dead = false, tl = null;
+    const D = Object.fromEntries(['diag', 'drop', 'slab', 'floor', 'sweep', 'top'].map((k) => [k, ms(k)]));
+    const DROP = parseFloat(css('--drop'));
+
+    root.classList.add('fx'); // pins the first screen on wide windows
+    hintFor(fine);
+
+    // Lenis on GSAP's clock. Touch keeps native scrolling.
+    lenis = new Lenis({ lerp: .1, smoothWheel: true, autoRaf: false });
+    lenis.on('scroll', ScrollTrigger.update);
+    const tick = (t) => lenis.raf(t * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
+
+    /* Stepped jobs: a function called once every so many milliseconds until it returns false. The ticker
+       callback exists only while a job is running, so nothing loops at rest. */
+    const jobs = new Map();
+    const step = () => {
+      const now = performance.now();
+      jobs.forEach((j, k) => { while (jobs.has(k) && now - j.t >= j.every) { j.t += j.every; if (j.fn() === false) jobs.delete(k); } });
+      if (!jobs.size) gsap.ticker.remove(step);
+    };
+    const run = (k, every, fn) => { if (!jobs.size) gsap.ticker.add(step); jobs.set(k, { every, fn, t: performance.now() }); };
+
+    let target = S.mode, phase = 0;
+    fx = {
+      // Survey: the picked tower's floors step apart, bottom to top, one floor at a time.
+      survey() { run('survey', D.floor, () => { S.sep++; city.draw(); return S.pick >= 0 && S.sep < city.tall(); }); },
+      // Regroup: every tower loses its top floor until the lot is clear, then the new grouping rises floor by floor.
+      regroup(mode) {
+        target = mode; jobs.delete('survey');
+        city.hold(-1);
+        if (jobs.has('regroup')) { phase = 0; S.limit = Math.min(S.limit, city.tall()); return; }
+        phase = 0; S.limit = city.tall();
+        run('regroup', D.slab, () => {
+          if (!phase) {
+            if (--S.limit <= 0) { S.limit = 0; if (S.mode !== target) city.regroup(target); phase = 1; }
+          } else if (++S.limit >= city.tall()) { S.limit = 1e9; city.draw(); return false; }
+          city.draw();
+        });
+      },
+      // Chart B: the pick crosses the floor one anti-diagonal at a time.
+      sweep() { run('sweep', D.sweep, () => { hours.S.sweep++; hours.draw(); if (hours.S.sweep >= hours.last) { hours.S.sweep = 1e9; return false; } }); },
+      // Topping out: the windows switch on floor by floor, then the pennant is planted.
+      topout(n, kind) {
+        let lit = 0;
+        topout(n, kind, 0, false);
+        run('topout', D.top, () => { lit++; topout(n, kind, Math.min(lit, n), lit > n); return lit <= n; });
+      }
+    };
+
+    /* Scroll builds the city. Wide windows: the first screen is pinned (sticky) for --build of scrolling, and
+       that distance is the scrub. Otherwise the scrub runs from the plot entering the window to its centre
+       reaching the window's centre, and never over less than 240px, so a plot that is already in view at load
+       starts with its lowest floors and is finished by the first scrolling. */
+    const top = (n) => n.getBoundingClientRect().top + window.scrollY;
+    const range = () => {
+      const vh = window.innerHeight;
+      if (getComputedStyle(stage).position === 'sticky') return [top(track) + Math.max(0, stage.offsetHeight - vh), top(track) + track.offsetHeight - vh];
+      const a = Math.max(0, top(plot) - vh * .8);
+      return [a, Math.max(a + 240, top(plot) + plot.offsetHeight / 2 - vh / 2)];
+    };
+    const st = ScrollTrigger.create({
+      start: () => range()[0], end: () => range()[1],
+      onUpdate: (self) => city.build(self.progress),
+      onRefresh: (self) => city.build(self.progress)
+    });
+    const fit = () => stage.style.setProperty('--stage-h', stage.offsetHeight + 'px');
+    const ro = new ResizeObserver(() => { fit(); ScrollTrigger.refresh(); });
+    ro.observe(stage);
+    fit();
+
+    /* Load: the lot is laid in rows, then the headline lines land like slabs, the bottom one first; the first
+       two floors are placed while they do. About a second in all. */
+    Promise.all([fontsReady, visible]).then(() => ctx.add(() => {
+      if (dead) return;
+      city.measure(); ScrollTrigger.refresh();
+      // Reloaded part-way down the page, or already played: no sequence.
+      if (played || window.scrollY > 40) { played = true; root.classList.add('go'); S.lot = S.cap = 1e9; city.draw(); return; }
+      gsap.set([...lines, ...cut], { visibility: 'hidden' });
+      root.classList.add('go');
+      S.lot = -1; S.cap = 0; city.draw();
+      const rows = city.rows(), per = Math.ceil(rows / 14), ticks = Math.ceil(rows / per), d = D.diag / 1000, dr = D.drop / 1000;
+      tl = gsap.timeline({ onComplete: () => { played = true; } });
+      for (let k = 1; k <= ticks; k++) tl.call(() => { S.lot = k * per - 1; city.draw(); }, null, k * d);
+      const t1 = (ticks + 1) * d;
+      for (let n = 1; n <= city.first(); n++) tl.call(() => { S.cap = n; city.draw(); }, null, t1 + n * D.slab / 1000);
+      tl.call(() => { S.lot = S.cap = 1e9; city.draw(); }, null, t1 + (city.first() + 1) * D.slab / 1000);
+      [...lines].reverse().forEach((ln, i) => {
+        const t = t1 + i * 2 * dr;
+        tl.call(() => gsap.set(ln, { visibility: 'visible', y: -2 * DROP }), null, t)
+          .call(() => gsap.set(ln, { y: -DROP }), null, t + dr)
+          .call(() => gsap.set(ln, { clearProps: 'transform,visibility' }), null, t + 2 * dr);
+      });
+      tl.call(() => gsap.set(cut, { clearProps: 'visibility' }), null, t1 + lines.length * 2 * dr);
+    }));
+
+    return () => {
+      dead = true;
+      jobs.clear(); gsap.ticker.remove(step);
+      fx = null;
+      tl?.kill(); st.kill(); ro.disconnect();
+      gsap.ticker.remove(tick);
+      gsap.ticker.lagSmoothing(500, 33);
+      lenis.destroy(); lenis = null;
+      root.classList.remove('fx');
+      hintFor(false);
+      stage.style.removeProperty('--stage-h');
+      gsap.set([...lines, ...cut], { clearProps: 'transform,visibility' });
+      if (S.mode !== wanted) city.regroup(wanted);
+      S.lot = S.cap = S.q = S.limit = S.sep = 1e9;
+      hours.S.sweep = 1e9;
+      city.draw(); hours.draw();
+    };
+  });
+})();
+</script>
+</body>
+</html>

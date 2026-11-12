@@ -1,4 +1,4 @@
-export const SECTIONS = ['hero', 'features', 'pricing', 'testimonials', 'process', 'cta', 'footer', 'portfolio', 'crud', 'nav', 'story', 'gallery', 'faq', 'contact', 'team'] as const;
+export const SECTIONS = ['hero', 'features', 'pricing', 'testimonials', 'process', 'cta', 'footer', 'portfolio', 'crud', 'nav', 'story', 'gallery', 'faq', 'contact', 'team', 'about'] as const;
 export type Section = (typeof SECTIONS)[number];
 export const SECTION_NAMES: Record<Section, string> = {
   hero: 'Hero',
@@ -16,4 +16,5 @@ export const SECTION_NAMES: Record<Section, string> = {
   faq: 'FAQ',
   contact: 'Contact',
   team: 'Team',
+  about: 'About me',
 };

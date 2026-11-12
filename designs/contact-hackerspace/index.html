@@ -1,0 +1,1354 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Find Molo 4</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Handjet:ELGR,ELSH,wght@1..2,0..16,100..900&family=Host+Grotesk:wght@300..800&display=swap">
+<style>
+  :root {
+    /* Colour: a night watch on a pier. The red working light is the ground; every other hue has one job.
+       Colour tokens are six-digit hex: the chart reads them and mixes its brightness steps from them. */
+    --watch: #3B1014;      /* oxblood, the red working light: page ground, dialog panel */
+    --deep: #26080C;       /* the same oxblood, darker: water on the chart, field wells, label chips, ink on amber and bone faces */
+    --land: #651F27;       /* the same oxblood, lighter: land and piers on the chart (1.6:1 on deep), list rules, hover fills (bone on it 10.1:1) */
+    --block: #9A3A49;      /* lighter again: buildings, bollards and rails on the chart (canvas only, 2.7:1 on deep) */
+    --scrim: rgb(38 8 12 / .86);   /* dialog backdrop: the deep tone */
+    --bone: #F6ECE4;       /* text and the marks that belong to it: button rims, link Morse (14.2:1 on watch, 16.1:1 on deep) */
+    --dust: #CDAEAA;       /* secondary text, chart grid, resting rules and field strips (8.1:1 on watch, 9.1:1 on deep) */
+    --sweep: #FFB83D;      /* the radar's own light: ping rings, range labels and the range in use, the primary button, focus rings (9.6:1 on watch; deep ink on it 10.9:1) */
+    --door-blip: #B8F26A;  /* the door and the way to it (12.6:1 on watch, 14.2:1 on deep) */
+    --transit: #6FE3F5;    /* public transport: the tram line, its stop, the ferry landing (11.0:1 on watch, 12.5:1 on deep) */
+    --racks: #D2B5FF;      /* where you leave wheels: bike racks and the car park (9.3:1 on watch, 10.5:1 on deep) */
+    --you: #FF9CC2;        /* the visitor, and only the visitor: their blip and their name (8.5:1 on watch, 9.6:1 on deep) */
+    --fault: #FFA08A;      /* validation errors only (8.4:1 on watch, 9.5:1 on deep) */
+    --lit-1: 1;            /* a blip the ring has just crossed: its hue at full strength... */
+    --lit-2: .78;          /* ...then mixed toward the water in two more steps... */
+    --lit-3: .62;
+    --lit-rest: .46;       /* ...and at rest */
+    --grid-a: .42;         /* chart grid: dust mixed into the water at this strength */
+
+    /* Type */
+    --font-display: "Handjet", "Arial Narrow", sans-serif;
+    --font-text: "Host Grotesk", system-ui, sans-serif;
+    --modules: "ELSH" 2, "ELGR" 1;   /* square Handjet modules */
+    --t-tag: 12px;                   /* labels on the chart */
+    --t-small: 13px;
+    --t-ctl: 15px;                   /* chart controls and the readout */
+    --t-body: 17px;
+    --t-lede: 20px;
+    --t-h3: 28px;
+    --t-num: 44px;                   /* Handjet numerals in the dialog */
+    --t-scope: 11px;                 /* Handjet range and north mark on the chart: this, times --k */
+    --t-h2: clamp(46px, min(6.2vw, 12svh), 88px);   /* follows the height too, so short laptops keep the first screen */
+    --lh-body: 1.5;
+    --lh-lede: 1.45;
+
+    /* Space: an 8px cell */
+    --cell: 8px;
+    --s1: 4px; --s2: 8px; --s3: 16px; --s4: 24px;
+    --s5: 32px; --s6: 48px; --s7: 64px; --s8: 96px;
+    --notch: 4px;            /* stepped corner on buttons and the dialog */
+    --tap: 48px;             /* button and field height */
+    --hit: 44px;             /* minimum target */
+    --ctl: 40px;             /* range buttons beside a sticky chart; --hit on small screens */
+    --max-w: 1296px;
+    --px: 161;               /* chart pixels per side; the door is pixel 80, 80 */
+    --k: 3;                  /* screen pixels per chart pixel; the script picks 2, 3 or 4 to fit the window */
+    --side: 184px;           /* width of the control column when it stands beside the scope */
+    --echo-1: 3px;           /* how far outside the button its first echo sits */
+    --echo-2: 6px;           /* and its second */
+    --nz: 6px;               /* height of the noise strip under a field */
+    --unit: 2px;             /* the pixel of every line: underlines, Morse dots, rules, the settled strip */
+
+    /* Motion: all of it stepped (CSS and the script read these) */
+    --d-ping-step: .07s;     /* one step of a ping ring; twelve steps to full range */
+    --d-first-step: .1s;     /* one step of the first ping, which uncovers the chart */
+    --d-ping-gap: .7s;       /* shortest time between two pings from a moving pointer */
+    --d-label: 1.5s;         /* how long a crossed blip keeps its label; its three light steps share it */
+    --d-echo: .06s;          /* delay between a button's two echoes */
+    --d-collapse: .045s;     /* one echo collapsing on press */
+    --d-press: .16s;         /* shortest time a press stays visible */
+    --d-morse: .04s;         /* one Morse element of the first group */
+    --d-tap: .2s;            /* how long a tapped link holds its Morse */
+    --d-settle: .09s;        /* the quieter strip, before it goes flat */
+    --d-wipe-in: .32s;       /* dialog: eight steps of 45 degrees */
+    --d-wipe-out: .24s;      /* dialog: six steps of 60 degrees */
+  }
+  @media (max-width: 599px) {
+    :root { --t-body: 16px; --t-lede: 18px; --t-h3: 24px; --t-num: 36px; --s8: 64px; }
+  }
+  @media (max-width: 959px) {
+    :root { --ctl: var(--hit); }
+  }
+
+  /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+
+  /* Hidden only when the script runs, and only until the first ping takes over. Hard cuts, so visibility. */
+  html.js:not(.go) .h2, html.js:not(.go) [data-rv] { visibility: hidden; }
+  @media (prefers-reduced-motion: reduce) {
+    html.js:not(.go) .h2, html.js:not(.go) [data-rv] { visibility: visible; }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { background: var(--watch); }
+  body {
+    margin: 0;
+    background: var(--watch);
+    color: var(--bone);
+    font: 400 var(--t-body)/var(--lh-body) var(--font-text);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  :focus-visible { outline: var(--unit) solid var(--sweep); outline-offset: 3px; }
+  ::selection { background: var(--bone); color: var(--deep); }
+  .vh {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+  }
+
+  /* ---------- Layout: copy on the left, the chart on the right, sticky through the section ---------- */
+  .contact {
+    position: relative;
+    overflow: clip;
+    padding-block: clamp(var(--s3), 3svh, var(--s4)) var(--s8);
+    padding-inline: max(var(--s3), (100% - var(--max-w)) / 2);
+    background: var(--watch);
+  }
+  /* In the markup the chart comes straight after the headline, which is where it sits on a phone. */
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 960px) {
+    .layout { grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto 1fr; column-gap: clamp(var(--s5), 4vw, var(--s7)); }
+    .h2 { grid-column: 1; grid-row: 1; }
+    .intro { grid-column: 1; grid-row: 2; }
+    .parts { grid-column: 1; grid-row: 3; }
+    .radar { grid-column: 2; grid-row: 1 / span 3; align-self: start; position: sticky; top: var(--s2); }
+  }
+
+  /* ---------- Copy ---------- */
+  .h2 {
+    margin: clamp(var(--s2), 3svh, var(--s5)) 0 0;
+    max-width: 5.3em;
+    font: 700 var(--t-h2)/.9 var(--font-display);
+    font-variation-settings: var(--modules);
+    letter-spacing: 0;
+    text-wrap: balance;
+  }
+  .h2 .w { display: inline-block; }   /* the first ping finds the lines through these, then puts the text back */
+  .lede { margin: var(--s4) 0 0; max-width: 46ch; font-size: var(--t-lede); line-height: var(--lh-lede); }
+  .actions { display: flex; flex-wrap: wrap; gap: var(--s4) var(--s4); margin-top: var(--s5); }
+
+  /* ---------- Buttons: stepped tiles whose outline comes back as two echoes ---------- */
+  .btn, .rg, .way {
+    --corners: polygon(0 var(--notch), var(--notch) var(--notch), var(--notch) 0, calc(100% - var(--notch)) 0, calc(100% - var(--notch)) var(--notch), 100% var(--notch), 100% calc(100% - var(--notch)), calc(100% - var(--notch)) calc(100% - var(--notch)), calc(100% - var(--notch)) 100%, var(--notch) 100%, var(--notch) calc(100% - var(--notch)), 0 calc(100% - var(--notch)));
+  }
+  .btn {
+    position: relative;
+    display: inline-block;
+    padding: 0; border: 0; background: none;
+    color: inherit; text-decoration: none;
+    font: 600 var(--t-body)/1.2 var(--font-text);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn:focus-visible { outline-offset: calc(var(--echo-2) + 3px); }   /* the focus ring sits outside the echoes */
+  .face { display: block; padding: var(--unit); background: var(--rim); clip-path: var(--corners); }
+  .inner {
+    display: flex; align-items: center; justify-content: center;
+    min-height: calc(var(--tap) - 2 * var(--unit));
+    padding: 0 var(--s4);
+    background: var(--ground);
+    clip-path: var(--corners);
+  }
+  .label { color: var(--ink); }
+  .btn-go { --rim: var(--sweep); --ground: var(--sweep); --ink: var(--deep); }
+  .btn-line { --rim: var(--bone); --ground: var(--watch); --ink: var(--bone); }
+  /* Contact: the face inverts for as long as the press lasts (the script holds .is-down at least --d-press). */
+  .btn-go.is-down { --ground: var(--deep); --ink: var(--sweep); }
+  .btn-line.is-down { --ground: var(--bone); --ink: var(--deep); }
+  /* Echo: two plain rectangles outside the tile, the first heavier than the second. They cut in 60 ms apart,
+     stay while the pointer or focus does, and collapse inward on press: the outer one first. */
+  .e { position: absolute; border: solid var(--rim); visibility: hidden; pointer-events: none; }
+  .e1 { inset: calc(var(--echo-1) * -1); border-width: var(--unit); }
+  .e2 { inset: calc(var(--echo-2) * -1); border-width: 1px; }
+  .btn:focus-visible .e1 { visibility: visible; }
+  .btn:focus-visible .e2 { visibility: visible; transition: visibility 0s linear var(--d-echo); }
+  @media (hover: hover) {
+    .btn:hover .e1 { visibility: visible; }
+    .btn:hover .e2 { visibility: visible; transition: visibility 0s linear var(--d-echo); }
+  }
+  .btn.is-down .e { visibility: hidden; }
+  .btn.is-down .e2 { animation: echo-off var(--d-collapse) steps(1, end) both; }
+  .btn.is-down .e1 { animation: echo-off calc(var(--d-collapse) * 2) steps(1, end) both; }
+  @keyframes echo-off { from { visibility: visible; } to { visibility: hidden; } }
+
+  /* ---------- Text links: the underline turns into Morse ---------- */
+  .u {
+    position: relative;
+    display: inline-block;
+    min-width: var(--hit);
+    padding: 10px 0 12px;
+    border: 0; background: none;
+    color: var(--bone);
+    font: inherit; font-weight: 600; line-height: 1.4;
+    text-align: left; text-decoration: none;
+    overflow-wrap: anywhere;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .u::before, .u::after { content: ""; position: absolute; left: 0; right: 0; bottom: 8px; height: var(--unit); }
+  .u::before { background: var(--dust); }   /* at rest: a solid rule */
+  /* The script writes each link's own pattern (the Morse of its first letter) into --morse and its period into
+     --morse-w; without it the pattern is a plain dot and dash. --mw uncovers the first group element by element. */
+  .u::after {
+    background: var(--morse, linear-gradient(90deg, var(--bone) 0 2px, transparent 0 4px, var(--bone) 0 10px, transparent 0)) 0 0 / var(--morse-w, 16px) 100% repeat-x;
+    clip-path: inset(0 calc(100% - var(--mw, 100%)) 0 0);
+    visibility: hidden;
+  }
+  .u:focus-visible::before, .u.is-tap::before { visibility: hidden; }
+  .u:focus-visible::after, .u.is-tap::after { visibility: visible; }
+  @media (hover: hover) {
+    .u:hover::before { visibility: hidden; }
+    .u:hover::after { visibility: visible; }
+  }
+
+  /* ---------- The chart ---------- */
+  .radar { --size: calc(var(--px) * var(--k) * 1px); width: var(--size); max-width: 100%; margin-top: var(--s4); scroll-margin-top: var(--s3); }
+  @media (min-width: 960px) { .radar { margin-top: 0; } }
+  .scope {
+    position: relative;
+    width: var(--size); height: var(--size);
+    cursor: crosshair;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  .scope canvas { position: absolute; left: 0; top: 0; display: block; width: 100%; height: 100%; }
+  .pic { image-rendering: pixelated; }
+  .ink { pointer-events: none; }
+  /* Names and distances are DOM text on chips of the water tone, so they never lose contrast over the drawing. */
+  .tag, .ring-tag {
+    position: absolute;
+    margin: 0;
+    background: var(--deep);
+    font: 600 var(--t-tag)/1 var(--font-text);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .tag { display: none; padding: 3px 5px; color: var(--bone); transform: translateY(-50%); }
+  .tag.is-on { display: block; }
+  .tag b { font-weight: 700; }
+  .tag[data-kind="door"] b { color: var(--door-blip); }
+  .tag[data-kind="transit"] b { color: var(--transit); }
+  .tag[data-kind="racks"] b { color: var(--racks); }
+  .tag[data-kind="you"] b { color: var(--you); }
+  .ring-tag { padding: 2px 3px; color: var(--sweep); }
+  .scope-range, .scope-n, .scope-px { position: absolute; margin: 0; pointer-events: none; }
+  .scope-range, .scope-n {
+    top: 0;
+    font: 700 calc(var(--k) * var(--t-scope))/.8 var(--font-display);
+    font-variation-settings: var(--modules);
+  }
+  .scope-range { left: 0; color: var(--sweep); }
+  .scope-n { right: 0; display: grid; justify-items: center; gap: var(--unit); color: var(--dust); }
+  .scope-n::before {   /* a stepped arrowhead above the N */
+    content: ""; width: calc(var(--k) * 5px); height: calc(var(--k) * 3px);
+    background: var(--dust);
+    clip-path: polygon(40% 0, 60% 0, 60% 33.4%, 80% 33.4%, 80% 66.7%, 100% 66.7%, 100% 100%, 0 100%, 0 66.7%, 20% 66.7%, 20% 33.4%, 40% 33.4%);
+  }
+  .scope-px { right: 0; bottom: 0; color: var(--dust); font: 500 var(--t-tag)/1 var(--font-text); font-variant-numeric: tabular-nums; }
+  .blip-list { position: absolute; left: 0; top: 0; margin: 0; padding: 0; list-style: none; }
+  .readout {
+    min-height: calc(var(--t-ctl) * 1.35 * 2);   /* two lines, reserved */
+    margin: 6px 0;
+    font-size: var(--t-ctl); line-height: 1.35;
+    font-variant-numeric: tabular-nums;
+  }
+  .ranges { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s1); }
+  .rg {
+    padding: 0; border: 0; background: none;
+    color: var(--bone);
+    font: 600 var(--t-ctl)/1 var(--font-text);
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .rg-face { display: block; padding: var(--unit); background: var(--dust); clip-path: var(--corners); }
+  .rg-in {
+    display: flex; align-items: center; justify-content: center;
+    min-height: calc(var(--ctl) - 2 * var(--unit));
+    background: var(--watch);
+    clip-path: var(--corners);
+  }
+  .rg:focus-visible .rg-face, .rg.is-down .rg-face { background: var(--bone); }
+  .rg:focus-visible .rg-in { background: var(--land); }
+  .legend { display: flex; flex-wrap: wrap; gap: 0 var(--s1); margin-top: var(--s1); }
+  .lg {
+    padding: 0; border: 0; background: none;
+    color: var(--bone);
+    font: 600 var(--t-ctl)/1 var(--font-text);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .lg[hidden] { display: none; }
+  .lg-in { display: flex; align-items: center; gap: var(--s2); min-height: calc(var(--ctl) - var(--s1)); padding: 0 10px 0 var(--s2); }
+  .sw { flex: none; width: 10px; height: 10px; }
+  .lg[data-kind="door"] .sw { background: var(--door-blip); }
+  .lg[data-kind="transit"] .sw { background: var(--transit); }
+  .lg[data-kind="racks"] .sw { background: var(--racks); }
+  .lg[data-kind="you"] .sw { background: var(--you); }
+  .lg:focus-visible .lg-in { background: var(--land); }
+  /* Short, wide windows (the script sets .is-row): the controls stand in a column to the left of the scope. */
+  .radar.is-row { display: grid; grid-template-columns: var(--side) var(--size); grid-template-rows: auto auto auto 1fr; column-gap: var(--s3); width: auto; }
+  .is-row .scope { grid-column: 2; grid-row: 1 / span 4; }
+  .is-row .readout { grid-column: 1; grid-row: 1; min-height: calc(var(--t-ctl) * 1.35 * 5); margin-top: 0; }
+  .is-row .ranges { grid-column: 1; grid-row: 2; grid-template-columns: minmax(0, 1fr); }
+  .is-row .legend { grid-column: 1; grid-row: 3; flex-direction: column; align-items: flex-start; margin-top: var(--s2); }
+  /* Tablets, where the chart is stacked but narrower than the column: the same, with the controls on the right. */
+  .radar.is-flip { grid-template-columns: var(--size) var(--side); }
+  .is-flip .scope { grid-column: 1; }
+  .is-flip .readout, .is-flip .ranges, .is-flip .legend { grid-column: 2; }
+  @media (hover: hover) {
+    .rg:hover .rg-face { background: var(--bone); }
+    .rg:hover .rg-in { background: var(--land); }
+    .lg:hover .lg-in { background: var(--land); }
+  }
+  /* The range in use is amber; a press cuts to bone for as long as it lasts. Both come after the hover rules. */
+  .rg[aria-pressed="true"] { color: var(--deep); }
+  .rg[aria-pressed="true"] .rg-face, .rg[aria-pressed="true"] .rg-in { background: var(--sweep); }
+  .rg.is-down { color: var(--deep); }
+  .rg.is-down .rg-face, .rg.is-down .rg-in, .lg.is-down .lg-in { background: var(--bone); }
+  .lg.is-down { color: var(--deep); }
+
+  /* ---------- The three parts the chart follows ---------- */
+  .part { margin-top: var(--s8); padding-top: var(--s4); border-top: var(--unit) solid var(--dust); scroll-margin-top: var(--s4); }
+  .part:first-child { margin-top: var(--s7); }
+  .part-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 0 var(--s4); }
+  .part h3, .done h3, .dlg h2 { margin: 0; font: 600 var(--t-h3)/1.15 var(--font-text); letter-spacing: -.01em; }
+  .part-range { margin: 0; color: var(--sweep); font-size: var(--t-small); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .part-intro { margin: var(--s3) 0 0; max-width: 52ch; }
+  .ways { margin: var(--s4) 0 0; padding: 0; list-style: none; }
+  .ways li { display: grid; grid-template-columns: 6em minmax(0, 1fr); column-gap: var(--s3); padding: var(--s2) 0 var(--s3); }
+  .ways li + li { border-top: var(--unit) solid var(--land); }
+  .way-k { padding-top: 10px; line-height: 1.4; font-weight: 600; }
+  .ways p { margin: 0; }
+  .way-n { grid-column: 2; max-width: 44ch; color: var(--dust); }
+  .facts { display: grid; gap: var(--s3); margin: var(--s4) 0 0; }
+  .facts > div { display: grid; grid-template-columns: 6em minmax(0, 1fr); gap: var(--s3); }
+  .facts dt { font-weight: 600; }
+  .facts dd { margin: 0; max-width: 44ch; font-variant-numeric: tabular-nums; }
+  .part .btn { margin-top: var(--s5); }
+  @media (max-width: 599px) {
+    .ways li, .facts > div { grid-template-columns: 4.6em minmax(0, 1fr); column-gap: var(--s2); }
+  }
+
+  /* ---------- Form: every field stands on a strip of noise that settles when the value is good ---------- */
+  .swap { display: grid; }
+  .swap > * { grid-area: 1 / 1; align-self: start; min-width: 0; }
+  .swap > .is-off { visibility: hidden; }
+  .lbl { display: block; margin-top: var(--s3); font-weight: 600; }
+  .lbl small { font-weight: 400; font-size: var(--t-small); color: var(--dust); }
+  .msg .lbl:first-child { margin-top: var(--s4); }
+  .field { position: relative; margin-top: var(--s1); }
+  .field input, .field select, .field textarea {
+    display: block;
+    width: 100%; min-height: var(--tap);
+    padding: 0 var(--s3);
+    border: 0; border-radius: 0;
+    background: var(--deep);
+    color: var(--bone);
+    font: inherit;
+  }
+  .field textarea { min-height: calc(var(--tap) * 2.5); padding: 12px var(--s3) 14px; line-height: 1.45; resize: vertical; }
+  .field select {
+    appearance: none;
+    padding-right: var(--s6);
+    cursor: pointer;
+    /* a stepped chevron, three bars */
+    background:
+      linear-gradient(var(--bone), var(--bone)) right 14px top 19px / 12px 2px no-repeat,
+      linear-gradient(var(--bone), var(--bone)) right 16px top 21px / 8px 2px no-repeat,
+      linear-gradient(var(--bone), var(--bone)) right 18px top 23px / 4px 2px no-repeat,
+      var(--deep);
+  }
+  .field option { background: var(--deep); color: var(--bone); }
+  .field :focus { outline: var(--unit) solid var(--sweep); outline-offset: var(--unit); }
+  /* The strip: a jagged profile, masked from one tile the script draws once per field (the gradients are the
+     stand-in). data-nz moves it from noise to a quieter profile to a flat line, in two cuts. */
+  .nz {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    height: var(--nz);
+    background: var(--dust);
+    pointer-events: none;
+    -webkit-mask: var(--nz-a, repeating-linear-gradient(90deg, #000 0 2px, transparent 0 6px), linear-gradient(transparent 50%, #000 0)) 0 100% / var(--nz-w, auto) 100% repeat-x;
+            mask: var(--nz-a, repeating-linear-gradient(90deg, #000 0 2px, transparent 0 6px), linear-gradient(transparent 50%, #000 0)) 0 100% / var(--nz-w, auto) 100% repeat-x;
+  }
+  .field[data-nz="mid"] .nz {
+    -webkit-mask-image: var(--nz-b, linear-gradient(transparent 50%, #000 0));
+            mask-image: var(--nz-b, linear-gradient(transparent 50%, #000 0));
+  }
+  .field[data-nz="flat"] .nz { height: var(--unit); -webkit-mask: none; mask: none; }
+  .field:hover .nz { background: var(--bone); }
+  .field [aria-invalid="true"] ~ .nz { background: var(--fault); }
+  .err {
+    min-height: calc(var(--t-small) * 1.45);   /* reserved, so nothing moves when a message appears */
+    margin: var(--s1) 0 0;
+    color: var(--fault);
+    font-size: var(--t-small); line-height: 1.45; font-weight: 500;
+  }
+  .form-hint { margin: var(--s2) 0 0; max-width: 46ch; color: var(--dust); font-size: var(--t-small); line-height: 1.45; }
+  .msg .btn { margin-top: var(--s5); }
+  .done { padding-top: var(--s4); }
+  .done p { margin: var(--s3) 0 0; max-width: 44ch; }
+  .done b, .log dd { font-weight: 600; overflow-wrap: anywhere; }
+  .log { padding-top: var(--s3); border-top: var(--unit) solid var(--land); }
+  .log dt { font-weight: 400; color: var(--dust); }
+  .log dd { font-weight: 400; white-space: pre-line; }
+  .done .you-name { color: var(--you); }
+  .done h3:focus { outline: none; }   /* focus lands here only so the result is read out */
+  .done .u { margin-top: var(--s2); }
+  @media (min-width: 960px) { .done-jump { display: none; } }   /* the chart is already beside the form */
+
+  /* ---------- Directions dialog: uncovered clockwise, like a clock hand, in eight cuts ---------- */
+  .way {
+    width: min(600px, 100% - 2 * var(--s3));
+    max-width: none;
+    max-height: calc(100dvh - 2 * var(--s3));
+    margin: auto;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--bone);
+    overflow-y: auto;
+    overscroll-behavior: contain;   /* short windows scroll inside the dialog */
+    --notch: var(--cell);
+  }
+  .way::backdrop { background: var(--scrim); }
+  .way[open] .dlg-wipe { animation: wipe-in var(--d-wipe-in) step-end both; }
+  .way.is-closing .dlg-wipe { animation: wipe-out var(--d-wipe-out) step-end both; }
+  /* Every frame has ten points: the centre, twelve o'clock, then the corners and edge middles the hand has
+     passed. Percentages follow the panel, so the 45 degree stops fall on its corners. */
+  @keyframes wipe-in {
+    0% { clip-path: polygon(50% 50%, 50% 0, 100% 0, 100% 0, 100% 0, 100% 0, 100% 0, 100% 0, 100% 0, 100% 0); }
+    12.5% { clip-path: polygon(50% 50%, 50% 0, 100% 0, 100% 50%, 100% 50%, 100% 50%, 100% 50%, 100% 50%, 100% 50%, 100% 50%); }
+    25% { clip-path: polygon(50% 50%, 50% 0, 100% 0, 100% 50%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%); }
+    37.5% { clip-path: polygon(50% 50%, 50% 0, 100% 0, 100% 50%, 100% 100%, 50% 100%, 50% 100%, 50% 100%, 50% 100%, 50% 100%); }
+    50% { clip-path: polygon(50% 50%, 50% 0, 100% 0, 100% 50%, 100% 100%, 50% 100%, 0 100%, 0 100%, 0 100%, 0 100%); }
+    62.5% { clip-path: polygon(50% 50%, 50% 0, 100% 0, 100% 50%, 100% 100%, 50% 100%, 0 100%, 0 50%, 0 50%, 0 50%); }
+    75% { clip-path: polygon(50% 50%, 50% 0, 100% 0, 100% 50%, 100% 100%, 50% 100%, 0 100%, 0 50%, 0 0, 0 0); }
+    87.5%, 100% { clip-path: polygon(50% 50%, 50% 0, 100% 0, 100% 50%, 100% 100%, 50% 100%, 0 100%, 0 50%, 0 0, 50% 0); }
+  }
+  /* Closing runs the other way in six cuts of 60 degrees: what is left always starts at twelve o'clock. */
+  @keyframes wipe-out {
+    0% { clip-path: polygon(50% 50%, 50% 0, 100% 0, 100% 100%, 0 100%, 0 21.1%, 0 21.1%); }
+    16.67% { clip-path: polygon(50% 50%, 50% 0, 100% 0, 100% 100%, 0 100%, 0 78.9%, 0 78.9%); }
+    33.33% { clip-path: polygon(50% 50%, 50% 0, 100% 0, 100% 100%, 50% 100%, 50% 100%, 50% 100%); }
+    50% { clip-path: polygon(50% 50%, 50% 0, 100% 0, 100% 78.9%, 100% 78.9%, 100% 78.9%, 100% 78.9%); }
+    66.67% { clip-path: polygon(50% 50%, 50% 0, 100% 0, 100% 21.1%, 100% 21.1%, 100% 21.1%, 100% 21.1%); }
+    83.33%, 100% { clip-path: polygon(50% 50%, 50% 50%, 50% 50%, 50% 50%, 50% 50%, 50% 50%, 50% 50%); }
+  }
+  .dlg-rim { padding: var(--unit); background: var(--bone); clip-path: var(--corners); }
+  .dlg { padding: var(--s5); background: var(--watch); clip-path: var(--corners); }
+  .dlg-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s3); }
+  .dlg-intro { margin: var(--s2) 0 var(--s3); max-width: 46ch; color: var(--dust); }
+  .steps { margin: 0; padding: 0; list-style: none; }
+  .steps li {
+    display: grid; grid-template-columns: 1.1em minmax(0, 1fr) auto; align-items: center; column-gap: var(--s3);
+    padding: var(--s2) 0;
+    border-top: var(--unit) solid var(--land);
+  }
+  .step-n { font: 700 var(--t-num)/1 var(--font-display); font-variation-settings: var(--modules); }
+  .step-m { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .dlg-note { margin: 0; padding-top: var(--s3); border-top: var(--unit) solid var(--land); color: var(--dust); }
+  @media (max-width: 599px) {
+    .dlg { padding: var(--s4) var(--s3); }
+    .actions { display: grid; }
+    .msg .btn, .part .btn { display: block; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0s !important; transition-delay: 0s !important; }
+    .way[open] .dlg-wipe, .way.is-closing .dlg-wipe, .btn.is-down .e { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<section class="contact" aria-labelledby="contact-title">
+  <div class="layout" id="layout">
+    <h2 class="h2" id="contact-title">Find the door at the end of Pier 4.</h2>
+
+    <div class="radar" id="chart">
+      <div class="scope" id="scope">
+        <canvas class="pic" id="pic" width="161" height="161" aria-hidden="true"></canvas>
+        <canvas class="ink" id="ink" aria-hidden="true"></canvas>
+        <div id="tags" aria-hidden="true"></div>
+        <p class="scope-range" id="range-num" aria-hidden="true">500 m</p>
+        <p class="scope-n" aria-hidden="true">N</p>
+        <p class="scope-px" id="px-note" aria-hidden="true">1 px = 6.25 m</p>
+        <ul class="blip-list" id="blips" aria-label="Places on the chart"></ul>
+      </div>
+      <p class="readout" id="readout" aria-live="polite" data-rv>Click or tap the chart to send a ping. It reports the nearest place it finds.</p>
+      <div class="ranges" role="group" aria-label="Chart range" data-rv>
+        <button class="rg" type="button" data-range="0" aria-pressed="false"><span class="rg-face"><span class="rg-in">2 km</span></span></button>
+        <button class="rg" type="button" data-range="1" aria-pressed="true"><span class="rg-face"><span class="rg-in">500 m</span></span></button>
+        <button class="rg" type="button" data-range="2" aria-pressed="false"><span class="rg-face"><span class="rg-in">100 m</span></span></button>
+      </div>
+      <div class="legend" role="group" aria-label="What the blips are" data-rv>
+        <button class="lg" type="button" data-kind="door" aria-haspopup="dialog" aria-controls="way"><span class="lg-in"><i class="sw"></i>Door</span></button>
+        <button class="lg" type="button" data-kind="transit"><span class="lg-in"><i class="sw"></i>Tram and ferry</span></button>
+        <button class="lg" type="button" data-kind="racks"><span class="lg-in"><i class="sw"></i>Bikes and cars</span></button>
+        <button class="lg" type="button" data-kind="you" hidden><span class="lg-in"><i class="sw"></i>You</span></button>
+      </div>
+    </div>
+
+    <div class="intro">
+      <p class="lede" data-rv>Molo 4 is a hackerspace run by its members, in the old pilot station on Pier 4 in Trieste. Open night is every Tuesday from 19:00: walk in, no booking. The door is on the seaward side, past the bollards.</p>
+      <div class="actions" data-rv>
+        <button class="btn btn-go" id="way-open" type="button" aria-haspopup="dialog" aria-controls="way"><span class="e e2"></span><span class="e e1"></span><span class="face"><span class="inner"><span class="label">How to find the door</span></span></span></button>
+        <a class="btn btn-line" href="#write"><span class="e e2"></span><span class="e e1"></span><span class="face"><span class="inner"><span class="label">Write before you come</span></span></span></a>
+      </div>
+    </div>
+
+    <div class="parts">
+      <div class="part" id="reach" data-range="0" data-rv>
+        <div class="part-head">
+          <h3>Reach us</h3>
+          <p class="part-range">Chart at 2 km</p>
+        </div>
+        <p class="part-intro">Nobody sits at a desk here. These are the four ways in, and who is at the other end of each.</p>
+        <ul class="ways">
+          <li>
+            <span class="way-k">Email</span>
+            <p><a class="u" href="mailto:ciao@molo4.example" target="_blank" rel="noopener">ciao@molo4.example<span class="vh"> (opens in a new tab)</span></a></p>
+            <p class="way-n">Read by whoever holds the keys that week. Expect an answer within two days.</p>
+          </li>
+          <li>
+            <span class="way-k">Matrix</span>
+            <p><a class="u" href="https://matrix.to/" target="_blank" rel="noopener">#molo4 on Matrix<span class="vh"> (opens in a new tab)</span></a></p>
+            <p class="way-n">The busiest room. Someone answers most evenings after 21:00.</p>
+          </li>
+          <li>
+            <span class="way-k">Mastodon</span>
+            <p><a class="u" href="https://mastodon.social/" target="_blank" rel="noopener">@molo4 on Mastodon<span class="vh"> (opens in a new tab)</span></a></p>
+            <p class="way-n">Changes to open night are posted here first. Replies are slow.</p>
+          </li>
+          <li>
+            <span class="way-k">Phone</span>
+            <p><a class="u" href="tel:+390405550144" target="_blank" rel="noopener">+39 040 555 0144<span class="vh"> (opens in a new tab)</span></a></p>
+            <p class="way-n">It rings on the workbench. Answered on Tuesdays from 19:00, when someone has a free hand.</p>
+          </li>
+        </ul>
+      </div>
+
+      <div class="part" id="write" data-range="1" data-rv>
+        <div class="part-head">
+          <h3 id="msg-title">Tell us what you are bringing</h3>
+          <p class="part-range">Chart at 500 m</p>
+        </div>
+        <p class="part-intro">Write ahead if it is heavy, hot, loud or strange, or if you want a hand carrying it down the pier. A member reads this before Tuesday.</p>
+        <div class="swap">
+          <form class="msg" id="msg" aria-labelledby="msg-title" novalidate>
+            <label class="lbl" for="who">Name or handle <small>(shown on the chart)</small></label>
+            <div class="field">
+              <input id="who" name="who" type="text" autocomplete="nickname" spellcheck="false" maxlength="60" required>
+              <span class="nz" aria-hidden="true"></span>
+            </div>
+            <p class="err" id="who-err" aria-live="polite"></p>
+            <label class="lbl" for="email">Email address</label>
+            <div class="field">
+              <input id="email" name="email" type="email" autocomplete="email" spellcheck="false" required>
+              <span class="nz" aria-hidden="true"></span>
+            </div>
+            <p class="err" id="email-err" aria-live="polite"></p>
+            <label class="lbl" for="topic">What it is about</label>
+            <div class="field">
+              <select id="topic" name="topic" required>
+                <option value="">Choose one</option>
+                <option value="visit">Visit on Tuesday</option>
+                <option value="project">Bring a project</option>
+                <option value="donate">Donate equipment</option>
+                <option value="press">Press</option>
+              </select>
+              <span class="nz" aria-hidden="true"></span>
+            </div>
+            <p class="err" id="topic-err" aria-live="polite"></p>
+            <label class="lbl" for="when">Date you plan to come <small>(optional)</small></label>
+            <div class="field">
+              <input id="when" name="when" type="date">
+              <span class="nz" aria-hidden="true"></span>
+            </div>
+            <p class="err" id="when-err" aria-live="polite"></p>
+            <label class="lbl" for="note">Message</label>
+            <div class="field">
+              <textarea id="note" name="note" rows="4" maxlength="600" required></textarea>
+              <span class="nz" aria-hidden="true"></span>
+            </div>
+            <p class="err" id="note-err" aria-live="polite"></p>
+            <p class="form-hint">A member answers from ciao@molo4.example, usually within two days.</p>
+            <button class="btn btn-go" id="msg-send" type="submit"><span class="e e2"></span><span class="e e1"></span><span class="face"><span class="inner"><span class="label">Send the message</span></span></span></button>
+          </form>
+          <div class="done is-off" id="done" inert>
+            <h3 id="done-title" tabindex="-1">Message logged.</h3>
+            <p>A member will answer <b id="done-mail">nora@example.com</b> about <b id="done-topic">your visit</b>, usually within two days.</p>
+            <p>You are on the chart as <b class="you-name" id="done-who">Nora</b>, at the landward edge, expected on <b id="done-day">Tuesday 17 November</b>.</p>
+            <dl class="facts log">
+              <div><dt>About</dt><dd id="log-topic">Visit on Tuesday</dd></div>
+              <div><dt>Coming</dt><dd id="log-day">Tuesday 17 November, the next open night</dd></div>
+              <div><dt>Message</dt><dd id="log-note">A lathe bed.</dd></div>
+            </dl>
+            <p class="done-jump"><a class="u" href="#chart">See yourself on the chart</a></p>
+            <button class="u" id="again" type="button">Write another message</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="part" id="find" data-range="2" data-rv>
+        <div class="part-head">
+          <h3>Find the door</h3>
+          <p class="part-range">Chart at 100 m</p>
+        </div>
+        <p class="part-intro">The pilot station is the last building on the pier. Cars stop at the row of five bollards; people and bikes carry on. Go round the building by its south side. The door faces the open sea, under a red lamp.</p>
+        <dl class="facts">
+          <div><dt>Address</dt><dd>Stazione Piloti, Molo 4, 34135 Trieste</dd></div>
+          <div><dt>Open night</dt><dd>Tuesdays from 19:00 until the last member leaves</dd></div>
+          <div><dt>Tram</dt><dd>Line 6 to Rive Molo 4, then 450 m on foot</dd></div>
+          <div><dt>Bikes</dt><dd>Six hoops on the station wall, a long rack at the foot of the pier</dd></div>
+          <div><dt>Cars</dt><dd>Silos car park, 875 m away. Nothing drives past the bollards.</dd></div>
+          <div><dt>Step-free</dt><dd>Yes. The quay is level all the way and the door is 90 cm wide.</dd></div>
+        </dl>
+        <button class="btn btn-line" id="way-open-2" type="button" aria-haspopup="dialog" aria-controls="way"><span class="e e2"></span><span class="e e1"></span><span class="face"><span class="inner"><span class="label">Read the five directions</span></span></span></button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<dialog class="way" id="way" aria-labelledby="way-title" data-lenis-prevent>
+  <div class="dlg-wipe"><div class="dlg-rim"><div class="dlg">
+    <div class="dlg-head">
+      <h2 id="way-title">How to find the door</h2>
+      <button class="u" id="way-close" type="button">Close</button>
+    </div>
+    <p class="dlg-intro">From the tram stop Rive Molo 4, line 6. It is 450 m, about six minutes, level all the way.</p>
+    <ol class="steps">
+      <li><span class="step-n" aria-hidden="true">1</span><span>Cross the waterfront road toward the sea.</span><span class="step-m">25 m</span></li>
+      <li><span class="step-n" aria-hidden="true">2</span><span>Turn right and follow the quay to the foot of Pier 4. The long bike rack is on your left.</span><span class="step-m">95 m</span></li>
+      <li><span class="step-n" aria-hidden="true">3</span><span>Turn left onto the pier and walk out along the crane rails to the row of five bollards.</span><span class="step-m">275 m</span></li>
+      <li><span class="step-n" aria-hidden="true">4</span><span>Pass between the bollards and go round the pilot station by its left side, the south one.</span><span class="step-m">35 m</span></li>
+      <li><span class="step-n" aria-hidden="true">5</span><span>The door is in the seaward wall, under the red lamp. Ring the bell marked M4.</span><span class="step-m">20 m</span></li>
+    </ol>
+    <p class="dlg-note">If the red lamp is dark, nobody is in. Ask in the Matrix room before you walk out.</p>
+  </div></div></div>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  const root = document.documentElement;
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const lib = !!(window.gsap && window.ScrollTrigger && window.Lenis);
+  if (lib) root.classList.add('js'); // CDN blocked: no class, everything is visible and still works
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const css = (n) => getComputedStyle(root).getPropertyValue(n).trim();
+  const ms = (n) => parseFloat(css(n)) * 1000;
+  let lenis = null;
+
+  /* ---------- The harbour, in metres from the door (x east, y north) ---------- */
+  const RANGES = [
+    { m: 2000, name: '2 km', rings: ['500 m', '1 km', '1.5 km', '2 km'], round: 10 },
+    { m: 500, name: '500 m', rings: ['125 m', '250 m', '375 m', '500 m'], round: 5 },
+    { m: 100, name: '100 m', rings: ['25 m', '50 m', '75 m', '100 m'], round: 1 }
+  ];
+  const KINDS = { door: '--door-blip', transit: '--transit', racks: '--racks', you: '--you' };
+  // on: the ranges that show the blip. tag: which side its label opens on, per range.
+  const BLIPS = [
+    { id: 'door', kind: 'door', name: 'Door', the: 'the door', x: 0, y: 0, on: [0, 1, 2], tag: 'lll' },
+    { id: 'tram', kind: 'transit', name: 'Tram stop', the: 'the tram stop', x: 328, y: -109, on: [0, 1], tag: 'rl' },
+    { id: 'ferry', kind: 'transit', name: 'Ferry landing', the: 'the ferry landing', x: 215, y: -1160, on: [0], tag: 'r' },
+    { id: 'hoops', kind: 'racks', name: 'Bike hoops', the: 'the bike hoops', x: 22, y: 4, on: [2], tag: '  r' },
+    { id: 'rack', kind: 'racks', name: 'Bike rack', the: 'the bike rack', x: 292, y: 26, on: [1], tag: ' l' },
+    { id: 'cars', kind: 'racks', name: 'Car park', the: 'the car park', x: 690, y: 540, on: [0], tag: 'r' }
+  ];
+  const COAST = [[1500, -320], [1100, -40], [700, 180], [-420, 300], [-900, 400], [-1300, 330], [-1700, 120], [-1e9, -260]]; // [north of this y, the shore's x]
+  const coast = (y) => COAST.find(([n]) => y >= n)[1];
+  const PIERS = [[70, -262, 300, -226], [-12, -18, 300, 18], [40, 226, 300, 262], [200, -1180, 330, -1140]]; // Pier 3, Pier 4, Pier 5, the ferry pier
+  const BREAKWATER = [-760, 150, -720, 1000];
+  const CANAL = [300, -330, 640, -302];
+  const STATION = [0, -10, 18, 10];
+  const ROUTE = [[328, -109], [303, -109], [303, -14], [28, -14], [-7, -14], [-7, 0], [-3, 0]]; // tram stop to door: 25 + 95 + 275 + 35 + 20 m
+  const BOLLARDS = 28, TRAM = 28; // the bollard row's x; the tram line's distance inland of the shore
+
+  /* ---------- The chart: 161 x 161 pixels, the door at 80, 80. Plain JavaScript; the motion layer only
+     makes its pings travel. ---------- */
+  const scope = $('#scope'), radar = $('#chart'), layout = $('#layout'), readout = $('#readout');
+  const rgs = $$('.rg'), lgs = $$('.lg');
+  const chart = (() => {
+    const N = 161, C = 80, R = 80, STEPS = 12;
+    const pic = $('#pic'), ink = $('#ink'), g = pic.getContext('2d'), q = ink.getContext('2d');
+    const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+    const mix = (a, b, t) => { const p = hex(a), o = hex(b); return `rgb(${p.map((v, i) => Math.round(v * t + o[i] * (1 - t))).join(' ')})`; };
+    const col = Object.fromEntries(['watch', 'deep', 'land', 'block', 'dust', 'sweep'].map((k) => [k, css(`--${k}`)]));
+    const LIT = ['--lit-1', '--lit-2', '--lit-3', '--lit-rest'].map((n) => parseFloat(css(n)));
+    const shade = Object.fromEntries(Object.entries(KINDS).map(([k, token]) => [k, LIT.map((t) => mix(css(token), col.deep, t))]));
+    const T = { step: ms('--d-ping-step'), label: ms('--d-label') };
+
+    // Midpoint circle: the half-width of every row of a pixel disc of radius r.
+    const cache = {};
+    const spans = (r) => {
+      if (cache[r]) return cache[r];
+      const hw = new Int16Array(2 * r + 1);
+      let x = r, y = 0, d = 1 - r;
+      while (x >= y) {
+        [[y, x], [x, y]].forEach(([row, half]) => { if (half > hw[r + row]) hw[r + row] = hw[r - row] = half; });
+        y++;
+        if (d < 0) d += 2 * y + 1; else { x--; d += 2 * (y - x) + 1; }
+      }
+      return (cache[r] = hw);
+    };
+    // Every pixel on the edge of that disc.
+    const rim = (r, fn) => {
+      const hw = spans(r);
+      for (let dy = -r; dy <= r; dy++) {
+        const w = hw[dy + r], m = Math.min(dy > -r ? hw[dy - 1 + r] : -1, dy < r ? hw[dy + 1 + r] : -1, w - 1);
+        for (let dx = m + 1; dx <= w; dx++) { fn(dx, dy); if (dx) fn(-dx, dy); }
+      }
+    };
+    const SCOPE = spans(R);
+    const inScope = (x, y) => y >= 0 && y < N && Math.abs(x - C) <= SCOPE[y];
+    const radius = (s) => Math.round((s + 1) * R / STEPS);
+    const layer = () => { const c = document.createElement('canvas'); c.width = c.height = N; return c; };
+    const disc = (c, r, fn) => { const hw = spans(r); for (let dy = -r; dy <= r; dy++) fn(C - hw[dy + r], C + dy, 2 * hw[dy + r] + 1); };
+
+    // The water, and the grid over everything: three dotted range rings, a dotted cross, the scope's edge.
+    const water = layer(), grid = layer();
+    {
+      const w = water.getContext('2d'), o = grid.getContext('2d');
+      w.fillStyle = col.deep;
+      disc(water, R, (x, y, n) => w.fillRect(x, y, n, 1));
+      o.fillStyle = mix(col.dust, col.deep, parseFloat(css('--grid-a')));
+      [20, 40, 60].forEach((r) => rim(r, (dx, dy) => { if ((dx + dy) % 2 === 0) o.fillRect(C + dx, C + dy, 1, 1); }));
+      for (let i = 4; i < R; i += 4) [[i, 0], [-i, 0], [0, i], [0, -i]].forEach(([dx, dy]) => o.fillRect(C + dx, C + dy, 1, 1));
+      o.fillStyle = mix(col.dust, col.deep, .62);
+      rim(R, (dx, dy) => o.fillRect(C + dx, C + dy, 1, 1));
+    }
+
+    // One drawing per range, from the same harbour: land, piers and blocks as flat tones, clipped to the scope.
+    const scene = RANGES.map((range, i) => {
+      const c = layer(), o = c.getContext('2d'), mpp = range.m / R;
+      const X = (m) => C + Math.round(m / mpp), Y = (m) => C - Math.round(m / mpp);
+      const box = (x0, y0, x1, y1, tone) => { o.fillStyle = tone; o.fillRect(X(x0), Y(y1), Math.max(1, X(x1) - X(x0)), Math.max(1, Y(y0) - Y(y1))); };
+      for (let py = 0; py < N; py++) { const x = Math.max(0, X(coast((C - py) * mpp))); if (x < N) { o.fillStyle = col.land; o.fillRect(x, py, N - x, 1); } }
+      PIERS.forEach((p) => box(...p, col.land));
+      if (i === 0) box(...BREAKWATER, col.land);
+      const span = range.m + 100;
+      for (let a = -Math.ceil(span / 100); a * 100 < span; a++) for (let b = -Math.ceil(span / 100); b * 100 < span; b++) {
+        const bx = 50 + a * 100, by = 12 + b * 100; // street blocks: 75 m, 100 m apart; about one in eight is a square
+        if (bx < coast(by) + 50 || bx < coast(by + 75) + 50 || ((Math.imul(a, 73856093) ^ Math.imul(b, 19349663)) >>> 0) % 100 < 13) continue;
+        box(bx, by, bx + 75, by + 75, col.block);
+      }
+      if (i < 2) { box(CANAL[0], CANAL[1] - 14, CANAL[2], CANAL[3] + 14, col.land); o.clearRect(X(CANAL[0]), Y(CANAL[3]), X(CANAL[2]) - X(CANAL[0]), Math.max(1, Y(CANAL[1]) - Y(CANAL[3]))); }
+      if (i === 2) o.clearRect(X(STATION[0]) - 1, Y(STATION[3]) - 1, X(STATION[2]) - X(STATION[0]) + 2, Y(STATION[1]) - Y(STATION[3]) + 2); // a pixel of water tone round the building
+      if (i > 0) box(...STATION, col.block);
+      if (i === 2) {
+        o.fillStyle = col.block;
+        for (let m = -6; m < 100; m += 12) { o.fillRect(X(m), Y(18), 2, 2); o.fillRect(X(m), Y(-18) - 2, 2, 2); }           // mooring posts on both edges
+        [-12, -6, 0, 6, 12].forEach((m) => o.fillRect(X(BOLLARDS), Y(m) - 1, 2, 2));                                      // the row of five bollards
+        for (let x = X(BOLLARDS) + 6; x < N; x += 3) { o.fillRect(x, Y(5), 1, 1); o.fillRect(x, Y(-5), 1, 1); }            // crane rails
+        o.fillStyle = col.land;
+        o.fillRect(X(10), Y(9), 5, 1); o.fillRect(X(10), Y(9), 1, 5); o.fillRect(X(10), Y(9) + 4, 5, 1);                   // the lookout, a square on the roof
+        [[6, 0], [4, 2], [2, 4]].forEach(([w, dy]) => o.clearRect(X(-12), Y(18) + dy, w, 2));                             // landing steps cut into the pier's corner
+        o.fillStyle = col.block;
+        [[3, 7], [1, 10], [0, 11], [1, 10], [3, 7]].forEach(([dx, w], row) => o.fillRect(X(-9) + dx, Y(18) - 8 + row, w, 1));   // the pilot boat, moored by the steps
+      }
+      o.globalCompositeOperation = 'destination-in';
+      o.beginPath(); disc(c, R, (x, y, n) => o.rect(x, y, n, 1)); o.fill();
+
+      // Dots that light like blips: the tram line beside the shore, then the way from the tram stop to the door.
+      const dots = [], seen = new Set();
+      const dot = (x, y, kind) => { const key = x * N + y; if (seen.has(key) || !inScope(x, y)) return; seen.add(key); dots.push({ x, y, kind, lv: 3, at: 0 }); };
+      if (i < 2) for (let py = 0, last = null; py < N; py++) {
+        const x = X(coast((C - py) * mpp) + TRAM);
+        for (let a = Math.min(x, last ?? x); a <= Math.max(x, last ?? x); a++) if ((a + py) % 2 === 0) dot(a, py, 'transit');
+        last = x;
+      }
+      const every = i === 2 ? 3 : 2;
+      let n = 0;
+      ROUTE.slice(1).forEach(([x1, y1], s) => {
+        let x = X(ROUTE[s][0]), y = Y(ROUTE[s][1]);
+        const ex = X(x1), ey = Y(y1);
+        while (x !== ex || y !== ey) { if (n++ % every === 0) dot(x, y, 'door'); if (x !== ex) x += Math.sign(ex - x); else y += Math.sign(ey - y); }
+      });
+      return { pic: c, dots, mpp, X, Y };
+    });
+
+    const blips = BLIPS.map((b) => ({ ...b, lv: 3, at: 0, p: scene.map((s) => [s.X(b.x), s.Y(b.y)]) }));
+    const door = blips[0];
+    let you = null;
+    let cur = lib ? 0 : 1, k = 3, dpr = 1, reveal = lib && !reduced.matches ? 0 : R;
+    let rings = [], hot = new Set(), focus = null, timer = 0, inView = true;
+    const api = { live: false, wake: null }; // live: pings travel; wake: starts the motion layer's loop
+    const shown = () => [...blips.filter((b) => b.on.includes(cur)), ...(you ? [you] : [])];
+    const near = (x, y) => Math.hypot(x - C, y - C) <= reveal + .5;
+
+    /* Labels: one chip per blip, placed beside it; four range labels down the south-west diagonal, which
+       is open water at every range. */
+    const tags = $('#tags');
+    const tagOf = (b) => { const el = document.createElement('p'); el.className = 'tag'; el.dataset.kind = b.kind; tags.append(el); return el; };
+    blips.forEach((b) => { b.el = tagOf(b); });
+    const ringTags = [1, 2, 3, 4].map(() => { const el = document.createElement('p'); el.className = 'ring-tag'; tags.append(el); return el; });
+    const place = () => {
+      shown().forEach((b) => {
+        const [x, y] = b.p[cur], side = b.tag[cur] || 'r', half = b === door ? 3 : 2, s = b.el.style;
+        s.top = (y + .5) * k + 'px';
+        s.left = side === 'r' ? (x + half + 2) * k + 'px' : '';
+        s.right = side === 'l' ? (N - x + half + 1) * k + 'px' : '';
+      });
+      ringTags.forEach((el, n) => {
+        const d = Math.round((n + 1) * 20 * Math.SQRT1_2);
+        el.textContent = RANGES[cur].rings[n];
+        el.style.right = (N - (C - d)) * k + 2 + 'px';
+        el.style.top = (C + d + 1) * k + 2 + 'px';
+      });
+    };
+
+    /* Drawing: the low-resolution picture, then the ink layer at screen resolution for the thin rings. */
+    const edges = (ox, oy, r) => { // the outline of a pixel disc, two screen pixels thick, clipped to the scope
+      const hw = spans(r), S = k * dpr, t = 2 * dpr;
+      for (let dy = -r; dy <= r; dy++) {
+        const y = oy + dy, w = hw[dy + r], up = dy > -r ? hw[dy - 1 + r] : -1, dn = dy < r ? hw[dy + 1 + r] : -1;
+        if (y < 0 || y >= N) continue;
+        [-1, 1].forEach((sgn) => {
+          const x = ox + sgn * w;
+          if (inScope(x, y)) q.fillRect(sgn < 0 ? x * S : x * S + S - t, y * S, t, S);
+          for (let dx = up + 1; dx <= w; dx++) if ((dx || sgn < 0) && inScope(ox + sgn * dx, y)) q.fillRect((ox + sgn * dx) * S, y * S, S, t);
+          for (let dx = dn + 1; dx <= w; dx++) if ((dx || sgn < 0) && inScope(ox + sgn * dx, y)) q.fillRect((ox + sgn * dx) * S, y * S + S - t, S, t);
+        });
+      }
+    };
+    const draw = () => {
+      const s = scene[cur];
+      g.fillStyle = col.watch; g.fillRect(0, 0, N, N);
+      g.drawImage(water, 0, 0);
+      if (reveal >= R) g.drawImage(s.pic, 0, 0);
+      else if (reveal > 0) disc(pic, reveal, (x, y, n) => g.drawImage(s.pic, x, y, n, 1, x, y, n, 1));
+      g.drawImage(grid, 0, 0);
+      s.dots.forEach((d) => { if (near(d.x, d.y)) { g.fillStyle = shade[d.kind][d.lv]; g.fillRect(d.x, d.y, 1, 1); } });
+      shown().forEach((b) => {
+        const [x, y] = b.p[cur], h = b === door ? 2 : 1;
+        if (!near(x, y)) return;
+        g.fillStyle = col.deep; g.fillRect(x - h - 1, y - h - 1, 2 * h + 3, 2 * h + 3);
+        g.fillStyle = shade[b.kind][b.lv]; g.fillRect(x - h, y - h, 2 * h + 1, 2 * h + 1);
+        if (b === door) { g.fillStyle = col.deep; g.fillRect(x, y, 1, 1); }
+      });
+      q.clearRect(0, 0, ink.width, ink.height);
+      q.fillStyle = col.sweep;
+      rings.forEach((ring) => edges(ring.x, ring.y, radius(ring.step)));
+      if (focus && shown().includes(focus)) { // keyboard focus on a blip: an amber square around it
+        const [x, y] = focus.p[cur], S = k * dpr, t = 2 * dpr, a = (x - 4) * S, b = (y - 4) * S, n = 9 * S;
+        q.fillRect(a, b, n, t); q.fillRect(a, b + n - t, n, t); q.fillRect(a, b, t, n); q.fillRect(a + n - t, b, t, n);
+      }
+    };
+
+    /* Fit: the biggest whole number of screen pixels per chart pixel that keeps the whole instrument on the
+       first screen (beside the copy) or inside the column (stacked). */
+    const fit = () => {
+      const side = getComputedStyle(radar).position === 'sticky', w = layout.clientWidth;
+      const max = Math.max(2, Math.min(side ? 4 : 3, Math.floor((side ? w * .5 : w) / N)));
+      const top = parseFloat(getComputedStyle(layout.parentElement).paddingTop);
+      radar.classList.remove('is-row', 'is-flip');
+      for (k = max; k > 2; k--) {
+        radar.style.setProperty('--k', k);
+        if (!side || top + radar.offsetHeight <= window.innerHeight - 4) break;
+      }
+      // A short, wide window: keep three screen pixels per chart pixel and move the controls beside the scope.
+      if (side && k === 2 && w >= 1100 && top + N * 3 <= window.innerHeight - 4) { radar.classList.add('is-row'); k = 3; }
+      if (!side && w >= N * k + 16 + parseFloat(css('--side'))) radar.classList.add('is-row', 'is-flip');
+      radar.style.setProperty('--k', k);
+      dpr = Math.min(2, Math.ceil(window.devicePixelRatio || 1));
+      ink.width = ink.height = N * k * dpr;
+      place(); draw();
+    };
+
+    /* Lighting: a crossed blip shows its name and its distance from the ping, then steps down to rest. */
+    const metres = (d, round = RANGES[cur].round) => d >= 995 ? (d / 1000).toFixed(1) + ' km' : Math.round(d / round) * round + ' m';
+    const bearing = (dx, dy) => String(Math.round(Math.atan2(dx, dy) * 180 / Math.PI + 360) % 360).padStart(3, '0') + '°';
+    const world = (ring) => ring.from && ring.from !== you ? [ring.from.x, ring.from.y] : [(ring.x - C) * scene[cur].mpp, (C - ring.y) * scene[cur].mpp];
+    const label = (b, ring) => {
+      const [wx, wy] = world(ring), d = b === you ? 0 : Math.hypot(b.x - wx, b.y - wy);
+      b.el.innerHTML = '';
+      const name = document.createElement('b');
+      name.textContent = b.name.length > 18 ? b.name.slice(0, 17) + '…' : b.name;
+      b.el.append(name, d >= 1 && b !== ring.from ? ' ' + metres(d, ring.from ? 5 : undefined) : '');
+      b.el.classList.add('is-on');
+    };
+    const light = (thing, now) => { thing.lv = 0; thing.at = now; hot.add(thing); };
+    const cross = (ring, r, now) => {
+      const hit = (t, x, y) => { if (ring.hit.has(t) || Math.hypot(x - ring.x, y - ring.y) > r + .5) return false; ring.hit.add(t); light(t, now); return true; };
+      scene[cur].dots.forEach((d) => hit(d, d.x, d.y));
+      shown().forEach((b) => { if (hit(b, ...b.p[cur])) label(b, ring); });
+    };
+    const rest = () => {
+      hot.forEach((t) => { t.lv = 3; });
+      hot.clear();
+      blips.forEach((b) => b.el.classList.remove('is-on'));
+      if (you) label(you, { from: you });
+    };
+    const quiet = () => { // drop everything in flight: rings end (the first ping still uncovers the chart), blips rest
+      clearTimeout(timer);
+      rings.splice(0).forEach((ring) => { if (ring.first) { reveal = R; ring.end?.(); } });
+      rest();
+    };
+
+    /* The readout: what the ping found nearest to where it started. */
+    const say = (text) => { readout.textContent = text; };
+    const report = (ring) => {
+      const [wx, wy] = world(ring), from = ring.from;
+      const found = shown().filter((b) => b !== from && b !== you && Math.hypot(b.p[cur][0] - ring.x, b.p[cur][1] - ring.y) <= R)
+        .map((b) => ({ b, d: Math.hypot(b.x - wx, b.y - wy) })).sort((a, b) => a.d - b.d)[0];
+      const origin = from ? `From ${from === you ? 'you' : from.the}: ` : '';
+      if (!found) return from ? `${origin}nothing else within ${RANGES[cur].name}.` : `Nothing within ${RANGES[cur].name} of that ping.`;
+      const what = `${metres(found.d, from && from !== you ? 5 : undefined)}, bearing ${bearing(found.b.x - wx, found.b.y - wy)}`;
+      return from ? `${origin}${found.b.name.toLowerCase()} ${what}.` : `${found.b.name}: ${what}.`;
+    };
+
+    /* A ping from chart pixel x, y. Live: a ring that travels. Otherwise: everything in range lights at once. */
+    const emit = (x, y, o = {}) => {
+      const ring = { x, y, from: o.from || null, step: -1, t0: performance.now(), ms: o.ms || T.step, hit: new Set(), first: !!o.first, tick: o.tick, end: o.end };
+      if (!ring.first) say(o.say ?? (o.pre || '') + report(ring));
+      if (!inView && !ring.first) return;
+      if (api.live && inView) {
+        if (rings.length >= 3) rings.shift(); // three rings alive at most
+        rings.push(ring);
+        api.wake?.();
+        return;
+      }
+      if (ring.first) { reveal = R; ring.end?.(); draw(); return; }
+      clearTimeout(timer);
+      rest();
+      cross(ring, R, 0);
+      draw();
+      timer = setTimeout(() => { rest(); draw(); }, T.label);
+    };
+    // One frame of the live chart. Everything is stepped, so it redraws only when a step changes.
+    const frame = () => {
+      const now = performance.now();
+      let dirty = false;
+      rings = rings.filter((ring) => {
+        const s = Math.floor((now - ring.t0) / ring.ms);
+        if (s === ring.step) return true;
+        dirty = true;
+        if (s >= STEPS) { if (ring.first) { reveal = R; ring.end?.(); } return false; }
+        ring.step = s;
+        if (ring.first) { reveal = radius(s); ring.tick?.(s); }
+        cross(ring, radius(s), now);
+        return true;
+      });
+      hot.forEach((t) => {
+        const lv = Math.min(3, Math.floor((now - t.at) / (T.label / 3)));
+        if (lv === t.lv) return;
+        t.lv = lv; dirty = true;
+        if (lv === 3) { hot.delete(t); if (t.el && t !== you) t.el.classList.remove('is-on'); }
+      });
+      if (dirty) draw();
+      return rings.length > 0 || hot.size > 0;
+    };
+
+    const range = (i) => {
+      quiet();
+      cur = i;
+      rgs.forEach((b) => b.setAttribute('aria-pressed', String(+b.dataset.range === i)));
+      $('#range-num').textContent = RANGES[i].name;
+      $('#px-note').textContent = `1 px = ${RANGES[i].m / R} m`;
+      place(); draw();
+    };
+    // The smallest range that shows a blip, if the one in use does not.
+    const show = (list) => { if (!list.some((b) => b === you || b.on.includes(cur))) range(Math.max(...list.flatMap((b) => b.on))); };
+    const from = (b, o = {}) => { show([b]); emit(...b.p[cur], { from: b, ...o }); };
+
+    Object.defineProperties(api, Object.getOwnPropertyDescriptors({ // descriptors, so the getters stay live
+      fit, draw, range, emit, from, frame, quiet, say, blips, door,
+      get cur() { return cur; }, get ready() { return reveal >= R; }, get you() { return you; },
+      set focus(b) { focus = b; draw(); },
+      set inView(v) { inView = v; if (!v) { quiet(); draw(); } },
+      full() { quiet(); reveal = R; draw(); },
+      bare() { quiet(); reveal = 0; draw(); },
+      at(e) { const r = scope.getBoundingClientRect(), x = Math.floor((e.clientX - r.left) / k), y = Math.floor((e.clientY - r.top) / k); return inScope(x, y) ? [x, y] : null; },
+      kind(kind, o = {}) { // every blip of one kind pings; the readout lists them from the door
+        const all = [...blips, ...(you ? [you] : [])].filter((b) => b.kind === kind);
+        if (!all.length) return;
+        show(all);
+        const on = all.filter((b) => b === you || b.on.includes(cur));
+        const text = kind === 'door' ? undefined : kind === 'you' ? `You are at the landward edge of the chart, ${you.name}.`
+          : 'From the door: ' + on.map((b) => `${b.name.toLowerCase()} ${metres(Math.hypot(b.x, b.y), 5)}, bearing ${bearing(b.x, b.y)}`).join('; ') + '.';
+        on.forEach((b) => emit(...b.p[cur], { from: b, say: text, ...o }));
+      },
+      arrive(name) { // the visitor: a pink blip at the landward edge, the same place at every range
+        const p = [150, 105];
+        you = { id: 'you', kind: 'you', name, the: 'you', x: 0, y: 0, on: [0, 1, 2], tag: 'lll', lv: 3, at: 0, p: [p, p, p] };
+        you.el = tagOf(you);
+        label(you, { from: you });
+        place(); draw();
+      },
+      leave() { if (!you) return; hot.delete(you); you.el.remove(); you = null; draw(); }
+    }));
+    return api;
+  })();
+
+  /* ---------- Chart controls (plain JavaScript) ---------- */
+  rgs.forEach((b) => b.addEventListener('click', () => {
+    chart.range(+b.dataset.range);
+    chart.from(chart.door, { pre: `Range ${RANGES[chart.cur].name}. ` });
+  }));
+  let lastPing = 0;
+  scope.addEventListener('click', (e) => {
+    const p = chart.at(e);
+    if (!p || !chart.ready) return;
+    lastPing = performance.now();
+    chart.emit(...p);
+  });
+
+  /* ---------- Directions dialog: a clock wipe in CSS; focus returns to whatever opened it ---------- */
+  const dlg = $('#way'), closeBtn = $('#way-close');
+  let opener = null, closing = false, downOn = null, closeTimer = 0;
+  // Recover from any close, even one the browser forces (a second Escape cannot be cancelled) mid-wipe.
+  const settle = () => { closing = false; clearTimeout(closeTimer); dlg.classList.remove('is-closing'); };
+  const openWay = (btn) => {
+    if (dlg.open) return;
+    settle();
+    opener = btn;
+    dlg.showModal();
+    lenis?.stop();
+  };
+  const closeWay = () => {
+    if (!dlg.open || closing) return;
+    const end = () => { if (!dlg.open) return; settle(); dlg.close(); opener?.focus(); };
+    if (reduced.matches) return end();
+    closing = true;
+    dlg.classList.add('is-closing');
+    closeTimer = setTimeout(end, ms('--d-wipe-out') + 120); // if the animation never runs
+  };
+  dlg.addEventListener('animationend', (e) => { if (e.animationName === 'wipe-out' && closing) { settle(); dlg.close(); opener?.focus(); } });
+  closeBtn.addEventListener('click', closeWay);
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); closeWay(); });
+  // Close on a backdrop click only when the press also started on the backdrop.
+  dlg.addEventListener('pointerdown', (e) => { downOn = e.target; });
+  dlg.addEventListener('click', (e) => { if (e.target === dlg && downOn === dlg) closeWay(); });
+  dlg.addEventListener('close', () => { settle(); lenis?.start(); });
+  $$('#way-open, #way-open-2').forEach((b) => b.addEventListener('click', () => openWay(b)));
+
+  /* Legend buttons ping from their kind of blip. Keyboard focus is enough; Door also opens the directions. */
+  lgs.forEach((b) => {
+    const kind = b.dataset.kind;
+    b.addEventListener('focus', () => { if (b.matches(':focus-visible')) chart.kind(kind); });
+    b.addEventListener('click', () => { chart.kind(kind); if (kind === 'door') openWay(b); });
+  });
+  /* Every blip is also a button in a visually hidden list. Focus pings from it and squares it on the chart. */
+  const blipList = $('#blips');
+  const blipButton = (b) => {
+    const li = document.createElement('li'), btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'vh';
+    const d = Math.hypot(b.x, b.y), deg = Math.round(Math.atan2(b.x, b.y) * 180 / Math.PI + 360) % 360;
+    btn.textContent = b.id === 'door' ? 'Door. Ping from here, and open the directions.'
+      : b.id === 'you' ? 'You, at the landward edge of the chart. Ping from here.'
+      : `${b.name}, ${d >= 995 ? (d / 1000).toFixed(1) + ' km' : Math.round(d / 5) * 5 + ' m'} from the door, bearing ${deg} degrees. Ping from here.`;
+    if (b.id === 'door') { btn.setAttribute('aria-haspopup', 'dialog'); btn.setAttribute('aria-controls', 'way'); }
+    btn.addEventListener('focus', () => { if (!btn.matches(':focus-visible')) return; chart.from(b); chart.focus = b; });
+    btn.addEventListener('blur', () => { chart.focus = null; });
+    btn.addEventListener('click', () => { chart.from(b); if (b.id === 'door') openWay(btn); });
+    li.append(btn); blipList.append(li);
+    return li;
+  };
+  chart.blips.forEach(blipButton);
+  let youItem = null;
+
+  /* ---------- Press: held from pointerdown for a minimum time, so a quick tap still shows it ---------- */
+  const hold = (el, cls, min) => {
+    let t0 = 0, timer = 0, held = false;
+    const down = () => { clearTimeout(timer); held = true; t0 = performance.now(); el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
+    const up = () => { if (!held) return; held = false; timer = setTimeout(() => el.classList.remove(cls), Math.max(0, min - (performance.now() - t0))); };
+    el.addEventListener('pointerdown', down);
+    el.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) down(); });
+    ['pointerup', 'pointerleave', 'pointercancel', 'keyup', 'blur'].forEach((t) => el.addEventListener(t, up));
+  };
+  $$('.btn, .rg, .lg').forEach((el) => hold(el, 'is-down', ms('--d-press')));
+  const us = $$('.u');
+  us.forEach((el) => hold(el, 'is-tap', ms('--d-tap')));
+
+  /* ---------- Morse underline: the code of each link's first letter or figure, as a background pattern.
+     Dots are 2px squares, dashes 6px bars, 2px between elements, 6px between repeats. Decoration only. ---------- */
+  const MORSE = { a: '.-', b: '-...', c: '-.-.', d: '-..', e: '.', f: '..-.', g: '--.', h: '....', i: '..', j: '.---', k: '-.-', l: '.-..', m: '--',
+    n: '-.', o: '---', p: '.--.', q: '--.-', r: '.-.', s: '...', t: '-', u: '..-', v: '...-', w: '.--', x: '-..-', y: '-.--', z: '--..',
+    0: '-----', 1: '.----', 2: '..---', 3: '...--', 4: '....-', 5: '.....', 6: '-....', 7: '--...', 8: '---..', 9: '----.' };
+  us.forEach((el) => {
+    const code = MORSE[(el.textContent.toLowerCase().match(/[a-z0-9]/) || ['e'])[0]];
+    let x = 0;
+    const stops = [], bars = [];
+    [...code].forEach((c) => { const w = c === '.' ? 2 : 6; bars.push(`var(--bone) ${x}px ${x + w}px, transparent ${x + w}px ${x + w + 2}px`); x += w + 2; stops.push(x); });
+    el.style.setProperty('--morse', `linear-gradient(90deg, ${bars.join(', ')}, transparent ${x}px)`);
+    el.style.setProperty('--morse-w', x + 4 + 'px');
+    el.morse = stops;
+  });
+
+  /* ---------- Fields: a strip of noise under each one, drawn once, that settles when the value is good ---------- */
+  const form = $('#msg'), done = $('#done'), doneTitle = $('#done-title'), again = $('#again');
+  form.noValidate = true;
+  const fields = ['who', 'email', 'topic', 'when', 'note'];
+  const el = (k) => form.elements[k], val = (k) => el(k).value.trim();
+  const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const TOPICS = { visit: 'your visit', project: 'the project you are bringing', donate: 'the equipment you want to give', press: 'your press question' };
+  const pad = (n) => String(n).padStart(2, '0');
+  const today = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
+  const nextTuesday = () => { const d = today(); d.setDate(d.getDate() + ((9 - d.getDay()) % 7 || 7)); return d; };
+  const parseDay = (v) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v); if (!m) return null; const d = new Date(+m[1], m[2] - 1, +m[3]); return d.getMonth() === m[2] - 1 ? d : null; };
+  const sayDay = (d) => `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]}`;
+  el('when').min = (() => { const d = today(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; })();
+  const F = {
+    who: (v) => !v ? 'Enter a name or a handle, like Nora or @nora.' : v.length > 40 ? 'Use 40 characters or fewer, so it fits beside your blip.' : '',
+    email: (v) => !v ? 'Enter your email address, like nora@example.com.' : !/^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(v) ? 'This address needs an @ and a domain, like nora@example.com.' : '',
+    topic: (v) => v ? '' : 'Choose what the message is about, so the right member reads it.',
+    when: (v) => {
+      if (el('when').validity.badInput) return 'Finish the date (day, month and year) or clear it.';
+      if (!v) return '';
+      const d = parseDay(v);
+      if (!d) return 'Enter the date as day, month and year, or leave it empty.';
+      if (d < today()) return 'That day has passed. Pick today or later, or leave the date empty.';
+      if (val('topic') === 'visit' && d.getDay() !== 2) return `Open night is on Tuesdays. Pick a Tuesday, like ${sayDay(nextTuesday()).replace('Tuesday ', '')}, or leave the date empty.`;
+      return '';
+    },
+    note: (v) => !v ? 'Write a line or two about what you are bringing or asking.' : v.length < 10 ? 'Add a little more. Ten characters is enough for a member to answer.' : ''
+  };
+  const tile = (heights) => { // a stepped profile, 2px columns, drawn at screen resolution
+    const dpr = Math.min(2, Math.ceil(window.devicePixelRatio || 1)), c = document.createElement('canvas'), W = 512, H = parseFloat(css('--nz')) || 6;
+    c.width = W * dpr; c.height = H * dpr;
+    const o = c.getContext('2d');
+    o.scale(dpr, dpr);
+    for (let x = 0; x < W; x += 2) { const h = heights(); o.fillRect(x, H - h, 2, h); }
+    return `url(${c.toDataURL()})`;
+  };
+  const settleTimers = {};
+  const strip = (k) => {
+    const box = el(k).closest('.field'), ok = !!val(k) && !F[k](val(k));
+    clearTimeout(settleTimers[k]);
+    if (!ok) { box.dataset.nz = 'noise'; return; }
+    if (box.dataset.nz === 'flat') return;
+    if (reduced.matches) { box.dataset.nz = 'flat'; return; }
+    box.dataset.nz = 'mid';   // the quieter profile first, then the flat line
+    settleTimers[k] = setTimeout(() => { box.dataset.nz = 'flat'; }, ms('--d-settle'));
+  };
+  fields.forEach((k) => {
+    const box = el(k).closest('.field');
+    box.style.setProperty('--nz-a', tile(() => 1 + Math.floor(Math.random() * 6)));
+    box.style.setProperty('--nz-b', tile(() => Math.random() < .3 ? 3 : 2));
+    box.style.setProperty('--nz-w', '512px');
+    box.dataset.nz = 'noise';
+  });
+  const mark = (k, msg) => {
+    const err = $(`#${k}-err`);
+    err.textContent = msg; // cleared too, so assistive tech never finds a stale message
+    if (msg) { el(k).setAttribute('aria-invalid', 'true'); el(k).setAttribute('aria-describedby', `${k}-err`); }
+    else { el(k).removeAttribute('aria-invalid'); el(k).removeAttribute('aria-describedby'); }
+    return !msg;
+  };
+  const check = (k) => { strip(k); if (el(k).hasAttribute('aria-invalid') && !F[k](val(k))) mark(k, ''); };
+  fields.forEach((k) => ['input', 'change'].forEach((t) => el(k).addEventListener(t, () => {
+    check(k);
+    if (k === 'topic') check('when'); // the Tuesday rule depends on the topic
+  })));
+
+  /* ---------- Sending (nothing leaves the page): the visitor goes on the chart ---------- */
+  const swap = (toDone) => {
+    const from = toDone ? form : done, to = toDone ? done : form;
+    from.classList.add('is-off'); from.inert = true;
+    to.classList.remove('is-off'); to.inert = false;
+  };
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const bad = fields.filter((k) => !mark(k, F[k](val(k))));
+    fields.forEach(strip);
+    if (bad.length) { el(bad[0]).focus(); return; }
+    const given = parseDay(val('when')), day = sayDay(given || nextTuesday());
+    $('#done-mail').textContent = val('email');
+    $('#done-topic').textContent = TOPICS[val('topic')];
+    $('#done-who').textContent = val('who');
+    $('#done-day').textContent = day;
+    $('#log-topic').textContent = el('topic').selectedOptions[0].textContent;
+    $('#log-day').textContent = given ? day : `${day}, the next open night`;
+    $('#log-note').textContent = val('note');
+    swap(true);
+    doneTitle.focus();
+    // A pink blip at the landward edge, then one ping from the door whose ring reaches it.
+    chart.leave(); youItem?.remove();
+    chart.arrive(val('who'));
+    youItem = blipButton(chart.you);
+    lgs.find((b) => b.dataset.kind === 'you').hidden = false;
+    chart.fit();
+    chart.from(chart.door, { say: `Message logged for ${day}. You are on the chart, ${val('who')}.` });
+  });
+  again.addEventListener('click', () => {
+    if (done.classList.contains('is-off')) return;
+    chart.leave(); youItem?.remove(); youItem = null;
+    lgs.find((b) => b.dataset.kind === 'you').hidden = true;
+    chart.fit();
+    chart.say('Your blip is off the chart. Write again to put it back.');
+    ['topic', 'when', 'note'].forEach((k) => { el(k).value = ''; }); // another message: the name and address stay
+    fields.forEach(strip);
+    swap(false);
+    el('topic').focus();
+  });
+
+  /* ---------- A still chart: the 500 m range without the libraries, fitted to the window ---------- */
+  chart.range(chart.cur);
+  chart.fit();
+  window.addEventListener('resize', () => chart.fit());
+  document.fonts?.ready.then(() => chart.fit()); // the legend may wrap differently once the text face is in
+
+  if (!lib) return;
+
+  /* ---------- Motion ---------- */
+  gsap.registerPlugin(ScrollTrigger);
+  const fontsReady = Promise.race([
+    Promise.all([document.fonts.ready, document.fonts.load('700 100px "Handjet"')]).then(() => 'fonts', () => 'fonts'),
+    new Promise((r) => setTimeout(() => r('timeout'), 1500))
+  ]);
+  // Start the first ping only on a visible page: with lagSmoothing(0), one started in a background tab
+  // would be over before anyone saw it.
+  const visible = new Promise((r) => {
+    if (document.visibilityState === 'visible') return r();
+    const f = () => { if (document.visibilityState === 'visible') { document.removeEventListener('visibilitychange', f); r(); } };
+    document.addEventListener('visibilitychange', f);
+  });
+  const h2 = $('.h2'), title = h2.textContent, rest = $$('[data-rv]'), parts = $$('.part');
+  let played = false;
+
+  const mm = gsap.matchMedia();
+  mm.add({
+    motion: '(prefers-reduced-motion: no-preference)',
+    reduce: '(prefers-reduced-motion: reduce)',
+    fine: '(hover: hover) and (pointer: fine)'
+  }, (ctx) => {
+    const { motion, fine } = ctx.conditions;
+    let dead = false;
+    const off = [];
+    const on = (el, type, fn, opt) => { el.addEventListener(type, fn, opt); off.push(() => el.removeEventListener(type, fn, opt)); };
+
+    /* Scroll, range steps: each part of the copy sets the chart's range with a hard cut, and the door pings
+       once. With reduced motion the cut still happens and the ping is an instant highlight. */
+    const go = (i) => {
+      if (i === chart.cur) return;
+      chart.range(i);
+      if (played) chart.from(chart.door, { pre: `Range ${RANGES[i].name}. ` });
+    };
+    // The range belongs to the last part whose top edge has passed 60% of the window; above them all, 2 km.
+    const sync = () => go(parts.reduce((n, part, i) => part.getBoundingClientRect().top <= window.innerHeight * .6 ? i : n, 0));
+    parts.slice(1).forEach((part) => ScrollTrigger.create({ trigger: part, start: 'top 60%', end: 'max', onToggle: sync, onRefresh: sync }));
+    chart.say(fine ? 'Move over the chart to send pings. A click sends one at once.' : 'Tap the chart to send a ping. It reports the nearest place it finds.');
+
+    if (!motion) {
+      // Reduced motion: the chart fully drawn, native scroll, instant highlights, no loop.
+      root.classList.add('go');
+      played = true;
+      chart.full();
+      return () => { off.forEach((f) => f()); };
+    }
+
+    const T = { first: ms('--d-first-step'), gap: ms('--d-ping-gap'), morse: parseFloat(css('--d-morse')) };
+
+    // Lenis on GSAP's clock. Touch keeps native scrolling.
+    lenis = new Lenis({ lerp: .1, smoothWheel: true, autoRaf: false, anchors: true });
+    lenis.on('scroll', ScrollTrigger.update);
+    const tick = (t) => lenis.raf(t * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
+
+    /* The chart's loop runs only while a ring is travelling or a blip is still lit, and never off screen. */
+    let awake = false;
+    const loop = () => { if (!chart.frame()) sleep(); };
+    const sleep = () => { if (!awake) return; awake = false; gsap.ticker.remove(loop); };
+    chart.wake = () => { if (awake) return; awake = true; gsap.ticker.add(loop); };
+    chart.live = true;
+    const box = scope.getBoundingClientRect();
+    chart.inView = box.bottom > 0 && box.top < window.innerHeight;
+    const io = new IntersectionObserver(([e]) => { chart.inView = e.isIntersecting; if (!e.isIntersecting) sleep(); });
+    io.observe(scope);
+    off.push(() => io.disconnect());
+
+    /* Pointer, pings: a moving pointer sends one from where it is, at most every 700 ms. (A click or a tap
+       sends one at once: that listener is plain JavaScript, above.) */
+    if (fine) on(scope, 'pointermove', (e) => {
+      if (e.pointerType === 'touch' || !chart.ready) return;
+      const now = performance.now(), p = chart.at(e);
+      if (!p || now - lastPing < T.gap) return;
+      lastPing = now;
+      chart.emit(...p);
+    });
+
+    /* Morse underline: the first group arrives element by element, then the rest of the line at once. */
+    us.forEach((el) => {
+      let calls = [];
+      const stop = () => { calls.forEach((c) => c.kill()); calls = []; };
+      const run = () => {
+        stop();
+        el.style.setProperty('--mw', el.morse[0] + 'px');
+        el.morse.slice(1).forEach((w, i) => calls.push(gsap.delayedCall((i + 1) * T.morse, () => el.style.setProperty('--mw', w + 'px'))));
+        calls.push(gsap.delayedCall(el.morse.length * T.morse, () => el.style.removeProperty('--mw')));
+      };
+      on(el, 'pointerenter', (e) => { if (e.pointerType !== 'touch') run(); });
+      on(el, 'pointerdown', (e) => { if (e.pointerType === 'touch') run(); });
+      on(el, 'focus', () => { if (el.matches(':focus-visible')) run(); });
+      off.push(() => { stop(); el.style.removeProperty('--mw'); });
+    });
+
+    /* Load, first ping: bare range rings, then one ping from the door. The picture exists only where the ring
+       has passed; the headline's lines cut in at one third, two thirds and full range; the rest at the end. */
+    if (!played) chart.bare();
+    Promise.all([fontsReady, visible]).then(() => ctx.add(() => {
+      if (dead) return;
+      chart.fit(); ScrollTrigger.refresh();
+      if (played || window.scrollY > 40) { played = true; root.classList.add('go'); chart.full(); return; }
+      h2.textContent = '';
+      const words = title.split(' ').map((w, i) => {
+        const span = document.createElement('span');
+        span.className = 'w'; span.textContent = w; span.style.visibility = 'hidden';
+        if (i) h2.append(' ');
+        h2.append(span);
+        return span;
+      });
+      const lines = [];
+      words.forEach((w) => { const last = lines[lines.length - 1]; if (last && last[0].offsetTop === w.offsetTop) last.push(w); else lines.push([w]); });
+      gsap.set(rest, { visibility: 'hidden' });
+      root.classList.add('go');
+      const cut = (n) => lines.forEach((line, i) => { if (Math.min(i, 2) <= n) line.forEach((w) => { w.style.visibility = ''; }); });
+      chart.from(chart.door, {
+        first: true, ms: T.first,
+        tick: (s) => [3, 7, 11].forEach((at, n) => { if (s >= at) cut(n); }), // ring steps 4, 8 and 12 of 12
+        end: () => { h2.textContent = title; gsap.set(rest, { clearProps: 'visibility' }); played = true; }
+      });
+    }));
+
+    return () => {
+      dead = true;
+      off.forEach((f) => f());
+      sleep();
+      chart.live = false; chart.wake = null; chart.inView = true;
+      chart.full();
+      gsap.ticker.remove(tick);
+      gsap.ticker.lagSmoothing(500, 33);
+      lenis.destroy(); lenis = null;
+    };
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1593 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Marisol Vega, pinball and arcade technician</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<style>
+  @font-face {
+    font-family: "Departure Mono";
+    src: url("https://cdn.jsdelivr.net/npm/@proj-airi/font-departure-mono@0.17.0/dist/files/DepartureMono-Regular.woff2") format("woff2");
+    font-weight: 400; font-style: normal; font-display: swap;
+  }
+  :root {
+    /* Ground and its tones: a backglass painted hot magenta. Never black. */
+    --ground: #A3126E;      /* the page */
+    --well: #6E0A4A;        /* wells: the playfield, score displays, the backglass, fields, chapter cards (1.59:1 on ground) */
+    --pit: #4F0735;         /* inside a well: unlit cells, slots, the skirt under a button; decorative */
+    --plate: #C52A8C;       /* raised plates: playfield walls, the spinner, the dialog's drop targets (1.42:1 on ground; white text on it 4.79:1) */
+    --white: #FFF4FA;       /* text, wires, flipper bats, a lit neutral lamp (6.82:1 on ground, 10.84:1 on well) */
+    --blush: #F7BFDD;       /* secondary text, outlines, hollow lamps (4.69:1 on ground, 7.45:1 on well) */
+    --scrim: rgb(110 10 74 / .9);   /* the well, laid over the page behind the dialog */
+
+    /* Eleven lamp hues. Each is one kind of lamp on a playfield and one kind of thing on this page. */
+    --start: #FFE23B;       /* yellow: the primary action, focus, the ball's highlight (5.64:1 on ground; well text on it 8.97:1) */
+    --bumper-a: #39E6FF;    /* cyan: bumper 1 and chapter 1 (4.86:1 on ground, 7.72:1 on well) */
+    --bumper-b: #B8FF3D;    /* lime: bumper 2 and chapter 2 (6.07:1, 9.64:1) */
+    --bumper-c: #FF9A2E;    /* orange: bumper 3 and chapter 3 (3.46:1, 5.49:1; never text) */
+    --bumper-d: #C59BFF;    /* violet: bumper 4 and chapter 4 (3.31:1, 5.27:1; never text) */
+    --bumper-e: #5DFFC4;    /* mint: bumper 5 and chapter 5 (5.77:1, 9.18:1) */
+    --coil: #FF5252;        /* red: coil and power faults in the chart (3.65:1 on well; only ever on a well) */
+    --switch: #8FD0FF;      /* sky: switch faults in the chart (7.00:1 on well) */
+    --rubber: #FFC9A3;      /* peach: rubbers and mechanical wear in the chart (7.83:1 on well) */
+    --score: #FFB000;       /* amber: every character on a score display, and nothing else (6.35:1 on well, 8.10:1 on pit) */
+    --fault: #FFBDBD;       /* light coral: form errors only (4.62:1 on ground) */
+
+    /* Type: Departure Mono, drawn on an 11px grid. One weight; emphasis is colour, inversion, size, position. */
+    --font: "Departure Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --t-small: 13.75px;
+    --t-body: 16.5px;
+    --t-lede: 22px;
+    --t-h3: 33px;
+    --t-display: 44px;      /* 44, 55 or 66: always a multiple of 11 */
+    --t-plate: 88px;        /* the initial on the spinner: 88, or 110 from 1024px */
+    --lh-small: 22px;       /* line heights are multiples of 5.5px */
+    --lh-body: 27.5px;
+    --lh-lede: 33px;
+    --lh-h3: 38.5px;
+    --lh-display: calc(var(--t-display) + 11px);
+
+    /* Space: the 11px cell of the face */
+    --cell: 11px;
+    --s1: 5.5px; --s2: 11px; --s3: 22px; --s4: 33px; --s5: 44px; --s6: 66px; --s7: 88px; --s8: 132px;
+    --notch: 4px;           /* stepped corner */
+    --tap: 48px;            /* button and field height */
+    --hit: 44px;            /* minimum target */
+    --gutter: 16px;
+    --max-w: 1320px;
+    --top-pad: clamp(33px, 5.5vh, 66px);
+    --bar: 33px;            /* the bonus row on phones */
+    --S: 3;                 /* css px per playfield px; the script sets these three from the window */
+    --LS: 3;                /* the story lane */
+    --CS: 3;                /* the chart */
+    --pin-len: 3.2;         /* scroll length of the pinned story, in window heights */
+
+    /* Motion: hard cuts on a clock. CSS and the script both read these. */
+    --d-lamp: .3s;          /* a bumper stays lit */
+    --d-test: .12s;         /* lamp test, one bumper */
+    --d-test-all: .2s;      /* lamp test, all five on */
+    --d-reel: .07s;         /* one third of a line on a score reel */
+    --d-cut: .08s;          /* between the copy blocks that cut in at load */
+    --d-blink: .09s;        /* one state of the start button's lamp ring */
+    --d-press: .16s;        /* the shortest a press is held */
+    --d-kick: .06s;         /* one frame of the flipper bat */
+    --d-roll: .3s;          /* the ball along a link's wire */
+    --d-fall: .08s;         /* and off its end */
+    --d-drop: .07s;         /* a drop target's half-down frame */
+    --d-plate: .05s;        /* one step of a dialog plate */
+    --d-flip: .1s;          /* the spinner's first flip; each one after is slower */
+    --flip-slow: 1.2;       /* by this much */
+    --d-match: .16s;        /* one value of the match number */
+    --d-knock: .1s;         /* the knocker in the air */
+    --d-sweep: .035s;       /* one diagonal of the attract sweep */
+    --idle: 20s;            /* without input, the ball is parked on the plunger */
+  }
+  @media (min-width: 600px) { :root { --gutter: 22px; } }
+  @media (min-width: 1024px) { :root { --gutter: 88px; --t-plate: 110px; } }
+  @media (min-width: 1100px) { :root { --t-display: 55px; } }
+  @media (min-width: 1400px) { :root { --t-display: 66px; } }
+
+  /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+
+  /* Hidden only when the libraries loaded, and only until the load sequence takes over. */
+  html.js:not(.go) .h2, html.js:not(.go) [data-rv], html.js:not(.go) .sd span { visibility: hidden; }
+  @media (prefers-reduced-motion: reduce) {
+    html.js:not(.go) .h2, html.js:not(.go) [data-rv], html.js:not(.go) .sd span { visibility: visible; }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { background: var(--ground); scroll-padding-top: var(--s5); }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--white);
+    font: 400 var(--t-body)/var(--lh-body) var(--font);
+    -webkit-font-smoothing: none;
+    font-synthesis: none;
+  }
+  h2, h3, h4, p, ol, ul, dl, dd, figure, fieldset, legend { margin: 0; padding: 0; font-weight: 400; }
+  ol, ul { list-style: none; }
+  fieldset { border: 0; min-width: 0; }
+  i { font-style: normal; }
+  canvas { display: block; image-rendering: pixelated; }
+  :focus-visible { outline: 2px solid var(--start); outline-offset: 3px; }
+  ::selection { background: var(--start); color: var(--well); }
+  [hidden] { display: none !important; }
+  [tabindex="-1"]:focus { outline: none; }   /* focus lands on a heading or a part only to announce it */
+  .vh { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+  .nt {
+    clip-path: polygon(0 var(--notch), var(--notch) var(--notch), var(--notch) 0, calc(100% - var(--notch)) 0, calc(100% - var(--notch)) var(--notch), 100% var(--notch), 100% calc(100% - var(--notch)), calc(100% - var(--notch)) calc(100% - var(--notch)), calc(100% - var(--notch)) 100%, var(--notch) 100%, var(--notch) calc(100% - var(--notch)), 0 calc(100% - var(--notch)));
+  }
+
+  .about { position: relative; overflow: clip; padding: var(--bar) var(--gutter) 0; }
+  .wrap { max-width: var(--max-w); margin: 0 auto; }
+  .part { padding-top: var(--s7); scroll-margin-top: var(--s2); }
+  .part > h3, .story h3, .done h3 { font-size: var(--t-h3); line-height: var(--lh-h3); }
+  .part-intro { max-width: 60ch; margin-top: var(--s2); color: var(--blush); }
+  /* Between parts: a row of unlit inserts. Decorative. */
+  .part::before {
+    content: ""; display: block; height: var(--cell); margin-bottom: var(--s5);
+    background: linear-gradient(90deg, var(--plate) var(--cell), transparent 0) 0 0 / var(--s3) var(--cell) repeat-x;
+  }
+  @media (min-width: 1024px) {
+    .about { padding-top: 0; }
+    .part { padding-top: var(--s8); }
+  }
+
+  /* ---------- Bonus lamps: the scroll-linked marker ---------- */
+  .bonus {
+    position: fixed; z-index: 4; left: 0; right: 0; top: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    height: var(--bar); padding: 0 var(--gutter);
+    background: var(--well);
+  }
+  .bonus-lamps { display: flex; gap: var(--s2); }
+  .bonus-lamps li { width: var(--cell); height: var(--cell); border: 2px solid var(--blush); }
+  .bonus-lamps li.is-on { border-color: var(--white); background: var(--white); }
+  .bonus-plate { color: var(--score); font-size: var(--t-small); line-height: var(--lh-small); white-space: nowrap; }
+  @media (min-width: 1024px) {
+    .bonus {
+      left: var(--s2); right: auto; top: auto; bottom: var(--s3);
+      flex-direction: column; align-items: flex-start; gap: var(--s3);
+      height: auto; padding: 0; background: none;
+    }
+    .bonus-lamps { flex-direction: column-reverse; }   /* a bonus ladder is climbed from the bottom */
+    .bonus-lamps li { width: var(--s3); height: var(--s3); }
+    .bonus-plate { padding: var(--s1); background: var(--well); }
+    .bonus-plate span { display: block; }
+  }
+
+  /* ---------- Top ---------- */
+  .top { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s5); padding-top: var(--top-pad); }
+  .who { color: var(--blush); }
+  .h2 { margin-top: var(--s2); font-size: var(--t-display); line-height: var(--lh-display); }
+  .reel { display: block; overflow: clip; }   /* the window of one score reel: exactly one line */
+  .reel-in { display: block; }
+  .lede { max-width: 56ch; margin-top: var(--s3); font-size: var(--t-lede); line-height: var(--lh-lede); }
+  .actions { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--s2) var(--s3); margin-top: var(--s4); }
+  .cab { width: max(calc(112px * var(--S)), 286px); max-width: 100%; }
+  .hint { margin-top: var(--s1); color: var(--blush); font-size: var(--t-small); line-height: var(--lh-small); }
+  @media (min-width: 1024px) {
+    .top { grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--s5); align-items: start; }
+  }
+  @media (max-width: 599px) {
+    .lede { font-size: var(--t-body); line-height: var(--lh-body); }
+  }
+
+  /* Score displays: a well with amber characters. */
+  .sd { display: grid; align-content: center; height: var(--s6); padding: 0 var(--s2); background: var(--well); color: var(--score); }
+  .sd-big { font-size: var(--t-h3); line-height: var(--lh-h3); white-space: nowrap; }
+  .sd-sub { font-size: var(--t-small); line-height: var(--lh-small); white-space: nowrap; overflow: hidden; }
+  .sd.is-blank span { visibility: hidden; }
+
+  /* The playfield: a real button, so Space and Enter fire the flippers. */
+  .table {
+    display: block; margin-top: var(--s2); padding: 0; border: 0;
+    background: var(--well); cursor: pointer; line-height: 0;
+    touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  }
+  .table canvas { width: calc(112px * var(--S)); height: calc(152px * var(--S)); }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    position: relative; display: inline-flex; align-items: center;
+    padding: 0; border: 0; background: none;
+    color: inherit; font: inherit; text-decoration: none; text-align: center;
+    cursor: pointer; -webkit-tap-highlight-color: transparent;
+  }
+  .label { position: relative; }
+  /* Primary, the start button: a yellow face in a socket, a ring of lamps round it and a flipper bat beside it. */
+  .ring { position: relative; display: block; padding: 8px; }
+  .ring::before, .ring::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background:
+      linear-gradient(90deg, var(--c) 4px, transparent 0) 0 0 / 8px 4px space no-repeat,
+      linear-gradient(90deg, var(--c) 4px, transparent 0) 0 100% / 8px 4px space no-repeat,
+      linear-gradient(var(--c) 4px, transparent 0) 0 0 / 4px 8px no-repeat space,
+      linear-gradient(var(--c) 4px, transparent 0) 100% 0 / 4px 8px no-repeat space,
+      linear-gradient(var(--c), var(--c)) 100% 100% / 4px 4px no-repeat;
+  }
+  .ring::before { --c: var(--well); }                 /* lamps off */
+  .ring::after { --c: var(--start); opacity: 0; }     /* lamps on: cut in, never faded */
+  .sock { display: block; padding-bottom: 3px; background: var(--pit); }
+  .btn-start .face {
+    display: flex; align-items: center; justify-content: center;
+    min-height: calc(var(--tap) - 3px); padding: 0 var(--s3);
+    background: var(--start); color: var(--well);
+  }
+  .btn-start:focus-visible .ring::after, .btn-start.is-down .ring::after { opacity: 1; }
+  @media (hover: hover) {
+    .btn-start:hover .ring::after { opacity: 1; }
+    .btn-start:hover .ring::after, .btn-start:focus-visible .ring::after { animation: blink calc(var(--d-blink) * 4) steps(1); }
+  }
+  @keyframes blink { 0%, 50% { opacity: 0; } 25%, 75%, 100% { opacity: 1; } }   /* off, on, off, on, and it stays on */
+  .btn-start.is-down .face { transform: translateY(3px); }                      /* the face sinks onto its skirt */
+  .bat { flex: none; width: 45px; height: 60px; margin-left: 2px; fill: var(--white); shape-rendering: crispEdges; }
+  .bat .b1, .bat .b2 { visibility: hidden; }
+  .btn-start.is-down .b0 { visibility: hidden; }
+  .btn-start.is-down .b1 { animation: kick-a var(--d-kick) steps(1); }          /* frame one: level */
+  .btn-start.is-down .b2 { visibility: visible; animation: kick-b var(--d-kick) steps(1); }   /* frame two: up, and held */
+  @keyframes kick-a { 0% { visibility: visible; } 100% { visibility: hidden; } }
+  @keyframes kick-b { 0% { visibility: hidden; } 100% { visibility: visible; } }
+
+  /* Secondary, the rollover: a wire stands across the top edge with a lane lamp above it. */
+  .btn-roll { flex-direction: column; align-items: stretch; margin-bottom: 8px; }
+  .lane { position: relative; z-index: 1; display: block; height: 22px; }
+  .lane-lamp { position: absolute; left: calc(50% - 6px); top: 0; width: 12px; height: 12px; border: 2px solid var(--blush); }
+  .wire { position: absolute; left: 22%; right: 22%; bottom: 0; height: 8px; border-top: 3px solid var(--white); }
+  .wire::before, .wire::after { content: ""; position: absolute; top: 0; bottom: 0; width: 2px; background: var(--white); }
+  .wire::before { left: 0; } .wire::after { right: 0; }
+  .btn-roll .face { display: block; padding: 2px; background: var(--blush); }
+  .btn-roll .inner {
+    display: flex; align-items: center; justify-content: center;
+    min-height: calc(var(--tap) - 4px); padding: 0 var(--s3);
+    background: var(--ground); color: var(--white);
+  }
+  /* Rolled over: the wire is pressed flat into the top edge and the lamp lights. */
+  .btn-roll:focus-visible .wire, .btn-roll.is-down .wire { transform: translateY(11px); }
+  .btn-roll:focus-visible .wire::before, .btn-roll:focus-visible .wire::after, .btn-roll.is-down .wire::before, .btn-roll.is-down .wire::after { visibility: hidden; }
+  .btn-roll:focus-visible .lane-lamp { border-color: var(--white); background: var(--white); }
+  .btn-roll:focus-visible .face { background: var(--white); }
+  @media (hover: hover) {
+    .btn-roll:hover .wire { transform: translateY(11px); }
+    .btn-roll:hover .wire::before, .btn-roll:hover .wire::after { visibility: hidden; }
+    .btn-roll:hover .lane-lamp { border-color: var(--white); background: var(--white); }
+    .btn-roll:hover .face { background: var(--white); }
+  }
+  /* Pressed: the lamp cuts to yellow and the face inverts. */
+  .btn-roll.is-down .lane-lamp { border-color: var(--start); background: var(--start); }
+  .btn-roll.is-down .face { background: var(--white); }
+  .btn-roll.is-down .inner { background: var(--white); color: var(--ground); }
+
+  /* ---------- Text links: the wireform ---------- */
+  .u {
+    position: relative; display: inline-block;
+    margin: -11px 0; padding: 11px 0; border: 0;
+    background: linear-gradient(var(--blush), var(--blush)) 0 calc(100% - 9px) / 100% 2px no-repeat;
+    color: var(--white); font: inherit; text-decoration: none;
+    cursor: pointer; -webkit-tap-highlight-color: transparent;
+  }
+  button.u, summary.u { margin: 0; }
+  /* A 4px ball on the wire. It rolls to the right end in whole 4px steps, drops 8px and is gone. It never parks. */
+  .u::after {
+    content: ""; position: absolute; left: 0; bottom: 11px; width: 4px; height: 4px;
+    background: var(--white); visibility: hidden; pointer-events: none;
+  }
+  .u:focus-visible, .u.is-tap { background-image: linear-gradient(var(--white), var(--white)); }
+  .u:focus-visible::after, .u.is-tap::after { animation: roll calc(var(--d-roll) + var(--d-fall)) linear; }
+  @media (hover: hover) {
+    .u:hover { background-image: linear-gradient(var(--white), var(--white)); }
+    .u:hover::after { animation: roll calc(var(--d-roll) + var(--d-fall)) linear; }
+  }
+  @keyframes roll {
+    0% { visibility: visible; transform: translate(0, 0); animation-timing-function: steps(var(--n, 12), end); }
+    79% { visibility: visible; transform: translate(var(--tx, 48px), 0); animation-timing-function: steps(2, start); }
+    100% { visibility: visible; transform: translate(var(--tx, 48px), 8px); }
+  }
+
+  /* ---------- Now ---------- */
+  .now-list { display: grid; gap: var(--s4); margin-top: var(--s4); }
+  .now-list dt { color: var(--blush); }
+  .now-list dt::before { content: ""; display: inline-block; width: var(--cell); height: var(--cell); margin-right: var(--s2); background: var(--white); }
+  .now-list dd { max-width: 34ch; margin-top: var(--s1); font-size: var(--t-lede); line-height: var(--lh-lede); }
+  @media (min-width: 900px) { .now-list { grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: var(--s5); } }
+  @media (max-width: 599px) { .now-list dd { font-size: var(--t-body); line-height: var(--lh-body); } }
+
+  /* ---------- The story so far ---------- */
+  .story-frame { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s4); }
+  .story-lane { background: var(--well); width: calc(96px * var(--LS)); }
+  .story-lane canvas { width: calc(96px * var(--LS)); height: calc(176px * var(--LS)); }
+  .story-hint { margin-top: var(--s2); color: var(--blush); max-width: 46ch; }
+  .idx, .story-hint { display: none; }
+  .chapters { display: grid; gap: var(--s2); margin-top: var(--s4); max-width: 62ch; }
+  .ch:nth-child(1), .idx li:nth-child(1) { --hue: var(--bumper-a); }
+  .ch:nth-child(2), .idx li:nth-child(2) { --hue: var(--bumper-b); }
+  .ch:nth-child(3), .idx li:nth-child(3) { --hue: var(--bumper-c); }
+  .ch:nth-child(4), .idx li:nth-child(4) { --hue: var(--bumper-d); }
+  .ch:nth-child(5), .idx li:nth-child(5) { --hue: var(--bumper-e); }
+  .card { position: relative; padding: var(--s3) var(--s3) var(--s3) var(--s5); background: var(--well); }
+  .card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: var(--s3); background: var(--hue); }   /* the chapter's drop target */
+  .ch-years { color: var(--blush); font-size: var(--t-small); line-height: var(--lh-small); }
+  .card h4 { font-size: var(--t-lede); line-height: var(--lh-lede); }
+  .card h4 + p { margin-top: var(--s1); }
+  @media (min-width: 1024px) {
+    .story-frame { grid-template-columns: auto minmax(0, 1fr); column-gap: var(--s6); align-items: start; }
+  }
+  /* Pinned (motion allowed and the window tall enough): the frame holds for --pin-len window heights while scroll rolls the ball. */
+  .pin .story { height: calc(100vh * (1 + var(--pin-len))); height: calc(100svh * (1 + var(--pin-len))); }
+  .pin .part.story { padding-top: 0; margin-top: var(--s7); }
+  .pin .part.story::before { content: none; }
+  .pin .story-frame { position: sticky; top: 0; height: 100vh; height: 100svh; }
+  .pin .idx { display: grid; align-content: start; gap: var(--s1); }
+  .pin .chapters { display: block; position: relative; }
+  @media (max-width: 1023.98px) {   /* phones: title, then lane and index side by side, then the card */
+    .pin .story-frame {
+      grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr);
+      grid-template-areas: "h h" "lane idx" "ch ch";
+      gap: var(--s2) var(--s3); padding: calc(var(--bar) + var(--s2)) 0 var(--s2);
+    }
+    .pin .story-text { display: contents; }
+    .pin .story h3 { grid-area: h; font-size: var(--t-lede); line-height: var(--lh-lede); }
+    .pin .story-lane { grid-area: lane; }
+    .pin .idx { grid-area: idx; }
+    .pin .chapters { grid-area: ch; margin: 0; max-width: none; }
+    .pin .card { padding-block: var(--s2); }
+  }
+  .idx li { display: flex; align-items: center; gap: var(--s2); color: var(--blush); font-size: var(--t-small); line-height: var(--lh-small); }
+  .idx li::before { content: ""; flex: none; width: var(--s3); height: var(--cell); border: 2px solid var(--hue); }   /* a lamp for the target: hollow until it is down */
+  .idx li.is-on { color: var(--white); }
+  .idx li.is-on::before { background: var(--hue); }
+  .idx li { white-space: nowrap; }
+  @media (min-width: 1024px) { .idx li.is-now::after { content: ""; width: var(--s3); height: 2px; background: var(--white); } }
+  /* One card at a time. The others stay in the accessibility tree: they are clipped, not removed. */
+  .pin .ch:not(.is-now) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  @media (min-width: 1024px) {
+    .pin .story-frame { padding: var(--s4) 0; align-items: center; }
+    .pin .story-hint { display: block; }
+    .pin .idx { margin-top: var(--s3); }
+    .pin .chapters { margin-top: var(--s3); min-height: 198px; max-width: 62ch; }
+  }
+
+  /* ---------- By the numbers ---------- */
+  .numbers-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s4); margin-top: var(--s4); }
+  .glass { justify-self: start; max-width: 100%; padding: var(--s3); background: var(--well); }
+  .legend { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s3); margin-bottom: var(--s3); color: var(--white); font-size: var(--t-small); line-height: var(--lh-small); }
+  .legend li { display: flex; align-items: center; gap: var(--s2); }
+  .legend i { width: var(--cell); height: var(--cell); background: var(--k); }
+  .glass canvas { width: calc(154px * var(--CS)); height: calc(140px * var(--CS)); cursor: pointer; touch-action: manipulation; }
+  .years { display: grid; grid-template-columns: repeat(11, calc(14px * var(--CS))); }
+  .year {
+    height: var(--hit); padding: 0; border: 0; background: none;
+    color: var(--blush); font: inherit; font-size: var(--t-small); cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .year[aria-pressed="true"] { background: var(--white); color: var(--well); }
+  .year.is-ghost { outline: 2px dashed var(--white); outline-offset: -6px; }   /* the last pick keeps a hollow mark */
+  .year:focus-visible { outline: 2px solid var(--start); outline-offset: -2px; }
+  .sd5 { display: inline-grid; padding: var(--s2) var(--s3); background: var(--well); color: var(--score); }
+  .sd5-n { font-size: var(--t-display); line-height: var(--lh-display); }
+  .sd5-c { font-size: var(--t-small); line-height: var(--lh-small); }
+  .readout { max-width: 52ch; margin-top: var(--s3); min-height: calc(var(--lh-body) * 3); }
+  .tbl-wrap { margin-top: var(--s2); }
+  summary.u { list-style: none; }
+  summary.u::-webkit-details-marker { display: none; }
+  .tbl { margin-top: var(--s2); border-collapse: collapse; }
+  .tbl caption, .tbl thead th { font-size: var(--t-small); line-height: var(--lh-small); }   /* the figures are body size; only the caption and the heads are small */
+  .tbl caption { text-align: left; color: var(--blush); padding-bottom: var(--s2); }
+  .tbl th, .tbl td { padding: var(--s1) var(--s3) var(--s1) 0; text-align: right; font-weight: 400; border-top: 2px solid var(--plate); }
+  .tbl th:first-child { text-align: left; }
+  .tbl tr > :last-child { padding-right: 0; }
+  .tbl thead th { border-top: 0; color: var(--blush); vertical-align: bottom; }
+  @media (min-width: 1200px) {
+    .numbers-grid { grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--s6); align-items: start; }
+    .glass { grid-column: 2; grid-row: 1; }
+  }
+  @media (max-width: 599px) {
+    .glass { padding: var(--s2); }
+    .year .yc { display: none; }
+    .tbl th, .tbl td { padding-right: var(--s1); }
+  }
+
+  /* ---------- The spinner ---------- */
+  .spin { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s4); margin-top: var(--s4); align-items: center; }
+  .spinner {
+    position: relative; display: block; width: 286px; height: 154px; padding: 0; border: 0;
+    background: none; color: inherit; font: inherit; cursor: grab;
+    touch-action: none; -webkit-tap-highlight-color: transparent; user-select: none;
+  }
+  .sp-post { position: absolute; top: 0; bottom: 0; width: var(--cell); background: var(--blush); }
+  .sp-post:first-child { left: 0; } .sp-post:last-child { right: 0; }
+  .sp-axle { position: absolute; left: var(--cell); right: var(--cell); top: 76px; height: 2px; background: var(--white); }
+  .sp-plate {
+    position: absolute; left: 55px; top: 22px; width: 176px; height: 110px;
+    display: grid; place-items: center;
+    background: var(--plate); color: var(--white);
+    font-size: var(--t-plate); line-height: var(--t-plate);
+  }
+  .sp-plate::after { content: ""; position: absolute; inset: 0; border: 4px solid var(--white); }
+  .sp-b { display: none; }
+  .sp-plate[data-face="1"] { background: var(--white); color: var(--ground); }
+  .sp-plate[data-face="1"]::after { border-color: var(--plate); }
+  .sp-plate[data-face="1"] .sp-a { display: none; }
+  .sp-plate[data-face="1"] .sp-b { display: block; }
+  .sp-plate[data-lean="1"] { transform: scaleY(.8); } .sp-plate[data-lean="2"] { transform: scaleY(.6); } .sp-plate[data-lean="3"] { transform: scaleY(.4); }
+  .marks { display: flex; gap: var(--s1); margin-top: var(--s3); }
+  .marks li { width: var(--cell); height: var(--s3); border: 2px solid var(--blush); }
+  .marks li.is-on { border-color: var(--white); background: var(--white); }
+  .spin-count { margin-top: var(--s2); color: var(--blush); font-size: var(--t-small); line-height: var(--lh-small); }
+  .spin-fact { max-width: 44ch; min-height: calc(var(--lh-lede) * 4 + var(--s5)); padding: var(--s3); background: var(--well); font-size: var(--t-lede); line-height: var(--lh-lede); }
+  @media (min-width: 900px) { .spin { grid-template-columns: auto minmax(0, 1fr); column-gap: var(--s6); } }
+  @media (min-width: 1024px) {   /* the toy at desk size: the same spinner on a 396 by 220 frame */
+    .spinner { width: 396px; height: 220px; }
+    .sp-axle { top: 109px; }
+    .sp-plate { left: 66px; top: 33px; width: 264px; height: 154px; }
+  }
+  @media (max-width: 599px) { .spin-fact { font-size: var(--t-body); line-height: var(--lh-body); min-height: calc(var(--lh-body) * 5 + var(--s5)); } }
+
+  /* ---------- Things I use ---------- */
+  .tools { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 var(--s6); margin-top: var(--s4); }
+  .tools li { padding: var(--s3) 0; border-top: 2px solid var(--plate); }
+  .tools h4 { font-size: var(--t-lede); line-height: var(--lh-lede); }
+  .tools .spec { color: var(--blush); max-width: 44ch; }
+  .why { max-width: 44ch; margin-top: var(--s1); padding: var(--s2) var(--s3); background: var(--well); }
+  @media (min-width: 900px) { .tools { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .tools-more { margin-top: var(--s3); }
+
+  /* ---------- Say hello ---------- */
+  .hello-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s5); margin-top: var(--s4); }
+  .links { display: grid; gap: var(--s1); margin-top: var(--s3); }
+  .links li { display: grid; grid-template-columns: 11ch minmax(0, 1fr); align-items: center; column-gap: var(--s2); min-height: var(--hit); }
+  .links .kind { color: var(--blush); }
+  .links .u { overflow-wrap: anywhere; justify-self: start; margin: 0; }
+  @media (max-width: 599px) { .links li { grid-template-columns: minmax(0, 1fr); } .links .kind { margin-bottom: -11px; } }
+  @media (min-width: 1024px) { .hello-grid { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); column-gap: var(--s6); } }
+
+  .form { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 var(--s3); }
+  @media (min-width: 700px) { .form { grid-template-columns: repeat(2, minmax(0, 1fr)); } .fld-wide { grid-column: 1 / -1; } }
+  .fld { min-width: 0; }
+  .lbl { display: block; margin-bottom: var(--s1); }
+  .opt { color: var(--blush); }
+  /* A field is a well with a coin-slot lamp at its left and a two-digit credit display at its right. */
+  .box {
+    display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center;
+    min-height: var(--tap); background: var(--well); border: 2px solid var(--blush);
+  }
+  .box:hover { border-color: var(--white); }
+  .box:focus-within { border-color: var(--start); outline: 2px solid var(--start); outline-offset: 3px; }
+  .coin { align-self: stretch; display: grid; place-items: center; width: var(--s3); }
+  .coin::before { content: ""; width: 6px; height: 22px; border: 2px solid var(--blush); }   /* the slot's lamp, unlit */
+  .box:focus-within .coin::before { border-color: var(--start); background: var(--start); }
+  .box input, .box textarea {
+    display: block; width: 100%; min-height: calc(var(--tap) - 4px); padding: 0 var(--s1);
+    border: 0; border-radius: 0; background: none; color: var(--white);
+    font: inherit; appearance: none;
+  }
+  .box input:focus-visible, .box textarea:focus-visible { outline: none; }   /* the box carries the ring */
+  .box textarea { height: calc(var(--lh-body) * 4 + var(--s3)); padding-block: var(--s2); resize: vertical; overflow-wrap: anywhere; }
+  .box-area { align-items: start; }
+  .cred { margin: 0 var(--s2) 0 var(--s1); padding: 0 var(--s1); background: var(--pit); color: var(--score); }
+  .box-area .cred { margin-top: var(--s2); }
+  .err { min-height: calc(var(--lh-small) * 2); margin-top: var(--s1); padding-bottom: var(--s1); color: var(--fault); font-size: var(--t-small); line-height: var(--lh-small); }
+  .fld.is-bad .box { border-color: var(--fault); }
+
+  /* The rotary selector: four positions on a rail, and a pointer that jumps to the chosen one. */
+  .sel-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: var(--s2); }
+  .pos {
+    position: relative; display: block; min-height: 77px; padding: 27px var(--s1) var(--s1);
+    border-top: 2px solid var(--blush);
+    color: var(--blush); font-size: var(--t-small); line-height: var(--lh-small); text-align: center; cursor: pointer;
+  }
+  .pos input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+  .pos::before { content: ""; position: absolute; left: calc(50% - 1px); top: 0; width: 2px; height: 8px; background: var(--blush); }   /* a detent */
+  .pos::after {   /* the pointer: a stepped wedge under the rail */
+    content: ""; position: absolute; left: calc(50% - 9px); top: 4px; width: 18px; height: 16px; background: var(--white); visibility: hidden;
+    clip-path: polygon(44.4% 0, 55.6% 0, 55.6% 25%, 66.7% 25%, 66.7% 50%, 77.8% 50%, 77.8% 75%, 100% 75%, 100% 100%, 0 100%, 0 75%, 22.2% 75%, 22.2% 50%, 33.3% 50%, 33.3% 25%, 44.4% 25%);
+  }
+  .pos.is-on { color: var(--white); background: var(--well); border-top-color: var(--white); }
+  .pos.is-on::after { visibility: visible; }
+  .pos:focus-within { outline: 2px solid var(--start); outline-offset: 3px; }
+  @media (min-width: 700px) { .sel-row { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+  /* The rocker: a power switch with a lamp. The half that is down is the state. */
+  .rocker { display: inline-flex; align-items: center; gap: var(--s2); min-height: var(--tap); cursor: pointer; position: relative; }
+  .rocker input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+  .rk { display: grid; grid-template-columns: 33px 33px; padding: 2px; background: var(--blush); }
+  .rk i { display: grid; place-items: center; height: 40px; }
+  .rk .rk-1, .rocker input:checked ~ .rk .rk-0 { background: var(--plate); color: var(--white); border-bottom: 4px solid var(--pit); }   /* the half that stands proud */
+  .rk .rk-0, .rocker input:checked ~ .rk .rk-1 { background: var(--well); color: var(--blush); border-bottom: 0; padding-top: 4px; }   /* the half that is pressed in */
+  .rk-lamp { width: var(--s3); height: var(--s3); border: 2px solid var(--blush); }
+  .rocker input:checked ~ .rk-lamp { border-color: var(--white); background: var(--white); }
+  .rocker:focus-within { outline: 2px solid var(--start); outline-offset: 3px; }
+  .rk-state { color: var(--blush); }
+  .form .btn { justify-self: start; margin-top: var(--s2); }
+
+  /* The confirmation: a match number on a score display, a knocker beside it. */
+  .done-ref { color: var(--blush); }
+  .match { display: flex; align-items: flex-end; gap: var(--s2); margin-top: var(--s2); }
+  .match .sd5 { grid-template-columns: auto auto; align-items: baseline; column-gap: var(--s3); }
+  .knocker { width: var(--s3); height: var(--s3); background: var(--white); }
+  .done-rest { margin-top: var(--s4); }
+  .done-rest > p { max-width: 52ch; margin-top: var(--s2); }
+  .echo { display: grid; grid-template-columns: 12ch minmax(0, 1fr); gap: var(--s1) var(--s2); margin: var(--s3) 0; padding: var(--s3); background: var(--well); max-width: 62ch; }
+  .echo dt { color: var(--blush); }
+  .echo dd { overflow-wrap: anywhere; }
+
+  /* ---------- Sign-off ---------- */
+  .signoff { padding: var(--s8) 0 var(--s6); }
+  .wm { display: block; touch-action: pan-y; }
+  .signoff-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s2) var(--s5); margin-top: var(--s4); }
+  .signoff-row p { max-width: 52ch; }
+  .signoff-acts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s4); }
+  .signoff-acts .u { margin: 0; }
+
+  /* ---------- The tool-roll dialog: five drop-target plates ---------- */
+  .roll {
+    width: min(968px, 100% - 2 * var(--gutter)); max-width: none; max-height: calc(100dvh - var(--s5));
+    margin: auto; padding: 0; border: 0;
+    background: none; color: var(--white);
+    overflow-y: auto; overscroll-behavior: contain;
+  }
+  .roll::backdrop { background: var(--scrim); }
+  .roll-wrap { position: relative; overflow: clip; }
+  .roll-plates { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px; }
+  .roll-plates i { background: var(--plate); border-top: 4px solid var(--white); }
+  .roll-in { position: relative; padding: 4px 0 var(--s4); }
+  .roll-top { padding: var(--s4) 0 var(--s3); background: var(--plate); }   /* the bank's top rail: the seams stop under it */
+  .roll-head { display: flex; justify-content: space-between; align-items: center; gap: var(--s3); padding: 0 var(--s3); }
+  .roll-head h2 { font-size: var(--t-h3); line-height: var(--lh-h3); }
+  .roll-intro { max-width: 60ch; margin-top: var(--s2); padding: 0 var(--s3); }
+  .roll-cols { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s3) 2px; margin-top: var(--s2); }
+  .roll-cols > div { padding: 0 var(--s3); }
+  .roll-cols h3 { display: flex; align-items: center; gap: var(--s2); font-size: var(--t-body); line-height: var(--lh-body); }
+  .roll-cols h3::before { content: ""; width: var(--cell); height: var(--cell); background: var(--white); }
+  .roll-cols ul { margin-top: var(--s1); font-size: var(--t-small); line-height: var(--lh-small); }
+  .roll-cols li { padding: var(--s1) 0; }
+  @media (min-width: 900px) {
+    .roll-cols { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    .roll-cols > div { padding: 0 var(--s2) 0 var(--s3); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition-duration: 0s !important; }
+  }
+</style>
+</head>
+<body>
+
+<section class="about" id="top" aria-labelledby="about-title">
+  <div class="bonus" aria-hidden="true">
+    <ol class="bonus-lamps"><li></li><li></li><li></li><li></li><li></li></ol>
+    <p class="bonus-plate"><span>Ball</span> <span><i id="ball-n">1</i> of 3</span></p>
+  </div>
+
+  <div class="wrap">
+    <header class="top">
+      <div class="copy">
+        <p class="who" data-rv>Marisol Vega, pinball and arcade technician, Guadalajara</p>
+        <h2 class="h2" id="about-title">Pinball machines should be played, not stored.</h2>
+        <p class="lede" data-rv>I repair electromechanical and early solid-state pinball for collectors, bars and one museum, from a van with a tool roll and a multimeter. Once a month I teach beginners to fix their own.</p>
+        <div class="actions" data-rv>
+          <a class="btn btn-start" href="#hello"><span class="ring"><span class="sock nt"><span class="face nt"><span class="label">Ask about a repair</span></span></span></span><svg class="bat" viewBox="0 0 36 48" aria-hidden="true"><polygon class="b0" points="6,20 30,22 32,24 30,26 6,28" transform="rotate(28 6 24)"/><polygon class="b1" points="6,20 30,22 32,24 30,26 6,28"/><polygon class="b2" points="6,20 30,22 32,24 30,26 6,28" transform="rotate(-28 6 24)"/><rect x="2" y="20" width="8" height="8"/></svg></a>
+          <button class="btn btn-roll" type="button" data-roll aria-haspopup="dialog" aria-controls="roll"><span class="lane" aria-hidden="true"><i class="lane-lamp"></i><i class="wire"></i></span><span class="face nt"><span class="inner nt"><span class="label">See my tool roll</span></span></span></button>
+        </div>
+      </div>
+
+      <div class="cab">
+        <div class="sd nt" id="sd" aria-hidden="true"><span class="sd-big" id="sd-big">Marisol Vega</span><span class="sd-sub" id="sd-sub">Hit a bumper to read a figure</span></div>
+        <button class="table" id="table" type="button"><canvas id="pf" width="112" height="152" aria-hidden="true"></canvas><span class="vh">Pinball table. Space or Enter fires the flippers; the left and right arrow keys lean the table.</span></button>
+        <p class="hint" id="table-hint" data-rv>Press the table for the next figure.</p>
+        <ul class="vh" aria-label="The five bumpers">
+          <li>11 seasons on the road since 2016</li>
+          <li>459 machines back in play</li>
+          <li>38 bars, homes and arcades I visit</li>
+          <li>34 repair nights taught so far</li>
+          <li>31 museum machines kept on free play</li>
+        </ul>
+      </div>
+    </header>
+
+    <section class="part" id="now" aria-labelledby="now-title">
+      <h3 id="now-title">Now</h3>
+      <dl class="now-list">
+        <div><dt>On the bench</dt><dd>Cometa Azul, a 1976 electromechanical four-player from a bar in Tlaquepaque. The score motor is rebuilt; it is waiting on one stepper spring.</dd></div>
+        <div><dt>Next repair night</dt><dd>Thursday 3 December, 19:00, at Taller Chispa on Calle Libertad. Twelve places, three dead machines, bring nothing.</dd></div>
+        <div><dt>On the road</dt><dd>Morelia, 14 to 18 December, for four machines the games museum could not keep on free play this autumn.</dd></div>
+      </dl>
+    </section>
+
+    <section class="part story" id="story" aria-labelledby="story-title">
+      <div class="story-frame">
+        <div class="story-lane"><canvas id="lane" width="96" height="176" aria-hidden="true"></canvas></div>
+        <div class="story-text">
+          <h3 id="story-title">The story so far</h3>
+          <p class="story-hint">Scroll to roll the ball up the plunger lane. Every target it drops is a chapter.</p>
+          <ol class="idx" aria-hidden="true">
+            <li>2009 to 2012</li><li>2012 to 2015</li><li>2016 to 2018</li><li>2019 to 2022</li><li>2023 to now</li>
+          </ol>
+          <ol class="chapters">
+            <li class="ch"><div class="card nt"><p class="ch-years">2009 to 2012</p><h4>Sweeping my uncle's arcade</h4><p>Sixteen, in Zapopan. Uncle Beto let me open one dead machine a week. The first I got running was a 1974 four-player with a burnt score motor.</p></div></li>
+            <li class="ch"><div class="card nt"><p class="ch-years">2012 to 2015</p><h4>Schematics at night</h4><p>Electronics at night school, a jukebox route by day. I learned to read a schematic before I learned to solder well, which is the right order.</p></div></li>
+            <li class="ch"><div class="card nt"><p class="ch-years">2016 to 2018</p><h4>The van</h4><p>I bought a 1994 van and started house calls: 23 machines the first year, most of them for one collector in Chapala who paid partly in parts.</p></div></li>
+            <li class="ch"><div class="card nt"><p class="ch-years">2019 to 2022</p><h4>The museum</h4><p>A games museum in Morelia asked for 31 machines on free play, every day. A machine in public breaks differently from one in a living room.</p></div></li>
+            <li class="ch"><div class="card nt"><p class="ch-years">2023 to now</p><h4>Repair night</h4><p>First Thursday of the month: twelve beginners, three dead machines. 34 nights so far, and nine of the regulars now fix their own.</p></div></li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <section class="part" id="numbers" aria-labelledby="numbers-title">
+      <h3 id="numbers-title">By the numbers</h3>
+      <p class="part-intro">Every machine I have sent back into play since the van, by what was wrong with it. One lamp is one machine. Pick a year.</p>
+      <div class="numbers-grid">
+        <div class="glass nt">
+          <ul class="legend" id="legend"></ul>
+          <canvas id="chart" width="154" height="140" aria-hidden="true"></canvas>
+          <div class="years" id="years" role="group" aria-label="Pick a year"></div>
+        </div>
+        <div class="numbers-side">
+          <p class="sd5 nt" aria-hidden="true"><span class="sd5-n" id="num-n">00051</span><span class="sd5-c" id="num-c">machines repaired in 2026</span></p>
+          <p class="readout" id="readout" aria-live="polite"></p>
+          <details class="tbl-wrap">
+            <summary class="u">Read the figures as a table</summary>
+            <table class="tbl" id="tbl"></table>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="part" id="spinner-part" aria-labelledby="spin-title">
+      <h3 id="spin-title">Spin for a fact</h3>
+      <p class="part-intro" id="spin-help">A spinner is the cheapest target on a playfield and the one people remember. Flick this one up or down, tap it, or press Enter. The harder the flick, the longer it spins.</p>
+      <div class="spin">
+        <div>
+        <button class="spinner" id="spinner" type="button" aria-describedby="spin-help">
+          <i class="sp-post" aria-hidden="true"></i><i class="sp-axle" aria-hidden="true"></i>
+          <span class="sp-plate" id="sp-plate" data-face="0" aria-hidden="true"><span class="sp-a">M</span><span class="sp-b">V</span></span>
+          <span class="vh">Spin the spinner</span><i class="sp-post" aria-hidden="true"></i>
+        </button>
+          <ol class="marks" id="marks" aria-hidden="true"><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li></ol>
+          <p class="spin-count" id="spin-count">No flips yet. One mark is one flip.</p>
+        </div>
+        <p class="spin-fact nt" id="spin-fact" aria-live="polite">It stops on one of twelve short facts about the work.</p>
+      </div>
+    </section>
+
+    <section class="part" id="tools" aria-labelledby="tools-title">
+      <h3 id="tools-title">Things I use</h3>
+      <p class="part-intro">Six of the 22 things in the roll. If your machine needs something that is not here, <a class="u" href="#hello">ask me before you buy it</a>.</p>
+      <ul class="tools">
+        <li><h4>Multimeter</h4><p class="spec">Autoranging, bought in 2007, with a continuity beeper loud enough for a bar.</p><button class="u" type="button" aria-expanded="false" aria-controls="why-1">Why I carry it<span class="vh">: multimeter</span></button><p class="why nt" id="why-1" hidden>Nine faults in ten show up on the beeper before I open the manual. I replace the leads every year and nothing else.</p></li>
+        <li><h4>Soldering iron</h4><p class="spec">60 watts, temperature controlled, with a chisel tip.</p><button class="u" type="button" aria-expanded="false" aria-controls="why-2">Why I carry it<span class="vh">: soldering iron</span></button><p class="why nt" id="why-2" hidden>Coil lugs are big and old joints are dirty. A small iron cooks the wire before the solder flows.</p></li>
+        <li><h4>Contact file</h4><p class="spec">A flexible file for tungsten points and a burnisher for gold ones.</p><button class="u" type="button" aria-expanded="false" aria-controls="why-3">Why I carry it<span class="vh">: contact file</span></button><p class="why nt" id="why-3" hidden>Most dead features are one dirty switch. Sandpaper sheds grit and eats the plating; a file does neither.</p></li>
+        <li><h4>Rubber ring kit</h4><p class="spec">310 rings in 14 sizes, sorted in a fishing-tackle box.</p><button class="u" type="button" aria-expanded="false" aria-controls="why-4">Why I carry it<span class="vh">: rubber ring kit</span></button><p class="why nt" id="why-4" hidden>New rubber changes how a machine plays more than any other repair, and it is the cheapest one I do.</p></li>
+        <li><h4>Jumper leads</h4><p class="spec">Six alligator leads in six colours.</p><button class="u" type="button" aria-expanded="false" aria-controls="why-5">Why I carry it<span class="vh">: jumper leads</span></button><p class="why nt" id="why-5" hidden>To prove a coil or a lamp works before I blame the board. Six colours, so I can see which one I forgot to take off.</p></li>
+        <li><h4>Notebook</h4><p class="spec">One page per machine, in pencil.</p><button class="u" type="button" aria-expanded="false" aria-controls="why-6">Why I carry it<span class="vh">: notebook</span></button><p class="why nt" id="why-6" hidden>What was wrong, what I changed, what I would check next. The owner gets a copy, because the next technician will want it.</p></li>
+      </ul>
+      <p class="tools-more"><button class="u" type="button" data-roll aria-haspopup="dialog" aria-controls="roll">Open the whole tool roll</button></p>
+    </section>
+
+    <section class="part" id="hello" aria-labelledby="hello-title">
+      <h3 id="hello-title">Say hello</h3>
+      <div class="hello-grid">
+        <div>
+          <p>Tell me what the machine does and what it does not. I answer within two working days, from the bench or the van.</p>
+          <ul class="links" id="links"></ul>
+        </div>
+        <div class="swap">
+          <form class="form" id="ask" aria-labelledby="hello-title">
+            <div class="fld" data-f="name">
+              <label class="lbl" for="f-name">Your name</label>
+              <div class="box"><i class="coin" aria-hidden="true"></i><input id="f-name" name="name" type="text" autocomplete="name"><span class="cred" aria-hidden="true">00</span></div>
+              <p class="err" id="f-name-err"></p>
+            </div>
+            <div class="fld" data-f="email">
+              <label class="lbl" for="f-email">Email address</label>
+              <div class="box"><i class="coin" aria-hidden="true"></i><input id="f-email" name="email" type="email" autocomplete="email" spellcheck="false"><span class="cred" aria-hidden="true">00</span></div>
+              <p class="err" id="f-email-err"></p>
+            </div>
+            <fieldset class="fld fld-wide sel">
+              <legend class="lbl">What it is</legend>
+              <div class="sel-row" id="kind">
+                <label class="pos"><input type="radio" name="kind" value="Electromechanical pinball"><span>Electro&shy;mechanical pinball</span></label>
+                <label class="pos"><input type="radio" name="kind" value="Solid-state pinball"><span>Solid-state pinball</span></label>
+                <label class="pos"><input type="radio" name="kind" value="Arcade cabinet"><span>Arcade cabinet</span></label>
+                <label class="pos is-on"><input type="radio" name="kind" value="Not sure" checked><span>Not sure</span></label>
+              </div>
+              <p class="err"></p>
+            </fieldset>
+            <div class="fld" data-f="year">
+              <label class="lbl" for="f-year">Year it was built <span class="opt">(optional)</span></label>
+              <div class="box"><i class="coin" aria-hidden="true"></i><input id="f-year" name="year" type="text" inputmode="numeric" autocomplete="off"><span class="cred" aria-hidden="true">00</span></div>
+              <p class="err" id="f-year-err"></p>
+            </div>
+            <div class="fld">
+              <span class="lbl" aria-hidden="true">Power</span>
+              <label class="rocker"><input type="checkbox" name="powers" role="switch"><span class="rk" aria-hidden="true"><i class="rk-0">0</i><i class="rk-1">I</i></span><i class="rk-lamp" aria-hidden="true"></i><span>It powers on</span></label>
+              <p class="err"></p>
+            </div>
+            <div class="fld fld-wide" data-f="message">
+              <label class="lbl" for="f-message">What it does, and what it does not</label>
+              <div class="box box-area"><i class="coin" aria-hidden="true"></i><textarea id="f-message" name="message" rows="4"></textarea><span class="cred" aria-hidden="true">00</span></div>
+              <p class="err" id="f-message-err"></p>
+            </div>
+            <button class="btn btn-start" type="submit"><span class="ring"><span class="sock nt"><span class="face nt"><span class="label">Send it to Marisol</span></span></span></span><svg class="bat" viewBox="0 0 36 48" aria-hidden="true"><polygon class="b0" points="6,20 30,22 32,24 30,26 6,28" transform="rotate(28 6 24)"/><polygon class="b1" points="6,20 30,22 32,24 30,26 6,28"/><polygon class="b2" points="6,20 30,22 32,24 30,26 6,28" transform="rotate(-28 6 24)"/><rect x="2" y="20" width="8" height="8"/></svg></button>
+          </form>
+
+          <div class="done" id="done" hidden>
+            <p class="done-ref">Your reference is <span id="done-ref">MV-0000</span>. The match number is its last two digits.</p>
+            <div class="match">
+              <p class="sd5 nt"><span class="sd5-c">Match</span><span class="sd5-n" id="match">00</span></p>
+              <i class="knocker" id="knocker" aria-hidden="true"></i>
+            </div>
+            <div class="done-rest" id="done-rest">
+              <h3 id="done-title" tabindex="-1">You win a reply.</h3>
+              <p>Thank you, <span id="done-name">you</span>. I will answer within two working days, from the bench or the van. This is what I have:</p>
+              <dl class="echo">
+                <dt>Email</dt><dd id="done-email"></dd>
+                <dt>Machine</dt><dd id="done-kind"></dd>
+                <dt>Power</dt><dd id="done-power"></dd>
+                <dt>Message</dt><dd id="done-message"></dd>
+              </dl>
+              <button class="u" id="again" type="button">Change this</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="signoff">
+      <canvas class="wm" id="wm" aria-hidden="true"></canvas>
+      <div class="signoff-row">
+        <p>Marisol Vega fixes pinball and arcade machines in Guadalajara, and wherever the van gets to. Free play since 2016.</p>
+        <div class="signoff-acts">
+          <button class="u" id="attract" type="button">Attract mode</button>
+          <a class="u" href="#top">Back to the plunger</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+</section>
+
+<dialog class="roll" id="roll" aria-labelledby="roll-title" data-lenis-prevent>
+  <div class="roll-wrap">
+    <div class="roll-plates" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="roll-in" id="roll-in">
+      <div class="roll-top">
+        <div class="roll-head">
+          <h2 id="roll-title">My tool roll</h2>
+          <button class="u" id="roll-close" type="button">Close</button>
+        </div>
+        <p class="roll-intro">Waxed canvas, 22 pockets, 4.1 kg. It has been the same roll since 2016; about half of what is in it has been replaced.</p>
+      </div>
+      <div class="roll-cols">
+        <div><h3>Measure</h3><ul><li>Multimeter</li><li>Test lamp</li><li>Feeler gauges</li><li>Spirit level</li><li>Steel rule</li></ul></div>
+        <div><h3>Clean</h3><ul><li>Contact file</li><li>Burnisher</li><li>Brass brush</li><li>Lint-free cloths</li></ul></div>
+        <div><h3>Join</h3><ul><li>Soldering iron</li><li>Solder, 60/40</li><li>Desoldering braid</li><li>Heat-shrink</li><li>Crimp tool</li></ul></div>
+        <div><h3>Adjust</h3><ul><li>Nut drivers</li><li>Spring hook</li><li>Leaf adjuster</li><li>Offset screwdriver</li></ul></div>
+        <div><h3>Spares</h3><ul><li>Rubber rings</li><li>Fuses</li><li>Lamps</li><li>Coil sleeves</li></ul></div>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  /* DATA: machines sent back into play, per year, by what was wrong. Edit the rows; the chart, the score display,
+     the readout and the table are all built from this. */
+  const DATA = {
+    unit: 'machines repaired',
+    kinds: [
+      { key: 'coil', name: 'Coil and power faults' },
+      { key: 'switch', name: 'Switch faults' },
+      { key: 'rubber', name: 'Rubbers and mechanical wear' }
+    ],
+    years: [   // year, coil, switch, rubber
+      [2016, 9, 8, 6], [2017, 12, 11, 8], [2018, 14, 13, 10], [2019, 15, 17, 12], [2020, 7, 9, 5], [2021, 11, 14, 9],
+      [2022, 16, 19, 12], [2023, 17, 22, 13], [2024, 18, 24, 15], [2025, 19, 27, 16], [2026, 15, 23, 13]
+    ]
+  };
+
+  /* CONTACT: delete a line to remove a link. Known keys: email, whatsapp, github, mastodon, instagram, itch.
+     Any other key with a full URL becomes a link with that key as its name. */
+  const CONTACT = {
+    email: 'hola@marisolvega.example',
+    whatsapp: '+52 33 5550 0142',
+    instagram: 'marisol.fixes.pinball',
+    mastodon: '@marisolvega@mastodon.social'
+  };
+
+  /* The five bumpers: what the score display shows when the ball hits each one. */
+  const FACTS = [
+    ['00011', 'seasons on the road since 2016'],
+    ['00459', 'machines back in play'],
+    ['00038', 'bars, homes and arcades I visit'],
+    ['00034', 'repair nights taught so far'],
+    ['00031', 'museum machines kept on free play']
+  ];
+  /* The spinner stops on one of these twelve. */
+  const SPIN = [
+    'I carry 14 sizes of rubber ring and still run out of the two-inch.',
+    'The oldest machine I have opened was built in 1962. It still had its first coils.',
+    'Most dead machines are one dirty switch.',
+    'I label every wire I unplug with masking tape. Every one.',
+    'A flipper coil pulls about 8 amps, for a few thousandths of a second.',
+    'Under playfields I have found 37 coins, 2 rings and 1 tooth.',
+    'Free play is a setting, not a philosophy. I recommend both.',
+    'Score reels fail at 9. The carry to the next reel is where the dirt is.',
+    'I charge for the visit, not the hour. Nobody should rush a schematic.',
+    'A playfield takes about three hours to strip, clean and re-rubber.',
+    'The multimeter is 19 years old. Its leads are new every year.',
+    'If it tilts when you breathe, the plumb bob is hung too low.'
+  ];
+
+  const root = document.documentElement;
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const lib = !!(window.gsap && window.ScrollTrigger && window.Lenis);
+  if (lib) root.classList.add('js'); // CDN blocked: no class, everything is visible and every flow works
+  const css = (n) => getComputedStyle(root).getPropertyValue(n).trim();
+  const secs = (n) => parseFloat(css(n)) || 0;
+  const clamp = (a, b, v) => Math.min(b, Math.max(a, v));
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+  // Piecewise-linear lookup through [[x, y], ...]; clamps at both ends.
+  const through = (pts, v) => {
+    if (v <= pts[0][0]) return pts[0][1];
+    for (let i = 1; i < pts.length; i++) if (v <= pts[i][0]) { const [a, b] = pts[i - 1], [c, d] = pts[i]; return c === a ? d : b + (d - b) * (v - a) / (c - a); }
+    return pts[pts.length - 1][1];
+  };
+  const HUES = ['bumper-a', 'bumper-b', 'bumper-c', 'bumper-d', 'bumper-e'];
+  // Colours come from the tokens, never from literals.
+  const C = Object.fromEntries(['ground', 'well', 'pit', 'plate', 'white', 'blush', 'start', 'coil', 'switch', 'rubber', 'score', ...HUES].map((k) => [k, css('--' + k)]));
+  let lenis = null, fx = null; // fx: hooks set by the motion branch; null means every change is instant
+
+  /* ---------- Whole-pixel drawing, shared by the three low-resolution canvases ---------- */
+  const px = (g, col, x, y, w = 1, h = 1) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
+  const line = (g, col, x0, y0, x1, y1, t = 1) => {   // Bresenham with a t-by-t brush
+    x0 = Math.round(x0); y0 = Math.round(y0); x1 = Math.round(x1); y1 = Math.round(y1);
+    const dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1, o = t >> 1;
+    let e = dx + dy;
+    g.fillStyle = col;
+    for (;;) {
+      g.fillRect(x0 - o, y0 - o, t, t);
+      if (x0 === x1 && y0 === y1) break;
+      const e2 = 2 * e;
+      if (e2 >= dy) { e += dy; x0 += sx; }
+      if (e2 <= dx) { e += dx; y0 += sy; }
+    }
+  };
+  const disc = (g, col, cx, cy, r) => {
+    g.fillStyle = col;
+    for (let y = -r; y <= r; y++) { const w = Math.floor(Math.sqrt((r + .5) * (r + .5) - y * y)); g.fillRect(cx - w, cy + y, 2 * w + 1, 1); }
+  };
+  const ball = (g, x, y) => { disc(g, C.white, x, y, 3); px(g, C.start, x - 2, y - 2, 2, 2); px(g, C.blush, x + 1, y + 2, 2, 1); };   // steel, with a yellow highlight
+
+  /* ---------- The playfield: one ball, five bumpers, two slingshots, two flippers, a drain ---------- */
+  const sd = $('#sd'), sdBig = $('#sd-big'), sdSub = $('#sd-sub'), tableBtn = $('#table'), hint = $('#table-hint');
+  const show = (big, sub) => { sdBig.textContent = big; sdSub.textContent = sub; };
+  const table = (() => {
+    const cv = $('#pf'), g = cv.getContext('2d');
+    const W = 112, H = 152, R = 3, BR = 7, GY = .085, LEAN = .02, VMAX = 5.6, FL = 15, ANG = [.56, 0, -.56];
+    const LIT = Math.round(secs('--d-lamp') * 30);            // frames a bumper stays lit
+    const BUMP = [[28, 36], [62, 28], [46, 56], [22, 70], [74, 64]];
+    const SEG = [   // x0, y0, x1, y1, kick
+      [4, 146, 4, 12], [4, 12, 12, 4], [12, 4, 92, 4], [92, 4, 108, 20, 1.8], [108, 20, 108, 146],   // cabinet, and the arch that throws the ball onto the field
+      [98, 32, 98, 150], [98, 144, 108, 144],                                                    // shooter lane and plunger
+      [4, 112, 32, 134], [98, 112, 70, 134],                                                     // guides down to the flippers
+      [16, 92, 16, 110], [16, 110, 27, 116], [27, 116, 16, 92, 1.6],                             // left slingshot: its long side kicks
+      [86, 92, 86, 110], [86, 110, 75, 116], [75, 116, 86, 92, 1.6]];                            // right slingshot
+    const PIV = [[32, 135, 1], [70, 135, -1]];                // flipper pivots and the way each one points
+    const GATE = [98, 32, 108, 22];                            // one way: it lets the ball out of the lane and never back in
+    const b = { x: 103, y: 141, vx: 0, vy: 0, live: false, out: false };
+    const s = { lit: [0, 0, 0, 0, 0], flip: 0, fire: 0, lean: 0, serve: 0, rest: 0, stuck: 0, sx: 0, sy: 0, parked: true };
+    const api = { ball: b, s, onHit: null, onDrain: null };
+
+    function bounce(x0, y0, x1, y1, r, e, kick) {
+      const ex = x1 - x0, ey = y1 - y0, t = clamp(0, 1, ((b.x - x0) * ex + (b.y - y0) * ey) / (ex * ex + ey * ey));
+      const cx = x0 + ex * t, cy = y0 + ey * t, dx = b.x - cx, dy = b.y - cy, d = Math.hypot(dx, dy);
+      if (d >= r || d === 0) return;
+      const nx = dx / d, ny = dy / d, vn = b.vx * nx + b.vy * ny;
+      b.x = cx + nx * r; b.y = cy + ny * r;
+      if (vn < 0) { b.vx -= (1 + e) * vn * nx; b.vy -= (1 + e) * vn * ny; if (kick) { b.vx += kick * nx; b.vy += kick * ny; } }
+    }
+    // A third of a frame: gravity (leaning toward the pointer), then circle against circles and segments.
+    function sub(dt) {
+      b.vx += s.lean * LEAN * dt; b.vy += GY * dt;
+      const v = Math.hypot(b.vx, b.vy);
+      if (v > VMAX) { b.vx *= VMAX / v; b.vy *= VMAX / v; }
+      b.x += b.vx * dt; b.y += b.vy * dt;
+      for (let i = 0; i < 5; i++) {
+        const dx = b.x - BUMP[i][0], dy = b.y - BUMP[i][1], d = Math.hypot(dx, dy);
+        if (d >= BR + R || d === 0) continue;
+        const nx = dx / d, ny = dy / d, vn = b.vx * nx + b.vy * ny;
+        b.x = BUMP[i][0] + nx * (BR + R); b.y = BUMP[i][1] + ny * (BR + R);
+        if (vn < 2.4) { b.vx += (2.4 - vn) * nx; b.vy += (2.4 - vn) * ny; }   // a bumper always throws the ball off
+        s.lit[i] = LIT; api.onHit?.(i);
+      }
+      for (const q of SEG) bounce(q[0], q[1], q[2], q[3], R, .6, q[4] || 0);
+      if (b.out) bounce(GATE[0], GATE[1], GATE[2], GATE[3], R, .6, 0); else if (b.x < 92) b.out = true;
+      for (const [x, y, dir] of PIV) { const a = ANG[s.flip]; bounce(x, y, x + dir * FL * Math.cos(a), y + FL * Math.sin(a), R + 1.5, .3, 0); }
+    }
+    // The bats moved up one position this frame: a ball that was on or above a bat and is now inside its sweep is thrown.
+    function swing(was) {
+      for (const [x, y, dir] of PIV) {
+        const rel = (a) => { const ux = dir * Math.cos(a), uy = Math.sin(a), nx = dir * Math.sin(a), ny = -Math.cos(a); return [(b.x - x) * ux + (b.y - y) * uy, (b.x - x) * nx + (b.y - y) * ny, nx, ny]; };
+        const o = rel(ANG[was]), n = rel(ANG[s.flip]);
+        if (n[0] < -2 || n[0] > FL + R || o[1] < -R - 1 || n[1] > R + 2) continue;
+        const k = clamp(0, 1, n[0] / FL), up = R + 2.5 - n[1], sp = 2.2 + 2.6 * k;
+        b.x += n[2] * up; b.y += n[3] * up; b.vx = n[2] * sp; b.vy = n[3] * sp;
+      }
+    }
+    function launch() { Object.assign(b, { x: 103, y: 140, vx: 0, vy: -(5.15 + Math.random() * .4), live: true, out: false }); s.rest = 0; s.stuck = 0; }
+    // One frame at 30 per second.
+    function step() {
+      for (let i = 0; i < 5; i++) if (s.lit[i]) s.lit[i]--;
+      const was = s.flip;
+      if (s.fire) { if (s.flip < 2) s.flip++; else s.fire--; } else if (s.flip) s.flip--;   // rest, level, up, held, and back the same way
+      if (!b.live) { if (s.serve && --s.serve === 0) launch(); return; }
+      if (s.flip > was) swing(was);
+      for (let k = 0; k < 3; k++) sub(1 / 3);
+      if (b.y > H + 6) { b.live = false; api.onDrain ? api.onDrain() : serve(12); return; }
+      if (b.x > 98 && b.y > 134 && Math.abs(b.vy) < .4) { if (++s.rest > 10) launch(); } else s.rest = 0;   // back on the plunger: shot again
+      if (++s.stuck > 45) { if (Math.hypot(b.x - s.sx, b.y - s.sy) < 2) { b.vx = Math.random() * 3 - 1.5; b.vy = -2; } s.stuck = 0; s.sx = b.x; s.sy = b.y; }
+    }
+    function serve(frames) { Object.assign(b, { x: 103, y: 141, vx: 0, vy: 0, live: false }); s.serve = frames; s.parked = false; }
+    function hold() { Object.assign(b, { x: 103, y: 141, vx: 0, vy: 0, live: false }); s.serve = 0; s.parked = true; }
+    const fire = () => { s.fire = 5; };
+    const lean = (k) => { s.lean = clamp(-2, 2, k); };
+
+    function render() {
+      px(g, C.well, 0, 0, W, H);
+      for (let i = 0; i < 9; i++) px(g, C.pit, 19 + i * 8, 84, 2, 2);                         // a row of inserts across the middle
+      for (const q of SEG) line(g, C.plate, q[0], q[1], q[2], q[3], 2);
+      for (const m of [0, 1]) for (let y = 93; y < 116; y++) {                                // slingshots, filled
+        const xh = 16 + (y - 92) * 11 / 24, xb = y <= 110 ? 16 : 16 + (y - 110) * 11 / 6;
+        for (let x = Math.ceil(xb); x <= xh; x++) px(g, C.plate, m ? 102 - x : x, y);
+      }
+      line(g, C.blush, 27, 116, 16, 92); line(g, C.blush, 75, 116, 86, 92);
+      line(g, C.blush, GATE[0], GATE[1], GATE[2], GATE[3]);
+      BUMP.forEach(([x, y], i) => {
+        const c = C[HUES[i]];
+        disc(g, c, x, y, BR);
+        if (s.lit[i]) { disc(g, C.white, x, y, 2); px(g, c, x - 1, y - BR - 4, 2, 2); px(g, c, x - 1, y + BR + 3, 2, 2); px(g, c, x - BR - 4, y - 1, 2, 2); px(g, c, x + BR + 3, y - 1, 2, 2); }
+        else { disc(g, C.well, x, y, BR - 2); disc(g, c, x, y, 1); }                          // unlit: a ring and a cap
+      });
+      for (const [x, y, dir] of PIV) { const a = ANG[s.flip]; line(g, C.white, x, y, x + dir * (FL - 1) * Math.cos(a), y + (FL - 1) * Math.sin(a), 3); px(g, C.blush, x - 2, y - 2, 5, 5); }
+      for (let k = -2; k <= 2; k++) px(g, k === s.lean ? C.white : C.plate, 50 + k * 5, 148, 3, 2);   // the tilt bob: which way the table leans
+      px(g, C.blush, 100, 146, 7, 2); px(g, C.plate, 103, 148, 1, 4);                         // plunger
+      if (b.y < H + 4) ball(g, Math.round(b.x), Math.round(b.y));
+    }
+    // Lamp test: light exactly these bumpers.
+    const test = (on) => { s.lit = s.lit.map((_, i) => on.includes(i) ? 999 : 0); render(); };
+    // A composed still for the page without motion: the ball just off bumper 2, and its figure on the display.
+    function still(i = 1) {
+      s.flip = 0; s.fire = 0; s.lean = 0; s.serve = 0; s.parked = true;
+      s.lit = s.lit.map((_, k) => k === i ? 999 : 0);
+      Object.assign(b, { x: BUMP[i][0] + 8, y: BUMP[i][1] + 9, vx: 0, vy: 0, live: false });
+      show(FACTS[i][0], FACTS[i][1]);
+      render();
+    }
+    // Whole-pixel scale: as large as the first screen allows, 2 to 4.
+    function fit() {
+      const wide = matchMedia('(min-width: 1024px)').matches, cw = $('.wrap').clientWidth;
+      const pad = clamp(33, 66, innerHeight * .055), byH = Math.floor((innerHeight - pad - 88) / H);
+      root.style.setProperty('--S', clamp(2, 4, wide ? Math.min(byH, cw >= 1200 ? 4 : 3) : Math.floor(cw / W)));
+    }
+    return Object.assign(api, { step, render, serve, hold, fire, lean, test, still, fit, launch });
+  })();
+
+  /* ---------- The story lane: a ball on a fixed path through five drop targets ---------- */
+  const story = $('#story'), chapters = $$('.ch'), idx = $$('.idx li');
+  const lane = (() => {
+    const cv = $('#lane'), g = cv.getContext('2d'), W = 96, H = 176, PI = Math.PI;
+    const pts = [[88, 166, 0]];   // the path, one point per pixel of travel: x, y, 1 on the ramp
+    const to = (x, y, ramp = 0) => { const [x0, y0] = pts[pts.length - 1], n = Math.ceil(Math.hypot(x - x0, y - y0)); for (let i = 1; i <= n; i++) pts.push([x0 + (x - x0) * i / n, y0 + (y - y0) * i / n, ramp]); };
+    const arc = (cx, cy, r, a0, a1, ramp = 0) => { const n = Math.ceil(Math.abs(a1 - a0) * r); for (let i = 1; i <= n; i++) { const a = a0 + (a1 - a0) * i / n; pts.push([cx + r * Math.cos(a), cy + r * Math.sin(a), ramp]); } };
+    to(88, 24); arc(70, 24, 18, 0, -PI);            // up the plunger lane and over the arch
+    to(52, 42); to(20, 68); to(20, 98);             // down and across to the left lane
+    arc(34, 98, 14, PI, -PI);                       // once round the loop
+    to(20, 130); arc(34, 130, 14, PI, PI / 2); to(46, 144);
+    to(73, 108, 1); to(73, 62, 1); arc(66.5, 62, 6.5, 0, -PI, 1);   // up the ramp and round its wire turn
+    to(60, 154);                                    // and down, under the ramp, into the saucer
+    const END = pts.length - 1;
+    const TG = [[52, 33, 0], [20, 82, 0], [34, 84, 1], [73, 86, 0], [60, 138, 0]];   // x, y, 1 = stands across a sideways path
+    const near = (x, y) => { let best = 0, bd = 1e9; pts.forEach((p, i) => { const d = Math.hypot(p[0] - x, p[1] - y); if (d < bd) { bd = d; best = i; } }); return best; };
+    const AT = TG.map(([x, y]) => near(x, y));
+    const K = [.1, .28, .46, .64, .82];             // scroll progress at which each target drops
+    const MAP = [[0, 0], ...K.map((k, i) => [k, AT[i]]), [.95, END], [1, END]];
+    const st = [0, 0, 0, 0, 0];                     // 0 standing, 1 half down, 2 down
+    let d = END, n = 5;
+
+    function render() {
+      px(g, C.well, 0, 0, W, H);
+      for (const q of [[4, 174, 4, 14], [4, 14, 16, 2], [16, 2, 80, 2], [80, 2, 94, 16], [94, 16, 94, 174], [82, 34, 82, 174]]) line(g, C.plate, q[0], q[1], q[2], q[3], 2);
+      px(g, C.blush, 84, 170, 9, 2);                                                          // plunger
+      for (const r of [10, 18]) for (let a = 0; a < 200; a++) { const t = a / 200 * 2 * PI; if (r === 10 || Math.cos(t) > -.75) px(g, C.plate, Math.round(34 + r * Math.cos(t)), Math.round(98 + r * Math.sin(t))); }   // the loop's two walls, open where the lane joins
+      disc(g, C.plate, 60, 156, 6); disc(g, C.pit, 60, 156, 4);                               // the saucer
+      const rail = (i, col) => { const p = pts[i], q = pts[Math.min(END, i + 1)], l = Math.hypot(q[0] - p[0], q[1] - p[1]) || 1, nx = -(q[1] - p[1]) / l, ny = (q[0] - p[0]) / l; px(g, col, Math.round(p[0] + nx * 4), Math.round(p[1] + ny * 4)); px(g, col, Math.round(p[0] - nx * 4), Math.round(p[1] - ny * 4)); return [nx, ny]; };
+      pts.forEach((p, i) => { if (!p[2] && i % 4 === 0) px(g, i <= d ? C.blush : C.plate, Math.round(p[0]), Math.round(p[1])); });   // the lane, as inserts; the ones behind the ball are lit
+      pts.forEach((p, i) => {   // the ramp is a wireform above the field: two rails and ties
+        if (!p[2]) return;
+        const [nx, ny] = rail(i, C.blush);
+        if (i % 6 === 0) line(g, i <= d ? C.blush : C.plate, p[0] + nx * 3, p[1] + ny * 3, p[0] - nx * 3, p[1] - ny * 3);
+      });
+      TG.forEach(([x, y, v], i) => {
+        const c = C[HUES[i]], w = v ? 4 : 11, h = v ? 11 : 4, x0 = x - (w >> 1), y0 = y - (h >> 1);
+        if (st[i] === 0) { px(g, c, x0, y0, w, h); px(g, C.white, x0, y0, v ? 1 : w, v ? h : 1); }
+        else if (st[i] === 1) px(g, c, v ? x0 + 2 : x0, v ? y0 : y0 + 2, v ? 2 : w, v ? h : 2);
+        else { px(g, c, x0, y0, w, h); px(g, C.pit, x0 + 1, y0 + 1, w - 2, h - 2); }           // down: only its slot is left
+      });
+      const p = pts[d];
+      if (p[2]) disc(g, C.pit, Math.round(p[0]) - 2, Math.round(p[1]) + 3, 3);                // on the ramp the ball casts a shadow
+      ball(g, Math.round(p[0]), Math.round(p[1]));
+    }
+    function mark(now) {
+      idx.forEach((li, i) => { li.classList.toggle('is-on', i < n); li.classList.toggle('is-now', now && i === n - 1); });
+      chapters.forEach((c, i) => c.classList.toggle('is-now', now && i === n - 1));
+    }
+    // p: scroll progress through the pinned scene. twoFrame: a newly passed target shows its half-down frame first.
+    function set(p, twoFrame) {
+      const nd = Math.round(through(MAP, p) / 2) * 2, nn = K.filter((k) => p >= k).length;
+      let fresh = false;
+      for (let i = 0; i < 5; i++) {
+        if (i >= nn) st[i] = 0;                                   // scrolling back stands the target up again
+        else if (st[i] === 0) { st[i] = twoFrame ? 1 : 2; fresh = fresh || twoFrame; }
+      }
+      const moved = nd !== d || nn !== n || fresh;
+      d = Math.min(END, nd); n = nn;
+      if (moved) { render(); mark(true); }
+      return fresh;
+    }
+    const settle = () => { for (let i = 0; i < 5; i++) if (st[i] === 1) st[i] = 2; render(); };
+    // The still: the ball home in the saucer, every target down, every chapter on the page.
+    function still() { d = END; n = 5; st.fill(2); render(); mark(false); }
+    function fit() {
+      const pin = root.classList.contains('pin'), wide = innerWidth >= 1024;
+      const room = innerHeight - 396;   // phones, pinned: what the bonus row, the title and one card at body size leave for the lane
+      root.style.setProperty('--LS', wide ? clamp(2, pin ? 4 : 3, Math.floor((innerHeight - 66) / H)) : !pin || room >= 2 * H ? 2 : room >= 1.5 * H ? 1.5 : 1);
+    }
+    return { set, settle, still, fit, render };
+  })();
+
+  /* ---------- By the numbers: columns of lamps on a backglass ---------- */
+  const chart = (() => {
+    const cv = $('#chart'), g = cv.getContext('2d'), N = DATA.years.length, PITCH = 14, CELL = 4, TOP = 12;
+    const tot = DATA.years.map((y) => y[1] + y[2] + y[3]), ROWS = Math.ceil(Math.max(...tot) / 2);
+    const W = N * PITCH, H = TOP + ROWS * CELL + 4, base = H - 4;
+    cv.width = W; cv.height = H;
+    cv.style.width = `calc(${W}px * var(--CS))`; cv.style.height = `calc(${H}px * var(--CS))`;
+    const yearsEl = $('#years'), numN = $('#num-n'), numC = $('#num-c'), readout = $('#readout');
+    let sel = N - 1, prev = -1;
+    $('#legend').innerHTML = DATA.kinds.map((k) => `<li><i style="--k: var(--${k.key})"></i>${k.name}</li>`).join('');
+    yearsEl.style.gridTemplateColumns = `repeat(${N}, calc(${PITCH}px * var(--CS)))`;
+    yearsEl.innerHTML = DATA.years.map((y, i) => `<button class="year" type="button" data-i="${i}" aria-label="${y[0]}, ${tot[i]} ${DATA.unit}"><span class="yc" aria-hidden="true">${String(y[0]).slice(0, 2)}</span><span aria-hidden="true">${String(y[0]).slice(2)}</span></button>`).join('');
+    const btns = $$('.year', yearsEl);
+    $('#tbl').innerHTML = `<caption>Machines repaired per year, by fault</caption><thead><tr><th scope="col">Year</th>${DATA.kinds.map((k) => `<th scope="col">${k.name}</th>`).join('')}<th scope="col">Total</th></tr></thead><tbody>` +
+      DATA.years.map((y, i) => `<tr><th scope="row">${y[0]}</th><td>${y[1]}</td><td>${y[2]}</td><td>${y[3]}</td><td>${tot[i]}</td></tr>`).join('') +
+      `</tbody><tfoot><tr><th scope="row">All years</th>${[1, 2, 3].map((k) => `<td>${DATA.years.reduce((a, y) => a + y[k], 0)}</td>`).join('')}<td>${tot.reduce((a, b) => a + b, 0)}</td></tr></tfoot>`;
+    const top = (i) => base - Math.ceil(tot[i] / 2) * CELL;
+
+    function draw() {
+      px(g, C.well, 0, 0, W, H);
+      DATA.years.forEach(([, a, b], i) => {
+        const x = i * PITCH + 3;
+        for (let k = 0; k < ROWS * 2; k++) {   // one lamp is one machine, filled two to a row from the bottom
+          const cx = x + (k % 2) * CELL, cy = base - ((k >> 1) + 1) * CELL;
+          if (k < tot[i]) px(g, C[k < a ? 'coil' : k < a + b ? 'switch' : 'rubber'], cx, cy, 3, 3);
+          else px(g, C.pit, cx + 1, cy + 1);
+        }
+      });
+      px(g, C.plate, 0, base, W, 1);
+      if (prev >= 0 && prev !== sel) {   // the ghost of the last pick: a hollow outline of its height, and its level carried across
+        const x = prev * PITCH + 1, y = top(prev) - 2, a = Math.min(prev, sel) * PITCH + 1, b = Math.max(prev, sel) * PITCH + 12;
+        px(g, C.white, x, y, 11, 1); px(g, C.white, x, y, 1, base - y); px(g, C.white, x + 10, y, 1, base - y);
+        for (let xx = a; xx < b; xx += 2) px(g, C.white, xx, y);
+      }
+      px(g, C.white, sel * PITCH + 1, base + 1, 11, 3);   // the pick
+    }
+    function pick(i, focus) {
+      if (i < 0 || i >= N) return;
+      if (i !== sel) { prev = sel; sel = i; }
+      const [yr, a, b, c] = DATA.years[sel], t = tot[sel];
+      draw();
+      btns.forEach((el, k) => { el.setAttribute('aria-pressed', k === sel); el.tabIndex = k === sel ? 0 : -1; el.classList.toggle('is-ghost', k === prev && prev !== sel); });
+      numN.textContent = String(t).padStart(5, '0');   // one hard cut: the digits never count
+      numC.textContent = `${DATA.unit} in ${yr}`;
+      const dlt = prev >= 0 ? t - tot[prev] : 0;
+      readout.textContent = `${yr}: ${t} ${DATA.unit}. ${a} with coil and power faults, ${b} with switch faults, ${c} with worn rubbers or mechanics.` +
+        (prev >= 0 ? ` That is ${dlt === 0 ? 'the same as' : Math.abs(dlt) + (dlt > 0 ? ' more than' : ' fewer than')} ${DATA.years[prev][0]}, your last pick, outlined on the chart.` : '');
+      if (focus) btns[sel].focus();
+    }
+    yearsEl.addEventListener('click', (e) => { const b = e.target.closest('.year'); if (b) pick(+b.dataset.i); });
+    yearsEl.addEventListener('keydown', (e) => {
+      const k = { ArrowLeft: sel - 1, ArrowRight: sel + 1, Home: 0, End: N - 1 }[e.key];
+      if (k == null) return;
+      e.preventDefault(); pick(clamp(0, N - 1, k), true);
+    });
+    cv.addEventListener('click', (e) => { const r = cv.getBoundingClientRect(); pick(clamp(0, N - 1, Math.floor((e.clientX - r.left) / r.width * N))); });
+    function fit() {
+      const glass = cv.closest('.glass'), room = (matchMedia('(min-width: 1200px)').matches ? $('.wrap').clientWidth * .56 : $('.wrap').clientWidth) - 2 * parseFloat(getComputedStyle(glass).paddingLeft);
+      // The whole backglass (legend, lamps, years, padding: 154px besides the canvas) fits one window, so a pick and its ghost are seen together.
+      root.style.setProperty('--CS', clamp(2, 4, Math.min(Math.floor(room / W), Math.floor((innerHeight - 154) / H))));
+    }
+    return { pick, fit, draw };
+  })();
+
+  /* ---------- The wordmark: MARISOL as a lamp matrix ---------- */
+  const mark = (() => {
+    const cv = $('#wm'), g = cv.getContext('2d');
+    const GLYPH = {
+      M: ['10001', '11011', '10101', '10101', '10001', '10001', '10001'], A: ['01110', '10001', '10001', '11111', '10001', '10001', '10001'],
+      R: ['11110', '10001', '10001', '11110', '10100', '10010', '10001'], I: ['11111', '00100', '00100', '00100', '00100', '00100', '11111'],
+      S: ['01111', '10000', '10000', '01110', '00001', '00001', '11110'], O: ['01110', '10001', '10001', '10001', '10001', '10001', '01110'],
+      L: ['10000', '10000', '10000', '10000', '10000', '10000', '11111'] };
+    const WORD = 'MARISOL', COLS = WORD.length * 6 - 1, ROWS = 7;
+    const ink = new Uint8Array(COLS * ROWS), heat = new Uint8Array(COLS * ROWS);   // heat: 3 lit, 2 and 1 going out, 0 hollow
+    [...WORD].forEach((ch, k) => GLYPH[ch].forEach((row, r) => [...row].forEach((v, c) => { if (v === '1') ink[r * COLS + k * 6 + c] = 1; })));
+    let cell = 8, dpr = 1;
+    function fit() {
+      const w = cv.parentElement.clientWidth;
+      cell = Math.max(4, Math.floor(w / (COLS + 2)));
+      dpr = Math.min(2, window.devicePixelRatio || 1);
+      cv.style.width = (COLS + 2) * cell + 'px'; cv.style.height = (ROWS + 2) * cell + 'px';
+      cv.width = (COLS + 2) * cell * dpr; cv.height = (ROWS + 2) * cell * dpr;
+      draw();
+    }
+    function draw() {
+      g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      g.clearRect(0, 0, cv.width, cv.height);
+      const gap = Math.max(1, Math.round(cell * .14)), sz = cell - gap, t = Math.max(2, Math.round(cell * .1)), dot = cell < 12 ? 1 : Math.round(cell * .14);
+      for (let r = -1; r <= ROWS; r++) for (let c = -1; c <= COLS; c++) {
+        const x = (c + 1) * cell, y = (r + 1) * cell, i = r * COLS + c, on = r >= 0 && r < ROWS && c >= 0 && c < COLS && ink[i];
+        if (!on) { px(g, C.plate, x + ((sz - dot) >> 1), y + ((sz - dot) >> 1), dot, dot); continue; }   // the rest of the matrix: unused sockets
+        const h = heat[i], col = C[HUES[Math.floor(c * 5 / COLS)]];
+        px(g, h ? col : C.blush, x, y, sz, sz);
+        if (h < 3) { const k = h === 2 ? Math.max(t + 1, Math.round(sz * .3)) : t; px(g, C.ground, x + k, y + k, sz - 2 * k, sz - 2 * k); }   // hollow, or a ring on its way out
+      }
+    }
+    // Lamps within three cells of a point light. Returns true if anything changed.
+    function light(cx, cy) {
+      const r = cv.getBoundingClientRect(), fx = (cx - r.left) / cell - 1.5, fy = (cy - r.top) / cell - 1.5;
+      let any = false;
+      for (let y = Math.max(0, Math.floor(fy - 3)); y <= Math.min(ROWS - 1, Math.ceil(fy + 3)); y++)
+        for (let x = Math.max(0, Math.floor(fx - 3)); x <= Math.min(COLS - 1, Math.ceil(fx + 3)); x++)
+          if (ink[y * COLS + x] && Math.hypot(x - fx, y - fy) <= 3 && heat[y * COLS + x] < 3) { heat[y * COLS + x] = 3; any = true; }
+      return any;
+    }
+    const tick = () => { let alive = false; for (let i = 0; i < heat.length; i++) if (heat[i]) { heat[i]--; alive = alive || heat[i] > 0; } return alive; };   // one step darker
+    const sweep = (t) => { for (let r = 0; r < ROWS; r++) { const c = t - (ROWS - 1 - r); if (c >= 0 && c < COLS && ink[r * COLS + c]) heat[r * COLS + c] = 3; } };   // one diagonal
+    const all = (h) => { heat.fill(h); draw(); };
+    return { fit, draw, light, tick, sweep, all, span: COLS + ROWS, get lit() { return heat.some((h) => h); } };
+  })();
+
+  /* ---------- First paint, and refits ---------- */
+  const fitAll = () => { table.fit(); lane.fit(); chart.fit(); mark.fit(); };
+  let stillAt = 1;
+  fitAll();
+  table.still(stillAt); lane.still(); chart.pick(DATA.years.length - 1); mark.all(3);
+  let rz = 0;
+  window.addEventListener('resize', () => { cancelAnimationFrame(rz); rz = requestAnimationFrame(() => { fitAll(); bonus(); }); });
+  // Without motion the table is a still: each press lights the next bumper and shows its figure.
+  tableBtn.addEventListener('click', () => { if (fx) fx.flip(); else { stillAt = (stillAt + 1) % 5; table.still(stillAt); } });
+
+  /* ---------- Bonus lamps: one for each part of the page reached, and the page's three thirds on the plate ---------- */
+  const lamps = $$('.bonus-lamps li'), ballN = $('#ball-n');
+  const PARTS = ['now', 'story', 'numbers', 'spinner-part', 'hello'].map((id) => $('#' + id));
+  function bonus() {
+    const max = Math.max(1, root.scrollHeight - innerHeight), n = PARTS.filter((p) => p.getBoundingClientRect().top < innerHeight * .6).length;
+    lamps.forEach((l, i) => l.classList.toggle('is-on', i < n));
+    const third = String(clamp(1, 3, Math.floor(scrollY / max * 3) + 1));
+    if (ballN.textContent !== third) ballN.textContent = third;
+  }
+  let bz = 0;
+  window.addEventListener('scroll', () => { if (!bz) bz = requestAnimationFrame(() => { bz = 0; bonus(); }); }, { passive: true });
+  bonus();
+
+  /* ---------- Presses: held for at least --d-press, so a quick tap still shows the whole press ---------- */
+  const HOLD = secs('--d-press') * 1000;
+  $$('.btn').forEach((b) => {
+    let t0 = 0, rel = 0;
+    const down = () => { clearTimeout(rel); t0 = performance.now(); b.classList.add('is-down'); };
+    const up = () => { rel = setTimeout(() => b.classList.remove('is-down'), Math.max(0, HOLD - (performance.now() - t0))); };
+    b.addEventListener('pointerdown', down);
+    b.addEventListener('keydown', (e) => { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) down(); });
+    ['pointerup', 'pointerleave', 'pointercancel', 'keyup', 'blur'].forEach((t) => b.addEventListener(t, up));
+  });
+  // The wire under a link: the ball takes whole 4px steps, however long the link is, and its last step carries it past
+  // the end of the wire. A touch rolls it once.
+  const wire = (e) => { const u = e.target.closest?.('.u'); if (!u) return; const n = Math.max(2, Math.ceil(u.offsetWidth / 4)); u.style.setProperty('--n', n); u.style.setProperty('--tx', n * 4 + 'px'); };
+  document.addEventListener('pointerover', wire); document.addEventListener('focusin', wire);
+  document.addEventListener('pointerdown', (e) => {
+    wire(e);
+    const u = e.target.closest?.('.u');
+    if (u && e.pointerType === 'touch') { u.classList.remove('is-tap'); void u.offsetWidth; u.classList.add('is-tap'); setTimeout(() => u.classList.remove('is-tap'), 500); }
+  });
+  // In-page links: the press is seen first, then the page moves (smoothly when Lenis runs) and focus follows.
+  $$('a[href^="#"]').forEach((a) => a.addEventListener('click', (e) => {
+    const t = $(a.getAttribute('href'));
+    if (!t) return;
+    e.preventDefault();
+    setTimeout(() => {
+      lenis ? lenis.scrollTo(t, { offset: -44 }) : t.scrollIntoView();
+      t.setAttribute('tabindex', '-1'); t.focus({ preventScroll: true });
+    }, a.classList.contains('btn') ? HOLD : 0);
+  }));
+
+  /* ---------- The spinner ---------- */
+  const spinner = $('#spinner'), plate = $('#sp-plate'), marks = $$('#marks li'), spinFact = $('#spin-fact'), spinCount = $('#spin-count');
+  let spinning = false, face = 0, factAt = -1, flips = 0, drag = null, skipClick = false;
+  function spin(n) {
+    if (spinning) return;
+    n = clamp(3, 12, Math.round(n));
+    spinning = true;
+    marks.forEach((m) => m.classList.remove('is-on'));
+    const flip = (i) => { face ^= 1; plate.dataset.face = face; marks[i].classList.add('is-on'); flips++; };   // one flip, one mark
+    const done = () => {
+      spinning = false; factAt = (factAt + n) % SPIN.length;
+      spinFact.textContent = SPIN[factAt];
+      spinCount.textContent = `${n} flips that time, ${flips} in all.`;
+    };
+    if (fx) fx.spin(n, flip, done); else { for (let i = 0; i < n; i++) flip(i); done(); }
+  }
+  spinner.addEventListener('click', () => { if (skipClick) { skipClick = false; return; } spin(6); });
+  spinner.addEventListener('pointerdown', (e) => { if (spinning) return; drag = { y: e.clientY, t: performance.now(), y0: e.clientY, far: 0 }; spinner.setPointerCapture?.(e.pointerId); });
+  spinner.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    const now = performance.now();
+    drag.far = Math.max(drag.far, Math.abs(e.clientY - drag.y0));
+    if (now - drag.t > 60) { drag.v = Math.abs(e.clientY - drag.y) / (now - drag.t); drag.y = e.clientY; drag.t = now; }
+    plate.dataset.lean = Math.min(3, Math.floor(drag.far / 14));   // the plate gives under the finger, a step at a time
+  });
+  const drop = (e) => {
+    if (!drag) return;
+    const d = drag; drag = null; delete plate.dataset.lean;
+    if (e.type === 'pointerup' && d.far > 10) { const v = Math.max(d.v || 0, d.far / Math.max(60, performance.now() - d.t + 60)); skipClick = true; setTimeout(() => { skipClick = false; }, 80); spin(3 + v * 6); }
+  };
+  spinner.addEventListener('pointerup', drop); spinner.addEventListener('pointercancel', drop);
+
+  /* ---------- Things I use: each reason opens and closes in place ---------- */
+  $$('.tools .u').forEach((b) => b.addEventListener('click', () => {
+    const open = b.getAttribute('aria-expanded') !== 'true';
+    b.setAttribute('aria-expanded', open);
+    $('#' + b.getAttribute('aria-controls')).hidden = !open;
+  }));
+
+  /* ---------- Contact links from CONTACT ---------- */
+  const KNOWN = {
+    email: (v) => ({ kind: 'Email', text: v, href: 'mailto:' + v }),
+    whatsapp: (v) => ({ kind: 'WhatsApp', text: v, href: 'https://wa.me/' + v.replace(/\D/g, '') }),
+    github: (v) => ({ kind: 'GitHub', text: v.replace(/^@/, ''), href: 'https://github.com/' + v.replace(/^@/, '') }),
+    mastodon: (v) => { const m = v.match(/^@?([^@\s/]+)@([^@\s/]+)$/); return m ? { kind: 'Mastodon', text: `@${m[1]}@${m[2]}`, href: `https://${m[2]}/@${m[1]}` } : { kind: 'Mastodon', text: v.replace(/^https?:\/\//, ''), href: v }; },
+    instagram: (v) => ({ kind: 'Instagram', text: '@' + v.replace(/^@/, ''), href: `https://www.instagram.com/${v.replace(/^@/, '')}/` }),
+    itch: (v) => ({ kind: 'itch.io', text: `${v}.itch.io`, href: `https://${v}.itch.io/` })
+  };
+  const linksEl = $('#links');
+  for (const [k, v] of Object.entries(CONTACT)) {
+    const l = KNOWN[k] ? KNOWN[k](String(v)) : /^https?:\/\//.test(v) ? { kind: k, text: String(v).replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, ''), href: v } : null;
+    if (!l) continue;
+    const li = document.createElement('li');
+    li.innerHTML = '<span class="kind"></span><a class="u" target="_blank" rel="noopener"></a>';
+    $('.kind', li).textContent = l.kind;
+    const a = $('a', li);
+    a.href = l.href; a.textContent = l.text;
+    a.insertAdjacentHTML('beforeend', '<span class="vh"> (opens in a new tab)</span>');
+    linksEl.append(li);
+  }
+
+  /* ---------- The enquiry form (works without the libraries; nothing is sent) ---------- */
+  const form = $('#ask'), done = $('#done'), doneTitle = $('#done-title'), doneRest = $('#done-rest'), matchEl = $('#match'), swapBox = $('.swap');
+  form.noValidate = true;
+  const RULES = {
+    name: (v) => !v ? 'Enter your name, so I know who I am answering.' : v.length > 60 ? 'Keep the name under 60 characters.' : '',
+    email: (v) => !v ? 'Enter your email address, like ana@example.com.' : !/^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(v) ? 'This address needs an @ and a domain, like ana@example.com.' : '',
+    year: (v) => !v ? '' : !/^\d{4}$/.test(v) ? 'Write the year as four digits, like 1978, or leave it empty.' : +v < 1947 || +v > 2026 ? 'Flippers arrived in 1947. Use a year from 1947 to 2026, or leave it empty.' : '',
+    message: (v) => !v ? 'Say what the machine does and what it does not.' : v.length < 12 ? 'Add a little more: what happens when you press start?' : ''
+  };
+  const field = (name) => form.elements[name], val = (name) => field(name).value.trim();
+  // The credit display counts what has been typed, two digits, in hard cuts; an invalid field shows two dashes.
+  const credit = (name, bad) => { $('.cred', field(name).closest('.fld')).textContent = bad ? '--' : String(Math.min(99, field(name).value.length)).padStart(2, '0'); };
+  const flag = (name, msg) => {
+    const el = field(name), fld = el.closest('.fld'), err = $('.err', fld);
+    err.textContent = msg; // cleared too, so assistive tech never finds a stale message
+    fld.classList.toggle('is-bad', !!msg);
+    if (msg) { el.setAttribute('aria-invalid', 'true'); el.setAttribute('aria-describedby', err.id); }
+    else { el.removeAttribute('aria-invalid'); el.removeAttribute('aria-describedby'); }
+    credit(name, !!msg);
+    return !msg;
+  };
+  for (const name of Object.keys(RULES)) field(name).addEventListener('input', () => {
+    if (field(name).hasAttribute('aria-invalid')) { if (!RULES[name](val(name))) flag(name, ''); } else credit(name, false);
+  });
+  const posEls = $$('.pos');
+  $('#kind').addEventListener('change', () => posEls.forEach((p) => p.classList.toggle('is-on', $('input', p).checked)));   // the pointer jumps
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const bad = Object.keys(RULES).filter((name) => !flag(name, RULES[name](val(name))));
+    if (bad.length) { field(bad[0]).focus(); return; }
+    let h = 0;
+    for (const ch of val('name') + val('email')) h = (h * 31 + ch.charCodeAt(0)) % 9000;
+    const ref = String(1000 + h), last = ref.slice(-2);
+    $('#done-ref').textContent = 'MV-' + ref;
+    $('#done-name').textContent = val('name');
+    $('#done-email').textContent = val('email');
+    $('#done-kind').textContent = form.elements.kind.value + (val('year') ? ', ' + val('year') : '');
+    $('#done-power').textContent = form.elements.powers.checked ? 'It powers on' : 'It does not power on';
+    $('#done-message').textContent = val('message');
+    swapBox.style.minHeight = swapBox.offsetHeight + 'px';   // the page keeps its height, so nothing jumps
+    form.hidden = true; done.hidden = false;
+    matchEl.textContent = last;
+    doneTitle.focus();
+    fx?.success(last);   // the match number cuts through three values, the knocker jumps, then the reply
+  });
+  $('#again').addEventListener('click', () => {
+    done.hidden = true; form.hidden = false; swapBox.style.minHeight = '';
+    field('name').focus();
+  });
+
+  /* ---------- The tool-roll dialog ---------- */
+  const dlg = $('#roll');
+  let opener = null, closing = false, downOn = null;
+  // Recover from any close, even one the browser forces (a second Escape is not cancelable) in the middle of the drop.
+  const settle = () => { closing = false; fx?.dialogReset(); };
+  $$('[data-roll]').forEach((b) => b.addEventListener('click', () => {
+    if (dlg.open) return;
+    opener = b; settle();
+    dlg.showModal();
+    lenis?.stop();
+    fx?.dialogIn();
+  }));
+  const closeDialog = () => {
+    if (!dlg.open || closing) return;
+    closing = true;
+    const end = () => { closing = false; dlg.close(); };
+    fx ? fx.dialogOut(end) : end();
+  };
+  $('#roll-close').addEventListener('click', closeDialog);
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); closeDialog(); });
+  // Close on a backdrop click only when the press also started on the backdrop.
+  dlg.addEventListener('pointerdown', (e) => { downOn = e.target; });
+  dlg.addEventListener('click', (e) => { if (e.target === dlg && downOn === dlg) closeDialog(); });
+  dlg.addEventListener('close', () => { settle(); lenis?.start(); opener?.focus(); });
+
+  /* ---------- Attract mode. Without motion the button switches the name's lamps on and off. ---------- */
+  let nameLit = true;
+  $('#attract').addEventListener('click', () => { if (fx) fx.attract(); else { nameLit = !nameLit; mark.all(nameLit ? 3 : 0); } });
+
+  if (!lib) return;
+
+  /* ---------- Motion ---------- */
+  gsap.registerPlugin(ScrollTrigger);
+  const T = Object.fromEntries(['test', 'test-all', 'reel', 'cut', 'drop', 'plate', 'flip', 'match', 'knock', 'sweep'].map((k) => [k, secs('--d-' + k)]));
+  const IDLE = secs('--idle') * 1000, SLOW = parseFloat(css('--flip-slow')) || 1.2;
+  const fontReady = Promise.race([
+    document.fonts.load('16px "Departure Mono"').then(() => 'font', () => 'font'),
+    new Promise((r) => setTimeout(() => r('timeout'), 1500))
+  ]);
+  // Start the opening only on a visible page: with lagSmoothing(0) a timeline started in a background tab would
+  // jump to its end on return.
+  const visible = new Promise((r) => {
+    if (document.visibilityState === 'visible') return r();
+    const f = () => { if (document.visibilityState === 'visible') { document.removeEventListener('visibilitychange', f); r(); } };
+    document.addEventListener('visibilitychange', f);
+  });
+  // A headline line per window: words are grouped by the line they wrapped onto. No letter moves alone.
+  const splitLines = (el) => {
+    const text = el.textContent.trim().replace(/\s+/g, ' '), words = text.split(' ');
+    el.textContent = '';
+    const spans = words.map((w) => { const s = document.createElement('span'); s.textContent = w; el.append(s, ' '); return s; });
+    const lines = []; let top = null;
+    spans.forEach((s) => { if (s.offsetTop !== top) { lines.push([]); top = s.offsetTop; } lines[lines.length - 1].push(s.textContent); });
+    el.textContent = '';
+    const inners = lines.map((ws) => { const w = document.createElement('span'), inn = document.createElement('span'); w.className = 'reel'; inn.className = 'reel-in'; inn.textContent = ws.join(' '); w.append(inn); el.append(w, ' '); return inn; });
+    return { inners, revert: () => { el.textContent = text; } };
+  };
+  let played = false;
+
+  const mm = gsap.matchMedia();
+  mm.add({
+    motion: '(prefers-reduced-motion: no-preference)',
+    reduce: '(prefers-reduced-motion: reduce)',
+    fine: '(hover: hover) and (pointer: fine)',
+    pinnable: '(min-width: 1024px) and (min-height: 560px), (max-width: 1023.98px) and (min-height: 610px)'
+  }, (ctx) => {
+    const { motion, fine, pinnable } = ctx.conditions;
+    if (!motion) {
+      // Reduced motion: final states, native scroll, no pin, no loops. The stills and instant flows above are the page.
+      root.classList.add('go');
+      return () => {};
+    }
+    let dead = false, st = null, split = null, loadTl = null;
+    const off = [], calls = new Set();
+    const on = (el, type, fn, opt) => { el.addEventListener(type, fn, opt); off.push(() => el.removeEventListener(type, fn, opt)); };
+    const later = (t, fn) => { const c = gsap.delayedCall(t, () => { calls.delete(c); fn(); }); calls.add(c); return c; };
+    root.classList.add('fx');
+
+    // Lenis on GSAP's clock. Touch keeps native scrolling.
+    lenis = new Lenis({ lerp: .1, smoothWheel: true, autoRaf: false });
+    lenis.on('scroll', ScrollTrigger.update);
+    const tick = (t) => lenis.raf(t * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
+
+    /* The table: a fixed 30 frames a second, awake only while the top is on screen and someone has been here in the
+       last --idle seconds. After that the ball is parked on the plunger and the loop is removed. */
+    const FRAME = 1000 / 30, sub = hint.textContent;
+    let awake = false, inView = true, started = false, acc = 0, lastInput = performance.now();
+    const park = () => { table.hold(); show('Marisol Vega', fine ? 'Move or click to serve the ball' : 'Tap to serve the ball'); };
+    const simTick = (t, dt) => {
+      acc += Math.min(dt, 100);
+      let n = 0;
+      while (acc >= FRAME && n < 3) { acc -= FRAME; n++; table.step(); }
+      if (!n) return;
+      if (table.ball.live && performance.now() - lastInput > IDLE + 9000) park();   // a ball that will not drain is lifted off the field
+      table.render();
+      if (table.s.parked && !table.s.flip && !table.s.lit.some((v) => v)) sleep();
+    };
+    const sleep = () => { if (!awake) return; awake = false; gsap.ticker.remove(simTick); };
+    const wake = () => {
+      if (awake || !inView || !started) return;
+      awake = true; acc = 0;
+      if (table.s.parked) table.serve(8);
+      gsap.ticker.add(simTick);
+    };
+    const input = () => { lastInput = performance.now(); wake(); };
+    table.onHit = (i) => show(FACTS[i][0], FACTS[i][1]);
+    table.onDrain = () => { performance.now() - lastInput > IDLE ? park() : table.serve(14); };
+    const io = new IntersectionObserver(([e]) => { inView = e.isIntersecting; inView ? input() : sleep(); });
+    io.observe(tableBtn);
+    off.push(() => io.disconnect());
+    hint.textContent = fine ? 'Move to lean the table. Click to flip.' : 'Touch a side to lean it. Tap to flip.';
+    // Pointer: gravity leans toward the pointer's side of the window, in five steps.
+    if (fine) on($('.top'), 'pointermove', (e) => { if (e.pointerType === 'touch') return; table.lean(Math.floor(e.clientX / innerWidth * 5) - 2); input(); });
+    // Touch: the side of the table that is touched. Keyboard: the arrow keys, with the table focused.
+    on(tableBtn, 'touchstart', (e) => { const r = tableBtn.getBoundingClientRect(), k = (e.touches[0].clientX - r.left) / r.width; table.lean(k < .34 ? -2 : k > .66 ? 2 : 0); input(); }, { passive: true });
+    on(tableBtn, 'keydown', (e) => { const k = { ArrowLeft: -2, ArrowRight: 2, ArrowDown: 0, ArrowUp: 0 }[e.key]; if (k != null) { table.lean(k); input(); } });
+    on(tableBtn, 'focus', input);
+
+    /* The story: pinned by CSS (sticky), scrubbed by one ScrollTrigger. Nothing loops: the lane is redrawn when the
+       scroll position changes, and a freshly passed target gets its half-down frame for --d-drop. */
+    root.classList.toggle('pin', pinnable);
+    lane.fit();
+    const roll = (p, twoFrame) => { if (lane.set(p, twoFrame)) later(T.drop, lane.settle); };
+    if (pinnable) {
+      st = ScrollTrigger.create({
+        trigger: story, start: 'top top', end: 'bottom bottom',
+        onUpdate: (self) => roll(self.progress, true),
+        onRefresh: (self) => roll(self.progress, false)
+      });
+      roll(st.progress, false);
+    } else lane.still();
+
+    /* The wordmark: lamps light near the pointer and go out a step at a time; the attract sweep is one diagonal
+       per --d-sweep. The loop exists only while a lamp is lit. */
+    let mOn = false, mAcc = 0, mN = 0, sweepT = -1;
+    const markTick = (t, dt) => {
+      mAcc += Math.min(dt, 100);
+      if (mAcc < T.sweep * 1000) return;
+      mAcc = 0;
+      if (sweepT >= 0) { mark.sweep(sweepT); if (++sweepT > mark.span) sweepT = -1; }
+      const alive = ++mN % 3 ? mark.lit : mark.tick();   // every third step the lamps let go one step
+      mark.draw();
+      if (!alive && sweepT < 0) { mOn = false; gsap.ticker.remove(markTick); }
+    };
+    const markWake = () => { if (!mOn) { mOn = true; mAcc = 0; gsap.ticker.add(markTick); } };
+    const wm = $('#wm');
+    mark.all(0);
+    if (fine) on(wm, 'pointermove', (e) => { if (e.pointerType !== 'touch' && mark.light(e.clientX, e.clientY)) markWake(); });
+    const touchLight = (e) => { if (mark.light(e.touches[0].clientX, e.touches[0].clientY)) markWake(); };
+    on(wm, 'touchstart', touchLight, { passive: true }); on(wm, 'touchmove', touchLight, { passive: true });
+    const attract = () => { sweepT = 0; markWake(); };
+    const wmSt = ScrollTrigger.create({ trigger: wm, start: 'top 80%', once: true, onEnter: attract });
+
+    /* ---------- Hooks for the plain-JS flows ---------- */
+    const plates = $$('.roll-plates i'), rollIn = $('#roll-in'), knocker = $('#knocker');
+    let dTl = null, sTl = null, spTl = null;
+    fx = {
+      flip() { input(); table.fire(); },
+      attract,
+      // Drop targets: each plate pops up from the bottom edge in two steps, left to right; the copy cuts in on the full bank.
+      dialogReset() { dTl?.kill(); dTl = null; gsap.set([rollIn, ...plates], { clearProps: 'all' }); },
+      dialogIn() {
+        gsap.set(rollIn, { opacity: 0 }); gsap.set(plates, { yPercent: 100 });
+        dTl = gsap.timeline();
+        plates.forEach((p, i) => dTl.set(p, { yPercent: 50 }, (2 * i + 1) * T.plate).set(p, { yPercent: 0 }, (2 * i + 2) * T.plate));
+        dTl.set(rollIn, { opacity: 1 }, 11 * T.plate);
+      },
+      dialogOut(end) {
+        dTl?.kill();
+        dTl = gsap.timeline({ onComplete: end });
+        dTl.set(rollIn, { opacity: 0 }, 0);
+        [...plates].reverse().forEach((p, i) => dTl.set(p, { yPercent: 50 }, (2 * i + 1) * T.plate).set(p, { yPercent: 100 }, (2 * i + 2) * T.plate));
+        dTl.to({}, { duration: T.plate });
+      },
+      // The match: three values that are not the answer, then the answer; the knocker jumps once; then the reply.
+      success(last) {
+        sTl?.kill();
+        const n = +last, seq = [(n + 37) % 100, (n + 64) % 100, (n + 81) % 100].map((v) => String(v).padStart(2, '0'));
+        gsap.set(doneRest, { opacity: 0 });
+        matchEl.textContent = seq[0];
+        sTl = gsap.timeline()
+          .call(() => { matchEl.textContent = seq[1]; }, null, T.match)
+          .call(() => { matchEl.textContent = seq[2]; }, null, 2 * T.match)
+          .call(() => { matchEl.textContent = last; }, null, 3 * T.match)
+          .set(knocker, { y: -22 }, 3 * T.match + .06)
+          .set(knocker, { y: 0 }, 3 * T.match + .06 + T.knock)
+          .set(doneRest, { opacity: 1 }, 3 * T.match + .06 + T.knock + .1);
+      },
+      // The spin: every flip is four frames (half, edge-on, half, flat) and each flip is --flip-slow times longer than the last.
+      spin(n, flip, done) {
+        spTl?.kill();
+        spTl = gsap.timeline({ onComplete: done });
+        let t = 0, d = T.flip;
+        for (let i = 0; i < n; i++) {
+          spTl.set(plate, { scaleY: .5 }, t).set(plate, { scaleY: .08 }, t + d / 4).call(flip, [i], t + d / 4)
+            .set(plate, { scaleY: .5 }, t + d / 2).set(plate, { scaleY: 1 }, t + d * .75);
+          t += d; d *= SLOW;
+        }
+        spTl.set(plate, { clearProps: 'transform' }, t);
+      }
+    };
+
+    /* ---------- Load: lamp test, score reels, then the ball is served ---------- */
+    const h2 = $('.h2'), rv = $$('[data-rv]');
+    Promise.all([fontReady, visible]).then(() => {
+      if (dead) return;
+      fitAll(); ScrollTrigger.refresh();
+      const begin = () => { started = true; show('Marisol Vega', 'Hit a bumper to read a figure'); table.hold(); input(); };
+      if (played || scrollY > 40) {   // already played, or the page was reloaded part-way down: no opening
+        played = true; root.classList.add('go'); table.test([]); begin();
+        return;
+      }
+      split = splitLines(h2);
+      gsap.set(split.inners, { yPercent: -200 });
+      gsap.set(rv, { visibility: 'hidden' });
+      show('Marisol Vega', 'Hit a bumper to read a figure');
+      sd.classList.add('is-blank');
+      table.hold(); table.test([]);
+      root.classList.add('go');
+      const t0 = .15, a = t0 + 5 * T.test + .1, all = [0, 1, 2, 3, 4], reel = 6 * T.reel;
+      loadTl = gsap.timeline({ onComplete: () => { split.revert(); split = null; played = true; } });
+      all.forEach((i) => loadTl.call(() => table.test([i]), null, t0 + i * T.test));           // the five bumpers, one by one
+      loadTl.call(() => table.test([]), null, t0 + 5 * T.test)
+        .call(() => { table.test(all); sd.classList.remove('is-blank'); }, null, a)             // all five, and her name on the display
+        .call(() => table.test([]), null, a + T['test-all'])
+        .call(() => table.test(all), null, a + T['test-all'] + .15)
+        .call(() => table.test([]), null, a + 2 * T['test-all'] + .15);
+      split.inners.forEach((el, i) => loadTl.to(el, { yPercent: 0, duration: reel, ease: 'steps(6)' }, .3 + i * reel));   // each line rolls in like a score reel
+      const t1 = Math.max(.3 + split.inners.length * reel, a + 2 * T['test-all'] + .15) + T.cut;
+      rv.forEach((el, i) => loadTl.set(el, { visibility: 'visible' }, t1 + i * T.cut));
+      loadTl.call(begin, null, t1 + rv.length * T.cut + .1);
+    });
+
+    return () => {
+      dead = true;
+      off.forEach((f) => f());
+      calls.forEach((c) => c.kill());
+      loadTl?.kill(); split?.revert(); dTl?.kill(); sTl?.kill(); spTl?.kill();
+      st?.kill(); wmSt.kill();
+      sleep(); gsap.ticker.remove(markTick);
+      fx = null;
+      table.onHit = table.onDrain = null;
+      gsap.ticker.remove(tick);
+      gsap.ticker.lagSmoothing(500, 33);
+      lenis.destroy(); lenis = null;
+      gsap.set([...rv, ...plates, rollIn, plate, knocker, doneRest], { clearProps: 'all' });
+      root.classList.remove('fx', 'pin');
+      sd.classList.remove('is-blank');
+      hint.textContent = sub;
+      played = true;
+      lane.fit(); table.still(stillAt); lane.still(); mark.all(3);
+    };
+  });
+})();
+</script>
+</body>
+</html>

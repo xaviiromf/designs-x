@@ -1,0 +1,1952 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Ansel Okafor, pixel type designer</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<style>
+  @font-face {
+    font-family: "Departure Mono";
+    src: url("https://cdn.jsdelivr.net/npm/@proj-airi/font-departure-mono@0.17.0/dist/files/DepartureMono-Regular.woff2") format("woff2");
+    font-weight: 400; font-style: normal; font-display: swap;
+  }
+
+  :root {
+    /* Ground: a drafting navy and its two tones */
+    --navy: #18275C;          /* page ground */
+    --well: #0F1A40;          /* wells: the editor grid, fields, chart blocks, the scrim (bone on it 14.2:1) */
+    --plate: #24367A;         /* raised plates: the dialog sheet, chips, cell rules (bone on it 9.4:1) */
+    --bone: #F1EBDD;          /* text, and the pixels of every specimen (11.9:1 on navy) */
+    --fog: #BFC8E6;           /* secondary text, field and button rims (8.5:1 on navy, 6.7:1 on plate) */
+
+    /* Ten print hues, one job each */
+    --brass: #D9BE6A;         /* the primary action and focus: rings, the field caret (7.8:1 on navy; navy on it 7.8:1) */
+    --burgundy: #8A2A3F;      /* ink, block: the empty home cell a pushed wordmark pixel left (1.7:1, decorative) */
+    --burgundy-ink: #E79AA9;  /* ink, readable: set pixels in the editor, the edited letter in the specimen, the wordmark (6.5:1 on navy, 7.7:1 on well) */
+    --royal-green: #1F6B4A;   /* guides at rest: baselines under the tester rows and in the drafts (2.2:1, decorative) */
+    --guide: #8FD1AE;         /* guides, readable royal green: baseline, x-height and cap height lines and their names (8.0:1 on navy) */
+    --terracotta: #D98C6A;    /* chapter 1 and draft 1 (5.3:1) */
+    --mustard: #C9A84A;       /* chapter 2 and draft 2 (6.2:1) */
+    --sage: #A7BF95;          /* chapter 3 and draft 3 (7.1:1) */
+    --periwinkle: #9EA8E0;    /* chapter 4 and draft 4 (6.2:1) */
+    --mauve: #C29BC9;         /* chapter 5 and draft 5 (6.0:1) */
+    --teal: #6FB5B0;          /* letters in the chart (6.0:1, non-text band) */
+    --sand: #D9C9A3;          /* figures and punctuation in the chart (8.7:1, non-text band) */
+    --rust: #C96A4A;          /* marks beyond the basic alphabet: accents and box-drawing in the chart, and the hollow box for a glyph a typeface lacks (3.8:1 on navy, 4.5:1 on well; non-text only) */
+    --scrim: rgb(15 26 64 / .88);
+
+    /* Type: one pixel face on an 11px grid */
+    --font: "Departure Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --t-small: 13.75px;
+    --t-body: 16.5px;
+    --t-lede: 22px;
+    --t-h3: 33px;
+    --t-display: 44px;        /* 44 on phones, 66 on tablets and short desktops, 88 on tall desktops */
+    --lh-small: 22px;
+    --lh-body: 27.5px;
+    --lh-lede: 33px;
+    --lh-h3: 38.5px;
+    /* Face metrics in em, measured from the loaded face by the script (these are Departure Mono's) */
+    --m-asc: 1; --m-des: .27; --m-cap: .73; --m-x: .55; --m-dsc: .19;
+
+    /* Space: the 11px cell */
+    --cell: 11px;
+    --s1: 5.5px; --s2: 11px; --s3: 22px; --s4: 33px;
+    --s5: 44px; --s6: 66px; --s7: 88px; --s8: 132px;
+    --tap: 48px;              /* button and field height */
+    --hit: 44px;              /* minimum target for text actions, chips and cells */
+    --notch: 4px;             /* stepped corner */
+    --max-w: 1232px;          /* content width, 112 cells */
+    --gl: 22px;               /* left gutter; wider on desktop, where the size scale lives */
+    --gr: 22px;
+    --ec: 22px;               /* one cell of the glyph editor; set per layout */
+
+    /* Motion: hard cuts on a visible frame. CSS and the script read these. */
+    --d-frame: 80ms;          /* one frame of the dialog's three sizes */
+    --d-press: 150ms;         /* a press stays down at least this long */
+    --d-link-hold: 250ms;     /* a touched link keeps its guides this long */
+    --d-guide2: 50ms;         /* second guide line of a link */
+    --d-anchor: 40ms;         /* between anchor points on the secondary button */
+    --d-smear: 70ms;          /* second step of the primary button's bold */
+    --d-line: 160ms;          /* between headline lines */
+    --d-metrics: 600ms;       /* how long a headline line keeps its guides */
+    --d-ink: 30ms;            /* one row of ink at load */
+    --d-word: 90ms;           /* one specimen word at load */
+    --d-home: 60ms;           /* one cell of a wordmark pixel's walk */
+    --d-nudge: 240ms;         /* the word held one cell right */
+    --d-crop: 90ms;           /* one crop mark of the proof */
+    --d-proof: 140ms;         /* between the proof's lines */
+  }
+  @media (min-width: 600px) { :root { --gl: 44px; --gr: 44px; --t-display: 66px; } }
+  @media (min-width: 1100px) {
+    :root {
+      --gl: 132px;
+      --ec: clamp(18px, round(down, (100svh - 340px) / 14, 1px), 33px);
+    }
+  }
+  @media (min-width: 1100px) and (min-height: 761px) { :root { --t-display: 88px; } }
+
+  /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+
+  /* Hidden only while the script runs, and only until the proofing sequence takes over. */
+  html.js:not(.go) .h2, html.js:not(.go) [data-cut], html.js:not(.go) .ed-stage, html.js:not(.go) .h2-rule { visibility: hidden; }
+  @media (prefers-reduced-motion: reduce) {
+    html.js:not(.go) .h2, html.js:not(.go) [data-cut], html.js:not(.go) .ed-stage, html.js:not(.go) .h2-rule { visibility: visible; }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { background: var(--navy); }
+  body {
+    margin: 0;
+    background: var(--navy);
+    color: var(--bone);
+    font: 400 var(--t-body)/var(--lh-body) var(--font);
+    font-synthesis: none;
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible { outline: 2px solid var(--brass); outline-offset: 3px; }
+  ::selection { background: var(--brass); color: var(--navy); }
+  .vh {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+  }
+  h3 { margin: 0; font: 400 var(--t-h3)/var(--lh-h3) var(--font); }
+  p { margin: 0; }
+  canvas { display: block; image-rendering: pixelated; }
+
+  .page { position: relative; overflow: clip; padding-bottom: var(--s7); }
+  .wrap { max-width: calc(var(--max-w) + var(--gl) + var(--gr)); margin-inline: auto; padding-inline: var(--gl) var(--gr); }
+  .part { margin-top: var(--s8); scroll-margin-top: var(--s4); }
+  .part-head { max-width: 64ch; }
+  .part-head p { margin-top: var(--s2); color: var(--fog); }
+
+  /* ---------- Stepped corners ---------- */
+  .btn, .dlg-rim, .dlg-in {
+    --corners: polygon(0 var(--notch), var(--notch) var(--notch), var(--notch) 0, calc(100% - var(--notch)) 0, calc(100% - var(--notch)) var(--notch), 100% var(--notch), 100% calc(100% - var(--notch)), calc(100% - var(--notch)) calc(100% - var(--notch)), calc(100% - var(--notch)) 100%, var(--notch) 100%, var(--notch) calc(100% - var(--notch)), 0 calc(100% - var(--notch)));
+  }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    position: relative;
+    display: inline-block;
+    padding: 0; border: 0; background: none;
+    color: inherit; text-decoration: none;
+    font: 400 var(--t-body)/var(--lh-body) var(--font);
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-rim { display: block; padding: 2px; background: var(--rim); clip-path: var(--corners); }
+  .btn-face {
+    display: flex; align-items: center; justify-content: center;
+    min-height: calc(var(--tap) - 4px);
+    padding: 0 var(--s3);
+    background: var(--face); color: var(--lbl);
+    clip-path: var(--corners);
+    white-space: nowrap;
+  }
+  .btn-l { position: relative; display: block; }
+
+  /* Primary: emboldened. The face has no bold, so the label is doubled 1px, then 2px, to the right. */
+  .btn-pri { --rim: var(--brass); --face: var(--brass); --lbl: var(--navy); }
+  .btn-l::before, .btn-l::after {
+    content: attr(data-l);
+    position: absolute; left: 1px; top: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0s;
+  }
+  .btn-l::after { left: 2px; }
+  .btn-pri .btn-marks {
+    position: absolute; left: var(--notch); right: var(--notch); top: -9px; height: 6px;
+    background:
+      repeating-linear-gradient(90deg, var(--brass) 0 2px, transparent 2px 11px) 0 100% / 100% 3px no-repeat,
+      repeating-linear-gradient(90deg, var(--brass) 0 2px, transparent 2px 55px) 0 0 / 100% 6px no-repeat;
+    opacity: 0;
+    transition: opacity 0s;
+    pointer-events: none;
+  }
+  @media (hover: hover) {
+    .btn-pri:hover .btn-l::before { opacity: 1; }
+    .btn-pri:hover .btn-l::after, .btn-pri:hover .btn-marks { opacity: 1; transition: opacity 0s linear var(--d-smear); }
+  }
+  .btn-pri:focus-visible .btn-l::before { opacity: 1; }
+  .btn-pri:focus-visible .btn-l::after, .btn-pri:focus-visible .btn-marks { opacity: 1; transition: opacity 0s linear var(--d-smear); }
+  /* Press: the face inverts and the smear comes off: regular weight on the inverted face. */
+  .btn-pri.is-down { --face: var(--well); --lbl: var(--brass); }
+  .btn-pri.is-down .btn-l::before, .btn-pri.is-down .btn-l::after { opacity: 0; transition: none; }
+
+  /* Secondary: anchor points, clockwise from the top left, then the top centre. */
+  .btn-sec { --rim: var(--fog); --face: var(--navy); --lbl: var(--bone); }
+  .anc {
+    position: absolute; width: 10px; height: 10px;
+    border: 2px solid var(--bone); background: var(--navy);
+    opacity: 0;
+    transition: opacity 0s;
+    pointer-events: none;
+  }
+  .anc:nth-child(1) { left: -4px; top: -4px; --n: 0; }
+  .anc:nth-child(2) { right: -4px; top: -4px; --n: 1; }
+  .anc:nth-child(3) { right: -4px; bottom: -4px; --n: 2; }
+  .anc:nth-child(4) { left: -4px; bottom: -4px; --n: 3; }
+  .anc:nth-child(5) { left: calc(50% - 5px); top: -4px; --n: 4; }
+  @media (hover: hover) {
+    .btn-sec:hover .anc { opacity: 1; transition: opacity 0s linear calc(var(--n) * var(--d-anchor)); }
+  }
+  .btn-sec:focus-visible .anc { opacity: 1; transition: opacity 0s linear calc(var(--n) * var(--d-anchor)); }
+  .btn-sec.is-down { --face: var(--bone); --lbl: var(--navy); --rim: var(--bone); }
+  .btn-sec.is-down .anc { opacity: 1; background: var(--bone); transition: none; }
+
+  /* ---------- Text links and text buttons: the guides ---------- */
+  .tl {
+    position: relative;
+    display: inline-block;
+    min-height: var(--hit);
+    padding: 8px 0;
+    border: 0; background: none;
+    color: var(--bone);
+    font: inherit; line-height: var(--lh-body); text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .tl-t {
+    position: relative;
+    display: inline-block;
+    line-height: 1;
+    padding-block: calc((var(--lh-body) - 1em) / 2);
+    /* the baseline, drawn as the underline: 1px at rest, 2px when the guides are in */
+    background: linear-gradient(var(--guide), var(--guide)) 0 calc((var(--lh-body) - 1em) / 2 + (.5 + (var(--m-asc) - var(--m-des)) / 2) * 1em + 1px) / 100% 1px no-repeat;
+  }
+  .tl-t::before, .tl-t::after {
+    content: "";
+    position: absolute; left: -6px; right: -6px; height: 2px;
+    background: var(--guide);
+    opacity: 0;
+    transition: opacity 0s;
+    pointer-events: none;
+  }
+  /* x-height line, sitting on the top of the lowercase */
+  .tl-t::before { top: calc((var(--lh-body) - 1em) / 2 + (.5 + (var(--m-asc) - var(--m-des)) / 2 - var(--m-x)) * 1em - 3px); }
+  /* descender line, under the tails */
+  .tl-t::after { top: calc((var(--lh-body) - 1em) / 2 + (.5 + (var(--m-asc) - var(--m-des)) / 2 + var(--m-dsc)) * 1em + 3px); }
+  @media (hover: hover) {
+    .tl:hover .tl-t { background-size: 100% 2px; }
+    .tl:hover .tl-t::before { opacity: 1; }
+    .tl:hover .tl-t::after { opacity: 1; transition: opacity 0s linear var(--d-guide2); }
+  }
+  .tl:focus-visible .tl-t, .tl.is-press .tl-t { background-size: 100% 2px; }
+  .tl:focus-visible .tl-t::before, .tl.is-press .tl-t::before { opacity: 1; }
+  .tl:focus-visible .tl-t::after, .tl.is-press .tl-t::after { opacity: 1; transition: opacity 0s linear var(--d-guide2); }
+
+  /* ---------- The size scale (scroll-linked marker) ---------- */
+  .scale {
+    position: fixed; z-index: 5;
+    left: 0; right: 0; bottom: 0;
+    display: flex; align-items: center; gap: var(--s2);
+    height: var(--s5);
+    padding: 0 var(--s3);
+    background: var(--well);
+    border-top: 2px solid var(--plate);
+    pointer-events: none;
+  }
+  .scale ol { display: flex; flex: 1; margin: 0; padding: 0; list-style: none; }
+  .scale li {
+    position: relative;
+    flex: 1;
+    display: flex; align-items: center; gap: var(--s1);
+    height: var(--s5);
+    color: var(--fog);
+    font-size: var(--t-small); line-height: var(--lh-small);
+  }
+  .scale li::before { content: ""; width: 11px; height: 2px; background: var(--fog); }
+  .scale li.is-on { color: var(--bone); }
+  .scale li.is-on::before { width: 11px; height: 11px; background: var(--bone); }
+  .scale-a {
+    position: absolute; left: 42px; bottom: calc(50% - 8px);
+    color: var(--bone);
+    line-height: 0;
+    display: none;
+  }
+  .scale li.is-on .scale-a { display: block; }
+  /* The strip: the marked "a" sits in a slot of its own at the right end, on a baseline 10px above the bottom edge */
+  @media (max-width: 1099px) {
+    .scale ol { margin-right: var(--s7); }
+    .scale li { position: static; }
+    .scale-a { left: auto; right: var(--s3); line-height: 1; bottom: calc(10px - (.5 - (var(--m-asc) - var(--m-des)) / 2) * 1em); }
+  }
+  .page { padding-bottom: calc(var(--s7) + var(--s5)); }
+  @media (min-width: 1100px) {
+    .scale {
+      top: 50%; bottom: auto; right: auto;
+      display: block;
+      width: 110px; height: auto;
+      padding: 0 0 0 var(--s3);
+      background: none; border: 0;
+      transform: translateY(-50%);
+    }
+    .scale ol { display: block; }
+    .scale li { height: var(--s7); }
+    .scale-a { bottom: auto; top: calc(50% + 6px); left: 42px; }
+    .page { padding-bottom: var(--s7); }
+  }
+
+  /* ---------- Top ---------- */
+  .top { padding-top: var(--s5); }
+  .top-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s6); }
+  .who { display: flex; flex-wrap: wrap; gap: 0 var(--s3); color: var(--fog); }
+  .who b { font-weight: 400; color: var(--bone); }
+  .h2-wrap { position: relative; margin-top: var(--s4); }
+  .h2 {
+    margin: 0;
+    font: 400 var(--t-display)/1 var(--font);
+    letter-spacing: 0;
+    text-wrap: balance;
+  }
+  .h2 .ln { display: block; }
+  .h2-rule { position: absolute; left: 0; right: 0; height: 2px; top: 100%; background: var(--guide); pointer-events: none; }
+  .h2-guides { position: absolute; inset: 0; pointer-events: none; }
+  .gd { position: absolute; left: 0; right: 0; height: 2px; background: var(--guide); }
+  .gd span {
+    position: absolute; right: 0; bottom: 4px;
+    padding: 0 var(--s1);
+    background: var(--navy);
+    color: var(--guide);
+    font-size: var(--t-small); line-height: var(--lh-small);
+    white-space: nowrap;
+  }
+  .gd + .gd span { bottom: auto; top: 4px; } /* x-height and baseline names sit under their lines, clear of the cap height name */
+  .lede { margin-top: var(--s5); max-width: 58ch; font-size: var(--t-lede); line-height: var(--lh-lede); }
+  .actions { display: flex; flex-wrap: wrap; gap: var(--s3); margin-top: var(--s5); }
+  @media (min-width: 1100px) and (max-height: 760px) {
+    .top { padding-top: var(--s4); }
+    .h2-wrap { margin-top: var(--s3); }
+    .lede { margin-top: var(--s4); font-size: var(--t-body); line-height: var(--lh-body); }
+    .actions { margin-top: var(--s4); }
+    /* Short desktop windows: the whole editor stays in the first screen. The hint stays as the grid's description. */
+    .editor .ed-bar { flex-wrap: nowrap; gap: var(--s2); }
+    .editor .tabs { gap: 4px; flex-wrap: nowrap; }
+    .editor #restore { font-size: var(--t-small); white-space: nowrap; }
+    .editor .ed-stage { margin-top: var(--s2); }
+    .editor .ed-hint, .editor .spec figcaption { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  }
+
+  /* ---------- The glyph editor (pointer engine) ---------- */
+  .editor { min-width: 0; }
+  .ed-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s2) var(--s3); }
+  .tabs { display: flex; flex-wrap: wrap; gap: var(--s1); }
+  .tab {
+    min-width: var(--hit); height: var(--hit);
+    padding: 0;
+    border: 2px solid var(--fog); background: var(--navy);
+    color: var(--bone);
+    font: 400 var(--t-lede)/1 var(--font);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  @media (hover: hover) { .tab:hover { border-color: var(--bone); background: var(--plate); } .chip:hover { border-color: var(--bone); } }
+  .tab[aria-pressed="true"] { background: var(--bone); border-color: var(--bone); color: var(--navy); }
+  .ed-stage { display: flex; align-items: flex-start; gap: var(--s3); margin-top: var(--s3); }
+  .ed-grid-box { position: relative; flex: none; }
+  .grid {
+    display: flex; flex-direction: column; gap: 1px;
+    padding: 1px;
+    background: var(--plate);
+    touch-action: none;
+    user-select: none; -webkit-user-select: none;
+    cursor: crosshair;
+  }
+  .row { display: flex; gap: 1px; }
+  .cell { width: calc(var(--ec) - 1px); height: calc(var(--ec) - 1px); background: var(--well); }
+  .cell.on { background: var(--burgundy-ink); }
+  .cell.is-pen { outline: 2px solid var(--bone); outline-offset: -2px; }
+  .cell:focus-visible { outline: 3px solid var(--brass); outline-offset: -3px; }
+  .ed-gd { position: absolute; left: -6px; width: calc(11 * var(--ec) + 13px); height: 2px; background: var(--guide); pointer-events: none; }
+  .ed-names { position: relative; flex: none; width: 12ch; height: calc(14 * var(--ec) + 1px); color: var(--guide); font-size: var(--t-small); line-height: var(--lh-small); }
+  .ed-names span { position: absolute; left: 0; transform: translateY(-50%); white-space: nowrap; }
+  .ed-read { margin-top: var(--s2); color: var(--fog); font-size: var(--t-small); line-height: var(--lh-small); }
+  .spec { margin: var(--s2) 0 0; }
+  .spec canvas + canvas { margin-top: var(--s2); }
+  .spec figcaption { margin-top: var(--s2); color: var(--fog); font-size: var(--t-small); line-height: var(--lh-small); }
+  .ed-hint { margin-top: var(--s1); color: var(--fog); font-size: var(--t-small); line-height: var(--lh-small); max-width: 52ch; }
+
+  @media (min-width: 1100px) {
+    .top { min-height: 100svh; }
+    .top-grid { grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); column-gap: var(--s6); align-items: start; }
+  }
+  @media (max-width: 1099px) { .ed-names { width: 11ch; } }
+  @media (max-width: 599px) {
+    :root { --ec: round(down, min(22px, (100vw - 44px - 9ch) / 11), 1px); }
+    .ed-names { width: 8ch; }
+    .ed-stage { gap: var(--s2); }
+    .actions { display: grid; }
+    .lede { font-size: var(--t-body); line-height: var(--lh-body); }
+  }
+
+  /* ---------- Now ---------- */
+  .now dl { display: grid; gap: var(--s3); margin: var(--s4) 0 0; max-width: 68ch; }
+  .now dl > div { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s1); }
+  .now dt { color: var(--fog); }
+  .now dd { margin: 0; }
+  @media (min-width: 768px) { .now dl > div { grid-template-columns: 18ch minmax(0, 1fr); gap: var(--s3); } }
+
+  /* ---------- The story so far: five drafts of one g ---------- */
+  .chs { list-style: none; margin: var(--s5) 0 0; padding: 0; display: grid; gap: var(--s7); }
+  .ch { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s3); align-items: center; }
+  .ch-art { justify-self: start; }
+  .ch-k { color: var(--hue); }
+  .ch h4 { margin: var(--s1) 0 0; font: 400 var(--t-lede)/var(--lh-lede) var(--font); }
+  .ch p { margin-top: var(--s2); max-width: 60ch; }
+  .ch .ch-g { color: var(--fog); }
+  .ch .ch-g b { font-weight: 400; color: var(--hue); }
+  .strip { display: none; }
+  @media (min-width: 768px) {
+    .ch { grid-template-columns: auto minmax(0, 1fr); gap: var(--s6); }
+  }
+  /* With the scene running: the track gives each draft a stretch of scroll, the stage stays put. */
+  html.fx .story-track { height: 420svh; }
+  html.fx .story-pin { position: sticky; top: 0; height: 100svh; display: flex; flex-direction: column; justify-content: center; padding-block: var(--s3) var(--s6); }
+  html.fx .chs { position: relative; margin-top: var(--s3); height: var(--stage-h, 480px); }
+  html.fx .ch { position: absolute; inset: 0; visibility: hidden; align-items: start; }
+  html.fx .ch.is-on { visibility: visible; }
+  html.fx .strip { display: flex; gap: var(--s1); margin: 0; padding: 0; list-style: none; }
+  .strip li {
+    display: flex; align-items: center; justify-content: center;
+    min-width: 4ch; height: var(--s4);
+    padding: 0 var(--s1);
+    border: 2px solid var(--hue);
+    color: var(--hue);
+    font-size: var(--t-small); line-height: 1;
+  }
+  .strip li.is-on { background: var(--hue); color: var(--navy); }
+  @media (min-width: 1100px) { html.fx .story-pin { padding-bottom: var(--s3); } }
+
+  /* ---------- By the numbers: the calendar ---------- */
+  .legend { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s4); margin: var(--s4) 0 0; padding: 0; list-style: none; color: var(--fog); font-size: var(--t-small); line-height: var(--lh-small); }
+  .legend li { display: flex; align-items: center; gap: var(--s2); }
+  .legend i { width: 11px; height: 11px; background: var(--hue); }
+  .cal { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--s2) var(--s2); margin-top: var(--s3); }
+  .cal-mh, .cal-row { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 4px; }
+  .cal-mh { grid-column: 2; color: var(--fog); font-size: var(--t-small); line-height: var(--lh-small); text-align: center; }
+  .cal-y { align-self: center; color: var(--fog); font-size: var(--t-small); line-height: var(--lh-small); }
+  .mo {
+    position: relative;
+    display: block;
+    height: var(--s6);
+    padding: 0;
+    border: 2px solid var(--plate);
+    background: var(--well);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  @media (min-width: 768px) { .mo { height: var(--s7); } }
+  .mo-f { position: absolute; left: 2px; right: 2px; bottom: 2px; display: flex; flex-direction: column-reverse; }
+  .mo-f i { display: block; flex: none; }
+  .mo-f .b1 { background: var(--teal); }
+  .mo-f .b2 { background: var(--sand); }
+  .mo-f .b3 { background: var(--rust); }
+  .mo[aria-pressed="true"] { border-color: var(--bone); }
+  .mo[aria-pressed="true"]::after { content: ""; position: absolute; left: -2px; right: -2px; top: -8px; height: 4px; background: var(--bone); }
+  .readout { margin-top: var(--s3); min-height: calc(3 * var(--lh-body)); max-width: 64ch; }
+  .readout b { font-weight: 400; }
+  .readout .r1 { color: var(--teal); }
+  .readout .r2 { color: var(--sand); }
+  .readout .r3 { color: var(--bone); }
+  details { margin-top: var(--s3); }
+  summary {
+    display: inline-flex; align-items: center; min-height: var(--hit);
+    cursor: pointer;
+    list-style: none;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: "+"; display: inline-block; width: 2ch; color: var(--fog); }
+  details[open] summary::before { content: "-"; }
+  .tbl-wrap { overflow-x: auto; max-width: 100%; margin-top: var(--s2); }
+  table { border-collapse: collapse; font-size: var(--t-small); line-height: var(--lh-small); }
+  th, td { padding: 2px var(--s2) 2px 0; border-bottom: 1px solid var(--plate); text-align: right; font-weight: 400; white-space: nowrap; }
+  th:first-child, td:last-child { text-align: left; }
+  thead th { color: var(--fog); border-bottom: 2px solid var(--fog); }
+  @media (max-width: 599px) { .cal { grid-template-columns: minmax(0, 1fr); } .cal-mh { grid-column: 1; } .cal-y { margin-top: var(--s1); } .cal-mh, .cal-row { gap: 2px; } }
+
+  /* ---------- The type tester ---------- */
+  .tester { margin-top: var(--s4); display: grid; gap: var(--s4); }
+  .t-ctl { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--s3) var(--s5); }
+  .t-ctl .fld { flex: 1 1 22ch; max-width: 40ch; }
+  .seg { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s1); margin: 0; padding: 0; border: 0; }
+  .seg-l { margin-right: var(--s2); color: var(--fog); }
+  .chip {
+    min-width: var(--hit); min-height: var(--hit);
+    padding: 0 var(--s2);
+    border: 2px solid var(--fog); background: var(--navy);
+    color: var(--bone);
+    font: inherit; line-height: 1;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .chip[aria-pressed="true"] { background: var(--bone); border-color: var(--bone); color: var(--navy); }
+  .t-rows { display: grid; gap: var(--s4); margin: 0; padding: 0; list-style: none; }
+  .t-row figcaption { display: flex; flex-wrap: wrap; gap: 0 var(--s3); margin-bottom: var(--s2); }
+  .t-row figcaption span { color: var(--fog); font-size: var(--t-small); }
+  .t-row { margin: 0; min-width: 0; }
+  .t-miss { margin-top: var(--s1); color: var(--fog); font-size: var(--t-small); line-height: var(--lh-small); }
+  .cmap { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s4); padding-top: var(--s4); border-top: 2px solid var(--plate); }
+  .cmap-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--s6), 1fr)); gap: 4px; margin-top: var(--s3); }
+  .ch-b {
+    display: grid; place-items: center;
+    height: var(--s7);
+    padding: 0;
+    border: 2px solid var(--plate); background: var(--well);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .ch-b.is-on { border-color: var(--bone); }
+  .pv { margin: 0; display: grid; gap: var(--s2); align-content: start; }
+  .pv-t { color: var(--fog); font-size: var(--t-small); line-height: var(--lh-small); max-width: 40ch; }
+  .pv-t b { font-weight: 400; color: var(--bone); font-size: var(--t-body); }
+  @media (min-width: 900px) { .cmap { grid-template-columns: minmax(0, 1fr) 280px; } }
+
+  /* ---------- Things I believe ---------- */
+  .rules { margin: var(--s4) 0 0; padding: 0; list-style: none; max-width: 72ch; counter-reset: r; }
+  .rules li { display: grid; grid-template-columns: 3ch minmax(0, 1fr); gap: var(--s2); padding: var(--s3) 0; border-top: 2px solid var(--plate); counter-increment: r; }
+  .rules li::before { content: counter(r); color: var(--fog); }
+  .rules p + p, .rules p + .tl { margin-top: var(--s1); }
+  .rules .tl { margin-top: var(--s1); }
+
+  /* ---------- Say hello ---------- */
+  .hello-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s6); margin-top: var(--s4); }
+  @media (min-width: 1000px) { .hello-grid { grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); } }
+  .contact { margin: 0; padding: 0; list-style: none; }
+  .contact li + li { margin-top: var(--s1); }
+  .contact .k { display: block; color: var(--fog); font-size: var(--t-small); line-height: var(--lh-small); }
+  .press-btn { margin-top: var(--s4); }
+  .side p { margin-top: var(--s3); color: var(--fog); max-width: 40ch; }
+
+  .form { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s2) var(--s4); }
+  @media (min-width: 700px) { .form { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .form .wide { grid-column: 1 / -1; } }
+  .fld { position: relative; min-width: 0; }
+  .fld-top { position: relative; display: flex; align-items: baseline; gap: var(--s2); min-height: var(--lh-body); }
+  .fld-top label, .fld-top .lbl { flex: none; }
+  .fld-hint { color: var(--fog); font-size: var(--t-small); }
+  .fld-n { position: absolute; bottom: 0; color: var(--fog); font-size: var(--t-small); line-height: var(--lh-small); white-space: nowrap; visibility: hidden; }
+  .fld-box { position: relative; margin-top: var(--s1); }
+  .fld input, .fld textarea {
+    display: block; width: 100%;
+    height: var(--tap);
+    padding: 0 var(--s2);
+    border: 2px solid var(--fog); border-radius: 0;
+    background: var(--well); color: var(--bone);
+    font: inherit;
+    appearance: none;
+  }
+  .fld textarea { height: calc(5 * var(--lh-body) + var(--s3)); padding: var(--s2); line-height: var(--lh-body); resize: vertical; overflow-wrap: anywhere; }
+  .fld input:hover, .fld textarea:hover { border-color: var(--bone); }
+  .fld input:focus, .fld textarea:focus { border-color: var(--brass); outline: none; }
+  .fld.at-end input { caret-color: transparent; }
+  /* The field's baseline, drawn as a guide across its full width while it has focus */
+  .fld-base { position: absolute; left: 2px; right: 2px; height: 2px; top: calc(var(--tap) / 2 + (var(--m-asc) - var(--m-des)) / 2 * 1em + 1px); background: var(--guide); visibility: hidden; pointer-events: none; }
+  /* The caret: one solid cell after the text, steady */
+  .fld-caret { position: absolute; left: var(--s2); top: calc(var(--tap) / 2 + ((var(--m-asc) - var(--m-des)) / 2 - var(--m-cap)) * 1em - 1px); width: 1ch; height: calc((var(--m-cap) + var(--m-dsc)) * 1em + 2px); background: var(--brass); visibility: hidden; pointer-events: none; }
+  .fld.is-focus .fld-base, .fld.is-focus .fld-n { visibility: visible; }
+  .fld.is-focus .fld-caret { visibility: visible; } /* the next cell after the text; the native caret hides while it sits there */
+  .err { display: flex; flex-direction: column; gap: 4px; min-height: calc(2 * var(--lh-small) + 10px); padding-top: 4px; font-size: var(--t-small); line-height: var(--lh-small); }
+  .err-bar { display: none; height: 6px; background: repeating-linear-gradient(135deg, var(--bone) 0 2px, transparent 2px 6px); }
+  .fld.is-bad .err-bar { display: block; }
+  .fld.is-bad input, .fld.is-bad textarea, .fld.is-bad .step { border-color: var(--bone); border-style: dashed; }
+
+  /* The choice: a stepper that cycles four values */
+  .step { display: grid; grid-template-columns: var(--tap) minmax(0, 1fr) var(--tap); margin-top: var(--s1); border: 2px solid var(--fog); background: var(--well); }
+  .step button {
+    display: grid; place-items: center;
+    height: calc(var(--tap) - 4px);
+    padding: 0; border: 0; background: var(--navy);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .step button:focus-visible { outline-offset: -3px; }
+  .step button i { width: 12px; height: 12px; background: var(--bone); clip-path: polygon(0 50%, 50% 0, 50% 25%, 100% 25%, 100% 75%, 50% 75%, 50% 100%); }
+  .step button + output + button i { transform: scaleX(-1); }
+  .step button.is-down { background: var(--bone); }
+  .step button.is-down i { background: var(--navy); }
+  .step output { display: flex; align-items: center; justify-content: center; padding: 0 var(--s1); text-align: center; border-inline: 2px solid var(--plate); }
+
+  /* The toggle: two pixels, one set and one clear, that swap */
+  .tog { position: relative; display: flex; align-items: center; gap: var(--s2); min-height: var(--hit); margin-top: var(--s1); cursor: pointer; }
+  .tog input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+  .tog-px { display: flex; gap: 2px; padding: 2px; border: 2px solid var(--fog); flex: none; }
+  .tog-px i { width: 18px; height: 18px; background: var(--well); }
+  .tog-px i:first-child, .tog input:checked + .tog-px i:last-child { background: var(--bone); }
+  .tog input:checked + .tog-px i:first-child { background: var(--well); }
+  .tog input:focus-visible + .tog-px { outline: 2px solid var(--brass); outline-offset: 3px; }
+  .tog-v { color: var(--fog); }
+  .form .send { margin-top: var(--s2); justify-self: start; }
+
+  /* The proof slip */
+  .slip { position: relative; padding: var(--s4); max-width: 640px; }
+  .crop { position: absolute; width: 22px; height: 22px; border: 0 solid var(--bone); }
+  .crop:nth-child(1) { left: 0; top: 0; border-width: 2px 0 0 2px; }
+  .crop:nth-child(2) { right: 0; top: 0; border-width: 2px 2px 0 0; }
+  .crop:nth-child(3) { right: 0; bottom: 0; border-width: 0 2px 2px 0; }
+  .crop:nth-child(4) { left: 0; bottom: 0; border-width: 0 0 2px 2px; }
+  .slip h3 { margin-top: var(--s3); }
+  .slip h3:focus { outline: none; }
+  .slip dl { display: grid; gap: var(--s1); margin: var(--s3) 0 0; }
+  .slip dl > div { display: grid; grid-template-columns: 14ch minmax(0, 1fr); gap: var(--s2); }
+  .slip dt { color: var(--fog); }
+  .slip dd { margin: 0; overflow-wrap: anywhere; }
+  .slip .tl { margin-top: var(--s3); }
+  .slip-note { margin-top: var(--s3); color: var(--fog); }
+  @media (max-width: 599px) { .slip { padding: var(--s3); } .slip dl > div { grid-template-columns: minmax(0, 1fr); gap: 0; } }
+
+  /* ---------- Sign-off ---------- */
+  .sign { margin-top: var(--s8); }
+  .mark-box { position: relative; }
+  .mark { touch-action: none; }
+  .sign-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s2) var(--s4); margin-top: var(--s3); color: var(--fog); }
+
+  /* ---------- Colophon dialog: a specimen sheet ---------- */
+  .dlg {
+    width: min(660px, 100% - 2 * var(--s3));
+    max-width: none;
+    max-height: calc(100dvh - 2 * var(--s3));
+    margin: auto;
+    padding: 0; border: 0; background: none;
+    color: var(--bone);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .dlg::backdrop { background: var(--scrim); }
+  .dlg-rim { padding: 2px; background: var(--fog); clip-path: var(--corners); }
+  .dlg-in { padding: var(--s4); background: var(--plate); clip-path: var(--corners); }
+  .dlg-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--s2) var(--s3); }
+  .dlg h2 { margin: 0; font: 400 var(--t-h3)/var(--lh-h3) var(--font); }
+  .dlg p { margin-top: var(--s2); max-width: 56ch; }
+  .sizes { margin: var(--s3) 0 0; padding: 0; list-style: none; border-top: 2px solid var(--fog); }
+  .sizes li { display: grid; grid-template-columns: 6ch minmax(0, 1fr); gap: var(--s2); align-items: baseline; padding: var(--s1) 0; border-bottom: 1px solid var(--navy); }
+  .sizes span { color: var(--fog); font-size: var(--t-small); }
+  .sizes b { font-weight: 400; overflow-wrap: anywhere; }
+  .dlg dl { display: grid; gap: var(--s2); margin: var(--s3) 0 0; }
+  .dlg dl > div { display: grid; grid-template-columns: 12ch minmax(0, 1fr); gap: var(--s2); }
+  .dlg dt { color: var(--fog); }
+  .dlg dd { margin: 0; }
+  .proof { display: none; margin: 0; line-height: 1; white-space: nowrap; }
+  /* Arriving and leaving: the title alone at 11, 22 and 44px in a frame that grows, one frame each */
+  .dlg[data-stage] { width: fit-content; overflow: hidden; }
+  .dlg[data-stage] .sheet { display: none; }
+  .dlg[data-stage] .proof { display: block; }
+  .dlg[data-stage] .dlg-in { padding: calc(var(--ps) * .75) var(--ps); }
+  .dlg[data-stage="1"] { --ps: 11px; }
+  .dlg[data-stage="2"] { --ps: 22px; }
+  .dlg[data-stage="3"] { --ps: 44px; }
+  .dlg[data-stage] .proof { font-size: var(--ps); }
+  @media (max-width: 599px) { .dlg-in { padding: var(--s3); } .dlg dl > div { grid-template-columns: minmax(0, 1fr); gap: 0; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0s !important; transition-delay: 0s !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<section class="page" id="top" aria-labelledby="claim">
+
+  <aside class="scale" aria-hidden="true">
+    <ol>
+      <li data-px="11">11<span class="scale-a">a</span></li>
+      <li data-px="22">22<span class="scale-a">a</span></li>
+      <li data-px="33">33<span class="scale-a">a</span></li>
+      <li data-px="44">44<span class="scale-a">a</span></li>
+      <li data-px="55">55<span class="scale-a">a</span></li>
+    </ol>
+  </aside>
+
+  <!-- 1. Top -->
+  <div class="wrap top">
+    <div class="top-grid">
+      <div class="copy">
+        <p class="who"><b>Ansel Okafor</b><span>Pixel type designer in Ghent</span></p>
+        <div class="h2-wrap">
+          <h2 class="h2" id="claim">Every letter is a decision per pixel.</h2>
+          <span class="h2-rule" aria-hidden="true"></span>
+          <div class="h2-guides" aria-hidden="true"></div>
+        </div>
+        <p class="lede" data-cut>I draw bitmap typefaces for games, handheld devices and small displays: fixed sizes, with every accent, figure and box-drawing character. Draw on the letter in the editor and the line under it is set with your version.</p>
+        <div class="actions" data-cut>
+          <a class="btn btn-pri" href="#hello"><span class="btn-marks" aria-hidden="true"></span><span class="btn-rim"><span class="btn-face"><span class="btn-l" data-l="Commission a typeface">Commission a typeface</span></span></span></a>
+          <button class="btn btn-sec" type="button" data-colophon aria-haspopup="dialog" aria-controls="colophon"><span class="anc" aria-hidden="true"></span><span class="anc" aria-hidden="true"></span><span class="anc" aria-hidden="true"></span><span class="anc" aria-hidden="true"></span><span class="anc" aria-hidden="true"></span><span class="btn-rim"><span class="btn-face"><span class="btn-l">Read the colophon</span></span></span></button>
+        </div>
+      </div>
+
+      <div class="editor" id="editor" role="region" aria-labelledby="ed-title">
+        <h3 class="vh" id="ed-title">Glyph editor</h3>
+        <div class="ed-bar">
+          <div class="tabs" role="group" aria-label="Letter to edit">
+            <button class="tab" type="button" data-ch="a" aria-pressed="true">a</button>
+            <button class="tab" type="button" data-ch="e" aria-pressed="false">e</button>
+            <button class="tab" type="button" data-ch="g" aria-pressed="false">g</button>
+            <button class="tab" type="button" data-ch="s" aria-pressed="false">s</button>
+            <button class="tab" type="button" data-ch="r" aria-pressed="false">r</button>
+            <button class="tab" type="button" data-ch="o" aria-pressed="false">o</button>
+          </div>
+          <button class="tl" type="button" id="restore"><span class="tl-t">Restore his drawing</span></button>
+        </div>
+        <div class="ed-stage">
+          <div class="ed-grid-box">
+            <div class="grid" id="grid" role="grid" aria-multiselectable="true" aria-label="Pixels of the letter a, 11 columns by 14 rows" aria-describedby="ed-hint"></div>
+            <span class="ed-gd" style="top: calc(1 * var(--ec))" aria-hidden="true"></span>
+            <span class="ed-gd" style="top: calc(5 * var(--ec))" aria-hidden="true"></span>
+            <span class="ed-gd" style="top: calc(11 * var(--ec))" aria-hidden="true"></span>
+          </div>
+          <div class="ed-names" aria-hidden="true">
+            <span style="top: calc(1 * var(--ec) + 1px)">cap height</span>
+            <span style="top: calc(5 * var(--ec) + 1px)">x-height</span>
+            <span style="top: calc(11 * var(--ec) + 1px)">baseline</span>
+          </div>
+        </div>
+        <p class="ed-read" id="ed-read" aria-live="polite">The a has 30 pixels set, as he drew it.</p>
+        <figure class="spec ed-stage-s">
+          <canvas class="spec-l" aria-hidden="true"></canvas>
+          <canvas class="spec-s" aria-hidden="true"></canvas>
+          <figcaption><span id="spec-alt">“squares decide how a glyph reads”</span>, set in Schelde 14 at two sizes with the letters as they are in the editor.</figcaption>
+        </figure>
+        <p class="ed-hint" id="ed-hint">Press or drag to set and clear pixels; the first cell you touch decides which. With the keyboard, arrows move and Space sets or clears.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Now -->
+  <section class="wrap part now" id="now" aria-labelledby="now-t">
+    <div class="part-head">
+      <h3 id="now-t">Now</h3>
+      <p>Autumn 2026.</p>
+    </div>
+    <dl>
+      <div><dt>On my screen</dt><dd>Schelde 14, the accented letters: 212 of 318 drawn, with the Vietnamese stacks still to come.</dd></div>
+      <div><dt>The size I'm fighting</dt><dd>9 pixels tall, where the e and the o both want the same five columns and only one of them can have them.</dd></div>
+      <div><dt>Availability</dt><dd>Booked until February 2027. I take two commissions a season, and the spring one is open.</dd></div>
+    </dl>
+  </section>
+
+  <!-- 3. The story so far -->
+  <section class="part story" id="story" aria-labelledby="story-t">
+    <div class="wrap">
+      <div class="part-head">
+        <h3 id="story-t">The story so far</h3>
+        <p>Five drafts of one letter, a lowercase g, one for each stretch of my working life. Each draft replaces the last, and the earlier ones stay behind it as outlines in their own colour.</p>
+      </div>
+    </div>
+    <div class="story-track">
+      <div class="story-pin wrap">
+        <ol class="strip" aria-hidden="true">
+          <li style="--hue: var(--terracotta)">2011</li>
+          <li style="--hue: var(--mustard)">2014</li>
+          <li style="--hue: var(--sage)">2017</li>
+          <li style="--hue: var(--periwinkle)">2020</li>
+          <li style="--hue: var(--mauve)">2023</li>
+        </ol>
+        <ol class="chs">
+          <li class="ch is-on" style="--hue: var(--terracotta)">
+            <canvas class="ch-art" data-draft="0" role="img" aria-label="Draft 1 of the g: a two-storey g, one pixel thick."></canvas>
+            <div>
+              <p class="ch-k">Chapter 1, 2011 to 2014</p>
+              <h4>Copying what I saw</h4>
+              <p>I redrew shop signs on graph paper and the letters on my calculator's display, at an evening class in lettering. I learned that a pixel is on or off: there is no half.</p>
+              <p class="ch-g"><b>The g:</b> two storeys copied from print, one pixel thick. At 14 cells its lower loop filled in.</p>
+            </div>
+          </li>
+          <li class="ch" style="--hue: var(--mustard)">
+            <canvas class="ch-art" data-draft="1" role="img" aria-label="Draft 2 of the g: one storey with a thin open hook, drawn over the outline of draft 1."></canvas>
+            <div>
+              <p class="ch-k">Chapter 2, 2014 to 2017</p>
+              <h4>Menus for a handheld game studio</h4>
+              <p>I set menus and dialogue for Lanternfish, a four-person studio making handheld games, 8 pixels tall. I learned that at small sizes the simplest structure reads first.</p>
+              <p class="ch-g"><b>The g:</b> one storey and an open hook. Readable, but thin enough to vanish on a dim screen.</p>
+            </div>
+          </li>
+          <li class="ch" style="--hue: var(--sage)">
+            <canvas class="ch-art" data-draft="2" role="img" aria-label="Draft 3 of the g: two-pixel stems and two-row bars, drawn over the outlines of drafts 1 and 2."></canvas>
+            <div>
+              <p class="ch-k">Chapter 3, 2017 to 2020</p>
+              <h4>Departure boards</h4>
+              <p>I drew the type for Velto, who make bus and tram displays read from 30 metres. I learned that light bleeds, so every stroke went to two pixels.</p>
+              <p class="ch-g"><b>The g:</b> two-cell stems and two-row bars. It survived the glare, and its counter closed up.</p>
+            </div>
+          </li>
+          <li class="ch" style="--hue: var(--periwinkle)">
+            <canvas class="ch-art" data-draft="3" role="img" aria-label="Draft 4 of the g: the bowl lifted and the tail cut short, drawn over the outlines of drafts 1 to 3."></canvas>
+            <div>
+              <p class="ch-k">Chapter 4, 2020 to 2023</p>
+              <h4>On my own</h4>
+              <p>I opened my studio in Ghent and released Lieve 7 and Kouter 9. I learned that tight line spacing is paid for by the descenders.</p>
+              <p class="ch-g"><b>The g:</b> the bowl lifted and the tail cut to two rows, so lines could sit closer. People read it as a q.</p>
+            </div>
+          </li>
+          <li class="ch" style="--hue: var(--mauve)">
+            <canvas class="ch-art" data-draft="4" role="img" aria-label="Draft 5 of the g, the one in Schelde 14: two-pixel stems, one-row bars, the bowl on the baseline and a three-row tail, drawn over the outlines of drafts 1 to 4."></canvas>
+            <div>
+              <p class="ch-k">Chapter 5, 2023 to now</p>
+              <h4>Schelde 14</h4>
+              <p>My largest family so far: 14 pixels, 640 glyphs, every Latin accent and the full box-drawing set. I learned to give each part its own row.</p>
+              <p class="ch-g"><b>The g:</b> two-cell stems, one-row bars, the bowl on the baseline and a full three-row tail.</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. By the numbers -->
+  <section class="wrap part numbers" id="numbers" aria-labelledby="num-t">
+    <div class="part-head">
+      <h3 id="num-t">By the numbers</h3>
+      <p>Glyphs I drew each month for three years, November 2023 to October 2026. A block fills in four steps with the month's total, and its bands are the three kinds of glyph. Pick a month to read it.</p>
+    </div>
+    <ul class="legend">
+      <li style="--hue: var(--teal)"><i aria-hidden="true"></i>Letters</li>
+      <li style="--hue: var(--sand)"><i aria-hidden="true"></i>Figures and punctuation</li>
+      <li style="--hue: var(--rust)"><i aria-hidden="true"></i>Accents and box-drawing</li>
+    </ul>
+    <div class="cal" id="cal" role="group" aria-label="Glyphs drawn per month, one button per month" aria-describedby="readout"></div>
+    <p class="readout" id="readout" aria-live="polite"></p>
+    <details>
+      <summary>Read the figures as a table</summary>
+      <div class="tbl-wrap">
+        <table>
+          <caption class="vh">Glyphs drawn per month</caption>
+          <thead><tr><th scope="col">Month</th><th scope="col">Letters</th><th scope="col">Figures, punctuation</th><th scope="col">Accents, box-drawing</th><th scope="col">Total</th><th scope="col">Typeface</th></tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </details>
+  </section>
+
+  <!-- 5. The type tester -->
+  <section class="wrap part toy" id="toy" aria-labelledby="toy-t">
+    <div class="part-head">
+      <h3 id="toy-t">The type tester</h3>
+      <p>Type a few words and see them in my three typefaces. A character a typeface doesn't have yet shows as a hollow box.</p>
+    </div>
+    <div class="tester">
+      <div class="t-ctl">
+        <div class="fld" data-fld>
+          <div class="fld-top"><label for="t-in">Type a few words</label><span class="fld-n" aria-hidden="true"></span></div>
+          <div class="fld-box"><input id="t-in" type="text" maxlength="24" value="small type, 7 px" spellcheck="false" autocomplete="off" aria-describedby="t-in-hint"><span class="fld-base" aria-hidden="true"></span><span class="fld-caret" aria-hidden="true"></span></div>
+          <p class="err"><span class="fld-hint" id="t-in-hint">Up to 24 characters.</span></p>
+        </div>
+        <div class="seg" role="group" aria-label="Scale">
+          <span class="seg-l" aria-hidden="true">Scale</span>
+          <button class="chip" type="button" data-scale="1" aria-pressed="false">x1</button>
+          <button class="chip" type="button" data-scale="2" aria-pressed="true">x2</button>
+          <button class="chip" type="button" data-scale="3" aria-pressed="false">x3</button>
+        </div>
+      </div>
+      <ul class="t-rows">
+        <li><figure class="t-row"><figcaption>Lieve 7 <span>5 by 7 cells, capitals and figures</span></figcaption><canvas aria-hidden="true" data-face="0"></canvas><p class="t-miss" data-miss="0"></p></figure></li>
+        <li><figure class="t-row"><figcaption>Kouter 9 <span>7 by 9 cells, lowercase and punctuation</span></figcaption><canvas aria-hidden="true" data-face="1"></canvas><p class="t-miss" data-miss="1"></p></figure></li>
+        <li><figure class="t-row"><figcaption>Schelde 14 <span>11 by 14 cells, lowercase and punctuation</span></figcaption><canvas aria-hidden="true" data-face="2"></canvas><p class="t-miss" data-miss="2"></p></figure></li>
+      </ul>
+      <div class="cmap">
+        <div>
+          <div class="seg" role="group" aria-label="Character map of">
+            <span class="seg-l" aria-hidden="true">Map of</span>
+            <button class="chip" type="button" data-map="0" aria-pressed="false">Lieve 7</button>
+            <button class="chip" type="button" data-map="1" aria-pressed="true">Kouter 9</button>
+            <button class="chip" type="button" data-map="2" aria-pressed="false">Schelde 14</button>
+          </div>
+          <div class="cmap-grid" id="cmap" role="group" aria-label="Characters in Kouter 9"></div>
+        </div>
+        <figure class="pv">
+          <canvas id="pv-cv" aria-hidden="true"></canvas>
+          <figcaption class="pv-t" id="pv-t" aria-live="polite"></figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. Things I believe -->
+  <section class="wrap part believe" id="believe" aria-labelledby="bel-t">
+    <div class="part-head">
+      <h3 id="bel-t">Things I believe</h3>
+      <p>Six rules I draw by at small sizes.</p>
+    </div>
+    <ol class="rules">
+      <li><div><p>Draw at the size it will be read. A 9-pixel e is not a shrunken 90-pixel e.</p><a class="tl" href="#editor"><span class="tl-t">Edit the e at the top</span></a></div></li>
+      <li><div><p>Give each part its own row. When two parts share a row, one of them loses.</p><a class="tl" href="#story"><span class="tl-t">See how the g got there</span></a></div></li>
+      <li><div><p>Accents are letters. I draw them with the base letter, not after it.</p><a class="tl" href="#numbers"><span class="tl-t">Count the accents I drew</span></a></div></li>
+      <li><div><p>A missing glyph should look missing. A hollow box is honest; a fallback typeface is not.</p><a class="tl" href="#toy"><span class="tl-t">Type a character I haven't drawn</span></a></div></li>
+      <li><div><p>Spacing is half the font. I space the n and the o before I draw anything else.</p><a class="tl" href="https://github.com/" target="_blank" rel="noopener"><span class="tl-t">Read the spacing tables on GitHub</span><span class="vh"> (opens in a new tab)</span></a></div></li>
+      <li><div><p>Ship the box-drawing set. Someone will draw a table with it on the first day.</p><a class="tl" href="#hello"><span class="tl-t">Ask for a typeface with one</span></a></div></li>
+    </ol>
+  </section>
+
+  <!-- 7. Say hello -->
+  <section class="wrap part hello" id="hello" aria-labelledby="hello-t">
+    <div class="part-head">
+      <h3 id="hello-t">Say hello</h3>
+      <p>Tell me what the type is for and how small it has to be. I answer within three working days.</p>
+    </div>
+    <div class="hello-grid">
+      <div class="side">
+        <ul class="contact" id="contact"></ul>
+        <button class="tl press-btn" type="button" data-colophon aria-haspopup="dialog" aria-controls="colophon"><span class="tl-t">Colophon and press notes</span></button>
+        <p>Studio: Kouter 9, 9000 Ghent, Belgium. Visits by appointment.</p>
+      </div>
+      <div class="swap">
+        <form class="form" id="form" novalidate aria-labelledby="form-t">
+          <h4 class="vh" id="form-t">Commission a typeface</h4>
+          <div class="fld" data-fld>
+            <div class="fld-top"><label for="f-name">Your name</label><span class="fld-n" aria-hidden="true"></span></div>
+            <div class="fld-box"><input id="f-name" name="name" type="text" autocomplete="name" spellcheck="false"><span class="fld-base" aria-hidden="true"></span><span class="fld-caret" aria-hidden="true"></span></div>
+            <p class="err" id="f-name-err"><span class="err-bar" aria-hidden="true"></span><span class="err-t"></span></p>
+          </div>
+          <div class="fld" data-fld>
+            <div class="fld-top"><label for="f-email">Email</label><span class="fld-n" aria-hidden="true"></span></div>
+            <div class="fld-box"><input id="f-email" name="email" type="email" autocomplete="email" spellcheck="false"><span class="fld-base" aria-hidden="true"></span><span class="fld-caret" aria-hidden="true"></span></div>
+            <p class="err" id="f-email-err"><span class="err-bar" aria-hidden="true"></span><span class="err-t"></span></p>
+          </div>
+          <div class="fld" id="f-purpose-fld">
+            <div class="fld-top"><span class="lbl" id="f-purpose-l">What it is for</span></div>
+            <div class="step" role="group" aria-labelledby="f-purpose-l">
+              <button type="button" id="p-prev" aria-label="Previous choice" aria-controls="f-purpose-v"><i aria-hidden="true"></i></button>
+              <output id="f-purpose-v" aria-live="polite">A game</output>
+              <button type="button" id="p-next" aria-label="Next choice" aria-controls="f-purpose-v"><i aria-hidden="true"></i></button>
+            </div>
+            <input type="hidden" name="purpose" id="f-purpose" value="A game">
+            <p class="err"><span class="fld-hint">Four choices; the arrows go round.</span></p>
+          </div>
+          <div class="fld" data-fld>
+            <div class="fld-top"><label for="f-size">Pixel size</label><span class="fld-hint">optional</span><span class="fld-n" aria-hidden="true"></span></div>
+            <div class="fld-box"><input id="f-size" name="size" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" aria-describedby="f-size-err"><span class="fld-base" aria-hidden="true"></span><span class="fld-caret" aria-hidden="true"></span></div>
+            <p class="err" id="f-size-err"><span class="err-bar" aria-hidden="true"></span><span class="err-t"><span class="fld-hint">Cap height in pixels, 5 to 32.</span></span></p>
+          </div>
+          <div class="wide">
+            <label class="tog"><input type="checkbox" name="accents" id="f-acc" role="switch"><span class="tog-px" aria-hidden="true"><i></i><i></i></span><span>It needs accents <span class="tog-v">(é, ł, ő and the rest)</span></span></label>
+          </div>
+          <div class="fld wide" data-fld>
+            <div class="fld-top"><label for="f-msg">Message</label><span class="fld-n" aria-hidden="true"></span></div>
+            <div class="fld-box"><textarea id="f-msg" name="message" rows="5" spellcheck="true"></textarea></div>
+            <p class="err" id="f-msg-err"><span class="err-bar" aria-hidden="true"></span><span class="err-t"></span></p>
+          </div>
+          <button class="btn btn-pri send" type="submit"><span class="btn-marks" aria-hidden="true"></span><span class="btn-rim"><span class="btn-face"><span class="btn-l" data-l="Send the request">Send the request</span></span></span></button>
+        </form>
+        <div class="slip" id="slip" hidden>
+          <span class="crop" aria-hidden="true"></span><span class="crop" aria-hidden="true"></span><span class="crop" aria-hidden="true"></span><span class="crop" aria-hidden="true"></span>
+          <canvas class="slip-names" aria-hidden="true"></canvas>
+          <div class="slip-body">
+            <h3 id="slip-t" tabindex="-1">Proof sent.</h3>
+            <dl>
+              <div><dt>Name</dt><dd id="o-name"></dd></div>
+              <div><dt>Email</dt><dd id="o-email"></dd></div>
+              <div><dt>For</dt><dd id="o-purpose"></dd></div>
+              <div><dt>Pixel size</dt><dd id="o-size"></dd></div>
+              <div><dt>Accents</dt><dd id="o-acc"></dd></div>
+              <div><dt>Message</dt><dd id="o-msg"></dd></div>
+            </dl>
+            <p class="slip-note">Nothing has left this page: this is a proof of what you would send. I answer requests within three working days.</p>
+            <button class="tl" type="button" id="again"><span class="tl-t">Change this</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. Sign-off -->
+  <footer class="wrap sign" aria-label="Sign-off">
+    <div class="mark-box"><canvas class="mark" id="mark" aria-hidden="true"></canvas></div>
+    <p class="vh">Ansel</p>
+    <div class="sign-row">
+      <p id="mark-hint">Point at the name to push its pixels. They walk home one cell at a time.</p>
+      <button class="tl" type="button" id="nudge"><span class="tl-t">Nudge the name</span></button>
+    </div>
+  </footer>
+</section>
+
+<dialog class="dlg" id="colophon" aria-labelledby="colophon-t" data-lenis-prevent>
+  <div class="dlg-rim"><div class="dlg-in">
+    <p class="proof" aria-hidden="true">Colophon</p>
+    <div class="sheet">
+      <div class="dlg-head">
+        <h2 id="colophon-t">Colophon</h2>
+        <button class="tl" type="button" id="colophon-close"><span class="tl-t">Close</span></button>
+      </div>
+      <p>How this page is made, and a few lines for press.</p>
+      <ul class="sizes">
+        <li><span>11 px</span><b style="font-size: 11px; line-height: 22px">a decision per pixel</b></li>
+        <li><span>22 px</span><b style="font-size: 22px; line-height: 33px">a decision per pixel</b></li>
+        <li><span>33 px</span><b style="font-size: 33px; line-height: 44px">a decision per pixel</b></li>
+      </ul>
+      <dl>
+        <div><dt>Text</dt><dd>Departure Mono, at multiples of 11 pixels, the grid it is drawn on.</dd></div>
+        <div><dt>Drawings</dt><dd>My three typefaces, Lieve 7, Kouter 9 and Schelde 14, set cell by cell by this page's own code. The five g drafts are the real ones.</dd></div>
+        <div><dt>Colour</dt><dd>Ten print colours on navy, each with one job: brass for what you press, burgundy for ink, green for guides, five for the chapters, three for the chart.</dd></div>
+        <div><dt>For press</dt><dd>Ansel Okafor is a type designer in Ghent who draws bitmap typefaces for games, handheld devices and small displays. His family Schelde 14 has 640 glyphs. Photos and font files on request.</dd></div>
+      </dl>
+    </div>
+  </div></div>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  /* ---------- The owner edits these two ---------- */
+  // Glyphs drawn per month: [letters, figures and punctuation, accents and box-drawing], from November 2023.
+  const DATA = {
+    start: [2023, 10],
+    faces: ['Kouter 9', 'Lieve 7', 'Schelde 14'],
+    months: [
+      [62, 18, 40, 0], [40, 10, 22, 0], [70, 24, 58, 0], [84, 20, 66, 0], [52, 30, 44, 0], [38, 12, 30, 0],
+      [44, 36, 8, 1], [60, 52, 12, 1], [22, 14, 4, 1], [10, 6, 0, 1], [72, 48, 20, 1], [80, 40, 26, 1],
+      [96, 8, 0, 2], [58, 6, 0, 2], [120, 12, 4, 2], [132, 16, 6, 2], [110, 40, 10, 2], [98, 52, 14, 2],
+      [76, 44, 30, 2], [64, 30, 52, 2], [20, 8, 10, 2], [12, 4, 6, 2], [54, 20, 88, 2], [48, 18, 102, 2],
+      [40, 22, 96, 2], [28, 12, 60, 2], [36, 10, 110, 2], [30, 16, 124, 2], [22, 64, 70, 2], [18, 72, 64, 2],
+      [26, 40, 92, 2], [34, 28, 80, 2], [14, 6, 20, 2], [8, 4, 12, 2], [30, 18, 104, 2], [24, 14, 118, 2]
+    ]
+  };
+  // Contact links: delete a line to remove a link. Known keys get a label; any other key with a full URL becomes a link.
+  const CONTACT = {
+    email: 'ansel.okafor@example.com',
+    github: 'https://github.com/',
+    mastodon: 'https://mastodon.social/',
+    itch: 'https://itch.io/',
+    'Are.na': 'https://www.are.na/'
+  };
+  const SPECIMEN = 'squares decide how a glyph reads';
+
+  const root = document.documentElement;
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const lib = !!(window.gsap && window.ScrollTrigger && window.Lenis);
+  if (lib) root.classList.add('js'); // CDN blocked: no class, everything is visible and every flow works
+  const read = (n) => getComputedStyle(root).getPropertyValue(n).trim();
+  const dur = (k) => { const v = read('--d-' + k); return v.endsWith('ms') ? parseFloat(v) : parseFloat(v) * 1000; };
+  const dpr = () => Math.min(2, window.devicePixelRatio || 1);
+  let lenis = null, fx = null; // fx: hooks set by the motion branch; null means instant
+
+  /* ---------- His three typefaces, as data ---------- */
+  // Each glyph: [first row, rows joined by '/']; '#' is a set pixel. Rows run from the top of the cell.
+  const LIEVE_SRC = {
+    A: '.###./#...#/#...#/#####/#...#/#...#/#...#', B: '####./#...#/#...#/####./#...#/#...#/####.',
+    C: '.####/#..../#..../#..../#..../#..../.####', D: '####./#...#/#...#/#...#/#...#/#...#/####.',
+    E: '#####/#..../#..../####./#..../#..../#####', F: '#####/#..../#..../####./#..../#..../#....',
+    G: '.####/#..../#..../#..##/#...#/#...#/.####', H: '#...#/#...#/#...#/#####/#...#/#...#/#...#',
+    I: '###/.#./.#./.#./.#./.#./###', J: '....#/....#/....#/....#/....#/#...#/.###.',
+    K: '#...#/#..#./#.#../##.../#.#../#..#./#...#', L: '#..../#..../#..../#..../#..../#..../#####',
+    M: '#...#/##.##/#.#.#/#.#.#/#...#/#...#/#...#', N: '#...#/##..#/#.#.#/#..##/#...#/#...#/#...#',
+    O: '.###./#...#/#...#/#...#/#...#/#...#/.###.', P: '####./#...#/#...#/####./#..../#..../#....',
+    Q: '.###./#...#/#...#/#...#/#.#.#/#..#./.##.#', R: '####./#...#/#...#/####./#.#../#..#./#...#',
+    S: '.####/#..../#..../.###./....#/....#/####.', T: '#####/..#../..#../..#../..#../..#../..#..',
+    U: '#...#/#...#/#...#/#...#/#...#/#...#/.###.', V: '#...#/#...#/#...#/#...#/.#.#./.#.#./..#..',
+    W: '#...#/#...#/#...#/#.#.#/#.#.#/##.##/#...#', X: '#...#/#...#/.#.#./..#../.#.#./#...#/#...#',
+    Y: '#...#/#...#/.#.#./..#../..#../..#../..#..', Z: '#####/....#/...#./..#../.#.../#..../#####',
+    0: '.###./#...#/#..##/#.#.#/##..#/#...#/.###.', 1: '..#../.##../..#../..#../..#../..#../.###.',
+    2: '.###./#...#/....#/...#./..#../.#.../#####', 3: '####./....#/....#/.###./....#/....#/####.',
+    4: '...#./..##./.#.#./#..#./#####/...#./...#.', 5: '#####/#..../####./....#/....#/#...#/.###.',
+    6: '.###./#..../#..../####./#...#/#...#/.###.', 7: '#####/....#/...#./..#../.#.../.#.../.#...',
+    8: '.###./#...#/#...#/.###./#...#/#...#/.###.', 9: '.###./#...#/#...#/.####/....#/....#/.###.',
+    '.': [6, '#'], ',': [5, '.#/#.'], '!': '#/#/#/#/#/./#', '?': '.###./#...#/....#/...#./..#../...../..#..',
+    '-': [3, '###'], "'": '#/#'
+  };
+  const KOUTER_SRC = {
+    a: [2, '.###./....#/.####/#...#/.####'], b: '#..../#..../####./#...#/#...#/#...#/####.',
+    c: [2, '.####/#..../#..../#..../.####'], d: '....#/....#/.####/#...#/#...#/#...#/.####',
+    e: [2, '.###./#...#/#####/#..../.####'], f: '..##/.#../####/.#../.#../.#../.#..',
+    g: [2, '.####/#...#/#...#/#...#/.####/....#/####.'], h: '#..../#..../####./#...#/#...#/#...#/#...#',
+    i: '#/./#/#/#/#/#', j: '..#/.../..#/..#/..#/..#/..#/..#/##.',
+    k: '#.../#.../#..#/#.#./##../#.#./#..#', l: '#./#./#./#./#./#./.#',
+    m: [2, '####./#.#.#/#.#.#/#.#.#/#.#.#'], n: [2, '####./#...#/#...#/#...#/#...#'],
+    o: [2, '.###./#...#/#...#/#...#/.###.'], p: [2, '####./#...#/#...#/#...#/####./#..../#....'],
+    q: [2, '.####/#...#/#...#/#...#/.####/....#/....#'], r: [2, '#.##/##../#.../#.../#...'],
+    s: [2, '.####/#..../.###./....#/####.'], t: '.#../.#../####/.#../.#../.#../..##',
+    u: [2, '#...#/#...#/#...#/#...#/.####'], v: [2, '#...#/#...#/.#.#./.#.#./..#..'],
+    w: [2, '#...#/#.#.#/#.#.#/#.#.#/.#.#.'], x: [2, '#...#/.#.#./..#../.#.#./#...#'],
+    y: [2, '#...#/#...#/#...#/#...#/.####/....#/####.'], z: [2, '#####/...#./..#../.#.../#####'],
+    '.': [6, '#'], ',': [6, '.#/#.'], "'": '#/#', '-': [4, '###'], '!': '#/#/#/#/#/./#', '?': '.##./#..#/...#/..#./..#././..#.'
+  };
+  // Schelde 14: drawn on 11 x 14 cells, two-cell stems, one-row bars. Cap height row 1, x-height row 5, baseline under row 10.
+  const SCHELDE_SRC = {
+    a: [5, '#####../.....##/.######/##...##/##...##/.######'],
+    b: [1, '##...../##...../##...../##...../######./##...##/##...##/##...##/##...##/######.'],
+    c: [5, '.#####/##..../##..../##..../##..../.#####'],
+    d: [1, '.....##/.....##/.....##/.....##/.######/##...##/##...##/##...##/##...##/.######'],
+    e: [5, '.#####./##...##/#######/##...../##...../.######'],
+    f: [1, '..###/.##../.##../.##../#####/.##../.##../.##../.##../.##..'],
+    g: [5, '.######/##...##/##...##/##...##/##...##/.######/.....##/.....##/######.'],
+    h: [1, '##...../##...../##...../##...../######./##...##/##...##/##...##/##...##/##...##'],
+    i: [2, '##/../../##/##/##/##/##/##'],
+    j: [2, '..##/..../..../..##/..##/..##/..##/..##/..##/..##/..##/###.'],
+    k: [1, '##...../##...../##...../##...../##...##/##..##./#####../##..##./##...##/##...##'],
+    l: [1, '##./##./##./##./##./##./##./##./##./.##'],
+    m: [5, '#######./##.##.##/##.##.##/##.##.##/##.##.##/##.##.##'],
+    n: [5, '######./##...##/##...##/##...##/##...##/##...##'],
+    o: [5, '.#####./##...##/##...##/##...##/##...##/.#####.'],
+    p: [5, '######./##...##/##...##/##...##/##...##/######./##...../##...../##.....'],
+    q: [5, '.######/##...##/##...##/##...##/##...##/.######/.....##/.....##/.....##'],
+    r: [5, '##.###/####../##..../##..../##..../##....'],
+    s: [5, '.######/##...../.#####./.....##/.....##/######.'],
+    t: [2, '.##../.##../.##../#####/.##../.##../.##../.##../..###'],
+    u: [5, '##...##/##...##/##...##/##...##/##...##/.######'],
+    v: [5, '##...##/##...##/##...##/.##.##./.##.##./..###..'],
+    w: [5, '##.##.##/##.##.##/##.##.##/##.##.##/##.##.##/.######.'],
+    x: [5, '##...##/.##.##./..###../.##.##./##...##/##...##'],
+    y: [5, '##...##/##...##/##...##/##...##/##...##/.######/.....##/.....##/######.'],
+    z: [5, '#######/....##./...##../..##.../.##..../#######'],
+    '.': [9, '##/##'], ',': [9, '##/##/.#/#.'], "'": [1, '##/##/##'], '-': [7, '#####']
+  };
+  // Cells of a glyph: { w, bits } with bits row-major over the face's full height.
+  const cells = (h, src) => {
+    const [r0, s] = Array.isArray(src) ? src : [0, src];
+    const rows = s.split('/'), w = Math.max(...rows.map((r) => r.length)), bits = new Uint8Array(w * h);
+    rows.forEach((r, y) => [...r].forEach((c, x) => { if (c === '#') bits[(r0 + y) * w + x] = 1; }));
+    return { w, bits };
+  };
+  const face = (name, w, h, cap, base, gap, space, box, src, upper) => {
+    const g = {};
+    for (const k in src) g[k] = cells(h, src[k]);
+    return { name, w, h, cap, base, gap, space, box, g, upper };
+  };
+  const FACES = [
+    face('Lieve 7', 5, 7, 0, 6, 1, 3, 4, LIEVE_SRC, true),
+    face('Kouter 9', 7, 9, 0, 6, 1, 3, 4, KOUTER_SRC, false),
+    face('Schelde 14', 11, 14, 1, 10, 2, 5, 6, SCHELDE_SRC, false)
+  ];
+  const SCH = FACES[2];
+
+  // Schelde on its full 11 x 14 editing grid, centred, and back again (trimmed to the drawn columns).
+  const COLS = 11, ROWS = 14;
+  const toGrid = (gl) => { const out = new Uint8Array(COLS * ROWS), off = Math.floor((COLS - gl.w) / 2); for (let y = 0; y < ROWS; y++) for (let x = 0; x < gl.w; x++) out[y * COLS + x + off] = gl.bits[y * gl.w + x]; return out; };
+  const trim = (bits) => {
+    let a = COLS, b = -1;
+    for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) if (bits[y * COLS + x]) { if (x < a) a = x; if (x > b) b = x; }
+    if (b < 0) return { w: 3, bits: new Uint8Array(3 * ROWS) }; // a cleared glyph still takes a narrow slot
+    const w = b - a + 1, out = new Uint8Array(w * ROWS);
+    for (let y = 0; y < ROWS; y++) for (let x = 0; x < w; x++) out[y * w + x] = bits[y * COLS + x + a];
+    return { w, bits: out };
+  };
+  const EDIT_CHARS = ['a', 'e', 'g', 's', 'r', 'o'];
+  const ORIG = {}, ED = {};
+  EDIT_CHARS.forEach((c) => { ORIG[c] = toGrid(SCH.g[c]); ED[c] = ORIG[c].slice(); });
+
+  /* ---------- Setting text from the bitmaps ---------- */
+  const glyphOf = (F, ch, edits) => {
+    if (ch === ' ') return { w: F.space, bits: null };
+    if (edits && F === SCH && ED[ch]) return trim(ED[ch]);
+    return F.g[F.upper ? ch.toUpperCase() : ch] || null; // null: the face lacks it
+  };
+  const layout = (F, text, maxCells, edits) => {
+    const words = text.split(' '), lines = [];
+    let line = [], x = 0;
+    const width = (gs) => gs.reduce((a, g) => a + (g.g ? g.g.w : F.box) + F.gap, 0) - (gs.length ? F.gap : 0);
+    words.forEach((wd, wi) => {
+      const gs = [...wd].map((ch) => ({ ch, g: glyphOf(F, ch, edits), word: wi }));
+      const w = width(gs);
+      if (line.length && x + F.space + w > maxCells) { lines.push(line); line = []; x = 0; }
+      if (line.length) { line.push({ ch: ' ', g: glyphOf(F, ' '), word: wi }); x += F.space + F.gap; }
+      gs.forEach((g) => line.push(g));
+      x += w + F.gap;
+    });
+    if (line.length) lines.push(line);
+    return lines;
+  };
+  // Paint a run of text into a canvas, wrapping at the canvas's own width. opts: px, edits, hi (letter in ink), words (how many are set).
+  const paint = (cv, F, text, opts) => {
+    const px = opts.px, box = cv.parentElement, maxW = Math.max(px * 20, opts.maxW || box.clientWidth);
+    const lines = layout(F, text, Math.floor(maxW / px), opts.edits), lead = F.h + Math.ceil(F.h / 3);
+    const wCells = Math.max(...lines.map((l) => l.reduce((a, g) => a + (g.g ? g.g.w : F.box) + F.gap, 0)), 1);
+    const W = Math.min(maxW, wCells * px), H = (lines.length * lead - (lead - F.h)) * px;
+    const k = dpr();
+    cv.width = Math.round(W * k); cv.height = Math.round(H * k);
+    cv.style.width = W + 'px'; cv.style.height = H + 'px';
+    const c = cv.getContext('2d');
+    c.setTransform(k, 0, 0, k, 0, 0);
+    c.clearRect(0, 0, W, H);
+    const bone = read('--bone'), ink = read('--burgundy-ink'), rust = read('--rust');
+    const missing = new Set();
+    lines.forEach((line, li) => {
+      let x = 0; const y0 = li * lead;
+      line.forEach((it) => {
+        const show = opts.words === undefined || it.word < opts.words;
+        if (!it.g) { // a hollow box from cap height to baseline
+          missing.add(it.ch);
+          if (show) {
+            c.fillStyle = rust;
+            const bx = x * px, by = (y0 + F.cap) * px, bw = F.box * px, bh = (F.base - F.cap + 1) * px;
+            c.fillRect(bx, by, bw, px); c.fillRect(bx, by + bh - px, bw, px); c.fillRect(bx, by, px, bh); c.fillRect(bx + bw - px, by, px, bh);
+          }
+          x += F.box + F.gap; return;
+        }
+        if (it.g.bits && show) {
+          c.fillStyle = opts.hi && it.ch === opts.hi ? ink : bone;
+          const { w, bits } = it.g;
+          for (let y = 0; y < F.h; y++) for (let gx = 0; gx < w; gx++) if (bits[y * w + gx]) c.fillRect((x + gx) * px, (y0 + y) * px, px, px);
+        }
+        x += it.g.w + F.gap;
+      });
+    });
+    return missing;
+  };
+
+  /* ---------- Face metrics, so guide lines sit on the real baseline, x-height and cap height ---------- */
+  const M = { asc: 1, des: .27, cap: .73, x: .55, dsc: .19 };
+  const metrics = () => {
+    const c = document.createElement('canvas').getContext('2d');
+    c.font = `100px ${read('--font')}`;
+    const x = c.measureText('x'), H = c.measureText('H'), g = c.measureText('g');
+    if (x.fontBoundingBoxAscent) { M.asc = x.fontBoundingBoxAscent / 100; M.des = x.fontBoundingBoxDescent / 100; }
+    if (x.width) M.adv = x.width / 100;
+    if (x.actualBoundingBoxAscent) { M.x = x.actualBoundingBoxAscent / 100; M.cap = H.actualBoundingBoxAscent / 100; M.dsc = Math.max(.12, g.actualBoundingBoxDescent / 100); }
+    for (const k of ['asc', 'des', 'cap', 'x', 'dsc']) root.style.setProperty('--m-' + k, M[k].toFixed(4));
+  };
+  // Baseline of a line box of height L (px) in a face of size f (px), from the top of the box.
+  const baseIn = (L, f) => L / 2 + (M.asc - M.des) / 2 * f;
+
+  /* ---------- Headline: the rule left on the last line's baseline ---------- */
+  const h2 = $('.h2'), h2wrap = $('.h2-wrap'), h2rule = $('.h2-rule'), h2guides = $('.h2-guides');
+  const lineBoxes = () => { // the headline's lines, measured from its words
+    const r = h2wrap.getBoundingClientRect(), f = parseFloat(getComputedStyle(h2).fontSize), L = parseFloat(getComputedStyle(h2).lineHeight) || f;
+    const rg = document.createRange(); rg.selectNodeContents(h2);
+    const tops = [...new Set([...rg.getClientRects()].map((q) => Math.round(q.top - r.top)))].sort((a, b) => a - b);
+    const lines = []; tops.forEach((t) => { if (!lines.length || t - lines[lines.length - 1] > L / 2) lines.push(t); });
+    return { f, L, lines: lines.map((t) => ({ top: t, base: t + baseIn(L, f) })) };
+  };
+  const placeRule = () => {
+    const { lines } = lineBoxes();
+    if (lines.length) h2rule.style.top = Math.round(lines[lines.length - 1].base + 2) + 'px';
+  };
+
+  /* ---------- The glyph editor (works without the libraries) ---------- */
+  const grid = $('#grid'), tabs = $$('.tab'), edRead = $('#ed-read');
+  const specL = $('.spec-l'), specS = $('.spec-s');
+  let cur = 'a', focusIdx = 5 * COLS + 2, reveal = ROWS, specWords = Infinity;
+  const cellEls = [];
+  for (let y = 0; y < ROWS; y++) {
+    const row = document.createElement('div');
+    row.className = 'row'; row.setAttribute('role', 'row');
+    for (let x = 0; x < COLS; x++) {
+      const c = document.createElement('div');
+      c.className = 'cell'; c.setAttribute('role', 'gridcell');
+      c.tabIndex = -1; c.dataset.i = y * COLS + x;
+      c.setAttribute('aria-label', `Row ${y + 1}, column ${x + 1}`);
+      row.append(c); cellEls.push(c);
+    }
+    grid.append(row);
+  }
+  cellEls[focusIdx].tabIndex = 0;
+  const count = (b) => b.reduce((a, v) => a + v, 0);
+  const renderGrid = () => {
+    const b = ED[cur];
+    cellEls.forEach((c, i) => {
+      const on = !!b[i];
+      c.classList.toggle('on', on && Math.floor(i / COLS) < reveal);
+      c.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+  };
+  const renderRead = () => {
+    const n = count(ED[cur]), diff = ED[cur].reduce((a, v, i) => a + (v !== ORIG[cur][i] ? 1 : 0), 0);
+    edRead.textContent = diff ? `The ${cur} has ${n} pixels set. You changed ${diff} of his.` : `The ${cur} has ${n} pixels set, as he drew it.`;
+  };
+  const renderSpec = () => {
+    const w = specL.parentElement.clientWidth;
+    if (!w) return;
+    paint(specL, SCH, SPECIMEN, { px: 2, edits: true, hi: cur, words: specWords });
+    paint(specS, SCH, SPECIMEN, { px: 1, edits: true, hi: cur, words: specWords });
+  };
+  let specRaf = 0;
+  const specSoon = () => { if (!specRaf) specRaf = requestAnimationFrame(() => { specRaf = 0; renderSpec(); }); };
+  const edRender = () => { renderGrid(); renderRead(); specSoon(); };
+  const pick = (ch) => {
+    cur = ch;
+    tabs.forEach((t) => t.setAttribute('aria-pressed', t.dataset.ch === ch ? 'true' : 'false'));
+    grid.setAttribute('aria-label', `Pixels of the letter ${ch}, 11 columns by 14 rows`);
+    edRender();
+  };
+  tabs.forEach((t) => t.addEventListener('click', () => pick(t.dataset.ch)));
+  $('#restore').addEventListener('click', () => { ED[cur] = ORIG[cur].slice(); edRender(); });
+  // The pencil: the first cell decides whether the stroke sets or clears; a drag fills every cell it crosses.
+  let mode = -1, last = -1, pen = -1;
+  const cellAt = (e) => {
+    const r = grid.getBoundingClientRect(), ec = (r.width - 1) / COLS;
+    const x = Math.floor((e.clientX - r.left - 1) / ec), y = Math.floor((e.clientY - r.top - 1) / ec);
+    return x < 0 || y < 0 || x >= COLS || y >= ROWS ? -1 : y * COLS + x;
+  };
+  const setCell = (i) => { if (i < 0 || ED[cur][i] === mode) return; ED[cur][i] = mode; };
+  const stroke = (a, b) => { // every cell on the straight run from a to b
+    let x0 = a % COLS, y0 = Math.floor(a / COLS); const x1 = b % COLS, y1 = Math.floor(b / COLS);
+    const dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
+    let err = dx + dy;
+    for (;;) { setCell(y0 * COLS + x0); if (x0 === x1 && y0 === y1) break; const e2 = 2 * err; if (e2 >= dy) { err += dy; x0 += sx; } if (e2 <= dx) { err += dx; y0 += sy; } }
+  };
+  const setPen = (i) => { if (pen === i) return; if (pen >= 0) cellEls[pen].classList.remove('is-pen'); pen = i; if (i >= 0) cellEls[i].classList.add('is-pen'); };
+  grid.addEventListener('pointerdown', (e) => {
+    const i = cellAt(e); if (i < 0) return;
+    e.preventDefault();
+    grid.setPointerCapture(e.pointerId);
+    mode = ED[cur][i] ? 0 : 1; last = i;
+    setCell(i); edRender();
+    focusCell(i, false);
+  });
+  grid.addEventListener('pointermove', (e) => {
+    const i = cellAt(e);
+    if (e.pointerType !== 'touch') setPen(i);
+    if (mode < 0 || i < 0 || i === last) return;
+    stroke(last, i); last = i; edRender();
+  });
+  const endStroke = () => { mode = -1; last = -1; };
+  grid.addEventListener('pointerup', endStroke);
+  grid.addEventListener('pointercancel', endStroke);
+  grid.addEventListener('pointerleave', () => setPen(-1));
+  const focusCell = (i, move = true) => {
+    cellEls[focusIdx].tabIndex = -1; focusIdx = i; cellEls[i].tabIndex = 0;
+    if (move) cellEls[i].focus();
+  };
+  grid.addEventListener('keydown', (e) => {
+    let x = focusIdx % COLS, y = Math.floor(focusIdx / COLS);
+    if (e.key === 'ArrowLeft') x = Math.max(0, x - 1);
+    else if (e.key === 'ArrowRight') x = Math.min(COLS - 1, x + 1);
+    else if (e.key === 'ArrowUp') y = Math.max(0, y - 1);
+    else if (e.key === 'ArrowDown') y = Math.min(ROWS - 1, y + 1);
+    else if (e.key === 'Home') x = 0;
+    else if (e.key === 'End') x = COLS - 1;
+    else if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); ED[cur][focusIdx] ^= 1; edRender(); return; }
+    else return;
+    e.preventDefault();
+    focusCell(y * COLS + x);
+  });
+  grid.addEventListener('focusin', (e) => { const i = +e.target.dataset.i; if (!isNaN(i) && i !== focusIdx) focusCell(i, false); });
+  renderGrid(); renderRead();
+
+  /* ---------- The story: five drafts of the g, each over the outlines of the ones before ---------- */
+  const D = [
+    ['..#####.##.', '.#.....#...', '.#.....#...', '..#####....', '.#.........', '..#######..', '.#.......#.', '.#.......#.', '..#######..'],
+    ['...######..', '..#.....#..', '..#.....#..', '..#.....#..', '..#.....#..', '...######..', '........#..', '........#..', '..######...'],
+    ['..#######..', '.########..', '.##....##..', '.##....##..', '.########..', '..#######..', '.......##..', '.#######...', '.######....'],
+    ['..######...', '.##....##..', '.##....##..', '.##....##..', '..#######..', '.......##..', '.......##..', '.######....', '...........'],
+    ['...######..', '..##...##..', '..##...##..', '..##...##..', '..##...##..', '...######..', '.......##..', '.......##..', '..######...']
+  ].map((rows) => { const b = new Uint8Array(COLS * ROWS); rows.forEach((r, y) => [...r].forEach((c, x) => { if (c === '#') b[(y + 5) * COLS + x] = 1; })); return b; });
+  const HUES = ['--terracotta', '--mustard', '--sage', '--periwinkle', '--mauve'];
+  const arts = $$('.ch-art');
+  const drawDraft = (cv, k, cell) => {
+    const W = COLS * cell + 1, H = ROWS * cell + 1, q = dpr();
+    cv.width = Math.round(W * q); cv.height = Math.round(H * q);
+    cv.style.width = W + 'px'; cv.style.height = H + 'px';
+    const c = cv.getContext('2d');
+    c.setTransform(q, 0, 0, q, 0, 0);
+    c.fillStyle = read('--well'); c.fillRect(0, 0, W, H);
+    c.fillStyle = read('--plate');
+    for (let i = 0; i <= COLS; i++) c.fillRect(i * cell, 0, 1, H);
+    for (let i = 0; i <= ROWS; i++) c.fillRect(0, i * cell, W, 1);
+    c.fillStyle = read('--royal-green'); // the guides at rest
+    [1, 5, 11].forEach((r) => c.fillRect(0, r * cell - 1, W, 2));
+    const b = D[k]; c.fillStyle = read(HUES[k]);
+    for (let i = 0; i < b.length; i++) if (b[i]) c.fillRect((i % COLS) * cell + 1, Math.floor(i / COLS) * cell + 1, cell - 1, cell - 1);
+    // Earlier drafts: their outlines over the current one, each inset a little more, so shared edges stay apart.
+    const step = Math.max(2, Math.floor(cell / 9));
+    for (let j = k - 1; j >= 0; j--) {
+      const g = D[j], ins = 1 + (k - 1 - j) * step, lw = 2; c.fillStyle = read(HUES[j]);
+      const on = (x, y) => x >= 0 && y >= 0 && x < COLS && y < ROWS && g[y * COLS + x];
+      // The cell outline of draft j, offset inward by ins: convex corners pull in, concave corners reach out.
+      const end = (cont, turn, base, dir) => !cont ? base + dir * ins : turn ? base - dir * ins : base;
+      for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) {
+        if (!on(x, y)) continue;
+        const X = x * cell + 1, Y = y * cell + 1, C = cell - 1;
+        if (!on(x, y - 1)) { const a = end(on(x - 1, y), on(x - 1, y - 1), X, 1), b = end(on(x + 1, y), on(x + 1, y - 1), X + C, -1); c.fillRect(a, Y + ins, b - a, lw); }
+        if (!on(x, y + 1)) { const a = end(on(x - 1, y), on(x - 1, y + 1), X, 1), b = end(on(x + 1, y), on(x + 1, y + 1), X + C, -1); c.fillRect(a, Y + C - ins - lw, b - a, lw); }
+        if (!on(x - 1, y)) { const a = end(on(x, y - 1), on(x - 1, y - 1), Y, 1), b = end(on(x, y + 1), on(x - 1, y + 1), Y + C, -1); c.fillRect(X + ins, a, lw, b - a); }
+        if (!on(x + 1, y)) { const a = end(on(x, y - 1), on(x + 1, y - 1), Y, 1), b = end(on(x, y + 1), on(x + 1, y + 1), Y + C, -1); c.fillRect(X + C - ins - lw, a, lw, b - a); }
+      }
+    }
+  };
+  const storyCell = () => {
+    const w = innerWidth, h = innerHeight;
+    if (!root.classList.contains('fx')) return w < 600 ? Math.max(14, Math.min(22, Math.floor((w - 44) / 11))) : 22;
+    if (w < 768) return Math.max(12, Math.min(24, Math.floor((w - 44) / 11), Math.floor((h - 470) / 14)));
+    return Math.max(16, Math.min(44, Math.floor((h - 190) / 14), Math.floor((w * .42) / 11))); // up to 44px, larger than the editor's 33px
+  };
+  const drawStory = () => {
+    const cell = storyCell();
+    arts.forEach((cv, k) => drawDraft(cv, k, cell));
+    $('.chs').style.setProperty('--stage-h', '0px');
+    const hs = $$('.ch').map((el) => el.scrollHeight);
+    $('.chs').style.setProperty('--stage-h', Math.max(...hs) + 'px');
+  };
+
+  /* ---------- By the numbers: the calendar (works without the libraries) ---------- */
+  const cal = $('#cal'), readout = $('#readout'), tbody = $('#tbody');
+  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const rows = DATA.months.map((m, i) => {
+    const mi = (DATA.start[1] + i) % 12, yr = DATA.start[0] + Math.floor((DATA.start[1] + i) / 12);
+    return { i, name: `${MONTHS[mi]} ${yr}`, short: MONTHS[mi][0], l: m[0], f: m[1], a: m[2], t: m[0] + m[1] + m[2], face: DATA.faces[m[3]] };
+  });
+  const peak = Math.max(...rows.map((r) => r.t));
+  const level = (t) => Math.max(1, Math.ceil(t / peak * 4)); // four steps
+  const mh = document.createElement('div');
+  mh.className = 'cal-mh'; mh.setAttribute('aria-hidden', 'true');
+  rows.slice(0, 12).forEach((r) => { const s = document.createElement('span'); s.textContent = r.short; mh.append(s); });
+  cal.append(document.createElement('span'), mh);
+  const mos = [];
+  for (let y = 0; y < 3; y++) {
+    const lab = document.createElement('span'); lab.className = 'cal-y'; lab.setAttribute('aria-hidden', 'true');
+    lab.textContent = `${DATA.start[0] + y}–${String(DATA.start[0] + y + 1).slice(2)}`;
+    const row = document.createElement('div'); row.className = 'cal-row';
+    rows.slice(y * 12, y * 12 + 12).forEach((r) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'mo'; b.tabIndex = -1;
+      b.setAttribute('aria-pressed', 'false');
+      b.setAttribute('aria-label', `${r.name}: ${r.t} glyphs`);
+      const f = document.createElement('span'); f.className = 'mo-f'; f.setAttribute('aria-hidden', 'true');
+      const lv = level(r.t);
+      f.style.height = `calc((100% - 4px) * ${lv / 4})`;
+      [['b1', r.l], ['b2', r.f], ['b3', r.a]].forEach(([k, v]) => { const i = document.createElement('i'); i.className = k; i.style.height = (v / r.t * 100) + '%'; f.append(i); });
+      b.append(f); row.append(b); mos.push(b);
+      const tr = document.createElement('tr');
+      [r.name, r.l, r.f, r.a, r.t, r.face].forEach((v, k) => { const td = document.createElement(k ? 'td' : 'th'); if (!k) td.scope = 'row'; td.textContent = v; tr.append(td); });
+      tbody.append(tr);
+    });
+    cal.append(lab, row);
+  }
+  let sel = -1;
+  const choose = (i, focus) => {
+    if (i === sel) { if (focus) mos[i].focus(); return; }
+    if (sel >= 0) { mos[sel].setAttribute('aria-pressed', 'false'); mos[sel].tabIndex = -1; }
+    sel = i; const r = rows[i];
+    mos[i].setAttribute('aria-pressed', 'true'); mos[i].tabIndex = 0;
+    if (focus) mos[i].focus();
+    readout.innerHTML = '';
+    const add = (t, cls) => { const b = document.createElement('b'); if (cls) b.className = cls; b.textContent = t; readout.append(b); };
+    add(r.name); readout.append(`: ${r.t} glyphs, on ${r.face}. `);
+    add(`${r.l} letters`, 'r1'); readout.append(', ');
+    add(`${r.f} figures and punctuation`, 'r2'); readout.append(', ');
+    add(`${r.a} accents and box-drawing`, 'r3'); readout.append('.');
+  };
+  mos.forEach((b, i) => {
+    b.addEventListener('click', () => choose(i));
+    b.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') choose(i); });
+    b.addEventListener('focus', () => choose(i));
+    b.addEventListener('keydown', (e) => {
+      const k = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -12, ArrowDown: 12 }[e.key];
+      let n = k === undefined ? (e.key === 'Home' ? 0 : e.key === 'End' ? mos.length - 1 : -1) : i + k;
+      if (n === -1 && k === undefined) return;
+      e.preventDefault();
+      n = Math.max(0, Math.min(mos.length - 1, n));
+      choose(n, true);
+    });
+  });
+  choose(rows.length - 1);
+
+  /* ---------- The type tester (works without the libraries) ---------- */
+  const tIn = $('#t-in'), tCvs = $$('canvas[data-face]'), tMiss = $$('[data-miss]');
+  let scale = 2, mapFace = 1, pvCh = 'g';
+  const renderTester = () => {
+    const text = tIn.value || ' ';
+    tCvs.forEach((cv, k) => {
+      const miss = paint(cv, FACES[k], text, { px: 3 * scale }); // x1, x2, x3 are 3, 6 and 9 screen pixels per font pixel
+      tMiss[k].textContent = miss.size ? `Not drawn yet: ${[...miss].join(' ')}` : 'Every character is drawn.';
+    });
+  };
+  tIn.addEventListener('input', renderTester);
+  $$('[data-scale]').forEach((b) => b.addEventListener('click', () => {
+    scale = +b.dataset.scale;
+    $$('[data-scale]').forEach((o) => o.setAttribute('aria-pressed', o === b ? 'true' : 'false'));
+    renderTester();
+  }));
+  const cmap = $('#cmap'), pvCv = $('#pv-cv'), pvT = $('#pv-t');
+  const drawCell = (cv, F, ch, px, guides) => { // one glyph on its full cell
+    const gl = F.g[ch], W = F.w * px + (guides ? 1 : 0), H = F.h * px + (guides ? 1 : 0), q = dpr();
+    cv.width = Math.round(W * q); cv.height = Math.round(H * q); cv.style.width = W + 'px'; cv.style.height = H + 'px';
+    const c = cv.getContext('2d'); c.setTransform(q, 0, 0, q, 0, 0); c.clearRect(0, 0, W, H);
+    const off = Math.floor((F.w - gl.w) / 2);
+    if (guides) {
+      c.fillStyle = read('--well'); c.fillRect(0, 0, W, H);
+      c.fillStyle = read('--plate');
+      for (let i = 0; i <= F.w; i++) c.fillRect(i * px, 0, 1, H);
+      for (let i = 0; i <= F.h; i++) c.fillRect(0, i * px, W, 1);
+      c.fillStyle = read('--guide'); c.fillRect(0, (F.base + 1) * px - 1, W, 2);
+    }
+    c.fillStyle = read('--bone');
+    for (let y = 0; y < F.h; y++) for (let x = 0; x < gl.w; x++) if (gl.bits[y * gl.w + x]) c.fillRect((x + off) * px + (guides ? 1 : 0), y * px + (guides ? 1 : 0), px - (guides ? 1 : 0), px - (guides ? 1 : 0));
+  };
+  let chBtns = [];
+  const preview = (ch) => {
+    pvCh = ch; const F = FACES[mapFace], gl = F.g[ch];
+    chBtns.forEach((b) => b.classList.toggle('is-on', b.dataset.c === ch));
+    drawCell(pvCv, F, ch, F.h > 9 ? 16 : F.h > 7 ? 24 : 30, true);
+    pvT.innerHTML = '';
+    const b = document.createElement('b'); b.textContent = ch; pvT.append(b, document.createElement('br'));
+    pvT.append(`${F.name}: a ${F.w} by ${F.h} cell, ${gl.w} pixel${gl.w > 1 ? 's' : ''} wide, ${gl.bits.reduce((a, v) => a + v, 0)} pixels set, advance ${gl.w + F.gap}.`);
+  };
+  const buildMap = () => {
+    const F = FACES[mapFace];
+    cmap.innerHTML = ''; cmap.setAttribute('aria-label', `Characters in ${F.name}`);
+    chBtns = Object.keys(F.g).map((ch, i) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'ch-b'; b.dataset.c = ch; b.tabIndex = i ? -1 : 0;
+      b.setAttribute('aria-label', ch === "'" ? 'apostrophe' : ch === '.' ? 'full stop' : ch === ',' ? 'comma' : ch === '-' ? 'hyphen' : ch);
+      const cv = document.createElement('canvas'); cv.setAttribute('aria-hidden', 'true'); b.append(cv);
+      cmap.append(b);
+      drawCell(cv, F, ch, F.h > 9 ? 4 : F.h > 7 ? 5 : 6, false);
+      b.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') preview(ch); });
+      b.addEventListener('focus', () => preview(ch));
+      b.addEventListener('click', () => preview(ch));
+      return b;
+    });
+    preview(F.g[pvCh] ? pvCh : chBtns[0].dataset.c);
+  };
+  cmap.addEventListener('keydown', (e) => {
+    const i = chBtns.indexOf(document.activeElement); if (i < 0) return;
+    const perRow = Math.max(1, chBtns.filter((b) => b.offsetTop === chBtns[0].offsetTop).length);
+    const k = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -perRow, ArrowDown: perRow }[e.key];
+    let n = k === undefined ? (e.key === 'Home' ? 0 : e.key === 'End' ? chBtns.length - 1 : -1) : i + k;
+    if (n === -1 && k === undefined) return;
+    e.preventDefault();
+    n = Math.max(0, Math.min(chBtns.length - 1, n));
+    chBtns[i].tabIndex = -1; chBtns[n].tabIndex = 0; chBtns[n].focus();
+  });
+  $$('[data-map]').forEach((b) => b.addEventListener('click', () => {
+    mapFace = +b.dataset.map;
+    $$('[data-map]').forEach((o) => o.setAttribute('aria-pressed', o === b ? 'true' : 'false'));
+    buildMap();
+  }));
+  buildMap();
+
+  /* ---------- Fields: the caret cell, the measure in cells, the baseline guide ---------- */
+  const adv = () => M.adv || .6364;
+  $$('[data-fld]').forEach((fld) => {
+    const inp = $('input, textarea', fld), n = $('.fld-n', fld), caret = $('.fld-caret', fld), lab = $('.fld-top > :first-child', fld);
+    const multi = inp.tagName === 'TEXTAREA';
+    const sync = () => {
+      const v = inp.value, len = [...v].length;
+      n.textContent = `${len} cell${len === 1 ? '' : 's'}`;
+      const end = inp.selectionStart === inp.selectionEnd && inp.selectionEnd === v.length;
+      fld.classList.toggle('at-end', !multi && end);
+      if (multi) { n.style.right = '0'; return; }
+      const fs = parseFloat(getComputedStyle(inp).fontSize), a = fs * adv(), pad = parseFloat(getComputedStyle(inp).paddingLeft) + 2;
+      const x = Math.min(inp.clientWidth + 2 - a - 4, pad + len * a - inp.scrollLeft);
+      caret.style.left = Math.round(x) + 'px';
+      caret.style.width = Math.round(a) + 'px';
+      const lw = lab.offsetWidth + 11 + (lab.nextElementSibling !== n ? lab.nextElementSibling.offsetWidth + 11 : 0);
+      n.style.left = Math.round(Math.max(lw, Math.min(x, fld.clientWidth - n.offsetWidth))) + 'px';
+    };
+    inp.addEventListener('focus', () => {
+      fld.classList.add('is-focus');
+      sync();
+    });
+    inp.addEventListener('blur', () => fld.classList.remove('is-focus'));
+    ['input', 'keyup', 'click', 'select', 'scroll'].forEach((t) => inp.addEventListener(t, sync));
+    document.addEventListener('selectionchange', () => { if (document.activeElement === inp) sync(); });
+  });
+
+  /* ---------- Presses that are seen, and links that hold their guides on touch ---------- */
+  const hold = (el, min, cls) => {
+    let t0 = 0, timer = 0;
+    const down = () => { clearTimeout(timer); t0 = performance.now(); el.classList.add(cls); };
+    const up = () => { if (!el.classList.contains(cls)) return; clearTimeout(timer); timer = setTimeout(() => el.classList.remove(cls), Math.max(0, min - (performance.now() - t0))); };
+    return { down, up };
+  };
+  $$('.btn, .step button').forEach((el) => {
+    const h = hold(el, dur('press'), 'is-down');
+    el.addEventListener('pointerdown', (e) => { if (e.button <= 0) h.down(); });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach((t) => el.addEventListener(t, h.up));
+    el.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) h.down(); });
+    el.addEventListener('keyup', h.up);
+    el.addEventListener('blur', h.up);
+  });
+  $$('.tl').forEach((el) => {
+    const h = hold(el, dur('link-hold'), 'is-press');
+    el.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'mouse') h.down(); });
+    ['pointerup', 'pointercancel'].forEach((t) => el.addEventListener(t, h.up));
+  });
+
+  /* ---------- Contact links from CONTACT ---------- */
+  const KNOWN = {
+    email: ['Email', (v) => 'mailto:' + v, (v) => v],
+    whatsapp: ['WhatsApp', (v) => 'https://wa.me/' + String(v).replace(/\D/g, ''), (v) => v],
+    github: ['Font sources on GitHub', (v) => v],
+    mastodon: ['Work in progress on Mastodon', (v) => v],
+    instagram: ['Specimens on Instagram', (v) => v],
+    itch: ['Buy the fonts on itch.io', (v) => v]
+  };
+  const contact = $('#contact');
+  Object.entries(CONTACT).forEach(([k, v]) => {
+    const known = KNOWN[k];
+    const href = known ? known[1](v) : v;
+    if (!/^(https?:|mailto:)/.test(href)) return;
+    const li = document.createElement('li'), a = document.createElement('a'), t = document.createElement('span');
+    a.className = 'tl'; a.href = href; a.target = '_blank'; a.rel = 'noopener';
+    t.className = 'tl-t';
+    t.textContent = known && known[2] ? known[2](v) : (known ? known[0] : k);
+    const lab = document.createElement('span'); lab.className = 'k'; lab.textContent = known && known[2] ? known[0] : (known ? new URL(href).host : new URL(href).host);
+    const vh = document.createElement('span'); vh.className = 'vh'; vh.textContent = ' (opens in a new tab)';
+    a.append(t, vh); li.append(lab, a); contact.append(li);
+    const h = hold(a, dur('link-hold'), 'is-press');
+    a.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'mouse') h.down(); });
+    ['pointerup', 'pointercancel'].forEach((ty) => a.addEventListener(ty, h.up));
+  });
+
+  /* ---------- The commission form (works without the libraries) ---------- */
+  const form = $('#form'), slip = $('#slip'), slipT = $('#slip-t');
+  const PURPOSES = ['A game', 'A device display', 'A brand', 'Something else'];
+  let purpose = 0;
+  const pv = $('#f-purpose-v'), pIn = $('#f-purpose');
+  const stepTo = (d) => { purpose = (purpose + d + PURPOSES.length) % PURPOSES.length; pv.textContent = PURPOSES[purpose]; pIn.value = PURPOSES[purpose]; };
+  $('#p-prev').addEventListener('click', () => stepTo(-1));
+  $('#p-next').addEventListener('click', () => stepTo(1));
+  const F_ = (id) => $('#' + id);
+  const checks = {
+    'f-name': (v) => !v.trim() ? 'Write your name, so I know who to answer.' : '',
+    'f-email': (v) => !v.trim() ? 'Write your email address, like noor@example.com.' : !/^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(v.trim()) ? 'This address needs an @ and a domain, like noor@example.com.' : '',
+    'f-size': (v) => {
+      v = v.trim(); if (!v) return '';
+      if (!/^\d+$/.test(v)) return 'Write a whole number of pixels, like 9, or leave it empty.';
+      const n = +v; return n < 5 || n > 32 ? `Pick a size from 5 to 32 pixels; ${n} is ${n < 5 ? 'too small to hold a lowercase' : 'past what I draw as a bitmap'}.` : '';
+    },
+    'f-msg': (v) => !v.trim() ? 'Write a line or two about the project: what it is and where the type will be read.' : v.trim().length < 10 ? 'Tell me a little more: at least 10 characters.' : ''
+  };
+  const sizeHint = $('#f-size-err .err-t').innerHTML;
+  const showErr = (id, msg) => {
+    const el = F_(id), fld = el.closest('.fld'), out = $('.err-t', F_(id + '-err'));
+    fld.classList.toggle('is-bad', !!msg);
+    if (id === 'f-size') out.innerHTML = msg ? '' : sizeHint;
+    if (msg) out.textContent = msg; else if (id !== 'f-size') out.textContent = '';
+    if (msg) { el.setAttribute('aria-invalid', 'true'); el.setAttribute('aria-describedby', id + '-err'); }
+    else { el.removeAttribute('aria-invalid'); if (id === 'f-size') el.setAttribute('aria-describedby', id + '-err'); else el.removeAttribute('aria-describedby'); }
+  };
+  Object.keys(checks).forEach((id) => F_(id).addEventListener('input', () => { if (F_(id).hasAttribute('aria-invalid') && !checks[id](F_(id).value)) showErr(id, ''); }));
+  const slipNames = $('.slip-names');
+  const drawNames = () => { // his three typeface names, each set in itself, on one baseline
+    const w = slip.clientWidth - 2 * parseFloat(getComputedStyle(slip).paddingLeft);
+    if (w <= 0) return;
+    const px = w < 420 ? 2 : 3, words = [['LIEVE', 0], ['kouter', 1], ['schelde', 2]];
+    const glyphs = words.map(([t, f]) => ({ F: FACES[f], gs: [...t].map((ch) => glyphOf(FACES[f], ch)) }));
+    const ws = glyphs.map(({ F, gs }) => gs.reduce((a, g) => a + g.w + F.gap, -F.gap));
+    const top = Math.max(...glyphs.map(({ F }) => F.base)), bot = Math.max(...glyphs.map(({ F }) => F.h - F.base));
+    const gap = 6, total = ws.reduce((a, b) => a + b, 0) + gap * 2;
+    const two = total * px > w, Wc = two ? Math.max(...ws) : total, Hc = two ? 3 * (top + bot) + 4 : top + bot;
+    const q = dpr(); slipNames.width = Wc * px * q; slipNames.height = Hc * px * q;
+    slipNames.style.width = Wc * px + 'px'; slipNames.style.height = Hc * px + 'px';
+    const c = slipNames.getContext('2d'); c.setTransform(q, 0, 0, q, 0, 0); c.fillStyle = read('--bone');
+    let x = 0;
+    glyphs.forEach(({ F, gs }, i) => {
+      const y0 = (two ? i * (top + bot + 2) : 0) + top - F.base; if (two) x = 0;
+      gs.forEach((g) => { for (let y = 0; y < F.h; y++) for (let gx = 0; gx < g.w; gx++) if (g.bits[y * g.w + gx]) c.fillRect((x + gx) * px, (y0 + y) * px, px, px); x += g.w + F.gap; });
+      x += gap - F.gap;
+    });
+  };
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    let first = null;
+    Object.keys(checks).forEach((id) => { const msg = checks[id](F_(id).value); showErr(id, msg); if (msg && !first) first = F_(id); });
+    if (first) { first.focus(); return; }
+    const size = F_('f-size').value.trim();
+    $('#o-name').textContent = F_('f-name').value.trim();
+    $('#o-email').textContent = F_('f-email').value.trim();
+    $('#o-purpose').textContent = PURPOSES[purpose];
+    $('#o-size').textContent = size ? `${+size} pixels` : 'Not decided yet';
+    $('#o-acc').textContent = F_('f-acc').checked ? 'Yes, it needs accents' : 'No accents';
+    $('#o-msg').textContent = F_('f-msg').value.trim();
+    form.hidden = true; slip.hidden = false;
+    drawNames();
+    slipT.focus();
+    fx?.success();
+  });
+  $('#again').addEventListener('click', () => { fx?.successReset(); slip.hidden = true; form.hidden = false; F_('f-name').focus(); });
+
+  /* ---------- Colophon dialog ---------- */
+  const dlg = $('#colophon'), closeBtn = $('#colophon-close');
+  let closing = false, downOn = null, opener = null;
+  const settle = () => { closing = false; fx?.dialogReset(); delete dlg.dataset.stage; };
+  $$('[data-colophon]').forEach((b) => b.addEventListener('click', () => {
+    if (dlg.open) return;
+    settle(); opener = b;
+    dlg.showModal();
+    lenis?.stop();
+    if (fx) fx.dialogIn(() => closeBtn.focus()); else closeBtn.focus();
+  }));
+  const closeDialog = () => {
+    if (!dlg.open || closing) return;
+    closing = true;
+    const end = () => { closing = false; dlg.close(); };
+    fx ? fx.dialogOut(end) : end();
+  };
+  closeBtn.addEventListener('click', closeDialog);
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); closeDialog(); });
+  dlg.addEventListener('pointerdown', (e) => { downOn = e.target; });
+  dlg.addEventListener('click', (e) => { if (e.target === dlg && downOn === dlg) closeDialog(); });
+  dlg.addEventListener('close', () => { settle(); lenis?.start(); opener?.focus(); });
+
+  /* ---------- Sign-off: ANSEL in square pixels ---------- */
+  const markCv = $('#mark');
+  const mark = (() => {
+    const L = {
+      A: ['..####..', '.######.', '###..###', '##....##', '##....##', '########', '########', '##....##', '##....##', '##....##'],
+      N: ['##....##', '###...##', '####..##', '##.##.##', '##.##.##', '##..####', '##...###', '##....##', '##....##', '##....##'],
+      S: ['.######.', '########', '##......', '##......', '#######.', '.#######', '......##', '......##', '########', '.######.'],
+      E: ['########', '########', '##......', '##......', '######..', '######..', '##......', '##......', '########', '########'],
+      L: ['##......', '##......', '##......', '##......', '##......', '##......', '##......', '##......', '########', '########']
+    };
+    const PAD = 2, H = 10 + 2 * PAD, pts = [];
+    let x = PAD;
+    for (const ch of 'ANSEL') { L[ch].forEach((r, y) => [...r].forEach((c, i) => { if (c === '#') pts.push({ hx: x + i, hy: PAD + y, dx: 0, dy: 0, tx: 0, ty: 0 }); })); x += 10; }
+    const W = x - 2 + PAD, g = markCv.getContext('2d');
+    let cell = 8, shift = 0;
+    const size = () => {
+      const w = markCv.parentElement.clientWidth; if (!w) return;
+      cell = Math.max(4, Math.floor(w / W));
+      const q = dpr();
+      markCv.width = Math.round(W * cell * q); markCv.height = Math.round(H * cell * q);
+      markCv.style.width = W * cell + 'px'; markCv.style.height = H * cell + 'px';
+      g.setTransform(q, 0, 0, q, 0, 0);
+      draw();
+    };
+    const draw = () => {
+      g.clearRect(0, 0, W * cell, H * cell);
+      const gap = Math.max(1, Math.round(cell / 10)), s = cell - gap;
+      g.fillStyle = read('--burgundy'); // the home cell a pushed pixel has left
+      for (const p of pts) if (p.dx || p.dy || shift) g.fillRect(p.hx * cell, p.hy * cell, s, s);
+      g.fillStyle = read('--burgundy-ink');
+      for (const p of pts) g.fillRect((p.hx + p.dx + shift) * cell, (p.hy + p.dy) * cell, s, s);
+    };
+    // Each pixel within two cells of (px, py) (in cells) aims one whole cell directly away from it.
+    const push = (px, py) => {
+      for (const p of pts) {
+        const vx = p.hx + .5 - px, vy = p.hy + .5 - py, d = Math.hypot(vx, vy);
+        if (d > 2) { p.tx = 0; p.ty = 0; continue; }
+        if (d < .25) { p.tx = 0; p.ty = -1; continue; }
+        const a = Math.round(Math.atan2(vy, vx) / (Math.PI / 4)); // eight directions
+        p.tx = Math.round(Math.cos(a * Math.PI / 4)); p.ty = Math.round(Math.sin(a * Math.PI / 4));
+      }
+    };
+    const release = () => { for (const p of pts) { p.tx = 0; p.ty = 0; } };
+    // One cell per step toward the target; true while anything still has to move.
+    const step = () => {
+      let moving = false;
+      for (const p of pts) {
+        if (p.dx !== p.tx) { p.dx += Math.sign(p.tx - p.dx); moving = true; }
+        if (p.dy !== p.ty) { p.dy += Math.sign(p.ty - p.dy); moving = true; }
+      }
+      draw();
+      return moving || pts.some((p) => p.dx !== p.tx || p.dy !== p.ty);
+    };
+    const home = () => { for (const p of pts) { p.dx = p.dy = p.tx = p.ty = 0; } draw(); };
+    return { size, draw, push, release, step, home, nudge(v) { shift = v; draw(); }, get cell() { return cell; } };
+  })();
+  let nudging = 0;
+  $('#nudge').addEventListener('click', () => { // one cell right, held, and back: a hard cut both ways
+    clearTimeout(nudging);
+    mark.nudge(1);
+    nudging = setTimeout(() => mark.nudge(0), dur('nudge'));
+  });
+
+  /* ---------- The size scale: a marker that steps through the five fifths of the page ---------- */
+  const marks = $$('.scale li'), scaleA = $$('.scale-a');
+  let fifth = -1;
+  const scaleSync = () => {
+    const max = document.documentElement.scrollHeight - innerHeight, p = max > 0 ? scrollY / max : 0;
+    const i = Math.min(4, Math.floor(p * 5 + 1e-6));
+    if (i === fifth) return;
+    fifth = i;
+    marks.forEach((m, k) => m.classList.toggle('is-on', k === i));
+    scaleA[i].style.fontSize = marks[i].dataset.px + 'px';
+  };
+  let scRaf = 0;
+  addEventListener('scroll', () => { if (!scRaf) scRaf = requestAnimationFrame(() => { scRaf = 0; scaleSync(); }); }, { passive: true });
+
+  /* ---------- Everything that depends on size ---------- */
+  const layoutAll = () => { metrics(); placeRule(); renderSpec(); drawStory(); renderTester(); mark.size(); if (!slip.hidden) drawNames(); fifth = -1; scaleSync(); };
+  let lastW = innerWidth, lastH = innerHeight, rz = 0;
+  addEventListener('resize', () => {
+    clearTimeout(rz);
+    rz = setTimeout(() => { if (innerWidth === lastW && Math.abs(innerHeight - lastH) < 80 && innerWidth < 768) return; lastW = innerWidth; lastH = innerHeight; layoutAll(); ScrollTrigger?.refresh?.(); }, 120);
+  });
+  layoutAll();
+  document.fonts?.ready.then(() => layoutAll());
+  const ScrollTrigger = window.ScrollTrigger;
+
+  if (!lib) return;
+
+  /* ================= Motion ================= */
+  gsap.registerPlugin(ScrollTrigger);
+  const fontsReady = Promise.race([
+    document.fonts.load('16px "Departure Mono"').then(() => 'font', () => 'font'),
+    new Promise((r) => setTimeout(() => r('timeout'), 1500))
+  ]);
+  const visible = new Promise((r) => {
+    if (document.visibilityState === 'visible') return r();
+    const f = () => { if (document.visibilityState === 'visible') { document.removeEventListener('visibilitychange', f); r(); } };
+    document.addEventListener('visibilitychange', f);
+  });
+  let played = false;
+
+  const mm = gsap.matchMedia();
+  mm.add({
+    motion: '(prefers-reduced-motion: no-preference)',
+    reduce: '(prefers-reduced-motion: reduce)',
+    fine: '(hover: hover) and (pointer: fine)'
+  }, (ctx) => {
+    const { motion } = ctx.conditions;
+    if (!motion) { root.classList.add('go'); return; } // reduced: final states, native scroll, no pin, no loops
+
+    let dead = false;
+    const off = [], calls = [], dcalls = [];
+    const on = (el, type, fn, opt) => { el.addEventListener(type, fn, opt); off.push(() => el.removeEventListener(type, fn, opt)); };
+    const later = (ms, fn, list = calls) => { const c = gsap.delayedCall(ms / 1000, fn); list.push(c); return c; };
+    const T = Object.fromEntries(['frame', 'line', 'metrics', 'ink', 'word', 'home', 'crop', 'proof'].map((k) => [k, dur(k)]));
+
+    root.classList.add('fx'); // the story becomes a pinned scene
+    drawStory();
+
+    // Lenis on GSAP's clock. Touch keeps native scrolling.
+    lenis = new Lenis({ lerp: .1, smoothWheel: true, autoRaf: false, anchors: true });
+    lenis.on('scroll', ScrollTrigger.update);
+    const tick = (t) => lenis.raf(t * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
+
+    /* ---------- Pinned scene: five drafts of the g ---------- */
+    const chs = $$('.ch'), strip = $$('.strip li');
+    let chap = -1;
+    const setChap = (i) => {
+      if (i === chap) return; chap = i;
+      chs.forEach((el, k) => el.classList.toggle('is-on', k === i));
+      strip.forEach((el, k) => el.classList.toggle('is-on', k === i));
+    };
+    const st = ScrollTrigger.create({
+      trigger: '.story-track', start: 'top top', end: 'bottom bottom',
+      onUpdate: (self) => setChap(Math.min(4, Math.floor(self.progress * 5))),
+      onRefresh: (self) => setChap(Math.min(4, Math.floor(self.progress * 5)))
+    });
+    setChap(Math.min(4, Math.floor(st.progress * 5)));
+
+    /* ---------- Sign-off: the pointer pushes pixels, which walk home ---------- */
+    let awake = false, inView = false, acc = 0, ptrIn = false;
+    const frame = (t, dms) => {
+      acc += Math.min(dms, 200);
+      let moving = true;
+      while (acc >= T.home) { acc -= T.home; moving = mark.step(); }
+      if (!moving && !ptrIn) sleep();
+    };
+    const wake = () => { if (awake || !inView) return; awake = true; acc = T.home; gsap.ticker.add(frame); };
+    const sleep = () => { if (!awake) return; awake = false; gsap.ticker.remove(frame); };
+    const io = new IntersectionObserver(([e]) => { inView = e.isIntersecting; if (!inView) { sleep(); mark.home(); } });
+    io.observe(markCv);
+    off.push(() => io.disconnect());
+    const at = (e) => { const r = markCv.getBoundingClientRect(); return [(e.clientX - r.left) / mark.cell, (e.clientY - r.top) / mark.cell]; };
+    on(markCv, 'pointermove', (e) => { if (e.pointerType === 'touch' && !e.buttons && e.pressure === 0) return; ptrIn = true; mark.push(...at(e)); wake(); });
+    on(markCv, 'pointerdown', (e) => { ptrIn = true; mark.push(...at(e)); wake(); });
+    const leave = () => { ptrIn = false; mark.release(); wake(); };
+    on(markCv, 'pointerleave', leave);
+    on(markCv, 'pointercancel', leave);
+    on(markCv, 'pointerup', (e) => { if (e.pointerType !== 'mouse') leave(); });
+
+    /* ---------- Hooks for the plain-JS flows ---------- */
+    const crops = $$('.crop'), slipBody = $('.slip-body');
+    fx = {
+      dialogReset() { dcalls.splice(0).forEach((c) => c.kill()); delete dlg.dataset.stage; },
+      // The specimen sheet arrives through three sizes of its title, one frame each, then the sheet.
+      dialogIn(done) {
+        dlg.dataset.stage = '1';
+        later(T.frame, () => { dlg.dataset.stage = '2'; }, dcalls);
+        later(2 * T.frame, () => { dlg.dataset.stage = '3'; }, dcalls);
+        later(3 * T.frame, () => { delete dlg.dataset.stage; done(); }, dcalls);
+      },
+      dialogOut(end) {
+        dlg.dataset.stage = '3';
+        later(T.frame, () => { dlg.dataset.stage = '2'; }, dcalls);
+        later(2 * T.frame, () => { dlg.dataset.stage = '1'; }, dcalls);
+        later(3 * T.frame, () => { delete dlg.dataset.stage; end(); }, dcalls);
+      },
+      // The proof: four crop marks one after another, the typeface names, then the details.
+      success() {
+        crops.forEach((c) => { c.style.visibility = 'hidden'; });
+        slipNames.style.visibility = 'hidden'; slipBody.style.opacity = '0'; // opacity, so the heading keeps its focus
+        crops.forEach((c, i) => later((i + 1) * T.crop, () => { c.style.visibility = ''; }));
+        later(4 * T.crop + T.proof, () => { slipNames.style.visibility = ''; });
+        later(4 * T.crop + 2 * T.proof, () => { slipBody.style.opacity = ''; });
+      },
+      successReset() { calls.splice(0).forEach((c) => c.kill()); [...crops, slipNames].forEach((el) => { el.style.visibility = ''; }); slipBody.style.opacity = ''; }
+    };
+
+    /* ---------- Load: proofing ---------- */
+    const cutEls = $$('[data-cut]'), stage = $('.ed-stage'), spec = $('.ed-stage-s');
+    const showGuides = (ln, f, gs) => { // baseline, x-height and cap height across the full width of one line
+      const box = document.createElement('div');
+      [['cap height', ln.base - M.cap * f], ['x-height', ln.base - M.x * f], ['baseline', ln.base]].forEach(([name, y]) => {
+        const d = document.createElement('div'); d.className = 'gd'; d.style.top = Math.round(y) + 'px';
+        const s = document.createElement('span'); s.textContent = name; d.append(s); box.append(d);
+      });
+      h2guides.append(box); gs.push(box);
+      return box;
+    };
+    Promise.all([fontsReady, visible]).then(() => ctx.add(() => {
+      if (dead) return;
+      layoutAll();
+      ScrollTrigger.refresh();
+      if (played) { root.classList.add('go'); return; }
+      played = true;
+      // Split the headline into its lines so each can cut in on its own.
+      const text = h2.textContent, { f, lines } = lineBoxes();
+      const words = text.split(' ');
+      h2.textContent = '';
+      const spans = words.map((w, i) => { const s = document.createElement('span'); s.textContent = w + (i < words.length - 1 ? ' ' : ''); h2.append(s); return s; });
+      const r0 = h2wrap.getBoundingClientRect();
+      const lineOf = spans.map((s) => { const t = s.getBoundingClientRect().top - r0.top; let k = 0; lines.forEach((l, j) => { if (t >= l.top - 4) k = j; }); return k; });
+      const lns = lines.map(() => { const s = document.createElement('span'); s.className = 'ln'; return s; });
+      h2.textContent = '';
+      spans.forEach((s, i) => lns[lineOf[i]].append(s));
+      lns.forEach((l) => { l.style.visibility = 'hidden'; h2.append(l); });
+      cutEls.forEach((el) => { el.style.visibility = 'hidden'; });
+      h2rule.style.visibility = 'hidden';
+      reveal = -1; renderGrid();
+      specWords = 0; renderSpec();
+      spec.style.visibility = 'hidden';
+      root.classList.add('go');
+
+      const gs = [];
+      const tl = gsap.timeline({ onComplete: () => { h2.textContent = text; } });
+      off.push(() => tl.kill());
+      const s = (ms) => ms / 1000;
+      lns.forEach((l, i) => {
+        tl.call(() => { l.style.visibility = ''; showGuides(lines[i], f, gs); }, null, s(i * T.line));
+        tl.call(() => { gs[i]?.remove(); if (i === lns.length - 1) h2rule.style.visibility = ''; }, null, s(i * T.line + T.metrics));
+      });
+      // The editor: the empty grid and its guides, then ink row by row from the cap height down, then the specimen word by word.
+      const e0 = 120;
+      for (let r = 0; r < ROWS; r++) tl.call(() => { reveal = r + 1; renderGrid(); }, null, s(e0 + (r + 1) * T.ink));
+      const w0 = e0 + (ROWS + 2) * T.ink;
+      tl.call(() => { spec.style.visibility = ''; }, null, s(w0));
+      SPECIMEN.split(' ').forEach((_, k) => tl.call(() => { specWords = k + 1; renderSpec(); }, null, s(w0 + (k + 1) * T.word)));
+      tl.call(() => { cutEls[0].style.visibility = ''; }, null, s(lns.length * T.line));
+      tl.call(() => { cutEls[1].style.visibility = ''; }, null, s((lns.length + 1) * T.line));
+      tl.call(() => { reveal = ROWS; specWords = Infinity; renderGrid(); renderSpec(); }, null, s(Math.max(lns.length * T.line + T.metrics, w0 + 7 * T.word)));
+    }));
+
+    return () => {
+      dead = true;
+      off.forEach((fn) => fn());
+      [...calls, ...dcalls].forEach((c) => c.kill()); calls.length = dcalls.length = 0;
+      sleep(); mark.home(); mark.nudge(0);
+      st.kill();
+      fx = null;
+      delete dlg.dataset.stage;
+      gsap.ticker.remove(tick);
+      gsap.ticker.lagSmoothing(500, 33);
+      lenis.destroy(); lenis = null;
+      root.classList.remove('fx');
+      root.classList.add('go');
+      h2guides.innerHTML = '';
+      if (h2.querySelector('.ln')) h2.textContent = h2.textContent;
+      [...$$('[data-cut]'), h2rule, $('.ed-stage-s'), ...$$('.crop'), $('.slip-names')].forEach((el) => { el.style.visibility = ''; }); $('.slip-body').style.opacity = '';
+      $$('.ch').forEach((el, k) => el.classList.toggle('is-on', k === 0));
+      reveal = ROWS; specWords = Infinity;
+      layoutAll();
+    };
+  });
+})();
+</script>
+</body>
+</html>

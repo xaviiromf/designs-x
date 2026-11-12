@@ -1,0 +1,1638 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>bitlark: game music in four channels</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Handjet:ELGR,ELSH,wght@1..2,0..16,100..900&family=Host+Grotesk:wght@300..800&display=swap">
+<style>
+  :root {
+    /* Colour: a tracker on an aubergine screen. Every hue has one job. Ratios are on --aubergine / --well / --beat. */
+    --aubergine: #40103C;   /* the ground; also the ink on lit blocks, inverted bands and filled buttons */
+    --well: #2B0A29;        /* the ground, darker: the pattern's well and the wells of form fields (1.15:1, decorative) */
+    --beat: #5A1D55;        /* the ground, lighter: every fourth row of a pattern, the beat rows (1.28:1, decorative) */
+    --scrim: rgb(34 8 32 / .9);   /* the ground, darker: the dialog backdrop */
+    --sheet: #FBF0F8;       /* text (13.9:1 / 16.1:1 / 10.9:1); the inverted band of the current row (aubergine on it 13.9:1); soundtrack cells in the output chart */
+    --rest: #C9AEC6;        /* secondary text, rules, empty pattern cells (7.6:1 / 8.8:1 / 5.9:1); jingle cells in the output chart */
+    --rest-deep: #957192;   /* the third tone of the output chart, sound effect packs (3.7:1 on the ground); never text */
+    --pulse-1: #FFE156;     /* pulse channel 1: its notes, meter and mute button (11.9:1 / 13.7:1) */
+    --pulse-2: #6BE4FF;     /* pulse channel 2: its notes, meter and mute button (10.4:1 / 12.0:1) */
+    --triangle: #8AF0A0;    /* triangle bass: its notes, meter and mute button (11.1:1 / 12.8:1) */
+    --noise: #FF9C8A;       /* noise channel: its drums, meter and mute button (7.6:1 / 8.8:1) */
+    --cursor: #FFB3EC;      /* the playhead (pattern row and song order), the edit cursor's frame, the primary button, focus rings (9.5:1 / 11.0:1; aubergine on it 9.5:1) */
+
+    /* Type */
+    --font-display: "Handjet", "Arial Narrow", sans-serif;
+    --font-text: "Host Grotesk", system-ui, sans-serif;
+    --modules: "ELSH" 2, "ELGR" 1;   /* square Handjet modules */
+    --t-small: 13px;
+    --t-data: 15px;          /* pattern cells, tables */
+    --t-body: 17px;
+    --t-lede: 19px;
+    --t-h3: 24px;            /* part headings (Host Grotesk 600) */
+    --t-num: 64px;           /* Handjet numerals: the row readout and the year total */
+    --t-h2: clamp(44px, 5.2vw, 78px);
+    --lh-body: 1.55;
+    --lh-lede: 1.45;
+
+    /* Space: an 8px cell */
+    --cell: 8px;
+    --s1: 4px; --s2: 8px; --s3: 16px; --s4: 24px;
+    --s5: 32px; --s6: 48px; --s7: 72px; --s8: 96px;
+    --notch: 4px;            /* stepped corner on buttons and panels */
+    --tap: 48px;             /* button and field height */
+    --hit: 44px;             /* minimum target for text actions */
+    --max-w: 1328px;
+    --orders-w: 132px;       /* the order list's column on desktop */
+    --deck-w: 344px;         /* the side column: track list, readouts */
+    --strip-h: 56px;         /* the order list as a strip on phones */
+    --gut: 56px;             /* row-number gutter of a pattern */
+    --row: 22px;             /* one pattern row */
+    --pulse-p: 16px;         /* period of the pulse wave on a button's edge */
+    --tooth: 8px;            /* height of its teeth */
+    --u: 6px;                /* output chart: one cell is two minutes of music */
+    --stick: 0px;            /* where the pattern's head sticks (under the strip on phones) */
+
+    /* Motion: hard cuts on a clock. CSS and the script read these. */
+    --d-block: .09s;         /* load: between blocks of eight rows */
+    --d-kick: .09s;          /* load: between the four meters kicking in channel order */
+    --d-fall: .07s;          /* a meter falls one cell */
+    --d-duty: .09s;          /* button hover: 25% duty is held this long before 50% */
+    --d-press: .14s;         /* a press is shown at least this long */
+    --d-vib: .18s;           /* link vibrato: three phase shifts, 60 ms apart */
+    --d-tap: .2s;            /* link vibrato held after a touch */
+    --d-strip: .06s;         /* dialog: between its four strips */
+  }
+  @media (max-width: 1023px) { :root { --stick: var(--strip-h); } }
+  @media (max-width: 599px) {
+    :root { --t-body: 16px; --t-lede: 17px; --gut: 40px; --row: 24px; --t-num: 48px; --s7: 56px; }
+  }
+  @media (min-width: 1024px) and (max-height: 720px) { :root { --row: 20px; --t-h2: 56px; } }
+
+  /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+
+  /* Hidden only when the script runs, and only until the load sequence takes over (it sets the same state inline). */
+  html.js:not(.go) #rows .row { visibility: hidden; }
+  @media (prefers-reduced-motion: reduce) {
+    html.js:not(.go) #rows .row { visibility: visible; }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { background: var(--aubergine); }
+  body {
+    margin: 0;
+    background: var(--aubergine);
+    color: var(--sheet);
+    font: 400 var(--t-body)/var(--lh-body) var(--font-text);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  :focus-visible { outline: 2px solid var(--cursor); outline-offset: 3px; }
+  ::selection { background: var(--sheet); color: var(--aubergine); }
+  .vh {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+  }
+  [hidden] { display: none !important; }
+  [data-ch="0"] { --ch: var(--pulse-1); }
+  [data-ch="1"] { --ch: var(--pulse-2); }
+  [data-ch="2"] { --ch: var(--triangle); }
+  [data-ch="3"] { --ch: var(--noise); }
+
+  /* ---------- The song: order list, top, parts ---------- */
+  .folio {
+    position: relative;
+    overflow: clip;
+    padding-block: var(--s5) var(--s8);
+    padding-inline: max(var(--s4), (100% - var(--max-w)) / 2);
+    background: var(--aubergine);
+  }
+  .wrap { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .main { min-width: 0; }
+  .part { padding-top: var(--s7); scroll-margin-top: calc(var(--stick) - var(--s5)); }
+  .part:first-child { padding-top: 0; scroll-margin-top: calc(var(--stick) + var(--s3)); }
+  .intro { scroll-margin-top: var(--s5); }
+  h3 { margin: 0; font: 600 var(--t-h3)/1.2 var(--font-text); letter-spacing: -.01em; }
+  .sub { margin: var(--s2) 0 0; max-width: 62ch; color: var(--rest); }
+
+  .intro { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s3); padding-bottom: var(--s4); }
+  .h2 {
+    margin: 0;
+    font: 700 var(--t-h2)/.92 var(--font-display);
+    font-variation-settings: var(--modules);
+    letter-spacing: 0;
+    text-wrap: balance;
+  }
+  .lede { margin: 0; max-width: 56ch; font-size: var(--t-lede); line-height: var(--lh-lede); }
+  .actions { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s3); margin-top: var(--s2); }
+  #play { min-width: 11em; }   /* "Stop" is shorter than "Play the pattern": the button keeps its place */
+
+  /* The order list. Desktop: a narrow column pinned to the left edge. Phones: a strip that sticks under the top. */
+  .orders { font-variant-numeric: tabular-nums; }
+  .orders ol { list-style: none; margin: 0; padding: 0; }
+  .orders a {
+    display: flex; align-items: center; gap: var(--s2);
+    min-height: var(--hit);
+    padding: 0 var(--s2);
+    color: var(--sheet);
+    font-weight: 500;
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .o-n { color: var(--rest); }
+  .orders a:hover { background: var(--beat); }
+  .orders a[aria-current] { background: var(--cursor); color: var(--aubergine); font-weight: 600; }   /* the song's playhead */
+  .orders a[aria-current] .o-n { color: var(--aubergine); }
+  .orders a:focus-visible { outline-offset: -2px; outline-color: var(--sheet); }
+  .orders-t, .orders-h { margin: 0; color: var(--rest); font-size: var(--t-small); line-height: 1.45; }
+  .orders-t { padding: 0 var(--s2) var(--s2); border-bottom: 2px solid var(--rest); font-weight: 600; }
+  .orders-h { padding: var(--s3) var(--s2) 0; }
+
+  @media (min-width: 1024px) {
+    .wrap { grid-template-columns: var(--orders-w) minmax(0, 1fr); column-gap: var(--s5); }
+    .orders { grid-column: 1; grid-row: 1 / span 2; align-self: start; position: sticky; top: var(--s4); }
+    .intro { grid-column: 2; grid-row: 1; grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); column-gap: var(--s6); align-items: end; }
+    .main { grid-column: 2; grid-row: 2; }
+  }
+  @media (min-width: 1024px) and (max-width: 1279px) {   /* a narrow desktop: the headline on one line, the lede beside the two buttons */
+    .intro { grid-template-columns: minmax(0, 1fr); }
+    .intro-b { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--s5); align-items: end; }
+    .actions { flex-direction: column; flex-wrap: nowrap; margin-top: 0; }
+    .actions .btn { display: block; }
+  }
+  @media (min-width: 1024px) and (max-height: 720px) {
+    .folio { padding-top: var(--s3); }
+    .intro { padding-bottom: var(--s3); }
+    .orders { top: var(--s3); }
+    .lede { font-size: var(--t-body); }
+    .status { min-height: 48px; }
+  }
+  @media (max-width: 1023px) {
+    .folio { padding-inline: var(--s4); }
+    .orders {
+      position: sticky; top: 0; z-index: 6;
+      margin: 0 calc(-1 * var(--s4)) var(--s4);
+      padding: 0 var(--s4);
+      background: var(--aubergine);
+      border-bottom: 2px solid var(--rest);
+    }
+    .orders-t, .orders-h { display: none; }
+    .orders ol { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    .orders a { flex-direction: column; align-items: flex-start; justify-content: center; gap: 0; height: var(--strip-h); padding: 0 var(--s1) 0 var(--s2); font-size: var(--t-small); line-height: 1.3; }
+  }
+  @media (max-width: 599px) {
+    .folio { padding-inline: var(--s3); }
+    .orders { margin-inline: calc(-1 * var(--s3)); padding-inline: var(--s3); }
+    .actions { display: grid; }
+    .actions .btn { display: block; }
+  }
+
+  /* ---------- Buttons: the top edge is a pulse wave. Corners live on .face and .inner, never on the button. ---------- */
+  .btn {
+    --corners: polygon(0 var(--notch), var(--notch) var(--notch), var(--notch) 0, calc(100% - var(--notch)) 0, calc(100% - var(--notch)) var(--notch), 100% var(--notch), 100% calc(100% - var(--notch)), calc(100% - var(--notch)) calc(100% - var(--notch)), calc(100% - var(--notch)) 100%, var(--notch) 100%, var(--notch) calc(100% - var(--notch)), 0 calc(100% - var(--notch)));
+    position: relative;
+    display: inline-block;
+    padding: var(--tooth) 0;          /* room for the teeth above, and below while pressed */
+    border: 0; background: none;
+    color: inherit;
+    font: 600 var(--t-body)/1.2 var(--font-text);
+    text-decoration: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* Three stacked duty cycles of one wave: 12.5% at rest, 25% (::before), 50% (::after). Each tooth is centred in its period. */
+  .teeth, .teeth::before, .teeth::after {
+    --duty: calc(var(--pulse-p) / 16);   /* half a tooth */
+    background: linear-gradient(90deg, transparent calc(50% - var(--duty)), var(--rim) 0 calc(50% + var(--duty)), transparent 0) 0 0 / var(--pulse-p) 100% repeat-x;
+  }
+  .teeth {
+    position: absolute; left: var(--notch); top: 0;
+    width: calc(100% - 2 * var(--notch));
+    width: round(down, calc(100% - 2 * var(--notch)), var(--pulse-p));
+    height: var(--tooth);
+    pointer-events: none;
+  }
+  .teeth::before, .teeth::after { content: ""; position: absolute; inset: 0; opacity: 0; transition: opacity 0s linear 0s; }
+  .teeth::before { --duty: calc(var(--pulse-p) / 8); }
+  .teeth::after { --duty: calc(var(--pulse-p) / 4); }
+  .btn:focus-visible .teeth::before, .btn.is-down .teeth::before { opacity: 1; }
+  .btn:focus-visible .teeth::after, .btn.is-down .teeth::after { opacity: 1; transition-delay: var(--d-duty); }
+  @media (hover: hover) {
+    .btn:hover .teeth::before { opacity: 1; }
+    .btn:hover .teeth::after { opacity: 1; transition-delay: var(--d-duty); }
+  }
+  .face { display: block; padding: 2px; background: var(--rim); clip-path: var(--corners); }
+  .inner {
+    display: flex; align-items: center; justify-content: center; gap: var(--s2);
+    min-height: calc(var(--tap) - 4px);
+    padding: 0 var(--s4);
+    background: var(--ground);
+    color: var(--ink);
+    clip-path: var(--corners);
+  }
+  .btn-main { --rim: var(--cursor); --ground: var(--cursor); --ink: var(--aubergine); }
+  .btn-line { --rim: var(--sheet); --ground: var(--aubergine); --ink: var(--sheet); }
+  .btn-ch { --rim: var(--ch); --ground: var(--ch); --ink: var(--aubergine); }
+  .is-muted .btn-ch { --ground: var(--well); --ink: var(--ch); }
+  .btn-sm { --tooth: 6px; font-size: var(--t-small); }
+  .btn-sm .inner { min-height: 32px; padding: 0 var(--s2); }
+  /* Pressed: the phase inverts. The teeth hang from the bottom edge and the face swaps ink and ground. */
+  .btn.is-down .teeth { top: auto; bottom: 0; }
+  .btn.is-down .inner { background: var(--ink); color: var(--ground); }
+  .ico { display: block; width: 12px; height: 12px; background: currentColor; clip-path: polygon(0 0, 3px 0, 3px 2px, 6px 2px, 6px 4px, 9px 4px, 9px 5px, 12px 5px, 12px 7px, 9px 7px, 9px 8px, 6px 8px, 6px 10px, 3px 10px, 3px 12px, 0 12px); }
+  .is-playing .ico { clip-path: none; }
+
+  /* ---------- Text links: the underline becomes a square wave, 3px tall on a 6px period, and shifts phase ---------- */
+  .u {
+    position: relative;
+    display: inline-block;
+    min-height: var(--hit);
+    padding: 10px 0;
+    border: 0; background: none;
+    color: var(--sheet);
+    font: inherit; font-weight: 500; line-height: 24px;
+    text-align: left;
+    text-decoration: underline;
+    text-decoration-color: var(--rest);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 5px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .u::before, .u::after {
+    content: "";
+    position: absolute; left: 0; right: 0; top: 33px;
+    height: 3px;
+    opacity: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(90deg, var(--sheet) 0 1px, transparent 0 3px, var(--sheet) 0 4px, transparent 0) var(--ph) 0 / 6px 3px repeat-x,
+      linear-gradient(90deg, var(--sheet) 0 3px, transparent 0) var(--ph) 0 / 6px 1px repeat-x,
+      linear-gradient(90deg, transparent 0 3px, var(--sheet) 0) var(--ph) 2px / 6px 1px repeat-x;
+  }
+  .u::before { --ph: 0px; }
+  .u::after { --ph: 3px; }
+  .u:focus-visible, .u.is-tap { text-decoration-color: transparent; }
+  .u:focus-visible::before, .u.is-tap::before { animation: vib-a var(--d-vib) step-end 1; }
+  .u:focus-visible::after, .u.is-tap::after { opacity: 1; animation: vib-b var(--d-vib) step-end 1; }
+  @media (hover: hover) {
+    .u:hover { text-decoration-color: transparent; }
+    .u:hover::before { animation: vib-a var(--d-vib) step-end 1; }
+    .u:hover::after { opacity: 1; animation: vib-b var(--d-vib) step-end 1; }
+  }
+  @keyframes vib-a { 0% { opacity: 1; } 33.33% { opacity: 0; } 66.66% { opacity: 1; } 100% { opacity: 0; } }
+  @keyframes vib-b { 0% { opacity: 0; } 33.33% { opacity: 1; } 66.66% { opacity: 0; } 100% { opacity: 1; } }
+
+  /* ---------- 01 The pattern ---------- */
+  .pat { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s4); }
+  .deck { min-width: 0; }
+  .tracks { margin: var(--s3) 0 0; padding: 0; border: 0; min-width: 0; }
+  .opts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s1); }
+  .opt { position: relative; display: block; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .opt-face {
+    display: flex; align-items: center;
+    min-height: var(--hit);
+    padding: var(--s1) var(--s2);
+    border: 2px solid var(--rest);
+    color: var(--sheet);
+    font: 500 var(--t-data)/1.2 var(--font-text);
+  }
+  .opt:hover .opt-face { border-color: var(--sheet); }
+  .opt input:checked + .opt-face { border-color: var(--sheet); background: var(--sheet); color: var(--aubergine); font-weight: 600; }
+  .opt input:focus-visible + .opt-face { outline: 2px solid var(--cursor); outline-offset: 3px; }
+  .now { margin: var(--s3) 0 0; color: var(--rest); font-size: var(--t-data); line-height: 1.45; font-variant-numeric: tabular-nums; }
+  .now b { color: var(--sheet); font-weight: 600; }
+  .deck .u { display: block; width: max-content; max-width: 100%; }
+  .sw { display: flex; align-items: center; gap: var(--s3); min-height: var(--hit); font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .sw-box { position: relative; flex: none; width: 44px; height: 24px; border: 2px solid var(--rest); background: var(--well); }
+  .sw-box::after { content: ""; position: absolute; left: 2px; top: 2px; width: 16px; height: 16px; background: var(--rest); }
+  .sw input:checked + .sw-box { border-color: var(--sheet); background: var(--sheet); }
+  .sw input:checked + .sw-box::after { left: 22px; background: var(--aubergine); }
+  .sw input:focus-visible + .sw-box { outline: 2px solid var(--cursor); outline-offset: 3px; }
+  .note { margin: 0; max-width: 46ch; color: var(--rest); font-size: var(--t-small); line-height: 1.45; }
+  .note + .note { margin-top: var(--s2); }
+
+  /* The tracker. One grid template for the head, every row and the readout, so the columns line up. */
+  .trk {
+    --cols: var(--gut) repeat(4, minmax(0, 1fr));
+    position: relative;
+    min-width: 0;
+    background: var(--well);
+    font-variant-numeric: tabular-nums;
+  }
+  .trk-head {
+    position: sticky; top: var(--stick); z-index: 3;
+    display: grid; grid-template-columns: var(--cols);
+    background: var(--well);
+    border-bottom: 2px solid var(--rest);
+  }
+  .trk-play { display: flex; align-items: flex-start; justify-content: center; padding-top: var(--s1); }
+  .trk-play .inner { width: calc(var(--gut) - 16px); padding: 0; }
+  .ch { min-width: 0; padding: var(--s1) var(--s2) var(--s2); border-left: 2px solid var(--aubergine); }
+  .ch-top { display: flex; flex-direction: column; align-items: flex-start; }
+  .ch-name { color: var(--ch); font: 600 var(--t-small)/20px var(--font-text); white-space: nowrap; }
+  .is-muted .ch-name { text-decoration: line-through; }
+  .meter { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 2px; height: 10px; margin-top: var(--s1); }
+  .meter i { background: var(--beat); }
+  .meter i.on { background: var(--ch); }
+  @media (min-width: 1280px) {
+    .ch-top { flex-direction: row; align-items: center; justify-content: space-between; gap: var(--s2); }
+  }
+  .row {
+    display: grid; grid-template-columns: var(--cols);
+    height: var(--row);
+    font: 500 var(--t-data)/var(--row) var(--font-text);
+    letter-spacing: .02em;
+  }
+  .row:nth-child(4n + 1) { background: var(--beat); }
+  .rn { padding-right: var(--s2); color: var(--rest); text-align: right; }
+  .cell {
+    padding-left: var(--s3);
+    border-left: 2px solid var(--aubergine);
+    color: var(--sheet);
+    white-space: nowrap; overflow: hidden;
+    scroll-margin: 200px 0 96px;
+    cursor: default;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .cell.is-empty { color: var(--rest); }
+  .cell:focus { outline: none; }   /* the edit cursor below is the focus indicator, drawn identically for pointer and keys */
+  /* The edit cursor: the row is inverted as a band; the cell under the cursor stays dark, framed, its note in its channel's hue. */
+  .row.is-edit { background: var(--sheet); }
+  .row.is-edit .rn, .row.is-edit .cell { color: var(--aubergine); }
+  .row.is-edit .cell.is-at { background: var(--well); color: var(--ch); outline: 2px solid var(--cursor); outline-offset: -2px; }
+  .row.is-edit .cell.is-at.is-empty { color: var(--rest); }
+  /* The playhead: a solid bar; the notes under it are blocks of their channel's hue. */
+  .row.is-play { background: var(--cursor); }
+  .row.is-play .rn, .row.is-play .cell { color: var(--aubergine); font-weight: 700; }
+  .row.is-play .cell.is-note { background: var(--ch); }
+  .trk.m0 .cell.is-note[data-ch="0"], .trk.m1 .cell.is-note[data-ch="1"], .trk.m2 .cell.is-note[data-ch="2"], .trk.m3 .cell.is-note[data-ch="3"] { color: var(--rest); text-decoration: line-through; }
+  .trk.m0 .is-play .cell.is-note[data-ch="0"], .trk.m1 .is-play .cell.is-note[data-ch="1"], .trk.m2 .is-play .cell.is-note[data-ch="2"], .trk.m3 .is-play .cell.is-note[data-ch="3"],
+  .trk.m0 .is-edit .cell.is-note[data-ch="0"], .trk.m1 .is-edit .cell.is-note[data-ch="1"], .trk.m2 .is-edit .cell.is-note[data-ch="2"], .trk.m3 .is-edit .cell.is-note[data-ch="3"] { background: none; color: var(--aubergine); font-weight: 500; }
+  .trk .is-edit .cell.is-at.is-note { background: var(--well); }
+  /* The readout: a last row that sticks to the bottom of the screen while the pattern is taller than it. */
+  .status {
+    position: sticky; bottom: 0; z-index: 3;
+    display: grid; grid-template-columns: var(--cols);
+    min-height: 56px;
+    background: var(--well);
+    border-top: 2px solid var(--rest);
+  }
+  .st-row { display: flex; align-items: center; justify-content: flex-end; padding-right: var(--s2); }
+  .st-row b { font: 700 calc(var(--t-num) * .66)/1 var(--font-display); font-variation-settings: var(--modules); }
+  .st-ch { display: flex; flex-direction: column; justify-content: center; min-width: 0; padding-left: var(--s3); border-left: 2px solid var(--aubergine); line-height: 1.25; }
+  .st-ch b { color: var(--ch); font-weight: 600; }
+  .st-ch small { color: var(--rest); font-size: var(--t-small); white-space: nowrap; }
+
+  @media (min-width: 1024px) {
+    .pat { grid-template-columns: minmax(0, 1fr) var(--deck-w); column-gap: var(--s4); }
+    .deck { grid-column: 2; grid-row: 1 / span 2; align-self: start; position: sticky; top: var(--s3); }
+    .pat > .trk { grid-column: 1; grid-row: 1; }
+    .pat > .disc { grid-column: 1; grid-row: 2; }
+  }
+  @media (min-width: 600px) and (max-width: 1023px) {
+    .opts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+  @media (max-width: 599px) {
+    .ch { padding-inline: var(--s1); }
+    .ch .btn { display: block; width: 100%; }
+    .cell, .st-ch { padding-left: var(--s2); }
+    .st-ch small { font-size: 12px; }
+  }
+
+  /* Disclosures: "read it as a table". An instant open, no animation. */
+  .disc { min-width: 0; }
+  .disc summary {
+    display: flex; align-items: center; gap: var(--s2);
+    width: max-content; max-width: 100%;
+    min-height: var(--hit);
+    font-weight: 500;
+    list-style: none;
+    cursor: pointer;
+  }
+  .disc summary::-webkit-details-marker { display: none; }
+  .disc summary::before { content: ""; flex: none; width: 12px; height: 12px; background: var(--rest); clip-path: polygon(0 5px, 5px 5px, 5px 0, 7px 0, 7px 5px, 12px 5px, 12px 7px, 7px 7px, 7px 12px, 5px 12px, 5px 7px, 0 7px); }
+  .disc[open] summary::before { clip-path: polygon(0 5px, 12px 5px, 12px 7px, 0 7px); }
+  .disc summary:hover::before { background: var(--sheet); }
+  .tbl { width: 100%; border-collapse: collapse; font-size: var(--t-data); font-variant-numeric: tabular-nums; }
+  .tbl caption { padding: var(--s2) 0; color: var(--rest); text-align: left; }
+  .tbl th, .tbl td { padding: var(--s1) var(--s2) var(--s1) 0; border-bottom: 1px solid var(--beat); text-align: left; font-weight: 400; vertical-align: top; }
+  .tbl thead th { border-bottom: 2px solid var(--rest); color: var(--rest); font-weight: 600; }
+  .tbl tbody th { color: var(--rest); }
+  .tbl .num { text-align: right; }
+
+  /* ---------- 02 Output: minutes of music a year, as nine tall meters ---------- */
+  .out { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s4); margin-top: var(--s4); }
+  .plot {
+    --yl: 32px;
+    position: relative;
+    display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); column-gap: var(--s1);
+    padding-left: 36px;
+  }
+  .plot::before {   /* a rule every 20 minutes */
+    content: "";
+    position: absolute; left: 0; right: 0; bottom: var(--yl);
+    height: var(--plot-h);
+    background: repeating-linear-gradient(to top, var(--beat) 0 2px, transparent 2px calc(var(--u) * 10));
+  }
+  .ax { position: absolute; left: 0; color: var(--rest); font-size: var(--t-small); line-height: 1; font-variant-numeric: tabular-nums; transform: translateY(50%); }
+  .yr {
+    position: relative;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    height: calc(var(--plot-h) + 24px + var(--yl));
+    min-width: 0;
+    padding: 0; border: 0; background: none;
+    color: var(--rest);
+    font: 500 var(--t-small)/1 var(--font-text);
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .yr:focus-visible { outline-offset: 1px; }
+  .yr-n { display: block; height: 20px; }
+  .yr-bar { display: flex; flex-direction: column-reverse; margin: 0 var(--s1); }
+  .yr-bar i { display: block; height: calc(var(--n) * var(--u)); background: repeating-linear-gradient(to top, var(--tone) 0 calc(var(--u) - 1px), transparent calc(var(--u) - 1px) var(--u)); }
+  .k-st { --tone: var(--sheet); }
+  .k-jg { --tone: var(--rest); }
+  .k-fx { --tone: var(--rest-deep); }
+  .yr-y { display: flex; align-items: center; justify-content: center; height: 28px; margin-top: var(--s1); }
+  .yr[aria-checked="true"] { color: var(--sheet); font-weight: 700; }
+  .yr[aria-checked="true"] .yr-bar { outline: 2px solid var(--sheet); outline-offset: 2px; }
+  .yr[aria-checked="true"] .yr-y { background: var(--sheet); color: var(--aubergine); }
+  .out-big { display: flex; align-items: baseline; gap: var(--s2); margin: 0; font-variant-numeric: tabular-nums; }
+  .out-big b { font: 700 var(--t-num)/.9 var(--font-display); font-variation-settings: var(--modules); }
+  .out-kinds { list-style: none; margin: var(--s3) 0 0; padding: 0; font-variant-numeric: tabular-nums; }
+  .out-kinds li { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; align-items: center; gap: var(--s2); padding: var(--s1) 0; border-bottom: 1px solid var(--beat); }
+  .out-kinds i { width: 12px; height: 12px; background: var(--tone); }
+  .out-kinds b { font-weight: 600; }
+  .out-read .note { margin-top: var(--s3); }
+  @media (min-width: 900px) {
+    .out { grid-template-columns: minmax(0, 1fr) var(--deck-w); column-gap: var(--s5); align-items: end; }
+  }
+  @media (max-width: 599px) {
+    .plot { padding-left: 28px; column-gap: 0; }
+    .y-c { display: none; }
+  }
+
+  /* ---------- 03 Selected work ---------- */
+  .work { margin-top: var(--s3); }
+  .work th, .work td { padding: 0 var(--s3) 0 0; vertical-align: middle; }
+  .work tbody tr:hover { background: var(--beat); }
+  .work tbody th { color: var(--sheet); }
+  .cur-tag { display: none; margin-left: var(--s3); color: var(--rest); font-size: var(--t-small); }
+  .is-cur .cur-tag { display: inline; }
+  .clients { margin: var(--s4) 0 0; max-width: 70ch; color: var(--rest); }
+  .clients b { color: var(--sheet); font-weight: 600; }
+  @media (max-width: 699px) {
+    .work thead { display: none; }
+    .work tbody tr { display: grid; grid-template-columns: repeat(3, auto); justify-content: start; column-gap: var(--s4); padding-bottom: var(--s2); border-bottom: 1px solid var(--beat); }
+    .work td { white-space: nowrap; }
+    .work td.g { white-space: normal; }
+    .work tbody th { grid-column: 1 / -1; }
+    .work tbody th, .work tbody td { border: 0; }
+    .work td.g { grid-column: 1 / -1; }
+    .work td.num { text-align: left; }
+    .work td::before { content: attr(data-l) " "; color: var(--rest); }
+  }
+
+  /* ---------- 04 Contact: links and the enquiry, laid out as a short pattern ---------- */
+  .con { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s5); margin-top: var(--s3); }
+  .links { list-style: none; margin: var(--s3) 0 0; padding: 0; }
+  .links li { display: grid; grid-template-columns: 6.5em minmax(0, 1fr); align-items: center; border-bottom: 1px solid var(--beat); }
+  .links .k { color: var(--rest); }
+  .links .u { overflow-wrap: anywhere; }
+  .swap { min-width: 0; }
+  .enq { --g: 48px; --lab: 188px; background: var(--well); }
+  .f-item:nth-child(4n + 1) .f-row { background: var(--beat); }
+  .f-row {
+    display: grid; grid-template-columns: var(--g) var(--lab) minmax(0, 1fr); align-items: center;
+    min-height: 64px;
+    padding: var(--s2) var(--s2) var(--s2) 0;
+  }
+  .f-n { padding-right: var(--s2); color: var(--rest); text-align: right; font-variant-numeric: tabular-nums; }
+  .f-row label { font-weight: 600; }
+  .f-row label small { display: block; color: var(--rest); font-size: var(--t-small); font-weight: 400; }
+  .f-row input, .f-row select, .f-row textarea {
+    display: block;
+    width: 100%; height: var(--tap);
+    padding: 0 var(--s3);
+    border: 2px solid var(--rest);
+    border-radius: 0;
+    background: var(--well);
+    color: var(--sheet);
+    font: inherit;
+    appearance: none;
+  }
+  .f-row :is(input, select, textarea) { scroll-margin: calc(var(--stick) + var(--s7)) 0 var(--s8); }   /* a focused field never lands under the order strip */
+  .f-row textarea { height: 104px; padding-block: var(--s2); resize: vertical; }
+  .f-row select { padding-right: var(--s6); cursor: pointer; }
+  .f-row option { background: var(--well); color: var(--sheet); }
+  .f-sel { position: relative; }
+  .f-sel::after {
+    content: "";
+    position: absolute; right: var(--s3); top: 50%;
+    width: 12px; height: 6px; margin-top: -3px;
+    background: var(--rest);
+    clip-path: polygon(0 0, 12px 0, 12px 2px, 10px 2px, 10px 4px, 8px 4px, 8px 6px, 4px 6px, 4px 4px, 2px 4px, 2px 2px, 0 2px);
+    pointer-events: none;
+  }
+  .f-row input:hover, .f-row select:hover, .f-row textarea:hover { border-color: var(--sheet); }
+  /* The current row: label and field together are inverted as a band, like the row under the tracker's cursor. */
+  .f-item .f-row:focus-within { background: var(--sheet); color: var(--aubergine); }
+  .f-row:focus-within .f-n, .f-row:focus-within label small { color: var(--aubergine); }
+  .f-row:focus-within :is(input, select, textarea) { border-color: var(--aubergine); outline: 2px solid var(--cursor); outline-offset: -4px; }
+  .f-msg {
+    display: flex; align-items: center; gap: var(--s2);
+    min-height: 32px;
+    margin: 0;
+    padding: var(--s1) var(--s2) var(--s1) calc(var(--g) + var(--lab));
+    color: var(--rest);
+    font-size: var(--t-small); line-height: 1.45;
+  }
+  .f-item.is-bad .f-msg { color: var(--sheet); font-weight: 600; }
+  .f-item.is-bad .f-msg::before {   /* errors have no hue of their own: a hatched bar in the text colour */
+    content: ""; flex: none;
+    width: 24px; height: 12px;
+    background: repeating-linear-gradient(135deg, var(--sheet) 0 2px, transparent 2px 5px);
+  }
+  .f-item.is-bad :is(input, select, textarea) { border-color: var(--sheet); }
+  .f-end { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s4); padding: var(--s3) var(--s3) var(--s3) var(--g); }
+  .done { padding: var(--s4); background: var(--well); }
+  .done h3:focus { outline: none; }   /* focus lands here only to announce the result */
+  .done > p { margin: var(--s2) 0 0; max-width: 56ch; }
+  .echo { margin: var(--s3) 0 0; }
+  .echo > div { display: grid; grid-template-columns: 7.5em minmax(0, 1fr); gap: var(--s2); padding: var(--s1) 0; border-bottom: 1px solid var(--beat); }
+  .echo dt { color: var(--rest); }
+  .echo dd { margin: 0; font-weight: 500; overflow-wrap: anywhere; }
+  .fan { max-width: 440px; margin-top: var(--s4); border: 2px solid var(--rest); }
+  .fan .trk-head { position: static; }
+  .fan .ch { padding-top: var(--s2); }
+  .done .btn { margin-top: var(--s3); }
+  @media (min-width: 1200px) {
+    .con { grid-template-columns: var(--deck-w) minmax(0, 1fr); column-gap: var(--s5); }
+    .swap { grid-column: 2; grid-row: 1; }
+    .con-a { grid-column: 1; grid-row: 1; }
+  }
+  @media (max-width: 599px) {
+    .enq { --g: 40px; }
+    .f-row { grid-template-columns: var(--g) minmax(0, 1fr); row-gap: var(--s1); }
+    .f-n { grid-row: 1 / span 2; align-self: start; padding-top: 2px; }
+    .f-row label, .f-row .f-in { grid-column: 2; }
+    .f-msg { padding-left: var(--g); }
+    .done { padding: var(--s3); }
+  }
+
+  /* ---------- Track sheet dialog: four strips, one per channel ---------- */
+  .sheet {
+    width: min(620px, 100% - 2 * var(--s3));
+    max-width: none;
+    max-height: calc(100dvh - 2 * var(--s3));
+    margin: auto;
+    padding: 0; border: 0;
+    background: none;
+    color: var(--sheet);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .sheet::backdrop { background: var(--scrim); }
+  .sheet-rim, .sheet-in {
+    --n: calc(2 * var(--notch));
+    clip-path: polygon(0 var(--n), var(--n) var(--n), var(--n) 0, calc(100% - var(--n)) 0, calc(100% - var(--n)) var(--n), 100% var(--n), 100% calc(100% - var(--n)), calc(100% - var(--n)) calc(100% - var(--n)), calc(100% - var(--n)) 100%, var(--n) 100%, var(--n) calc(100% - var(--n)), 0 calc(100% - var(--n)));
+  }
+  .sheet-rim { padding: 2px; background: var(--rest); }
+  .sheet-in { padding: var(--s4) var(--s5) var(--s5); background: var(--aubergine); }
+  .sheet-head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--s3); }
+  .sheet h2 { margin: var(--s2) 0 0; font: 700 48px/.92 var(--font-display); font-variation-settings: var(--modules); }
+  .sheet-sub { margin: var(--s2) 0 0; color: var(--rest); }
+  .sheet-facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: var(--s3) 0 0; background: var(--well); font-variant-numeric: tabular-nums; }
+  .sheet-facts > div { padding: var(--s2) var(--s3); border-left: 2px solid var(--aubergine); }
+  .sheet-facts > div:first-child { border-left: 0; }
+  .sheet-facts dt { color: var(--rest); font-size: var(--t-small); }
+  .sheet-facts dd { margin: 0; font-weight: 600; }
+  .sheet h3 { margin-top: var(--s4); font-size: var(--t-body); letter-spacing: 0; }
+  .sheet-in > p { margin: var(--s1) 0 0; }
+  .credits { margin: var(--s1) 0 0; }
+  .credits > div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s3); padding: var(--s1) 0; border-bottom: 1px solid var(--beat); }
+  .credits dt { color: var(--rest); }
+  .credits dd { margin: 0; }
+  .sheet-end { margin-top: var(--s3); }
+  @media (max-width: 599px) {
+    .sheet-in { padding: var(--s3) var(--s3) var(--s4); }
+    .sheet h2 { font-size: 40px; }
+    .sheet-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .sheet-facts > div:nth-child(3) { border-left: 0; }
+    .credits > div { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition-duration: 0s !important; transition-delay: 0s !important; }
+  }
+</style>
+</head>
+<body>
+
+<section class="folio" id="folio" aria-labelledby="folio-title">
+  <div class="wrap">
+    <header class="intro" id="top">
+      <h2 class="h2" id="folio-title">Game music in four channels.</h2>
+      <div class="intro-b">
+        <p class="lede">Mirela Dvořák writes as bitlark, in Brno: soundtracks, jingles and sound effect packs for indie games, on two pulse channels, a triangle bass and a noise channel.</p>
+        <div class="actions">
+          <a class="btn btn-main" href="#contact"><span class="teeth" aria-hidden="true"></span><span class="face"><span class="inner"><span class="label">Commission a soundtrack</span></span></span></a>
+          <button class="btn btn-line" id="play" type="button"><span class="teeth" aria-hidden="true"></span><span class="face"><span class="inner"><span class="label">Play the pattern</span></span></span></button>
+        </div>
+      </div>
+    </header>
+
+    <nav class="orders" aria-label="Song orders">
+      <p class="orders-t">Orders</p>
+      <ol>
+        <li><a href="#top" aria-current="true"><span class="o-n">00</span><span class="o-t">Top</span></a></li>
+        <li><a href="#pattern"><span class="o-n">01</span><span class="o-t">Pattern</span></a></li>
+        <li><a href="#output"><span class="o-n">02</span><span class="o-t">Output</span></a></li>
+        <li><a href="#work"><span class="o-n">03</span><span class="o-t">Work</span></a></li>
+        <li><a href="#contact"><span class="o-n">04</span><span class="o-t">Contact</span></a></li>
+      </ol>
+      <p class="orders-h" id="orders-h" hidden>Scrolling steps the playhead through the pattern, one row at a time.</p>
+    </nav>
+
+    <div class="main">
+      <div class="part pat" id="pattern">
+        <div class="deck">
+          <h3 id="pat-title">Load a pattern</h3>
+          <fieldset class="tracks">
+            <legend class="vh">Track</legend>
+            <div class="opts" id="opts"></div>
+          </fieldset>
+          <p class="now" id="now"></p>
+          <button class="u" id="now-sheet" type="button" aria-haspopup="dialog" aria-controls="sheet">Open the track sheet</button>
+          <label class="sw"><input class="vh" id="sound" type="checkbox" role="switch" aria-describedby="sound-note"><span class="sw-box" aria-hidden="true"></span><span>Sound on</span></label>
+          <p class="note" id="sound-note">Off until you switch it on. Then the pattern plays through four quiet oscillators made in your browser.</p>
+          <p class="note" id="pat-help">Point at a row and the meters show what plays there. Inside the pattern the arrow keys move the cursor and Enter plays the row.</p>
+        </div>
+
+        <div class="trk" id="trk">
+          <div role="grid" aria-labelledby="pat-title" aria-describedby="pat-help" aria-rowcount="33" aria-colcount="5">
+            <div class="trk-head" role="row" aria-rowindex="1">
+              <div class="trk-play" role="columnheader" aria-label="Row">
+                <button class="btn btn-line btn-sm" id="play-2" type="button" aria-label="Play the pattern"><span class="teeth" aria-hidden="true"></span><span class="face"><span class="inner"><span class="ico" aria-hidden="true"></span></span></span></button>
+              </div>
+              <div class="ch" role="columnheader" aria-label="Pulse 1" data-ch="0">
+                <span class="ch-top"><span class="ch-name">Pulse 1</span><button class="btn btn-ch btn-sm" type="button" data-mute="0"><span class="teeth" aria-hidden="true"></span><span class="face"><span class="inner"><span class="label">Mute</span><span class="vh"> pulse 1</span></span></span></button></span>
+                <span class="meter" aria-hidden="true"></span>
+              </div>
+              <div class="ch" role="columnheader" aria-label="Pulse 2" data-ch="1">
+                <span class="ch-top"><span class="ch-name">Pulse 2</span><button class="btn btn-ch btn-sm" type="button" data-mute="1"><span class="teeth" aria-hidden="true"></span><span class="face"><span class="inner"><span class="label">Mute</span><span class="vh"> pulse 2</span></span></span></button></span>
+                <span class="meter" aria-hidden="true"></span>
+              </div>
+              <div class="ch" role="columnheader" aria-label="Triangle" data-ch="2">
+                <span class="ch-top"><span class="ch-name">Triangle</span><button class="btn btn-ch btn-sm" type="button" data-mute="2"><span class="teeth" aria-hidden="true"></span><span class="face"><span class="inner"><span class="label">Mute</span><span class="vh"> triangle</span></span></span></button></span>
+                <span class="meter" aria-hidden="true"></span>
+              </div>
+              <div class="ch" role="columnheader" aria-label="Noise" data-ch="3">
+                <span class="ch-top"><span class="ch-name">Noise</span><button class="btn btn-ch btn-sm" type="button" data-mute="3"><span class="teeth" aria-hidden="true"></span><span class="face"><span class="inner"><span class="label">Mute</span><span class="vh"> noise</span></span></span></button></span>
+                <span class="meter" aria-hidden="true"></span>
+              </div>
+            </div>
+            <div class="rows" id="rows" role="rowgroup"></div>
+          </div>
+          <div class="status" id="readout" role="group" aria-label="The row under the cursor or the playhead">
+            <span class="st-row"><span class="vh">Row </span><b id="st-n">00</b></span>
+            <span class="st-ch" data-ch="0"><span class="vh">Pulse 1: </span><b></b><small></small></span>
+            <span class="st-ch" data-ch="1"><span class="vh">Pulse 2: </span><b></b><small></small></span>
+            <span class="st-ch" data-ch="2"><span class="vh">Triangle: </span><b></b><small></small></span>
+            <span class="st-ch" data-ch="3"><span class="vh">Noise: </span><b></b><small></small></span>
+          </div>
+        </div>
+
+        <details class="disc">
+          <summary>Read the pattern as a table</summary>
+          <table class="tbl" id="pat-table"></table>
+        </details>
+      </div>
+
+      <div class="part" id="output">
+        <h3 id="out-title">Minutes of music, year by year</h3>
+        <p class="sub" id="out-help">Each cell is two minutes of finished music. Point at a year, tap it, or use the arrow keys.</p>
+        <div class="out">
+          <div>
+            <div class="plot" id="plot" role="radiogroup" aria-labelledby="out-title" aria-describedby="out-help"></div>
+          </div>
+          <div class="out-read" id="out-read" aria-live="polite">
+            <p class="out-big"><b id="out-total"></b><span id="out-year"></span></p>
+            <ul class="out-kinds" id="out-kinds"></ul>
+            <p class="note" id="out-games"></p>
+            <p class="note" id="out-sum"></p>
+          </div>
+        </div>
+        <details class="disc">
+          <summary>Read the figures as a table</summary>
+          <table class="tbl" id="out-table"></table>
+        </details>
+      </div>
+
+      <div class="part" id="work">
+        <h3>Selected work</h3>
+        <p class="sub">Six tracks from six games. Choosing one loads its pattern above and opens its sheet: what the developer asked for, who did what, and the licence.</p>
+        <table class="tbl work" id="work-table"></table>
+        <p class="clients" id="clients"></p>
+      </div>
+
+      <div class="part" id="contact">
+        <h3>Commission a soundtrack</h3>
+        <div class="con">
+          <div class="con-a">
+            <p class="sub">Say what the game is and when you need the music. Mirela answers within two working days with a price and the date of a first sketch. A full soundtrack usually takes six to ten weeks.</p>
+            <ul class="links" id="links"></ul>
+          </div>
+          <div class="swap">
+            <form class="enq" id="enq" novalidate aria-label="Enquiry">
+              <div class="f-item">
+                <div class="f-row"><span class="f-n" aria-hidden="true">00</span><label for="f-name">Name</label><div class="f-in"><input id="f-name" name="name" type="text" autocomplete="name" aria-describedby="f-name-msg"></div></div>
+                <p class="f-msg" id="f-name-msg" aria-live="polite" data-hint=""></p>
+              </div>
+              <div class="f-item">
+                <div class="f-row"><span class="f-n" aria-hidden="true">01</span><label for="f-email">Email</label><div class="f-in"><input id="f-email" name="email" type="email" autocomplete="email" spellcheck="false" aria-describedby="f-email-msg"></div></div>
+                <p class="f-msg" id="f-email-msg" aria-live="polite" data-hint=""></p>
+              </div>
+              <div class="f-item">
+                <div class="f-row"><span class="f-n" aria-hidden="true">02</span><label for="f-need">What you need</label><div class="f-in f-sel"><select id="f-need" name="need" aria-describedby="f-need-msg">
+                  <option value="">Choose one</option>
+                  <option value="Full soundtrack">Full soundtrack</option>
+                  <option value="A few tracks">A few tracks</option>
+                  <option value="Jingles and effects">Jingles and effects</option>
+                </select></div></div>
+                <p class="f-msg" id="f-need-msg" aria-live="polite" data-hint=""></p>
+              </div>
+              <div class="f-item">
+                <div class="f-row"><span class="f-n" aria-hidden="true">03</span><label for="f-min">Minutes of music <small>Optional</small></label><div class="f-in"><input id="f-min" name="minutes" type="text" inputmode="numeric" autocomplete="off" aria-describedby="f-min-msg"></div></div>
+                <p class="f-msg" id="f-min-msg" aria-live="polite" data-hint="A rough whole number, like 20. Loops count once.">A rough whole number, like 20. Loops count once.</p>
+              </div>
+              <div class="f-item">
+                <div class="f-row"><span class="f-n" aria-hidden="true">04</span><label for="f-date">Deadline <small>Optional</small></label><div class="f-in"><input id="f-date" name="deadline" type="date" aria-describedby="f-date-msg"></div></div>
+                <p class="f-msg" id="f-date-msg" aria-live="polite" data-hint="The day you need the final files.">The day you need the final files.</p>
+              </div>
+              <div class="f-item">
+                <div class="f-row"><span class="f-n" aria-hidden="true">05</span><label for="f-notes">Notes <small>Optional</small></label><div class="f-in"><textarea id="f-notes" name="notes" rows="3"></textarea></div></div>
+              </div>
+              <div class="f-end">
+                <button class="btn btn-main" type="submit"><span class="teeth" aria-hidden="true"></span><span class="face"><span class="inner"><span class="label">Send the enquiry</span></span></span></button>
+                <p class="note">Nothing leaves this page: it is a demonstration, and the enquiry is only shown back to you.</p>
+              </div>
+            </form>
+            <div class="done" id="done" hidden>
+              <h3 id="done-title" tabindex="-1">Enquiry noted.</h3>
+              <p id="done-line"></p>
+              <dl class="echo" id="echo"></dl>
+              <div class="trk fan" id="fan" aria-hidden="true">
+                <div class="trk-head">
+                  <span></span>
+                  <span class="ch" data-ch="0"><span class="ch-name">Pulse 1</span><span class="meter"></span></span>
+                  <span class="ch" data-ch="1"><span class="ch-name">Pulse 2</span><span class="meter"></span></span>
+                  <span class="ch" data-ch="2"><span class="ch-name">Triangle</span><span class="meter"></span></span>
+                  <span class="ch" data-ch="3"><span class="ch-name">Noise</span><span class="meter"></span></span>
+                </div>
+                <div class="rows" id="fan-rows"></div>
+              </div>
+              <p class="note" id="fan-note">A one-bar fanfare for you: C-5, E-5, G-5 and C-6, rising across the two pulse channels.</p>
+              <button class="btn btn-line" id="again" type="button"><span class="teeth" aria-hidden="true"></span><span class="face"><span class="inner"><span class="label">Write another</span></span></span></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<dialog class="sheet" id="sheet" aria-labelledby="sheet-title" data-lenis-prevent>
+  <div class="sheet-rim" id="sheet-rim"><div class="sheet-in">
+    <div class="sheet-head">
+      <h2 id="sheet-title">Track</h2>
+      <button class="btn btn-line btn-sm" id="sheet-close" type="button"><span class="teeth" aria-hidden="true"></span><span class="face"><span class="inner"><span class="label">Close</span></span></span></button>
+    </div>
+    <p class="sheet-sub" id="sheet-sub"></p>
+    <dl class="sheet-facts" id="sheet-facts"></dl>
+    <h3>What the developer asked for</h3>
+    <p id="sheet-asked"></p>
+    <h3>Credits</h3>
+    <dl class="credits" id="sheet-credits"></dl>
+    <h3>Licence</h3>
+    <p id="sheet-licence"></p>
+    <div class="sheet-end">
+      <button class="btn btn-main" id="sheet-ask" type="button"><span class="teeth" aria-hidden="true"></span><span class="face"><span class="inner"><span class="label">Ask for something like this</span></span></span></button>
+    </div>
+  </div></div>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  /* ---------- The owner edits these. Delete a line of CONTACT to remove that link. ----------
+     Known keys take a handle or a full URL: email, whatsapp, github, mastodon, instagram, itch.
+     Any other key with a full URL becomes a link named after the key. */
+  const CONTACT = {
+    email: 'mirela@bitlark.example',
+    mastodon: '@bitlark@chiptune.example',
+    itch: 'bitlark-brno',
+    github: 'bitlark-brno',
+    bandcamp: 'https://bitlark.example/albums'
+  };
+
+  /* A pattern is four lines, one per channel, of 32 rows (sixteenth notes; a bar sign is only for reading).
+     "." is an empty row, "C5" a note, "A#3" a sharp, "K S H" kick, snare and hat on the noise channel.
+     ":7" after a note sets its volume, 1 to 8; otherwise the channel's own volume is used. */
+  const DATA = {
+    channels: [
+      { name: 'Pulse 1', wave: 'square', vol: 6 },
+      { name: 'Pulse 2', wave: 'square', vol: 4 },
+      { name: 'Triangle', wave: 'triangle', vol: 7 },
+      { name: 'Noise', wave: 'noise', vol: 5 }
+    ],
+    drums: { K: { cell: 'KCK', word: 'kick', vol: 7 }, S: { cell: 'SNR', word: 'snare', vol: 6 }, H: { cell: 'HAT', word: 'hat', vol: 3 } },
+    tracks: [
+      { title: 'Hollow Lantern', game: 'Mothlight Cellar', studio: 'Tin Kettle Games', year: 2025, bpm: 132, len: '2:48', key: 'A minor',
+        asked: 'A cave theme that can loop for ten minutes without wearing anyone down: tense, never loud, and quiet enough to hear the footsteps over it.',
+        credits: [['Composition and tracker programming', 'Mirela Dvořák'], ['Sound driver for the cartridge build', 'Tin Kettle Games'], ['Playtest notes on the loop point', 'Anežka Holub']],
+        licence: 'Exclusive to the game for two years. bitlark keeps the right to sell the soundtrack album and to show this pattern here.',
+        pattern: [
+          'A4 . . C5 | . . E5 . | D5 . C5 . | B4 . C5 . | A4 . . C5 | . . F5:7 . | E5 . . D5 | . B4 G#4 .',
+          'E4 . A4 . | E4 . A4 . | E4 . A4 . | E4 . A4 . | F4 . A4 . | F4 . A4 . | E4 . G#4 . | E4 . G#4 .',
+          'A2 . . A2 | . . A2 . | A2 . . A2 | . . G2 . | F2 . . F2 | . . F2 . | E2 . . E2 | . . E2 .',
+          'K . H . | S . H . | K . H . | S . H H | K . H . | S . H . | K . H . | S . S:4 S:5'
+        ] },
+      { title: 'Paper Boats', game: 'Canal Day', studio: 'Slow Tide', year: 2023, bpm: 96, len: '3:12', key: 'F major',
+        asked: 'Something gentle for a puzzle game about folding boats, with no drums before the second half and a tune a child could whistle.',
+        credits: [['Composition and tracker programming', 'Mirela Dvořák'], ['Melody idea for the second half', 'Ines Okafor, Slow Tide'], ['Mastering for the web build', 'Mirela Dvořák']],
+        licence: 'Non-exclusive. Slow Tide may use it in the game and its trailers for as long as the game is sold; the album is released jointly.',
+        pattern: [
+          'A4 . . C5 | . . F5 . | D5 . . F5 | . . A5 . | G5 . F5 . | D5 . . . | E5 . . G5 | . . C5 .',
+          '. . C4 . | A3 . C4 . | . . A3 . | F3 . A3 . | . . D4 . | A#3 . D4 . | . . E4 . | C4 . G3 .',
+          'F2 . . . | . . . . | D2 . . . | . . . . | A#1 . . . | . . A#1 . | C2 . . . | . . E2 .',
+          '. . . . | . . . . | . . . . | . . . . | K:5 . H . | . . H . | K:5 . H . | S:4 . H .'
+        ] },
+      { title: 'Rust Rally', game: 'Scrapyard Sprint', studio: 'Odd Gear', year: 2024, bpm: 168, len: '1:54', key: 'E minor',
+        asked: 'A race theme that makes a forty-second lap feel too short, and still works when the engine sound sits on top of the bass.',
+        credits: [['Composition and tracker programming', 'Mirela Dvořák'], ['Engine sound design', 'Odd Gear'], ['Final mix against the engine', 'Mirela Dvořák and Odd Gear']],
+        licence: 'Exclusive to the game for three years, including its ports. bitlark may release the track on an album after the first year.',
+        pattern: [
+          'E5 . G5 . | B5 . G5 . | E5 . G5 B5 | . A5 G5 . | E5 . G5 . | C6:7 . G5 . | F#5 . A5 . | D6:7 . B5 A5',
+          '. B4 . E4 | . B4 . E4 | . B4 . E4 | . B4 . E4 | . C5 . E4 | . C5 . E4 | . D5 . F#4 | . D5 . F#4',
+          'E2 . E3 . | E2 . E3 . | E2 . E3 . | E2 . D3 . | C2 . C3 . | C2 . C3 . | D2 . D3 . | D2 . D3 F#3',
+          'K . H . | S . H . | K . H K | S . H . | K . H . | S . H . | K . H K | S . S S'
+        ] },
+      { title: 'Night Bus 47', game: 'Last Stop', studio: 'Kavka Interactive', year: 2022, bpm: 110, len: '3:40', key: 'D minor',
+        asked: 'The city at three in the morning. A bass line you could hum on the way home, and room left for the sound of the bus.',
+        credits: [['Composition and tracker programming', 'Mirela Dvořák'], ['Field recordings of the night bus', 'Kavka Interactive'], ['Loop edit for the menu', 'Mirela Dvořák']],
+        licence: 'Exclusive to the game. Kavka Interactive may use it in trailers and at shows; bitlark sells the album.',
+        pattern: [
+          '. . . . | A4 . . . | . . F4 . | . . D4 . | . . . . | D5 . . . | . . C#5 . | . . A4 .',
+          '. . D4 . | . . F4 . | . . D4 . | . . F4 . | . . D4 . | . . F4 . | . . E4 . | . . C#4 .',
+          'D2 . . D2 | . F2 . A2 | . . G2 . | F2 . E2 . | A#1 . . A#1 | . D2 . F2 | A1 . . A1 | . C#2 E2 .',
+          'K . . H | . . H . | S . . H | . . H . | K . . H | . . H . | S . . H | . H S .'
+        ] },
+      { title: 'Clockwork Orchard', game: 'The Tinker’s Almanac', studio: 'Pear & Cog', year: 2021, bpm: 120, len: '2:30', key: 'G major',
+        asked: 'A cheerful shop theme, short enough to loop every thirty seconds, with a ticking part that never becomes a headache.',
+        credits: [['Composition and tracker programming', 'Mirela Dvořák'], ['Shop bell and till effects', 'Mirela Dvořák'], ['Implementation in the engine', 'Pear & Cog']],
+        licence: 'Non-exclusive after the first year. Includes twelve short jingles made from the same theme.',
+        pattern: [
+          'G4 . B4 . | D5 . B4 . | G5 . . E5 | . . B4 . | C5 . E5 . | G5 . E5 . | F#5 . . A5 | . D5 . .',
+          '. D4 . D4 | . D4 . D4 | . E4 . E4 | . E4 . E4 | . E4 . E4 | . E4 . E4 | . F#4 . F#4 | . F#4 . F#4',
+          'G2 . . . | D2 . . . | E2 . . . | B1 . . . | C2 . . . | G2 . . . | D2 . . D2 | . . F#2 .',
+          'K . H . | H . H . | S . H . | H . H . | K . H . | H . H . | S . H . | H . S .'
+        ] },
+      { title: 'The Tax Collector', game: 'Coin Purse Knights', studio: 'Small Shield', year: 2026, bpm: 150, len: '2:06', key: 'C minor',
+        asked: 'A boss fight that is funny first and frightening second. He takes your coins, so the tune should sound as if it is counting them.',
+        credits: [['Composition and tracker programming', 'Mirela Dvořák'], ['Coin and purse effects', 'Mirela Dvořák'], ['Boss design and timing notes', 'Small Shield']],
+        licence: 'Exclusive to the game for two years. The sound effect pack is licensed separately, per title.',
+        pattern: [
+          'C5 . D#5 . | G5 . . F#5 | G5 . D#5 . | C5 . . . | G#5:7 . G5 . | D#5 . . C5 | D5 . . B4 | . G4 B4 D5:7',
+          '. . . G4 | . . . G4 | . . . G4 | . . D#4 . | . . . G#4 | . . . G#4 | . . . G4 | . . . .',
+          'C2 C2 . C2 | . . C3 . | C2 C2 . C2 | . . A#2 . | G#1 G#1 . G#1 | . . G#2 . | G1 G1 . G1 | . G2 B2 D3',
+          'K . . K | S . . . | K . . K | S . H H | K . . K | S . . . | K . K . | S S S S'
+        ] }
+    ],
+    /* The confirmation's one bar of eight rows: four rising notes across the channels. */
+    fanfare: { bpm: 150, pattern: ['C5 . . . G5 . C6:8 .', '. . E5:6 . . . G5:6 .', 'C3 . . . . . C4 .', 'K . . . . . S .'] },
+    kinds: [['st', 'Soundtracks'], ['jg', 'Jingles'], ['fx', 'Sound effect packs']],
+    years: [
+      { y: 2018, st: 14, jg: 6, fx: 4, games: 2 }, { y: 2019, st: 22, jg: 8, fx: 6, games: 3 }, { y: 2020, st: 38, jg: 6, fx: 10, games: 4 },
+      { y: 2021, st: 30, jg: 12, fx: 8, games: 4 }, { y: 2022, st: 52, jg: 10, fx: 12, games: 5 }, { y: 2023, st: 46, jg: 14, fx: 16, games: 6 },
+      { y: 2024, st: 64, jg: 12, fx: 20, games: 7 }, { y: 2025, st: 58, jg: 16, fx: 14, games: 6 }, { y: 2026, st: 44, jg: 8, fx: 10, games: 4, note: 'Counted to the end of October.' }
+    ],
+    clients: ['Tin Kettle Games', 'Slow Tide', 'Odd Gear', 'Kavka Interactive', 'Pear & Cog', 'Small Shield', 'Lumen Arcade', 'Studio Hrách']
+  };
+  /* Web Audio: a quiet master, one gain per channel, three ways of filtering the noise. */
+  const SOUND = { master: .09, mix: [.5, .4, 1, .7], drums: { K: ['lowpass', 170, .09], S: ['bandpass', 1900, .1], H: ['highpass', 7000, .035] } };
+
+  const root = document.documentElement;
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const lib = !!(window.gsap && window.ScrollTrigger && window.Lenis);
+  if (lib) root.classList.add('js'); // CDN blocked: no class, everything is visible and still works
+  const read = (n) => getComputedStyle(root).getPropertyValue(n).trim();
+  const ms = (n) => parseFloat(read(n)) * 1000;
+  const still = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const two = (n) => String(n).padStart(2, '0');
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+
+  /* ---------- Pure functions: pattern parsing, form parsing, contact links ---------- */
+  const SEMI = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+  function parseToken(tok, ch) {
+    if (tok === '.') return null;
+    const [body, v] = tok.split(':');
+    if (ch.wave === 'noise') {
+      const d = DATA.drums[body];
+      if (!d) throw new Error(`Unknown drum "${tok}"`);
+      return { cell: d.cell, word: d.word, drum: body, vol: v ? +v : d.vol };
+    }
+    const m = body.match(/^([A-G])(#?)(\d)$/);
+    if (!m) throw new Error(`Unknown note "${tok}"`);
+    const midi = 12 * (+m[3] + 1) + SEMI[m[1]] + (m[2] ? 1 : 0), cell = m[1] + (m[2] || '-') + m[3];
+    return { cell, word: cell, midi, freq: 440 * 2 ** ((midi - 69) / 12), vol: v ? +v : ch.vol };
+  }
+  function parsePattern(lines, channels = DATA.channels) {
+    const cols = lines.map((line, c) => line.split(/[\s|]+/).filter(Boolean).map((t) => parseToken(t, channels[c])));
+    const n = cols[0].length;
+    if (cols.some((col) => col.length !== n)) throw new Error('The channels of a pattern differ in length');
+    // A note sounds until the next note in its channel, for four rows at most.
+    cols.forEach((col) => col.forEach((note, r) => { if (!note) return; let len = 1; while (r + len < n && !col[r + len] && len < 4) len++; note.len = len; }));
+    return Array.from({ length: n }, (_, r) => cols.map((col) => col[r]));
+  }
+  const yearTotal = (d) => DATA.kinds.reduce((a, [k]) => a + d[k], 0);
+  const checkName = (v) => !v.trim() ? 'Enter your name, so Mirela knows who to answer.' : v.trim().length < 2 ? 'That name is too short. Use at least 2 characters.' : '';
+  const checkEmail = (v) => !v.trim() ? 'Enter your email address, like ana@example.com.' : /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(v.trim()) ? '' : 'This address needs an @ and a domain, like ana@example.com.';
+  const checkNeed = (v) => v ? '' : 'Choose one: a full soundtrack, a few tracks, or jingles and effects.';
+  function parseMinutes(s) {
+    const v = s.trim();
+    if (!v) return { ok: true, value: null, msg: '' };
+    if (!/^\d+$/.test(v)) return { ok: false, msg: 'Use a whole number of minutes, like 20, or leave this empty.' };
+    const n = +v;
+    if (n < 1 || n > 240) return { ok: false, msg: 'Use a number from 1 to 240. For more music than that, say so in the notes.' };
+    return { ok: true, value: n, msg: '' };
+  }
+  function parseDeadline(s, today) {
+    const v = s.trim();
+    if (!v) return { ok: true, value: null, msg: '' };
+    const m = v.match(/^(\d{4})-(\d{2})-(\d{2})$/), d = m && new Date(Date.UTC(+m[1], m[2] - 1, +m[3]));
+    if (!m || d.getUTCMonth() !== m[2] - 1 || d.getUTCDate() !== +m[3]) return { ok: false, msg: 'Use a date like 2027-03-01, or leave this empty.' };
+    if (v <= today) return { ok: false, msg: 'Pick a date after today, or leave this empty.' };
+    return { ok: true, value: v, msg: '' };
+  }
+  const isoDay = (plus = 0) => { const d = new Date(); d.setDate(d.getDate() + plus); return `${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d.getDate())}`; };
+  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const longDate = (iso) => { const [y, m, d] = iso.split('-').map(Number); return `${d} ${MONTHS[m - 1]} ${y}`; };
+  const isUrl = (v) => /^https?:\/\/\S+$/.test(v);
+  const KNOWN = {
+    email: ['Email', (v) => [v, 'mailto:' + v]],
+    whatsapp: ['WhatsApp', (v) => [v, 'https://wa.me/' + v.replace(/\D/g, '')]],
+    github: ['GitHub', (v) => [v, 'https://github.com/' + v]],
+    mastodon: ['Mastodon', (v) => { const m = v.match(/^@?([^@\s]+)@([^@\s]+)$/); return m && [`@${m[1]}@${m[2]}`, `https://${m[2]}/@${m[1]}`]; }],
+    instagram: ['Instagram', (v) => ['@' + v.replace(/^@/, ''), 'https://instagram.com/' + v.replace(/^@/, '')]],
+    itch: ['itch.io', (v) => [v + '.itch.io', `https://${v}.itch.io/`]]
+  };
+  function contactLinks(c) {
+    return Object.entries(c).map(([key, v]) => {
+      if (typeof v !== 'string' || !v.trim()) return null;
+      v = v.trim();
+      const label = KNOWN[key] ? KNOWN[key][0] : key.charAt(0).toUpperCase() + key.slice(1);
+      if (isUrl(v)) return { label, text: v.replace(/^https?:\/\//, '').replace(/\/$/, ''), href: v };
+      const made = KNOWN[key] && KNOWN[key][1](v);   // an unknown key needs a full URL
+      return made ? { label, text: made[0], href: made[1] } : null;
+    }).filter(Boolean);
+  }
+
+  function runSelfTest() {
+    const bad = [], ok = (c, m) => { if (!c) bad.push(m); };
+    try {
+      const ch = DATA.channels;
+      ok(parseToken('.', ch[0]) === null, 'empty row');
+      ok(parseToken('C5', ch[0]).cell === 'C-5' && parseToken('A#3', ch[0]).cell === 'A#3', 'cell names');
+      ok(Math.abs(parseToken('A4', ch[0]).freq - 440) < .001 && Math.abs(parseToken('C4', ch[0]).freq - 261.626) < .01, 'frequencies');
+      ok(parseToken('C5:8', ch[0]).vol === 8 && parseToken('C5', ch[1]).vol === 4 && parseToken('K', ch[3]).vol === 7 && parseToken('S:4', ch[3]).vol === 4, 'volumes');
+      DATA.tracks.forEach((t) => { const p = parsePattern(t.pattern); ok(p.length === 32 && p.every((r) => r.length === 4), `${t.title}: 32 rows by 4 channels`); });
+      const f = parsePattern(DATA.fanfare.pattern);
+      ok(f.length === 8 && f[0][0].cell === 'C-5' && f[2][1].cell === 'E-5' && f[4][0].cell === 'G-5' && f[6][0].cell === 'C-6', 'fanfare rises');
+      ok(f[0][0].len === 4 && f[4][0].len === 2, 'note lengths');
+      let threw = false; try { parsePattern(['C5 .', 'C5', '.', '.']); } catch (e) { threw = true; } ok(threw, 'uneven pattern is refused');
+      ok(yearTotal({ st: 1, jg: 2, fx: 3 }) === 6 && DATA.years.every((d) => DATA.kinds.every(([k]) => d[k] % 2 === 0)), 'year totals, whole cells');
+      ok(parseMinutes('').ok && parseMinutes('').value === null && parseMinutes(' 20 ').value === 20, 'minutes: empty and whole');
+      ok(!parseMinutes('2.5').ok && !parseMinutes('ten').ok && !parseMinutes('0').ok && !parseMinutes('241').ok && parseMinutes('240').ok, 'minutes: rejects');
+      ok(parseDeadline('', '2026-11-10').ok && parseDeadline('2027-03-01', '2026-11-10').value === '2027-03-01', 'deadline: empty and future');
+      ok(!parseDeadline('2026-11-10', '2026-11-10').ok && !parseDeadline('2027-02-30', '2026-11-10').ok && !parseDeadline('1 March', '2026-11-10').ok, 'deadline: rejects');
+      ok(longDate('2027-03-01') === '1 March 2027', 'long date');
+      ok(!checkName('Ana') && !!checkName(' ') && !!checkName('A') && !checkEmail('ana@example.com') && !!checkEmail('ana@example') && !!checkEmail('') && !!checkNeed('') && !checkNeed('A few tracks'), 'text checks');
+      const l = contactLinks({ email: 'a@b.example', whatsapp: '+420 555 010 020', mastodon: '@a@b.example', itch: 'x', shop: 'https://x.example/', nope: 'x', gone: '' });
+      ok(l.length === 5 && l[0].href === 'mailto:a@b.example' && l[1].href === 'https://wa.me/420555010020' && l[2].href === 'https://b.example/@a' && l[3].href === 'https://x.itch.io/' && l[4].label === 'Shop', 'contact links');
+      ok(contactLinks({ github: 'https://github.com/' })[0].href === 'https://github.com/', 'known key with a full URL');
+    } catch (e) { bad.push('threw: ' + e.message); }
+    if (bad.length) console.error('SELFTEST FAIL: ' + bad.join('; ')); else console.log('SELFTEST PASS');
+    return !bad.length;
+  }
+  if (location.hash === '#selftest') runSelfTest();
+
+  /* ---------- A tracker: rows, meters, the playhead. The main pattern and the confirmation's bar share it. ---------- */
+  function makeTracker(box, rowsEl, grid) {
+    const meters = $$('.meter', box).map((m) => { for (let i = 0; i < 8; i++) m.append(el('i')); return [...m.children]; });
+    const lv = [0, 0, 0, 0], muted = [false, false, false, false];
+    let pat = null, rows = [], at = -1, fallT = 0;
+    const draw = (c) => meters[c].forEach((cell, k) => cell.classList.toggle('on', k < lv[c]));
+    const fall = () => {   // every meter above zero drops one cell; the timer stops when all are down
+      fallT = 0;
+      let any = false;
+      lv.forEach((v, c) => { if (v > 0) { lv[c] = v - 1; draw(c); if (v > 1) any = true; } });
+      if (any) fallT = setTimeout(fall, ms('--d-fall'));
+    };
+    const kick = (c, v) => { lv[c] = v; draw(c); if (!still() && !fallT) fallT = setTimeout(fall, ms('--d-fall')); };
+    return {
+      muted,
+      get rows() { return rows; },
+      get at() { return at; },
+      cell: (r, c) => rows[r]?.children[c + 1],
+      load(p, names) {
+        pat = p; at = -1;
+        rowsEl.textContent = '';
+        rows = p.map((notes, r) => {
+          const row = el('div', 'row'), rn = el('span', 'rn', two(r));
+          if (grid) { row.setAttribute('role', 'row'); row.setAttribute('aria-rowindex', r + 2); rn.setAttribute('role', 'rowheader'); }
+          row.append(rn);
+          notes.forEach((n, c) => {
+            const cell = el('span', 'cell ' + (n ? 'is-note' : 'is-empty'), n ? n.cell : '---');
+            cell.dataset.ch = c; cell.dataset.r = r;
+            if (grid) { cell.setAttribute('role', 'gridcell'); cell.tabIndex = -1; cell.setAttribute('aria-label', `${names[c]}, row ${two(r)}: ${n ? `${n.word}, volume ${n.vol}` : 'rest'}`); }
+            row.append(cell);
+          });
+          return row;
+        });
+        rowsEl.append(...rows);
+      },
+      setPlay(r) { if (r === at) return; rows[at]?.classList.remove('is-play'); at = r; rows[r]?.classList.add('is-play'); },
+      kick,
+      kickRow(r) {   // meters jump to the volume of each note in the row; with reduced motion they hold it instead of falling
+        pat[r].forEach((n, c) => { if (n && !muted[c]) kick(c, n.vol); else if (still()) { lv[c] = 0; draw(c); } });
+      },
+      rest() { clearTimeout(fallT); fallT = 0; lv.fill(0); [0, 1, 2, 3].forEach(draw); }
+    };
+  }
+
+  /* ---------- Sound: optional, off by default, made only after the visitor switches it on ---------- */
+  const audio = (() => {
+    let ctx = null, voices = null, on = false, dead = false;
+    const build = () => {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) { dead = true; return; }
+      ctx = new AC();
+      const master = ctx.createGain();
+      master.gain.value = SOUND.master;
+      master.connect(ctx.destination);
+      voices = DATA.channels.map((ch) => {
+        const g = ctx.createGain();
+        g.gain.value = 0;
+        g.connect(master);
+        if (ch.wave === 'noise') {   // one second of white noise, looped, through a filter that each drum retunes
+          const buf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate), d = buf.getChannelData(0);
+          for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+          const src = ctx.createBufferSource(), f = ctx.createBiquadFilter();
+          src.buffer = buf; src.loop = true;
+          src.connect(f); f.connect(g); src.start();
+          return { g, f };
+        }
+        const osc = ctx.createOscillator();
+        osc.type = ch.wave;
+        osc.connect(g); osc.start();
+        return { g, osc };
+      });
+    };
+    const quiet = () => { try { if (ctx) voices.forEach((v) => { v.g.gain.cancelScheduledValues(0); v.g.gain.setValueAtTime(0, ctx.currentTime); }); } catch (e) { /* silent by design */ } };
+    return {
+      set(want) {   // returns false when this browser cannot make sound
+        try {
+          if (want && !ctx && !dead) build();
+          if (ctx) { const p = want ? ctx.resume() : (quiet(), ctx.suspend()); p?.catch?.(() => {}); }
+        } catch (e) { dead = true; ctx = null; }
+        on = want && !!ctx;
+        return !want || !!ctx;
+      },
+      row(notes, muted, step) {   // step: seconds per row
+        if (!on) return;
+        try {
+          const t = ctx.currentTime + .012;
+          notes.forEach((n, c) => {
+            if (!n || muted[c]) return;
+            const v = voices[c], peak = n.vol / 8 * SOUND.mix[c];
+            let dur = n.len * step * .92;
+            if (n.drum) { const [type, hz, sec] = SOUND.drums[n.drum]; v.f.type = type; v.f.frequency.setValueAtTime(hz, t); dur = sec; }
+            else v.osc.frequency.setValueAtTime(n.freq, t);
+            v.g.gain.cancelScheduledValues(t);   // a stepped envelope, like the hardware: full, then 60%, then off
+            v.g.gain.setValueAtTime(peak, t);
+            v.g.gain.setValueAtTime(peak * .6, t + dur * .5);
+            v.g.gain.setValueAtTime(0, t + dur);
+          });
+        } catch (e) { /* sound is optional: never an error */ }
+      },
+      quiet
+    };
+  })();
+
+  /* ---------- The playhead's clock: a hard jump per row at the pattern's tempo. Plain timers, no library. ---------- */
+  let stopRun = null;
+  function runPattern(trk, pat, bpm, passes, done, onRow) {
+    stopRun?.();
+    const step = 60000 / bpm / 4, total = pat.length * passes, t0 = performance.now();
+    let n = 0, timer = 0, live = true;
+    const end = (natural) => { if (!live) return; live = false; clearTimeout(timer); stopRun = null; if (!natural) audio.quiet(); done(natural); };
+    const tick = () => {
+      if (!live) return;
+      if (n >= total) return end(true);
+      const r = n % pat.length;
+      trk.setPlay(r); trk.kickRow(r); audio.row(pat[r], trk.muted, step / 1000); onRow?.(r);
+      n++;
+      timer = setTimeout(tick, Math.max(0, t0 + n * step - performance.now()));
+    };
+    stopRun = () => end(false);
+    tick();
+  }
+
+  /* ---------- 01 The pattern ---------- */
+  const NAMES = DATA.channels.map((c) => c.name);
+  const TRACKS = DATA.tracks.map((t) => ({ ...t, rows: parsePattern(t.pattern) }));
+  const trkEl = $('#trk'), rowsEl = $('#rows'), main = makeTracker(trkEl, rowsEl, true);
+  const playBtns = [$('#play'), $('#play-2')], opts = $('#opts'), now = $('#now'), patTable = $('#pat-table');
+  const stN = $('#st-n'), stCh = $$('.st-ch');
+  let cur = TRACKS[0], playing = false, edit = null, hover = false, lenis = null, fx = null; // fx: hooks set by the motion branch; null means instant
+
+  const showStatus = (r) => {
+    stN.textContent = two(r);
+    cur.rows[r].forEach((n, c) => {
+      $('b', stCh[c]).textContent = n ? n.cell : '---';
+      $('small', stCh[c]).textContent = n ? (main.muted[c] ? 'muted' : (n.drum ? n.word + ', ' : '') + 'vol ' + n.vol) : 'rest';
+    });
+  };
+  const clearEdit = () => {
+    if (!edit) return;
+    main.rows[edit.r]?.classList.remove('is-edit'); main.cell(edit.r, edit.c)?.classList.remove('is-at');
+    edit = null;
+    showStatus(Math.max(0, main.at));
+  };
+  // The edit cursor: the row gets the band, the cell its frame, and the meters kick for the notes in the row.
+  const setEdit = (r, c) => {
+    if (edit && edit.r === r && edit.c === c) return;
+    const moved = !edit || edit.r !== r;
+    if (edit) { main.rows[edit.r]?.classList.remove('is-edit'); main.cell(edit.r, edit.c)?.classList.remove('is-at'); }
+    edit = { r, c };
+    main.rows[r].classList.add('is-edit');
+    if (c >= 0) main.cell(r, c).classList.add('is-at');
+    showStatus(r);
+    if (moved && !playing) main.kickRow(r);
+  };
+  const preview = (r) => { if (playing) return; main.kickRow(r); audio.row(cur.rows[r], main.muted, 60 / cur.bpm / 4); };
+
+  const setPlaying = (v) => {
+    playing = v;
+    $('.label', playBtns[0]).textContent = v ? 'Stop' : 'Play the pattern';
+    playBtns[1].setAttribute('aria-label', v ? 'Stop the pattern' : 'Play the pattern');
+    playBtns[1].classList.toggle('is-playing', v);
+  };
+  const stop = () => stopRun?.();
+  const play = () => {
+    setPlaying(true);
+    // Two passes, then it stops by itself. With reduced motion: one pass, no loop.
+    runPattern(main, cur.rows, cur.bpm, still() ? 1 : 2, (natural) => {
+      setPlaying(false);
+      if (natural) main.setPlay(0);
+      if (!edit) showStatus(main.at);
+    }, (r) => { if (!edit) showStatus(r); });
+  };
+  playBtns.forEach((b) => b.addEventListener('click', () => (playing ? stop() : play())));
+
+  const loadTrack = (i, quiet) => {
+    const was = playing;
+    stop();
+    cur = TRACKS[i];
+    edit = null;
+    main.rest();
+    main.load(cur.rows, NAMES);
+    main.cell(0, 0).tabIndex = 0;
+    main.setPlay(0);
+    showStatus(0);
+    $$('input', opts)[i].checked = true;
+    $$('#work-table tbody tr').forEach((tr, k) => tr.classList.toggle('is-cur', k === i));
+    now.innerHTML = '';
+    now.append('From ', el('b', '', cur.game), ` by ${cur.studio}, ${cur.year}. ${cur.key}, ${cur.bpm} BPM, ${cur.len}.`);
+    // The text alternative: the same pattern as a table.
+    patTable.innerHTML = '';
+    const cap = el('caption', '', `${cur.title}: one pattern of ${cur.rows.length} rows at ${cur.bpm} BPM, four rows to the beat.`);
+    const head = el('tr'); ['Row', ...NAMES].forEach((h) => { const th = el('th', '', h); th.scope = 'col'; head.append(th); });
+    const thead = el('thead'); thead.append(head);
+    const body = el('tbody');
+    cur.rows.forEach((notes, r) => {
+      const tr = el('tr'), th = el('th', '', two(r)); th.scope = 'row'; tr.append(th);
+      notes.forEach((n) => tr.append(el('td', '', n ? `${n.word}, vol ${n.vol}` : 'rest')));
+      body.append(tr);
+    });
+    patTable.append(cap, thead, body);
+    if (still()) main.kickRow(0);
+    if (was) play(); else if (!quiet) fx?.fill();
+  };
+  TRACKS.forEach((t, i) => {
+    const lab = el('label', 'opt'), inp = el('input', 'vh'), face = el('span', 'opt-face', t.title);
+    inp.type = 'radio'; inp.name = 'track'; inp.value = i;
+    inp.addEventListener('change', () => { if (inp.checked) loadTrack(i); });
+    lab.append(inp, face); opts.append(lab);
+  });
+  loadTrack(0, true);
+
+  $$('[data-mute]').forEach((b) => b.addEventListener('click', () => {
+    const c = +b.dataset.mute, m = !main.muted[c];
+    main.muted[c] = m;
+    trkEl.classList.toggle('m' + c, m);
+    b.closest('.ch').classList.toggle('is-muted', m);
+    $('.label', b).textContent = m ? 'Unmute' : 'Mute';
+    showStatus(edit ? edit.r : Math.max(0, main.at));
+  }));
+
+  const sound = $('#sound'), soundNote = $('#sound-note');
+  sound.addEventListener('change', () => {
+    const ok = audio.set(sound.checked);
+    if (!ok) sound.checked = false;
+    soundNote.textContent = !ok ? 'This browser cannot make sound here, so the pattern plays silently.'
+      : sound.checked ? 'Sound is on: two square waves, a triangle and filtered noise, kept quiet. Play the pattern, or press Enter on a row.'
+      : 'Off until you switch it on. Then the pattern plays through four quiet oscillators made in your browser.';
+  });
+
+  // Pointer: the row and cell under it. Touch: a tap. Keyboard: the grid's arrow keys; Enter plays the row.
+  const hit = (e) => { const row = e.target.closest('.row'); if (!row) return null; const cell = e.target.closest('.cell'); return { r: main.rows.indexOf(row), c: cell ? +cell.dataset.ch : -1 }; };
+  rowsEl.addEventListener('pointermove', (e) => { if (e.pointerType === 'touch') return; const h = hit(e); if (h) { hover = true; setEdit(h.r, h.c); } });
+  rowsEl.addEventListener('pointerleave', (e) => {
+    if (e.pointerType === 'touch') return;
+    hover = false;
+    const f = rowsEl.contains(document.activeElement) && document.activeElement.closest('.cell');
+    if (f) setEdit(+f.dataset.r, +f.dataset.ch); else clearEdit();
+  });
+  rowsEl.addEventListener('click', (e) => { const h = hit(e); if (!h) return; setEdit(h.r, h.c); preview(h.r); });
+  rowsEl.addEventListener('focusin', (e) => {
+    const cell = e.target.closest('.cell'); if (!cell) return;
+    $$('.cell[tabindex="0"]', rowsEl).forEach((c) => { c.tabIndex = -1; });
+    cell.tabIndex = 0;
+    setEdit(+cell.dataset.r, +cell.dataset.ch);
+  });
+  rowsEl.addEventListener('focusout', (e) => { if (!rowsEl.contains(e.relatedTarget) && !hover) clearEdit(); });
+  rowsEl.addEventListener('keydown', (e) => {
+    const cell = e.target.closest('.cell'); if (!cell) return;
+    let r = +cell.dataset.r, c = +cell.dataset.ch;
+    const last = cur.rows.length - 1;
+    switch (e.key) {
+      case 'ArrowDown': r = Math.min(last, r + 1); break;
+      case 'ArrowUp': r = Math.max(0, r - 1); break;
+      case 'ArrowRight': c = Math.min(3, c + 1); break;
+      case 'ArrowLeft': c = Math.max(0, c - 1); break;
+      case 'PageDown': r = Math.min(last, r + 4); break;
+      case 'PageUp': r = Math.max(0, r - 4); break;
+      case 'Home': c = 0; break;
+      case 'End': c = 3; break;
+      case 'Enter': case ' ': e.preventDefault(); preview(r); return;
+      default: return;
+    }
+    e.preventDefault();
+    main.cell(r, c).focus();
+  });
+  // The playhead stops when the pattern leaves the screen and when the tab is hidden.
+  if ('IntersectionObserver' in window) new IntersectionObserver(([e]) => { if (!e.isIntersecting && playing) stop(); }).observe(trkEl);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); });
+
+  /* ---------- 02 Output: nine meters, one per year ---------- */
+  const plot = $('#plot'), outTable = $('#out-table');
+  const TOP = Math.ceil(Math.max(...DATA.years.map(yearTotal)) / 20) * 20;   // the axis ends on a multiple of 20 minutes
+  let year = DATA.years.length - 2;
+  plot.style.setProperty('--plot-h', `calc(${TOP / 2} * var(--u))`);
+  for (let m = 20; m <= TOP; m += 20) { const a = el('span', 'ax', m); a.setAttribute('aria-hidden', 'true'); a.style.bottom = `calc(var(--yl) + ${m / 2} * var(--u))`; plot.append(a); }
+  const yrs = DATA.years.map((d, i) => {
+    const b = el('button', 'yr'), bar = el('span', 'yr-bar'), y = el('span', 'yr-y');
+    b.type = 'button'; b.setAttribute('role', 'radio');
+    b.setAttribute('aria-label', `${d.y}: ${yearTotal(d)} minutes`);
+    bar.setAttribute('aria-hidden', 'true');
+    DATA.kinds.forEach(([k]) => { const s = el('i', 'k-' + k); s.style.setProperty('--n', d[k] / 2); bar.append(s); });
+    y.append(el('span', 'y-c', String(d.y).slice(0, 2)), String(d.y).slice(2));
+    b.append(el('span', 'yr-n', yearTotal(d)), bar, y);
+    b.addEventListener('click', () => pickYear(i));
+    b.addEventListener('pointerenter', (e) => { if (e.pointerType !== 'touch') pickYear(i); });
+    plot.append(b);
+    return b;
+  });
+  function pickYear(i, focus) {
+    year = i;
+    const d = DATA.years[i];
+    yrs.forEach((b, k) => { b.setAttribute('aria-checked', k === i); b.tabIndex = k === i ? 0 : -1; });
+    if (focus) yrs[i].focus();
+    $('#out-total').textContent = yearTotal(d);
+    $('#out-year').textContent = `minutes in ${d.y}`;
+    const list = $('#out-kinds'); list.innerHTML = '';
+    DATA.kinds.forEach(([k, name]) => { const li = el('li'), sw = el('i', 'k-' + k); sw.setAttribute('aria-hidden', 'true'); li.append(sw, el('span', '', name), el('b', '', `${d[k]} min`)); list.append(li); });
+    $('#out-games').textContent = `${d.games} games shipped with this music.` + (d.note ? ' ' + d.note : '');
+  }
+  plot.addEventListener('keydown', (e) => {
+    const step = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1 }[e.key];
+    const to = step ? Math.min(yrs.length - 1, Math.max(0, year + step)) : e.key === 'Home' ? 0 : e.key === 'End' ? yrs.length - 1 : -1;
+    if (to < 0) return;
+    e.preventDefault(); pickYear(to, true);
+  });
+  pickYear(year);
+  {
+    const all = DATA.years.reduce((a, d) => a + yearTotal(d), 0), games = DATA.years.reduce((a, d) => a + d.games, 0);
+    $('#out-sum').textContent = `Since ${DATA.years[0].y}: ${all} minutes of music in ${games} games.`;
+    const head = el('tr'); ['Year', ...DATA.kinds.map(([, n]) => n), 'Total', 'Games'].forEach((h, i) => { const th = el('th', i ? 'num' : '', h); th.scope = 'col'; head.append(th); });
+    const thead = el('thead'), body = el('tbody'); thead.append(head);
+    DATA.years.forEach((d) => {
+      const tr = el('tr'), th = el('th', '', d.y); th.scope = 'row'; tr.append(th);
+      [...DATA.kinds.map(([k]) => d[k]), yearTotal(d), d.games].forEach((v) => tr.append(el('td', 'num', v)));
+      body.append(tr);
+    });
+    outTable.append(el('caption', '', 'Minutes of finished music per year, by kind, and the games it shipped in.'), thead, body);
+  }
+
+  /* ---------- 03 Selected work ---------- */
+  {
+    const t = $('#work-table'), head = el('tr'), thead = el('thead'), body = el('tbody');
+    ['Track', 'Game', 'Year', 'Tempo', 'Length'].forEach((h, i) => { const th = el('th', i > 1 ? 'num' : '', h); th.scope = 'col'; head.append(th); });
+    thead.append(head);
+    TRACKS.forEach((tr, i) => {
+      const row = el('tr'), th = el('th'), b = el('button', 'u', tr.title);
+      th.scope = 'row'; b.type = 'button'; b.dataset.sheet = i;
+      b.setAttribute('aria-haspopup', 'dialog'); b.setAttribute('aria-controls', 'sheet');
+      th.append(b, el('span', 'cur-tag', 'Loaded in the pattern')); row.append(th);
+      [['g', 'Game', tr.game], ['num', 'Year', tr.year], ['num', 'Tempo', tr.bpm + ' BPM'], ['num', 'Length', tr.len]].forEach(([cls, l, v]) => { const td = el('td', cls, v); td.dataset.l = l; row.append(td); });
+      body.append(row);
+    });
+    const cap = el('caption', 'vh', 'Six tracks: title, game, year, tempo and length.');
+    t.append(cap, thead, body);
+    body.children[TRACKS.indexOf(cur)].classList.add('is-cur');
+    const c = $('#clients');
+    c.append(el('b', '', 'Clients since 2018: '), DATA.clients.join(', ') + '.');
+  }
+
+  /* ---------- 04 Contact links, built from CONTACT ---------- */
+  contactLinks(CONTACT).forEach((l) => {
+    const li = el('li'), a = el('a', 'u', l.text);
+    a.href = l.href; a.target = '_blank'; a.rel = 'noopener';
+    a.append(el('span', 'vh', ' (opens in a new tab)'));
+    li.append(el('span', 'k', l.label), a);
+    $('#links').append(li);
+  });
+
+  /* ---------- Track sheet dialog ---------- */
+  const dlg = $('#sheet');
+  let opener = null, closing = false, downOn = null, askFor = null;
+  // Recover from any close, even one the browser forces (a second Escape is not cancelable) mid-sequence.
+  const settle = () => { closing = false; fx?.dialogReset(); };
+  const openSheet = (i, from) => {
+    if (dlg.open) return;
+    const t = TRACKS[i];
+    stop();   // the playhead stops when a dialog opens
+    if (t !== cur) loadTrack(i, true);
+    opener = from;
+    $('#sheet-title').textContent = t.title;
+    $('#sheet-sub').textContent = `${t.game}, by ${t.studio}, ${t.year}`;
+    const facts = $('#sheet-facts'), cr = $('#sheet-credits');
+    facts.innerHTML = ''; cr.innerHTML = '';
+    [['Tempo', t.bpm + ' BPM'], ['Key', t.key], ['Length', t.len], ['Channels', '4']].forEach(([k, v]) => { const d = el('div'); d.append(el('dt', '', k), el('dd', '', v)); facts.append(d); });
+    t.credits.forEach(([k, v]) => { const d = el('div'); d.append(el('dt', '', k), el('dd', '', v)); cr.append(d); });
+    $('#sheet-asked').textContent = t.asked;
+    $('#sheet-licence').textContent = t.licence;
+    settle();
+    dlg.showModal();
+    lenis?.stop();
+    fx?.dialogIn();
+  };
+  const closeSheet = () => {
+    if (!dlg.open || closing) return;
+    closing = true;
+    const end = () => { closing = false; dlg.close(); };
+    fx ? fx.dialogOut(end) : end();
+  };
+  $('#now-sheet').addEventListener('click', (e) => openSheet(TRACKS.indexOf(cur), e.currentTarget));
+  $('#work-table').addEventListener('click', (e) => { const b = e.target.closest('[data-sheet]'); if (b) openSheet(+b.dataset.sheet, b); });
+  $('#sheet-close').addEventListener('click', closeSheet);
+  $('#sheet-ask').addEventListener('click', () => { askFor = cur; closeSheet(); });
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); closeSheet(); });
+  // Close on a backdrop click only when the press also started on the backdrop (not a text selection overshoot).
+  dlg.addEventListener('pointerdown', (e) => { downOn = e.target; });
+  dlg.addEventListener('click', (e) => { if (e.target === dlg && downOn === dlg) closeSheet(); });
+  dlg.addEventListener('close', () => {
+    settle(); lenis?.start();
+    if (!askFor) { opener?.focus(); return; }
+    // "Ask for something like this": back to the enquiry, with the track named in the notes if they are empty.
+    const t = askFor; askFor = null;
+    if (!done.hidden) showDone(false);
+    if (!fNotes.value.trim()) fNotes.value = `Something like "${t.title}" from ${t.game}.`;
+    const target = $('#contact');
+    lenis ? lenis.scrollTo(target) : target.scrollIntoView();
+    fName.focus({ preventScroll: true });
+  });
+
+  /* ---------- Enquiry form (nothing is sent) ---------- */
+  const form = $('#enq'), done = $('#done'), doneTitle = $('#done-title');
+  const fName = $('#f-name'), fEmail = $('#f-email'), fNeed = $('#f-need'), fMin = $('#f-min'), fDate = $('#f-date'), fNotes = $('#f-notes');
+  const fan = makeTracker($('#fan'), $('#fan-rows'), false), FAN = parsePattern(DATA.fanfare.pattern);
+  fan.load(FAN);
+  fDate.min = isoDay(1);
+  const RULES = [
+    [fName, checkName], [fEmail, checkEmail], [fNeed, checkNeed],
+    [fMin, (v) => parseMinutes(v).msg], [fDate, (v) => (fDate.validity.badInput ? 'Use a date like 2027-03-01, or leave this empty.' : parseDeadline(v, isoDay()).msg)]
+  ];
+  const showError = (input, msg) => {
+    const item = input.closest('.f-item'), line = $('.f-msg', item);
+    line.textContent = msg || line.dataset.hint;   // the hint returns when the error clears, so no stale message is left
+    item.classList.toggle('is-bad', !!msg);
+    if (msg) input.setAttribute('aria-invalid', 'true'); else input.removeAttribute('aria-invalid');
+  };
+  RULES.forEach(([input, rule]) => ['input', 'change'].forEach((t) => input.addEventListener(t, () => {
+    if (input.hasAttribute('aria-invalid') && !rule(input.value)) showError(input, '');
+  })));
+  const showDone = (yes) => { form.hidden = yes; done.hidden = !yes; };
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const bad = RULES.map(([input, rule]) => { const msg = rule(input.value); showError(input, msg); return msg ? input : null; }).filter(Boolean);
+    if (bad.length) { bad[0].focus(); return; }
+    const name = fName.value.trim(), mins = parseMinutes(fMin.value).value, day = parseDeadline(fDate.value, isoDay()).value, notes = fNotes.value.trim();
+    doneTitle.textContent = `Enquiry noted, ${name.split(/\s+/)[0]}.`;
+    $('#done-line').textContent = 'Mirela answers within two working days, at the address below. This is what she will read:';
+    const echo = $('#echo'); echo.innerHTML = '';   // textContent only: these are the visitor's own words
+    [['Name', name], ['Email', fEmail.value.trim()], ['You need', fNeed.value], ['Music', mins ? `About ${mins} minute${mins === 1 ? '' : 's'}` : 'Length not given'],
+      ['Deadline', day ? longDate(day) : 'No deadline given'], ...(notes ? [['Notes', notes]] : [])]
+      .forEach(([k, v]) => { const d = el('div'); d.append(el('dt', '', k), el('dd', '', v)); echo.append(d); });
+    stop();
+    showDone(true);
+    doneTitle.focus({ preventScroll: true });
+    lenis?.resize();
+    // The fanfare: the playhead runs through the bar once. With reduced motion it rests on the last note instead.
+    fan.rest();
+    if (still()) { fan.setPlay(6); fan.kickRow(6); }
+    else { fan.setPlay(-1); runPattern(fan, FAN, DATA.fanfare.bpm, 1, () => fan.setPlay(6)); }   // it comes to rest on the last note
+  });
+  $('#again').addEventListener('click', () => {
+    stopRun?.();
+    [fNeed, fMin, fDate, fNotes].forEach((f) => { f.value = ''; });   // name and email are kept
+    showDone(false);
+    lenis?.resize();
+    fNeed.focus();
+  });
+
+  /* ---------- The order list: the entry for the part at the top of the screen carries the song's playhead ---------- */
+  const orders = $$('.orders a'), parts = orders.map((a) => $(a.getAttribute('href')));
+  let order = 0, orderRaf = 0;
+  const setOrder = () => {
+    orderRaf = 0;
+    const line = parseFloat(read('--stick')) + 120;
+    let at = 0;
+    parts.forEach((p, i) => { if (p.getBoundingClientRect().top <= line) at = i; });
+    if (window.scrollY > 0 && window.scrollY + innerHeight >= root.scrollHeight - 2) at = parts.length - 1;
+    if (at === order) return;
+    orders[order].removeAttribute('aria-current');
+    orders[order = at].setAttribute('aria-current', 'true');
+  };
+  const askOrder = () => { if (!orderRaf) orderRaf = requestAnimationFrame(setOrder); };
+  window.addEventListener('scroll', askOrder, { passive: true });
+  window.addEventListener('resize', askOrder);
+  setOrder();
+
+  /* ---------- Presses are held long enough to be seen: buttons at least --d-press, links --d-tap after a touch ---------- */
+  {
+    let down = null, t0 = 0, timer = 0;
+    const lift = () => {
+      if (!down) return;
+      const b = down, wait = (b.classList.contains('btn') ? ms('--d-press') : ms('--d-tap')) - (performance.now() - t0);
+      down = null;
+      const off = () => b.classList.remove('is-down', 'is-tap');
+      if (wait > 0) timer = setTimeout(off, wait); else off();
+    };
+    const press = (b, cls) => {
+      clearTimeout(timer);
+      $$('.is-down, .is-tap').forEach((x) => x.classList.remove('is-down', 'is-tap'));
+      down = b; t0 = performance.now(); b.classList.add(cls);
+    };
+    document.addEventListener('pointerdown', (e) => {
+      if (e.button) return;
+      const b = e.target.closest?.('.btn'), u = !b && e.pointerType === 'touch' && e.target.closest?.('.u');
+      if (b) press(b, 'is-down'); else if (u) press(u, 'is-tap');
+    });
+    ['pointerup', 'pointercancel'].forEach((t) => document.addEventListener(t, lift));
+    document.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) { const b = e.target.closest?.('.btn'); if (b) press(b, 'is-down'); } });
+    document.addEventListener('keyup', lift);
+  }
+
+  if (!lib) return;
+
+  /* ---------- Motion ---------- */
+  gsap.registerPlugin(ScrollTrigger);
+  const fontsReady = Promise.race([
+    Promise.all([document.fonts.ready, document.fonts.load('700 100px "Handjet"')]).then(() => 'fonts', () => 'fonts'),
+    new Promise((r) => setTimeout(() => r('timeout'), 1500))
+  ]);
+  // Start the load sequence only on a visible page: with lagSmoothing(0), a timeline started in a background
+  // tab would jump to its end on return.
+  const visible = new Promise((r) => {
+    if (document.visibilityState === 'visible') return r();
+    const f = () => { if (document.visibilityState === 'visible') { document.removeEventListener('visibilitychange', f); r(); } };
+    document.addEventListener('visibilitychange', f);
+  });
+  let played = false;   // the song loads once per page
+
+  const mm = gsap.matchMedia();
+  mm.add({ motion: '(prefers-reduced-motion: no-preference)', reduce: '(prefers-reduced-motion: reduce)' }, (ctx) => {
+    if (!ctx.conditions.motion) {
+      // Reduced motion: the pattern is simply there, native scroll, no scrub, dialog and track changes are instant.
+      root.classList.add('go');
+      return;
+    }
+    let dead = false, fillTl = null, dlgTl = null;
+    const T = { block: ms('--d-block') / 1000, kick: ms('--d-kick') / 1000, strip: ms('--d-strip') / 1000 };
+    const rim = $('#sheet-rim'), hint = $('#orders-h');
+    hint.hidden = false;
+
+    // Lenis on GSAP's clock. Touch keeps native scrolling.
+    lenis = new Lenis({ lerp: .1, smoothWheel: true, autoRaf: false, anchors: true });
+    lenis.on('scroll', ScrollTrigger.update);
+    const tick = (t) => lenis.raf(t * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
+
+    /* The song loads: the rows cut in as four blocks of eight, top to bottom, then the meters kick in channel order. */
+    const fill = () => {
+      fillTl?.kill();
+      const rows = main.rows, n = rows.length / 4;
+      rows.forEach((r) => { r.style.visibility = 'hidden'; });
+      fillTl = gsap.timeline();
+      for (let b = 0; b < 4; b++) fillTl.call(() => rows.slice(b * n, b * n + n).forEach((r) => { r.style.visibility = ''; }), null, (b + 1) * T.block);
+      for (let c = 0; c < 4; c++) fillTl.call(() => { if (!playing) main.kick(c, 8); }, null, 5 * T.block + c * T.kick);
+    };
+
+    /* The order list's scroll moment: while nothing plays, the row that crosses a fixed line of the screen takes the
+       playhead, so scrolling through the pattern steps it one row at a time, both ways, like a tracker scrolling
+       under its cursor. The line is where the first row sits at the top of the page, or 45% down, whichever is higher. */
+    const line = () => Math.round(Math.min(rowsEl.getBoundingClientRect().top + window.scrollY, innerHeight * .45));
+    const st = ScrollTrigger.create({
+      trigger: rowsEl,
+      start: () => `top ${line()}px`,
+      end: () => `bottom ${line()}px`,
+      onUpdate: (self) => {
+        if (playing || dlg.open) return;
+        const n = cur.rows.length, r = Math.min(n - 1, Math.floor(self.progress * n));
+        if (r === main.at) return;
+        if (hover) { hover = false; clearEdit(); }   // the row has moved from under a still pointer
+        main.setPlay(r); main.kickRow(r);
+        if (!edit) showStatus(r);
+      }
+    });
+
+    /* Hooks for the plain-JS flows */
+    fx = {
+      fill,
+      // The track sheet arrives as four vertical strips, left to right, and leaves right to left.
+      dialogReset() { dlgTl?.kill(); dlgTl = null; rim.style.clipPath = ''; },
+      dialogIn() {
+        dlgTl?.kill();
+        rim.style.clipPath = 'inset(0 75% 0 0)';
+        dlgTl = gsap.timeline();
+        [50, 25, 0].forEach((v, i) => dlgTl.call(() => { rim.style.clipPath = v ? `inset(0 ${v}% 0 0)` : ''; }, null, (i + 1) * T.strip));
+      },
+      dialogOut(end) {
+        dlgTl?.kill();
+        rim.style.clipPath = 'inset(0 25% 0 0)';
+        dlgTl = gsap.timeline();
+        [50, 75].forEach((v, i) => dlgTl.call(() => { rim.style.clipPath = `inset(0 ${v}% 0 0)`; }, null, (i + 1) * T.strip));
+        dlgTl.call(() => { rim.style.clipPath = ''; end(); }, null, 3 * T.strip);
+      }
+    };
+
+    Promise.all([fontsReady, visible]).then(() => ctx.add(() => {
+      if (dead) return;
+      if (!played) { played = true; fill(); }   // the same hidden state as the CSS, now inline, so .go can be added in the same task
+      root.classList.add('go');
+      ScrollTrigger.refresh();
+    }));
+
+    return () => {
+      dead = true;
+      fx = null;
+      fillTl?.kill(); dlgTl?.kill();
+      main.rows.forEach((r) => { r.style.visibility = ''; });
+      rim.style.clipPath = '';
+      hint.hidden = true;
+      st.kill();
+      gsap.ticker.remove(tick);
+      gsap.ticker.lagSmoothing(500, 33);
+      lenis.destroy(); lenis = null;
+    };
+  });
+})();
+</script>
+</body>
+</html>

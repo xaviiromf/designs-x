@@ -20,6 +20,7 @@ designs/<slug>/design.md    metadata and design notes
 designs/<slug>/preview.png  1440x900 capture of the top of the section
 PRINCIPLES.md               the taste behind the collection
 SKILL.md                    instructions for agents using a local clone
+research/                   plans, motion catalogue, and the effects ledger of the retro gamer / cyberpunk family
 site/                       Astro catalogue, deployed to GitHub Pages
 scripts/shot.sh             screenshot a design with system Chromium
 scripts/check-flows.mjs     node scripts/check-flows.mjs [slug] [--json|--self-test]: fail on dead links, broken flows, console errors

@@ -1,0 +1,787 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Kolmio Jam 2026 entries</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Handjet:ELGR,ELSH,wght@1..2,0..16,100..900&family=Host+Grotesk:wght@300..800&display=swap">
+<style>
+  :root {
+    /* Colour: an untextured chartreuse mesh, one hue per genre, yellow for the triangle budget */
+    --ground: #3F5C00;      /* chartreuse: the jam's own untextured mesh; page ground */
+    --plate: #1F2D04;       /* card plates, control bar, dialog, rules: an opaque surface over the mesh */
+    --bone: #F2F5DA;        /* text, focus rings, what you touch (6.9:1 on ground, 13.1:1 on plate) */
+    --lichen: #C5D396;      /* secondary text and field borders, on plates only (9.2:1 on plate) */
+    --seam: #4C6512;        /* rules and empty budget slots on plates; decorative (2.2:1) */
+    --budget: #FFE14D;      /* the 300-triangle budget: triangle counts and budget bars only (11.2:1 on plate) */
+    --racing: #FF9147;      /* genre: racing (6.5:1 on plate) */
+    --platform: #62D2F0;    /* genre: platformer (8.4:1 on plate) */
+    --horror: #FF7A9C;      /* genre: horror (5.9:1 on plate) */
+    --puzzle: #C6AEFF;      /* genre: puzzle (7.6:1 on plate) */
+    --scrim: rgb(24 36 2 / .82);
+    /* Four flat tones per hue, darkest to lightest; the canvas reads these. The ground set stays dark enough
+       that bone text keeps 5.5:1 on its lightest tone. */
+    --mesh-ground: #2C4300 #365100 #3F5C00 #4A6B00;
+    --mesh-racing: #7C340B #A64B17 #D26A28 #FF9147;
+    --mesh-platform: #1A5E78 #27809F #3BA6C7 #62D2F0;
+    --mesh-horror: #741C38 #9C2E53 #C94A72 #FF7A9C;
+    --mesh-puzzle: #46348A #6049B0 #8468D6 #C6AEFF;
+    --mesh-mark: #6F7A3E #A3AD78 #CCD4A2 #F2F5DA;  /* the play-later peak: bone, the visitor's own mark */
+    --facet-lit: #4A6B00;   /* button hover, the lit triangle (bone on it 5.5:1) */
+    --facet-dim: #2C4300;   /* button hover, the shaded triangle (bone on it 9.9:1) */
+    --facet-lit-on: #FFFFF4;/* the same pair on a pressed (bone) chip; plate ink on them 14.5:1 and 10.9:1 */
+    --facet-dim-on: #DCE3B4;
+
+    /* Type */
+    --font-display: "Handjet", "Arial Narrow", sans-serif;
+    --font-text: "Host Grotesk", system-ui, sans-serif;
+    --modules: "ELSH" 2, "ELGR" 1;
+    --t-tiny: 13px;
+    --t-small: 14.5px;
+    --t-body: 17px;
+    --t-lede: 21px;
+    --t-h3: 30px;
+    --t-h2: clamp(46px, 7vw, 104px);
+    --lh-body: 1.55;
+
+    /* Space: the mesh pixel is 4px, so every step is a whole number of mesh pixels */
+    --px: 4px;
+    --s1: 4px; --s2: 8px; --s3: 16px; --s4: 24px; --s5: 40px; --s6: 64px; --s7: 96px;
+    --gut: 24px;
+    --max-w: 1320px;
+    --tap: 48px;
+    --hit: 44px;
+
+    /* Motion (the script reads these) */
+    --d-lod: .12s;          /* one level of detail during the load */
+    --d-bounce: .075s;      /* how long each of the three stepped bounces holds */
+    --d-facet: .06s;        /* the second triangle of a button face, a dialog's second frame */
+    --breath: .35;          /* how fast the noise field evolves while something touches it */
+
+    --tri-ul: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1' preserveAspectRatio='none' shape-rendering='crispEdges'%3E%3Cpath d='M0 0H1L0 1Z'/%3E%3C/svg%3E");
+    --tri-lr: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1' preserveAspectRatio='none' shape-rendering='crispEdges'%3E%3Cpath d='M1 0V1H0Z'/%3E%3C/svg%3E");
+    --strip-up: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='4' shape-rendering='crispEdges'%3E%3Cpath d='M0 4L4 0L8 4Z'/%3E%3C/svg%3E");
+    --strip-down: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='4' shape-rendering='crispEdges'%3E%3Cpath d='M0 0H4L0 4ZM4 0H8V4Z'/%3E%3C/svg%3E");
+  }
+  @media (max-width: 599px) { :root { --gut: 16px; --t-body: 16px; --t-lede: 18px; } }
+
+  /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+
+  /* Hidden only while the load sequence runs; reduced motion and a blocked CDN never see these. */
+  html.js:not(.go) .rv { visibility: hidden; }
+  html.js:not(.go):not(.go1) .h2 { visibility: hidden; }
+  @media (prefers-reduced-motion: reduce) { html.js:not(.go) .rv, html.js:not(.go) .h2 { visibility: visible; } }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { background: var(--ground); }
+  body {
+    margin: 0; background: var(--ground); color: var(--bone);
+    font: 400 var(--t-body)/var(--lh-body) var(--font-text);
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible { outline: 2px solid var(--bone); outline-offset: 3px; }
+  ::selection { background: var(--bone); color: var(--plate); }
+  .vh { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  :where(.jam, .entry) :where(h2, h3, p, dl, dd, ol, ul) { margin: 0; }
+
+  /* ---------- The mesh ---------- */
+  .jam {
+    position: relative; overflow: clip; isolation: isolate;
+    padding: var(--s7) max(var(--gut), (100% - var(--max-w)) / 2) var(--s7);
+  }
+  .mesh {
+    position: absolute; left: 0; top: 0; z-index: -1;
+    image-rendering: pixelated; pointer-events: none;
+  }
+
+  /* ---------- Head ---------- */
+  .head { display: grid; gap: var(--s4); max-width: 60rem; margin-bottom: var(--s6); }
+  .h2 {
+    font: 800 var(--t-h2)/.88 var(--font-display); font-variation-settings: var(--modules);
+    letter-spacing: .01em; max-width: 13ch; text-wrap: balance;
+  }
+  .lede { font-size: var(--t-lede); line-height: 1.45; max-width: 40em; }
+  .hint { font-size: var(--t-small); }
+  .hint[hidden] { display: none; }
+
+  /* ---------- Links: a folded ribbon under the text ---------- */
+  .lnk {
+    position: relative; color: var(--bone); text-decoration: none; font-weight: 600;
+    background: linear-gradient(var(--bone), var(--bone)) 0 100% / 100% 1px no-repeat;
+    padding-block: 10px 3px; /* 44px tall target on one line of body text */
+  }
+  .lnk::before, .lnk::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: -4px; height: 4px; visibility: hidden;
+    -webkit-mask: var(--strip-up) 0 0 / 8px 4px repeat-x; mask: var(--strip-up) 0 0 / 8px 4px repeat-x;
+    background: var(--bone);
+  }
+  .lnk::after { -webkit-mask-image: var(--strip-down); mask-image: var(--strip-down); background: var(--facet-lit); transition: visibility 0s; }
+  .on-plate .lnk::after { background: var(--seam); }
+  .lnk:hover, .lnk:focus-visible { background-size: 100% 0; }
+  .lnk:hover::before, .lnk:focus-visible::before { visibility: visible; }
+  .lnk:hover::after, .lnk:focus-visible::after { visibility: visible; transition-delay: var(--d-facet); }
+
+  /* ---------- Buttons: a quad of two flat-shaded triangles ---------- */
+  .btn {
+    position: relative; isolation: isolate; display: inline-flex; align-items: center; justify-content: center; gap: var(--s2);
+    min-height: var(--hit); padding: 0 var(--s3);
+    font: 600 var(--t-small)/1.2 var(--font-text); color: var(--bone);
+    background: var(--plate); border: 2px solid var(--lichen); border-radius: 0; cursor: pointer;
+    --lit: var(--facet-lit); --dim: var(--facet-dim);
+  }
+  .btn::before, .btn::after {
+    content: ""; position: absolute; inset: 0; z-index: -1; visibility: hidden;
+    -webkit-mask: var(--tri-ul) 0 0 / 100% 100% no-repeat; mask: var(--tri-ul) 0 0 / 100% 100% no-repeat;
+    background: var(--lit);
+  }
+  .btn::after { -webkit-mask-image: var(--tri-lr); mask-image: var(--tri-lr); background: var(--dim); }
+  .btn[aria-pressed="true"] { background: var(--bone); color: var(--plate); border-color: var(--bone); --lit: var(--facet-lit-on); --dim: var(--facet-dim-on); }
+  .btn:hover::before, .btn:focus-visible::before { visibility: visible; }
+  .btn:hover::after, .btn:focus-visible::after { visibility: visible; transition: visibility 0s var(--d-facet); }
+  /* Pressed in: the normal flips, so the lit and shaded triangles swap */
+  .btn:active, .btn.is-down { --lit: var(--facet-dim); --dim: var(--facet-lit); }
+  .btn[aria-pressed="true"]:active, .btn[aria-pressed="true"].is-down { --lit: var(--facet-dim-on); --dim: var(--facet-lit-on); }
+  .btn:active::before, .btn:active::after, .btn.is-down::before, .btn.is-down::after { visibility: visible; transition: none; }
+  .sw { width: 10px; height: 10px; background: var(--hue); flex: none; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+
+  /* ---------- Controls ---------- */
+  .bar {
+    display: flex; flex-wrap: wrap; gap: var(--s4) var(--s5); align-items: flex-end;
+    padding: var(--s4); background: var(--plate); margin-bottom: var(--s3);
+  }
+  .grp { display: grid; gap: var(--s2); }
+  .grp-l { font-size: var(--t-tiny); font-weight: 600; color: var(--lichen); }
+  .row { display: flex; flex-wrap: wrap; gap: var(--s2); }
+  .find { flex: 1 1 260px; }
+  .find input {
+    width: 100%; height: var(--tap); padding: 0 var(--s3);
+    font: 400 var(--t-body) var(--font-text); color: var(--bone);
+    background: var(--plate); border: 2px solid var(--lichen); border-radius: 0;
+  }
+  .find input:hover { border-color: var(--bone); }
+  .find input:focus-visible { border-color: var(--bone); outline-offset: 2px; }
+  .find input::placeholder { color: var(--lichen); opacity: 1; }
+  .matches { display: block; height: 10px; line-height: 0; }
+  .matches svg, .budget svg { display: block; }
+  .status { min-height: 1.6em; margin-bottom: var(--s4); font-weight: 600; }
+
+  /* ---------- Gallery ---------- */
+  .grid {
+    list-style: none; padding: 0; display: grid; gap: var(--s4);
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 284px), 1fr));
+  }
+  .card { position: relative; display: grid; grid-template-rows: auto 1fr; --hue: var(--bone); }
+  .card[hidden] { display: none; }
+  .win { aspect-ratio: 4 / 3; border: 4px solid var(--plate); border-bottom: 0; position: relative; }
+  .card:hover .win, .card:has(.open:focus-visible) .win { border-color: var(--bone); }
+  .rank {
+    position: absolute; left: 0; top: 0; padding: 2px var(--s2) 4px;
+    background: var(--plate); color: var(--bone); font: 700 22px/1 var(--font-display); font-variation-settings: var(--modules);
+  }
+  .plate { background: var(--plate); padding: var(--s3) var(--s3) var(--s4); display: grid; gap: var(--s1); align-content: start; }
+  .genre { display: flex; align-items: center; gap: var(--s2); color: var(--hue); font-size: var(--t-tiny); font-weight: 650; }
+  .card h3 { font: 700 var(--t-h3)/1 var(--font-display); font-variation-settings: var(--modules); margin-block: 2px 2px; }
+  .open {
+    all: unset; cursor: pointer; color: var(--bone);
+    /* the whole card is the target */
+  }
+  .open::after { content: ""; position: absolute; inset: 0; }
+  .open:focus-visible { outline: none; }
+  .card:has(.open:focus-visible) { outline: 2px solid var(--bone); outline-offset: 3px; }
+  .maker { color: var(--lichen); font-size: var(--t-small); }
+  .budget { display: flex; align-items: center; gap: var(--s2); margin-top: var(--s2); font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+  .budget b { color: var(--budget); font-weight: 650; }
+  .plat { color: var(--lichen); font-size: var(--t-small); }
+  .listed { color: var(--bone); font-size: var(--t-tiny); font-weight: 650; display: flex; gap: var(--s2); align-items: center; }
+  .listed[hidden] { display: none; }
+  .listed::before { content: ""; width: 10px; height: 10px; background: var(--bone); clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+
+  .empty { background: var(--plate); padding: var(--s4); display: grid; gap: var(--s3); justify-items: start; }
+  .empty[hidden] { display: none; }
+
+  /* ---------- Rules ---------- */
+  .rules { margin-top: var(--s6); background: var(--plate); padding: var(--s5) var(--s4); display: grid; gap: var(--s4); }
+  .rules h3 { font: 800 clamp(34px, 4vw, 52px)/.95 var(--font-display); font-variation-settings: var(--modules); }
+  .rules ol { padding-left: 1.4em; display: grid; gap: var(--s2); max-width: 46em; }
+  .rules ol li::marker { color: var(--budget); font-weight: 700; }
+  .rules dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--s3) var(--s4); border-top: 2px solid var(--seam); padding-top: var(--s4); }
+  .rules dt { font-size: var(--t-tiny); font-weight: 600; color: var(--lichen); }
+  .rules dd { margin: 0; }
+
+  /* ---------- Entry dialog ---------- */
+  .entry {
+    width: min(600px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); padding: 0; overflow: auto;
+    background: var(--plate); color: var(--bone); border: 4px solid var(--hue, var(--bone));
+  }
+  .entry::backdrop { background: var(--scrim); }
+  .dlg { padding: var(--s5) var(--s4) var(--s4); display: grid; gap: var(--s3); }
+  [tabindex="-1"]:focus { outline: none; } /* headings that only take focus from the script or an anchor */
+  .entry h2 { font: 800 clamp(40px, 6vw, 60px)/.9 var(--font-display); font-variation-settings: var(--modules); }
+  .d-facts { display: grid; grid-template-columns: max-content 1fr; gap: var(--s2) var(--s4); padding-block: var(--s3); border-block: 2px solid var(--seam); }
+  .d-facts dt { color: var(--lichen); font-size: var(--t-small); font-weight: 600; }
+  .d-facts dd { margin: 0; font-variant-numeric: tabular-nums; }
+  .d-facts .budget { margin: 0; }
+  .entry h3 { font-size: var(--t-small); font-weight: 650; color: var(--lichen); }
+  .d-msg { min-height: 1.55em; font-weight: 600; }
+  .d-actions { display: flex; flex-wrap: wrap; gap: var(--s2); }
+  .d-actions #d-close { margin-left: auto; }
+  @media (max-width: 599px) { .win { aspect-ratio: 2 / 1; } }
+  @media (max-width: 599px) { .d-facts { grid-template-columns: 1fr; gap: 0 0; } .d-facts dd { margin-bottom: var(--s2); } .d-actions #d-close { margin-left: 0; } }
+</style>
+</head>
+<body>
+
+<section class="jam" id="jam" aria-labelledby="jam-title">
+  <canvas class="mesh" aria-hidden="true"></canvas>
+
+  <header class="head">
+    <h2 class="h2" id="jam-title" tabindex="-1">Twelve games, 300 triangles a model</h2>
+    <p class="lede rv">Kolmio Jam ran online from 9 to 12 October 2026, hosted by Kantti, the game-dev meetup at Metso library in Tampere. The theme was Low tide. These are all twelve finished entries, and what each team cut to stay under the budget. <a class="lnk" href="#rules">Read the four rules</a></p>
+    <p class="hint rv" id="hint" hidden></p>
+  </header>
+
+  <div class="bar rv" role="search" aria-label="Filter and order the entries">
+    <div class="grp">
+      <span class="grp-l" id="g-genre">Genre</span>
+      <div class="row" role="group" aria-labelledby="g-genre" id="chips">
+        <button class="btn" type="button" data-genre="all" aria-pressed="true">All</button>
+        <button class="btn" type="button" data-genre="racing" aria-pressed="false" style="--hue: var(--racing)"><span class="sw" aria-hidden="true"></span>Racing</button>
+        <button class="btn" type="button" data-genre="platform" aria-pressed="false" style="--hue: var(--platform)"><span class="sw" aria-hidden="true"></span>Platformer</button>
+        <button class="btn" type="button" data-genre="horror" aria-pressed="false" style="--hue: var(--horror)"><span class="sw" aria-hidden="true"></span>Horror</button>
+        <button class="btn" type="button" data-genre="puzzle" aria-pressed="false" style="--hue: var(--puzzle)"><span class="sw" aria-hidden="true"></span>Puzzle</button>
+      </div>
+    </div>
+    <div class="grp">
+      <span class="grp-l" id="g-sort">Order</span>
+      <div class="row" role="group" aria-labelledby="g-sort" id="sorts">
+        <button class="btn" type="button" data-sort="rank" aria-pressed="true">Jury result</button>
+        <button class="btn" type="button" data-sort="tris" aria-pressed="false">Fewest triangles</button>
+        <button class="btn" type="button" data-sort="title" aria-pressed="false">Title</button>
+      </div>
+    </div>
+    <div class="grp find">
+      <label class="grp-l" for="q">Find a title or maker</label>
+      <input id="q" type="search" autocomplete="off" spellcheck="false" placeholder="Pier, Okafor, rally">
+      <span class="matches" id="matches" aria-hidden="true"></span>
+    </div>
+  </div>
+
+  <p class="status rv" id="status" role="status">Showing all 12 entries, by jury result.</p>
+  <ol class="grid rv" id="grid" aria-label="Entries"></ol>
+  <div class="empty" id="empty" hidden>
+    <p id="empty-msg">No entry matches.</p>
+    <button class="btn" type="button" id="reset">Show all twelve entries</button>
+  </div>
+
+  <section class="rules rv on-plate" id="rules" aria-labelledby="rules-title">
+    <h3 id="rules-title" tabindex="-1">The four rules</h3>
+    <ol>
+      <li>Every model has 300 triangles or fewer, counted after triangulation. Characters, cars and the level each count as models.</li>
+      <li>Textures are 64 by 64 pixels at most, with 16 colours each.</li>
+      <li>The game renders at 320 by 240 or lower, with no anti-aliasing and no smoothing filters.</li>
+      <li>72 hours, alone or in a pair, on the theme announced at the start: Low tide.</li>
+    </ol>
+    <dl>
+      <div><dt>Jam</dt><dd>Online, 9 to 12 October 2026</dd></div>
+      <div><dt>Jury results</dt><dd>1 November 2026, at the Kantti meetup</dd></div>
+      <div><dt>Host</dt><dd>Kantti, Metso library makerspace, Tampere</dd></div>
+      <div><dt>Next jam</dt><dd>April 2027, theme announced at the start</dd></div>
+    </dl>
+    <p><a class="lnk" href="#jam-title">Back to the entries</a></p>
+  </section>
+</section>
+
+<dialog class="entry" id="entry" aria-labelledby="d-title" data-lenis-prevent>
+  <div class="dlg">
+    <p class="genre" id="d-genre"><span class="sw" aria-hidden="true"></span><span></span></p>
+    <h2 id="d-title">Entry</h2>
+    <p class="maker" id="d-maker"></p>
+    <dl class="d-facts">
+      <dt>Jury result</dt><dd id="d-rank"></dd>
+      <dt>Largest model</dt><dd id="d-model"></dd>
+      <dt>Budget used</dt><dd><span class="budget" id="d-budget"></span></dd>
+      <dt>Platforms</dt><dd id="d-plat"></dd>
+    </dl>
+    <h3>What they cut to fit</h3>
+    <p id="d-cut"></p>
+    <p class="d-msg" id="d-msg" role="status"></p>
+    <div class="d-actions">
+      <button class="btn" type="button" id="d-list" aria-pressed="false">Play later</button>
+      <button class="btn" type="button" id="d-prev">Previous entry</button>
+      <button class="btn" type="button" id="d-next">Next entry</button>
+      <button class="btn" type="button" id="d-close">Close</button>
+    </div>
+  </div>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  const root = document.documentElement;
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const lib = !!(window.gsap && window.ScrollTrigger && window.Lenis);
+  if (lib) root.classList.add('js'); // CDN blocked: no class, everything shows and works in plain JavaScript
+  const read = (n) => getComputedStyle(root).getPropertyValue(n).trim();
+
+  /* ---------- The entries ---------- */
+  const GENRES = { racing: 'Racing', platform: 'Platformer', horror: 'Horror', puzzle: 'Puzzle' };
+  const REGION = { racing: 1, platform: 2, horror: 3, puzzle: 4 };
+  const ENTRIES = [
+    { id: 'ebb-line', title: 'Ebb Line', maker: 'Saara Niemi and Joonas Kallio', genre: 'racing', rank: 1, tris: 296, model: 'the hovercraft', plat: 'Windows, Web',
+      cut: 'The hovercraft has no underside. The camera never sees it, so its 40 triangles went into the spray fins instead.' },
+    { id: 'tidepool-courier', title: 'Tidepool Courier', maker: 'Mo Adebayo', genre: 'platform', rank: 2, tris: 212, model: 'the crab courier', plat: 'Web',
+      cut: 'The crab walks on two legs a side. Its gait is four whole models swapped every other frame, not a skeleton.' },
+    { id: 'sluice', title: 'Sluice', maker: 'Ines Varga', genre: 'puzzle', rank: 3, tris: 148, model: 'the canal basin', plat: 'Windows, Linux, macOS',
+      cut: 'Every lock gate is the same 12-triangle wedge, rotated and recoloured. The water is one quad that moves up and down.' },
+    { id: 'wreck-lamp', title: 'Wreck Lamp', maker: 'Teemu Ahola', genre: 'horror', rank: 4, tris: 300, model: 'the diver', plat: 'Windows',
+      cut: 'The diver’s helmet takes exactly 300. The lamp beam is a flat sprite, and the wreck is fog with three ribs in it.' },
+    { id: 'low-water-gp', title: 'Low Water Grand Prix', maker: 'Two Buoys (Lea and Pim Vos)', genre: 'racing', rank: 5, tris: 274, model: 'the track', plat: 'Windows, Linux',
+      cut: 'The whole track is one model, so the grandstands are painted on the cliffs. The crowd is four colours of texture.' },
+    { id: 'kelp-stair', title: 'Kelp Stair', maker: 'Ana Lucía Ríos', genre: 'platform', rank: 6, tris: 96, model: 'the kelp tower', plat: 'Web',
+      cut: 'One 8-triangle leaf, instanced 12 times up the stalk. The climber is a billboard that turns to face you.' },
+    { id: 'pier-4am', title: 'The Pier at 4 a.m.', maker: 'Noor Haddad', genre: 'horror', rank: 7, tris: 188, model: 'the pier', plat: 'Windows, macOS',
+      cut: 'The planks stop where the fog starts. Past that, the pier is one long box that you only ever see from inside.' },
+    { id: 'salt-ledger', title: 'Salt Ledger', maker: 'Kasimir Lind', genre: 'puzzle', rank: 8, tris: 60, model: 'the scales', plat: 'Web, Linux',
+      cut: 'The salt is a texture, not geometry. Weighing a pile swaps one 16-colour image for the next.' },
+    { id: 'mudflat-rally', title: 'Mudflat Rally', maker: 'Juno Park', genre: 'racing', rank: 9, tris: 232, model: 'the rally car', plat: 'Web',
+      cut: 'The wheels are hexagons. At 320 by 240 nobody noticed until the jury slowed the replay down.' },
+    { id: 'barnacle-climb', title: 'Barnacle Climb', maker: 'Femi and Tolu Okafor', genre: 'platform', rank: 10, tris: 300, model: 'the hull', plat: 'Windows',
+      cut: 'The hull uses all 300, so each barnacle is a decal. The climber’s hands are cubes.' },
+    { id: 'lighthouse-static', title: 'Lighthouse Static', maker: 'Marta Kowal', genre: 'horror', rank: 11, tris: 132, model: 'the lighthouse', plat: 'Linux, Web',
+      cut: 'The spiral stair is the same six steps on a loop. The game counts how often you have climbed them.' },
+    { id: 'moon-pull', title: 'Moon Pull', maker: 'Ola Nordqvist', genre: 'puzzle', rank: 12, tris: 24, model: 'the moon', plat: 'Web',
+      cut: 'The whole game is a 24-triangle moon and one flat plane of sea. You drag the moon; the tide follows.' }
+  ];
+  const byId = new Map(ENTRIES.map((e) => [e.id, e]));
+  const ord = (n) => n + (n % 10 === 1 && n !== 11 ? 'st' : n % 10 === 2 && n !== 12 ? 'nd' : n % 10 === 3 && n !== 13 ? 'rd' : 'th');
+  const SORTS = {
+    rank: { label: 'by jury result', fn: (a, b) => a.rank - b.rank },
+    tris: { label: 'fewest triangles first', fn: (a, b) => a.tris - b.tris || a.rank - b.rank },
+    title: { label: 'by title', fn: (a, b) => a.title.replace(/^The /, '').localeCompare(b.title.replace(/^The /, '')) }
+  };
+  const state = { genre: 'all', sort: 'rank', q: '', list: new Set() };
+
+  // A triangle strip: one triangle per slot, alternating up and down, in the slot's colour (null = empty).
+  const strip = (fills, u = 6, h = 10) => {
+    const w = (fills.length + 1) * u;
+    return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" shape-rendering="crispEdges" aria-hidden="true">${fills.map((f, k) => {
+      const x = k * u, pts = k % 2 ? `${x},0 ${x + u},${h} ${x + 2 * u},0` : `${x},${h} ${x + u},0 ${x + 2 * u},${h}`;
+      return `<polygon points="${pts}" style="fill:${f || 'var(--seam)'}"/>`;
+    }).join('')}</svg>`;
+  };
+  const budget = (t) => strip(Array.from({ length: 12 }, (_, k) => (k < Math.ceil(t / 25) ? 'var(--budget)' : null)))
+    + `<span><b>${t}</b> of 300 triangles</span>`;
+
+  /* ---------- Cards ---------- */
+  const sec = $('.jam'), grid = $('#grid'), status = $('#status'), empty = $('#empty'), emptyMsg = $('#empty-msg');
+  const q = $('#q'), matches = $('#matches');
+  const cards = new Map();
+  for (const e of ENTRIES) {
+    const li = document.createElement('li');
+    li.className = 'card'; li.dataset.id = e.id; li.dataset.genre = e.genre;
+    li.style.setProperty('--hue', `var(--${e.genre})`);
+    li.innerHTML = `<div class="win" aria-hidden="true"><span class="rank">${ord(e.rank)}</span></div>
+      <div class="plate">
+        <p class="genre"><span class="sw" aria-hidden="true"></span>${GENRES[e.genre]}<span class="vh">, jury result ${ord(e.rank)}</span></p>
+        <h3><button class="open" type="button" aria-haspopup="dialog">${e.title}</button></h3>
+        <p class="maker">${e.maker}</p>
+        <p class="budget">${budget(e.tris)}</p>
+        <p class="plat">${e.plat}</p>
+        <p class="listed" hidden>On your play-later list</p>
+      </div>`;
+    cards.set(e.id, li);
+  }
+  const fold = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const shown = () => ENTRIES.filter((e) => (state.genre === 'all' || e.genre === state.genre)
+    && (!state.q || fold(`${e.title} ${e.maker}`).includes(fold(state.q)))).sort(SORTS[state.sort].fn);
+
+  let refresh = () => { mesh.layout(); mesh.still(); mesh.draw(); }; // the motion branch swaps in a loop wake
+  const render = () => {
+    const list = shown(), ids = new Set(list.map((e) => e.id));
+    [...ENTRIES].sort(SORTS[state.sort].fn).forEach((e) => { const li = cards.get(e.id); li.hidden = !ids.has(e.id); grid.append(li); });
+    const n = list.length, g = state.genre === 'all' ? '' : ` ${GENRES[state.genre].toLowerCase()}`;
+    const k = state.list.size, tail = k ? ` ${k} on your play-later list.` : '';
+    status.textContent = n === 12 ? `Showing all 12 entries, ${SORTS[state.sort].label}.${tail}`
+      : `Showing ${n} of 12${g} entries${state.q ? ` matching “${state.q}”` : ''}, ${SORTS[state.sort].label}.${tail}`;
+    empty.hidden = n > 0;
+    if (!n) emptyMsg.textContent = `No${g} entry has “${state.q}” in its title or maker.`;
+    matches.innerHTML = n ? strip(list.map((e) => `var(--${e.genre})`), 5, 10) : '';
+    refresh();
+  };
+  const press = (group, attr, val) => $$(`#${group} .btn`).forEach((b) => b.setAttribute('aria-pressed', String(b.dataset[attr] === val)));
+  $('#chips').addEventListener('click', (e) => { const b = e.target.closest('.btn'); if (!b) return; state.genre = b.dataset.genre; press('chips', 'genre', state.genre); render(); });
+  $('#sorts').addEventListener('click', (e) => { const b = e.target.closest('.btn'); if (!b) return; state.sort = b.dataset.sort; press('sorts', 'sort', state.sort); render(); });
+  q.addEventListener('input', () => { state.q = q.value.trim(); render(); });
+  $('#reset').addEventListener('click', () => {
+    state.genre = 'all'; state.q = ''; q.value = ''; press('chips', 'genre', 'all'); render(); q.focus();
+  });
+  // Keyboard and touch press for the facet swap (CSS :active covers the mouse)
+  document.addEventListener('keydown', (e) => { if ((e.key === ' ' || e.key === 'Enter') && e.target.matches?.('.btn')) e.target.classList.add('is-down'); });
+  document.addEventListener('keyup', () => $$('.btn.is-down').forEach((b) => b.classList.remove('is-down')));
+
+  /* ---------- Entry dialog ---------- */
+  const dlg = $('#entry'), dTitle = $('#d-title'), dList = $('#d-list'), dMsg = $('#d-msg');
+  let lenis = null, fx = null, current = null, closing = false, downOn = null;
+  const fill = (id) => {
+    const e = byId.get(id); current = id;
+    dlg.style.setProperty('--hue', `var(--${e.genre})`);
+    $('#d-genre span:last-child').textContent = GENRES[e.genre];
+    dTitle.textContent = e.title;
+    $('#d-maker').textContent = `by ${e.maker}`;
+    $('#d-rank').textContent = `${ord(e.rank)} of 12`;
+    $('#d-model').textContent = `${e.model[0].toUpperCase()}${e.model.slice(1)}, ${e.tris} triangles`;
+    $('#d-budget').innerHTML = budget(e.tris);
+    $('#d-plat').textContent = e.plat;
+    $('#d-cut').textContent = e.cut;
+    dList.setAttribute('aria-pressed', String(state.list.has(id)));
+    dMsg.textContent = '';
+  };
+  const openEntry = (id) => {
+    if (dlg.open) return;
+    closing = false; fx?.dialogReset();
+    fill(id); dlg.showModal(); lenis?.stop(); fx?.dialogIn();
+  };
+  const closeEntry = () => {
+    if (!dlg.open || closing) return;
+    closing = true;
+    const end = () => { closing = false; dlg.close(); cards.get(current)?.querySelector('.open').focus(); };
+    fx ? fx.dialogOut(end) : end();
+  };
+  const step = (d) => {
+    const list = shown(), i = list.findIndex((e) => e.id === current);
+    if (!list.length) return;
+    fill(list[(i + d + list.length) % list.length].id);
+    dTitle.focus();
+  };
+  dTitle.tabIndex = -1;
+  grid.addEventListener('click', (e) => { const b = e.target.closest('.open'); if (b) openEntry(b.closest('.card').dataset.id); });
+  $('#d-prev').addEventListener('click', () => step(-1));
+  $('#d-next').addEventListener('click', () => step(1));
+  $('#d-close').addEventListener('click', closeEntry);
+  dList.addEventListener('click', () => {
+    const on = !state.list.has(current), e = byId.get(current);
+    on ? state.list.add(current) : state.list.delete(current);
+    dList.setAttribute('aria-pressed', String(on));
+    cards.get(current).querySelector('.listed').hidden = !on;
+    const k = state.list.size;
+    dMsg.textContent = on ? `${e.title} is on your play-later list. ${k} ${k === 1 ? 'entry' : 'entries'} on it.`
+      : `${e.title} is off your play-later list.`;
+    render();
+    if (on) fx?.peak(current); // a peak stamps up in the entry's region
+  });
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); closeEntry(); });
+  dlg.addEventListener('pointerdown', (e) => { downOn = e.target; });
+  dlg.addEventListener('click', (e) => { if (e.target === dlg && downOn === dlg) closeEntry(); });
+  dlg.addEventListener('close', () => { closing = false; fx?.dialogReset(); lenis?.start(); });
+
+  /* ---------- The mesh: flat-shaded triangles on a 4px pixel grid, four tones per hue ---------- */
+  const mesh = (() => {
+    const P = 4;                 // one mesh pixel is 4 CSS pixels; drawn unsmoothed and scaled with image-rendering: pixelated
+    const K = .55;               // oblique view: a raised vertex moves up the screen by K of its height
+    const AMP = 6, FREQ = 1 / 46, JIT = 3.2;
+    const BOUNCE = [-.45, .22, -.1, 0]; // three stepped bounces, then rest
+    const cv = $('.mesh'), g = cv.getContext('2d');
+    const Lv = [-.4, -.6, .7], Lm = Math.hypot(...Lv), LX = Lv[0] / Lm, LY = Lv[1] / Lm, LZ = Lv[2] / Lm;
+    const BANDS = [.5, .64, .78];
+    const pal = new Uint32Array(24);
+    let W = 0, H = 0, S0 = 12, S = 12, nx = 0, ny = 0, lod = 1, tint = true, tau = 0, hold = .075;
+    let vx, vy, jz, cur, from, ph, pt, hh, sy, tri, reg, img, buf, rects = [];
+    const src = { ptr: null, cards: new Set(), crease: null, peaks: state.list, stir: 0 };
+
+    const hash = (x, y, z) => {
+      let h = Math.imul(x | 0, 73856093) ^ Math.imul(y | 0, 19349663) ^ Math.imul(z | 0, 83492791);
+      h = Math.imul(h ^ (h >>> 13), 1274126177);
+      return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+    };
+    const sm = (t) => t * t * (3 - 2 * t);
+    const noise = (x, y, z) => { // 3D value noise
+      const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z);
+      const u = sm(x - xi), v = sm(y - yi), w = sm(z - zi);
+      const l = (a, b, t) => a + (b - a) * t;
+      const c = (dx, dy, dz) => hash(xi + dx, yi + dy, zi + dz);
+      return l(l(l(c(0, 0, 0), c(1, 0, 0), u), l(c(0, 1, 0), c(1, 1, 0), u), v),
+               l(l(c(0, 0, 1), c(1, 0, 1), u), l(c(0, 1, 1), c(1, 1, 1), u), v), w);
+    };
+    const rgba = (hex) => { const n = parseInt(hex.slice(1), 16); return (255 << 24 | (n & 255) << 16 | (n >> 8 & 255) << 8 | n >> 16) >>> 0; };
+    const palette = () => ['ground', 'racing', 'platform', 'horror', 'puzzle', 'mark'].forEach((k, r) =>
+      read(`--mesh-${k}`).split(/\s+/).forEach((hex, t) => { pal[r * 4 + t] = rgba(hex); }));
+
+    const resize = () => {
+      const w = sec.offsetWidth, h = sec.offsetHeight;
+      W = Math.ceil(w / P); H = Math.ceil(h / P);
+      cv.width = W; cv.height = H; cv.style.width = `${W * P}px`; cv.style.height = `${H * P}px`;
+      S0 = w < 600 ? 10 : 12; S = S0 * lod;
+      const sh = S * .866;
+      nx = Math.ceil(W / S) + 3; ny = Math.ceil(H / sh) + 3;
+      const n = nx * ny;
+      vx = new Float32Array(n); vy = new Float32Array(n); jz = new Float32Array(n); cur = new Float32Array(n); from = new Float32Array(n);
+      ph = new Int8Array(n).fill(-1); pt = new Float32Array(n); hh = new Float32Array(n); sy = new Float32Array(n);
+      for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+        const k = j * nx + i;
+        vx[k] = (i - 1 - (j & 1) * .5) * S + (hash(i, j, lod) - .5) * .34 * S;
+        vy[k] = (j - 1) * sh + (hash(j, i, lod + 7) - .5) * .28 * sh;
+        jz[k] = (hash(i + 31, j + 17, lod) - .5) * 2 * JIT; // fixed relief per vertex, so neighbouring facets differ
+      }
+      const t = [];
+      for (let j = 0; j < ny - 1; j++) for (let i = 0; i < nx - 1; i++) {
+        const a = j * nx + i, b = a + 1, c = a + nx, d = c + 1;
+        if (j & 1) t.push(a, c, b, b, c, d); else t.push(a, c, d, a, d, b);
+      }
+      tri = Int32Array.from(t); reg = new Uint8Array(t.length / 3);
+      img = g.createImageData(W, H); buf = new Uint32Array(img.data.buffer);
+      palette();
+    };
+
+    // Card regions in mesh pixels, read from the live layout: a triangle takes the hue of the card its centre is on.
+    const layout = () => {
+      if (!tri) resize();
+      const sr = sec.getBoundingClientRect(), f = (v) => v / P;
+      rects = [...grid.children].filter((li) => !li.hidden).map((li) => {
+        const c = li.getBoundingClientRect(), wr = li.firstElementChild.getBoundingClientRect();
+        return { id: li.dataset.id, r: REGION[li.dataset.genre], x0: f(c.left - sr.left), y0: f(c.top - sr.top), x1: f(c.right - sr.left), y1: f(c.bottom - sr.top),
+          cx: f(wr.left + wr.width / 2 - sr.left), cy: f(wr.top + wr.height / 2 - sr.top), rad: f(Math.max(wr.width, wr.height)) * .58 };
+      });
+      for (let t = 0; t < reg.length; t++) {
+        let r = 0;
+        if (tint) {
+          const a = tri[t * 3], b = tri[t * 3 + 1], c = tri[t * 3 + 2];
+          const x = (vx[a] + vx[b] + vx[c]) / 3, y = (vy[a] + vy[b] + vy[c]) / 3;
+          for (const q of rects) if (x >= q.x0 && x < q.x1 && y >= q.y0 && y < q.y1) { r = src.peaks.has(q.id) && Math.hypot(x - q.cx, y - q.cy) < 1.7 * S0 ? 5 : q.r; break; }
+        }
+        reg[t] = r;
+      }
+    };
+
+    // Where every source wants vertex k to sit: negative sinks, positive rises.
+    const target = (k) => {
+      const x = vx[k], y = vy[k];
+      let z = 0;
+      const p = src.ptr;
+      if (p) {
+        const R = 2.6 * S0, d = Math.hypot(x - p.x, y - p.y);
+        if (d < R) { const q = 1 - (d / R) ** 2; z -= (p.down ? 18 : 10) * q; }
+      }
+      for (const q of rects) {
+        if (src.cards.has(q.id)) { const d = Math.hypot(x - q.cx, y - q.cy); if (d < q.rad) z -= 16 * (1 - (d / q.rad) ** 2); }
+        if (src.peaks.has(q.id)) { const R = 2.2 * S0, d = Math.hypot(x - q.cx, y - q.cy); if (d < R) z += 22 * (1 - d / R); }
+      }
+      const c = src.crease;
+      if (c) { const R = 1.1 * S0, d = Math.abs(x + .6 * y - c.at) / 1.166; if (d < R) z += c.amp * (1 - d / R); }
+      return z;
+    };
+
+    // One tick of the press: deeper is immediate; shallower by more than 2.5px plays three stepped bounces.
+    const step = (dt) => {
+      let busy = !!src.crease || performance.now() - src.stir < 700; // a still pointer keeps its dent, but the field stops breathing
+      for (let k = 0; k < cur.length; k++) {
+        const t = target(k);
+        if (ph[k] >= 0) {
+          if (Math.abs(t) > Math.abs(from[k]) + 1 && Math.sign(t) === Math.sign(from[k]) && Math.abs(t) > Math.abs(cur[k])) { ph[k] = -1; cur[k] = t; continue; }
+          pt[k] += dt;
+          while (pt[k] >= hold && ph[k] >= 0) { pt[k] -= hold; ph[k] = ph[k] + 1 >= BOUNCE.length ? -1 : ph[k] + 1; }
+          cur[k] = ph[k] < 0 ? t : t + (from[k] - t) * BOUNCE[ph[k]];
+          if (ph[k] >= 0) busy = true;
+        } else if (Math.abs(cur[k] - t) > 2.5 && Math.abs(t) < Math.abs(cur[k])) {
+          from[k] = cur[k]; ph[k] = 0; pt[k] = 0; cur[k] = t + (from[k] - t) * BOUNCE[0]; busy = true;
+        } else cur[k] = t;
+      }
+      if (busy) tau += dt * breath; // the field breathes only while something touches it
+      return busy;
+    };
+    let breath = .35;
+    // A new peak stamps up through the same three bounces (1.45, 0.78, 1.1, then 1 of its height).
+    const rise = (id) => {
+      const q = rects.find((r) => r.id === id); if (!q) return;
+      for (let k = 0; k < cur.length; k++) if (Math.hypot(vx[k] - q.cx, vy[k] - q.cy) < 2.2 * S0) { from[k] = cur[k]; ph[k] = 0; pt[k] = 0; }
+    };
+    const still = () => { src.ptr = null; src.cards.clear(); src.crease = null; for (let k = 0; k < cur.length; k++) { cur[k] = target(k); ph[k] = -1; } };
+
+    const fillTri = (ax, ay, bx, by, cx, cy, col) => {
+      let area = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
+      if (area === 0) return;
+      if (area < 0) { let t = bx; bx = cx; cx = t; t = by; by = cy; cy = t; }
+      const x0 = Math.max(0, Math.floor(Math.min(ax, bx, cx))), x1 = Math.min(W - 1, Math.ceil(Math.max(ax, bx, cx)));
+      const y0 = Math.max(0, Math.floor(Math.min(ay, by, cy))), y1 = Math.min(H - 1, Math.ceil(Math.max(ay, by, cy)));
+      for (let y = y0; y <= y1; y++) {
+        const py = y + .5, row = y * W;
+        for (let x = x0; x <= x1; x++) {
+          const px = x + .5;
+          if ((bx - ax) * (py - ay) - (by - ay) * (px - ax) >= 0 && (cx - bx) * (py - by) - (cy - by) * (px - bx) >= 0
+            && (ax - cx) * (py - cy) - (ay - cy) * (px - cx) >= 0) buf[row + x] = col;
+        }
+      }
+    };
+    const draw = () => {
+      if (!tri) return;
+      buf.fill(pal[2]);
+      for (let k = 0; k < cur.length; k++) {
+        hh[k] = (noise(vx[k] * FREQ, vy[k] * FREQ, tau) - .5) * 2 * AMP + jz[k] + cur[k];
+        sy[k] = vy[k] - hh[k] * K;
+      }
+      for (let t = 0; t < reg.length; t++) {
+        const a = tri[t * 3], b = tri[t * 3 + 1], c = tri[t * 3 + 2];
+        const ex = vx[b] - vx[a], ey = vy[b] - vy[a], ez = hh[b] - hh[a];
+        const fx = vx[c] - vx[a], fy = vy[c] - vy[a], fz = hh[c] - hh[a];
+        let nX = ey * fz - ez * fy, nY = ez * fx - ex * fz, nZ = ex * fy - ey * fx;
+        if (nZ < 0) { nX = -nX; nY = -nY; nZ = -nZ; }
+        const d = (nX * LX + nY * LY + nZ * LZ) / Math.hypot(nX, nY, nZ);
+        const tone = d < BANDS[0] ? 0 : d < BANDS[1] ? 1 : d < BANDS[2] ? 2 : 3;
+        fillTri(vx[a], sy[a], vx[b], sy[b], vx[c], sy[c], pal[reg[t] * 4 + tone]);
+      }
+      g.putImageData(img, 0, 0);
+    };
+    return {
+      src, resize, layout, step, draw, still, rise,
+      set lod(v) { lod = v; }, set tint(v) { tint = v; }, set hold(v) { hold = v; }, set breath(v) { breath = v; },
+      at: (cx, cy) => { const r = sec.getBoundingClientRect(); return { x: (cx - r.left) / P, y: (cy - r.top) / P }; },
+      crease: (p, amp) => { src.crease = { at: -S0 + p * (W + .6 * H + 2 * S0), amp }; },
+      clear: () => g.clearRect(0, 0, W, H)
+    };
+  })();
+
+  // Static mesh in every mode (it is plain canvas); the motion branch adds the presses and the loop.
+  const rebuildMesh = () => { mesh.resize(); refresh(); };
+  let lastW = 0, lastH = 0;
+  const ro = new ResizeObserver(() => {
+    if (sec.offsetWidth === lastW && sec.offsetHeight === lastH) return;
+    lastW = sec.offsetWidth; lastH = sec.offsetHeight; rebuildMesh();
+  });
+  ro.observe(sec);
+  render();
+  document.fonts?.ready.then(() => refresh());
+
+  if (!lib) return;
+
+  /* ---------- Motion ---------- */
+  const fontsReady = Promise.race([
+    Promise.all([document.fonts.ready, document.fonts.load('800 80px "Handjet"')]).then(() => 1, () => 1),
+    new Promise((r) => setTimeout(r, 1500))
+  ]);
+  const visible = new Promise((r) => {
+    if (document.visibilityState === 'visible') return r();
+    const f = () => { if (document.visibilityState === 'visible') { document.removeEventListener('visibilitychange', f); r(); } };
+    document.addEventListener('visibilitychange', f);
+  });
+
+  const mm = gsap.matchMedia();
+  mm.add({ motion: '(prefers-reduced-motion: no-preference)', fine: '(hover: hover) and (pointer: fine)' }, (ctx) => {
+    const { motion, fine } = ctx.conditions;
+    if (!motion) { root.classList.add('go'); return () => {}; } // reduced motion: the still shaded mesh, native scroll
+
+    const T = { lod: parseFloat(read('--d-lod')), facet: parseFloat(read('--d-facet')) };
+    mesh.hold = parseFloat(read('--d-bounce'));
+    mesh.breath = parseFloat(read('--breath'));
+    const off = [];
+    const on = (el, type, fn, opt) => { el.addEventListener(type, fn, opt); off.push(() => el.removeEventListener(type, fn, opt)); };
+    let dead = false;
+
+    lenis = new Lenis({ lerp: .1, smoothWheel: true, autoRaf: false, anchors: true });
+    lenis.on('scroll', ScrollTrigger.update);
+    const tick = (t) => lenis.raf(t * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
+
+    /* The loop runs only while some vertex is moving, and sleeps off screen. */
+    let awake = false, inView = true, ready = false, lastScroll = 0;
+    const frame = (t, dms) => {
+      if (mesh.src.crease && performance.now() - lastScroll > 140) mesh.src.crease = null; // scrolling stopped: the fold lets go
+      const busy = mesh.step(Math.min(dms, 100) / 1000);
+      mesh.draw();
+      if (!busy) sleep();
+    };
+    const wake = () => { mesh.src.stir = performance.now(); if (awake || !inView || !ready) return; awake = true; gsap.ticker.add(frame); };
+    const sleep = () => { if (!awake) return; awake = false; gsap.ticker.remove(frame); };
+    refresh = () => { mesh.layout(); if (ready) wake(); else { mesh.still(); mesh.draw(); } };
+    const io = new IntersectionObserver(([e]) => { inView = e.isIntersecting; inView ? wake() : sleep(); });
+    io.observe(sec);
+    off.push(() => io.disconnect());
+
+    const hint = $('#hint');
+    hint.textContent = fine ? 'Point at the mesh to press it; hold the button to press harder.' : 'Tap the mesh to press it.';
+    hint.hidden = false;
+
+    /* Pointer: the cloth press. Mouse and pen press while over the mesh; touch presses where it taps. */
+    on(sec, 'pointermove', (e) => {
+      if (e.pointerType === 'touch') return;
+      mesh.src.ptr = { ...mesh.at(e.clientX, e.clientY), down: e.buttons > 0 }; wake();
+    });
+    on(sec, 'pointerdown', (e) => { mesh.src.ptr = { ...mesh.at(e.clientX, e.clientY), down: true }; wake(); });
+    const lift = (e) => {
+      if (e.pointerType === 'touch' || e.type !== 'pointerup') mesh.src.ptr = null;
+      else if (mesh.src.ptr) mesh.src.ptr.down = false;
+      wake();
+    };
+    on(sec, 'pointerup', lift); on(sec, 'pointercancel', lift); on(sec, 'pointerleave', lift);
+
+    /* A card under the pointer or the keyboard presses the mesh under its window. */
+    let hoverId = null, focusId = null;
+    const pressCards = () => { mesh.src.cards.clear(); [hoverId, focusId].forEach((id) => id && mesh.src.cards.add(id)); wake(); };
+    on(grid, 'pointerover', (e) => { if (e.pointerType === 'touch') return; const c = e.target.closest('.card'); if (c && c.dataset.id !== hoverId) { hoverId = c.dataset.id; pressCards(); } });
+    on(grid, 'pointerout', (e) => { const c = e.target.closest('.card'); if (c && !c.contains(e.relatedTarget)) { hoverId = null; pressCards(); } });
+    on(grid, 'focusin', (e) => { if (e.target.matches('.open:focus-visible')) { focusId = e.target.closest('.card').dataset.id; pressCards(); } });
+    on(grid, 'focusout', () => { focusId = null; pressCards(); });
+
+    /* Scroll: a fold travels across the mesh from top left to bottom right as the section passes. */
+    const st = ScrollTrigger.create({
+      trigger: sec, start: 'top bottom', end: 'bottom top',
+      onUpdate: (self) => {
+        const v = Math.abs(self.getVelocity());
+        if (v < 40 || !ready) return;
+        mesh.crease(self.progress, gsap.utils.clamp(5, 11, v / 160));
+        lastScroll = performance.now(); wake();
+      }
+    });
+    off.push(() => st.kill());
+
+    /* Dialog: built from two triangles, upper-left first. */
+    const frames = ['polygon(0 0, 36% 0, 0 36%)', 'polygon(0 0, 100% 0, 0 100%)'];
+    let dtl = null;
+    fx = {
+      dialogIn: () => { dtl?.kill(); dtl = gsap.timeline().set(dlg, { clipPath: frames[0] }).set(dlg, { clipPath: frames[1] }, T.facet).set(dlg, { clipPath: 'none' }, T.facet * 2); },
+      dialogOut: (end) => { dtl?.kill(); dtl = gsap.timeline({ onComplete: end }).set(dlg, { clipPath: frames[1] }).set(dlg, { clipPath: frames[0] }, T.facet).set({}, {}, T.facet * 2); },
+      dialogReset: () => { dtl?.kill(); gsap.set(dlg, { clearProps: 'clipPath' }); },
+      peak: (id) => { mesh.rise(id); wake(); }
+    };
+
+    /* Load: level of detail pops in, 8x, 4x, 2x, then the full mesh with its genre regions. */
+    Promise.all([fontsReady, visible]).then(() => {
+      if (dead) return;
+      const steps = [8, 4, 2, 1];
+      const tl = gsap.timeline();
+      steps.forEach((m, k) => tl.call(() => {
+        mesh.lod = m; mesh.tint = m === 1; rebuildMesh();
+        if (m === 2) root.classList.add('go1');
+      }, null, k * T.lod));
+      tl.call(() => { root.classList.add('go'); ready = true; refresh(); }, null, steps.length * T.lod);
+      off.push(() => tl.kill());
+    });
+
+    return () => {
+      dead = true;
+      off.forEach((f) => f());
+      sleep();
+      fx = null;
+      gsap.ticker.remove(tick);
+      gsap.ticker.lagSmoothing(500, 33);
+      lenis.destroy(); lenis = null;
+      gsap.set(dlg, { clearProps: 'clipPath' });
+      hint.hidden = true;
+      root.classList.add('go');
+      refresh = () => { mesh.layout(); mesh.still(); mesh.draw(); };
+      mesh.lod = 1; mesh.tint = true; rebuildMesh();
+    };
+  });
+})();
+</script>
+</body>
+</html>

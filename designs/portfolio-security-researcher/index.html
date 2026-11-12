@@ -1,0 +1,1508 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Inés Kowalczyk, security research</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Handjet:ELGR,ELSH,wght@1..2,0..16,100..900&family=Host+Grotesk:wght@300..800&display=swap">
+<style>
+  :root {
+    /* Colour: a network diagram on moss. Every hue has one job. */
+    --moss: #1B3A10;        /* the ground: page, panels and every text block sit on it */
+    --moss-deep: #10260A;   /* darker moss: field wells and the dialog scrim (1.27:1 on moss; decorative) */
+    --moss-hi: #2A5219;     /* lighter moss: grid lines on the page and in the charts (1.40:1; decorative) */
+    --page: #F1F4E6;        /* paper: text, the median tick, error marks (11.3:1 on moss, 14.4:1 on moss-deep) */
+    --lichen: #A9BF98;      /* the muted layer: secondary text, rules, resting grid nodes, redaction bars (6.4:1 on moss) */
+    --critical: #FF7A8A;    /* severity critical, only in charts, chips and row marks (5.1:1; moss text on it 5.1:1) */
+    --high: #FFA552;        /* severity high, same places (6.5:1) */
+    --medium: #FFE066;      /* severity medium, same places (9.7:1) */
+    --low: #7FE3F0;         /* severity low, same places (8.5:1) */
+    --trace: #D8FF7A;       /* the visitor's path: the trace, focus rings, picks, the primary button (11.2:1; moss text on it 11.2:1) */
+    --scrim: rgb(16 38 10 / .9);   /* moss-deep at 90% behind the dialog */
+
+    /* Type */
+    --font-display: "Handjet", "Arial Narrow", sans-serif;
+    --font-text: "Host Grotesk", system-ui, sans-serif;
+    --modules: "ELSH" 2, "ELGR" 1;   /* square Handjet modules, the same tile as the grid */
+    --t-small: 14px;
+    --t-body: 17px;
+    --t-lede: 20px;
+    --t-h4: 20px;
+    --t-h3: 26px;
+    --t-ep: 30px;                    /* the handshake endpoints, Handjet as a graphic */
+    --t-h2: clamp(44px, 4.4vw + 8px, 76px);
+    --lh-body: 1.5;
+    --lh-lede: 1.45;
+
+    /* Space: the grid. 16px cells; every step is a quarter, half or whole cell. */
+    --cell: 16px;
+    --s1: 4px; --s2: 8px; --s3: 16px; --s4: 24px;
+    --s5: 32px; --s6: 48px; --s7: 64px; --s8: 96px; --s9: 128px;
+    --lane: 64px;           /* open grid between blocks: the trace's lanes */
+    --max-w: 1184px;        /* 74 cells; the rest is open gutter */
+    --slab: 1008px;         /* widest a full-row block gets, so a lane stays open beside it */
+    --notch: 4px;           /* stepped corner on buttons */
+    --gap: 4px;             /* how far a packet moves: the open gap and the sent jump */
+    --line: 3px;            /* the trace line */
+    --tap: 48px;            /* primary button and field height */
+    --hit: 44px;            /* every other target */
+    --trace-len: 48;        /* cells of line the trace keeps */
+    --trace-rate: 60;       /* cells per second at rest distance; faster when far behind */
+
+    /* Motion (CSS and the script read these) */
+    --d-gap: .12s;          /* button gaps open 2px, then 4px */
+    --d-sent: .04s;         /* between two packet jumps */
+    --d-hold: .16s;         /* shortest press */
+    --d-node: .05s;         /* the right endpoint after the left */
+    --d-tap: .2s;           /* a touched link holds its endpoints */
+    --d-park: .18s;         /* the pointer rests this long before the line retracts */
+    --d-load: 1.05s;        /* the whole opening run */
+    --d-band: .18s;         /* one dialog band: three steps of 60ms */
+    --d-band-gap: .06s;     /* between dialog bands */
+    --d-arrow: .22s;        /* between handshake arrows */
+    --d-copied: 2.4s;       /* "Copied" stays on the button */
+  }
+  @media (max-width: 599px) {
+    :root { --t-body: 16px; --t-lede: 18px; --t-h3: 22px; --t-h4: 18px; --t-ep: 24px; --lane: 48px; --s9: 96px; }
+  }
+
+  /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+
+  /* Hidden only while the opening run plays. The headline is never hidden. */
+  html.js:not(.go) [data-cut] { visibility: hidden; }
+  @media (prefers-reduced-motion: reduce) {
+    html.js:not(.go) [data-cut] { visibility: visible; }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { background: var(--moss); }
+  body {
+    margin: 0;
+    background: var(--moss);
+    color: var(--page);
+    font: 400 var(--t-body)/var(--lh-body) var(--font-text);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  :focus-visible { outline: 2px solid var(--trace); outline-offset: 3px; }
+  ::selection { background: var(--trace); color: var(--moss); }
+  .vh {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+  }
+  .g { background: var(--moss); }   /* a text block on the ground: the trace passes under it, never through the words */
+  h3, h4 { margin: 0; }
+  [id] { scroll-margin-top: var(--s4); }
+
+  /* ---------- The section and its grid ---------- */
+  /* 16px cells: 1px lines in lighter moss, a 2px lichen node at every crossing. Hard stops only. */
+  .pf {
+    position: relative;
+    overflow: clip;
+    isolation: isolate;
+    padding-inline: max(var(--s3), (100% - var(--max-w)) / 2);
+    padding-inline: round(down, max(var(--s3), (100% - var(--max-w)) / 2), var(--cell));
+    background-color: var(--moss);
+    background-image:
+      conic-gradient(from 270deg at 2px 2px, var(--lichen) 0 25%, transparent 0),
+      linear-gradient(90deg, var(--moss-hi) 0 1px, transparent 0),
+      linear-gradient(var(--moss-hi) 0 1px, transparent 0);
+    background-size: var(--cell) var(--cell);
+    background-position: calc(var(--cell) / 2 - 1px) calc(var(--cell) / 2 - 1px), calc(var(--cell) / 2) 0, 0 calc(var(--cell) / 2);   /* lines half a cell off the block edges */
+  }
+  /* The trace: a viewport-tall canvas parked in section coordinates, so a resting drawing scrolls with the page. */
+  .trace { position: absolute; left: 0; top: 0; z-index: 0; display: block; pointer-events: none; }
+  .wrap { position: relative; z-index: 1; padding-block: var(--s3) var(--s7); }
+
+  /* ---------- Nav row ---------- */
+  .bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 var(--s5); }
+  .who { margin: 0; padding-block: var(--s2); }
+  .who b { font-weight: 700; }
+  .who span { color: var(--lichen); }
+  .nav { display: flex; flex-wrap: wrap; gap: 0 var(--s4); margin: 0; padding: 0; list-style: none; }
+
+  /* ---------- Text links: endpoints ---------- */
+  .ln {
+    position: relative;
+    display: inline-flex; align-items: center;
+    min-height: var(--hit);
+    padding: 0 var(--s1);
+    color: var(--page);
+    font: inherit; font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .ln-t {
+    position: relative;
+    padding-bottom: 3px;
+    background: linear-gradient(var(--lichen), var(--lichen)) 0 100% / 100% 1px no-repeat;
+  }
+  /* A 4px node at each end of the underline: a link between two hosts. Left at once, right 50ms later. */
+  .ln-t::before, .ln-t::after {
+    content: "";
+    position: absolute; bottom: -1px;
+    width: 4px; height: 4px;
+    background: var(--page);
+    visibility: hidden;
+    transition: visibility 0s linear 0s;
+  }
+  .ln-t::before { left: -4px; }
+  .ln-t::after { right: -4px; }
+  .ln:focus-visible .ln-t, .ln.is-tap .ln-t { background-image: linear-gradient(var(--page), var(--page)); background-size: 100% 2px; }
+  .ln:focus-visible .ln-t::before, .ln.is-tap .ln-t::before { visibility: visible; }
+  .ln:focus-visible .ln-t::after, .ln.is-tap .ln-t::after { visibility: visible; transition-delay: var(--d-node); }
+  @media (hover: hover) {
+    .ln:hover .ln-t { background-image: linear-gradient(var(--page), var(--page)); background-size: 100% 2px; }
+    .ln:hover .ln-t::before { visibility: visible; }
+    .ln:hover .ln-t::after { visibility: visible; transition-delay: var(--d-node); }
+  }
+  summary.ln { list-style: none; }
+  summary.ln::-webkit-details-marker { display: none; }
+
+  /* ---------- Buttons: packets ---------- */
+  /* The script cuts every face into three copies, each clipped to a third. Hover opens the cuts (2px, then 4px);
+     a press sends the three packets 4px right, one after another. The corners live on inner spans, never on the button. */
+  .btn {
+    --corners: polygon(0 var(--notch), var(--notch) var(--notch), var(--notch) 0, calc(100% - var(--notch)) 0, calc(100% - var(--notch)) var(--notch), 100% var(--notch), 100% calc(100% - var(--notch)), calc(100% - var(--notch)) calc(100% - var(--notch)), calc(100% - var(--notch)) 100%, var(--notch) 100%, var(--notch) calc(100% - var(--notch)), 0 calc(100% - var(--notch)));
+    --h: var(--tap);
+    position: relative;
+    display: inline-block;
+    padding: 0; border: 0; background: none;
+    color: inherit; text-decoration: none;
+    font: 600 var(--t-body)/1.2 var(--font-text);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    user-select: none;
+  }
+  .btn:focus-visible { outline-offset: 8px; }
+  .pk { display: block; transition: transform var(--d-gap) steps(2, jump-start); }
+  .pk + .pk { position: absolute; inset: 0; }
+  .pk-push, .pk-cut { display: block; height: 100%; }
+  .pk-push { transition: transform 0s linear 0s; }
+  /* --a and --b are the two cut lines in whole pixels (set by the script), so no seam shows at rest */
+  .pk:nth-child(1) .pk-cut { clip-path: inset(0 calc(100% - var(--a, 33.333%)) 0 0); }
+  .pk:nth-child(2) .pk-cut { clip-path: inset(0 calc(100% - var(--b, 66.667%)) 0 var(--a, 33.333%)); }
+  .pk:nth-child(3) .pk-cut { clip-path: inset(0 0 0 var(--b, 66.667%)); }
+  .pk-face { display: block; height: 100%; padding: var(--bw); background: var(--rim); clip-path: var(--corners); }
+  .pk-in {
+    display: flex; align-items: center; justify-content: center;
+    min-height: calc(var(--h) - 2 * var(--bw)); height: 100%;
+    padding: 0 var(--s4);
+    background: var(--face); color: var(--ink);
+    clip-path: var(--corners);
+    white-space: nowrap;
+  }
+  .btn-go { --bw: 0px; --rim: var(--trace); --face: var(--trace); --ink: var(--moss); }
+  .btn-line { --bw: 2px; --rim: var(--lichen); --face: var(--moss); --ink: var(--page); }
+  .btn-s { --h: var(--hit); }
+  .btn-s .pk-in { padding: 0 var(--s3); }
+  @media (hover: hover) {
+    .btn:hover .pk:nth-child(1) { transform: translateX(calc(-1 * var(--gap))); }
+    .btn:hover .pk:nth-child(3) { transform: translateX(var(--gap)); }
+  }
+  .btn:focus-visible .pk:nth-child(1), .btn.is-open .pk:nth-child(1) { transform: translateX(calc(-1 * var(--gap))); }
+  .btn:focus-visible .pk:nth-child(3), .btn.is-open .pk:nth-child(3) { transform: translateX(var(--gap)); }
+  .btn.is-sent .pk-push { transform: translateX(var(--gap)); }
+  .btn.is-sent .pk:nth-child(2) .pk-push { transition-delay: var(--d-sent); }
+  .btn.is-sent .pk:nth-child(3) .pk-push { transition-delay: calc(2 * var(--d-sent)); }
+
+  /* ---------- Top ---------- */
+  .top { display: grid; gap: var(--lane); margin-top: var(--s6); }
+  @media (min-width: 1100px) {
+    .top { grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); column-gap: var(--s8); align-items: start; margin-top: var(--s5); }
+  }
+  .h2 {
+    width: fit-content; max-width: 100%;
+    margin: 0;
+    font: 700 var(--t-h2)/.98 var(--font-display);
+    font-variation-settings: var(--modules);
+    letter-spacing: 0;
+    text-wrap: balance;
+  }
+  .lede { margin: var(--s4) 0 0; max-width: 54ch; font-size: var(--t-lede); line-height: var(--lh-lede); }
+  .actions { display: flex; flex-wrap: wrap; gap: var(--s3) var(--s5); margin-top: var(--s5); }
+
+  /* ---------- Panels ---------- */
+  .panel { position: relative; padding: var(--s4); border-top: 2px solid var(--lichen); background: var(--moss); }
+  .panel h3, .wus-head h3 { font: 600 var(--t-h3)/1.2 var(--font-text); letter-spacing: -.01em; }
+  .sub { margin: var(--s2) 0 0; max-width: 62ch; color: var(--lichen); }
+  .readout { min-height: calc(2 * var(--lh-body) * 1em); margin: var(--s3) 0 0; max-width: 70ch; font-variant-numeric: tabular-nums; }
+  .readout b { font-weight: 700; }
+  .tbl { margin-top: var(--s2); }
+  .tbl-wrap { overflow-x: auto; }
+  .tbl table { width: 100%; margin-top: var(--s2); border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+  .tbl caption { padding-bottom: var(--s2); color: var(--lichen); text-align: left; }
+  .tbl th, .tbl td { padding: 6px var(--s3) 6px 0; border-bottom: 1px solid var(--lichen); text-align: right; white-space: nowrap; }
+  .tbl :is(th, td):first-child { text-align: left; }
+  .tbl thead th { font-weight: 600; color: var(--lichen); }
+  .tbl tbody th { font-weight: 600; }
+  .tbl tfoot :is(th, td) { font-weight: 700; border-bottom: 0; }
+
+  /* ---------- Chart A: findings by severity ---------- */
+  .toggles { display: flex; flex-wrap: wrap; gap: var(--s2); margin-top: var(--s3); }
+  .tg {
+    display: inline-flex; align-items: center; gap: var(--s2);
+    min-height: var(--hit); padding: 0 var(--s3) 0 var(--s2);
+    border: 2px solid var(--lichen); background: var(--moss);
+    color: var(--page);
+    font: 600 var(--t-small)/1 var(--font-text); font-variant-numeric: tabular-nums;
+    cursor: pointer;
+  }
+  .tg .sw { flex: none; width: 16px; height: 16px; border: 2px solid var(--sev); background: var(--sev); }
+  .tg span { font-weight: 400; color: var(--lichen); }
+  .tg[aria-pressed="false"] { color: var(--lichen); }
+  .tg[aria-pressed="false"] .sw { background: transparent; }
+  .pa { position: relative; margin-top: var(--s4); }
+  .pa svg, .pb svg { display: block; }
+  .yr {
+    position: absolute; top: 0; bottom: 0;
+    display: flex; align-items: flex-end; justify-content: center;
+    padding: 0 0 6px; border: 0; background: none;
+    color: var(--lichen);
+    font: 500 var(--t-small)/1 var(--font-text); font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .yr:focus-visible { outline-offset: -2px; }
+  .yr[aria-checked="true"] { color: var(--page); font-weight: 700; }
+  .ax { fill: var(--lichen); font: 500 12px var(--font-text); font-variant-numeric: tabular-nums; }
+  .gl { fill: var(--moss-hi); }
+
+  /* ---------- Chart B: days from report to fix ---------- */
+  .fixes { max-width: var(--slab); margin: var(--s9) 0 0 auto; }   /* set right, so the band under the intro stays open */
+  .legend { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s4); margin: var(--s3) 0 0; padding: 0; list-style: none; color: var(--lichen); font-size: var(--t-small); }
+  .legend li { display: inline-flex; align-items: center; gap: var(--s2); min-height: 28px; }
+  .legend i { width: 10px; height: 10px; background: var(--sev); }
+  .legend .tick { width: 18px; height: 2px; background: var(--page); }
+  .pb { position: relative; margin-top: var(--s4); cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+  .pb:focus-visible { outline-offset: 4px; }
+  .howto { margin: var(--s2) 0 0; color: var(--lichen); font-size: var(--t-small); }
+
+  /* ---------- Write-ups ---------- */
+  .writeups { margin-top: var(--s9); }
+  .wus-head { width: fit-content; max-width: 100%; }
+  .wus { display: grid; gap: var(--lane); margin: var(--s5) 0 0; padding: 0; list-style: none; }
+  .wu {
+    position: relative;
+    display: grid; gap: var(--s4) var(--s6);
+    padding: var(--s4) var(--s4) var(--s4) calc(var(--s4) + 6px);
+    background: var(--moss);
+  }
+  .wu::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: var(--sev); }   /* row mark */
+  @media (min-width: 860px) { .wu { grid-template-columns: minmax(0, 1fr) minmax(0, 21rem); } }
+  .wu { max-width: var(--slab); }
+  .wu:nth-child(even) { margin-left: auto; }   /* staggered rows leave a lane that zigzags down the list */
+  .meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3); margin: 0; }
+  .chip {
+    display: inline-flex; align-items: center;
+    min-height: 28px; padding: 0 var(--s2);
+    background: var(--sev); color: var(--moss);
+    font: 700 var(--t-small)/1 var(--font-text);
+  }
+  /* The lifecycle chip: four pips and the stage it has reached, with its date. */
+  .stage {
+    display: inline-flex; align-items: center; gap: var(--s2);
+    min-height: 28px; padding: 0 var(--s2);
+    border: 2px solid var(--lichen);
+    font-size: var(--t-small); line-height: 1; font-variant-numeric: tabular-nums;
+  }
+  .pips { display: inline-flex; gap: 2px; }
+  .pips i { width: 6px; height: 6px; border: 1px solid var(--lichen); }
+  .stage[data-s="0"] .pips i:nth-child(-n+1),
+  .stage[data-s="1"] .pips i:nth-child(-n+2),
+  .stage[data-s="2"] .pips i:nth-child(-n+3),
+  .stage[data-s="3"] .pips i { border-color: var(--page); background: var(--page); }
+  .stage b { font-weight: 700; }
+  .wu-title { margin-top: var(--s3); max-width: 40ch; font: 600 var(--t-h4)/1.3 var(--font-text); }
+  .vendor { margin: var(--s1) 0 0; color: var(--lichen); }
+  .wu-line { margin: var(--s2) 0 0; max-width: 60ch; }
+  /* Redaction: a lichen bar over each word while the embargo holds. The words stay in the DOM. */
+  .w { position: relative; }
+  .w.r::after { content: ""; position: absolute; left: -1px; right: -1px; top: .14em; bottom: .02em; background: var(--lichen); }
+  .dates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s2) var(--s4); margin: 0; font-variant-numeric: tabular-nums; }
+  .dates dt { color: var(--lichen); font-size: var(--t-small); }
+  .dates dd { margin: 0; font-weight: 600; }
+  .wu-side { align-self: start; }
+  .wu-side .btn { margin-top: var(--s4); }
+
+  /* ---------- Contact ---------- */
+  .contact { display: grid; gap: var(--lane); margin-top: var(--s9); }
+  @media (min-width: 1000px) { .contact { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); align-items: start; } }
+  .intro-c { margin: var(--s2) 0 0; max-width: 46ch; }
+  .cl { display: grid; margin: var(--s4) 0 0; padding: 0; list-style: none; }
+  .cl li { display: grid; grid-template-columns: 6.5em minmax(0, 1fr); align-items: center; gap: var(--s3); border-bottom: 1px solid var(--lichen); }
+  .cl li > span { color: var(--lichen); font-size: var(--t-small); }
+  .cl .ln { justify-self: start; overflow-wrap: anywhere; }
+  .fp { margin-top: var(--s4); }
+  .fp-l { margin: 0; color: var(--lichen); font-size: var(--t-small); }
+  .fp-v { margin: var(--s1) 0 0; font-weight: 600; letter-spacing: .04em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .fp .btn { margin-top: var(--s3); }
+  .fp-note { min-height: calc(var(--t-small) * 1.45); margin: var(--s2) 0 0; color: var(--lichen); font-size: var(--t-small); line-height: 1.45; }
+
+  /* ---------- Enquiry form ---------- */
+  .lbl, .choice legend { display: block; margin-top: var(--s4); padding: 0; font-weight: 600; }
+  .lbl span, .choice legend span { color: var(--lichen); font-weight: 400; }
+  .two { display: grid; gap: 0 var(--s4); }
+  @media (min-width: 640px) { .two { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  /* Field: a double wall. Focus cuts a second wall in 4px inside the first; an error breaks the outer wall into dashes. */
+  .fld { position: relative; margin-top: var(--s2); }
+  .fld input, .fld textarea {
+    display: block;
+    width: 100%; height: var(--tap);
+    padding: 0 var(--s3);
+    border: 0; border-radius: 0; outline: none;
+    background: var(--moss-deep); color: var(--page);
+    font: inherit;
+    appearance: none;
+  }
+  .fld textarea { height: 128px; min-height: 96px; padding-block: 14px; resize: vertical; overflow-wrap: anywhere; }
+  .fld input::-webkit-calendar-picker-indicator { cursor: pointer; }
+  .wall {
+    --wc: var(--lichen); --on: 100%; --per: 100%;
+    position: absolute; inset: 0; pointer-events: none;
+    background:
+      repeating-linear-gradient(90deg, var(--wc) 0 var(--on), transparent var(--on) var(--per)) 0 0 / 100% 2px no-repeat,
+      repeating-linear-gradient(90deg, var(--wc) 0 var(--on), transparent var(--on) var(--per)) 0 100% / 100% 2px no-repeat,
+      repeating-linear-gradient(180deg, var(--wc) 0 var(--on), transparent var(--on) var(--per)) 0 0 / 2px 100% no-repeat,
+      repeating-linear-gradient(180deg, var(--wc) 0 var(--on), transparent var(--on) var(--per)) 100% 0 / 2px 100% no-repeat;
+  }
+  .wall2 { position: absolute; inset: 6px; border: 2px solid var(--trace); pointer-events: none; visibility: hidden; }
+  .fld:hover .wall { --wc: var(--page); }
+  .fld:focus-within .wall { --wc: var(--trace); }
+  .fld:focus-within .wall2 { visibility: visible; }
+  .fld.is-bad .wall { --wc: var(--page); --on: 8px; --per: 14px; }
+  .choice { min-width: 0; margin: 0; padding: 0; border: 0; }
+  .opts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 var(--s4); margin-top: var(--s1); }
+  .opt { display: flex; align-items: center; gap: var(--s2); min-height: var(--hit); cursor: pointer; }
+  .opt input {
+    flex: none;
+    width: 20px; height: 20px; margin: 0;
+    border: 2px solid var(--lichen); border-radius: 0;
+    background: var(--moss-deep);
+    appearance: none; cursor: pointer;
+  }
+  .opt:hover input { border-color: var(--page); }
+  .opt input:checked { border-color: var(--page); background: var(--moss-deep) linear-gradient(var(--page), var(--page)) 50% 50% / 8px 8px no-repeat; }
+  .choice.is-bad .opt input { border-style: dashed; border-color: var(--page); }
+  /* Errors have no hue: a hatched paper bar and the message, on a reserved line. */
+  .err {
+    display: flex; gap: var(--s2); align-items: flex-start;
+    min-height: calc(var(--t-small) * 1.45 * 2);
+    margin: var(--s2) 0 0;
+    font-size: var(--t-small); line-height: 1.45; font-weight: 600;
+  }
+  .err:not(:empty)::before {
+    content: ""; flex: none;
+    width: 24px; height: 12px; margin-top: 3px;
+    background: repeating-linear-gradient(135deg, var(--page) 0 2px, transparent 2px 5px);
+  }
+  .send { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s3) var(--s4); margin-top: var(--s3); }
+  .send p { margin: 0; max-width: 34ch; color: var(--lichen); font-size: var(--t-small); }
+
+  /* ---------- Success: the handshake ---------- */
+  .hs { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--s3); align-items: stretch; }
+  .ep {
+    display: grid; place-items: center;
+    min-width: 3.4em; padding: 0 var(--s3);
+    border: 2px solid var(--page);
+    font: 700 var(--t-ep)/1 var(--font-display);
+    font-variation-settings: var(--modules);
+  }
+  .arrows { display: grid; gap: var(--s3); margin: 0; padding: var(--s2) 0; list-style: none; }
+  .ar { position: relative; padding-bottom: 14px; font-size: var(--t-small); line-height: 1.3; }
+  .ar::before { content: ""; position: absolute; left: 0; right: 0; bottom: 4px; height: 2px; background: var(--page); }
+  .ar::after {
+    content: ""; position: absolute; bottom: 0;
+    width: 6px; height: 10px; background: var(--page);
+    clip-path: polygon(0 0, 2px 0, 2px 2px, 4px 2px, 4px 4px, 6px 4px, 6px 6px, 4px 6px, 4px 8px, 2px 8px, 2px 10px, 0 10px);
+  }
+  .ar-r::after { right: -2px; }
+  .ar-l { text-align: right; }
+  .ar-l::after { left: -2px; transform: scaleX(-1); }
+  .done h3 { margin-top: var(--s5); font: 600 var(--t-h3)/1.2 var(--font-text); }
+  .done h3:focus { outline: none; }   /* focus lands here only to announce the result */
+  .echo { display: grid; gap: var(--s1); margin: var(--s3) 0 0; }
+  .echo div { display: grid; grid-template-columns: 7em minmax(0, 1fr); gap: var(--s3); }
+  .echo dt { color: var(--lichen); }
+  .echo dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; white-space: pre-line; }
+  .done .reply { margin: var(--s3) 0 0; max-width: 52ch; }
+  .done .btn { margin-top: var(--s4); }
+  .done.is-play .ar, .done.is-play .q { visibility: hidden; }
+
+  /* ---------- Footer stub ---------- */
+  .foot { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0 var(--s4); margin-top: var(--s8); padding-top: var(--s3); border-top: 2px solid var(--lichen); }
+  .foot p { margin: 0; max-width: 70ch; color: var(--lichen); font-size: var(--t-small); }
+
+  /* ---------- Write-up dialog: three bands ---------- */
+  .wd {
+    width: min(640px, 100% - 2 * var(--s3)); max-width: none;
+    max-height: calc(100dvh - 2 * var(--s3));
+    margin: auto; padding: 0; border: 0;
+    background: none; color: var(--page);
+    overflow-x: hidden; overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .wd::backdrop { background: var(--scrim); }
+  .band { position: relative; padding: var(--s4); border: 2px solid var(--lichen); background: var(--moss); }
+  .band + .band { border-top-width: 0; }
+  .b1 { padding-left: calc(var(--s4) + 6px); }
+  .b1::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: var(--sev); }
+  .wd h2 { margin: var(--s3) 0 0; font: 600 var(--t-h3)/1.2 var(--font-text); letter-spacing: -.01em; }
+  .wd .vendor { margin-top: var(--s2); }
+  .b2 p { margin: var(--s4) 0 0; max-width: 62ch; }
+  .b3 { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--s3); }
+
+  /* ---------- Narrow screens ---------- */
+  @media (max-width: 599px) {
+    .top { margin-top: var(--s5); }
+    .actions { display: grid; }
+    .actions .btn, .send .btn { display: block; }
+    .panel { padding: var(--s3); }
+    .wu { padding: var(--s3) var(--s3) var(--s3) calc(var(--s3) + 6px); }
+    .opts { grid-template-columns: minmax(0, 1fr); }
+    .cl li { grid-template-columns: minmax(0, 1fr); gap: 0; padding-top: var(--s2); }
+    .band { padding: var(--s3); }
+    .b1 { padding-left: calc(var(--s3) + 6px); }
+    .hs { gap: var(--s2); }
+    .ep { padding: 0 var(--s2); min-width: 0; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0s !important; transition-delay: 0s !important; }
+  }
+</style>
+</head>
+<body>
+
+<section class="pf" id="top" aria-labelledby="pf-title">
+  <canvas class="trace" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <nav class="bar" aria-label="Portfolio">
+      <p class="who g"><b>Inés Kowalczyk</b> <span>Security research, Valencia</span></p>
+      <ul class="nav">
+        <li class="g"><a class="ln" href="#findings"><span class="ln-t">Findings</span></a></li>
+        <li class="g"><a class="ln" href="#fixes"><span class="ln-t">Fix times</span></a></li>
+        <li class="g"><a class="ln" href="#writeups"><span class="ln-t">Write-ups</span></a></li>
+        <li class="g"><a class="ln" href="#contact"><span class="ln-t">Contact</span></a></li>
+      </ul>
+    </nav>
+
+    <div class="top">
+      <div class="intro">
+        <h2 class="h2 g" id="pf-title">I test web apps and payment terminals for the teams that run them.</h2>
+        <p class="lede g" data-cut>I'm Inés Kowalczyk, an independent security researcher in Valencia. Since 2019 I have reported <span data-total>124</span> vulnerabilities through coordinated disclosure and bug-bounty programmes, and I take testing contracts of one to four weeks.</p>
+        <div class="actions" data-cut>
+          <a class="btn btn-go" id="cta" href="#enquiry">Ask about a test</a>
+          <a class="btn btn-line" href="#writeups">Read the disclosed write-ups</a>
+        </div>
+      </div>
+
+      <article class="panel" id="findings" aria-labelledby="pa-title">
+        <h3 id="pa-title">Findings by severity</h3>
+        <p class="sub">Every square is one vulnerability I reported, stacked by year. 2026 runs to 10 November.</p>
+        <div class="toggles" role="group" aria-label="Severities drawn solid" id="toggles"></div>
+        <div class="pa" id="pa" role="radiogroup" aria-label="Pick a year"></div>
+        <p class="readout" id="pa-read" aria-live="polite"></p>
+        <details class="tbl">
+          <summary class="ln"><span class="ln-t">Read the figures as a table</span></summary>
+          <div class="tbl-wrap"><table id="pa-table"></table></div>
+        </details>
+      </article>
+    </div>
+
+    <article class="panel fixes" id="fixes" aria-labelledby="pb-title">
+      <h3 id="pb-title">Days from report to fix</h3>
+      <p class="sub">One square per finding, placed by the quarter I reported it and how long the vendor took to ship a fix. The paper tick across each year is that year's median.</p>
+      <ul class="legend" id="pb-legend"></ul>
+      <div class="pb" id="pb" tabindex="0" role="group" aria-labelledby="pb-title" aria-describedby="pb-howto pb-read"></div>
+      <p class="howto" id="pb-howto">Pick a square to name the finding. With the chart focused, the arrow keys move between findings: left and right by date, up and down by fix time.</p>
+      <p class="readout" id="pb-read" aria-live="polite"></p>
+      <details class="tbl">
+        <summary class="ln"><span class="ln-t">Read the figures as a table</span></summary>
+        <div class="tbl-wrap"><table id="pb-table"></table></div>
+      </details>
+    </article>
+
+    <div class="writeups" id="writeups">
+      <div class="wus-head g">
+        <h3>Disclosed write-ups</h3>
+        <p class="sub">Eight findings the vendors fixed and agreed to publish, with the four dates every report goes through: reported, triaged, fixed and disclosed.</p>
+      </div>
+      <ol class="wus" id="wus"></ol>
+    </div>
+
+    <div class="contact" id="contact">
+      <div class="panel">
+        <h3>Write to me</h3>
+        <p class="intro-c">For a test, use the form. If you found a flaw in something I tested, email me and encrypt it with this key.</p>
+        <ul class="cl" id="links"></ul>
+        <div class="fp" id="fp" hidden>
+          <p class="fp-l" id="fp-l">Key fingerprint</p>
+          <p class="fp-v" id="fp-v"></p>
+          <button class="btn btn-line btn-s" id="fp-copy" type="button" aria-describedby="fp-l">Copy fingerprint</button>
+          <p class="fp-note" id="fp-note" aria-live="polite"></p>
+        </div>
+      </div>
+
+      <div class="panel" id="enquiry">
+        <form id="enq" novalidate aria-labelledby="enq-title">
+          <h3 id="enq-title">Ask about a test</h3>
+          <p class="sub">Tell me what you run and when you would like to start. I reply within two working days.</p>
+          <div class="two">
+            <div>
+              <label class="lbl" for="f-name">Your name</label>
+              <div class="fld"><input id="f-name" name="name" type="text" autocomplete="name" required><span class="wall" aria-hidden="true"></span><span class="wall2" aria-hidden="true"></span></div>
+              <p class="err" id="f-name-err" aria-live="polite"></p>
+            </div>
+            <div>
+              <label class="lbl" for="f-mail">Work email</label>
+              <div class="fld"><input id="f-mail" name="email" type="email" autocomplete="email" spellcheck="false" required><span class="wall" aria-hidden="true"></span><span class="wall2" aria-hidden="true"></span></div>
+              <p class="err" id="f-mail-err" aria-live="polite"></p>
+            </div>
+          </div>
+          <fieldset class="choice" id="f-what" aria-describedby="f-what-err">
+            <legend>What needs testing</legend>
+            <div class="opts">
+              <label class="opt"><input type="radio" name="what" value="Web application" required><span>Web application</span></label>
+              <label class="opt"><input type="radio" name="what" value="API" required><span>API</span></label>
+              <label class="opt"><input type="radio" name="what" value="Payment terminal" required><span>Payment terminal</span></label>
+              <label class="opt"><input type="radio" name="what" value="Something else" required><span>Something else</span></label>
+            </div>
+          </fieldset>
+          <p class="err" id="f-what-err" aria-live="polite"></p>
+          <label class="lbl" for="f-start">Preferred start date <span>(optional)</span></label>
+          <div class="fld"><input id="f-start" name="start" type="date"><span class="wall" aria-hidden="true"></span><span class="wall2" aria-hidden="true"></span></div>
+          <p class="err" id="f-start-err" aria-live="polite"></p>
+          <label class="lbl" for="f-scope">Scope notes</label>
+          <div class="fld"><textarea id="f-scope" name="scope" required></textarea><span class="wall" aria-hidden="true"></span><span class="wall2" aria-hidden="true"></span></div>
+          <p class="err" id="f-scope-err" aria-live="polite"></p>
+          <div class="send">
+            <button class="btn btn-go" type="submit">Send the enquiry</button>
+            <p>I confirm that your company owns the system before any testing starts.</p>
+          </div>
+        </form>
+
+        <div class="done" id="done" hidden>
+          <div class="hs" aria-hidden="true">
+            <span class="ep">You</span>
+            <ol class="arrows">
+              <li class="ar ar-r" id="ar-1">Enquiry about a web application test</li>
+              <li class="ar ar-l">Received, in Inés's queue</li>
+              <li class="ar ar-r">Confirmed: reply within two working days</li>
+            </ol>
+            <span class="ep">Inés</span>
+          </div>
+          <h3 class="q" id="done-title" tabindex="-1">Message queued</h3>
+          <dl class="echo q" id="echo"></dl>
+          <p class="reply q" id="reply"></p>
+          <button class="btn btn-line q" id="again" type="button">Write another</button>
+        </div>
+      </div>
+    </div>
+
+    <footer class="foot g">
+      <p>Inés Kowalczyk, independent security researcher, Valencia. Write-ups are published with each vendor's agreement, and this page sets no cookies.</p>
+      <a class="ln" href="#top"><span class="ln-t">Back to the top</span></a>
+    </footer>
+  </div>
+</section>
+
+<dialog class="wd" id="wd" aria-labelledby="wd-title" data-lenis-prevent>
+  <div class="band b1">
+    <p class="meta"><span class="chip" id="wd-sev">High</span></p>
+    <h2 id="wd-title">Write-up</h2>
+    <p class="vendor" id="wd-vendor"></p>
+  </div>
+  <div class="band b2">
+    <dl class="dates" id="wd-dates"></dl>
+    <p id="wd-text"></p>
+  </div>
+  <div class="band b3">
+    <button class="btn btn-line btn-s" id="wd-next" type="button">Next write-up</button>
+    <button class="btn btn-line btn-s" id="wd-close" type="button">Close</button>
+  </div>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  /* ---------- Edit these two objects ---------- */
+  // Contact links: delete a line to remove a link. Known keys: email, signal, mastodon, github, whatsapp,
+  // instagram, itch, fingerprint (shown as text with a copy button). Any other key with a full URL becomes a link.
+  const CONTACT = {
+    email: 'ines@kowalczyk.example',
+    signal: 'https://signal.me/#eu/ines_kowalczyk.07',
+    mastodon: 'https://infosec.exchange/@ines_kowalczyk',
+    github: 'https://github.com/ines-kowalczyk',
+    fingerprint: '7F3A 91C2 0B5E D4A8 6613 2E9F C07B 85D1 4A6E 0C39'
+  };
+
+  const DATA = {
+    asOf: '2026-11-10',
+    years: [2019, 2026],
+    // [name, what they are]
+    vendors: [
+      ['Teselia Transit', 'a regional transit operator'], ['Corvina Pay', 'a maker of countertop card terminals'],
+      ['Nispero Grocers', 'a supermarket chain with home delivery'], ['Marjal Health', 'a booking service for private clinics'],
+      ['Salobre Bank', 'a regional savings bank'], ['Albufera Ferries', 'a passenger ferry company'],
+      ['Taulell Systems', 'a maker of point-of-sale hardware'], ['Rambla Hotels', 'a group of eleven city hotels'],
+      ['Ostra Telecom', 'a mobile network'], ['Quintana Insurance', 'a car and home insurer'],
+      ['Tramuntana Parcel', 'a parcel courier'], ['Kestrel Payroll', 'a payroll service for small firms'],
+      ['Fenollar Energy', 'an electricity supplier'], ['Garbí Rentals', 'a car rental company'],
+      ['Lonja Tickets', 'a concert ticket shop'], ['Cierzo Logistics', 'a warehouse operator'],
+      ['Brava Cinemas', 'a cinema chain'], ['Horta Water', 'a municipal water utility']
+    ],
+    // Finding titles for the ones without a public write-up
+    kinds: [
+      'Sign-in bypass on the staff portal', 'Card numbers written to a debug log', 'Commands run through the report export',
+      "Another customer's invoices readable by changing an ID", 'Password reset link usable twice',
+      'Admin pages reachable without a session', 'API key shipped inside the mobile app',
+      'Stored script in the support chat', 'Open redirect on the sign-in page', 'Server fetches internal addresses on request',
+      'Price changed in the basket request', 'Upload accepts any file type',
+      'Session kept after logout', 'Software versions shown on error pages', 'Sign-up form confirms which emails exist',
+      'Account page can be framed by other sites'
+    ],
+    // One finding each: reported, severity (c h m l), days to fix (- while open), vendor, title (kind number, or wN for write-up N)
+    findings: [
+      '2019-01-02 m 42 15 10', '2019-01-27 l 160 11 15', '2019-04-12 m 67 14 10', '2019-06-23 m 20 17 7',
+      '2019-07-26 h 5 13 6', '2019-07-31 h 27 8 4', '2019-08-12 m 19 9 7', '2020-02-02 h 22 8 4',
+      '2020-03-21 m 63 10 7', '2020-05-31 c 3 8 0', '2020-06-08 l 134 14 12', '2020-07-18 m 53 12 10',
+      '2020-08-09 l 161 10 14', '2020-09-06 h 17 16 3', '2020-12-01 h 22 15 3', '2020-12-18 m 63 9 7',
+      '2020-12-20 l 209 9 13', '2021-01-27 m - 11 11', '2021-03-08 h 25 0 w0', '2021-05-03 h 10 13 6',
+      '2021-05-09 h 7 16 5', '2021-05-16 l 191 15 13', '2021-05-17 l 164 14 12', '2021-06-15 l 89 13 12',
+      '2021-06-26 c 2 13 0', '2021-07-12 l 118 13 14', '2021-08-01 l 197 15 14', '2021-08-20 m 13 11 11',
+      '2021-09-18 c 11 16 1', '2021-11-21 m 14 12 8', '2022-01-19 l 185 13 15', '2022-03-06 m 32 10 9',
+      '2022-04-09 l 154 10 13', '2022-05-17 c 23 1 w1', '2022-05-26 m 18 11 11', '2022-06-27 l 58 15 12',
+      '2022-07-14 c 4 8 1', '2022-08-15 c 9 16 0', '2022-08-20 m 23 14 8', '2022-08-29 m 13 11 9',
+      '2022-09-10 m 13 12 7', '2022-10-22 m 34 12 7', '2022-11-26 h 15 16 4', '2022-11-28 l 84 14 12',
+      '2022-12-14 l 100 12 15', '2022-12-22 m 14 9 9', '2023-01-03 m 78 8 7', '2023-02-01 h 33 12 5',
+      '2023-02-02 h 19 2 w2', '2023-02-22 h 40 17 4', '2023-03-12 m 25 17 10', '2023-05-04 h 39 8 3',
+      '2023-05-08 l - 11 15', '2023-06-05 m 27 10 9', '2023-06-18 h 6 8 4', '2023-06-29 h 13 9 6',
+      '2023-07-14 h 4 8 4', '2023-08-11 h 4 15 6', '2023-08-18 m 11 16 7', '2023-08-26 h 29 14 3',
+      '2023-09-11 h 6 14 4', '2023-10-11 c 3 3 w3', '2023-11-21 l 76 14 15', '2023-12-02 l 72 15 15',
+      '2023-12-17 h 24 17 3', '2024-01-12 l 96 12 12', '2024-02-24 h 4 16 4', '2024-03-14 m 19 14 11',
+      '2024-04-22 h 14 4 w4', '2024-04-22 m 14 16 10', '2024-05-10 l 63 9 13', '2024-06-11 l 62 10 15',
+      '2024-06-19 h 12 14 5', '2024-06-20 l 72 11 14', '2024-07-25 m 18 11 11', '2024-08-13 h 14 11 3',
+      '2024-09-03 m 78 5 w5', '2024-09-10 l 39 14 14', '2024-10-02 c 1 17 2', '2024-10-11 m 17 14 11',
+      '2024-10-16 h 7 17 6', '2024-10-20 m 18 12 11', '2024-10-29 l - 11 12', '2024-11-08 m 68 14 7',
+      '2024-11-11 h 8 16 5', '2024-11-26 c 1 8 1', '2024-12-01 h 8 8 4', '2024-12-21 m 12 13 11',
+      '2025-01-01 h 16 10 3', '2025-02-15 m 9 16 7', '2025-02-17 m 10 15 7', '2025-03-12 m 47 16 9',
+      '2025-03-18 m 134 6 w6', '2025-03-27 h 4 17 6', '2025-04-20 m 34 10 10', '2025-05-18 l 39 8 15',
+      '2025-08-10 m 25 13 7', '2025-08-16 l 91 10 14', '2025-09-04 h 16 12 5', '2025-09-19 c 8 14 0',
+      '2025-09-27 m 55 12 7', '2025-10-25 l 59 12 15', '2025-10-28 m 56 16 10', '2025-11-04 l 69 7 w7',
+      '2025-11-18 h 13 8 4', '2025-11-21 m 29 12 10', '2025-12-09 c 2 15 2', '2025-12-24 h 24 8 6',
+      '2025-12-26 m - 14 7', '2026-01-05 h 5 16 4', '2026-03-26 m 33 8 9', '2026-03-28 m 25 12 11',
+      '2026-04-14 m 11 13 8', '2026-06-08 m 14 8 7', '2026-06-24 m - 15 9', '2026-08-09 h 5 16 6',
+      '2026-08-10 m 40 11 11', '2026-08-17 c 3 17 1', '2026-08-24 l 22 15 13', '2026-08-27 m - 13 11',
+      '2026-10-11 l - 9 15', '2026-10-17 h 9 15 4', '2026-11-02 h - 13 6', '2026-11-07 h - 13 3'
+    ],
+    writeups: [
+      { title: "Any rider's journey history from a card number", vendor: 0, sev: 'h',
+        reported: '2021-03-08', triaged: '2021-03-10', fixed: '2021-04-02', disclosed: '2021-06-14',
+        line: 'The trip history page trusted whichever card number was in the address.',
+        text: "Teselia's web portal shows riders the trips made with their travel card. The page loaded the history for whatever card number appeared in the address and never checked that the card belonged to the signed-in account. Card numbers are printed on the card and issued in sequence, so anyone with an account could read where any rider had travelled in the last 90 days. Teselia added the ownership check 25 days after my report, cleared the cached pages, and confirmed that its logs showed no use of the flaw before the fix." },
+      { title: 'Terminal updates installed without a signature check', vendor: 1, sev: 'c',
+        reported: '2022-05-17', triaged: '2022-05-18', fixed: '2022-06-09', disclosed: '2022-09-20',
+        line: 'A countertop terminal installed any update file it was offered on the shop network.',
+        text: "Corvina's countertop terminals fetch software updates from a server on the shop's own network. They checked that the file was complete but not who had signed it, so another device on the same network could offer its own update and the terminal would install it. I reported it with a harmless test build that only changed the picture on the idle screen. Corvina shipped signed updates 23 days later and pushed them to 41,000 terminals over the following month." },
+      { title: 'Refunds paid to a card other than the one charged', vendor: 2, sev: 'h',
+        reported: '2023-02-02', triaged: '2023-02-06', fixed: '2023-02-21', disclosed: '2023-05-04',
+        line: 'The refund request named a card, and the server paid whichever card it named.',
+        text: "When a delivery arrived short, Nispero's app let customers ask for a refund on the missing items. The refund request carried the saved card to pay back, and the server accepted a card stored by any customer. Combined with a cheap order, that would move money from the shop to a card of someone else's choosing. Nispero now refunds only to the card that paid for the order, and went through 18 months of refunds to confirm that none had been redirected." },
+      { title: 'Appointment notes readable by other patients', vendor: 3, sev: 'c',
+        reported: '2023-10-11', triaged: '2023-10-11', fixed: '2023-10-14', disclosed: '2024-01-15',
+        line: 'Notes written by clinic staff could be opened from any patient account.',
+        text: "Marjal's booking site lets patients see their upcoming appointments. Each appointment page also loaded the notes the clinic had written for it, and changing the number in the address was enough to open someone else's. The notes included the reason for the visit. I stopped after confirming the problem between two accounts of my own and reported it the same day. Marjal took the notes off the patient pages within hours, fixed the access check in three days and informed the data protection authority." },
+      { title: 'One-time codes with no limit on attempts', vendor: 4, sev: 'h',
+        reported: '2024-04-22', triaged: '2024-04-23', fixed: '2024-05-06', disclosed: '2024-08-01',
+        line: 'The code sent by text message could be guessed, because wrong guesses were never counted.',
+        text: "Salobre's online banking asks for a six-digit code sent by text message before a new payee is added. Nothing counted the wrong answers, so a script could try every possible code in under an hour without being slowed down or locked out. Salobre now allows five attempts per code, expires codes after three minutes and alerts the customer after repeated failures. The fix shipped 14 days after my report." },
+      { title: 'Passenger lists exported by any staff account', vendor: 5, sev: 'm',
+        reported: '2024-09-03', triaged: '2024-09-12', fixed: '2024-11-20', disclosed: '2025-02-10',
+        line: 'The export button checked that you were staff, not which crossing you worked on.',
+        text: "Albufera's staff portal can export the passenger list for a crossing, with names, ages and cabin numbers. The export checked that the account belonged to staff, but not whether that person worked on the crossing, so a ticket-office account at one port could download the lists for the whole fleet. The fix needed new roles in the portal, which is why it took 78 days. Albufera switched the export off for ticket-office accounts in the meantime." },
+      { title: "Service port left open on a till's main board", vendor: 6, sev: 'm',
+        reported: '2025-03-18', triaged: '2025-03-25', fixed: '2025-07-30', disclosed: '2025-10-06',
+        line: "With the case open, a maintenance port gave full access to the till's software.",
+        text: "Taulell's tills have a maintenance port on the main board that the factory uses for testing. On shipped units it was still active, so anyone who opened the case could read and change the till's software. Opening the case leaves marks and takes about ten minutes, which kept the rating at medium. The fix is a change to the board itself, so it reached new units 134 days after my report, and Taulell now offers a free sealed case for older ones." },
+      { title: 'Sessions kept alive after a password change', vendor: 7, sev: 'l',
+        reported: '2025-11-04', triaged: '2025-11-10', fixed: '2026-01-12', disclosed: '2026-03-30',
+        line: 'Changing your password did not sign out the other devices using your account.',
+        text: "When a guest changed their Rambla account password, sessions on other devices stayed signed in for up to 30 days. Someone who had borrowed a guest's tablet could keep seeing their bookings after the guest thought they had locked them out. The rating is low because the account shows no payment details. Rambla now ends every other session when a password changes, and has added a button that signs out everywhere." }
+    ]
+  };
+
+  const root = document.documentElement;
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const lib = !!(window.gsap && window.ScrollTrigger && window.Lenis);
+  if (lib) root.classList.add('js'); // CDN blocked: no class, everything is visible and every flow still works
+  const read = (n) => getComputedStyle(root).getPropertyValue(n).trim();
+  const ms = (n) => parseFloat(read(n)) * 1000;
+  const sec = $('.pf');
+  let lenis = null, fx = null; // fx: hooks set by the motion branch; null means instant
+
+  /* ---------- Records (pure functions; runSelfTest checks them) ---------- */
+  const SEV = ['c', 'h', 'm', 'l'];
+  const SEVNAME = { c: 'Critical', h: 'High', m: 'Medium', l: 'Low' };
+  const SEVVAR = { c: '--critical', h: '--high', m: '--medium', l: '--low' };
+  const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const BANDS = ['0 to 7 days', '8 to 30 days', '31 to 90 days', '91 days or more', 'Still open'];
+  const parseDay = (s) => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s).trim());
+    if (!m) return null;
+    const d = new Date(Date.UTC(+m[1], m[2] - 1, +m[3]));
+    return d.getUTCMonth() === m[2] - 1 && d.getUTCDate() === +m[3] ? d : null;
+  };
+  const fmt = (d) => `${d.getUTCDate()} ${MON[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+  const addDays = (d, n) => new Date(+d + n * 864e5);
+  const daysBetween = (a, b) => Math.round((b - a) / 864e5);
+  const median = (a) => {
+    if (!a.length) return null;
+    const s = [...a].sort((x, y) => x - y), m = s.length >> 1;
+    return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+  };
+  const band = (days) => days === null ? 4 : days <= 7 ? 0 : days <= 30 ? 1 : days <= 90 ? 2 : 3;
+  const parseFinding = (line, i) => {
+    const [day, sev, fix, v, k] = line.trim().split(/\s+/);
+    const rep = parseDay(day), w = k[0] === 'w' ? DATA.writeups[+k.slice(1)] : null, days = fix === '-' ? null : +fix;
+    return { i, rep, year: rep.getUTCFullYear(), q: Math.floor(rep.getUTCMonth() / 3), sev, days,
+      fixed: days === null ? null : addDays(rep, days), vendor: DATA.vendors[+v][0], title: w ? w.title : DATA.kinds[+k], w };
+  };
+  const ASOF = parseDay(DATA.asOf);
+  const F = DATA.findings.map(parseFinding).sort((a, b) => a.rep - b.rep).map((f, i) => ((f.i = i), f));
+  const YEARS = Array.from({ length: DATA.years[1] - DATA.years[0] + 1 }, (_, k) => DATA.years[0] + k);
+  const tally = (list) => YEARS.map((y) => {
+    const o = { y, n: 0, c: 0, h: 0, m: 0, l: 0 };
+    list.forEach((f) => { if (f.year === y) { o[f.sev]++; o.n++; } });
+    return o;
+  });
+  const yearMedian = (list, y) => median(list.filter((f) => f.year === y && f.days !== null).map((f) => f.days));
+  $$('[data-total]').forEach((el) => { el.textContent = F.length; });
+
+  /* ---------- Buttons: cut each face into three packets (plain JS; CSS does the motion) ---------- */
+  const packetize = (b) => {
+    const html = b.innerHTML;
+    b.innerHTML = [0, 1, 2].map((k) => `<span class="pk"${k ? ' aria-hidden="true"' : ''}><span class="pk-push"><span class="pk-cut"><span class="pk-face"><span class="pk-in">${html}</span></span></span></span></span>`).join('');
+  };
+  const setLabel = (b, text) => $$('.pk-in', b).forEach((el) => { el.textContent = text; });
+
+  /* ---------- Chart A: findings by severity (plain JS) ---------- */
+  const chartA = (() => {
+    const box = $('#pa'), out = $('#pa-read'), table = $('#pa-table'), tg = $('#toggles');
+    const counts = tally(F), max = Math.max(...counts.map((c) => c.n));
+    const on = { c: true, h: true, m: true, l: true };
+    let pick = Math.max(0, YEARS.indexOf(ASOF.getUTCFullYear() - 1));
+    const total = (s) => F.filter((f) => f.sev === s).length;
+    tg.innerHTML = SEV.map((s) => `<button class="tg" type="button" aria-pressed="true" data-sev="${s}" style="--sev: var(${SEVVAR[s]})"><i class="sw" aria-hidden="true"></i>${SEVNAME[s]} <span>${total(s)}</span></button>`).join('');
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(svgNS, 'svg');
+    svg.setAttribute('aria-hidden', 'true');
+    box.append(svg);
+    const btns = counts.map((c, i) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'yr'; b.setAttribute('role', 'radio');
+      b.setAttribute('aria-label', `${c.y}: ${c.n} findings`);
+      b.textContent = c.y;
+      b.addEventListener('click', () => set(i, false));
+      box.append(b);
+      return b;
+    });
+    function draw() {
+      const W = box.clientWidth; if (!W) return;
+      const ax = W < 420 ? 24 : 32, yw = Math.floor((W - ax) / YEARS.length);
+      const cs = Math.max(10, Math.min(18, Math.floor((yw - 10) / 2))), rows = Math.ceil(max / 2), H = rows * cs, LB = 30, top = 6;
+      let s = '';
+      for (let k = 10; k <= max; k += 10) { // a gridline every ten findings (five rows)
+        const y = top + H - (k / 2) * cs;
+        s += `<rect class="gl" x="${ax}" y="${y}" width="${W - ax}" height="1"/><text class="ax" x="${ax - 6}" y="${y + 4}" text-anchor="end">${k}</text>`;
+      }
+      counts.forEach((c, i) => {
+        const x0 = ax + i * yw + Math.floor((yw - 2 * cs) / 2);
+        let k = 0;
+        for (const sv of SEV) for (let n = 0; n < c[sv]; n++, k++) { // critical at the base, then high, medium, low
+          const x = x0 + (k % 2) * cs + 1, y = top + H - (Math.floor(k / 2) + 1) * cs + 1, z = cs - 2, col = `var(${SEVVAR[sv]})`;
+          s += on[sv] ? `<rect x="${x}" y="${y}" width="${z}" height="${z}" style="fill:${col}"/>`
+            : `<rect x="${x + 1}" y="${y + 1}" width="${z - 2}" height="${z - 2}" style="fill:none;stroke:${col};stroke-width:2"/>`;
+        }
+        if (i === pick) { // the picked bar gets a trace outline
+          const r = Math.ceil(c.n / 2);
+          s += `<rect x="${x0 - 2}" y="${top + H - r * cs - 2}" width="${2 * cs + 4}" height="${r * cs + 4}" style="fill:none;stroke:var(--trace);stroke-width:2"/>`;
+        }
+        btns[i].style.left = ax + i * yw + 'px'; btns[i].style.width = yw + 'px';
+        btns[i].textContent = yw < 48 ? "'" + String(c.y).slice(2) : c.y; // the aria-label keeps the full year
+      });
+      svg.setAttribute('width', W); svg.setAttribute('height', top + H + LB);
+      svg.innerHTML = s;
+    }
+    function say() {
+      const c = counts[pick], off = SEV.filter((s) => !on[s]);
+      out.innerHTML = `<b>${c.y}</b>: ${c.n} findings. ${SEV.map((s) => `${c[s]} ${SEVNAME[s].toLowerCase()}`).join(', ')}.` +
+        (c.y === ASOF.getUTCFullYear() ? ` The year runs to ${fmt(ASOF)}.` : '') +
+        (off.length ? ` Drawn hollow: ${off.map((s) => SEVNAME[s].toLowerCase()).join(', ')}.` : '');
+    }
+    function set(i, focus) {
+      pick = (i + btns.length) % btns.length;
+      btns.forEach((b, k) => { b.setAttribute('aria-checked', String(k === pick)); b.tabIndex = k === pick ? 0 : -1; });
+      if (focus) btns[pick].focus();
+      draw(); say();
+    }
+    box.addEventListener('keydown', (e) => {
+      const k = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+      if (k) { e.preventDefault(); set(pick + k, true); }
+      else if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); set(e.key === 'Home' ? 0 : btns.length - 1, true); }
+    });
+    tg.addEventListener('click', (e) => {
+      const b = e.target.closest('.tg'); if (!b) return;
+      const s = b.dataset.sev; on[s] = !on[s];
+      b.setAttribute('aria-pressed', String(on[s]));
+      draw(); say();
+    });
+    table.innerHTML = `<caption>Findings reported per year and severity</caption><thead><tr><th scope="col">Year</th>${SEV.map((s) => `<th scope="col">${SEVNAME[s]}</th>`).join('')}<th scope="col">Total</th></tr></thead><tbody>` +
+      counts.map((c) => `<tr><th scope="row">${c.y}</th>${SEV.map((s) => `<td>${c[s]}</td>`).join('')}<td>${c.n}</td></tr>`).join('') +
+      `</tbody><tfoot><tr><th scope="row">All years</th>${SEV.map((s) => `<td>${total(s)}</td>`).join('')}<td>${F.length}</td></tr></tfoot>`;
+    set(pick, false);
+    new ResizeObserver(draw).observe(box);
+    return { draw };
+  })();
+
+  /* ---------- Chart B: days from report to fix (plain JS) ---------- */
+  const chartB = (() => {
+    const box = $('#pb'), out = $('#pb-read'), table = $('#pb-table');
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('aria-hidden', 'true');
+    box.append(svg);
+    $('#pb-legend').innerHTML = SEV.map((s) => `<li><i style="--sev: var(${SEVVAR[s]})"></i>${SEVNAME[s]}</li>`).join('') + '<li><i class="tick"></i>Median days to fix, per year</li>';
+    const Q = YEARS.length * 4, SHORT = ['0–7', '8–30', '31–90', '91+', 'Open'];
+    const qOf = (f) => (f.year - YEARS[0]) * 4 + f.q;
+    // Piles: one per band and quarter, critical at the base.
+    const piles = Array.from({ length: 5 }, () => Array.from({ length: Q }, () => []));
+    F.forEach((f) => piles[band(f.days)][qOf(f)].push(f));
+    piles.forEach((b) => b.forEach((p) => p.sort((a, z) => SEV.indexOf(a.sev) - SEV.indexOf(z.sev) || a.rep - z.rep)));
+    let pick = F.findIndex((f) => f.w === DATA.writeups[3]), geo = null;
+    const RANGE = [[0, 7], [8, 30], [31, 90], [91, 240]];
+    function draw() {
+      const W = box.clientWidth; if (!W) return;
+      const lab = W < 600 ? 44 : 112, qw = Math.floor((W - lab) / Q), per = qw >= 44 ? 3 : qw >= 20 ? 2 : 1;
+      const step = Math.max(6, Math.min(14, Math.floor((qw - 4) / per))), z = step - 2, pad = 8;
+      const rows = piles.map((b) => Math.max(2, ...b.map((p) => Math.ceil(p.length / per))));
+      const bh = rows.map((r) => r * step + 2 * pad);
+      // Bands from the bottom: 0 to 7 days sits on the axis, still open is the top band, set apart by a gap.
+      const GAP = 12, yb = []; let y = 4;
+      for (let b = 4; b >= 0; b--) { yb[b] = y + bh[b]; y += bh[b] + (b === 4 ? GAP : 0); }
+      const plotB = y, LB = 30, x0 = lab;
+      let s = '';
+      for (let b = 0; b < 5; b++) {
+        s += `<rect class="gl" x="${x0}" y="${yb[b]}" width="${qw * Q}" height="1"/>`;
+        s += `<text class="ax" x="${x0 - 8}" y="${yb[b] - bh[b] / 2 + 4}" text-anchor="end">${W < 600 ? SHORT[b] : BANDS[b]}</text>`;
+      }
+      s += `<rect class="gl" x="${x0}" y="${yb[4] - bh[4]}" width="${qw * Q}" height="1"/>`;
+      YEARS.forEach((yr, k) => {
+        const x = x0 + k * 4 * qw;
+        s += `<rect class="gl" x="${x}" y="${yb[4] - bh[4]}" width="1" height="${plotB - yb[4] + bh[4] + 6}"/>`;
+        s += `<text class="ax" x="${x + 2 * qw}" y="${plotB + 20}" text-anchor="middle">${W < 600 ? "'" + String(yr).slice(2) : yr}</text>`;
+      });
+      s += `<rect class="gl" x="${x0 + Q * qw}" y="${yb[4] - bh[4]}" width="1" height="${plotB - yb[4] + bh[4] + 6}"/>`;
+      geo = [];
+      piles.forEach((bands, b) => bands.forEach((p, q) => p.forEach((f, k) => {
+        const off = Math.floor((qw - per * step) / 2) + 1;
+        const x = x0 + q * qw + off + (k % per) * step, yy = yb[b] - pad - (Math.floor(k / per) + 1) * step + 2;
+        geo[f.i] = { x, y: yy, b, q };
+        s += `<rect x="${x}" y="${yy}" width="${z}" height="${z}" style="fill:var(${SEVVAR[f.sev]})"/>`;
+      })));
+      YEARS.forEach((yr, k) => { // the paper tick: the year's median, placed within its band
+        const m = yearMedian(F, yr); if (m === null) return;
+        const b = band(m), [lo, hi] = RANGE[b], t = Math.min(1, (m - lo) / (hi - lo));
+        const ty = Math.round(yb[b] - pad - t * (bh[b] - 2 * pad));
+        s += `<rect x="${x0 + k * 4 * qw + 2}" y="${ty - 1}" width="${4 * qw - 3}" height="2" style="fill:var(--page)"/>`;
+      });
+      const g = geo[pick];
+      if (g) s += `<rect x="${g.x - 2}" y="${g.y - 2}" width="${z + 4}" height="${z + 4}" style="fill:none;stroke:var(--trace);stroke-width:2"/>`;
+      svg.setAttribute('width', W); svg.setAttribute('height', plotB + LB);
+      svg.innerHTML = s;
+      geo.z = z;
+    }
+    function say() {
+      const f = F[pick], m = yearMedian(F, f.year);
+      out.innerHTML = `<b>${f.title}</b>, ${f.vendor}. ${SEVNAME[f.sev]}. Reported ${fmt(f.rep)}, ` +
+        (f.days === null ? `still open after ${daysBetween(f.rep, ASOF)} days.` : `fixed ${fmt(f.fixed)}: ${f.days} ${f.days === 1 ? 'day' : 'days'}.`) +
+        (m === null ? '' : ` Median for ${f.year}: ${m} days.`);
+    }
+    function set(i) { pick = Math.max(0, Math.min(F.length - 1, i)); draw(); say(); }
+    // Up and down: the nearest finding (by quarter, then by date) in the next band with any.
+    const vertical = (dir) => {
+      const g = geo[pick];
+      for (let b = g.b + dir; b >= 0 && b <= 4; b += dir) {
+        let best = -1, sc = 1e9;
+        F.forEach((f) => { const h = geo[f.i]; if (h.b !== b) return; const d = Math.abs(h.q - g.q) * 1e4 + Math.abs(f.rep - F[pick].rep) / 864e5; if (d < sc) { sc = d; best = f.i; } });
+        if (best >= 0) return best;
+      }
+      return pick;
+    };
+    box.addEventListener('keydown', (e) => {
+      const map = { ArrowLeft: () => pick - 1, ArrowRight: () => pick + 1, ArrowUp: () => vertical(1), ArrowDown: () => vertical(-1), Home: () => 0, End: () => F.length - 1 };
+      if (!map[e.key]) return;
+      e.preventDefault(); set(map[e.key]());
+    });
+    box.addEventListener('click', (e) => {
+      const r = svg.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top, h = geo.z / 2;
+      let best = -1, sc = 1e9;
+      geo.forEach((g, i) => { const d = Math.hypot(g.x + h - x, g.y + h - y); if (d < sc) { sc = d; best = i; } });
+      if (best >= 0 && sc < 28) set(best);
+    });
+    table.innerHTML = `<caption>Findings per year by time to fix, and the median days to fix</caption><thead><tr><th scope="col">Year</th>${BANDS.map((b) => `<th scope="col">${b}</th>`).join('')}<th scope="col">Median days</th></tr></thead><tbody>` +
+      YEARS.map((y) => `<tr><th scope="row">${y}</th>${BANDS.map((_, b) => `<td>${F.filter((f) => f.year === y && band(f.days) === b).length}</td>`).join('')}<td>${yearMedian(F, y) ?? 'none yet'}</td></tr>`).join('') + '</tbody>';
+    set(pick);
+    new ResizeObserver(draw).observe(box);
+    return { draw };
+  })();
+
+  /* ---------- Write-ups (plain JS) ---------- */
+  const STAGES = ['reported', 'triaged', 'fixed', 'disclosed'];
+  const words = (t) => t.split(' ').map((w) => `<span class="w">${w}</span>`).join(' ');
+  const dateList = (w) => STAGES.map((k) => `<div><dt>${k[0].toUpperCase() + k.slice(1)}</dt><dd><time datetime="${w[k]}">${fmt(parseDay(w[k]))}</time></dd></div>`).join('');
+  const setStage = (el, s) => {
+    const w = DATA.writeups[+el.dataset.wu], k = STAGES[s];
+    el.dataset.s = s;
+    $('.stage-t', el).innerHTML = `<b>${k[0].toUpperCase() + k.slice(1)}</b> ${fmt(parseDay(w[k]))}`;
+  };
+  $('#wus').innerHTML = DATA.writeups.map((w, i) => {
+    const v = DATA.vendors[w.vendor];
+    return `<li class="wu" style="--sev: var(${SEVVAR[w.sev]})">
+      <div class="wu-main">
+        <p class="meta"><span class="chip">${SEVNAME[w.sev]}</span><span class="stage" data-wu="${i}" data-s="3" aria-hidden="true"><span class="pips"><i></i><i></i><i></i><i></i></span><span class="stage-t"></span></span></p>
+        <h4 class="wu-title">${words(w.title)}</h4>
+        <p class="vendor">${v[0]}, ${v[1]}</p>
+        <p class="wu-line">${words(w.line)}</p>
+      </div>
+      <div class="wu-side">
+        <dl class="dates">${dateList(w)}</dl>
+        <button class="btn btn-line btn-s" type="button" data-open="${i}" aria-haspopup="dialog" aria-controls="wd">Read the write-up<span class="vh">: ${w.title}</span></button>
+      </div>
+    </li>`;
+  }).join('');
+  $$('.stage').forEach((el) => setStage(el, 3));
+
+  /* ---------- Contact links from CONTACT (plain JS) ---------- */
+  const NEWTAB = '<span class="vh"> (opens in a new tab)</span>';
+  const handle = (u) => { try { const x = new URL(u); return x.hostname.replace(/^www\./, '') + x.pathname.replace(/\/$/, ''); } catch { return u; } };
+  const KNOWN = {
+    email: (v) => ['Email', `mailto:${v}`, v],
+    signal: (v) => ['Signal', v, 'Message me on Signal'],
+    mastodon: (v) => ['Mastodon', v, handle(v)],
+    github: (v) => ['GitHub', v, handle(v)],
+    whatsapp: (v) => ['WhatsApp', `https://wa.me/${String(v).replace(/\D/g, '')}`, v],
+    instagram: (v) => ['Instagram', v, handle(v)],
+    itch: (v) => ['itch.io', v, handle(v)]
+  };
+  $('#links').innerHTML = Object.entries(CONTACT).map(([k, v]) => {
+    if (k === 'fingerprint' || !v) return '';
+    const known = KNOWN[k]?.(v);
+    if (!known && !/^https?:\/\//.test(v)) return '';
+    const [label, href, text] = known || [k[0].toUpperCase() + k.slice(1), v, handle(v)];
+    return `<li><span>${label}</span><a class="ln" href="${href}" target="_blank" rel="noopener"><span class="ln-t">${text}</span>${NEWTAB}</a></li>`;
+  }).join('');
+  const fpBox = $('#fp'), fpCopy = $('#fp-copy'), fpNote = $('#fp-note');
+  if (CONTACT.fingerprint) { fpBox.hidden = false; $('#fp-v').textContent = CONTACT.fingerprint; }
+  let fpT = 0;
+  fpCopy.addEventListener('click', async () => {
+    let ok = false;
+    try { await navigator.clipboard.writeText(CONTACT.fingerprint); ok = true; } catch { ok = false; }
+    clearTimeout(fpT);
+    setLabel(fpCopy, ok ? 'Copied' : 'Copy fingerprint');
+    fpNote.textContent = ok ? 'The fingerprint is on your clipboard.' : 'Your browser blocked the clipboard. Select the fingerprint above and copy it.';
+    fpT = setTimeout(() => { setLabel(fpCopy, 'Copy fingerprint'); fpNote.textContent = ''; }, ms('--d-copied') || 2400);
+  });
+
+  /* ---------- Enquiry form (plain JS) ---------- */
+  const form = $('#enq'), done = $('#done'), again = $('#again'), doneTitle = $('#done-title');
+  const FREE = ['gmail.com', 'googlemail.com', 'outlook.com', 'hotmail.com', 'live.com', 'yahoo.com', 'icloud.com', 'proton.me', 'protonmail.com', 'gmx.com', 'gmx.es'];
+  const todayUTC = () => { const n = new Date(); return new Date(Date.UTC(n.getFullYear(), n.getMonth(), n.getDate())); };
+  const V = {
+    name: (v) => !v.trim() ? 'Enter your name, so I know who to reply to.' : '',
+    email: (v) => {
+      v = v.trim();
+      if (!v) return 'Enter your work email, like marta@yourcompany.example.';
+      if (!/^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(v)) return 'This address needs an @ and a domain, like marta@yourcompany.example.';
+      if (FREE.includes(v.split('@')[1].toLowerCase())) return 'Use your work address, not a personal one: I check that the company owns the system before testing.';
+      return '';
+    },
+    what: (v) => !v ? 'Choose what needs testing. Pick Something else if it is none of these.' : '',
+    start: (v, today = todayUTC()) => {
+      if (!v.trim()) return '';
+      const d = parseDay(v);
+      if (!d) return 'Enter a full date, like 2026-12-01, or leave it empty.';
+      if (d < today) return 'Pick today or a later date, or leave it empty.';
+      if (daysBetween(today, d) > 365) return `I book up to a year ahead. Pick a date before ${fmt(addDays(today, 366))}, or leave it empty.`;
+      return '';
+    },
+    scope: (v) => !v.trim() ? 'Describe the scope in a sentence or two: what it is and where it runs.'
+      : v.trim().length < 10 ? 'Add a little more, at least 10 characters, so I can size the test.' : ''
+  };
+  const fields = [
+    { k: 'name', el: $('#f-name'), err: $('#f-name-err') },
+    { k: 'email', el: $('#f-mail'), err: $('#f-mail-err') },
+    { k: 'what', el: $('#f-what'), err: $('#f-what-err'), radios: $$('#f-what input') },
+    { k: 'start', el: $('#f-start'), err: $('#f-start-err') },
+    { k: 'scope', el: $('#f-scope'), err: $('#f-scope-err') }
+  ];
+  const value = (f) => f.radios ? (f.radios.find((r) => r.checked)?.value || '') : f.el.value;
+  const show = (f, msg) => {
+    f.err.textContent = msg; // cleared too, so assistive tech never finds a stale message
+    (f.radios ? f.el : f.el.parentElement).classList.toggle('is-bad', !!msg);
+    (f.radios || [f.el]).forEach((el) => {
+      if (msg) { el.setAttribute('aria-invalid', 'true'); if (!f.radios) el.setAttribute('aria-describedby', f.err.id); }
+      else { el.removeAttribute('aria-invalid'); if (!f.radios) el.removeAttribute('aria-describedby'); }
+    });
+  };
+  fields.forEach((f) => {
+    const re = () => { if (f.err.textContent && !V[f.k](value(f))) show(f, ''); };
+    (f.radios || [f.el]).forEach((el) => { el.addEventListener('input', re); el.addEventListener('change', re); });
+  });
+  const swap = (toDone) => {
+    form.hidden = toDone; done.hidden = !toDone; // a hard cut
+    if (toDone) { doneTitle.focus(); fx?.success(done); }
+    else { form.reset(); fields.forEach((f) => show(f, '')); $('#f-name').focus(); }
+  };
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    let first = null;
+    fields.forEach((f) => { const m = V[f.k](value(f)); show(f, m); if (m && !first) first = f; });
+    if (first) { (first.radios ? first.radios[0] : first.el).focus(); return; }
+    const vals = Object.fromEntries(fields.map((f) => [f.k, value(f).trim()]));
+    const start = vals.start ? `from ${fmt(parseDay(vals.start))}` : 'No preferred date';
+    $('#ar-1').textContent = `Enquiry about a ${vals.what === 'Something else' ? 'test' : vals.what.toLowerCase().replace('api', 'API') + ' test'}`;
+    const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    $('#echo').innerHTML = [['Name', vals.name], ['Email', vals.email], ['Testing', vals.what], ['Start', start], ['Scope', vals.scope]]
+      .map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join('');
+    $('#reply').textContent = `I'll reply to ${vals.email} within two working days, from ${CONTACT.email || 'my own address'}.`;
+    swap(true);
+  });
+  again.addEventListener('click', () => swap(false));
+
+  /* ---------- Write-up dialog (plain JS) ---------- */
+  const dlg = $('#wd'), closeBtn = $('#wd-close'), nextBtn = $('#wd-next');
+  let closing = false, downOn = null, opener = null, cur = 0;
+  const fill = (i) => {
+    cur = (i + DATA.writeups.length) % DATA.writeups.length;
+    const w = DATA.writeups[cur], v = DATA.vendors[w.vendor];
+    dlg.style.setProperty('--sev', `var(${SEVVAR[w.sev]})`);
+    $('#wd-sev').textContent = SEVNAME[w.sev];
+    $('#wd-title').textContent = w.title;
+    $('#wd-vendor').textContent = `${v[0]}, ${v[1]}`;
+    $('#wd-dates').innerHTML = dateList(w);
+    $('#wd-text').textContent = w.text;
+  };
+  // Recover from any close, even one the browser forces (a second Escape is not cancelable) mid-animation.
+  const settle = () => { closing = false; fx?.dialogReset(); };
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-open]'); if (!b || dlg.open) return;
+    settle();
+    opener = b; fill(+b.dataset.open);
+    dlg.showModal();
+    lenis?.stop();
+    fx?.dialogIn();
+  });
+  nextBtn.addEventListener('click', () => fill(cur + 1)); // a hard cut to the next record
+  const closeDialog = () => {
+    if (!dlg.open || closing) return;
+    closing = true;
+    const end = () => { closing = false; dlg.close(); };
+    fx ? fx.dialogOut(end) : end();
+  };
+  closeBtn.addEventListener('click', closeDialog);
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); closeDialog(); });
+  // Close on a backdrop click only when the press also started on the backdrop.
+  dlg.addEventListener('pointerdown', (e) => { downOn = e.target; });
+  dlg.addEventListener('click', (e) => { if (e.target === dlg && downOn === dlg) closeDialog(); });
+  dlg.addEventListener('close', () => { settle(); lenis?.start(); opener?.focus(); });
+
+  $$('.btn').forEach(packetize);
+  const cuts = new ResizeObserver((es) => es.forEach(({ target: b }) => {
+    const w = b.offsetWidth; if (!w) return;
+    b.style.setProperty('--a', Math.round(w / 3) + 'px'); b.style.setProperty('--b', Math.round(w * 2 / 3) + 'px');
+  }));
+  $$('.btn').forEach((b) => cuts.observe(b));
+
+  /* ---------- Presses that are always seen (plain JS; CSS steps them, reduced motion makes them instant) ---------- */
+  // Packets: pointerdown (or Enter/Space) sends the three segments; they stay for at least --d-hold, then return together.
+  // Links: a touch keeps the endpoints up for --d-tap.
+  let pressed = null, t0 = 0, relT = 0, tapped = null, tapT0 = 0, tapRel = 0;
+  const sendDown = (b, touch) => {
+    if (pressed && pressed !== b) pressed.classList.remove('is-sent', 'is-open');
+    clearTimeout(relT); pressed = b; t0 = performance.now();
+    b.classList.add('is-sent'); if (touch) b.classList.add('is-open');
+  };
+  const sendUp = () => {
+    if (!pressed) return;
+    const b = pressed; clearTimeout(relT);
+    relT = setTimeout(() => { b.classList.remove('is-sent', 'is-open'); if (pressed === b) pressed = null; }, Math.max(0, (ms('--d-hold') || 160) - (performance.now() - t0)));
+  };
+  document.addEventListener('pointerdown', (e) => {
+    const b = e.target.closest('.btn'); if (b && e.button === 0) sendDown(b, e.pointerType === 'touch');
+    const l = e.target.closest('.ln');
+    if (l && e.pointerType === 'touch') { clearTimeout(tapRel); tapped?.classList.remove('is-tap'); tapped = l; tapT0 = performance.now(); l.classList.add('is-tap'); }
+  });
+  const up = () => {
+    sendUp();
+    if (tapped) { const l = tapped; clearTimeout(tapRel); tapRel = setTimeout(() => { l.classList.remove('is-tap'); if (tapped === l) tapped = null; }, Math.max(0, (ms('--d-tap') || 200) - (performance.now() - tapT0))); }
+  };
+  ['pointerup', 'pointercancel'].forEach((t) => document.addEventListener(t, up));
+  document.addEventListener('keydown', (e) => { const b = e.target.closest?.('.btn'); if (b && (e.key === 'Enter' || e.key === ' ') && !e.repeat) sendDown(b, false); });
+  document.addEventListener('keyup', (e) => { if (e.key === 'Enter' || e.key === ' ') sendUp(); });
+
+  /* ---------- The trace: a head that runs the grid lines (engine is plain JS; the loop runs in the motion layer) ---------- */
+  const trace = (() => {
+    const cv = $('.trace'), g = cv.getContext('2d'), M = 160;
+    let C = 16, O = 8, W = 0, H = 0, dpr = 1, col = '', LEN = 48;
+    const st = { head: null, trail: [], way: [], follow: null, axis: '', sx: 0, sy: 0, slide: null, avoid: false, reached: null };
+    // Blocks are obstacles: the head never enters one, it hugs its outline (the block's rectangle pushed out to the grid).
+    const BLOCKS = '.h2, .lede, .panel, .wus-head, .wu, .foot';
+    let obs = [], obsT = -1e9;
+    const obstacles = () => {
+      const now = performance.now();
+      if (now - obsT > 300) {
+        obsT = now; obs = $$(BLOCKS).filter((el) => el.getClientRects().length).map((el) => snap(el));
+        // Blocks closer than two cells merge into one, so every outline is a clear lane the head can run.
+        for (let i = 0; i < obs.length; i++) for (let j = i + 1; j < obs.length; j++) {
+          const a = obs[i], b = obs[j];
+          if (a.L <= b.R + 1 && b.L <= a.R + 1 && a.T <= b.B + 1 && b.T <= a.B + 1) {
+            obs[i] = { L: Math.min(a.L, b.L), T: Math.min(a.T, b.T), R: Math.max(a.R, b.R), B: Math.max(a.B, b.B) };
+            obs.splice(j, 1); i = -1; break;
+          }
+        }
+      }
+      return obs;
+    };
+    const inside = (c, r, q) => c > q.L && c < q.R && r > q.T && r < q.B;
+    const blockAt = (c, r) => obstacles().find((q) => inside(c, r, q));
+    // A cell inside a block moves to the nearest cell on that block's outline.
+    const toEdge = ([c, r]) => {
+      const q = blockAt(c, r); if (!q) return [c, r];
+      const d = [c - q.L, q.R - c, r - q.T, q.B - r], k = d.indexOf(Math.min(...d));
+      return k === 0 ? [q.L, r] : k === 1 ? [q.R, r] : k === 2 ? [c, q.T] : [c, q.B];
+    };
+    function size() {
+      C = parseFloat(read('--cell')) || 16; O = C / 2; LEN = parseInt(read('--trace-len'), 10) || 48; col = read('--trace');
+      dpr = Math.min(2, window.devicePixelRatio || 1);
+      W = sec.clientWidth; H = window.innerHeight + 2 * M;
+      cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+      cv.style.width = W + 'px'; cv.style.height = H + 'px';
+    }
+    // The canvas covers the viewport plus a margin, placed in section coordinates at every draw.
+    function draw() {
+      const r = sec.getBoundingClientRect(), y0 = Math.max(0, Math.round(-r.top - M));
+      cv.style.transform = `translateY(${y0}px)`;
+      g.setTransform(dpr, 0, 0, dpr, 0, -y0 * dpr);
+      g.clearRect(0, y0, W, H);
+      g.fillStyle = col;
+      const t = st.trail, L = parseFloat(read('--line')) || 3, o = Math.floor(L / 2);
+      // Each cell is a solid bar on a grid line; overlapping bars make the corners square joints.
+      for (let i = 1; i < t.length; i++) {
+        const [a, b] = t[i - 1], [c, d] = t[i];
+        g.fillRect(Math.min(a, c) * C + O - o, Math.min(b, d) * C + O - o, Math.abs(c - a) * C + L, Math.abs(d - b) * C + L);
+      }
+      if (st.head) g.fillRect(st.head[0] * C + O - 4, st.head[1] * C + O - 4, 9, 9); // the head: a 9px square, bigger than the line
+    }
+    const clear = () => { g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, cv.width, cv.height); };
+    // One cell at a time toward the next waypoint (or the pointer): one axis at a time, the longer axis first,
+    // and it keeps to that axis until it is lined up, so every route is an L with a square corner.
+    function advance(n) {
+      let moved = 0;
+      while (moved < n) {
+        const t = st.way[0] || st.follow;
+        if (!t || !st.head) break;
+        const [hx, hy] = st.head, dx = t[0] - hx, dy = t[1] - hy;
+        if (!dx && !dy) {
+          if (st.way.length) { st.way.shift(); st.axis = ''; st.reached?.(st.way.length); continue; }
+          break;
+        }
+        if ((st.axis === 'x' && Math.sign(dx) !== st.sx) || (st.axis === 'y' && Math.sign(dy) !== st.sy)) st.axis = '';
+        if (!st.axis) { st.axis = Math.abs(dx) >= Math.abs(dy) ? 'x' : 'y'; st.sx = Math.sign(dx); st.sy = Math.sign(dy); }
+        let mv = st.axis === 'x' ? [st.sx, 0] : [0, st.sy];
+        // Wall-following: a step into a block turns to the other axis toward the target, or slides along the
+        // block's edge toward its nearer corner until the way ahead is clear. A head already inside may leave.
+        const shut = (m) => !!blockAt(hx + m[0], hy + m[1]) && !blockAt(hx, hy);
+        if (st.avoid && shut(mv)) {
+          const alt = st.axis === 'x' ? (dy ? [0, Math.sign(dy)] : null) : (dx ? [Math.sign(dx), 0] : null);
+          if (alt && !st.slide && !shut(alt)) mv = alt; // once sliding, keep sliding until the way ahead opens
+          else {
+            if (!st.slide) {
+              const q = blockAt(hx + mv[0], hy + mv[1]);
+              st.slide = st.axis === 'x' ? [0, Math.abs(hy - q.T) + Math.abs(t[1] - q.T) <= Math.abs(q.B - hy) + Math.abs(t[1] - q.B) ? -1 : 1]
+                : [Math.abs(hx - q.L) + Math.abs(t[0] - q.L) <= Math.abs(q.R - hx) + Math.abs(t[0] - q.R) ? -1 : 1, 0];
+            }
+            mv = st.slide;
+            if (shut(mv)) { st.slide = [-mv[0], -mv[1]]; mv = st.slide; if (shut(mv)) break; } // a corner pocket: slide the other way
+          }
+        } else st.slide = null;
+        st.head = [hx + mv[0], hy + mv[1]];
+        st.trail.push(st.head);
+        if (st.trail.length > LEN + 1) st.trail.shift(); // the tail is lost in whole cells
+        moved++;
+      }
+      return moved;
+    }
+    const shrink = (n) => { while (n-- > 0 && st.trail.length > 1) st.trail.shift(); };
+    const local = (el) => { const a = el.getBoundingClientRect(), r = sec.getBoundingClientRect(); return { l: a.left - r.left - O, t: a.top - r.top - O, r: a.right - r.left - O, b: a.bottom - r.top - O }; }; // in grid-line coordinates
+    // A control's rectangle on the grid, pushed out to the nearest lines clear of it.
+    const snap = (el, pad = 6) => { const q = local(el); return { L: Math.floor((q.l - pad) / C), T: Math.floor((q.t - pad) / C), R: Math.ceil((q.r + pad) / C), B: Math.ceil((q.b + pad) / C) }; };
+    const around = (q) => [[q.L, q.T], [q.L, q.B], [q.R, q.B], [q.R, q.T], [q.L, q.T]];
+    // The opening run: in from the left edge on the row under the headline, down and back along the primary
+    // button's top edge (two turns), once around it, parked at its top-left corner.
+    function opening() {
+      const h = local($('.h2')), q = snap($('#cta')), R = Math.ceil((h.b + 4) / C);
+      return { start: [-1, R], way: [[q.R, R], [q.R, q.T], [q.L, q.T], ...around(q).slice(1)] };
+    }
+    const cells = (start, way) => way.reduce((n, p, i) => { const a = i ? way[i - 1] : start; return n + Math.abs(p[0] - a[0]) + Math.abs(p[1] - a[1]); }, 0);
+    // A composed still frame for reduced motion and a blocked CDN: the end of the opening run, before the line retracts.
+    function still() {
+      size();
+      const o = opening();
+      st.head = o.start; st.trail = [o.start]; st.way = o.way.slice(); st.follow = null; st.axis = ''; st.reached = null;
+      advance(1e4);
+      draw();
+    }
+    return { st, size, draw, clear, advance, shrink, snap, around, opening, cells, still, toEdge, blockAt, obstacles, get cell() { return C; }, get len() { return LEN; } };
+  })();
+
+  /* ---------- Self-test (location.hash === '#selftest') ---------- */
+  function runSelfTest() {
+    const eq = (a, b, m) => { if (JSON.stringify(a) !== JSON.stringify(b)) throw new Error(`${m}: ${JSON.stringify(a)} is not ${JSON.stringify(b)}`); };
+    eq(median([3, 1, 2]), 2, 'median of three'); eq(median([1, 2, 3, 4]), 2.5, 'median of four'); eq(median([]), null, 'median of none');
+    eq([7, 8, 30, 31, 90, 91, null].map(band), [0, 1, 1, 2, 2, 3, 4], 'fix-time bands');
+    eq(parseDay('2026-02-30'), null, 'impossible date'); eq(parseDay('12/01/2026'), null, 'wrong date format');
+    eq(fmt(parseDay('2021-03-08')), '8 Mar 2021', 'date format');
+    eq(daysBetween(parseDay('2025-03-18'), parseDay('2025-07-30')), 134, 'days between');
+    const f = parseFinding('2024-09-03 m 78 5 w5', 0);
+    eq([f.year, f.q, f.sev, f.days, fmt(f.fixed), f.vendor, f.title], [2024, 2, 'm', 78, '20 Nov 2024', 'Albufera Ferries', DATA.writeups[5].title], 'parse a finding');
+    eq(parseFinding('2026-11-07 h - 13 3', 0).fixed, null, 'an open finding');
+    eq(tally(F).reduce((n, c) => n + c.n, 0), F.length, 'every finding counted once');
+    eq(tally(F).every((c) => c.n === c.c + c.h + c.m + c.l), true, 'severities add up');
+    DATA.writeups.forEach((w, i) => {
+      const r = F.find((x) => x.w === w);
+      eq(!!r, true, `write-up ${i} is in the findings`);
+      eq([fmt(r.rep), r.fixed && fmt(r.fixed), r.sev], [fmt(parseDay(w.reported)), fmt(parseDay(w.fixed)), w.sev], `write-up ${i} matches its finding`);
+      eq(parseDay(w.reported) <= parseDay(w.triaged) && parseDay(w.triaged) <= parseDay(w.fixed) && parseDay(w.fixed) <= parseDay(w.disclosed), true, `write-up ${i} dates in order`);
+    });
+    eq(F.every((x) => !x.fixed || x.fixed <= ASOF), true, 'no fix after the as-of date');
+    const today = parseDay('2026-11-10');
+    eq(V.name('  '), 'Enter your name, so I know who to reply to.', 'empty name');
+    eq([V.email(''), V.email('ana@'), V.email('ana@gmail.com')].every(Boolean), true, 'bad emails rejected');
+    eq(V.email('marta@corvina.example'), '', 'work email accepted');
+    eq(!!V.what(''), true, 'no choice'); eq(V.what('API'), '', 'a choice');
+    eq([V.start('', today), V.start('2026-11-10', today), V.start('2027-06-01', today)], ['', '', ''], 'good start dates');
+    eq([V.start('2026-11-09', today), V.start('2026-13-01', today), V.start('2028-01-01', today)].every(Boolean), true, 'bad start dates');
+    eq([!!V.scope(''), !!V.scope('short'), V.scope('A web shop on two servers')], [true, true, ''], 'scope notes');
+    console.log('SELFTEST PASS');
+  }
+  if (location.hash === '#selftest') { try { runSelfTest(); } catch (e) { console.log('SELFTEST FAIL ' + e.message); } }
+
+  // Without the motion layer the canvas shows a still frame, redrawn when the layout changes.
+  const stillFrame = () => trace.still();
+  stillFrame();
+  document.fonts?.ready.then(() => { if (!root.classList.contains('fx')) stillFrame(); });
+  let rw = window.innerWidth;
+  window.addEventListener('resize', () => { if (!root.classList.contains('fx') && window.innerWidth !== rw) { rw = window.innerWidth; stillFrame(); } });
+
+  if (!lib) return;
+
+  /* ---------- Motion ---------- */
+  gsap.registerPlugin(ScrollTrigger);
+  const fontsReady = Promise.race([
+    Promise.all([document.fonts.ready, document.fonts.load('700 72px "Handjet"'), document.fonts.load('600 17px "Host Grotesk"')]).then(() => 1, () => 1),
+    new Promise((r) => setTimeout(r, 1500))
+  ]);
+  // Start the opening only on a visible page: with lagSmoothing(0) a background tab would jump past it.
+  const visible = new Promise((r) => {
+    if (document.visibilityState === 'visible') return r();
+    const f = () => { if (document.visibilityState === 'visible') { document.removeEventListener('visibilitychange', f); r(); } };
+    document.addEventListener('visibilitychange', f);
+  });
+  let played = false;
+
+  const mm = gsap.matchMedia();
+  mm.add({
+    motion: '(prefers-reduced-motion: no-preference)',
+    reduce: '(prefers-reduced-motion: reduce)',
+    fine: '(hover: hover) and (pointer: fine)'
+  }, (ctx) => {
+    const { motion, fine } = ctx.conditions;
+    if (!motion) { root.classList.add('go'); stillFrame(); return; } // reduced: final states, native scroll, the still frame
+
+    let dead = false;
+    const off = [];
+    const on = (el, type, fn, opt) => { el.addEventListener(type, fn, opt); off.push(() => el.removeEventListener(type, fn, opt)); };
+    const T = Object.fromEntries(['park', 'load', 'band', 'band-gap', 'arrow'].map((k) => [k, parseFloat(read(`--d-${k}`))]));
+    const BASE = parseFloat(read('--trace-rate')) || 60;
+    root.classList.add('fx');
+
+    // Lenis on GSAP's clock. Touch keeps native scrolling.
+    lenis = new Lenis({ lerp: .1, smoothWheel: true, autoRaf: false, anchors: true });
+    lenis.on('scroll', ScrollTrigger.update);
+    const tick = (t) => lenis.raf(t * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
+
+    /* ---------- The trace loop: runs only while the head moves or the line is still retracting ---------- */
+    const S = trace.st;
+    let awake = false, inView = true, acc = 0, racc = 0, lastMove = 0, rate = 0, busy = false, ptr = null, kb = false, hold = false; // hold: the opening loop stays drawn until the first input
+    trace.size(); trace.clear();
+    S.head = null; S.trail = []; S.way = []; S.follow = null;
+    const frame = () => {
+      const dt = Math.min(gsap.ticker.deltaRatio() / 60, 1 / 15), now = performance.now();
+      const t = S.way[0] || S.follow;
+      const dist = t && S.head ? Math.abs(t[0] - S.head[0]) + Math.abs(t[1] - S.head[1]) : 0;
+      // About 60 cells a second, faster the further the head is behind.
+      acc += dt * (rate || Math.min(720, BASE + 5 * dist));
+      const n = Math.floor(acc); acc -= n;
+      const moved = n ? trace.advance(n) : 0;
+      if (moved) { lastMove = now; racc = 0; }
+      const parked = !dist && !S.way.length;
+      if (parked && hold) { trace.draw(); sleep(); return; }
+      if (parked && now - lastMove > T.park * 1000) { racc += dt * BASE; const k = Math.floor(racc); racc -= k; trace.shrink(k); }
+      trace.draw();
+      if (parked && S.trail.length <= 1 && now - lastMove > T.park * 1000) sleep();
+    };
+    const wake = () => { if (awake || !inView || dead) return; awake = true; acc = 0; gsap.ticker.add(frame); };
+    const sleep = () => { if (!awake) return; awake = false; gsap.ticker.remove(frame); };
+    const io = new IntersectionObserver(([e]) => { inView = e.isIntersecting; inView ? wake() : sleep(); });
+    io.observe(sec);
+    off.push(() => io.disconnect());
+    const ro = new ResizeObserver(() => { trace.size(); trace.draw(); });
+    ro.observe(sec);
+    off.push(() => ro.disconnect());
+
+    const C = () => trace.cell;
+    const cellAt = (x, y) => { const r = sec.getBoundingClientRect(); return [Math.max(0, Math.min(Math.round(sec.clientWidth / C()), Math.round((x - r.left - C() / 2) / C()))), Math.max(0, Math.round((y - r.top - C() / 2) / C()))]; };
+    // A head that is off screen comes back in from the left edge, on the row it is heading for.
+    const enter = (row) => {
+      const r = sec.getBoundingClientRect(), top = -r.top / C(), bot = (innerHeight - r.top) / C();
+      if (!S.head || S.head[1] < top - 2 || S.head[1] > bot + 2) { S.head = [-1, row]; S.trail = [S.head]; S.axis = ''; }
+    };
+    // A target inside a block becomes the nearest cell on its outline, so the line hugs what is being pointed at.
+    const goTo = (cell) => { if (busy) return; hold = false; S.way = []; rate = 0; cell = trace.toEdge(cell); enter(cell[1]); S.follow = cell; wake(); };
+    // Pointer: the head follows the pointer's cell.
+    if (fine) {
+      on(document, 'pointermove', (e) => { if (e.pointerType === 'touch') return; kb = false; ptr = [e.clientX, e.clientY]; goTo(cellAt(...ptr)); });
+      on(document.documentElement, 'pointerleave', () => { ptr = null; });
+      // The page moves under a still pointer, so the pointer's cell changes as you scroll.
+      on(window, 'scroll', () => { if (ptr && !dlg.open) goTo(cellAt(...ptr)); }, { passive: true });
+    }
+    // Touch: a drag draws the trace; a tap routes the head to the tap in one L-shaped run.
+    let tStart = null, dragging = false;
+    on(document, 'touchstart', (e) => { kb = false; const p = e.touches[0]; tStart = [p.clientX, p.clientY]; dragging = false; }, { passive: true });
+    on(document, 'touchmove', (e) => {
+      const p = e.touches[0]; if (!tStart) return;
+      if (!dragging && Math.hypot(p.clientX - tStart[0], p.clientY - tStart[1]) > 10) dragging = true;
+      if (dragging && !dlg.open) goTo(cellAt(p.clientX, p.clientY));
+    }, { passive: true });
+    on(document, 'touchend', () => { if (tStart && !dragging && !dlg.open) goTo(cellAt(...tStart)); tStart = null; }, { passive: true });
+    // Keyboard: a focused control pulls the head to its corner, once around it, and parks it at the top-left.
+    on(document, 'keydown', (e) => { if (e.key === 'Tab' || e.key.startsWith('Arrow') || e.key === 'Home' || e.key === 'End') kb = true; });
+    on(document, 'pointerdown', () => { kb = false; });
+    on(sec, 'focusin', (e) => {
+      const el = e.target;
+      if (!kb || busy || el.tabIndex < 0 && !el.matches('[role=radio]') || !el.matches(':focus-visible')) return;
+      requestAnimationFrame(() => { // after the browser scrolls the control into view
+        if (dead || busy || document.activeElement !== el) return;
+        const q = trace.snap(el);
+        enter(q.T);
+        S.follow = null; rate = 0; hold = false;
+        // A control inside a block: the head runs to the block's outline beside the control and parks there.
+        // A control in open grid: once around it, parked at its top-left.
+        S.way = trace.blockAt(q.L + 1, q.T + 1) ? [trace.toEdge([q.L + 1, q.T + 1])] : trace.around(q);
+        wake();
+      });
+    });
+
+    /* ---------- Scroll: the embargo lifts ---------- */
+    // Each write-up row crosses the middle band of the viewport: its lifecycle chip steps through the four stages,
+    // and on "disclosed" the redaction bars are cut away one word at a time, left to right. Scrolling back re-covers.
+    const rows = $$('.wu').map((row) => {
+      const ws = $$('.w', row), stage = $('.stage', row);
+      ws.forEach((w) => w.classList.add('r'));
+      let last = -1;
+      const set = (p) => {
+        const s = p < .15 ? 0 : p < .3 ? 1 : p < .45 ? 2 : 3;
+        const k = s < 3 ? 0 : Math.min(ws.length, Math.floor((p - .45) / .45 * (ws.length + 1)));
+        const key = s * 1000 + k; if (key === last) return; last = key;
+        if (+stage.dataset.s !== s) setStage(stage, s);
+        ws.forEach((w, i) => w.classList.toggle('r', i >= k));
+      };
+      const st = ScrollTrigger.create({ trigger: row, start: 'top 80%', end: 'top 30%', onUpdate: (self) => set(self.progress), onRefresh: (self) => set(self.progress) });
+      set(st.progress);
+      return { st, ws, stage };
+    });
+
+    /* ---------- Hooks for the plain-JS flows ---------- */
+    const bands = $$('.band', dlg);
+    fx = {
+      dialogReset() { gsap.killTweensOf(bands); gsap.set(bands, { clearProps: 'transform' }); },
+      // Reassembled: title, body and actions travel in from alternating sides in three whole steps of a third.
+      dialogIn() {
+        bands.forEach((b, i) => gsap.fromTo(b, { xPercent: i % 2 ? 100 : -100 }, { xPercent: 0, duration: T.band, ease: 'steps(3)', delay: i * T['band-gap'], overwrite: true }));
+      },
+      dialogOut(end) {
+        const n = bands.length;
+        bands.forEach((b, i) => gsap.to(b, { xPercent: i % 2 ? 100 : -100, duration: T.band, ease: 'steps(3)', delay: (n - 1 - i) * T['band-gap'], overwrite: true,
+          onComplete: i === 0 ? end : null }));
+      },
+      // Handshake: the three arrows cut in 220ms apart, then "Message queued" and the details.
+      success(el) {
+        el.classList.add('is-play');
+        const ars = $$('.ar', el), q = $$('.q', el);
+        gsap.set([...ars, ...q], { visibility: 'hidden' });
+        el.classList.remove('is-play');
+        ars.forEach((a, i) => gsap.set(a, { visibility: 'visible', delay: i * T.arrow }));
+        gsap.set(q, { visibility: 'visible', delay: ars.length * T.arrow, onComplete: () => gsap.set([...ars, ...q], { clearProps: 'visibility' }) });
+      }
+    };
+
+    /* ---------- Load: the head teaches the trace ---------- */
+    Promise.all([fontsReady, visible]).then(() => ctx.add(() => {
+      if (dead) return;
+      ScrollTrigger.refresh();
+      trace.size();
+      if (played || window.scrollY > innerHeight) { played = true; S.avoid = true; root.classList.add('go'); return; }
+      played = true; busy = true;
+      const o = trace.opening(), total = trace.cells(o.start, o.way), n = o.way.length;
+      S.head = o.start; S.trail = [o.start]; S.way = o.way.slice(); S.follow = null; S.axis = '';
+      rate = total / T.load; // the whole run, under 1.2s
+      S.reached = (left) => {
+        if (left === n - 3) root.classList.add('go'); // at the button's top-left corner: the lede and buttons cut in
+        if (left === 0) { busy = false; rate = 0; S.reached = null; hold = true; S.avoid = true; }
+      };
+      lastMove = performance.now();
+      wake();
+    }));
+
+    return () => {
+      dead = true;
+      off.forEach((f) => f());
+      sleep(); trace.clear();
+      S.reached = null; busy = false; rate = 0; S.avoid = false;
+      gsap.ticker.remove(tick);
+      gsap.ticker.lagSmoothing(500, 33);
+      lenis.destroy(); lenis = null;
+      rows.forEach(({ st, ws, stage }) => { st.kill(); ws.forEach((w) => w.classList.remove('r')); setStage(stage, 3); });
+      fx.dialogReset(); fx = null;
+      root.classList.remove('fx');
+      root.classList.add('go');
+    };
+  });
+})();
+</script>
+</body>
+</html>

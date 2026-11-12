@@ -1,0 +1,1186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Dust Jacket footer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Handjet:ELGR,ELSH,wght@1..2,0..16,100..900&family=Host+Grotesk:wght@300..800&display=swap">
+<style>
+  :root {
+    /* Colour: a shelf of cartridges at dusk. Seven hues, one job each. */
+    --shelf: #3B2731;        /* ground: dusty mauve, the shelf the cartridges stand on */
+    --well: #2A1B22;         /* the shelf in shadow: the wordmark's well (dust 7.41:1, sleeve 14.21:1 on it) */
+    --scrim: rgb(42 27 34 / .86);   /* the shelf in shadow again: the dialog backdrop */
+    --sleeve: #F6ECEF;       /* sleeve paper: text, and the paper labels text is printed on (11.95:1 on shelf; shelf on it 11.95:1) */
+    --dust: #BFA8B4;         /* dust: secondary text, rules, resting links and the particles (6.23:1 on shelf, 7.41:1 on well) */
+    --dust-dim: #8C7380;     /* the second tone of the dust; particles and the dialog spine only (3.82:1 on well, decorative) */
+    --line-8: #63E0CF;       /* the 8-bit line: its pips, chip and end label only (8.61:1 on shelf; shelf text on it 8.61:1) */
+    --line-16: #FFA35C;      /* the 16-bit line: its pips, chip and end label only (7.00:1; shelf text on it 7.00:1) */
+    --line-h: #A9B8FF;       /* the handheld line: its pips, chip and end label only (7.23:1; shelf text on it 7.23:1) */
+    --contact: #F2C94C;      /* edge-connector gold, what you touch: the primary button, focus rings, contact fingers (8.70:1; shelf on it 8.70:1) */
+    --fault: #FF8F8F;        /* errors only (6.30:1 on shelf) */
+
+    /* Type */
+    --font-display: "Handjet", "Arial Narrow", sans-serif;
+    --font-text: "Host Grotesk", system-ui, sans-serif;
+    --modules: "ELSH" 2, "ELGR" 1;   /* square Handjet modules: the wordmark is sampled from them */
+    --t-small: 14px;
+    --t-body: 16px;
+    --t-lede: 20px;
+    --t-label: 15px;                 /* column plates */
+    --t-h2: clamp(44px, 6.4vw, 92px);
+    --lh-body: 1.55;
+
+    /* Space: an 8px cell; every step is a whole or half cell */
+    --cell: 8px;
+    --s1: 4px; --s2: 8px; --s3: 16px; --s4: 24px;
+    --s5: 32px; --s6: 48px; --s7: 64px; --s8: 96px;
+    --edge-min: var(--s4);           /* the smallest side gutter */
+    --max-w: 1344px;                 /* content width: 168 cells */
+    --notch: 4px;                    /* stepped corner on cartridges and the end label */
+    --cut: 8px;                      /* the keyed corner cut into a focused field */
+    --tap: 48px;                     /* field height; a cartridge with its slot is 50px */
+    --hit: 44px;                     /* minimum target for links and chips */
+    --mark-em: 3.9;                  /* DUST JACKET is 3.88em of Handjet 800 ink wide; 2.24em for JACKET alone */
+
+    /* Motion (CSS and the script read these) */
+    --d-lift: .12s;          /* a cartridge lifts 4px in two steps */
+    --d-press: .14s;         /* the shortest time a cartridge stays seated after a press */
+    --d-tap: .2s;            /* the shortest time a tapped link shows its hover state */
+    --d-specks: .18s;        /* three frames of the link specks */
+    --d-notch: .12s;         /* the field's keyed corner, 4px then 8px */
+    --d-plate: .08s;         /* one frame of a label being stuck on, and the gap between labels */
+    --d-sleeve-out: .24s;    /* the dialog panel slides out in four steps */
+    --d-sleeve-in: .18s;     /* and back in three */
+    --d-frame: .033s;        /* one frame of the dust (30 a second) */
+    --d-rest: .3s;           /* how long a blown speck hangs before it walks home (0.5x to 1.1x) */
+    --d-gust: .9s;           /* one gust across the whole word */
+  }
+  @media (max-width: 599px) {
+    :root { --edge-min: var(--s3); --t-h2: 40px; --t-lede: 18px; }
+  }
+
+  /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+
+  /* Hidden only while the script waits for the fonts; the labels are then stuck on as the columns arrive. */
+  html.js:not(.go) .plate { visibility: hidden; }
+  @media (prefers-reduced-motion: reduce) {
+    html.js:not(.go) .plate { visibility: visible; }
+  }
+
+  @property --cut-now { syntax: "<length>"; inherits: true; initial-value: 0px; }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { background: var(--shelf); }
+  body {
+    margin: 0;
+    background: var(--shelf);
+    color: var(--sleeve);
+    font: 400 var(--t-body)/var(--lh-body) var(--font-text);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  :focus-visible { outline: 2px solid var(--contact); outline-offset: 3px; }
+  ::selection { background: var(--sleeve); color: var(--shelf); }
+  .vh {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+  }
+  .wrap { padding-inline: max(var(--edge-min), (100% - var(--max-w)) / 2); }
+
+  /* ---------- The page above: one release, then the footer has to be scrolled into ---------- */
+  .stub { min-height: calc(100svh + var(--s8)); padding-block: var(--s8) var(--s7); }
+  .h2 {
+    margin: 0;
+    max-width: 12em;
+    font: 700 var(--t-h2)/1 var(--font-display);
+    font-variation-settings: var(--modules);
+    letter-spacing: 0;
+    text-wrap: balance;
+  }
+  .stub-copy { max-width: 62ch; margin-top: var(--s5); }
+  .stub-copy p { margin: 0; }
+  .stub-copy p + p { margin-top: var(--s3); color: var(--dust); }
+  .lede { font-size: var(--t-lede); line-height: 1.45; }
+  .nw { white-space: nowrap; }
+
+  /* ---------- Footer ---------- */
+  .ft {
+    position: relative;
+    overflow: clip;
+    container-type: inline-size;
+    background: var(--shelf);
+    --corners: polygon(0 var(--notch), var(--notch) var(--notch), var(--notch) 0, calc(100% - var(--notch)) 0, calc(100% - var(--notch)) var(--notch), 100% var(--notch), 100% calc(100% - var(--notch)), calc(100% - var(--notch)) calc(100% - var(--notch)), calc(100% - var(--notch)) 100%, var(--notch) 100%, var(--notch) calc(100% - var(--notch)), 0 calc(100% - var(--notch)));
+  }
+
+  /* The well: the wordmark band. The canvas covers it; the h2 text is the fallback and the accessible name. */
+  .well {
+    position: relative;
+    padding-block: var(--s5) var(--s2);
+    background: var(--well);
+    touch-action: pan-y;
+  }
+  .dust { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .mark {
+    --lines: 1;
+    --mark-fs: min(calc(min(100cqw - 2 * var(--edge-min), var(--max-w)) / var(--mark-em)), 52svh);
+    position: relative;
+    display: flex; flex-wrap: wrap; align-content: flex-end; column-gap: .25em;
+    height: calc(var(--mark-fs) * .7);
+    margin: 0;
+    color: var(--dust);
+    font: 800 var(--mark-fs)/.7 var(--font-display);
+    font-variation-settings: var(--modules);
+    text-transform: uppercase;
+    white-space: nowrap;
+    user-select: none;
+  }
+  .is-drawn .mark { color: transparent; }
+  @container (max-width: 639px) {
+    .mark { --lines: 2; --mark-em: 2.24; height: calc(var(--mark-fs) * 1.5); line-height: .8; }
+    .mark span { display: block; width: 100%; }
+  }
+  .well-foot {
+    position: relative;
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+    gap: 0 var(--s4);
+    margin-top: var(--s3);
+  }
+  .well-note { margin: 0; max-width: 52ch; color: var(--dust); }
+
+  /* ---------- Text links: dust at rest; on hover the line thickens and three specks fly off its end ---------- */
+  .tl {
+    position: relative;
+    display: inline-block;
+    min-height: var(--hit);
+    padding: 11px 0;
+    border: 0;
+    color: var(--dust);
+    font: inherit; line-height: 1.375; text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+    background: linear-gradient(currentColor, currentColor) 0 100% / 100% 1px no-repeat content-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .tl::before, .tl::after {
+    content: "";
+    position: absolute; right: -2px; bottom: 11px;
+    width: 2px; height: 2px;
+    background: var(--dust);
+    opacity: 0;
+    pointer-events: none;
+  }
+  .tl::after { box-shadow: 2px -4px 0 0 var(--dust); }   /* the third speck rides with the second */
+  .tl:focus-visible, .tl.is-tap { color: var(--sleeve); background-size: 100% 2px; }
+  .tl:focus-visible::before, .tl.is-tap::before { animation: speck-a var(--d-specks) steps(1, end) both; }
+  .tl:focus-visible::after, .tl.is-tap::after { animation: speck-b var(--d-specks) steps(1, end) both; }
+  @media (hover: hover) {
+    .tl:hover { color: var(--sleeve); background-size: 100% 2px; }
+    .tl:hover::before { animation: speck-a var(--d-specks) steps(1, end) both; }
+    .tl:hover::after { animation: speck-b var(--d-specks) steps(1, end) both; }
+  }
+  @keyframes speck-a {
+    0% { opacity: 1; transform: translate(1px, -2px); }
+    33.333% { opacity: 1; transform: translate(3px, -5px); }
+    66.667% { opacity: 1; transform: translate(5px, -8px); }
+    100% { opacity: 0; transform: translate(5px, -8px); }
+  }
+  @keyframes speck-b {
+    0% { opacity: 1; transform: translate(3px, 0); }
+    33.333% { opacity: 1; transform: translate(6px, -2px); }
+    66.667% { opacity: 1; transform: translate(8px, -4px); }
+    100% { opacity: 0; transform: translate(8px, -4px); }
+  }
+
+  /* ---------- Cartridges: a face seated in a slot; it lifts to show six gold fingers ---------- */
+  .cart {
+    --rim: var(--dust); --face: var(--shelf); --ink: var(--sleeve);
+    --rim-down: var(--sleeve); --face-down: var(--sleeve); --ink-down: var(--shelf);
+    position: relative;
+    display: inline-block;
+    vertical-align: top;
+    padding: var(--s1) 0 0;          /* headroom for the lift, inside the focus ring */
+    border: 0; background: none;
+    color: inherit;
+    font: 600 var(--t-body)/1.2 var(--font-text);
+    text-decoration: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .cart-gold { --rim: var(--contact); --face: var(--contact); --ink: var(--shelf); --rim-down: var(--contact); --face-down: var(--shelf); --ink-down: var(--contact); }
+  .cart::before {   /* the slot line */
+    content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--dust);
+  }
+  .cart::after {    /* six contact fingers, hidden under the seated face */
+    content: ""; position: absolute; left: 50%; bottom: 2px;
+    width: 66px; height: 4px; margin-left: -33px;
+    background: repeating-linear-gradient(90deg, var(--contact) 0 6px, transparent 0 12px);
+  }
+  .cart-face {
+    position: relative; z-index: 1;
+    display: block;
+    margin-bottom: 2px;
+    padding: 2px;
+    background: var(--rim);
+    clip-path: var(--corners);
+    transition: transform var(--d-lift) steps(2, start);
+  }
+  .cart-in {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 40px;
+    padding: 0 var(--s4);
+    background: var(--face);
+    color: var(--ink);
+    clip-path: var(--corners);
+    white-space: nowrap;
+  }
+  .cart:focus-visible .cart-face { transform: translateY(-4px); }
+  @media (hover: hover) { .cart:hover .cart-face { transform: translateY(-4px); } }
+  /* Seated: pushed 1px past rest, the fingers gone under it, the face inverted. Held at least --d-press. */
+  .cart:active .cart-face, .cart.is-down .cart-face { transform: translateY(1px); transition: none; --rim: var(--rim-down); }
+  .cart:active .cart-in, .cart.is-down .cart-in { background: var(--face-down); color: var(--ink-down); }
+  .cart:active::after, .cart.is-down::after { visibility: hidden; }
+
+  /* ---------- The footer's body ---------- */
+  .ft-body { padding-block: var(--s5) 0; }
+  .cols {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s6) var(--s5);
+  }
+  @container (min-width: 600px) {
+    .cols { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .col-cat { grid-column: 1 / -1; }
+  }
+  @container (min-width: 1100px) {
+    .cols { grid-template-columns: minmax(0, 6fr) repeat(3, minmax(0, 2fr)); }
+    .col-cat { grid-column: auto; }
+  }
+  .col ul { margin: var(--s3) 0 0; padding: 0; list-style: none; }
+
+  /* Column titles are labels stuck on the shelf */
+  .plate {
+    display: inline-block;
+    margin: 0;
+    padding: 3px 10px;
+    background: var(--sleeve);
+    color: var(--shelf);
+    font: 700 var(--t-label)/1.4 var(--font-text);
+  }
+  .plate.is-blank { visibility: hidden; }
+  .plate.is-hollow { background: transparent; color: transparent; box-shadow: inset 0 0 0 2px var(--sleeve); }
+
+  .lines { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s4) var(--s4); margin-top: var(--s3); }
+  @container (min-width: 480px) { .lines { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .lines h4 { margin: 0; color: var(--sleeve); font: 600 var(--t-small)/1.4 var(--font-text); }
+  .lines ul { margin-top: var(--s2); }
+  .lines li { display: grid; grid-template-columns: 10px minmax(0, 1fr); column-gap: var(--s2); padding-block: 5px; }
+  .pip { width: 10px; height: 10px; margin-top: 7px; background: var(--hue); }
+  .l8 { --hue: var(--line-8); }
+  .l16 { --hue: var(--line-16); }
+  .lh { --hue: var(--line-h); }
+  .t { color: var(--sleeve); font-weight: 500; }
+  /* The one catalogue title with a page of its own: a link in the title's place, sleeve-coloured like its neighbours. */
+  .lines .tl { justify-self: start; min-height: 0; padding: 0 0 2px; color: var(--sleeve); font-weight: 500; }
+  .lines .tl::before, .lines .tl::after { bottom: 2px; }
+  .lines li:has(.tl) { padding-bottom: 3px; }
+  .st { grid-column: 2; color: var(--dust); font-size: var(--t-small); line-height: 1.4; font-variant-numeric: tabular-nums; }
+
+  .links li + li { margin-top: 0; }
+
+  /* ---------- Signup and about ---------- */
+  .mid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s6) var(--s7);
+    margin-top: var(--s6);
+    padding-top: var(--s5);
+    border-top: 2px solid var(--dust);
+  }
+  @container (min-width: 1100px) {
+    .mid { grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); }
+  }
+  .sign-hint { margin: var(--s2) 0 0; color: var(--dust); max-width: 60ch; }
+  .swap { margin-top: var(--s4); }
+  .swap > .is-off { display: none; }
+
+  .n-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s3) var(--s4);
+    align-items: start;
+  }
+  @container (min-width: 760px) {
+    .n-grid { grid-template-columns: minmax(0, 1fr) auto; }
+    .n-mail { grid-column: 1 / -1; }
+  }
+  @container (min-width: 1320px) {
+    .n-grid { grid-template-columns: minmax(0, 1fr) auto auto; }
+    .n-mail { grid-column: auto; }
+  }
+  .lbl, .n-line legend {
+    display: block;
+    margin: 0 0 var(--s2);
+    padding: 0;
+    color: var(--sleeve);
+    font: 600 var(--t-small)/1.4 var(--font-text);
+  }
+  .n-line { margin: 0; padding: 0; border: 0; min-width: 0; }
+  .n-send { padding-top: calc(var(--t-small) * 1.4 + var(--s2) - var(--s1)); }
+
+  /* Field: an end label at the left, the address on the right. Focus cuts the shell's keyed corner. */
+  .field { position: relative; }
+  .field:has(input:focus-visible) { outline: 2px solid var(--contact); outline-offset: 3px; }
+  .fld {
+    --edge: var(--dust);
+    --cut-now: 0px;
+    display: flex; gap: 2px;
+    padding: 2px;
+    background: var(--edge);
+    clip-path: polygon(var(--cut-now) 0, 100% 0, 100% 100%, 0 100%, 0 var(--cut-now), var(--cut-now) var(--cut-now));
+    transition: --cut-now var(--d-notch) steps(2, start);
+  }
+  .endl {
+    flex: none;
+    display: flex; align-items: center; justify-content: center;
+    width: 6.6em;
+    min-height: calc(var(--tap) - 4px);
+    padding: 0 var(--s2);
+    background: var(--shelf);
+    color: var(--dust);
+    font: 600 var(--t-small)/1.2 var(--font-text);
+    text-align: center;
+    clip-path: polygon(var(--cut-now) 0, 100% 0, 100% 100%, 0 100%, 0 var(--cut-now), var(--cut-now) var(--cut-now));
+  }
+  .fld input {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: calc(var(--tap) - 4px);
+    padding: 0 var(--s3);
+    border: 0; border-radius: 0;
+    background: var(--shelf);
+    color: var(--sleeve);
+    font: inherit;
+    appearance: none;
+  }
+  .fld input:focus { outline: none; }   /* the ring is drawn on .field, outside the cut */
+  .field:hover .fld { --edge: var(--sleeve); }
+  .field[data-line="l8"] { --pick: var(--line-8); }
+  .field[data-line="l16"] { --pick: var(--line-16); }
+  .field[data-line="lh"] { --pick: var(--line-h); }
+  .field:focus-within .fld { --cut-now: var(--cut); --edge: var(--sleeve); }
+  .field[data-line]:not([data-line=""]):focus-within .endl { background: var(--pick); color: var(--shelf); }
+  .field.is-bad .fld { --cut-now: 0px; --edge: var(--fault); }
+  .err {
+    min-height: calc(var(--t-small) * 1.4);
+    margin: var(--s1) 0 0;
+    color: var(--fault);
+    font-size: var(--t-small); line-height: 1.4; font-weight: 500;
+  }
+
+  /* Line chips: radio buttons, each with its line's pip */
+  .chips { display: flex; flex-wrap: wrap; gap: var(--s2); }
+  .chip { position: relative; display: inline-flex; cursor: pointer; }
+  .chip input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+  .chip span {
+    display: inline-flex; align-items: center; gap: var(--s2);
+    min-height: var(--tap);
+    padding: 0 var(--s3);
+    border: 2px solid var(--dust);
+    color: var(--sleeve);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .chip span::before { content: ""; width: 10px; height: 10px; background: var(--hue); }
+  .chip:hover span { border-color: var(--sleeve); }
+  .chip input:checked + span { background: var(--hue); border-color: var(--hue); color: var(--shelf); }
+  .chip input:checked + span::before { background: var(--shelf); }
+  .chip:has(input:focus-visible) { outline: 2px solid var(--contact); outline-offset: 3px; }
+  .chips.is-bad .chip span { border-color: var(--fault); }
+
+  /* Confirmation: a cartridge end label with the line's stripe and the address on a ruled line */
+  .done h3 { margin: 0; font: 600 var(--t-lede)/1.3 var(--font-text); }
+  .done h3:focus { outline: none; }   /* focus lands here only to announce the result */
+  .endlabel {
+    --stripe: var(--dust);
+    max-width: 30em;
+    margin-top: var(--s3);
+    background: var(--sleeve);
+    color: var(--shelf);
+    clip-path: var(--corners);
+  }
+  .done[data-line="l8"] .endlabel { --stripe: var(--line-8); }
+  .done[data-line="l16"] .endlabel { --stripe: var(--line-16); }
+  .done[data-line="lh"] .endlabel { --stripe: var(--line-h); }
+  .endlabel-stripe { margin: 0; padding: 5px var(--s3); background: var(--stripe); font: 700 var(--t-small)/1.4 var(--font-text); }
+  .endlabel-body { padding: var(--s3) var(--s3) var(--s4); }
+  .endlabel-to { margin: 0; font-size: var(--t-small); font-weight: 600; }
+  .endlabel-mail {
+    margin: var(--s2) 0 0;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--shelf);
+    font-size: var(--t-lede); font-weight: 600; line-height: 1.3;
+    overflow-wrap: anywhere;
+  }
+  .done-note { margin: var(--s3) 0 0; color: var(--dust); max-width: 52ch; }
+  .done .tl { margin-top: var(--s1); }
+
+  .about p { margin: var(--s3) 0 0; max-width: 46ch; }
+  .about p + p { color: var(--dust); }
+
+  /* ---------- Base row ---------- */
+  .base {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+    gap: var(--s3) var(--s6);
+    margin-top: var(--s6);
+    padding-block: var(--s3) var(--s5);
+    border-top: 2px solid var(--dust);
+  }
+  .socials { display: flex; flex-wrap: wrap; gap: 0 var(--s4); margin: 0; padding: 0; list-style: none; }
+  .legal { flex: 1 1 26em; margin: 0; color: var(--dust); font-size: var(--t-small); line-height: 1.5; font-variant-numeric: tabular-nums; max-width: 62ch; }
+
+  /* ---------- Shipping and returns: a panel pulled out of its sleeve ---------- */
+  .sleeve {
+    width: min(680px, 100% - 2 * var(--s3));
+    max-width: none;
+    max-height: calc(100dvh - 2 * var(--s3));
+    margin: auto;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--sleeve);
+    overflow: visible;
+  }
+  .sleeve[open] { display: flex; }
+  .sleeve::backdrop { background: var(--scrim); }
+  .spine {
+    position: relative; z-index: 2;
+    flex: none;
+    width: 10px;
+    background: var(--dust-dim) repeating-linear-gradient(180deg, transparent 0 8px, var(--well) 0 12px) 3px 8px / 4px calc(100% - 16px) no-repeat;
+  }
+  .sleeve-in { flex: 1 1 auto; min-width: 0; display: flex; overflow: clip; }
+  .panel {
+    flex: 1 1 auto; min-width: 0;
+    max-height: calc(100dvh - 2 * var(--s3));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: var(--s5);
+    background: var(--shelf);
+    border: 2px solid var(--dust);
+    border-left: 0;
+  }
+  .fx .sleeve[open] .panel { animation: sleeve-out var(--d-sleeve-out) steps(4, start) both; }
+  .fx .sleeve.is-closing .panel { animation: sleeve-in var(--d-sleeve-in) steps(3, start) both; }
+  @keyframes sleeve-out { from { transform: translateX(-100%); } to { transform: none; } }
+  @keyframes sleeve-in { from { transform: none; } to { transform: translateX(-100%); } }
+  .panel-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--s3); }
+  .panel h2 { margin: 6px 0 0; font: 600 26px/1.2 var(--font-text); letter-spacing: -.01em; }
+  .panel h3 { margin: var(--s5) 0 0; font: 600 var(--t-lede)/1.3 var(--font-text); }
+  .panel p { margin: var(--s2) 0 0; max-width: 58ch; }
+  .panel-intro { color: var(--dust); }
+  .rates { width: 100%; margin-top: var(--s4); border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  .rates th, .rates td { padding: var(--s2) var(--s3) var(--s2) 0; text-align: left; vertical-align: baseline; }
+  .rates thead th { color: var(--dust); font-size: var(--t-small); font-weight: 600; border-bottom: 2px solid var(--dust); }
+  .rates tbody tr + tr > * { border-top: 1px solid var(--dust-dim); }
+  .rates tbody th { font-weight: 600; }
+  .rates :is(th, td):last-child { padding-right: 0; text-align: right; }
+
+  /* ---------- Narrow screens ---------- */
+  @container (max-width: 599px) {
+    .links-col ul { display: grid; grid-template-columns: minmax(0, 1fr); }
+    .base { flex-direction: column; align-items: flex-start; }
+    .legal { flex: none; }
+    .n-send { padding-top: 0; }
+    .well-foot { flex-direction: column; align-items: flex-start; }
+  }
+  @media (max-width: 599px) {
+    .stub { padding-top: var(--s7); }
+    .panel { padding: var(--s4) var(--s3); }
+    .panel h2 { font-size: 22px; }
+    .rates th, .rates td { padding-right: var(--s2); }
+    .n-send .cart { display: block; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0s !important; }
+    .tl::before, .tl::after { animation: none !important; }
+    .fx .sleeve[open] .panel, .fx .sleeve.is-closing .panel { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<section class="stub wrap" id="top" aria-labelledby="stub-title">
+  <h2 class="h2" id="stub-title">Tidewater Run, our newest <span class="nw">16-bit</span> cartridge, ships on Friday</h2>
+  <div class="stub-copy" id="newest">
+    <p class="lede">A tide-racing platformer by Clara Mendes and Rui Faria from Aveiro. You outrun the flood up the salt flats, and every level drains a little lower than the last. Battery save, 48 levels and a 32-page printed manual.</p>
+    <p>The first run is 1,200 cartridges at €44 each, in a smoked shell with a fold-out map of the flats. We post the first ones from Porto on Friday 13 November, and copies 1 to 200 come signed by both of them.</p>
+  </div>
+</section>
+
+<footer class="ft" aria-labelledby="ft-title">
+  <div class="well wrap" id="well">
+    <canvas class="dust" id="dust" aria-hidden="true"></canvas>
+    <h2 class="mark" id="ft-title"><span>Dust</span> <span>Jacket</span></h2>
+    <div class="well-foot">
+      <p class="well-note">New games on cartridge for old consoles, flashed, tested and boxed by hand in Porto.</p>
+      <button class="tl" id="gust" type="button" hidden>Blow the dust off</button>
+    </div>
+  </div>
+
+  <div class="ft-body wrap">
+    <div class="cols" id="cols">
+      <div class="col col-cat" id="catalogue">
+        <h3 class="plate">Catalogue</h3>
+        <div class="lines">
+          <div class="l8">
+            <h4>8-bit line</h4>
+            <ul>
+              <li><span class="pip" aria-hidden="true"></span><span class="t">Lantern Moth</span><span class="st">In stock, €34</span></li>
+              <li><span class="pip" aria-hidden="true"></span><span class="t">Ferry to Nowhere</span><span class="st">Last 60 copies, €34</span></li>
+              <li><span class="pip" aria-hidden="true"></span><span class="t">Brass Choir</span><span class="st">Preorder for 4 December</span></li>
+            </ul>
+          </div>
+          <div class="l16">
+            <h4>16-bit line</h4>
+            <ul>
+              <li><span class="pip" aria-hidden="true"></span><a class="tl" href="#newest">Tidewater Run</a><span class="st">New this week, €44</span></li>
+              <li><span class="pip" aria-hidden="true"></span><span class="t">Saltpan Derby</span><span class="st">In stock, €42</span></li>
+              <li><span class="pip" aria-hidden="true"></span><span class="t">Orchard Siege</span><span class="st">Sold out, reprint in January</span></li>
+            </ul>
+          </div>
+          <div class="lh">
+            <h4>Handheld line</h4>
+            <ul>
+              <li><span class="pip" aria-hidden="true"></span><span class="t">Pocket Lighthouse</span><span class="st">In stock, €29</span></li>
+              <li><span class="pip" aria-hidden="true"></span><span class="t">Moss and Rivet</span><span class="st">In stock, €29</span></li>
+              <li><span class="pip" aria-hidden="true"></span><span class="t">Night Tram 9</span><span class="st">Preorder for 18 December</span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="col links-col" id="makers">
+        <h3 class="plate">For makers</h3>
+        <ul class="links">
+          <li><a class="tl" href="mailto:makers@dustjacket.example" target="_blank" rel="noopener">Pitch your game<span class="vh"> (opens in a new tab)</span></a></li>
+          <li><a class="tl" href="https://github.com/" target="_blank" rel="noopener">Specs and dev tools<span class="vh"> (opens in a new tab)</span></a></li>
+          <li><a class="tl" href="https://discord.com/" target="_blank" rel="noopener">Makers' Discord<span class="vh"> (opens in a new tab)</span></a></li>
+          <li><a class="tl" href="https://itch.io/" target="_blank" rel="noopener">Sell the digital build<span class="vh"> (opens in a new tab)</span></a></li>
+        </ul>
+      </div>
+
+      <div class="col links-col" id="help">
+        <h3 class="plate">Shop help</h3>
+        <ul class="links">
+          <li><button class="tl" id="ship-open" type="button" aria-haspopup="dialog" aria-controls="ship">Shipping and returns</button></li>
+          <li><a class="tl" href="mailto:orders@dustjacket.example" target="_blank" rel="noopener">Ask about an order<span class="vh"> (opens in a new tab)</span></a></li>
+          <li><a class="tl" href="mailto:repairs@dustjacket.example" target="_blank" rel="noopener">Repair a cartridge<span class="vh"> (opens in a new tab)</span></a></li>
+          <li><a class="tl" href="#signup">Restock emails</a></li>
+        </ul>
+      </div>
+
+      <div class="col links-col" id="company">
+        <h3 class="plate">Company</h3>
+        <ul class="links">
+          <li><a class="tl" href="#about">About Dust Jacket</a></li>
+          <li><a class="tl" href="mailto:press@dustjacket.example" target="_blank" rel="noopener">Press kit<span class="vh"> (opens in a new tab)</span></a></li>
+          <li><a class="tl" href="mailto:hello@dustjacket.example" target="_blank" rel="noopener">Say hello<span class="vh"> (opens in a new tab)</span></a></li>
+          <li><a class="tl" href="https://www.openstreetmap.org/" target="_blank" rel="noopener">Visit the workshop<span class="vh"> (opens in a new tab)</span></a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="mid">
+      <div class="col signup" id="signup">
+        <h3 class="plate" id="signup-title">Tell me when a cartridge ships</h3>
+        <p class="sign-hint">One email when a new cartridge on your line is ready to post, about four a year.</p>
+        <div class="swap">
+          <form class="notify" id="notify" aria-labelledby="signup-title">
+            <div class="n-grid">
+              <div class="n-mail">
+                <label class="lbl" for="n-email">Email address</label>
+                <div class="field" id="n-field" data-line="">
+                  <div class="fld">
+                    <span class="endl" id="n-endl" aria-hidden="true">Pick a line</span>
+                    <input id="n-email" name="email" type="email" autocomplete="email" spellcheck="false" required>
+                  </div>
+                </div>
+                <p class="err" id="n-email-err" aria-live="polite"></p>
+              </div>
+              <fieldset class="n-line" id="n-line">
+                <legend>Which line?</legend>
+                <div class="chips" id="n-chips">
+                  <label class="chip l8"><input type="radio" name="line" value="l8" required><span>8-bit</span></label>
+                  <label class="chip l16"><input type="radio" name="line" value="l16" required><span>16-bit</span></label>
+                  <label class="chip lh"><input type="radio" name="line" value="lh" required><span>Handheld</span></label>
+                </div>
+                <p class="err" id="n-line-err" aria-live="polite"></p>
+              </fieldset>
+              <div class="n-send">
+                <button class="cart cart-gold" id="n-submit" type="submit"><span class="cart-face"><span class="cart-in">Tell me when it ships</span></span></button>
+              </div>
+            </div>
+          </form>
+          <div class="done is-off" id="done" inert>
+            <h3 id="done-title" tabindex="-1">You're on the list for the <span id="done-line">16-bit line</span>.</h3>
+            <div class="endlabel">
+              <p class="endlabel-stripe" id="done-stripe">16-bit line</p>
+              <div class="endlabel-body">
+                <p class="endlabel-to">This one goes to</p>
+                <p class="endlabel-mail" id="done-mail">rita@example.com</p>
+              </div>
+            </div>
+            <p class="done-note" id="done-note">We'll write once, the week a new cartridge on that line is ready to post.</p>
+            <button class="tl" id="again" type="button">Use a different email</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="col about" id="about">
+        <h3 class="plate">About us</h3>
+        <p>Dust Jacket is four people in a workshop in Bonfim, Porto. Since 2019 we have put 31 games on cartridge, and every one is flashed, tested and boxed at our own bench.</p>
+        <p>The shop counter is open on Saturdays from 10:00 to 14:00, if you would rather collect than wait for the post.</p>
+      </div>
+    </div>
+
+    <div class="base">
+      <ul class="socials" aria-label="Dust Jacket elsewhere">
+        <li><a class="tl" href="https://mastodon.social/" target="_blank" rel="noopener">Mastodon<span class="vh"> (opens in a new tab)</span></a></li>
+        <li><a class="tl" href="https://bsky.app/" target="_blank" rel="noopener">Bluesky<span class="vh"> (opens in a new tab)</span></a></li>
+        <li><a class="tl" href="https://www.instagram.com/" target="_blank" rel="noopener">Instagram<span class="vh"> (opens in a new tab)</span></a></li>
+        <li><a class="tl" href="https://www.youtube.com/" target="_blank" rel="noopener">YouTube<span class="vh"> (opens in a new tab)</span></a></li>
+      </ul>
+      <p class="legal">© <span id="year">2026</span> Dust Jacket Edições, Lda. Rua do Heroísmo 214, 4300-259 Porto, Portugal. Company and VAT number PT 516 482 097.</p>
+      <a class="cart" href="#top"><span class="cart-face"><span class="cart-in">Back to the top</span></span></a>
+    </div>
+  </div>
+</footer>
+
+<dialog class="sleeve" id="ship" aria-labelledby="ship-title" data-lenis-prevent>
+  <div class="spine" aria-hidden="true"></div>
+  <div class="sleeve-in">
+    <div class="panel" id="ship-panel">
+      <div class="panel-head">
+        <h2 id="ship-title">Shipping and returns</h2>
+        <button class="cart" id="ship-close" type="button"><span class="cart-face"><span class="cart-in">Close</span></span></button>
+      </div>
+      <p class="panel-intro">We post from Porto every weekday at 15:00. Orders in before then leave the same day, in a padded box with the cartridge in its sleeve.</p>
+      <table class="rates">
+        <caption class="vh">Shipping cost and delivery time by region</caption>
+        <thead><tr><th scope="col">Region</th><th scope="col">Cost</th><th scope="col">Working days</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Portugal</th><td>€4, free over €80</td><td>1 to 2</td></tr>
+          <tr><th scope="row">Spain</th><td>€7</td><td>2 to 4</td></tr>
+          <tr><th scope="row">Rest of the EU</th><td>€9</td><td>3 to 6</td></tr>
+          <tr><th scope="row">UK and Switzerland</th><td>€12, plus customs</td><td>4 to 8</td></tr>
+          <tr><th scope="row">US and Canada</th><td>€16</td><td>6 to 12</td></tr>
+          <tr><th scope="row">Everywhere else</th><td>€19</td><td>8 to 20</td></tr>
+        </tbody>
+      </table>
+      <h3>Returns</h3>
+      <p>Send back an unopened cartridge within 30 days and we refund the price. If a cartridge stops working in its first two years, we replace it and pay the postage both ways.</p>
+      <p>Email <b>orders@dustjacket.example</b> with your order number first, so we know it is coming.</p>
+    </div>
+  </div>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  const root = document.documentElement;
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const lib = !!(window.gsap && window.ScrollTrigger && window.Lenis);
+  if (lib) root.classList.add('js'); // CDN blocked: no class, everything is visible and every flow still works
+
+  const css = (n) => getComputedStyle(root).getPropertyValue(n).trim();
+  const sec = (n) => { const v = css(n); return parseFloat(v) / (v.endsWith('ms') ? 1000 : 1); }; // a --d-* token in seconds
+  const ft = $('.ft'), well = $('#well'), canvas = $('#dust'), mark = $('#ft-title'), gustBtn = $('#gust');
+  let lenis = null, fx = null; // fx: hooks from the motion branch; null means instant
+
+  // The three hardware lines. Each has one hue, used only for its pips, its chip and the field's end label.
+  const LINES = {
+    l8: { short: '8-bit', name: '8-bit line' },
+    l16: { short: '16-bit', name: '16-bit line' },
+    lh: { short: 'Handheld', name: 'handheld line' }
+  };
+  $('#year').textContent = new Date().getFullYear();
+
+  /* ---------- Press states that last: a cartridge stays seated at least --d-press, a tapped link lit --d-tap ---------- */
+  const hold = (el, cls, min, filter) => {
+    let t0 = 0, timer = 0;
+    const down = (e) => {
+      if (filter && !filter(e)) return;
+      clearTimeout(timer); t0 = performance.now(); el.classList.add(cls);
+    };
+    const up = () => {
+      if (!el.classList.contains(cls)) return;
+      clearTimeout(timer);
+      timer = setTimeout(() => el.classList.remove(cls), Math.max(0, min() * 1000 - (performance.now() - t0)));
+    };
+    el.addEventListener('pointerdown', down);
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach((t) => el.addEventListener(t, up));
+    return { down, up };
+  };
+  $$('.cart').forEach((el) => {
+    const h = hold(el, 'is-down', () => sec('--d-press'));
+    el.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) h.down(e); });
+    el.addEventListener('keyup', h.up);
+    el.addEventListener('blur', h.up);
+  });
+  $$('.tl').forEach((el) => hold(el, 'is-tap', () => sec('--d-tap'), (e) => e.pointerType === 'touch'));
+
+  /* ---------- "Tell me when a cartridge ships" (works without the libraries; nothing is sent) ---------- */
+  const form = $('#notify'), email = $('#n-email'), field = $('#n-field'), endl = $('#n-endl');
+  const emailErr = $('#n-email-err'), lineSet = $('#n-line'), chips = $('#n-chips'), lineErr = $('#n-line-err');
+  const radios = $$('input[name=line]', form);
+  const done = $('#done'), doneTitle = $('#done-title'), again = $('#again');
+  form.noValidate = true;
+  const picked = () => radios.find((r) => r.checked)?.value || '';
+  const syncLine = () => {
+    const v = picked();
+    field.dataset.line = v;
+    endl.textContent = v ? LINES[v].short : 'Pick a line';
+  };
+  const checkEmail = () => {
+    const v = email.value.trim();
+    if (!v) return 'Enter your email address, like rita@example.com.';
+    if (!/^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(v)) return 'This address needs an @ and a domain, like rita@example.com.';
+    return '';
+  };
+  const checkLine = () => picked() ? '' : 'Choose a line: 8-bit, 16-bit or handheld.';
+  const showEmail = (msg) => {
+    emailErr.textContent = msg; // cleared too, so assistive tech never finds a stale message
+    field.classList.toggle('is-bad', !!msg);
+    if (msg) { email.setAttribute('aria-invalid', 'true'); email.setAttribute('aria-describedby', 'n-email-err'); }
+    else { email.removeAttribute('aria-invalid'); email.removeAttribute('aria-describedby'); }
+  };
+  const showLine = (msg) => {
+    lineErr.textContent = msg;
+    chips.classList.toggle('is-bad', !!msg);
+    if (msg) lineSet.setAttribute('aria-describedby', 'n-line-err'); else lineSet.removeAttribute('aria-describedby');
+    radios.forEach((r) => msg ? r.setAttribute('aria-invalid', 'true') : r.removeAttribute('aria-invalid'));
+  };
+  const swap = (toDone) => {
+    const from = toDone ? form : done, to = toDone ? done : form;
+    from.classList.add('is-off'); from.inert = true;
+    to.classList.remove('is-off'); to.inert = false;
+    if (toDone) { doneTitle.focus(); fx?.success(); }
+    else { email.focus(); email.select(); }
+  };
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const a = checkEmail(), b = checkLine();
+    showEmail(a); showLine(b);
+    if (a) { email.focus(); return; }
+    if (b) { (radios.find((r) => r.checked) || radios[0]).focus(); return; }
+    const v = picked();
+    done.dataset.line = v;
+    $('#done-line').textContent = LINES[v].name;
+    $('#done-stripe').textContent = LINES[v].short + ' line';
+    $('#done-mail').textContent = email.value.trim();
+    $('#done-note').textContent = `We'll write once, the week a new ${LINES[v].name} cartridge is ready to post.`;
+    swap(true);
+  });
+  email.addEventListener('input', () => { if (email.hasAttribute('aria-invalid') && !checkEmail()) showEmail(''); });
+  radios.forEach((r) => r.addEventListener('change', () => { syncLine(); if (lineErr.textContent) showLine(''); }));
+  again.addEventListener('click', () => { if (!done.classList.contains('is-off')) swap(false); });
+  syncLine();
+
+  /* ---------- Shipping and returns: native dialog; the panel slides out of its sleeve (CSS, motion only) ---------- */
+  const dlg = $('#ship'), openBtn = $('#ship-open'), closeBtn = $('#ship-close'), panel = $('#ship-panel');
+  let closing = false, closeTimer = 0, downOn = null;
+  // Recover from any close, even one the browser forces (a second Escape is not cancelable) mid-slide.
+  const settle = () => { closing = false; clearTimeout(closeTimer); dlg.classList.remove('is-closing'); };
+  openBtn.addEventListener('click', () => {
+    if (dlg.open) return;
+    settle();
+    dlg.showModal();
+    panel.scrollTop = 0;
+    lenis?.stop();
+  });
+  const closeDialog = () => {
+    if (!dlg.open || closing) return;
+    const end = () => { if (!dlg.open) return; settle(); dlg.close(); openBtn.focus(); };
+    if (!root.classList.contains('fx')) return end();
+    closing = true;
+    dlg.classList.add('is-closing');
+    const onEnd = (e) => { if (e.target === panel) { panel.removeEventListener('animationend', onEnd); end(); } };
+    panel.addEventListener('animationend', onEnd);
+    closeTimer = setTimeout(end, sec('--d-sleeve-in') * 1000 + 200); // if the animation never runs
+  };
+  closeBtn.addEventListener('click', closeDialog);
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); closeDialog(); });
+  // Close on a backdrop click only when the press also started on the backdrop.
+  dlg.addEventListener('pointerdown', (e) => { downOn = e.target; });
+  dlg.addEventListener('click', (e) => { if (e.target === dlg && downOn === dlg) closeDialog(); });
+  dlg.addEventListener('close', () => { settle(); lenis?.start(); });
+
+  /* ---------- The dust: the wordmark as a few thousand flat squares ----------
+     Home positions are sampled from Handjet 800 on an offscreen canvas, one square every P pixels where the
+     letters have ink; P is chosen so the word holds about 4,600 specks. Each speck has a state: at home, in
+     the air (blown, slowing under drag), hanging (a short rest) or walking home in whole-pixel steps.
+     The scroll moment lifts each speck a whole number of rows above its home; lower rows land first.
+     This part is plain JavaScript: without the libraries it draws the word once, at rest. */
+  const dust = (() => {
+    const g = canvas.getContext('2d');
+    const TARGET = 4600, R = 70, DRAG = 4.5, STILL = 400, WALK = .24, GAIN = .85, MAXV = 1700, SCATTER = 1.1, GUST_V = 700;
+    let W = 0, H = 0, dpr = 1, P = 6, S = 3, n = 0, prog = 1, away = 0, gust = null, gustN = 0, footY = 0, ready = false;
+    let hx, hy, x, y, vx, vy, wt, st, tone, lift, fall, land, gid;
+    let col = ['', ''], rest = .3;
+
+    function build() {
+      const wr = well.getBoundingClientRect(), mr = mark.getBoundingClientRect();
+      W = Math.round(wr.width); H = Math.round(wr.height);
+      if (!W || !H || !mr.width) return false;
+      dpr = Math.min(2, window.devicePixelRatio || 1);
+      canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+      col = [css('--dust-dim'), css('--dust')];
+      rest = sec('--d-rest');
+
+      // Lay the word out in the h2's box: one line on wide screens, DUST over JACKET under 640px.
+      const face = css('--font-display'), two = getComputedStyle(mark).getPropertyValue('--lines').trim() === '2';
+      const words = two ? ['DUST', 'JACKET'] : ['DUST JACKET'];
+      const o = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+      o.font = `800 100px ${face}`;
+      const m = words.map((t) => o.measureText(t));
+      const asc = m[0].actualBoundingBoxAscent / 100, gap = .14;
+      const ink = Math.max(...m.map((q) => (q.actualBoundingBoxLeft + q.actualBoundingBoxRight) / 100));
+      const left = Math.round(mr.left - wr.left), base = Math.round(mr.bottom - wr.top);
+      const fs = Math.min(mr.width / ink, mr.height / (words.length * asc + (words.length - 1) * gap));
+      const capPx = Math.round(asc * fs), lead = Math.round((asc + gap) * fs);
+      footY = base - Math.round(capPx * .3);
+      o.canvas.width = W; o.canvas.height = H;
+      o.font = `800 ${fs}px ${face}`; o.fillStyle = '#fff';
+      words.forEach((t, i) => o.fillText(t, left + m[i].actualBoundingBoxLeft / 100 * fs, base - (words.length - 1 - i) * lead));
+
+      const top = Math.max(0, base - capPx - (words.length - 1) * lead - 4), h = Math.min(H, base + 4) - top;
+      const px = o.getImageData(0, top, W, h).data;
+      let A = 0;
+      for (let i = 3; i < px.length; i += 4) if (px[i] > 127) A++;
+      P = Math.max(3, Math.ceil(Math.sqrt(A / TARGET)));
+      S = P >= 5 ? 3 : 2;
+      const pts = [], inset = (P - S) >> 1;
+      for (let yy = h % P; yy + P <= h; yy += P) {
+        for (let xx = left % P; xx + P <= W; xx += P) {
+          if (px[((yy + (P >> 1)) * W + xx + (P >> 1)) * 4 + 3] > 127) pts.push(xx + inset, top + yy + inset);
+        }
+      }
+      n = pts.length / 2;
+      hx = new Int16Array(n); hy = new Int16Array(n);
+      x = new Float32Array(n); y = new Float32Array(n); vx = new Float32Array(n); vy = new Float32Array(n); wt = new Float32Array(n);
+      st = new Uint8Array(n); tone = new Uint8Array(n); lift = new Int16Array(n); fall = new Int16Array(n); land = new Float32Array(n); gid = new Uint16Array(n);
+      let y0 = Infinity, y1 = -Infinity;
+      for (let i = 0; i < n; i++) { hy[i] = pts[2 * i + 1]; y0 = Math.min(y0, hy[i]); y1 = Math.max(y1, hy[i]); }
+      for (let i = 0; i < n; i++) {
+        hx[i] = pts[2 * i]; x[i] = hx[i]; y[i] = hy[i];
+        tone[i] = (((hx[i] * 73856093) ^ (hy[i] * 19349663)) >>> 0) % 10 < 3 ? 0 : 1; // three in ten in the darker tone
+        land[i] = .3 + .65 * (1 - (hy[i] - y0) / Math.max(1, y1 - y0)); // the bottom row lands at 30%, the top at 95%
+        fall[i] = Math.ceil((hy[i] + S) / P) + 1;                         // starts one row above the well
+      }
+      away = 0; gust = null; ready = true;
+      setProgress(prog);
+      return true;
+    }
+
+    // The dust settles: each speck is a whole number of rows above home, falling faster as it nears its landing.
+    function setProgress(p) {
+      prog = p;
+      if (!ready) return;
+      for (let i = 0; i < n; i++) {
+        const q = land[i];
+        lift[i] = p >= q ? 0 : Math.ceil(fall[i] * (1 - (p / q) * (p / q)));
+      }
+    }
+
+    function draw() {
+      if (!ready) return;
+      g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      g.clearRect(0, 0, W, H);
+      for (let t = 0; t < 2; t++) {
+        g.fillStyle = col[t];
+        for (let i = 0; i < n; i++) {
+          if (tone[i] !== t) continue;
+          const yy = Math.round(y[i]) - lift[i] * P, xx = Math.round(x[i]);
+          if (yy <= -S || yy >= H || xx <= -S || xx >= W) continue;
+          g.fillRect(xx, yy, S, S);
+        }
+      }
+    }
+
+    const kick = (i, ax, ay) => {
+      if (st[i] === 0) away++;
+      if (st[i] !== 1) { vx[i] = 0; vy[i] = 0; }
+      st[i] = 1; vx[i] += ax; vy[i] += ay;
+    };
+
+    // One frame. Air: move and slow down. Hanging: wait. Walking: a whole-pixel step toward home per frame,
+    // a quarter of the way or at least one pixel, on each axis.
+    function step(dt) {
+      if (gust) {
+        const nf = gust.front + gust.v * dt;
+        for (let i = 0; i < n; i++) {
+          const px = x[i];
+          if (px < gust.front - R * .5 || px >= nf || gid[i] === gust.id) continue;
+          gid[i] = gust.id;
+          const m = GUST_V * (.6 + Math.random() * .6), a = (Math.random() - .5) * .8 - .18;
+          kick(i, Math.cos(a) * m, Math.sin(a) * m);
+        }
+        gust.front = nf;
+        if (nf > W + R) gust = null;
+      }
+      const k = Math.exp(-DRAG * dt);
+      for (let i = 0; i < n; i++) {
+        const s = st[i];
+        if (!s) continue;
+        if (s === 1) {
+          x[i] += vx[i] * dt; y[i] += vy[i] * dt;
+          vx[i] *= k; vy[i] *= k;
+          if (vx[i] * vx[i] + vy[i] * vy[i] < STILL) { st[i] = 2; wt[i] = rest * (.5 + Math.random() * .6); x[i] = Math.round(x[i]); y[i] = Math.round(y[i]); }
+        } else if (s === 2) {
+          wt[i] -= dt;
+          if (wt[i] <= 0) st[i] = 3;
+        } else {
+          const dx = hx[i] - x[i], dy = hy[i] - y[i];
+          x[i] += Math.sign(dx) * Math.min(Math.abs(dx), Math.max(1, Math.round(Math.abs(dx) * WALK)));
+          y[i] += Math.sign(dy) * Math.min(Math.abs(dy), Math.max(1, Math.round(Math.abs(dy) * WALK)));
+          if (x[i] === hx[i] && y[i] === hy[i]) { st[i] = 0; away--; }
+        }
+      }
+      return away > 0 || !!gust;
+    }
+
+    // A breath along the pointer's path: specks within R of the segment are blown along its direction, with
+    // scatter, harder near the path and on faster strokes.
+    function blow(ax, ay, bx, by, speed) {
+      if (!ready) return false;
+      const dx = bx - ax, dy = by - ay, len = Math.hypot(dx, dy);
+      const base = Math.min(MAXV, speed * GAIN);
+      if (len < .5 || base < 40) return false;
+      const ux = dx / len, uy = dy / len, l2 = len * len;
+      const x0 = Math.min(ax, bx) - R, x1 = Math.max(ax, bx) + R, y0 = Math.min(ay, by) - R, y1 = Math.max(ay, by) + R;
+      let hit = false;
+      for (let i = 0; i < n; i++) {
+        const px = x[i] + S / 2, py = y[i] - lift[i] * P + S / 2;
+        if (px < x0 || px > x1 || py < y0 || py > y1) continue;
+        let t = ((px - ax) * dx + (py - ay) * dy) / l2;
+        t = t < 0 ? 0 : t > 1 ? 1 : t;
+        const d = Math.hypot(px - ax - t * dx, py - ay - t * dy);
+        if (d > R) continue;
+        const m = base * (1 - d / R) * (.55 + Math.random() * .6), a = (Math.random() - .5) * SCATTER;
+        const c = Math.cos(a), s = Math.sin(a);
+        kick(i, (ux * c - uy * s) * m, (ux * s + uy * c) * m);
+        hit = true;
+      }
+      return hit;
+    }
+    // A round puff: outward from a point (a tap, or a focused link below the word).
+    function puff(cx, cy, r, M) {
+      if (!ready) return false;
+      let hit = false;
+      for (let i = 0; i < n; i++) {
+        const px = x[i] + S / 2 - cx, py = y[i] - lift[i] * P + S / 2 - cy, d = Math.hypot(px, py);
+        if (d > r) continue;
+        const a = (d < 1 ? Math.random() * 6.283 : Math.atan2(py, px)) + (Math.random() - .5) * .7;
+        const m = M * (1 - d / r * .6) * (.6 + Math.random() * .6);
+        kick(i, Math.cos(a) * m, Math.sin(a) * m);
+        hit = true;
+      }
+      return hit;
+    }
+    // One gust across the whole word, left to right: a front sweeps the well and blows every speck it passes.
+    function blast(dur) { if (!ready) return; gust = { front: -R, v: (W + 2 * R) / dur, id: (gustN = gustN % 65535 + 1) }; }
+
+    return {
+      build, setProgress, draw, step, blow, puff, blast,
+      get ready() { return ready; }, get busy() { return away > 0 || !!gust; }, get footY() { return footY; }
+    };
+  })();
+
+  // Build once the display face is in (or after 1.5s), and again whenever the well changes size.
+  let progressOf = () => 1; // the motion branch replaces this with the scroll progress
+  let onBuilt = null;
+  const fontsReady = Promise.race([
+    Promise.all([document.fonts.ready, document.fonts.load('800 100px "Handjet"')]).then(() => 'fonts', () => 'fonts'),
+    new Promise((r) => setTimeout(() => r('timeout'), 1500))
+  ]);
+  let wW = 0, wH = 0, built = false;
+  const rebuild = (force) => {
+    const r = well.getBoundingClientRect();
+    if (!force && Math.round(r.width) === wW && Math.round(r.height) === wH) return;
+    wW = Math.round(r.width); wH = Math.round(r.height);
+    dust.setProgress(progressOf());
+    if (!dust.build()) return;
+    well.classList.add('is-drawn');
+    dust.draw();
+    onBuilt?.();
+  };
+  fontsReady.then((how) => {
+    built = true; rebuild(true);
+    if (how === 'timeout') document.fonts.ready.then(() => rebuild(true));
+  });
+  if (window.ResizeObserver) new ResizeObserver(() => { if (built) rebuild(false); }).observe(well);
+  else window.addEventListener('resize', () => built && rebuild(false));
+
+  if (!lib) return;
+
+  /* ---------- Motion ---------- */
+  gsap.registerPlugin(ScrollTrigger);
+  // Start the labels only on a visible page: with lagSmoothing(0), a sequence started in a background tab
+  // would have finished before anyone saw it.
+  const visible = new Promise((r) => {
+    if (document.visibilityState === 'visible') return r();
+    const f = () => { if (document.visibilityState === 'visible') { document.removeEventListener('visibilitychange', f); r(); } };
+    document.addEventListener('visibilitychange', f);
+  });
+  const plates = $$('.plate');
+  let stuck = false;
+
+  const mm = gsap.matchMedia();
+  mm.add({
+    motion: '(prefers-reduced-motion: no-preference)',
+    reduce: '(prefers-reduced-motion: reduce)',
+    fine: '(hover: hover) and (pointer: fine)'
+  }, (ctx) => {
+    const { motion, fine } = ctx.conditions;
+    if (!motion) {
+      // Reduced motion: native scroll, the word at rest, the labels on, every change instant.
+      root.classList.add('go');
+      return;
+    }
+    let dead = false;
+    const off = [];
+    const on = (el, type, fn, opt) => { el.addEventListener(type, fn, opt); off.push(() => el.removeEventListener(type, fn, opt)); };
+    const FRAME = sec('--d-frame'), GUST = sec('--d-gust'), PLATE = sec('--d-plate');
+
+    root.classList.add('fx');
+    gustBtn.hidden = false;
+
+    // Lenis on GSAP's clock. Touch keeps native scrolling.
+    lenis = new Lenis({ lerp: .1, smoothWheel: true, autoRaf: false, anchors: true });
+    lenis.on('scroll', ScrollTrigger.update);
+    const tick = (t) => lenis.raf(t * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
+
+    /* The dust loop: 30 frames a second, only while a speck is away from home, never off screen. */
+    let awake = false, inView = false, acc = 0, owed = false;
+    const frame = (t, dms) => {
+      acc += dms / 1000;
+      if (acc < FRAME) return;
+      const dt = Math.min(acc, FRAME * 2);
+      acc = 0;
+      const alive = dust.step(dt);
+      dust.draw();
+      if (!alive) sleep();
+    };
+    const wake = () => { if (awake || !inView || !dust.ready) return; awake = true; acc = FRAME; gsap.ticker.add(frame); };
+    const sleep = () => { if (!awake) return; awake = false; gsap.ticker.remove(frame); };
+    const io = new IntersectionObserver(([e]) => {
+      inView = e.isIntersecting;
+      if (!inView) return sleep();
+      if (owed) { owed = false; dust.blast(GUST); }
+      if (dust.busy) wake();
+    });
+    io.observe(well);
+    off.push(() => io.disconnect());
+    const gustNow = () => { if (!inView) { owed = true; return; } dust.blast(GUST); wake(); };
+
+    /* Scroll: the dust settles as the well comes into view, feet first; scrolling back lifts it again. */
+    const st = ScrollTrigger.create({
+      trigger: well, start: 'top bottom', end: 'bottom bottom',
+      onUpdate: (self) => { dust.setProgress(self.progress); if (!awake) dust.draw(); }
+    });
+    progressOf = () => st.progress;
+    dust.setProgress(st.progress); dust.draw();
+    onBuilt = () => { ScrollTrigger.refresh(); dust.setProgress(st.progress); dust.draw(); };
+
+    /* Pointer: a breath along the direction of travel. */
+    const local = (e) => { const r = well.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+    let last = null, speed = 0;
+    const breathe = (p, t) => {
+      if (last && t - last.t < 120) {
+        const v = Math.hypot(p[0] - last.x, p[1] - last.y) / Math.max(1, t - last.t) * 1000; // px per second
+        speed = speed * .35 + v * .65;
+        if (dust.blow(last.x, last.y, p[0], p[1], speed)) wake();
+      } else speed = 0;
+      last = { x: p[0], y: p[1], t };
+    };
+    if (fine) {
+      on(well, 'pointermove', (e) => { if (e.pointerType !== 'touch') breathe(local(e), e.timeStamp); });
+      on(well, 'pointerleave', () => { last = null; });
+    }
+    /* Touch: a drag blows along the drag; a tap is one round puff. */
+    let tap = null;
+    on(well, 'touchstart', (e) => { const p = local(e.touches[0]); tap = { x: p[0], y: p[1], t: e.timeStamp, moved: false }; last = { x: p[0], y: p[1], t: e.timeStamp }; }, { passive: true });
+    on(well, 'touchmove', (e) => {
+      const p = local(e.touches[0]);
+      if (tap && Math.hypot(p[0] - tap.x, p[1] - tap.y) > 10) tap.moved = true;
+      breathe(p, e.timeStamp);
+    }, { passive: true });
+    on(well, 'touchend', (e) => {
+      if (tap && !tap.moved && e.timeStamp - tap.t < 500 && !e.target.closest('button, a') && dust.puff(tap.x, tap.y, 64, 650)) wake();
+      tap = null; last = null;
+    }, { passive: true });
+    /* Keyboard: the button sends a gust; focusing any footer link puffs the part of the word above it. */
+    on(gustBtn, 'click', gustNow);
+    on(ft, 'focusin', (e) => {
+      const el = e.target;
+      if (!inView || el === gustBtn || !el.matches('a, .tl') || !el.matches(':focus-visible')) return;
+      const r = el.getBoundingClientRect(), w = well.getBoundingClientRect();
+      if (dust.puff(gsap.utils.clamp(0, w.width, r.left + Math.min(r.width, 160) / 2 - w.left), dust.footY, 48, 460)) wake();
+    });
+
+    /* Success: one gust across the word (waits until the word is on screen). */
+    fx = { success() { gustNow(); } };
+
+    /* Load: the first time the columns arrive, the titles are stuck on, left to right, a frame apart:
+       one frame as a hollow plate, then the filled label. Once only. */
+    Promise.all([fontsReady, visible]).then(() => ctx.add(() => {
+      if (dead) return;
+      if (stuck) { root.classList.add('go'); return; }
+      plates.forEach((p) => p.classList.add('is-blank'));
+      root.classList.add('go');
+      ScrollTrigger.create({
+        trigger: '#cols', start: 'top 88%', once: true,
+        onEnter: () => ctx.add(() => {
+          stuck = true;
+          plates.forEach((p, i) => {
+            gsap.delayedCall(i * PLATE, () => p.classList.replace('is-blank', 'is-hollow'));
+            gsap.delayedCall(i * PLATE + PLATE, () => p.classList.remove('is-hollow', 'is-blank'));
+          });
+        })
+      });
+    }));
+
+    return () => {
+      dead = true;
+      off.forEach((f) => f());
+      sleep();
+      fx = null;
+      st.kill();
+      gsap.ticker.remove(tick);
+      gsap.ticker.lagSmoothing(500, 33);
+      lenis.destroy(); lenis = null;
+      root.classList.remove('fx');
+      gustBtn.hidden = true;
+      plates.forEach((p) => p.classList.remove('is-blank', 'is-hollow'));
+      progressOf = () => 1; onBuilt = null;
+      dust.setProgress(1); dust.draw();
+    };
+  });
+})();
+</script>
+</body>
+</html>

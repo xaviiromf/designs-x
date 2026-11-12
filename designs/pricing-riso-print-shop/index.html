@@ -1,0 +1,858 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Doppeltrommel print prices</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Handjet:ELGR,ELSH,wght@1..2,0..16,100..900&family=Host+Grotesk:wght@300..800&display=swap">
+<style>
+  :root {
+    /* Colour: a two-drum risograph in Leipzig. Contrast is against --raspberry unless noted. */
+    --raspberry: #7A1438;   /* page ground: the shop's own raspberry wall */
+    --plate: #5A0C29;       /* the rate-card plates and the dialog sheet (paper text 12.5:1 on it) */
+    --screen: #A3305E;      /* the resting halftone dots; decoration only (1.6:1) */
+    --paper: #FFF1E6;       /* text (9.6:1; 12.5:1 on plate) */
+    --pencil: #F5BED0;      /* secondary text, rules, field and outline borders (6.6:1; 8.7:1 on plate) */
+    --aqua: #5ED6E8;        /* drum one: the one-colour run, and the first ink of every job (6.2:1; 8.1:1 on plate; plate text on it 8.1:1) */
+    --yellow: #FFE04A;      /* drum two: the second ink (8.1:1; 10.5:1 on plate) */
+    --over: #7FD67A;        /* overprint green: where yellow lands on aqua; the three-colour run only (5.9:1; 7.8:1 on plate) */
+    --jam: #FFB38F;         /* paper jam: errors only (8.0:1 on plate) */
+    --scrim: rgb(58 6 25 / .8);
+    --job: var(--aqua);     /* the ink of the run being booked; set per tier and in the dialog */
+
+    /* Type */
+    --font-display: "Handjet", "Arial Narrow", sans-serif;
+    --font-text: "Host Grotesk", system-ui, sans-serif;
+    --modules: "ELSH" 2, "ELGR" 1;   /* square Handjet modules */
+    --t-small: 14px;
+    --t-body: 17px;
+    --t-lede: 21px;
+    --t-h3: 26px;
+    --t-price: clamp(56px, 6vw, 84px);
+    --t-num: clamp(72px, 8vw, 120px);
+    --t-h2: clamp(46px, 6.4vw, 96px);
+    --lh-body: 1.55;
+
+    /* Space: the halftone lattice steps 8px (fixed in the script); every space here is a multiple of it. */
+    --s1: 8px; --s2: 16px; --s3: 24px; --s4: 32px; --s5: 48px; --s6: 64px; --s7: 96px;
+    --notch: 4px;
+    --tap: 48px;
+    --hit: 44px;
+    --max-w: 1312px;
+
+    /* Motion: the script reads these too */
+    --d-copy: .14s;          /* one pale copy off the drum at load */
+    --d-grow: .05s;          /* ink: one radius step up */
+    --d-dry: .45s;           /* ink: one radius step down while it dries */
+    --d-inkup: .2s;          /* button halftone growing to solid */
+    --d-staple: .07s;        /* the second staple after the first */
+    --d-gauge: .2s;          /* the field's ink gauge filling */
+    --d-roll: .06s;          /* one frame of the dialog rolling off the drum */
+    --d-pass: 1s;            /* one full-sheet pass on success */
+  }
+  @media (max-width: 599px) { :root { --t-body: 16px; --t-lede: 18px; --t-h3: 22px; } }
+
+  /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+
+  /* Hidden only while the script runs the first copies off the drum. */
+  html.js:not(.go) .head, html.js:not(.go) .tier, html.js:not(.go) .fine { visibility: hidden; }
+  @media (prefers-reduced-motion: reduce) {
+    html.js:not(.go) .head, html.js:not(.go) .tier, html.js:not(.go) .fine { visibility: visible; }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { background: var(--raspberry); }
+  body {
+    margin: 0;
+    background: var(--raspberry);
+    color: var(--paper);
+    font: 400 var(--t-body)/var(--lh-body) var(--font-text);
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible { outline: 2px solid var(--paper); outline-offset: 3px; }
+  ::selection { background: var(--yellow); color: var(--plate); }
+  .vh { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  :where(.rates, .sheet) :where(h2, h3, p, ul, ol, dl, dd, table) { margin: 0; }
+
+  /* ---------- The sheet: a 45-degree halftone screen ---------- */
+  .rates {
+    position: relative;
+    isolation: isolate;
+    overflow: clip;
+    padding: var(--s7) max(var(--s3), (100% - var(--max-w)) / 2) var(--s7);
+    /* No-JS screen: the same 45-degree lattice in CSS. The canvas replaces it with pixel-round dots. */
+    background:
+      radial-gradient(circle, var(--screen) 0 2px, transparent 2.5px) 0 0 / 16px 16px,
+      radial-gradient(circle, var(--screen) 0 2px, transparent 2.5px) 8px 8px / 16px 16px,
+      var(--raspberry);
+  }
+  .rates.is-drawn { background: var(--raspberry); }
+  .screen {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    z-index: -1; pointer-events: none;
+    image-rendering: pixelated;   /* one canvas pixel per CSS pixel: dots stay pixel-round at any DPR */
+  }
+
+  .head { max-width: 62rem; }
+  .shop { color: var(--pencil); font-weight: 600; }
+  .h2 {
+    margin-top: var(--s2);
+    font: 700 var(--t-h2)/.95 var(--font-display);
+    font-variation-settings: var(--modules);
+    text-wrap: balance;
+  }
+  .lede { margin-top: var(--s3); max-width: 58ch; font-size: var(--t-lede); line-height: 1.45; }
+  .hint { margin-top: var(--s2); color: var(--pencil); }
+
+  /* ---------- Rate card: one plate per run ---------- */
+  .tiers { list-style: none; padding: 0; margin-top: var(--s6); display: grid; gap: var(--s5); }
+  .tier {
+    --corners: polygon(0 8px, 8px 8px, 8px 0, calc(100% - 8px) 0, calc(100% - 8px) 8px, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 8px calc(100% - 8px), 0 calc(100% - 8px));
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 15rem) minmax(0, 13rem) minmax(0, 1fr) minmax(0, 16rem);
+    gap: var(--s4);
+    align-items: start;
+    padding: var(--s4);
+    background: var(--plate);
+    clip-path: var(--corners);
+  }
+  .tier[data-tier="1"] { --job: var(--aqua); }
+  .tier[data-tier="2"] { --job: var(--yellow); }
+  .tier[data-tier="3"] { --job: var(--over); }
+  .num {
+    display: block;
+    font: 800 var(--t-num)/.8 var(--font-display);
+    font-variation-settings: var(--modules);
+    color: var(--job);
+  }
+  .tier h3 { margin-top: var(--s2); font: 650 var(--t-h3)/1.15 var(--font-text); letter-spacing: -.01em; }
+  .inks { display: flex; gap: 6px; margin-top: var(--s1); }
+  .inks i { width: 16px; height: 16px; background: var(--c); }
+  .drums { margin-top: var(--s1); color: var(--pencil); font-size: var(--t-small); line-height: 1.45; }
+  .price { font-variant-numeric: tabular-nums; }
+  .big {
+    font: 700 var(--t-price)/.9 var(--font-display);
+    font-variation-settings: var(--modules);
+  }
+  .per { margin-top: var(--s1); color: var(--pencil); font-size: var(--t-small); line-height: 1.45; max-width: 22ch; }
+  .ladder { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  .ladder caption { text-align: left; font-weight: 600; padding-bottom: var(--s1); }
+  .ladder th, .ladder td { padding: 6px 0; text-align: right; border-top: 1px solid var(--screen); }
+  .ladder th:first-child, .ladder td:first-child { text-align: left; }
+  .ladder thead th { color: var(--pencil); font-size: var(--t-small); font-weight: 500; border-top: 0; }
+  .ladder tbody th { font-weight: 400; }
+  .terms .days { font-weight: 650; }
+  .terms ul { margin-top: var(--s1); padding-left: 1.1em; color: var(--pencil); font-size: var(--t-small); line-height: 1.5; }
+  .terms .btn { margin-top: var(--s3); width: 100%; }
+  @media (max-width: 1139px) {
+    .tier { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  }
+  @media (max-width: 639px) {
+    .tier { grid-template-columns: minmax(0, 1fr); padding: var(--s3); gap: var(--s3); }
+    .tiers { gap: var(--s4); }
+  }
+
+  /* ---------- Buttons: an inked face ---------- */
+  .btn {
+    --corners: polygon(0 var(--notch), var(--notch) var(--notch), var(--notch) 0, calc(100% - var(--notch)) 0, calc(100% - var(--notch)) var(--notch), 100% var(--notch), 100% calc(100% - var(--notch)), calc(100% - var(--notch)) calc(100% - var(--notch)), calc(100% - var(--notch)) 100%, var(--notch) 100%, var(--notch) calc(100% - var(--notch)), 0 calc(100% - var(--notch)));
+    display: inline-block;
+    padding: 0; border: 0; background: none;
+    color: inherit; font: 650 var(--t-body)/1.2 var(--font-text);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .face { display: block; padding: 2px; background: var(--job); clip-path: var(--corners); }
+  .inner {
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+    min-height: calc(var(--tap) - 4px);
+    padding: 0 var(--s3);
+    background: var(--plate);
+    clip-path: var(--corners);
+    isolation: isolate;
+  }
+  /* The halftone that inks the face: dots grow a radius step at a time until the face is solid. */
+  .inner::before {
+    content: ""; position: absolute; inset: 0; z-index: -1;
+    background: var(--job);
+    -webkit-mask-size: 16px 16px; mask-size: 16px 16px;
+    visibility: hidden;
+  }
+  .label { color: var(--paper); }
+  .btn:hover .inner::before, .btn:focus-visible .inner::before, .btn.is-tap .inner::before {
+    visibility: visible;
+    animation: inkup var(--d-inkup) linear both;
+  }
+  .btn:hover .label, .btn:focus-visible .label, .btn.is-tap .label { color: var(--plate); transition: color 0s calc(var(--d-inkup) * .8); }
+  @keyframes inkup {
+    0%   { -webkit-mask-image: var(--m1); mask-image: var(--m1); }
+    25%  { -webkit-mask-image: var(--m2); mask-image: var(--m2); }
+    50%  { -webkit-mask-image: var(--m3); mask-image: var(--m3); }
+    75%  { -webkit-mask-image: var(--m4); mask-image: var(--m4); }
+    100% { -webkit-mask-image: none; mask-image: none; }
+  }
+  /* Press: the sheet is taken by the feed rollers, its top rows gripped and the face 2px down. */
+  .btn:active .face, .btn.is-down .face { transform: translateY(2px); clip-path: polygon(0 4px, 100% 4px, 100% 100%, 0 100%); }
+  .btn-solid .inner { background: var(--job); }
+  .btn-solid .label { color: var(--plate); }
+
+  /* ---------- Text links: saddle stitched ---------- */
+  .u {
+    position: relative;
+    display: inline-flex; align-items: center;
+    min-height: var(--hit); min-width: var(--hit);
+    padding: 0; border: 0;
+    background: linear-gradient(var(--pencil), var(--pencil)) 0 calc(50% + .75em) / 100% 1px no-repeat;
+    color: var(--paper); font: inherit; font-weight: 600;
+    text-decoration: none; cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* Two staples punch through the underline: the left one, then the right one a frame later. */
+  .u::before, .u::after {
+    content: ""; position: absolute; top: calc(50% + .75em - 3px);
+    width: 10px; height: 5px;
+    border: 2px solid var(--paper); border-bottom: 0;
+    visibility: hidden;
+  }
+  .u::before { left: 18%; }
+  .u::after { right: 18%; }
+  .u:hover, .u:focus-visible, .u.is-tap { background-size: 100% 2px; }
+  .u:hover::before, .u:focus-visible::before, .u.is-tap::before { visibility: visible; }
+  .u:hover::after, .u:focus-visible::after, .u.is-tap::after { visibility: visible; transition: visibility 0s var(--d-staple); }
+
+  /* ---------- Fine print ---------- */
+  .fine {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s4);
+    margin-top: var(--s6); padding: var(--s4);
+    background: var(--raspberry); border-top: 2px solid var(--pencil);
+  }
+  .fine h3 { font: 650 var(--t-h3)/1.15 var(--font-text); }
+  .fine ul { margin-top: var(--s2); padding-left: 1.1em; }
+  .fine li + li { margin-top: 6px; }
+  .fine p { max-width: 52ch; }
+  .fine p + p, .fine h3 + p { margin-top: var(--s2); }
+  @media (max-width: 799px) { .fine { grid-template-columns: minmax(0, 1fr); padding: var(--s3) 0; } }
+
+  /* ---------- Booking dialog ---------- */
+  .book {
+    width: min(600px, 100% - 2 * var(--s3));
+    max-width: none; max-height: calc(100dvh - 2 * var(--s3));
+    margin: auto; padding: 0; border: 0;
+    background: none; color: var(--paper);
+    overflow-y: auto; overscroll-behavior: contain;
+  }
+  .book::backdrop { background: var(--scrim); }
+  .sheet { padding: var(--s4); background: var(--plate); border: 2px solid var(--job); }
+  .sheet-head { display: flex; justify-content: space-between; align-items: center; gap: var(--s3); }
+  .sheet h2 { font: 650 var(--t-h3)/1.15 var(--font-text); }
+  .intro { margin-top: var(--s1); color: var(--pencil); }
+  fieldset { margin: var(--s3) 0 0; padding: 0; border: 0; }
+  legend, .lbl { display: block; padding: 0; font-weight: 650; }
+  .opts { display: grid; gap: 4px; margin-top: var(--s1); }
+  .opt {
+    display: flex; align-items: center; gap: var(--s2);
+    min-height: var(--hit); padding: 0 var(--s2);
+    border: 2px solid var(--screen); cursor: pointer;
+  }
+  .opt:has(:checked) { border-color: var(--c); }
+  .opt input {
+    appearance: none; margin: 0; flex: none;
+    width: 20px; height: 20px; border: 2px solid var(--pencil); background: var(--plate); cursor: pointer;
+  }
+  .opt input:checked { background: var(--c); border-color: var(--c); box-shadow: inset 0 0 0 3px var(--plate); }
+  .opt .what { flex: 1; }
+  .opt .what small { display: block; color: var(--pencil); font-size: var(--t-small); line-height: 1.3; }
+  .row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s2); }
+  @media (max-width: 519px) { .row { grid-template-columns: minmax(0, 1fr); } .sheet { padding: var(--s3); } }
+  .lbl { margin-top: var(--s3); }
+  /* The field's ink gauge: a column at its left edge fills with the booked run's ink while you type. */
+  .field { position: relative; margin-top: var(--s1); }
+  .field::before {
+    content: ""; position: absolute; left: 2px; top: 2px; bottom: 2px; width: 8px;
+    background: var(--job); pointer-events: none;
+    clip-path: inset(100% 0 0 0);
+    transition: clip-path var(--d-gauge) steps(4, end);
+  }
+  .field:focus-within::before { clip-path: inset(0); }
+  .field input, .field select {
+    display: block; width: 100%; height: var(--tap);
+    padding: 0 var(--s2) 0 calc(var(--s2) + 10px);
+    border: 2px solid var(--pencil); border-radius: 0;
+    background: var(--plate); color: var(--paper); font: inherit;
+    appearance: none;
+  }
+  .field select { background: var(--plate) linear-gradient(135deg, transparent 50%, var(--pencil) 50%) calc(100% - 18px) 50% / 8px 8px no-repeat; cursor: pointer; }
+  .field input:hover, .field select:hover { border-color: var(--paper); }
+  .field input:focus, .field select:focus { border-color: var(--job); outline: none; }
+  .field input:focus-visible, .field select:focus-visible { outline: 2px solid var(--paper); outline-offset: 3px; }
+  .field input[aria-invalid="true"] { border-color: var(--jam); }
+  .err { min-height: 1.45em; margin-top: 4px; color: var(--jam); font-size: var(--t-small); line-height: 1.45; font-weight: 500; }
+  .total { margin-top: var(--s3); padding: var(--s2) 0; border-block: 1px solid var(--screen); font-variant-numeric: tabular-nums; }
+  .total b { font-weight: 650; }
+  .note { margin-top: var(--s2); color: var(--pencil); font-size: var(--t-small); line-height: 1.45; }
+  .send { margin-top: var(--s3); width: 100%; }
+  .done:focus { outline: none; }
+  .done p { margin-top: var(--s2); }
+  .done b { overflow-wrap: anywhere; }
+  .done .job { font: 700 clamp(40px, 7vw, 56px)/1 var(--font-display); font-variation-settings: var(--modules); color: var(--job); margin-top: var(--s2); }
+  .done-actions { display: flex; flex-wrap: wrap; gap: var(--s3); align-items: center; margin-top: var(--s3); }
+  [hidden] { display: none !important; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition-duration: 0s !important; transition-delay: 0s !important; }
+  }
+</style>
+</head>
+<body>
+
+<section class="rates" id="rates" aria-labelledby="rates-title">
+  <canvas class="screen" aria-hidden="true"></canvas>
+  <header class="head">
+    <p class="shop kt">Doppeltrommel, a risograph print shop in Leipzig-Plagwitz</p>
+    <h2 class="h2 kt" id="rates-title">Print your zine, manual or box insert in one, two or three colours.</h2>
+    <p class="lede kt">We print for people who make games for old consoles: fanzines, instruction manuals, maps and box inserts for homebrew cartridges. Our machine has two drums, aqua and yellow. You pay by the colours on the page and the size of the run.</p>
+    <p class="hint kt" id="hint" hidden></p>
+  </header>
+
+  <ol class="tiers">
+    <li class="tier ko" data-tier="1">
+      <div class="tier-id">
+        <span class="num" aria-hidden="true">1</span>
+        <h3>One colour</h3>
+        <div class="inks" aria-hidden="true"><i style="--c: var(--aqua)"></i></div>
+        <p class="drums">Aqua drum only. Line art, text and flat tints in one ink.</p>
+      </div>
+      <div class="price">
+        <p class="big">€96</p>
+        <p class="per">100 copies of a 16-page A5 zine, stapled and trimmed</p>
+      </div>
+      <table class="ladder">
+        <caption>Other run sizes</caption>
+        <thead><tr><th scope="col">Copies</th><th scope="col">Run</th><th scope="col">Each</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">50</th><td>€64</td><td>€1.28</td></tr>
+          <tr><th scope="row">100</th><td>€96</td><td>€0.96</td></tr>
+          <tr><th scope="row">250</th><td>€178</td><td>€0.71</td></tr>
+          <tr><th scope="row">500</th><td>€298</td><td>€0.60</td></tr>
+        </tbody>
+      </table>
+      <div class="terms">
+        <p class="days">Ready in 3 working days</p>
+        <ul><li>Munken Print White 90 g</li><li>PDF check by a person</li></ul>
+        <button class="btn" type="button" data-book="1" aria-haspopup="dialog" aria-controls="book"><span class="face"><span class="inner"><span class="label">Book a one-colour run</span></span></span></button>
+      </div>
+    </li>
+
+    <li class="tier ko" data-tier="2">
+      <div class="tier-id">
+        <span class="num" aria-hidden="true">2</span>
+        <h3>Two colours</h3>
+        <div class="inks" aria-hidden="true"><i style="--c: var(--aqua)"></i><i style="--c: var(--yellow)"></i></div>
+        <p class="drums">Aqua and yellow side by side, never on top of each other.</p>
+      </div>
+      <div class="price">
+        <p class="big">€152</p>
+        <p class="per">100 copies of a 16-page A5 zine, stapled and trimmed</p>
+      </div>
+      <table class="ladder">
+        <caption>Other run sizes</caption>
+        <thead><tr><th scope="col">Copies</th><th scope="col">Run</th><th scope="col">Each</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">50</th><td>€109</td><td>€2.18</td></tr>
+          <tr><th scope="row">100</th><td>€152</td><td>€1.52</td></tr>
+          <tr><th scope="row">250</th><td>€276</td><td>€1.10</td></tr>
+          <tr><th scope="row">500</th><td>€459</td><td>€0.92</td></tr>
+        </tbody>
+      </table>
+      <div class="terms">
+        <p class="days">Ready in 5 working days</p>
+        <ul><li>Both drums in one pass</li><li>A PDF proof before we print</li></ul>
+        <button class="btn" type="button" data-book="2" aria-haspopup="dialog" aria-controls="book"><span class="face"><span class="inner"><span class="label">Book a two-colour run</span></span></span></button>
+      </div>
+    </li>
+
+    <li class="tier ko" data-tier="3">
+      <div class="tier-id">
+        <span class="num" aria-hidden="true">3</span>
+        <h3>Three colours</h3>
+        <div class="inks" aria-hidden="true"><i style="--c: var(--aqua)"></i><i style="--c: var(--yellow)"></i><i style="--c: var(--over)"></i></div>
+        <p class="drums">Aqua, yellow, and the green you get where yellow is printed over aqua.</p>
+      </div>
+      <div class="price">
+        <p class="big">€186</p>
+        <p class="per">100 copies of a 16-page A5 zine, stapled and trimmed</p>
+      </div>
+      <table class="ladder">
+        <caption>Other run sizes</caption>
+        <thead><tr><th scope="col">Copies</th><th scope="col">Run</th><th scope="col">Each</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">50</th><td>€134</td><td>€2.68</td></tr>
+          <tr><th scope="row">100</th><td>€186</td><td>€1.86</td></tr>
+          <tr><th scope="row">250</th><td>€331</td><td>€1.32</td></tr>
+          <tr><th scope="row">500</th><td>€548</td><td>€1.10</td></tr>
+        </tbody>
+      </table>
+      <div class="terms">
+        <p class="days">Ready in 7 working days</p>
+        <ul><li>A printed proof sheet to collect or by post</li><li>We check every overprint</li></ul>
+        <button class="btn" type="button" data-book="3" aria-haspopup="dialog" aria-controls="book"><span class="face"><span class="inner"><span class="label">Book a three-colour run</span></span></span></button>
+      </div>
+    </li>
+  </ol>
+
+  <div class="fine ko" id="fine-print">
+    <div>
+      <h3>Every run includes</h3>
+      <ul>
+        <li>Paper: Munken Print White 90 g inside, the same or Gmund 250 g card for the cover (card adds €0.18 a copy).</li>
+        <li>Manuals for cartridge boxes: A6, up to 24 pages, at the A5 price.</li>
+        <li>Box inserts and maps: folded to your box, no extra charge.</li>
+        <li>Prices include 19% VAT. Postage in Germany is €6.90 a parcel.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Before you book</h3>
+      <p>Send one PDF per ink, in black, at 600 dpi. Riso ink stays soft for a day, so we let each run dry overnight before we fold it.</p>
+      <p>Collect from Karl-Heine-Straße 93, Tuesday to Saturday, 11:00 to 19:00, or ask us anything first.</p>
+      <p><a class="u" href="mailto:druck@doppeltrommel.example" target="_blank" rel="noopener">Email the shop<span class="vh"> (opens your email app)</span></a></p>
+    </div>
+  </div>
+</section>
+
+<dialog class="book" id="book" aria-labelledby="book-title" data-lenis-prevent>
+  <div class="sheet">
+    <form id="book-form" novalidate>
+      <div class="sheet-head">
+        <h2 id="book-title">Book a run</h2>
+        <button class="u" type="button" data-close>Close</button>
+      </div>
+      <p class="intro">Nothing is charged now. You pay when you collect.</p>
+      <fieldset>
+        <legend>Colours</legend>
+        <div class="opts">
+          <label class="opt" style="--c: var(--aqua)"><input type="radio" name="tier" value="1" checked><span class="what">One colour<small>Aqua, ready in 3 working days</small></span></label>
+          <label class="opt" style="--c: var(--yellow)"><input type="radio" name="tier" value="2"><span class="what">Two colours<small>Aqua and yellow, ready in 5 working days</small></span></label>
+          <label class="opt" style="--c: var(--over)"><input type="radio" name="tier" value="3"><span class="what">Three colours<small>With overprint, ready in 7 working days</small></span></label>
+        </div>
+      </fieldset>
+      <label class="lbl" for="copies">Copies</label>
+      <div class="field">
+        <select id="copies" name="copies">
+          <option value="50">50 copies</option>
+          <option value="100" selected>100 copies</option>
+          <option value="250">250 copies</option>
+          <option value="500">500 copies</option>
+        </select>
+      </div>
+      <div class="row">
+        <div>
+          <label class="lbl" for="name">Your name</label>
+          <div class="field"><input id="name" name="name" type="text" autocomplete="name" required></div>
+          <p class="err" id="name-err" aria-live="polite"></p>
+        </div>
+        <div>
+          <label class="lbl" for="email">Email for the proof</label>
+          <div class="field"><input id="email" name="email" type="email" autocomplete="email" spellcheck="false" required></div>
+          <p class="err" id="email-err" aria-live="polite"></p>
+        </div>
+      </div>
+      <p class="total" id="total" aria-live="polite"></p>
+      <p class="note">We check your files and email a proof within one working day. The run starts when you say yes.</p>
+      <button class="btn btn-solid send" type="submit"><span class="face"><span class="inner"><span class="label">Book this run</span></span></span></button>
+    </form>
+    <div class="done" id="done" tabindex="-1" hidden>
+      <div class="sheet-head">
+        <h2>Your run is booked.</h2>
+      </div>
+      <p class="job" id="done-job">DT-0000</p>
+      <p id="done-what">100 copies, one colour, €96.</p>
+      <p>We'll email the proof to <b id="done-mail">sam@example.com</b> within one working day. Quote the job number when you collect.</p>
+      <div class="done-actions">
+        <button class="btn" type="button" data-close><span class="face"><span class="inner"><span class="label">Close</span></span></span></button>
+        <button class="u" type="button" id="again">Book another run</button>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  const root = document.documentElement;
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const lib = !!(window.gsap && window.ScrollTrigger && window.Lenis);
+  if (lib) root.classList.add('js'); // CDN blocked: no class, everything shows and the booking still works
+
+  const sec = $('#rates'), canvas = $('.screen');
+  const dlg = $('#book'), form = $('#book-form'), done = $('#done'), total = $('#total');
+  const TIERS = {
+    1: { name: 'one colour', days: 3, runs: { 50: 64, 100: 96, 250: 178, 500: 298 } },
+    2: { name: 'two colours', days: 5, runs: { 50: 109, 100: 152, 250: 276, 500: 459 } },
+    3: { name: 'three colours', days: 7, runs: { 50: 134, 100: 186, 250: 331, 500: 548 } }
+  };
+  const INK = { 1: 'var(--aqua)', 2: 'var(--yellow)', 3: 'var(--over)' };
+  let lenis = null, fx = null, opener = null, booked = 0;
+
+  /* ---------- Booking (works without the libraries) ---------- */
+  const tier = () => form.elements.tier.value;
+  const quote = () => {
+    const t = TIERS[tier()], n = form.elements.copies.value;
+    dlg.style.setProperty('--job', INK[tier()]);
+    total.innerHTML = `<b>€${t.runs[n]}</b> for ${n} copies in ${t.name}, ready ${t.days} working days after you approve the proof.`;
+  };
+  form.addEventListener('change', quote);
+  const rules = {
+    name: (v) => v.length < 2 ? 'Enter the name we should write on the job, like Sam Okafor.' : '',
+    email: (v) => !v ? 'Enter an email address for the proof, like sam@example.com.'
+      : !/^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(v) ? 'This address needs an @ and a domain, like sam@example.com.' : ''
+  };
+  const show = (k, msg) => {
+    const el = form.elements[k], err = $(`#${k}-err`);
+    err.textContent = msg;
+    if (msg) { el.setAttribute('aria-invalid', 'true'); el.setAttribute('aria-describedby', `${k}-err`); }
+    else { el.removeAttribute('aria-invalid'); el.removeAttribute('aria-describedby'); }
+    return msg;
+  };
+  Object.keys(rules).forEach((k) => form.elements[k].addEventListener('input', (e) => {
+    if (e.target.hasAttribute('aria-invalid') && !rules[k](e.target.value.trim())) show(k, '');
+  }));
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const bad = Object.keys(rules).filter((k) => show(k, rules[k](form.elements[k].value.trim())));
+    if (bad.length) { form.elements[bad[0]].focus(); return; }
+    const t = TIERS[tier()], n = form.elements.copies.value, d = new Date();
+    $('#done-job').textContent = `DT-${String(d.getDate()).padStart(2, '0')}${String(d.getMonth() + 1).padStart(2, '0')}-${String(100 + Math.floor(Math.random() * 900))}`;
+    $('#done-what').textContent = `${n} copies in ${t.name}, €${t.runs[n]}, ready ${t.days} working days after the proof.`;
+    $('#done-mail').textContent = form.elements.email.value.trim();
+    form.hidden = true; done.hidden = false; done.focus();
+    booked = +tier();
+  });
+  $('#again').addEventListener('click', () => { done.hidden = true; form.hidden = false; booked = 0; form.elements.name.focus(); });
+
+  const reset = () => { done.hidden = true; form.hidden = false; };
+  const openBook = (btn) => {
+    if (dlg.open) return;
+    opener = btn; reset();
+    form.elements.tier.value = btn.dataset.book; quote();
+    dlg.showModal(); lenis?.stop();
+    fx?.dialogIn();
+  };
+  let closing = false, downOn = null;
+  const closeBook = () => {
+    if (!dlg.open || closing) return;
+    closing = true;
+    const end = () => { closing = false; dlg.close(); };
+    fx ? fx.dialogOut(end) : end();
+  };
+  $$('[data-book]').forEach((b) => b.addEventListener('click', () => openBook(b)));
+  $$('[data-close]', dlg).forEach((b) => b.addEventListener('click', closeBook));
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); closeBook(); });
+  dlg.addEventListener('pointerdown', (e) => { downOn = e.target; });
+  dlg.addEventListener('click', (e) => { if (e.target === dlg && downOn === dlg) closeBook(); });
+  dlg.addEventListener('close', () => {
+    closing = false; fx?.dialogReset(); lenis?.start(); opener?.focus();
+    if (booked) { fx?.run(booked); booked = 0; } // the booked run goes through the machine once, on the page
+  });
+  quote();
+
+  if (!lib) return;
+
+  /* ---------- The screen: a 45-degree halftone of pixel-round dots that inks where something touches it ---------- */
+  const read = (n) => getComputedStyle(root).getPropertyValue(n).trim();
+  const screen = (() => {
+    const g = canvas.getContext('2d');
+    const P = 8; // lattice step; dots sit where (a + b) is even, so the screen runs at 45 degrees
+    let W = 0, H = 0, cols = 0, rows = 0, cap = 3, grow = .05, dry = .45, spr = [];
+    let rest, ko, L = [], T = [], C = [];
+    const active = new Set(), dirty = new Set();
+
+    // Sprites: pixel-round dots of radius 1 to 4, one set per colour; no anti-aliased circles anywhere.
+    function sprites() {
+      spr = ['--screen', '--aqua', '--yellow', '--over'].map((n) => {
+        const c = read(n);
+        return [0, 1, 2, 3, 4].map((r) => {
+          if (!r) return null;
+          const o = document.createElement('canvas'); o.width = o.height = 8;
+          const x = o.getContext('2d'); x.fillStyle = c;
+          for (let y = 0; y < 8; y++) for (let X = 0; X < 8; X++) if (Math.hypot(X + .5 - 4, y + .5 - 4) <= r) x.fillRect(X, y, 1, 1);
+          return o;
+        });
+      });
+    }
+    // Paper grain: seeded value noise over the lattice, so the rest screen is the same on every visit.
+    const hash = (a, b) => { let h = (a * 374761393 + b * 668265263) ^ 0x5bd1e995; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
+    const smooth = (x, y, s) => {
+      const fx = x / s, fy = y / s, i = Math.floor(fx), j = Math.floor(fy), u = fx - i, v = fy - j;
+      const k = (t) => t * t * (3 - 2 * t), a = hash(i, j), b = hash(i + 1, j), c = hash(i, j + 1), d = hash(i + 1, j + 1);
+      return a + (b - a) * k(u) + (c - a) * k(v) + (a - b - c + d) * k(u) * k(v);
+    };
+    const grain = (a, b) => {
+      const v = smooth(a * P, b * P, 120) * .55 + smooth(a * P + 999, b * P, 36) * .3 + hash(a, b) * .15;
+      return v < .24 ? 0 : v < .44 ? 1 : v < .62 ? 2 : 3;
+    };
+
+    function build() {
+      W = sec.offsetWidth; H = sec.offsetHeight;
+      canvas.width = W; canvas.height = H; // CSS pixels; the canvas is scaled up pixelated
+      grow = parseFloat(read('--d-grow')) || .05; dry = parseFloat(read('--d-dry')) || .45;
+      cols = Math.ceil(W / P) + 1; rows = Math.ceil(H / P) + 1;
+      const n = cols * rows;
+      rest = new Uint8Array(n); ko = new Uint8Array(n);
+      L = [new Uint8Array(n), new Uint8Array(n)]; T = [new Uint8Array(n), new Uint8Array(n)]; C = [new Float32Array(n), new Float32Array(n)];
+      // Knock-outs: no dots under type or plates, the way a printer keeps the screen out of type.
+      // Plates (.ko) knock out their box; loose type (.kt) knocks out each line of text.
+      const s = sec.getBoundingClientRect(), range = document.createRange();
+      const boxes = [...$$('.ko', sec).map((el) => el.getBoundingClientRect()),
+        ...$$('.kt', sec).flatMap((el) => { range.selectNodeContents(el); return [...range.getClientRects()]; })];
+      const rects = boxes.map((r) => [r.left - s.left - 8, r.top - s.top - 6, r.right - s.left + 8, r.bottom - s.top + 6]);
+      for (let b = 0; b < rows; b++) for (let a = b & 1; a < cols; a += 2) {
+        const i = b * cols + a, x = a * P, y = b * P;
+        if (rects.some(([x0, y0, x1, y1]) => x > x0 && x < x1 && y > y0 && y < y1)) ko[i] = 1;
+        else rest[i] = grain(a, b);
+      }
+      sprites(); active.clear(); dirty.clear();
+      full();
+    }
+    function dot(i, clear = true) {
+      const a = i % cols, b = (i / cols) | 0, x = a * P - 4, y = b * P - 4;
+      if (clear) g.clearRect(x, y, 8, 8);
+      const r = Math.min(rest[i], cap), la = L[0][i], lb = L[1][i];
+      if (r) g.drawImage(spr[0][r], x, y);
+      if (!la && !lb) return;
+      // Two inks on one dot: the bigger dot in its own ink, the smaller one in flat overprint green.
+      g.drawImage(spr[la === lb ? 3 : la > lb ? 1 : 2][Math.max(la, lb)], x, y);
+      if (la && lb && la !== lb) g.drawImage(spr[3][Math.min(la, lb)], x, y);
+    }
+    function full() {
+      g.clearRect(0, 0, W, H);
+      for (let b = 0; b < rows; b++) for (let a = b & 1; a < cols; a += 2) dot(b * cols + a, false);
+    }
+    // Ink one channel of one dot up to level v (1 to 4). Fresh ink keeps the dot wet: its drying clock restarts.
+    function ink(i, ch, v) {
+      if (ko[i] || v < 1) return;
+      v = Math.min(4, v);
+      if (v > T[ch][i]) T[ch][i] = v;
+      if (v >= L[ch][i]) C[ch][i] = 0;
+      active.add(i);
+    }
+    // Modes: a (aqua), b (yellow), split (both drums, kept apart in diagonal bands), ab (yellow over aqua).
+    const side = (a, b) => ((a + b) >> 2) & 1;
+    function put(i, a, b, v, mode) {
+      if (mode === 'a') ink(i, 0, v);
+      else if (mode === 'b') ink(i, 1, v);
+      else if (mode === 'split') ink(i, side(a, b), v);
+      else if (mode === 'sa') { if (!side(a, b)) ink(i, 0, v); }
+      else if (mode === 'sb') { if (side(a, b)) ink(i, 1, v); }
+      else { ink(i, 0, v); ink(i, 1, v - 1); }
+    }
+    function each(x0, y0, x1, y1, fn) {
+      const b0 = Math.max(0, Math.floor(y0 / P)), b1 = Math.min(rows - 1, Math.ceil(y1 / P));
+      const a0 = Math.max(0, Math.floor(x0 / P)), a1 = Math.min(cols - 1, Math.ceil(x1 / P));
+      for (let b = b0; b <= b1; b++) for (let a = a0 + ((a0 + b) & 1); a <= a1; a += 2) fn(b * cols + a, a, b, a * P, b * P);
+    }
+    // A round stamp: level 4 at the centre, one step less every quarter of the radius.
+    function stamp(x, y, R, mode) {
+      each(x - R, y - R, x + R, y + R, (i, a, b, px, py) => {
+        const d = Math.hypot(px - x, py - y);
+        if (d <= R) put(i, a, b, 4 - Math.floor(d / R * 4), mode);
+      });
+    }
+    function trail(x0, y0, x1, y1, R, mode) {
+      const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 4));
+      for (let k = 1; k <= n; k++) stamp(x0 + (x1 - x0) * k / n, y0 + (y1 - y0) * k / n, R, mode);
+    }
+    // Ink around a rectangle: strongest at its edge, gone R px out.
+    function ring(x0, y0, x1, y1, R, mode) {
+      each(x0 - R, y0 - R, x1 + R, y1 + R, (i, a, b, px, py) => {
+        const d = Math.hypot(Math.max(x0 - px, 0, px - x1), Math.max(y0 - py, 0, py - y1));
+        if (d > 0 && d <= R) put(i, a, b, 4 - Math.floor(d / R * 4), mode);
+      });
+    }
+    // A band across the full width (the roller, the success pass).
+    function band(y0, y1, v, mode) { each(0, Math.min(y0, y1), W, Math.max(y0, y1), (i, a, b) => put(i, a, b, v, mode)); }
+
+    // Grow one radius step per --d-grow toward the stamped level; once there, dry one step per --d-dry.
+    function step(dt) {
+      for (const i of active) {
+        let live = false;
+        for (let ch = 0; ch < 2; ch++) {
+          const l = L[ch], t = T[ch], c = C[ch];
+          if (!t[i] && !l[i]) continue;
+          live = true;
+          c[i] += dt;
+          if (l[i] < t[i]) { if (c[i] >= grow) { l[i]++; c[i] = 0; dirty.add(i); } }
+          else if (c[i] >= dry) { l[i]--; t[i] = l[i]; c[i] = 0; dirty.add(i); }
+        }
+        if (!live) active.delete(i);
+      }
+      for (const i of dirty) dot(i);
+      dirty.clear();
+      return active.size > 0;
+    }
+    return {
+      build, full, stamp, trail, ring, band, step,
+      set cap(v) { cap = v; },
+      get busy() { return active.size > 0; },
+      clear: () => g.clearRect(0, 0, W, H)
+    };
+  })();
+
+  // Button halftone masks: 45-degree dot tiles at radius 1 to 4, drawn at 2x so they stay crisp at any DPR.
+  [1, 2, 3, 4].forEach((r) => {
+    const o = document.createElement('canvas'); o.width = o.height = 32;
+    const x = o.getContext('2d'); x.fillStyle = '#fff';
+    for (const [cx, cy] of [[4, 4], [12, 12]]) for (let y = 0; y < 8; y++) for (let X = 0; X < 8; X++)
+      if (Math.hypot(X + .5 - 4, y + .5 - 4) <= r) x.fillRect((cx - 4 + X) * 2, (cy - 4 + y) * 2, 2, 2);
+    root.style.setProperty(`--m${r}`, `url(${o.toDataURL()})`);
+  });
+
+  /* ---------- Motion ---------- */
+  gsap.registerPlugin(ScrollTrigger);
+  const fontsReady = Promise.race([
+    Promise.all([document.fonts.ready, document.fonts.load('700 100px "Handjet"')]).catch(() => {}),
+    new Promise((r) => setTimeout(r, 1500))
+  ]);
+  const visible = new Promise((r) => {
+    if (document.visibilityState === 'visible') return r();
+    const f = () => { if (document.visibilityState === 'visible') { document.removeEventListener('visibilitychange', f); r(); } };
+    document.addEventListener('visibilitychange', f);
+  });
+
+  const mm = gsap.matchMedia();
+  mm.add({ motion: '(prefers-reduced-motion: no-preference)', reduce: '(prefers-reduced-motion: reduce)', fine: '(hover: hover) and (pointer: fine)' }, (ctx) => {
+    const { motion, fine } = ctx.conditions;
+    let dead = false, lastW = 0, lastH = 0;
+    const off = [];
+    const on = (el, type, fn, opt) => { el.addEventListener(type, fn, opt); off.push(() => el.removeEventListener(type, fn, opt)); };
+    const rebuild = () => {
+      if (sec.offsetWidth === lastW && sec.offsetHeight === lastH) return;
+      lastW = sec.offsetWidth; lastH = sec.offsetHeight;
+      screen.build();
+    };
+    let ready = false;
+    const ro = new ResizeObserver(() => { if (ready) rebuild(); });
+    ro.observe(sec); off.push(() => ro.disconnect());
+
+    if (!motion) {
+      // Reduced motion: the printed screen at rest, drawn once; native scroll; no ink.
+      root.classList.add('go');
+      fontsReady.then(() => { if (dead) return; ready = true; sec.classList.add('is-drawn'); screen.cap = 3; rebuild(); });
+      return () => { dead = true; off.forEach((f) => f()); screen.clear(); sec.classList.remove('is-drawn'); };
+    }
+
+    const D = (k) => parseFloat(read(`--d-${k}`));
+    root.classList.add('fx');
+    const hint = $('#hint');
+    hint.textContent = fine ? 'Move across the page to ink it. Point at a run to load its drums.' : 'Drag across the page to ink it. Tap a run to load its drums.';
+    hint.hidden = false;
+
+    lenis = new Lenis({ lerp: .1, smoothWheel: true, autoRaf: false, anchors: true });
+    lenis.on('scroll', ScrollTrigger.update);
+    const tick = (t) => lenis.raf(t * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
+
+    /* The ink loop runs only while a dot is wet, and sleeps off screen. */
+    let awake = false, inView = true, dy = 0, lastY = window.scrollY;
+    const frame = (t, dms) => {
+      if (dy) { // the roller: scrolling runs the sheet under a nip at mid-viewport; down inks aqua, up inks yellow
+        const r = sec.getBoundingClientRect(), nip = innerHeight / 2 - r.top, d = gsap.utils.clamp(-160, 160, dy);
+        if (Math.abs(d) > 1) screen.band(nip - d, nip, gsap.utils.clamp(1, 3, Math.round(Math.abs(d) / 10)), d > 0 ? 'a' : 'b');
+        dy = 0;
+      }
+      if (!screen.step(Math.min(dms, 100) / 1000)) sleep();
+    };
+    const wake = () => { if (awake || !inView || !ready) return; awake = true; gsap.ticker.add(frame); };
+    const sleep = () => { if (!awake) return; awake = false; gsap.ticker.remove(frame); };
+    const st = ScrollTrigger.create({ trigger: sec, start: 'top bottom', end: 'bottom top', onToggle: (s) => { inView = s.isActive; inView ? (screen.busy && wake()) : sleep(); } });
+    off.push(() => st.kill());
+
+    // What the hand is loaded with: one colour until a run is pointed at, then that run's drums.
+    const MODE = { 1: 'a', 2: 'split', 3: 'ab' };
+    let loaded = 'a', last = null;
+    const local = (e) => { const r = sec.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+    const touch = (x, y, R) => {
+      if (last) screen.trail(last[0], last[1], x, y, R, loaded); else screen.stamp(x, y, R, loaded);
+      last = [x, y]; wake();
+    };
+    const inkTier = (el) => {
+      const a = el.getBoundingClientRect(), r = sec.getBoundingClientRect();
+      loaded = MODE[el.dataset.tier];
+      screen.ring(a.left - r.left, a.top - r.top, a.right - r.left, a.bottom - r.top, 32, loaded);
+      wake();
+    };
+    if (fine) {
+      on(sec, 'pointermove', (e) => { if (e.pointerType !== 'touch') touch(...local(e), 22); });
+      on(sec, 'pointerleave', () => { last = null; });
+      on(sec, 'pointerdown', (e) => { if (e.pointerType !== 'touch' && !e.target.closest('button, a, .tier, .head, .fine')) { screen.stamp(...local(e), 40, loaded); wake(); } });
+    }
+    on(sec, 'touchstart', (e) => { last = null; touch(...local(e.touches[0]), 30); }, { passive: true });
+    on(sec, 'touchmove', (e) => touch(...local(e.touches[0]), 22), { passive: true });
+    on(sec, 'touchend', () => { last = null; }, { passive: true });
+    $$('.tier').forEach((el) => on(el, 'pointerenter', () => inkTier(el)));
+    on(sec, 'focusin', (e) => { const t = e.target.closest('.tier'); if (t && e.target.matches(':focus-visible')) inkTier(t); });
+    on(window, 'scroll', () => { const y = window.scrollY; dy += y - lastY; lastY = y; if (dy) wake(); }, { passive: true });
+
+    // Touch: the pressed look for buttons and links lasts a moment after the tap.
+    $$('.btn, .u').forEach((el) => on(el, 'pointerdown', (e) => {
+      if (e.pointerType !== 'touch') return;
+      el.classList.add('is-tap'); setTimeout(() => el.classList.remove('is-tap'), 300);
+    }));
+
+    /* Dialog: rolls off the drum, turning on its top edge in three frames. */
+    const sheet = $('.sheet', dlg), R = D('roll');
+    fx = {
+      dialogIn() { gsap.timeline().set(sheet, { transformPerspective: 900, transformOrigin: '50% 0', rotationX: -70 }).set(sheet, { rotationX: -40 }, R).set(sheet, { rotationX: -14 }, R * 2).set(sheet, { rotationX: 0 }, R * 3); },
+      dialogOut(end) { gsap.timeline({ onComplete: end }).set(sheet, { transformPerspective: 900, transformOrigin: '50% 0', rotationX: -14 }).set(sheet, { rotationX: -40 }, R).set(sheet, { rotationX: -70 }, R * 2).set({}, {}, R * 3); },
+      dialogReset() { gsap.killTweensOf(sheet); gsap.set(sheet, { clearProps: 'transform' }); },
+      // Success: the booked run goes through once, a full sheet per drum pass, top to bottom, then dries.
+      run(t) {
+        const passes = { 1: [['a', 3]], 2: [['sa', 3], ['sb', 3]], 3: [['a', 3], ['b', 2]] }[t];
+        const tl = gsap.timeline();
+        passes.forEach(([mode, v], k) => {
+          const p = { y: 0 }; let prev = 0;
+          tl.to(p, { y: 1, duration: D('pass'), ease: 'none', onUpdate: () => {
+            const r = sec.getBoundingClientRect(), top = Math.max(0, -r.top), y = top + p.y * Math.min(innerHeight, r.bottom - top - r.top);
+            screen.band(prev || top, y, v, mode); prev = y; wake();
+          } }, k * D('pass') * .6);
+        });
+      }
+    };
+
+    // Load: the first copies off a riso come out pale. Three copies build the screen; the type lands on the last.
+    Promise.all([fontsReady, visible]).then(() => {
+      if (dead) return;
+      ready = true; sec.classList.add('is-drawn');
+      screen.cap = 0; rebuild();
+      const c = D('copy'), tiers = $$('.tier');
+      gsap.timeline()
+        .call(() => { screen.cap = 1; screen.full(); }, null, c)
+        .call(() => { screen.cap = 2; screen.full(); }, null, c * 2)
+        .call(() => { screen.cap = 3; screen.full(); root.classList.add('go'); }, null, c * 3)
+        // then each run inks its own colours once, in order, so the colours explain themselves
+        .call(() => inkTier(tiers[0]), null, c * 3 + .25)
+        .call(() => inkTier(tiers[1]), null, c * 3 + .55)
+        .call(() => { inkTier(tiers[2]); loaded = 'a'; }, null, c * 3 + .85);
+    });
+
+    return () => {
+      dead = true; sleep(); off.forEach((f) => f());
+      gsap.ticker.remove(tick); lenis?.destroy(); lenis = null; fx = null;
+      root.classList.remove('fx'); hint.hidden = true; screen.clear(); sec.classList.remove('is-drawn');
+    };
+  });
+})();
+</script>
+</body>
+</html>

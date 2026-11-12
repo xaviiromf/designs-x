@@ -1,0 +1,798 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Nordpol Keyworks: magnetic keyboards</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Handjet:ELGR,ELSH,wght@1..2,0..16,100..900&family=Host+Grotesk:wght@300..800&display=swap">
+<style>
+  :root {
+    /* Colour: a sheet of iron filings on the fjord. Every hue has one job; ratios are against --fjord unless noted. */
+    --fjord: #08566A;       /* the ground: Tromsøsundet under a polar-night sky */
+    --deep: #033A48;        /* the same fjord, deeper: card and dialog faces, ink on light faces (ice on it 11.6:1) */
+    --rim: #2C7A8E;         /* card and table rules; decorative (1.7:1) */
+    --needle: #237286;      /* a needle at rest: body; barely there on purpose (1.5:1, aria-hidden canvas) */
+    --needle-hi: #3A889B;   /* a needle at rest: its north tip, so the comb's direction reads (2.0:1) */
+    --ice: #EAFBFF;         /* text, the primary button face, focus ring (7.7:1) */
+    --frost: #A9DCE6;       /* secondary text, outlines, the compass at rest (5.5:1) */
+    --north: #FF9682;       /* a north pole only: needles it holds, the N cap, a card's north edge, the compass tip; never body text (3.9:1 non-text; as the N label on deep 5.8:1) */
+    --north-lo: #C86E62;    /* a needle weakly held by a north pole; decorative */
+    --north-hi: #FFD0C6;    /* the tip of a needle strongly held by a north pole; decorative */
+    --south: #D4C6FF;       /* a south pole only: needles it holds, the S cap, a card's south edge (5.2:1; 7.8:1 on deep) */
+    --south-lo: #8F82CC;    /* a needle weakly held by a south pole; decorative */
+    --south-hi: #F2EEFF;    /* the tip of a needle strongly held by a south pole; decorative */
+    --warn: #FFE07A;        /* errors only (6.4:1; 9.5:1 on deep) */
+    --scrim: rgb(2 40 50 / .7);
+
+    /* Type */
+    --font-display: "Handjet", "Arial Narrow", sans-serif;
+    --font-text: "Host Grotesk", system-ui, sans-serif;
+    --modules: "ELSH" 2, "ELGR" 1;   /* square Handjet modules */
+    --t-tiny: 13px;
+    --t-small: 14.5px;
+    --t-body: 16.5px;
+    --t-lede: 19px;
+    --t-h3: 21px;
+    --t-fig: clamp(34px, 3vw, 44px);                /* card figures, in Handjet */
+    --t-h2: clamp(46px, min(6.4vw, 11vh), 100px);
+    --lh-body: 1.5;
+
+    /* Space: an 8px step, half the field's 16px pitch */
+    --s1: 4px; --s2: 8px; --s3: 16px; --s4: 24px; --s5: 40px; --s6: 64px; --s7: 96px;
+    --gut: clamp(16px, 3.6vw, 56px);
+    --max-w: 1280px;
+    --pitch: 16px;          /* one needle per 16px cell (12px on phones); the script reads this */
+    --notch: 4px;           /* stepped corner */
+    --cap: 10px;            /* a pole cap on a button */
+    --tap: 48px;            /* button and field height */
+    --hit: 44px;            /* minimum target */
+
+    /* Motion: whole steps on a visible clock. CSS and the script read these. */
+    --d-tick: .04s;         /* one 45° step of every turning needle */
+    --d-card: .12s;         /* load: one card cut in and its magnet switched on */
+    --d-cap: .1s;           /* button: the pole caps, two steps */
+    --d-hold: .14s;         /* a press is held at least this long */
+    --d-link: .1s;          /* link: filings turn flat, then join */
+    --d-domain: .07s;       /* dialog: one frame of the domains */
+    --d-wave: .5s;          /* success: the needles turn north, bottom row to top */
+    --d-north: 1.2s;        /* success: they hold north this long */
+    --d-release: .5s;       /* touch: the finger's magnet stays this long after lifting */
+  }
+  @media (max-width: 599px) {
+    :root { --pitch: 12px; --t-lede: 17.5px; --t-h3: 19px; }
+  }
+
+  /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { background: var(--fjord); }
+  body {
+    margin: 0;
+    background: var(--fjord);
+    color: var(--ice);
+    font: 400 var(--t-body)/var(--lh-body) var(--font-text);
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible { outline: 2px solid var(--ice); outline-offset: 3px; }
+  ::selection { background: var(--ice); color: var(--deep); }
+  .vh {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+  }
+
+  /* ---------- The sheet ---------- */
+  .kit { position: relative; overflow: clip; background: var(--fjord); }
+  .field {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    image-rendering: pixelated; pointer-events: none;
+  }
+  .wrap { position: relative; max-width: calc(var(--max-w) + 2 * var(--gut)); margin: 0 auto; padding: var(--s6) var(--gut) var(--s6); }
+
+  .head { display: grid; gap: var(--s3) var(--s5); grid-template-columns: minmax(0, 1fr); }
+  .maker { margin: 0; color: var(--frost); font-size: var(--t-small); font-weight: 600; }
+  .h2 {
+    margin: 0;
+    font: 700 var(--t-h2)/.9 var(--font-display);
+    font-variation-settings: var(--modules);
+    text-wrap: balance;
+    max-width: 12ch;
+  }
+  .lede { margin: 0; max-width: 58ch; font-size: var(--t-lede); line-height: 1.45; }
+  .acts { display: flex; flex-wrap: wrap; gap: var(--s3) var(--s4); align-items: center; }
+  @media (min-width: 1024px) {
+    .head { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); align-items: end; }
+    .maker, .h2 { grid-column: 1 / -1; }
+  }
+
+  /* The pointer magnet: what it is, its face, and the key to the colours. */
+  .ctl {
+    margin-top: var(--s5);
+    display: grid; gap: var(--s3) var(--s5); align-items: center;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  @media (min-width: 900px) { .ctl { grid-template-columns: auto minmax(0, 1fr) auto; } }
+  .ctl .btn { justify-self: start; }
+  .pol { margin: 0; color: var(--frost); font-size: var(--t-small); max-width: 46ch; }
+  .legend { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s4); margin: 0; padding: 0; list-style: none; font-size: var(--t-small); color: var(--frost); }
+  .legend li { display: flex; align-items: center; gap: var(--s2); }
+  .sw { width: 16px; height: 4px; background: var(--k); flex: none; }
+  .sw.n { --k: var(--north); } .sw.s { --k: var(--south); } .sw.r { --k: var(--needle-hi); }
+  html:not(.live) #flip, html:not(.live) .pol { display: none; }
+
+  /* ---------- Feature cards: six fixed magnets, north edge up ---------- */
+  .cards {
+    margin: var(--s5) 0 0; padding: 0; list-style: none;
+    display: grid; gap: var(--s5) var(--s5); grid-template-columns: minmax(0, 1fr);
+  }
+  @media (min-width: 640px) { .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 1024px) { .cards { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s5) var(--s6); } }
+  .card {
+    position: relative;
+    display: flex; flex-direction: column; gap: var(--s2);
+    padding: var(--s4) var(--s4) var(--s3);
+    background: var(--deep);
+    border: 1px solid var(--rim);
+    clip-path: polygon(0 var(--notch), var(--notch) var(--notch), var(--notch) 0, calc(100% - var(--notch)) 0, calc(100% - var(--notch)) var(--notch), 100% var(--notch), 100% calc(100% - var(--notch)), calc(100% - var(--notch)) calc(100% - var(--notch)), calc(100% - var(--notch)) 100%, var(--notch) 100%, var(--notch) calc(100% - var(--notch)), 0 calc(100% - var(--notch)));
+  }
+  /* The card's two pole faces: a hairline at rest, a solid band in the pole's hue while its magnet pulls harder. */
+  .card::before, .card::after { content: ""; position: absolute; left: var(--notch); right: var(--notch); height: 2px; background: var(--rim); }
+  .card::before { top: 0; } .card::after { bottom: 0; }
+  .card.is-active::before { height: 6px; background: var(--north); }
+  .card.is-active::after { height: 6px; background: var(--south); }
+  .pole { position: absolute; right: var(--s3); font: 700 var(--t-tiny)/1 var(--font-text); color: var(--frost); }
+  .pole.n { top: var(--s3); } .pole.s { bottom: var(--s3); }
+  .card.is-active .pole.n { color: var(--north); } .card.is-active .pole.s { color: var(--south); }
+  .card h3 { margin: 0; padding-right: var(--s4); font: 650 var(--t-h3)/1.2 var(--font-text); letter-spacing: -.01em; }
+  .card p { margin: 0; color: var(--ice); }
+  .fig { order: -1; display: flex; align-items: baseline; gap: var(--s2); color: var(--frost); font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+  .fig b { font: 700 var(--t-fig)/1 var(--font-display); font-variation-settings: var(--modules); color: var(--ice); }
+  .card .link { margin-top: auto; align-self: flex-start; }
+  .card p + .link { margin-top: var(--s2); }
+  html.js:not(.go) .card:not(.is-on) { visibility: hidden; }
+
+  /* ---------- Spec sheet ---------- */
+  .spec { margin-top: var(--s6); background: var(--deep); border: 1px solid var(--rim); padding: var(--s4); }
+  .spec h3 { margin: 0 0 var(--s3); font: 700 clamp(30px, 3vw, 40px)/1 var(--font-display); font-variation-settings: var(--modules); }
+  table { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+  caption { text-align: left; color: var(--frost); padding-bottom: var(--s2); }
+  th, td { text-align: left; vertical-align: top; padding: var(--s2) var(--s3) var(--s2) 0; border-top: 1px solid var(--rim); }
+  thead th { color: var(--frost); font-weight: 600; }
+  tbody th { font-weight: 600; width: 28%; }
+  tr { scroll-margin-top: var(--s6); }
+  tr:target th { box-shadow: inset 4px 0 var(--ice); padding-left: var(--s3); }
+  .foot { margin: var(--s5) 0 0; max-width: 70ch; color: var(--frost); font-size: var(--t-small); }
+
+  /* ---------- Buttons: a horseshoe magnet. Hover lays a pole cap on each end; press closes the keeper across them. ---------- */
+  .btn {
+    position: relative; display: inline-flex; min-height: var(--tap); padding: 0; border: 0; background: none;
+    color: inherit; font: 600 var(--t-body)/1.2 var(--font-text); cursor: pointer; -webkit-tap-highlight-color: transparent;
+  }
+  .btn-face {
+    --corners: polygon(0 var(--notch), var(--notch) var(--notch), var(--notch) 0, calc(100% - var(--notch)) 0, calc(100% - var(--notch)) var(--notch), 100% var(--notch), 100% calc(100% - var(--notch)), calc(100% - var(--notch)) calc(100% - var(--notch)), calc(100% - var(--notch)) 100%, var(--notch) 100%, var(--notch) calc(100% - var(--notch)), 0 calc(100% - var(--notch)));
+    position: relative; display: flex; align-items: center; gap: var(--s2); width: 100%;
+    padding: 0 calc(var(--cap) + var(--s4));
+    background: var(--face); color: var(--ink); clip-path: var(--corners);
+    box-shadow: inset 0 0 0 2px var(--edge);
+  }
+  .btn-main { --face: var(--ice); --ink: var(--deep); --edge: var(--ice); }
+  .btn-line { --face: transparent; --ink: var(--ice); --edge: var(--frost); }
+  .btn-line .btn-face { background: var(--deep); }
+  .cap { position: absolute; top: 0; bottom: 0; width: var(--cap); clip-path: inset(100% 0 0 0); transition: clip-path var(--d-cap) steps(2, end); }
+  .cap.n { left: 0; background: var(--north); }
+  .cap.s { right: 0; background: var(--south); }
+  .keeper { position: absolute; left: 0; right: 0; bottom: 0; height: 6px; background: var(--frost); visibility: hidden; }
+  .btn:focus-visible .cap, .btn.is-down .cap { clip-path: inset(0); }
+  @media (hover: hover) and (pointer: fine) { .btn:hover .cap { clip-path: inset(0); } }
+  .btn.is-down .keeper { visibility: visible; }
+  .btn.is-down .btn-face { transform: translateY(2px); }
+  .btn-line.is-down .keeper { background: var(--ice); }
+
+  /* ---------- Links: an underline of filings. At rest they lie at 45°; pointed at, they turn flat, then join. ---------- */
+  .link {
+    position: relative; display: inline-flex; align-items: center; min-height: var(--hit);
+    color: var(--ice); font-weight: 600; text-decoration: none;
+  }
+  .link::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: 8px; height: 4px; background: var(--frost);
+    -webkit-mask: var(--m-slant) 0 0 / 6px 4px repeat-x; mask: var(--m-slant) 0 0 / 6px 4px repeat-x;
+  }
+  .link:focus-visible::after, .link.is-down::after { animation: align var(--d-link) steps(1, end) forwards; background: var(--ice); }
+  @media (hover: hover) and (pointer: fine) { .link:hover::after { animation: align var(--d-link) steps(1, end) forwards; background: var(--ice); } }
+  :root {
+    --m-slant: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='4' shape-rendering='crispEdges'%3E%3Cpath d='M0 3h1v1H0zM1 2h1v1H1zM2 1h1v1H2zM3 0h1v1H3z'/%3E%3C/svg%3E");
+    --m-flat: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='4' shape-rendering='crispEdges'%3E%3Cpath d='M0 2h4v2H0z'/%3E%3C/svg%3E");
+    --m-solid: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='4' shape-rendering='crispEdges'%3E%3Cpath d='M0 2h6v2H0z'/%3E%3C/svg%3E");
+  }
+  @keyframes align {
+    0% { -webkit-mask-image: var(--m-slant); mask-image: var(--m-slant); }
+    40% { -webkit-mask-image: var(--m-flat); mask-image: var(--m-flat); }
+    100% { -webkit-mask-image: var(--m-solid); mask-image: var(--m-solid); }
+  }
+
+  /* ---------- Dialog ---------- */
+  dialog {
+    width: min(560px, calc(100vw - 2 * var(--gut))); max-height: calc(100svh - 32px);
+    margin: auto; padding: 0; border: 0; background: var(--deep); color: var(--ice);
+    box-shadow: inset 0 0 0 1px var(--frost);
+  }
+  dialog::backdrop { background: var(--scrim); }
+  .dlg { position: relative; padding: var(--s5) var(--s4) var(--s4); }
+  .dlg h2 { margin: 0 0 var(--s2); padding-right: 96px; font: 700 clamp(34px, 5vw, 46px)/.95 var(--font-display); font-variation-settings: var(--modules); }
+  .dlg p { margin: 0 0 var(--s3); color: var(--ice); }
+  .dlg .note { color: var(--frost); font-size: var(--t-small); }
+  .close { position: absolute; top: var(--s3); right: var(--s3); }
+  .close .btn-face { padding: 0 calc(var(--cap) + var(--s3)); }
+  /* Domains: the panel opens as twelve magnetic domains whose arrows turn into line. */
+  .domains { position: absolute; inset: 0; z-index: 2; display: grid; grid-template: repeat(3, 1fr) / repeat(4, 1fr); visibility: hidden; pointer-events: none; }
+  .domains.is-on { visibility: visible; }
+  .domains span { display: grid; place-items: center; background: var(--deep); box-shadow: inset 0 0 0 1px var(--rim); }
+  .domains i { --d: 0; display: block; width: 22px; height: 10px; background: var(--frost); transform: rotate(calc(var(--d) * 45deg));
+    clip-path: polygon(0 3px, 14px 3px, 14px 0, 22px 5px, 14px 10px, 14px 7px, 0 7px); }
+
+  fieldset { margin: 0 0 var(--s3); padding: 0; border: 0; }
+  legend { padding: 0; margin-bottom: var(--s2); font-weight: 600; }
+  .boards { display: grid; gap: var(--s2); }
+  .board { display: flex; align-items: center; gap: var(--s3); min-height: var(--hit); padding: var(--s2) var(--s3); box-shadow: inset 0 0 0 1px var(--rim); cursor: pointer; }
+  .board span { color: var(--frost); font-size: var(--t-small); margin-left: auto; font-variant-numeric: tabular-nums; }
+  .board input { appearance: none; margin: 0; width: 20px; height: 20px; flex: none; box-shadow: inset 0 0 0 2px var(--frost); display: grid; place-items: center; cursor: pointer; }
+  .board input::before { content: ""; width: 10px; height: 10px; background: var(--ice); visibility: hidden; }
+  .board input:checked::before { visibility: visible; }
+  .board:has(input:checked) { box-shadow: inset 0 0 0 2px var(--ice); }
+  .board input:focus-visible { outline: 2px solid var(--ice); outline-offset: 3px; }
+
+  .fld { display: grid; gap: var(--s2); margin-bottom: var(--s3); }
+  .fld label { font-weight: 600; }
+  .row { position: relative; }
+  .fld input {
+    width: 100%; min-height: var(--tap); padding: 0 var(--s3) 0 56px; border: 0; border-radius: 0;
+    background: var(--fjord); color: var(--ice); font: 400 var(--t-body)/1 var(--font-text);
+    box-shadow: inset 0 0 0 2px var(--frost);
+  }
+  .fld input:focus-visible { outline: 2px solid var(--ice); outline-offset: 3px; }
+  .fld input[aria-invalid="true"] { box-shadow: inset 0 0 0 2px var(--warn); }
+  /* The compass: one 45° step per typed character; it points north, tip in the north hue, once the address is valid. */
+  .compass { position: absolute; left: 6px; top: 50%; width: 36px; height: 36px; margin-top: -18px; pointer-events: none; }
+  .compass svg { display: block; width: 100%; height: 100%; shape-rendering: crispEdges; }
+  .compass .ring { fill: none; stroke: var(--rim); stroke-width: 2; }
+  .compass .hand { transform-origin: 18px 18px; transform: rotate(calc(var(--turn, 2) * 45deg)); }
+  .compass .tail { fill: var(--frost); }
+  .compass .tip { fill: var(--frost); }
+  .fld:focus-within .compass .ring { stroke: var(--frost); }
+  .fld.is-valid .compass .tip { fill: var(--north); }
+  .fld.is-valid .compass .tail { fill: var(--south); }
+  .err { margin: 0; min-height: 1.5em; color: var(--warn); font-size: var(--t-small); }
+  .done h2:focus { outline: none; }
+  .done h2:focus-visible { outline: 2px solid var(--ice); outline-offset: 3px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cap, .link::after { transition: none; animation: none !important; }
+    .link:focus-visible::after, .link.is-down::after { -webkit-mask-image: var(--m-solid); mask-image: var(--m-solid); }
+    .btn.is-down .btn-face { transform: none; }
+  }
+  @media (prefers-reduced-motion: reduce) and (hover: hover) and (pointer: fine) {
+    .link:hover::after { -webkit-mask-image: var(--m-solid); mask-image: var(--m-solid); }
+  }
+</style>
+</head>
+<body>
+<section class="kit" aria-labelledby="kit-title">
+  <canvas class="field" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <header class="head">
+      <p class="maker" data-calm>Nordpol Keyworks, a two-person workshop on Skansen quay, Tromsø</p>
+      <h2 class="h2" id="kit-title">Keys that ride on magnets</h2>
+      <p class="lede" data-calm>Every key on a Nordpol board carries a small magnet over a Hall sensor. Nothing touches, so nothing wears, and the board knows how far down each key is, to a tenth of a millimetre. We build two boards for old computers and arcade play, forty at a time.</p>
+      <div class="acts" data-calm>
+        <button class="btn btn-main" id="reserve-open" type="button" aria-haspopup="dialog" aria-controls="reserve"><span class="btn-face"><span class="cap n" aria-hidden="true"></span>Reserve from batch 7<span class="cap s" aria-hidden="true"></span><span class="keeper" aria-hidden="true"></span></span></button>
+        <a class="link" href="#spec">Read the spec sheet</a>
+      </div>
+    </header>
+
+    <div class="ctl" data-calm>
+      <button class="btn btn-line" id="flip" type="button" aria-describedby="pol"><span class="btn-face"><span class="cap n" aria-hidden="true"></span>Turn the magnet over<span class="cap s" aria-hidden="true"></span><span class="keeper" aria-hidden="true"></span></span></button>
+      <p class="pol" id="pol" role="status">Your pointer is a magnet, south face out: needles turn their tips toward it. Click the sheet to turn it over.</p>
+      <ul class="legend" aria-label="What the colours mean">
+        <li><span class="sw n" aria-hidden="true"></span>Held by a north pole</li>
+        <li><span class="sw s" aria-hidden="true"></span>Held by a south pole</li>
+        <li><span class="sw r" aria-hidden="true"></span>Combed, at rest</li>
+      </ul>
+    </div>
+
+    <ul class="cards" aria-label="What a Nordpol board does">
+      <li class="card" data-card>
+        <span class="pole n" aria-hidden="true">N</span><span class="pole s" aria-hidden="true">S</span>
+        <h3>Set the press point per key</h3>
+        <p class="fig"><b>0.2&ndash;3.8</b> mm, in 0.1 mm steps</p>
+        <p>The sensor reads the magnet's height 2,000 times a second, so a key can fire a hair below the top or only at the bottom. Light fingers on the arrows, a deep press on Return.</p>
+        <a class="link" href="#spec-actuation">Actuation on the spec sheet</a>
+      </li>
+      <li class="card" data-card>
+        <span class="pole n" aria-hidden="true">N</span><span class="pole s" aria-hidden="true">S</span>
+        <h3>Rapid trigger on the pad</h3>
+        <p class="fig"><b>0.1</b> mm to reset</p>
+        <p>A button lets go the moment it rises a tenth of a millimetre, not at a fixed point. Two quick taps on the Lodestone Pad are two inputs, even if your thumb never lifts off.</p>
+        <a class="link" href="#spec-reset">Reset and scan rate on the spec sheet</a>
+      </li>
+      <li class="card" data-card>
+        <span class="pole n" aria-hidden="true">N</span><span class="pole s" aria-hidden="true">S</span>
+        <h3>Nothing inside to wear out</h3>
+        <p class="fig"><b>80,000,000</b> presses</p>
+        <p>No metal leaf touches another; a magnet only passes a sensor. The test rig on our bench has pressed one key eighty million times and it still reads the same height.</p>
+        <a class="link" href="#spec-life">Bench test on the spec sheet</a>
+      </li>
+      <li class="card" data-card>
+        <span class="pole n" aria-hidden="true">N</span><span class="pole s" aria-hidden="true">S</span>
+        <h3>Speaks to old machines</h3>
+        <p class="fig"><b>6</b> adapter boards</p>
+        <p>The Needle 64 drives the keyboard matrix of an 8-bit home computer directly through a swap-in adapter board and ribbon cable. Unplug the adapter and it is a USB-C keyboard for anything newer.</p>
+        <a class="link" href="#spec-ports">Ports and adapters on the spec sheet</a>
+      </li>
+      <li class="card" data-card>
+        <span class="pole n" aria-hidden="true">N</span><span class="pole s" aria-hidden="true">S</span>
+        <h3>Clean opposites</h3>
+        <p class="fig"><b>2</b> modes, no software</p>
+        <p>When left and right are held together on the pad, you decide what the game sees: the last one pressed, or neither. Hold Menu and tap a direction to switch; the pad remembers.</p>
+        <a class="link" href="#spec-socd">Opposite directions on the spec sheet</a>
+      </li>
+      <li class="card" data-card>
+        <span class="pole n" aria-hidden="true">N</span><span class="pole s" aria-hidden="true">S</span>
+        <h3>Open on the bench</h3>
+        <p class="fig"><b>5</b> years of repairs</p>
+        <p>Switches pull out by hand and every magnet comes out with a pin. Schematics and firmware are published. Send a board back within five years and we fix it; you pay the postage one way.</p>
+        <a class="link" href="#spec-repair">Repairs on the spec sheet</a>
+      </li>
+    </ul>
+
+    <div class="spec" id="spec" data-calm>
+      <h3>Spec sheet</h3>
+      <table>
+        <caption>Both boards, as they leave the workshop in batch 7.</caption>
+        <thead><tr><th scope="col">What</th><th scope="col">Needle 64</th><th scope="col">Lodestone Pad</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Keys</th><td>64, in a home-computer layout</td><td>12: eight in an arcade layout, four menu</td></tr>
+          <tr id="spec-actuation"><th scope="row">Actuation</th><td>0.2&ndash;3.8 mm, per key</td><td>0.2&ndash;3.8 mm, per button</td></tr>
+          <tr id="spec-reset"><th scope="row">Reset and scan</th><td>0.1 mm rapid trigger, 2,000 Hz</td><td>0.1 mm rapid trigger, 8,000 Hz</td></tr>
+          <tr id="spec-life"><th scope="row">Bench test</th><td>80 million presses, no drift</td><td>80 million presses, no drift</td></tr>
+          <tr id="spec-ports"><th scope="row">Ports</th><td>USB-C; adapter port for 6 machines</td><td>USB-C; 9-pin port for old joystick inputs</td></tr>
+          <tr id="spec-socd"><th scope="row">Opposite directions</th><td>Not needed</td><td>Last pressed, or neutral</td></tr>
+          <tr id="spec-repair"><th scope="row">Repairs</th><td>5 years in the workshop</td><td>5 years in the workshop</td></tr>
+          <tr><th scope="row">Price</th><td>NOK 2,890</td><td>NOK 1,640</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="foot" data-calm>Nordpol Keyworks, Skansengata 4, 9008 Tromsø. The workshop is open on Saturdays from 11 to 15; questions to <a class="link" href="mailto:verksted@nordpol-keyworks.example" target="_blank" rel="noopener">verksted@nordpol-keyworks.example</a>.</p>
+  </div>
+</section>
+
+<dialog id="reserve" aria-labelledby="reserve-title" data-lenis-prevent>
+  <div class="dlg">
+    <div class="domains" aria-hidden="true"><span><i></i></span><span><i></i></span><span><i></i></span><span><i></i></span><span><i></i></span><span><i></i></span><span><i></i></span><span><i></i></span><span><i></i></span><span><i></i></span><span><i></i></span><span><i></i></span></div>
+    <button class="btn btn-line close" id="reserve-close" type="button"><span class="btn-face"><span class="cap n" aria-hidden="true"></span>Close<span class="cap s" aria-hidden="true"></span><span class="keeper" aria-hidden="true"></span></span></button>
+    <form id="reserve-form" novalidate>
+      <h2 id="reserve-title">Reserve from batch 7</h2>
+      <p>Batch 7 is forty boards, built in February and posted in the first week of March 2027.</p>
+      <p class="note">Nothing is charged now. We write when your board is on the bench, and you pay then.</p>
+      <fieldset>
+        <legend>Board</legend>
+        <div class="boards">
+          <label class="board"><input type="radio" name="board" value="Needle 64" checked>Needle 64<span>NOK 2,890</span></label>
+          <label class="board"><input type="radio" name="board" value="Lodestone Pad">Lodestone Pad<span>NOK 1,640</span></label>
+        </div>
+      </fieldset>
+      <div class="fld" id="email-fld">
+        <label for="email">Email for the bench note</label>
+        <div class="row">
+          <span class="compass" aria-hidden="true"><svg viewBox="0 0 36 36"><rect class="ring" x="1" y="1" width="34" height="34"/><g class="hand"><path class="tail" d="M8 16h10v4H8z"/><path class="tip" d="M18 14h6v2h2v4h-2v2h-6z"/></g></svg></span>
+          <input id="email" name="email" type="email" autocomplete="email" inputmode="email" required>
+        </div>
+        <p class="err" id="email-err" aria-live="polite"></p>
+      </div>
+      <button class="btn btn-main" type="submit"><span class="btn-face"><span class="cap n" aria-hidden="true"></span>Reserve my place<span class="cap s" aria-hidden="true"></span><span class="keeper" aria-hidden="true"></span></span></button>
+    </form>
+    <div class="done" id="done" hidden>
+      <h2 id="done-title" tabindex="-1">You have a place in batch 7</h2>
+      <p id="done-text">We will write when your board is on the bench.</p>
+      <p class="note">Nothing was charged. Close this and the sheet settles back to its comb.</p>
+      <button class="btn btn-main" id="done-close" type="button"><span class="btn-face"><span class="cap n" aria-hidden="true"></span>Back to the boards<span class="cap s" aria-hidden="true"></span><span class="keeper" aria-hidden="true"></span></span></button>
+    </div>
+  </div>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  const root = document.documentElement;
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const css = (n) => getComputedStyle(root).getPropertyValue(n).trim();
+  const sec = (n) => parseFloat(css(n));
+  const lib = !!(window.gsap && window.Lenis);
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
+  if (lib && !reduce) root.classList.add('js'); // CDN blocked or reduced motion: nothing hidden, every flow works
+  let lenis = null;
+
+  const kit = $('.kit'), canvas = $('.field'), cards = $$('[data-card]'), flipBtn = $('#flip'), pol = $('#pol');
+  const dlg = $('#reserve'), openBtn = $('#reserve-open'), form = $('#reserve-form'), done = $('#done');
+  const email = $('#email'), fld = $('#email-fld'), err = $('#email-err');
+
+  /* ---------- Presses are held long enough to be seen (every mode) ---------- */
+  const held = new Set();
+  const press = (el) => { el.classList.add('is-down'); held.add(el); el._t = performance.now(); };
+  const release = () => held.forEach((el) => {
+    const wait = Math.max(0, sec('--d-hold') * 1000 - (performance.now() - el._t));
+    setTimeout(() => el.classList.remove('is-down'), wait); held.delete(el);
+  });
+  document.addEventListener('pointerdown', (e) => { const b = e.target.closest?.('.btn, .link'); if (b && e.button === 0) press(b); });
+  document.addEventListener('keydown', (e) => { const b = e.target.closest?.('.btn'); if (b && (e.key === ' ' || e.key === 'Enter') && !e.repeat) press(b); });
+  ['pointerup', 'pointercancel', 'keyup'].forEach((t) => document.addEventListener(t, release));
+
+  /* ---------- The field: iron filings that point in eight directions ---------- */
+  const field = (() => {
+    const g = canvas.getContext('2d');
+    const DX = [1, 1, 0, -1, -1, -1, 0, 1], DY = [0, 1, 1, 1, 0, -1, -1, -1]; // 0 east, clockwise on screen; 6 is north (up)
+    const quant = (x, y) => (Math.round(Math.atan2(y, x) / (Math.PI / 4)) + 8) % 8;
+    // Seeded value noise; its curl gives a divergence-free flow, which is what combed filings look like.
+    const hash = (x, y) => { let h = (x * 374761393 + y * 668265263) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); h ^= h >>> 16; return (h >>> 0) / 4294967296; };
+    const sm = (t) => t * t * (3 - 2 * t);
+    const vn = (x, y) => {
+      const xi = Math.floor(x), yi = Math.floor(y), u = sm(x - xi), v = sm(y - yi);
+      const a = hash(xi, yi), b = hash(xi + 1, yi), c = hash(xi, yi + 1), d = hash(xi + 1, yi + 1);
+      return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+    };
+    const pot = (x, y) => vn(x, y) + .5 * vn(x * 2.1 + 17, y * 2.1 + 5);
+
+    let W = 0, H = 0, P = 16, cols = 0, rows = 0, n = 0;
+    let noise = new Float32Array(0), cf = [], mids = [], mask = new Uint8Array(0);
+    let cur = new Uint8Array(0), tgt = new Uint8Array(0), tone = new Uint8Array(0), shown = new Uint8Array(0);
+    let sprites = [];
+    const st = { cardsOn: cards.length, active: -1, mags: { ptr: null, foc: null }, pol: 1, lean: 0, wave: -1, waveRows: [0, 0] };
+
+    // Tones: 0 at rest, 1-2 held by a north pole (weak, strong), 3-4 held by a south pole.
+    function makeSprites() {
+      const tones = [['--needle', '--needle-hi'], ['--north-lo', '--north'], ['--north', '--north-hi'], ['--south-lo', '--south'], ['--south', '--south-hi']]
+        .map(([a, b]) => [css(a), css(b)]);
+      sprites = [];
+      const c0 = Math.floor(P / 2) - 1;
+      tones.forEach(([body, tip]) => {
+        for (let d = 0; d < 8; d++) {
+          const s = document.createElement('canvas'); s.width = s.height = P;
+          const x = s.getContext('2d'), k = d % 2 ? 4 : 6; // 7px orthogonal, a 5x5 stair on the diagonals
+          for (let j = 0; j < k; j++) {
+            const o = j - (k - 1) / 2;
+            x.fillStyle = j === k - 1 ? tip : body;
+            x.fillRect(c0 + Math.round(o * DX[d]), c0 + Math.round(o * DY[d]), 2, 2);
+          }
+          sprites.push(s);
+        }
+      });
+    }
+
+    // A bar magnet: north pole near the card's top edge, south near its bottom. Field of a pole falls off as 1/d^2.
+    const pole = (out, i, x, y, px, py, q, L) => {
+      const dx = x - px, dy = y - py, d = Math.max(20, Math.hypot(dx, dy)), k = q * (L / d) * (L / d) / d;
+      out[2 * i] += dx * k; out[2 * i + 1] += dy * k;
+    };
+
+    function build() {
+      P = sec('--pitch') || 16;
+      W = kit.clientWidth; H = kit.clientHeight;
+      cols = Math.ceil(W / P); rows = Math.ceil(H / P); n = cols * rows;
+      canvas.width = W; canvas.height = H;
+      makeSprites();
+      const r0 = kit.getBoundingClientRect();
+      const rect = (el, m = 0) => { const r = el.getBoundingClientRect(); return [r.left - r0.left - m, r.top - r0.top - m, r.right - r0.left + m, r.bottom - r0.top + m]; };
+      const calm = $$('[data-calm], [data-card]', kit).map((el) => rect(el, 4));
+      const cr = cards.map((el) => rect(el));
+      noise = new Float32Array(2 * n); mask = new Uint8Array(n);
+      cf = cr.map(() => new Float32Array(2 * n));
+      mids = cr.map(([, y0, , y1]) => (y0 + y1) / 2);
+      const e = .02, sc = 1 / 260;
+      for (let r = 0, i = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++, i++) {
+          const x = (c + .5) * P, y = (r + .5) * P, nx = x * sc, ny = y * sc;
+          const cx = (pot(nx, ny + e) - pot(nx, ny - e)) / (2 * e), cy = -(pot(nx + e, ny) - pot(nx - e, ny)) / (2 * e);
+          noise[2 * i] = cx * .9 + .75; noise[2 * i + 1] = cy * .9 + .15; // combed left to right, with curl in it
+          if (calm.some(([a, b, cc, d]) => x > a && x < cc && y > b && y < d)) mask[i] = 1;
+          cr.forEach(([x0, y0, x1, y1], k) => {
+            const mx = (x0 + x1) / 2, L = Math.min(150, (x1 - x0) * .4);
+            pole(cf[k], i, x, y, mx, y0 + 12, 1, L);
+            pole(cf[k], i, x, y, mx, y1 - 12, -1, L);
+          });
+        }
+      }
+      cur = new Uint8Array(n); tgt = new Uint8Array(n); tone = new Uint8Array(n); shown = new Uint8Array(n);
+      aim(); cur.set(tgt); shown.set(tone);
+      paintAll();
+    }
+
+    const R_MAG = 420, Q_MAG = 1.5, L_MAG = 110;
+    function aim() {
+      const { cardsOn, active, mags, pol: p, lean, wave, waveRows } = st;
+      const ms = [mags.ptr, mags.foc].filter(Boolean);
+      for (let r = 0, i = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++, i++) {
+          if (mask[i]) continue;
+          const x = (c + .5) * P, y = (r + .5) * P;
+          if (wave >= 0 && r >= waveRows[0] && r < waveRows[1]) { tgt[i] = 6; tone[i] = 2; continue; }
+          let bx = noise[2 * i], by = noise[2 * i + 1] + lean;
+          for (let k = 0; k < cardsOn; k++) { bx += cf[k][2 * i]; by += cf[k][2 * i + 1]; }
+          let ex = 0, ey = 0, px = 0, py = 0;
+          if (active >= 0) { ex = 2 * cf[active][2 * i]; ey = 2 * cf[active][2 * i + 1]; } // the active card pulls three times harder
+          for (const m of ms) {
+            const dx = m.x - x, dy = m.y - y, d0 = Math.hypot(dx, dy);
+            if (d0 > R_MAG) continue;
+            const d = Math.max(16, d0), k = p * Q_MAG * (L_MAG / d) * (L_MAG / d) / d; // p 1: south face, tips turn toward it
+            px += dx * k; py += dy * k;
+          }
+          tgt[i] = quant(bx + ex + px, by + ey + py);
+          const lm = Math.hypot(ex + px, ey + py), bm = Math.hypot(bx, by) + 1e-6;
+          if (lm < .8 * bm) { tone[i] = 0; continue; }
+          const strong = lm > 2.5 * bm;
+          const north = Math.hypot(px, py) >= Math.hypot(ex, ey) ? p < 0 : y < mids[active];
+          tone[i] = north ? (strong ? 2 : 1) : (strong ? 4 : 3);
+        }
+      }
+    }
+
+    const cell = (i) => {
+      const x = (i % cols) * P, y = Math.floor(i / cols) * P;
+      g.clearRect(x, y, P, P);
+      g.drawImage(sprites[shown[i] * 8 + cur[i]], x, y);
+    };
+    function paintAll() { g.clearRect(0, 0, W, H); for (let i = 0; i < n; i++) if (!mask[i]) cell(i); }
+
+    // One tick: every needle that is not on its target turns one 45° step the short way. A needle shows its
+    // pole's hue only once it points where that pole says; while it turns it is a resting needle.
+    function step() {
+      let busy = false;
+      for (let i = 0; i < n; i++) {
+        if (mask[i]) continue;
+        const t = tgt[i];
+        let c = cur[i], ch = false;
+        if (c !== t) { c = (c + ((t - c + 8) % 8 <= 4 ? 1 : 7)) % 8; cur[i] = c; ch = true; }
+        const s = c === t ? tone[i] : 0;
+        if (s !== shown[i]) { shown[i] = s; ch = true; }
+        if (ch) cell(i);
+        if (c !== t) busy = true;
+      }
+      return busy;
+    }
+    // Every needle at a random angle, as if the sheet had been shaken: the comb then settles one step a tick.
+    function scatter() { for (let i = 0; i < n; i++) { cur[i] = (Math.random() * 8) | 0; shown[i] = 0; } paintAll(); }
+    const rowAt = (y) => Math.max(0, Math.min(rows, Math.floor(y / P)));
+    return { build, aim, step, scatter, paintAll, rowAt, st, get rows() { return rows; }, clear: () => g.clearRect(0, 0, W, H) };
+  })();
+
+  /* The loop: one tick per --d-tick, only while a needle is turning or an input is pending; asleep off screen. */
+  const loop = (() => {
+    let raf = 0, last = 0, acc = 0, inView = true, need = false, on = false, waveT = 0;
+    const TICK = sec('--d-tick') * 1000;
+    const tick = () => {
+      const s = field.st;
+      if (s.lean) { s.lean *= .72; if (Math.abs(s.lean) < .04) s.lean = 0; need = true; }
+      if (s.wave >= 0) waveStep(); // success: rows turn north from the bottom of the view upward
+      if (need) { need = false; field.aim(); }
+      return field.step() || need || !!s.lean || s.wave >= 0;
+    };
+    let wv = null;
+    const waveStep = () => {
+      const s = field.st, el = performance.now() - wv.t0;
+      const rise = Math.min(1, el / (sec('--d-wave') * 1000));
+      s.waveRows = [Math.round(wv.bot - (wv.bot - wv.top) * rise), wv.bot];
+      if (el > (sec('--d-wave') + sec('--d-north')) * 1000) s.wave = -1;
+      need = true;
+    };
+    const frame = (t) => {
+      raf = 0;
+      if (!last) last = t;
+      acc += t - last; last = t;
+      let busy = true;
+      if (acc >= TICK) { acc = acc % TICK; busy = tick(); }
+      if (busy && inView) raf = requestAnimationFrame(frame); else last = 0;
+    };
+    const wake = (aim = true) => { if (aim) need = true; if (on && !raf && inView) raf = requestAnimationFrame(frame); };
+    new IntersectionObserver(([e]) => { inView = e.isIntersecting; if (inView) wake(false); else if (raf) { cancelAnimationFrame(raf); raf = 0; last = 0; } }).observe(kit);
+    return {
+      wake, start() { on = true; wake(); },
+      wave() {
+        const r = kit.getBoundingClientRect();
+        wv = { t0: performance.now(), top: field.rowAt(-r.top), bot: field.rowAt(innerHeight - r.top) };
+        field.st.wave = 1; wake();
+      }
+    };
+  })();
+
+  /* ---------- Cards: fixed magnets; the active one pulls three times harder ---------- */
+  const setActive = (k) => {
+    if (field.st.active === k) return;
+    field.st.active = k;
+    cards.forEach((c, i) => c.classList.toggle('is-active', i === k));
+    if (!reduce) loop.wake(); // reduced motion: the comb stays still; the card's edges carry the state
+  };
+  cards.forEach((c, k) => {
+    c.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') setActive(k); });
+    c.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse' && !c.contains(document.activeElement)) setActive(-1); });
+    c.addEventListener('focusin', () => setActive(k));
+    c.addEventListener('focusout', (e) => { if (!c.contains(e.relatedTarget)) setActive(-1); });
+    c.addEventListener('click', (e) => { if (e.pointerType !== 'mouse' && !e.target.closest('a')) setActive(field.st.active === k ? -1 : k); });
+  });
+
+  /* ---------- The pointer magnet and its face ---------- */
+  const flip = () => {
+    field.st.pol = -field.st.pol;
+    pol.textContent = field.st.pol > 0
+      ? 'South face out: needles turn their tips toward the magnet.'
+      : 'North face out: needles turn their tips away from the magnet.';
+    loop.wake();
+  };
+  flipBtn.addEventListener('click', flip);
+
+  /* ---------- Reserve dialog and form (plain JavaScript; the motion branch adds the domains) ---------- */
+  let fx = null; // motion hooks; null means instant
+  const check = () => {
+    const v = email.value.trim();
+    if (!v) return 'Write your email address, like siri@example.no.';
+    if (!/^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(v)) return 'The address needs an @ and a domain, like siri@example.no.';
+    return '';
+  };
+  const showErr = (m) => {
+    err.textContent = m;
+    if (m) email.setAttribute('aria-invalid', 'true'), email.setAttribute('aria-describedby', 'email-err');
+    else email.removeAttribute('aria-invalid'), email.removeAttribute('aria-describedby');
+  };
+  let turn = 2, lastLen = 0;
+  const compass = () => {
+    const ok = !check();
+    const len = email.value.length;
+    turn = ok ? 6 : (turn + (len >= lastLen ? 1 : 7) * Math.max(1, Math.abs(len - lastLen))) % 8; // one 45° step per character
+    if (!ok && turn === 6) turn = 7; // north is kept for a valid address
+    lastLen = len;
+    fld.style.setProperty('--turn', turn);
+    fld.classList.toggle('is-valid', ok);
+  };
+  email.addEventListener('input', () => { compass(); if (email.hasAttribute('aria-invalid') && !check()) showErr(''); });
+  email.addEventListener('blur', () => { if (email.value && check()) showErr(check()); });
+  const resetForm = () => { form.hidden = false; done.hidden = true; dlg.setAttribute('aria-labelledby', 'reserve-title'); };
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const m = check(); showErr(m);
+    if (m) { email.focus(); return; }
+    $('#done-text').textContent = `${form.elements.board.value} for ${email.value.trim()}. We will write to you when it is on the bench in February, with the price and how to pay.`;
+    form.hidden = true; done.hidden = false;
+    dlg.setAttribute('aria-labelledby', 'done-title');
+    $('#done-title').focus();
+    if (!reduce) loop.wave(); // the whole sheet turns north
+    form.reset(); turn = 2; lastLen = 0; fld.style.setProperty('--turn', 2); fld.classList.remove('is-valid');
+  });
+
+  let closing = false, downOn = null;
+  openBtn.addEventListener('click', () => {
+    if (dlg.open) return;
+    resetForm(); closing = false;
+    dlg.showModal(); lenis?.stop();
+    fx?.open();
+  });
+  const closeDlg = () => {
+    if (!dlg.open || closing) return;
+    closing = true;
+    const end = () => { closing = false; dlg.close(); };
+    fx ? fx.close(end) : end();
+  };
+  $('#reserve-close').addEventListener('click', closeDlg);
+  $('#done-close').addEventListener('click', closeDlg);
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); closeDlg(); });
+  dlg.addEventListener('pointerdown', (e) => { downOn = e.target; });
+  dlg.addEventListener('click', (e) => { if (e.target === dlg && downOn === dlg) closeDlg(); });
+  dlg.addEventListener('close', () => { closing = false; fx?.settle(); lenis?.start(); openBtn.focus(); });
+
+  /* ---------- Start ---------- */
+  const fontsReady = Promise.race([
+    Promise.all([document.fonts.ready, document.fonts.load('700 100px "Handjet"')]).catch(() => {}),
+    new Promise((r) => setTimeout(r, 1500))
+  ]);
+  const visible = new Promise((r) => {
+    if (document.visibilityState === 'visible') return r();
+    const f = () => { if (document.visibilityState === 'visible') { document.removeEventListener('visibilitychange', f); r(); } };
+    document.addEventListener('visibilitychange', f);
+  });
+  let rebuildRaf = 0, lastW = 0, lastH = 0;
+  const rebuild = () => {
+    if (kit.clientWidth === lastW && kit.clientHeight === lastH) return;
+    lastW = kit.clientWidth; lastH = kit.clientHeight;
+    field.build();
+  };
+  const ro = new ResizeObserver(() => { cancelAnimationFrame(rebuildRaf); rebuildRaf = requestAnimationFrame(rebuild); });
+
+  if (reduce) {
+    // Reduced motion: one still, combed sheet with every card's magnet on. Card edges still show focus and hover.
+    root.classList.add('go');
+    fontsReady.then(() => { rebuild(); ro.observe(kit); });
+    return;
+  }
+
+  root.classList.add('live');
+  if (!fine) pol.textContent = 'Your finger is a magnet, south face out: needles turn their tips toward it. Tap the sheet to turn it over.';
+  const local = (x, y) => { const r = kit.getBoundingClientRect(); return { x: x - r.left, y: y - r.top }; };
+  const M = field.st.mags;
+  kit.addEventListener('pointermove', (e) => { if (e.pointerType === 'touch') return; M.ptr = local(e.clientX, e.clientY); loop.wake(); });
+  kit.addEventListener('pointerleave', (e) => { if (e.pointerType === 'touch') return; M.ptr = null; loop.wake(); });
+  let lift = 0;
+  const touch = (e) => { clearTimeout(lift); const t = e.touches[0]; M.ptr = local(t.clientX, t.clientY); loop.wake(); };
+  kit.addEventListener('touchstart', touch, { passive: true });
+  kit.addEventListener('touchmove', touch, { passive: true });
+  kit.addEventListener('touchend', () => { lift = setTimeout(() => { M.ptr = null; loop.wake(); }, sec('--d-release') * 1000); }, { passive: true });
+  // A click on the sheet itself (not on a control or a card) turns the magnet over.
+  kit.addEventListener('click', (e) => { if (!e.target.closest('a, button, input, label, [data-card], dialog')) flip(); });
+  // Keyboard: a focused control outside the cards becomes the magnet, at its centre.
+  kit.addEventListener('focusin', (e) => {
+    if (e.target.closest('[data-card]') || !e.target.matches(':focus-visible')) return;
+    const r = e.target.getBoundingClientRect(); M.foc = local(r.left + r.width / 2, r.top + r.height / 2); loop.wake();
+  });
+  kit.addEventListener('focusout', () => { M.foc = null; loop.wake(); });
+  // Scroll jolts the sheet: needles lean toward the direction of travel by its speed, then settle back to the comb.
+  let ly = scrollY, lt = performance.now();
+  addEventListener('scroll', () => {
+    const now = performance.now(), v = (scrollY - ly) / Math.max(8, now - lt); // px per ms
+    ly = scrollY; lt = now;
+    const l = Math.max(-1.6, Math.min(1.6, v * .9));
+    if (Math.abs(l) > Math.abs(field.st.lean)) { field.st.lean = l; loop.wake(); }
+  }, { passive: true });
+
+  if (!lib) { fontsReady.then(() => { rebuild(); ro.observe(kit); loop.start(); }); return; }
+
+  /* ---------- Motion branch (GSAP, Lenis) ---------- */
+  lenis = new Lenis({ lerp: .1, smoothWheel: true, autoRaf: false, anchors: true });
+  gsap.ticker.add((t) => lenis.raf(t * 1000));
+  gsap.ticker.lagSmoothing(0);
+
+  const doms = $('.domains', dlg), arrows = $$('i', doms);
+  let dtl = null;
+  const toward = (d, t) => (d === t ? d : (d + ((t - d + 8) % 8 <= 4 ? 1 : 7)) % 8);
+  fx = {
+    // The panel opens as twelve domains, each arrow at a random angle; they turn into line a step a frame, then merge.
+    open() {
+      dtl?.kill();
+      let ds = arrows.map(() => (Math.random() * 8) | 0);
+      const show = () => arrows.forEach((a, i) => a.style.setProperty('--d', ds[i]));
+      doms.classList.add('is-on'); show();
+      dtl = gsap.timeline();
+      const f = sec('--d-domain');
+      for (let s = 1; s <= 4; s++) dtl.call(() => { ds = ds.map((d) => toward(d, 6)); show(); }, null, s * f);
+      dtl.call(() => doms.classList.remove('is-on'), null, 5 * f);
+    },
+    // Closing knocks the domains out of line for one frame, then the dialog is gone.
+    close(end) {
+      dtl?.kill();
+      doms.classList.add('is-on');
+      arrows.forEach((a) => a.style.setProperty('--d', (Math.random() * 8) | 0));
+      dtl = gsap.timeline().call(end, null, sec('--d-domain') * 2);
+    },
+    settle() { dtl?.kill(); doms.classList.remove('is-on'); }
+  };
+
+  Promise.all([fontsReady, visible]).then(() => {
+    // Load: the sheet starts shaken with every card's magnet off; the comb settles, then the cards cut in one at
+    // a time and each one's magnet switches on, bending the field around it.
+    field.st.cardsOn = 0;
+    rebuild(); ro.observe(kit);
+    field.scatter();
+    loop.start();
+    const tl = gsap.timeline({ delay: .2 });
+    cards.forEach((c, k) => tl.call(() => { c.classList.add('is-on'); field.st.cardsOn = k + 1; loop.wake(); }, null, k * sec('--d-card')));
+    tl.call(() => root.classList.add('go'));
+  });
+})();
+</script>
+</body>
+</html>

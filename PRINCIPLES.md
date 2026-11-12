@@ -1,6 +1,6 @@
 # Principles
 
-designs-x is a collection of front-end **sections** (hero, features, pricing, testimonials, process, call to action, footer, portfolio, CRUD, navigation, scroll story, gallery, FAQ, contact, team) built to be read and reused by AI agents. Every design is original, self-contained HTML and CSS, and ships with a note that explains why it works.
+designs-x is a collection of front-end **sections** (hero, features, pricing, testimonials, process, call to action, footer, portfolio, CRUD, navigation, scroll story, gallery, FAQ, contact, team, about me) built to be read and reused by AI agents. Every design is original, self-contained HTML and CSS, and ships with a note that explains why it works.
 
 This document is the taste behind the collection. Read it before using a design, and before making a new one.
 
@@ -11,6 +11,7 @@ This document is the taste behind the collection. Read it before using a design,
 - **One file that runs on its own.** `index.html` opens in a browser with no build step. CSS lives in a `<style>` block. JavaScript, if any, lives in one `<script>` block at the end. External fonts are allowed and declared.
 - **Tokenised.** Every colour, font family, type size and the spacing scale is a CSS custom property on `:root`. Porting a design to another brand starts by changing those variables, not by hunting through rules.
 - **Portfolio and CRUD sections** are larger, app-like sections. Portfolio designs carry interactive charts and editable contact/social links. CRUD designs create, read, update and delete typed records (text, integer, decimal, date, boolean, choice) kept only for the browser session.
+- **About me sections** are the largest sections: a whole personal front end for one fictional person (who they are, what they do now, how they got here, what they use, how to reach them).
 - **Explained.** `design.md` says what the design is for, why it works, what must not be changed, and how to adapt it.
 
 ## Taste
@@ -71,3 +72,10 @@ Every design meets this without announcing it:
 3. Map the target project's brand onto the `:root` tokens first. Follow **Adapting**.
 4. Replace the copy with the target project's real content. Keep its length and tone roughly the same, or revisit the layout.
 5. Translate to the target stack (React, Vue, Svelte, Tailwind, etc.) only after the tokens and copy are right. Keep the structure and the one bold idea intact.
+
+## The catalogue's fullscreen control is not part of any design
+
+The catalogue's view pages (`/d/<slug>/`) wrap every live preview with a **Fullscreen** button and, while in fullscreen, a floating **Quit fullscreen** button. That control belongs to the site, not to the design.
+
+- When porting or building a design, do not copy it, reference it, or count it as part of the design.
+- Do not add a fullscreen control to a design for this purpose. A design's `index.html` and `design.md` never mention it.

@@ -1,0 +1,1279 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Greyscale repair questions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Handjet:ELGR,ELSH,wght@1..2,0..16,100..900&family=Host+Grotesk:wght@300..800&display=swap">
+<style>
+  :root {
+    /* Colour: an unlit reflective LCD on the bench. Every hue has one job. Ratios are against --lcd-0 unless noted. */
+    --lcd-w: #22240A;       /* the well: dialog scrim, the screen bezel, the contrast wheel body (decorative, 1.3:1) */
+    --lcd-0: #2F3210;       /* shade 0, the ground: an unlit LCD; also the dark shade on the test screen */
+    --lcd-1: #5A5F22;       /* shade 1: test-screen mid tone, a field's lit ground, a bottomed-out key (lcd-3 on it 5.5:1); rules (1.9:1, decorative) */
+    --lcd-2: #AEB55C;       /* shade 2: secondary text, field and key outlines, the resting underline (6.0:1); a key face (lcd-0 on it 6.0:1) */
+    --lcd-3: #E6EBB4;       /* shade 3, the palest: text (10.7:1; 12.8:1 on the well) and the lightest pixel on the test screen */
+    --screen: #6FE6F2;      /* Screen faults only: their chip, question markers and test-pattern accent (9.0:1; lcd-0 on it 9.0:1) */
+    --buttons: #FF9EC4;     /* Button faults only: chip, markers, accent (6.9:1) */
+    --power: #FFB347;       /* Power faults only: chip, markers, accent (7.4:1) */
+    --sound: #C9B3FF;       /* Sound faults only: chip, markers, accent (7.2:1) */
+    --bench: #FFFDF0;       /* white-hot bench paper: the focus ring and the one primary button only (13.0:1; lcd-0 on it 13.0:1) */
+    --fault: #FF8E7E;       /* errors only: the message and the row of missing pixels (6.0:1; 7.1:1 on the well) */
+    --scrim: rgb(34 36 10 / .92);   /* the well at 92%: the flat dialog backdrop */
+
+    /* Type */
+    --font-display: "Handjet", "Arial Narrow", sans-serif;
+    --font-text: "Host Grotesk", system-ui, sans-serif;
+    --modules: "ELSH" 2, "ELGR" 1;   /* square Handjet modules, like the LCD's pixels */
+    --t-small: 14px;
+    --t-body: 17px;
+    --t-q: 18px;            /* a question */
+    --t-lede: 19px;
+    --t-h3: 26px;
+    --t-num: 40px;          /* Handjet step numerals in the packing list */
+    --t-h2: clamp(42px, 6vw, 92px);
+    --lh-body: 1.55;
+    --lh-lede: 1.5;
+
+    /* Space: a 4px cell, the size of one screen pixel at full scale. */
+    --cell: 4px;
+    --s1: 4px; --s2: 8px; --s3: 16px; --s4: 24px;
+    --s5: 32px; --s6: 48px; --s7: 72px; --s8: 96px;
+    --notch: 4px;           /* pixel corner on keys, the bezel and the dialog */
+    --tap: 48px;            /* key and field height */
+    --hit: 44px;            /* minimum target for text buttons, chips and options */
+    --max-w: 1296px;
+    --px: 2;                /* CSS pixels per screen pixel: 2 under 380px, 3, then 4 on desktops 1200px wide and 780px tall */
+    --dm-cell: 3px;         /* one Bayer dither cell, in CSS px */
+    --wheel-w: 40px;        /* the contrast wheel's width */
+
+    /* Motion: a 4x4 Bayer threshold stepped by hand. CSS and the script read these. */
+    --d-dither: .07s;       /* one dither step of an answer, the dialog, a swatch */
+    --d-dissolve: .07s;     /* one step of the screen's cross-dissolve */
+    --d-power: .4s;         /* the screen powers on: nine levels, 0 to 16 */
+    --d-line: .06s;         /* one dither step of a headline line */
+    --d-ring: .06s;         /* one membrane ring */
+    --d-hold: .14s;         /* the least time a key stays bottomed out */
+    --d-link: .06s;         /* one step of the dither underline */
+    --d-link-hold: .2s;     /* a tapped link stays lit this long */
+    --d-field: .07s;        /* the 50% frame when a field lights */
+    --d-recover: .09s;      /* one of the three recovery steps of a pressed pixel */
+    --d-pass: .36s;         /* the four shade bars hold before the tick arrives */
+  }
+  @media (min-width: 380px) { :root { --px: 3; } }
+  @media (min-width: 1200px) and (min-height: 780px) { :root { --px: 4; } }
+  @media (max-width: 599px) { :root { --t-body: 16px; --t-q: 17px; --t-lede: 17px; --t-h3: 23px; } }
+
+  /* Lenis rules, inlined from lenis@1.3.26/dist/lenis.css */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis:not(.lenis-autoToggle).lenis-stopped { overflow: clip; }
+  .lenis [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-smooth iframe { pointer-events: none; }
+
+  /* Hidden only when the script runs, and only until the load sequence takes over (it sets the same states inline). */
+  html.js:not(.go) .h2 .ln, html.js:not(.go) [data-cut] { visibility: hidden; }
+  @media (prefers-reduced-motion: reduce) {
+    html.js:not(.go) .h2 .ln, html.js:not(.go) [data-cut] { visibility: visible; }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { background: var(--lcd-0); }
+  body {
+    margin: 0;
+    background: var(--lcd-0);
+    color: var(--lcd-3);
+    font: 400 var(--t-body)/var(--lh-body) var(--font-text);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  :focus-visible { outline: 2px solid var(--bench); outline-offset: 3px; }
+  ::selection { background: var(--lcd-3); color: var(--lcd-0); }
+  .vh {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+  }
+  button { font: inherit; color: inherit; }
+  b, strong { font-weight: 650; }
+
+  /* ---------- The dither: one 4x4 Bayer matrix, five coverage levels (0, 4, 8, 12, 16 of 16) ---------- */
+  /* The script draws the tiles once (canvas to data-URL) into --dm-4, --dm-8, --dm-12 (3px cells) and --um-8,
+     --um-12 (1px cells, for the 2px underline). Level 16 is no mask at all; level 0 hides the element but keeps
+     its space. Without the tiles (no script) nothing is masked. */
+  [data-dm] { -webkit-mask-size: calc(4 * var(--dm-cell)) calc(4 * var(--dm-cell)); mask-size: calc(4 * var(--dm-cell)) calc(4 * var(--dm-cell)); -webkit-mask-repeat: repeat; mask-repeat: repeat; }
+  [data-dm="0"] { visibility: hidden; }
+  [data-dm="4"] { -webkit-mask-image: var(--dm-4, none); mask-image: var(--dm-4, none); }
+  [data-dm="8"] { -webkit-mask-image: var(--dm-8, none); mask-image: var(--dm-8, none); }
+  [data-dm="12"] { -webkit-mask-image: var(--dm-12, none); mask-image: var(--dm-12, none); }
+
+  /* ---------- The bench ---------- */
+  .faq {
+    position: relative;
+    overflow: clip;
+    padding-block: clamp(24px, 5vh, 64px) var(--s8);
+    padding-inline: max(var(--s3), (100% - var(--max-w)) / 2);
+    background: var(--lcd-0);
+  }
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s5); }
+  .intro { container-type: inline-size; }
+  @media (min-width: 960px) {
+    .layout {
+      grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+      column-gap: var(--s6);
+      row-gap: var(--s4);
+    }
+    .intro { grid-column: 1; grid-row: 1; }
+    .lede-wrap { grid-column: 2; grid-row: 1; align-self: end; }
+    .console { grid-column: 1; grid-row: 2 / 4; }
+    .console-in { position: sticky; top: var(--s4); }
+    .qs { grid-column: 2; grid-row: 2; }
+    .ask { grid-column: 2; grid-row: 3; }
+  }
+
+  .h2 {
+    margin: 0;
+    font: 700 min(var(--t-h2), 8vh, 10.6cqi)/1 var(--font-display);
+    font-variation-settings: var(--modules);
+    letter-spacing: 0;
+  }
+  .h2 .ln { display: block; }
+  @media (max-width: 959px) { .h2 { font-size: max(40px, min(var(--t-h2), 10.6cqi)); } }
+  .lede { margin: 0; max-width: 60ch; font-size: var(--t-lede); line-height: var(--lh-lede); }
+  .hint-top { margin: 0 0 var(--s2); max-width: 60ch; color: var(--lcd-2); }
+  .lede-wrap { display: grid; align-content: end; }
+
+  /* ---------- Search, chips and the count ---------- */
+  .lbl { display: block; margin: 0 0 var(--s1); font-weight: 600; font-size: var(--t-small); line-height: 20px; }
+  .fld { position: relative; display: block; border: 2px solid var(--lcd-2); }
+  .fld:hover { border-color: var(--lcd-3); }
+  .fld:focus-within { border-color: var(--lcd-3); }
+  .fld-bg { position: absolute; inset: 0; background: var(--lcd-1); visibility: hidden; pointer-events: none; }
+  html:not(.fx) .fld:focus-within .fld-bg, .fld.is-f1 .fld-bg, .fld.is-f2 .fld-bg { visibility: visible; }
+  .fld.is-f1 .fld-bg { -webkit-mask: var(--dm-8, none) 0 0 / calc(4 * var(--dm-cell)) calc(4 * var(--dm-cell)) repeat; mask: var(--dm-8, none) 0 0 / calc(4 * var(--dm-cell)) calc(4 * var(--dm-cell)) repeat; }
+  .fld input, .fld textarea {
+    position: relative;
+    display: block;
+    width: 100%;
+    min-height: calc(var(--tap) - 4px);
+    margin: 0; padding: 0 var(--s3);
+    border: 0; border-radius: 0;
+    background: transparent;
+    color: var(--lcd-3);
+    font: inherit;
+    appearance: none;
+  }
+  .fld textarea { padding-block: 12px; min-height: 128px; resize: vertical; line-height: var(--lh-body); }
+  .fld input:focus-visible, .fld textarea:focus-visible { outline: none; } /* the field's own outline is drawn on the wrapper */
+  .fld:has(:focus-visible) { outline: 2px solid var(--bench); outline-offset: 3px; }
+  .fld input::-webkit-search-cancel-button { display: none; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: var(--s2); margin: var(--s2) 0 0; padding: 0; list-style: none; }
+  .count-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 var(--s3); min-height: var(--hit); }
+  .count { margin: 0; color: var(--lcd-2); font-variant-numeric: tabular-nums; }
+  .empty { margin: var(--s3) 0 0; padding: var(--s4); border: 2px solid var(--lcd-1); max-width: 56ch; }
+  .empty h3 { margin: 0; font: 600 var(--t-h3)/1.2 var(--font-text); }
+  .empty p { margin: var(--s2) 0 0; color: var(--lcd-2); }
+  .empty b { color: var(--lcd-3); overflow-wrap: anywhere; }
+
+  /* ---------- Rubber keys: every button is a key ---------- */
+  .key {
+    --bw: 0px;
+    position: relative;
+    display: inline-block;
+    padding: 0; border: 0; background: none;
+    text-align: left;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .face { display: block; padding: var(--bw); background: var(--k-rim, transparent); clip-path: var(--corners); }
+  .inner {
+    position: relative;
+    display: flex; align-items: center; gap: var(--s2);
+    min-height: calc(var(--tap) - 2 * var(--bw));
+    padding: 0 var(--s4);
+    background: var(--k-face);
+    color: var(--k-ink);
+    font-weight: 600;
+    clip-path: var(--corners);
+  }
+  /* The membrane: one 2px frame that steps inward, 0, 4, then 8px from the edge, and stays at 8. */
+  .ring {
+    position: absolute; inset: var(--ri, 0px);
+    border: 2px solid var(--k-ring);
+    clip-path: polygon(0 2px, 2px 2px, 2px 0, calc(100% - 2px) 0, calc(100% - 2px) 2px, 100% 2px, 100% calc(100% - 2px), calc(100% - 2px) calc(100% - 2px), calc(100% - 2px) 100%, 2px 100%, 2px calc(100% - 2px), 0 calc(100% - 2px));
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .key[data-ring="1"] .ring { visibility: visible; --ri: 0px; }
+  .key[data-ring="2"] .ring { visibility: visible; --ri: 4px; }
+  .key[data-ring="3"] .ring { visibility: visible; --ri: 8px; }
+  html:not(.fx) .key:hover .ring, html:not(.fx) .key:focus-visible .ring { visibility: visible; --ri: 8px; }
+  /* Bottomed out: the face fills solid lcd-1 and the label goes to the palest shade. */
+  .key.is-down .inner, html:not(.fx) .key:active .inner { background: var(--lcd-1); color: var(--lcd-3); }
+  .key.is-down .inner *, html:not(.fx) .key:active .inner * { color: var(--lcd-3); }
+
+  .k-main { --k-face: var(--bench); --k-ink: var(--lcd-0); --k-ring: var(--lcd-0); }
+  .k-plain { --k-face: var(--lcd-2); --k-ink: var(--lcd-0); --k-ring: var(--lcd-0); }
+  .k-chip { --bw: 2px; --k-rim: var(--hue); --k-face: var(--lcd-0); --k-ink: var(--lcd-3); --k-ring: var(--hue); }
+  .k-chip .inner { min-height: calc(var(--hit) - 4px); padding: 0 var(--s3); }
+  .k-chip[aria-pressed="true"] { --k-face: var(--hue); --k-ink: var(--lcd-0); --k-ring: var(--lcd-0); }
+  .k-chip .sq { flex: none; width: 12px; height: 12px; background: var(--hue); }
+  .k-chip[aria-pressed="true"] .sq { background: var(--lcd-0); }
+  .chip-wrap { position: relative; padding-bottom: 6px; }
+  .chip-wrap::after { content: ""; position: absolute; left: 6px; right: 6px; bottom: 0; height: 2px; background: var(--hue); display: none; }
+  .chip-wrap.is-live::after { display: block; } /* the group the screen is showing now */
+
+  [data-g="screen"] { --hue: var(--screen); }
+  [data-g="buttons"] { --hue: var(--buttons); }
+  [data-g="power"] { --hue: var(--power); }
+  [data-g="sound"] { --hue: var(--sound); }
+
+  /* ---------- Text buttons and links: the dither underline ---------- */
+  .lnk {
+    position: relative;
+    display: inline-block;
+    min-height: var(--hit);
+    padding: 11px 0;
+    border: 0; background: none;
+    color: var(--lcd-2);
+    font: 600 var(--t-body)/22px var(--font-text);
+    text-decoration: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .lnk::after {
+    content: "";
+    position: absolute; left: 0; right: 0; bottom: 9px; height: 2px;
+    background: currentColor;
+    -webkit-mask: var(--um-8, none) 0 0 / 4px 4px repeat; mask: var(--um-8, none) 0 0 / 4px 4px repeat;
+  }
+  .lnk.is-hot { color: var(--lcd-3); }
+  .lnk.is-hot[data-ul="12"]::after { -webkit-mask-image: var(--um-12, none); mask-image: var(--um-12, none); }
+  .lnk.is-hot:not([data-ul])::after { -webkit-mask: none; mask: none; }
+  html:not(.fx) .lnk:hover, html:not(.fx) .lnk:focus-visible, html:not(.fx) .lnk:active { color: var(--lcd-3); }
+  html:not(.fx) .lnk:hover::after, html:not(.fx) .lnk:focus-visible::after, html:not(.fx) .lnk:active::after { -webkit-mask: none; mask: none; }
+
+  /* ---------- The diagnostic screen ---------- */
+  .unit { margin: var(--s3) 0 0; }
+  .bezel {
+    display: inline-grid;
+    grid-template-columns: auto var(--wheel-w);
+    gap: 6px;
+    padding: 6px;
+    background: var(--lcd-w);
+    clip-path: var(--corners);
+  }
+  .glass { display: block; padding: 2px; background: var(--lcd-1); }
+  .lcd {
+    display: block;
+    width: calc(96px * var(--px)); height: calc(86px * var(--px));
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    background: var(--lcd-2);
+    touch-action: pan-y;
+    cursor: crosshair;
+  }
+  .readout {
+    grid-column: 1 / -1;
+    width: 0; min-width: 100%;   /* spans the bezel without widening the glass */
+    display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 var(--s3);
+    padding: 0 2px;
+    color: var(--lcd-2);
+    font-size: var(--t-small); line-height: 20px;
+    font-variant-numeric: tabular-nums;
+  }
+  .readout b { color: var(--lcd-3); font-weight: 600; }
+
+  /* The contrast wheel, seen edge-on: twelve ridges 30 degrees apart, three of them marked. */
+  .wheel {
+    position: relative;
+    display: grid; grid-template-rows: 22px 1fr 22px;
+    width: var(--wheel-w);
+    border: 2px solid var(--lcd-2);
+    background: var(--lcd-w);
+    color: var(--lcd-2);
+    cursor: ns-resize;
+    touch-action: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .wheel:hover { border-color: var(--lcd-3); }
+  .wheel-end { display: grid; place-items: center; font: 700 18px/1 var(--font-text); }
+  .wheel-win { position: relative; overflow: hidden; background: var(--lcd-0); border-block: 2px solid var(--lcd-1); }
+  .ridge { position: absolute; left: 3px; right: 3px; top: 0; height: 2px; background: var(--lcd-2); }
+  .ridge.is-near { height: 4px; background: var(--lcd-2); }
+  .ridge.is-mark { background: var(--lcd-3); }
+
+  /* ---------- Questions ---------- */
+  .grp { margin-top: var(--s5); }
+  .grp-h {
+    display: flex; align-items: center; gap: var(--s3);
+    margin: 0; padding-bottom: var(--s3);
+    font: 600 var(--t-h3)/1.2 var(--font-text);
+    letter-spacing: -.01em;
+  }
+  .grp-n { margin-left: auto; color: var(--lcd-2); font-size: var(--t-small); font-weight: 400; font-variant-numeric: tabular-nums; }
+  .sw { flex: none; width: 24px; height: 24px; padding: 2px; border: 2px solid var(--hue); }
+  .sw-in { display: block; width: 100%; height: 100%; background: var(--hue); }
+  .qlist { margin: 0; padding: 0; list-style: none; border-bottom: 2px solid var(--lcd-1); }
+  .q { border-top: 2px solid var(--lcd-1); }
+  .q-h { margin: 0; font: inherit; }
+  .k-q { --k-face: var(--lcd-0); --k-ink: var(--lcd-3); --k-ring: var(--lcd-2); display: block; width: 100%; }
+  .k-q .inner { min-height: 60px; padding: 14px var(--s3) 14px 48px; font-size: var(--t-q); line-height: 1.4; }
+  .mk { position: absolute; left: 16px; top: 50%; width: 14px; height: 14px; margin-top: -7px; }
+  .mk::before, .mk::after { content: ""; position: absolute; background: var(--hue); }
+  .mk::before { left: 0; right: 0; top: 5px; height: 4px; }
+  .mk::after { top: 0; bottom: 0; left: 5px; width: 4px; }
+  .k-q[aria-expanded="true"] .mk::after { visibility: hidden; }
+  .ans { padding: 0 var(--s3) var(--s4) 48px; max-width: 66ch; }
+  .ans p { margin: 0; }
+  .ans p + p { margin-top: var(--s2); }
+  .ans .facts { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s4); margin-top: var(--s3); color: var(--lcd-2); font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+  .ans .facts b { color: var(--lcd-3); }
+
+  /* ---------- Ask the bench ---------- */
+  .ask { margin-top: var(--s7); padding-top: var(--s5); border-top: 2px solid var(--lcd-1); max-width: 640px; }
+  .ask h3 { margin: 0; font: 600 calc(var(--t-h3) + 4px)/1.15 var(--font-text); letter-spacing: -.01em; }
+  .ask-intro { margin: var(--s2) 0 0; max-width: 56ch; }
+  .ask-intro .lnk { display: inline; padding: 11px 0; line-height: inherit; } /* inline in the sentence; the padding keeps a 44px target */
+  .ask-intro .lnk::after { bottom: 9px; }
+  .row { margin-top: var(--s4); }
+  .miss { display: block; height: 2px; margin-top: 4px; visibility: hidden;
+    background: repeating-linear-gradient(90deg, var(--fault) 0 14px, transparent 14px 18px, var(--fault) 18px 24px, transparent 24px 26px, var(--fault) 26px 44px, transparent 44px 50px, var(--fault) 50px 58px, transparent 58px 60px); }
+  .row.is-bad .miss { visibility: visible; }
+  .err { min-height: 22px; margin: 4px 0 0; color: var(--fault); font-size: var(--t-small); line-height: 22px; font-weight: 500; }
+  .row.is-bad .fld { border-color: var(--fault); }
+  fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
+  legend { padding: 0; margin-bottom: var(--s1); font-weight: 600; font-size: var(--t-small); line-height: 20px; }
+  .opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: var(--s2); }
+  .opt { display: flex; align-items: center; gap: var(--s3); min-height: var(--tap); padding: 0 var(--s3); border: 2px solid var(--lcd-1); cursor: pointer; }
+  .opt:hover { border-color: var(--lcd-2); }
+  .opt:has(:checked) { border-color: var(--lcd-3); }
+  .opt input {
+    flex: none; width: 20px; height: 20px; margin: 0;
+    border: 2px solid var(--lcd-2); border-radius: 0; background: var(--lcd-0);
+    appearance: none; cursor: pointer;
+  }
+  .opt input:checked { border-color: var(--lcd-3); background: linear-gradient(var(--lcd-3), var(--lcd-3)) center / 8px 8px no-repeat var(--lcd-0); }
+  .row.is-bad .opt { border-color: var(--fault); }
+  .hint { margin: var(--s1) 0 0; color: var(--lcd-2); font-size: var(--t-small); line-height: 20px; }
+  .ask .k-main { margin-top: var(--s2); }
+  .done h4 { margin: 0; font: 600 calc(var(--t-h3) + 4px)/1.15 var(--font-text); }
+  .done h4:focus { outline: none; } /* focus lands here only to announce the result */
+  .done p { margin: var(--s2) 0 0; max-width: 52ch; }
+  .done b { overflow-wrap: anywhere; }
+  .done .lnk { margin-top: var(--s2); }
+  .mini { display: block; width: 192px; height: 172px; margin-bottom: var(--s3); border: 2px solid var(--lcd-1); image-rendering: pixelated; background: var(--lcd-2); }
+  @media (min-width: 960px) { .mini { display: none; } }
+
+  /* ---------- Packing dialog ---------- */
+  .pack {
+    width: min(640px, 100% - 2 * var(--s3));
+    max-width: none;
+    max-height: calc(100dvh - 2 * var(--s3));
+    margin: auto; padding: 0; border: 0;
+    background: none;
+    color: var(--lcd-3);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .pack::backdrop { background: var(--scrim); }
+  .pk { padding: 2px; background: var(--lcd-2); clip-path: var(--corners); }
+  .pk-in { padding: var(--s5); background: var(--lcd-0); clip-path: var(--corners); }
+  .pk-head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--s3); }
+  .pk h2 { margin: 6px 0 0; font: 600 calc(var(--t-h3) + 4px)/1.15 var(--font-text); letter-spacing: -.01em; }
+  .pk-intro { margin: var(--s2) 0 0; color: var(--lcd-2); max-width: 52ch; }
+  .steps { margin: var(--s4) 0 0; padding: 0; list-style: none; counter-reset: step; }
+  .steps li { counter-increment: step; display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: var(--s3); padding: var(--s3) 0; border-top: 2px solid var(--lcd-1); }
+  .steps li::before {
+    content: counter(step);
+    color: var(--lcd-2);
+    font: 700 var(--t-num)/.8 var(--font-display);
+    font-variation-settings: var(--modules);
+  }
+  .steps b { display: block; }
+  .steps span { color: var(--lcd-2); }
+  .pk-foot { margin: var(--s3) 0 0; color: var(--lcd-2); font-size: var(--t-small); }
+
+  @media (min-width: 960px) and (max-height: 700px) {
+    .layout { row-gap: var(--s3); }
+    .unit { margin-top: var(--s2); }
+  }
+  @media (max-width: 599px) {
+    .pk-in { padding: var(--s4) var(--s3); }
+    .k-q .inner { padding-left: 44px; }
+    .ans { padding-left: var(--s3); }
+    .mk { left: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<section class="faq" id="faq" aria-labelledby="faq-title">
+  <div class="layout">
+    <div class="intro">
+      <h2 class="h2" id="faq-title"><span class="ln">Questions the bench</span> <span class="ln">gets every week</span></h2>
+    </div>
+    <div class="lede-wrap" data-cut>
+      <p class="lede">Greyscale is two technicians in Leeds who repair 1990s and 2000s handhelds by post. Diagnosis is free, we quote before we touch anything, and most handhelds are back with you within 10 working days.</p>
+    </div>
+
+    <div class="console">
+      <div class="console-in">
+        <div data-cut>
+          <label class="lbl" for="search">Search the questions</label>
+          <span class="fld"><span class="fld-bg" aria-hidden="true"></span><input id="search" type="search" autocomplete="off" spellcheck="false" aria-controls="questions"></span>
+          <ul class="chips" aria-label="Show questions about">
+            <li class="chip-wrap is-live" data-g="screen"><button class="key k-chip" type="button" data-g="screen" aria-pressed="false" aria-controls="questions"><span class="face"><span class="inner"><span class="ring" aria-hidden="true"></span><span class="sq" aria-hidden="true"></span>Screen</span></span></button></li>
+            <li class="chip-wrap" data-g="buttons"><button class="key k-chip" type="button" data-g="buttons" aria-pressed="false" aria-controls="questions"><span class="face"><span class="inner"><span class="ring" aria-hidden="true"></span><span class="sq" aria-hidden="true"></span>Buttons</span></span></button></li>
+            <li class="chip-wrap" data-g="power"><button class="key k-chip" type="button" data-g="power" aria-pressed="false" aria-controls="questions"><span class="face"><span class="inner"><span class="ring" aria-hidden="true"></span><span class="sq" aria-hidden="true"></span>Power</span></span></button></li>
+            <li class="chip-wrap" data-g="sound"><button class="key k-chip" type="button" data-g="sound" aria-pressed="false" aria-controls="questions"><span class="face"><span class="inner"><span class="ring" aria-hidden="true"></span><span class="sq" aria-hidden="true"></span>Sound</span></span></button></li>
+          </ul>
+        </div>
+        <figure class="unit" aria-labelledby="lcd-read">
+          <div class="bezel">
+            <span class="glass"><canvas class="lcd" id="lcd" width="96" height="86" aria-hidden="true"></canvas></span>
+            <div class="wheel" id="wheel" role="slider" tabindex="0" aria-label="Screen contrast" aria-orientation="vertical" aria-valuemin="1" aria-valuemax="4" aria-valuenow="3" aria-valuetext="3 of 4, normal" aria-describedby="screen-hint">
+              <span class="wheel-end" aria-hidden="true">+</span>
+              <span class="wheel-win" aria-hidden="true"></span>
+              <span class="wheel-end" aria-hidden="true">&minus;</span>
+            </div>
+            <figcaption class="readout" id="lcd-read"><span>Showing <b id="read-test">the missing lines test</b></span><span id="read-con">Contrast 3 of 4</span></figcaption>
+          </div>
+        </figure>
+      </div>
+    </div>
+
+    <div class="qs" id="questions" data-cut>
+      <p class="hint-top" id="screen-hint">The test screen follows the questions as you read. Press the glass to see how a tired LCD pools under a thumb, or turn the contrast wheel beside it.</p>
+      <div class="count-row">
+        <p class="count" id="count" aria-live="polite">Showing all 14 questions</p>
+        <button class="lnk" id="clear" type="button" hidden>Clear search</button>
+      </div>
+      <div class="empty" id="empty" hidden>
+        <h3>No questions match</h3>
+        <p>Nothing on the bench mentions <b id="empty-term">that</b>. Try a part, like battery, speaker, ribbon or d-pad, or ask us below.</p>
+      </div>
+
+      <div class="grp" data-g="screen">
+        <h3 class="grp-h" id="g-screen"><span class="sw" aria-hidden="true"><span class="sw-in"></span></span>Screen faults <span class="grp-n">4 questions</span></h3>
+        <ul class="qlist">
+          <li class="q" id="q-missing-lines" data-g="screen">
+            <h4 class="q-h"><button class="key k-q" type="button" id="b-missing-lines" aria-expanded="false" aria-controls="a-missing-lines"><span class="face"><span class="inner"><span class="ring" aria-hidden="true"></span><span class="mk" aria-hidden="true"></span>My screen has lines missing. Can it be fixed?</span></span></button></h4>
+            <div class="ans" id="a-missing-lines" hidden>
+              <p>Almost always. Straight lines of dead pixels, top to bottom or side to side, mean the ribbon that joins the glass to the board has lifted. We re-bond it under a hot bar, pixel row by pixel row, and test it for an hour before it goes back.</p>
+              <p>If the glass is cracked as well, re-bonding won't hold, and we fit a new reflective panel instead.</p>
+              <p class="facts"><span>Re-bond <b>£45</b></span><span>New panel <b>£62</b></span><span>Bench time <b>about 40 minutes</b></span></p>
+            </div>
+          </li>
+          <li class="q" id="q-faint" data-g="screen">
+            <h4 class="q-h"><button class="key k-q" type="button" id="b-faint" aria-expanded="false" aria-controls="a-faint"><span class="face"><span class="inner"><span class="ring" aria-hidden="true"></span><span class="mk" aria-hidden="true"></span>The picture is faint even with the contrast wheel all the way up.</span></span></button></h4>
+            <div class="ans" id="a-faint" hidden>
+              <p>That is usually one of two parts. A worn contrast wheel stops reaching the end of its track, or the polariser film on the glass has browned with age and sunlight. We check both during diagnosis and tell you which one it is before we fit anything.</p>
+              <p class="facts"><span>Contrast wheel <b>£12</b></span><span>Polariser film <b>£18</b></span></p>
+            </div>
+          </li>
+          <li class="q" id="q-frontlight" data-g="screen">
+            <h4 class="q-h"><button class="key k-q" type="button" id="b-frontlight" aria-expanded="false" aria-controls="a-frontlight"><span class="face"><span class="inner"><span class="ring" aria-hidden="true"></span><span class="mk" aria-hidden="true"></span>Can you fit a light so I can play in the dark?</span></span></button></h4>
+            <div class="ans" id="a-frontlight" hidden>
+              <p>Yes, on the Monochrome 4 AA and Colour 2 AA families. We fit a front-light kit with its own switch, so you can still play with it off. Expect about a third less battery life with the light on.</p>
+              <p>We don't fit lights to clamshells: the ribbon through the hinge has no room for the extra wires.</p>
+              <p class="facts"><span>Kit and fitting <b>£74</b></span></p>
+            </div>
+          </li>
+          <li class="q" id="q-lens" data-g="screen">
+            <h4 class="q-h"><button class="key k-q" type="button" id="b-lens" aria-expanded="false" aria-controls="a-lens"><span class="face"><span class="inner"><span class="ring" aria-hidden="true"></span><span class="mk" aria-hidden="true"></span>The clear lens over the screen is scratched. Is that the screen too?</span></span></button></h4>
+            <div class="ans" id="a-lens" hidden>
+              <p>No. The lens is a separate window glued over the screen, and scratches on it don't touch the LCD. We lift the old one, clean the glass under it and fit a new lens in plastic or real glass.</p>
+              <p class="facts"><span>Plastic lens <b>£9</b></span><span>Glass lens <b>£15</b></span><span>Same day as diagnosis</span></p>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="grp" data-g="buttons">
+        <h3 class="grp-h" id="g-buttons"><span class="sw" aria-hidden="true"><span class="sw-in"></span></span>Button faults <span class="grp-n">3 questions</span></h3>
+        <ul class="qlist">
+          <li class="q" id="q-hard-press" data-g="buttons">
+            <h4 class="q-h"><button class="key k-q" type="button" id="b-hard-press" aria-expanded="false" aria-controls="a-hard-press"><span class="face"><span class="inner"><span class="ring" aria-hidden="true"></span><span class="mk" aria-hidden="true"></span>I have to press the buttons really hard before anything happens.</span></span></button></h4>
+            <div class="ans" id="a-hard-press" hidden>
+              <p>The carbon pads under the rubber have worn thin, or the contacts on the board are dirty. We clean every contact and fit a full new set of rubber membranes, so all the buttons feel the same again, not just the one that failed.</p>
+              <p class="facts"><span>Full membrane set <b>£16</b></span><span>Same day as diagnosis</span></p>
+            </div>
+          </li>
+          <li class="q" id="q-dpad" data-g="buttons">
+            <h4 class="q-h"><button class="key k-q" type="button" id="b-dpad" aria-expanded="false" aria-controls="a-dpad"><span class="face"><span class="inner"><span class="ring" aria-hidden="true"></span><span class="mk" aria-hidden="true"></span>My d-pad sticks on the diagonals.</span></span></button></h4>
+            <div class="ans" id="a-dpad" hidden>
+              <p>The pivot under the d-pad has worn into a dip, so it rocks into two directions at once. A new d-pad and its membrane fix it. If sugar or drink got under it, tell us in your note, and we strip and wash the front shell too, at no extra cost.</p>
+              <p class="facts"><span>D-pad and membrane <b>£14</b></span></p>
+            </div>
+          </li>
+          <li class="q" id="q-colours" data-g="buttons">
+            <h4 class="q-h"><button class="key k-q" type="button" id="b-colours" aria-expanded="false" aria-controls="a-colours"><span class="face"><span class="inner"><span class="ring" aria-hidden="true"></span><span class="mk" aria-hidden="true"></span>Can I choose a different colour for the new buttons?</span></span></button></h4>
+            <div class="ans" id="a-colours" hidden>
+              <p>Yes. We stock grey, black and clear buttons for every family we repair. If we're replacing your buttons anyway the colour is free; on their own, a set of coloured buttons is £10 fitted.</p>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="grp" data-g="power">
+        <h3 class="grp-h" id="g-power"><span class="sw" aria-hidden="true"><span class="sw-in"></span></span>Power faults <span class="grp-n">4 questions</span></h3>
+        <ul class="qlist">
+          <li class="q" id="q-swollen" data-g="power">
+            <h4 class="q-h"><button class="key k-q" type="button" id="b-swollen" aria-expanded="false" aria-controls="a-swollen"><span class="face"><span class="inner"><span class="ring" aria-hidden="true"></span><span class="mk" aria-hidden="true"></span>The rechargeable battery is swollen. Can I post it to you?</span></span></button></h4>
+            <div class="ans" id="a-swollen" hidden>
+              <p>No, please don't. A swollen lithium pack can catch fire in a sorting machine, and Royal Mail won't carry one. If the battery door opens without force, take the pack out, cover its contacts with tape and drop it at a battery recycling point. Then post the handheld without it, and we fit a new pack.</p>
+              <p>If the pack won't come out, don't prise it. Email us and bring it to the bench in Leeds on a Thursday, between 4pm and 7pm.</p>
+              <p class="facts"><span>New pack, fitted <b>£28</b></span></p>
+            </div>
+          </li>
+          <li class="q" id="q-wiggle" data-g="power">
+            <h4 class="q-h"><button class="key k-q" type="button" id="b-wiggle" aria-expanded="false" aria-controls="a-wiggle"><span class="face"><span class="inner"><span class="ring" aria-hidden="true"></span><span class="mk" aria-hidden="true"></span>It only turns on if I wiggle the batteries.</span></span></button></h4>
+            <div class="ans" id="a-wiggle" hidden>
+              <p>The springs and plates in the battery bay have corroded, usually because batteries were left in and leaked. We fit new terminals. If the leak reached the board, we clean it and replace the tracks it ate, and we quote that part separately after diagnosis.</p>
+              <p class="facts"><span>New terminals <b>£15</b></span><span>Board clean <b>£20 to £35</b></span></p>
+            </div>
+          </li>
+          <li class="q" id="q-blank" data-g="power">
+            <h4 class="q-h"><button class="key k-q" type="button" id="b-blank" aria-expanded="false" aria-controls="a-blank"><span class="face"><span class="inner"><span class="ring" aria-hidden="true"></span><span class="mk" aria-hidden="true"></span>The power light comes on, but the screen stays blank.</span></span></button></h4>
+            <div class="ans" id="a-blank" hidden>
+              <p>Most often a cracked solder joint on the power regulator, which feeds the screen a different voltage from the rest of the board. We reflow and test it. Diagnosis is free whether you go ahead or not; if you say no, you pay only the £6.50 return postage.</p>
+              <p class="facts"><span>Typical repair <b>£38</b></span></p>
+            </div>
+          </li>
+          <li class="q" id="q-warranty" data-g="power">
+            <h4 class="q-h"><button class="key k-q" type="button" id="b-warranty" aria-expanded="false" aria-controls="a-warranty"><span class="face"><span class="inner"><span class="ring" aria-hidden="true"></span><span class="mk" aria-hidden="true"></span>What does the warranty cover?</span></span></button></h4>
+            <div class="ans" id="a-warranty" hidden>
+              <p>Six months on every part we fit and the work we did, from the day it reaches you. If the same fault comes back, post it to us again and we pay the postage both ways. It doesn't cover drops, liquid, or a pack charged with a charger that wasn't made for it.</p>
+              <p class="facts"><span>Warranty <b>6 months</b></span><span>Repeat fault postage <b>on us</b></span></p>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="grp" data-g="sound">
+        <h3 class="grp-h" id="g-sound"><span class="sw" aria-hidden="true"><span class="sw-in"></span></span>Sound faults <span class="grp-n">3 questions</span></h3>
+        <ul class="qlist">
+          <li class="q" id="q-no-speaker" data-g="sound">
+            <h4 class="q-h"><button class="key k-q" type="button" id="b-no-speaker" aria-expanded="false" aria-controls="a-no-speaker"><span class="face"><span class="inner"><span class="ring" aria-hidden="true"></span><span class="mk" aria-hidden="true"></span>There's no sound from the speaker, but headphones work.</span></span></button></h4>
+            <div class="ans" id="a-no-speaker" hidden>
+              <p>Then the sound chip is fine and the speaker itself has gone, usually a broken coil wire. We fit a new speaker of the same size and loudness, so it sounds the way you remember.</p>
+              <p class="facts"><span>New speaker <b>£11</b></span><span>Same day as diagnosis</span></p>
+            </div>
+          </li>
+          <li class="q" id="q-crackle" data-g="sound">
+            <h4 class="q-h"><button class="key k-q" type="button" id="b-crackle" aria-expanded="false" aria-controls="a-crackle"><span class="face"><span class="inner"><span class="ring" aria-hidden="true"></span><span class="mk" aria-hidden="true"></span>It crackles when I turn the volume up or down.</span></span></button></h4>
+            <div class="ans" id="a-crackle" hidden>
+              <p>The volume wheel's track is worn or dusty. Cleaning sometimes cures it for a while, so we replace the wheel outright; it's a part we keep for every family.</p>
+              <p class="facts"><span>New volume wheel <b>£13</b></span></p>
+            </div>
+          </li>
+          <li class="q" id="q-one-side" data-g="sound">
+            <h4 class="q-h"><button class="key k-q" type="button" id="b-one-side" aria-expanded="false" aria-controls="a-one-side"><span class="face"><span class="inner"><span class="ring" aria-hidden="true"></span><span class="mk" aria-hidden="true"></span>Headphones only work on one side. How long does that take?</span></span></button></h4>
+            <div class="ans" id="a-one-side" hidden>
+              <p>The headphone socket has cracked off the board on one pin. We fit a new socket the same day we diagnose it, so with posting both ways it's back with you in 7 to 10 working days, like most repairs.</p>
+              <p class="facts"><span>New socket <b>£14</b></span><span>Door to door <b>7 to 10 working days</b></span></p>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="ask" id="ask" data-cut>
+      <h3 id="ask-title">Still stuck? Ask the bench</h3>
+      <p class="ask-intro">One of us reads every question and replies within two working days, usually with a price. Before you post anything, read <button class="lnk" id="pack-open" type="button" aria-haspopup="dialog" aria-controls="pack">How to pack a handheld</button></p>
+      <form id="ask-form" novalidate aria-labelledby="ask-title">
+        <div class="row" id="row-email">
+          <label class="lbl" for="f-email">Your email</label>
+          <span class="fld"><span class="fld-bg" aria-hidden="true"></span><input id="f-email" name="email" type="email" autocomplete="email" spellcheck="false"></span>
+          <span class="miss" aria-hidden="true"></span>
+          <p class="err" id="e-email"></p>
+        </div>
+        <div class="row" id="row-family">
+          <fieldset id="f-family">
+            <legend>Which handheld do you have?</legend>
+            <div class="opts">
+              <label class="opt"><input type="radio" name="family" value="Monochrome, 4 AA" required>Monochrome, 4 AA</label>
+              <label class="opt"><input type="radio" name="family" value="Colour, 2 AA" required>Colour, 2 AA</label>
+              <label class="opt"><input type="radio" name="family" value="Clamshell, rechargeable" required>Clamshell, rechargeable</label>
+              <label class="opt"><input type="radio" name="family" value="Other" required>Other</label>
+            </div>
+          </fieldset>
+          <span class="miss" aria-hidden="true"></span>
+          <p class="err" id="e-family"></p>
+        </div>
+        <div class="row" id="row-question">
+          <label class="lbl" for="f-question">Your question</label>
+          <span class="fld"><span class="fld-bg" aria-hidden="true"></span><textarea id="f-question" name="question" rows="4" aria-describedby="h-question"></textarea></span>
+          <span class="miss" aria-hidden="true"></span>
+          <p class="err" id="e-question"></p>
+          <p class="hint" id="h-question">What it does, what it doesn't do, and anything that happened before it started.</p>
+        </div>
+        <button class="key k-main" type="submit"><span class="face"><span class="inner"><span class="ring" aria-hidden="true"></span>Send my question</span></span></button>
+      </form>
+      <div class="done" id="done" hidden>
+        <canvas class="mini" id="mini" width="96" height="86" aria-hidden="true"></canvas>
+        <h4 id="done-title" tabindex="-1">Screen test passed: your question is on the bench</h4>
+        <p>We'll reply to <b id="d-email">sam@example.com</b> within two working days.</p>
+        <p>We've noted that it's a <b id="d-family">Colour, 2 AA</b> handheld, so the reply can include a price for that family.</p>
+        <button class="lnk" id="again" type="button">Send another question</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<dialog class="pack" id="pack" aria-labelledby="pack-title" data-lenis-prevent>
+  <div class="pk"><div class="pk-in">
+    <div class="pk-head">
+      <h2 id="pack-title">How to pack a handheld</h2>
+      <button class="key k-plain" id="pack-close" type="button"><span class="face"><span class="inner"><span class="ring" aria-hidden="true"></span>Close</span></span></button>
+    </div>
+    <p class="pk-intro">Six steps, about ten minutes. Most damage we see in the post comes from a loose box, not a thin one.</p>
+    <ol class="steps">
+      <li><div><b>Take the batteries out.</b> <span>Tape the battery door shut. If a rechargeable pack is swollen, leave it out of the box altogether and read <a class="lnk" href="#q-swollen">the swollen battery answer</a>.</span></div></li>
+      <li><div><b>Wrap it twice in bubble wrap,</b> <span>screen side in, so nothing presses on the glass.</span></div></li>
+      <li><div><b>Leave cartridges and cases at home,</b> <span>unless a cartridge is part of the fault. Then bag it and write its name on the bag.</span></div></li>
+      <li><div><b>Use a box 5 cm bigger on every side.</b> <span>Fill the gaps with scrunched paper until nothing moves when you shake it.</span></div></li>
+      <li><div><b>Put a note on top:</b> <span>your name, your email and the fault in one sentence. Add your reply number if we gave you one.</span></div></li>
+      <li><div><b>Post it tracked to Greyscale,</b> <span>Unit 7, Sheaf Yard, Leeds LS9 8QA, and keep the receipt until it's back with you.</span></div></li>
+    </ol>
+    <p class="pk-foot">We email you the day it arrives, and again with the quote.</p>
+  </div></div>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
+<script>
+(() => {
+  const root = document.documentElement;
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const lib = !!(window.gsap && window.ScrollTrigger && window.Lenis);
+  if (lib) root.classList.add('js'); // CDN blocked: no class, everything is visible and every flow works
+  const read = (n) => getComputedStyle(root).getPropertyValue(n).trim();
+  let lenis = null, fx = null; // fx: hooks set by the motion branch; null means instant
+
+  /* ---------- The Bayer matrix, made once: M4(x, y) = 4 x M2(x mod 2, y mod 2) + M2(x div 2, y div 2) ---------- */
+  const B2 = [[0, 2], [3, 1]];
+  const BAYER = new Uint8Array(16);
+  for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) BAYER[y * 4 + x] = 4 * B2[y & 1][x & 1] + B2[y >> 1][x >> 1];
+
+  // Mask tiles for coverage 4, 8 and 12 of 16: a cell is opaque where the threshold is below the level.
+  const tile = (level, cell) => {
+    const dpr = Math.min(3, Math.ceil(window.devicePixelRatio || 1)), s = cell * dpr, c = document.createElement('canvas');
+    c.width = c.height = 4 * s;
+    const g = c.getContext('2d');
+    g.fillStyle = '#fff';
+    for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) if (BAYER[y * 4 + x] < level) g.fillRect(x * s, y * s, s, s);
+    return `url(${c.toDataURL()})`;
+  };
+  const cell = parseFloat(read('--dm-cell')) || 3;
+  [4, 8, 12].forEach((l) => root.style.setProperty(`--dm-${l}`, tile(l, cell)));
+  [8, 12].forEach((l) => root.style.setProperty(`--um-${l}`, tile(l, 1)));
+
+  /* ---------- The test screen: 96 x 86 pixels in four shades ---------- */
+  const W = 96, H = 86, GROUPS = ['screen', 'buttons', 'power', 'sound'];
+  const acc = (h, base = 1) => 4 + h * 4 + base; // an accent pixel: group hue h over shade `base`
+  const paint = (fn) => {
+    const b = new Uint8Array(W * H).fill(3);
+    const P = {
+      px(x, y, v) { x = Math.round(x); y = Math.round(y); if (x >= 0 && x < W && y >= 0 && y < H) b[y * W + x] = v; },
+      rect(x, y, w, h, v) { for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) P.px(i, j, v); },
+      frame(x, y, w, h, v, t = 1) { P.rect(x, y, w, t, v); P.rect(x, y + h - t, w, t, v); P.rect(x, y, t, h, v); P.rect(x + w - t, y, t, h, v); },
+      disc(cx, cy, r, v) { for (let j = -r; j <= r; j++) for (let i = -r; i <= r; i++) if (i * i + j * j <= r * r + r) P.px(cx + i, cy + j, v); },
+      line(x0, y0, x1, y1, v, t = 1) {
+        const n = Math.ceil(Math.hypot(x1 - x0, y1 - y0) * 2), o = Math.floor(t / 2);
+        for (let k = 0; k <= n; k++) P.rect(Math.round(x0 + (x1 - x0) * k / n) - o, Math.round(y0 + (y1 - y0) * k / n) - o, t, t, v);
+      },
+      tri(x, y, dir, v) { for (let r = 0; r < 3; r++) for (let i = -2 + r; i <= 2 - r; i++) dir === 'down' ? P.px(x + i, y + r, v) : P.px(x + r, y + i, v); }
+    };
+    fn(P);
+    return b;
+  };
+  const PAT = {
+    off: paint((p) => p.rect(0, 0, W, H, 1)),
+    // Screen: four shade swatches and a checker, cut by two dead columns and a dead row, with arrows at the faults.
+    screen: paint((p) => {
+      for (let i = 0; i < 4; i++) { p.rect(8 + i * 20, 10, 18, 22, i); }
+      p.frame(68, 10, 18, 22, 2);
+      for (let y = 40; y < 78; y += 4) for (let x = 8; x < 88; x += 4) p.rect(x, y, 4, 4, ((x + y) / 4) % 2 ? 1 : 2);
+      p.frame(7, 39, 82, 40, 0);
+      p.rect(31, 0, 2, H, 3); p.rect(63, 0, 1, H, 3); p.rect(0, 57, W, 1, 3);
+      p.tri(31.5, 3, 'down', acc(0)); p.tri(63, 3, 'down', acc(0)); p.tri(1, 57, 'right', acc(0));
+    }),
+    // Buttons: a scan matrix with two keys registered, the d-pad with its up arm pressed, two face keys and two small ones.
+    buttons: paint((p) => {
+      for (let i = 0; i < 8; i++) { p.frame(12 + i * 9, 6, 7, 7, 1); if (i === 2 || i === 5) p.rect(14 + i * 9, 8, 3, 3, acc(1)); }
+      p.rect(20, 28, 10, 32, 0); p.rect(9, 39, 32, 10, 0);
+      p.rect(22, 30, 6, 8, acc(1)); p.rect(23, 42, 4, 4, 1);
+      p.disc(68, 52, 7, 0); p.disc(68, 52, 3, 1);
+      p.disc(84, 40, 7, 0); p.disc(84, 40, 4, acc(1));
+      p.rect(35, 72, 11, 4, 1); p.rect(51, 72, 11, 4, 1);
+      p.px(35, 72, 3); p.px(35, 75, 3); p.px(45, 72, 3); p.px(45, 75, 3); p.px(51, 72, 3); p.px(51, 75, 3); p.px(61, 72, 3); p.px(61, 75, 3);
+    }),
+    // Power: a battery at three bars of four, a bolt across the empty bar, and a level scale under it.
+    power: paint((p) => {
+      p.frame(12, 22, 62, 40, 0, 3); p.rect(74, 33, 6, 18, 0);
+      for (let i = 0; i < 4; i++) { if (i < 3) p.rect(18 + i * 13, 28, 11, 28, 1); else p.frame(18 + i * 13, 28, 11, 28, 2); }
+      p.line(66, 25, 58, 43, acc(2), 3); p.line(58, 41, 66, 41, acc(2), 3); p.line(66, 41, 57, 60, acc(2), 3);
+      for (let i = 0; i < 4; i++) p.rect(18 + i * 13, 68, 11, 4, i < 3 ? 0 : 2);
+      for (let i = 0; i <= 4; i++) p.rect(17 + i * 13, 74, 1, 4, 1);
+    }),
+    // Sound: a speaker grille, and a waveform block with its centre line and its peaks in the accent.
+    sound: paint((p) => {
+      p.frame(4, 24, 30, 34, 1, 2);
+      for (let j = 0; j < 5; j++) for (let i = 0; i < 4; i++) p.rect(10 + i * 5 + (j % 2 ? 2 : 0), 29 + j * 5, 2, 2, 0);
+      p.frame(40, 16, 52, 54, 0, 2);
+      p.rect(43, 43, 46, 1, acc(3));
+      for (let k = 0; k < 22; k++) {
+        const h = Math.round(20 * Math.abs(Math.sin(k * .62 + .4)) * (1 - k / 34)) + 2;
+        p.rect(44 + k * 2, 43 - h, 1, h * 2 + 1, 0);
+        if (h > 12) p.px(44 + k * 2, 43 - h - 2, acc(3));
+      }
+      p.rect(40, 76, 52, 2, 1); p.rect(72, 73, 4, 8, 0);
+    }),
+    // Pass: the four shades as four bars, then a large tick over them, outlined so it reads on every bar.
+    bars: paint((p) => { for (let i = 0; i < 4; i++) p.rect(i * 24, 0, 24, H, i); }),
+    pass: paint((p) => {
+      for (let i = 0; i < 4; i++) p.rect(i * 24, 0, 24, H, i);
+      p.line(22, 46, 38, 62, 0, 13); p.line(38, 62, 74, 22, 0, 13);
+      p.line(22, 46, 38, 62, 3, 7); p.line(38, 62, 74, 22, 3, 7);
+    })
+  };
+  const LABEL = {
+    off: 'the screen switching on', screen: 'the missing lines test', buttons: 'the button matrix test',
+    power: 'the battery level test', sound: 'the speaker waveform test', bars: 'the four shade bars', pass: 'screen test passed'
+  };
+  // Four contrast settings: which displayed shade each of the four drawn shades becomes.
+  const MAPS = [[2, 2, 3, 3], [1, 2, 3, 3], [0, 1, 2, 3], [0, 0, 1, 2]];
+  const CON_NAME = ['faint', 'light', 'normal', 'dark'];
+  const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  const SHADE = ['--lcd-0', '--lcd-1', '--lcd-2', '--lcd-3'].map((t) => rgb(read(t)));
+  const HUE = GROUPS.map((g) => rgb(read(`--${g}`)));
+
+  const makeScreen = (canvas) => {
+    const g = canvas.getContext('2d'), img = g.createImageData(W, H), d = img.data;
+    const press = new Float32Array(W * H);
+    let a = PAT.off, b = null, k = 16;
+    const s = {
+      name: 'off', con: 2, press,
+      draw() {
+        const map = MAPS[s.con];
+        for (let y = 0, i = 0; y < H; y++) {
+          for (let x = 0; x < W; x++, i++) {
+            const t = BAYER[((y & 3) << 2) | (x & 3)];
+            const v = b && t < k ? b[i] : a[i];
+            const p = press[i], q = p > 0 ? Math.min(2, Math.floor(p + (t + .5) / 16)) : 0;
+            let c;
+            if (v >= 4 && !q) c = HUE[(v - 4) >> 2];
+            else c = SHADE[map[Math.max(0, (v >= 4 ? (v - 4) & 3 : v) - q)]];
+            const o = i * 4;
+            d[o] = c[0]; d[o + 1] = c[1]; d[o + 2] = c[2]; d[o + 3] = 255;
+          }
+        }
+        g.putImageData(img, 0, 0);
+      },
+      // Settle any dissolve in progress into one buffer, so a new one can start from what is on the glass.
+      freeze() {
+        if (!b) return;
+        const m = new Uint8Array(W * H);
+        for (let y = 0, i = 0; y < H; y++) for (let x = 0; x < W; x++, i++) m[i] = BAYER[((y & 3) << 2) | (x & 3)] < k ? b[i] : a[i];
+        a = m; b = null; k = 16;
+      },
+      set(name) { s.freeze(); a = PAT[name]; b = null; k = 16; s.name = name; s.draw(); },
+      to(name) { s.freeze(); b = PAT[name]; k = 0; s.name = name; },
+      level(l) { k = l; if (l >= 16 && b) { a = b; b = null; k = 16; } s.draw(); }
+    };
+    return s;
+  };
+  const lcd = $('#lcd'), mini = $('#mini');
+  const main = makeScreen(lcd), small = makeScreen(mini);
+  const motionLikely = lib && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+  main.set(motionLikely ? 'off' : 'screen'); // with motion, the screen powers on at load
+  small.set('bars');
+
+  /* ---------- Readout, chips that show the group on screen, the contrast wheel ---------- */
+  const readTest = $('#read-test'), readCon = $('#read-con');
+  const chips = $$('.k-chip'), wraps = $$('.chip-wrap');
+  let live = 'screen';
+  const showOnScreen = (name, how) => { // how: 'cut' or a direction for the dissolve
+    if (GROUPS.includes(name)) { live = name; wraps.forEach((w) => w.classList.toggle('is-live', w.dataset.g === name)); }
+    readTest.textContent = LABEL[main.name === 'off' ? 'off' : name];
+    if (main.name === name || main.name === 'off') return; // still switching on: the load puts `live` on the glass
+    if (fx && how !== 'cut') fx.dissolve(main, name); else main.set(name);
+  };
+
+  const wheel = $('#wheel'), win = $('.wheel-win', wheel);
+  const ridges = Array.from({ length: 12 }, (_, j) => {
+    const r = document.createElement('span');
+    r.className = 'ridge' + (j % 4 === 0 ? ' is-mark' : '');
+    win.append(r);
+    return r;
+  });
+  let rot = 0;
+  const turn = (n) => { // one notch is 30 degrees; the ridges jump to their new places in one cut
+    rot += n;
+    const h = win.clientHeight, c = h / 2, R = h / 2 - 3;
+    ridges.forEach((r, j) => {
+      const th = ((j + rot) % 12 + 12) % 12 * Math.PI / 6, cs = Math.cos(th);
+      r.style.visibility = cs > .2 ? 'visible' : 'hidden';
+      r.classList.toggle('is-near', cs > .8);
+      r.style.transform = `translateY(${Math.round(c + R * Math.sin(th) - (cs > .8 ? 2 : 1))}px)`;
+    });
+  };
+  turn(0);
+  new ResizeObserver(() => turn(0)).observe(win);
+  const setContrast = (v) => {
+    v = Math.max(0, Math.min(3, v));
+    if (v === main.con) return;
+    turn(v > main.con ? -1 : 1);
+    main.con = small.con = v;
+    wheel.setAttribute('aria-valuenow', v + 1);
+    wheel.setAttribute('aria-valuetext', `${v + 1} of 4, ${CON_NAME[v]}`);
+    readCon.textContent = `Contrast ${v + 1} of 4`;
+    main.draw(); small.draw();
+    fx?.pressCentre();
+  };
+  wheel.addEventListener('keydown', (e) => {
+    const step = { ArrowUp: 1, ArrowRight: 1, ArrowDown: -1, ArrowLeft: -1, PageUp: 1, PageDown: -1 }[e.key];
+    if (step) { e.preventDefault(); setContrast(main.con + step); }
+    else if (e.key === 'Home') { e.preventDefault(); setContrast(0); }
+    else if (e.key === 'End') { e.preventDefault(); setContrast(3); }
+  });
+  // Pointer: the top half turns it up, the bottom half down. A drag turns it a notch every 24px.
+  let dragY = null;
+  wheel.addEventListener('pointerdown', (e) => {
+    const r = wheel.getBoundingClientRect();
+    setContrast(main.con + (e.clientY < r.top + r.height / 2 ? 1 : -1));
+    dragY = e.clientY;
+    wheel.setPointerCapture?.(e.pointerId);
+  });
+  wheel.addEventListener('pointermove', (e) => {
+    if (dragY === null) return;
+    const n = Math.trunc((dragY - e.clientY) / 24);
+    if (n) { setContrast(main.con + n); dragY -= n * 24; }
+  });
+  ['pointerup', 'pointercancel'].forEach((t) => wheel.addEventListener(t, () => { dragY = null; }));
+
+  /* ---------- Questions: accordion, search and chips (plain JS) ---------- */
+  const qs = $$('.q'), groups = $$('.grp'), search = $('#search'), count = $('#count'), clear = $('#clear');
+  const empty = $('#empty'), emptyTerm = $('#empty-term');
+  const btnOf = (q) => $('.k-q', q), ansOf = (q) => $('.ans', q);
+  const setOpen = (q, open, quiet) => {
+    const btn = btnOf(q), ans = ansOf(q);
+    if ((btn.getAttribute('aria-expanded') === 'true') === open) return;
+    btn.setAttribute('aria-expanded', String(open));
+    if (fx && !quiet) fx.answer(ans, open);
+    else ans.hidden = !open;
+    if (open && !quiet) showOnScreen(q.dataset.g);
+  };
+  qs.forEach((q) => btnOf(q).addEventListener('click', () => setOpen(q, btnOf(q).getAttribute('aria-expanded') !== 'true')));
+  const norm = (s) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
+  const text = new Map(qs.map((q) => [q, norm(q.textContent)]));
+  const filter = () => {
+    const term = norm(search.value), picked = chips.filter((c) => c.getAttribute('aria-pressed') === 'true').map((c) => c.dataset.g);
+    let n = 0;
+    qs.forEach((q) => {
+      const ok = (!term || text.get(q).includes(term)) && (!picked.length || picked.includes(q.dataset.g));
+      q.hidden = !ok;
+      if (ok) n++;
+    });
+    groups.forEach((g) => { g.hidden = !$$('.q', g).some((q) => !q.hidden); });
+    const any = !!(term || picked.length);
+    count.textContent = !any ? `Showing all ${qs.length} questions` : n ? `Showing ${n} of ${qs.length} questions` : `No questions match`;
+    clear.hidden = !any;
+    empty.hidden = n > 0;
+    emptyTerm.textContent = term ? `“${search.value.trim()}”` : 'those faults';
+    fx?.layout();
+  };
+  search.addEventListener('input', filter);
+  chips.forEach((c) => c.addEventListener('click', () => {
+    const on = c.getAttribute('aria-pressed') !== 'true';
+    c.setAttribute('aria-pressed', String(on));
+    filter();
+    if (on) showOnScreen(c.dataset.g);
+  }));
+  clear.addEventListener('click', () => {
+    search.value = '';
+    chips.forEach((c) => c.setAttribute('aria-pressed', 'false'));
+    filter();
+    search.focus();
+  });
+
+  // Deep links: #q-swollen opens that question.
+  const openFromHash = (scroll) => {
+    const q = location.hash.length > 1 && document.getElementById(decodeURIComponent(location.hash.slice(1)));
+    if (!q || !q.classList.contains('q')) return;
+    if (q.hidden) { search.value = ''; chips.forEach((c) => c.setAttribute('aria-pressed', 'false')); filter(); }
+    setOpen(q, true, !scroll);
+    showOnScreen(q.dataset.g, scroll ? undefined : 'cut');
+    if (scroll) lenis ? lenis.scrollTo(q, { offset: -24, immediate: matchMedia('(prefers-reduced-motion: reduce)').matches }) : q.scrollIntoView({ block: 'start' });
+  };
+  openFromHash(false);
+  window.addEventListener('hashchange', () => openFromHash(true));
+
+  /* ---------- Ask the bench (plain JS; nothing is sent) ---------- */
+  const form = $('#ask-form'), done = $('#done'), doneTitle = $('#done-title');
+  const fEmail = $('#f-email'), fQuestion = $('#f-question'), fFamily = $('#f-family'), radios = $$('input[name=family]');
+  form.noValidate = true;
+  const RULES = [
+    { el: fEmail, row: $('#row-email'), err: $('#e-email'), test() {
+      const v = fEmail.value.trim();
+      if (!v) return 'Enter your email address so we can reply, like sam@example.com.';
+      if (!/^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(v)) return 'This address needs an @ and a domain, like sam@example.com.';
+      return '';
+    } },
+    { el: fFamily, focusEl: () => radios[0], row: $('#row-family'), err: $('#e-family'), test() {
+      return radios.some((r) => r.checked) ? '' : 'Choose which handheld you have. Pick Other if it isn’t listed.';
+    } },
+    { el: fQuestion, row: $('#row-question'), err: $('#e-question'), test() {
+      const v = fQuestion.value.trim();
+      if (!v) return 'Tell us what the handheld does, or doesn’t do.';
+      if (v.length < 15) return `Add a little more: what happens, and when. At least 15 characters; you have ${v.length}.`;
+      return '';
+    } }
+  ];
+  const show = (r, msg) => {
+    r.err.textContent = msg;
+    r.row.classList.toggle('is-bad', !!msg);
+    const targets = r.el === fFamily ? radios : [r.el];
+    targets.forEach((t) => { if (msg) t.setAttribute('aria-invalid', 'true'); else t.removeAttribute('aria-invalid'); });
+    const base = r.el === fQuestion ? 'h-question' : '';
+    const ids = (msg ? [r.err.id, base] : [base]).filter(Boolean).join(' ');
+    if (ids) r.el.setAttribute('aria-describedby', ids); else r.el.removeAttribute('aria-describedby');
+  };
+  RULES.forEach((r) => {
+    const recheck = () => { if (r.row.classList.contains('is-bad') && !r.test()) show(r, ''); };
+    (r.el === fFamily ? radios : [r.el]).forEach((t) => { t.addEventListener('input', recheck); t.addEventListener('change', recheck); });
+  });
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const bad = RULES.filter((r) => { const m = r.test(); show(r, m); return !!m; });
+    if (bad.length) { (bad[0].focusEl?.() || bad[0].el).focus(); return; }
+    $('#d-email').textContent = fEmail.value.trim();
+    $('#d-family').textContent = radios.find((r) => r.checked).value;
+    form.hidden = true; done.hidden = false;
+    doneTitle.focus();
+    if (fx) fx.success(); else { main.set('pass'); small.set('pass'); readTest.textContent = LABEL.pass; }
+  });
+  $('#again').addEventListener('click', () => {
+    done.hidden = true; form.hidden = false;
+    fQuestion.value = ''; // the email and the handheld are kept
+    small.set('bars');
+    showOnScreen(live, fx ? undefined : 'cut');
+    fQuestion.focus();
+  });
+
+  /* ---------- Packing dialog ---------- */
+  const dlg = $('#pack'), openBtn = $('#pack-open'), closeBtn = $('#pack-close');
+  let closing = false, downOn = null, after = null;
+  // Recover from any close, even one the browser forces (a second Escape is not cancelable) mid-dither.
+  const settle = () => { closing = false; fx?.dialogReset(); };
+  openBtn.addEventListener('click', () => {
+    if (dlg.open) return;
+    settle();
+    dlg.showModal();
+    lenis?.stop();
+    fx?.dialogIn();
+  });
+  const closeDialog = (then) => {
+    if (!dlg.open || closing) return;
+    closing = true;
+    after = then || null;
+    const end = () => { closing = false; dlg.close(); };
+    fx ? fx.dialogOut(end) : end();
+  };
+  closeBtn.addEventListener('click', () => closeDialog());
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); closeDialog(); });
+  // Close on a backdrop click only when the press also started on the backdrop (not a text selection overshoot).
+  dlg.addEventListener('pointerdown', (e) => { downOn = e.target; });
+  dlg.addEventListener('click', (e) => { if (e.target === dlg && downOn === dlg) closeDialog(); });
+  dlg.addEventListener('close', () => {
+    settle(); lenis?.start();
+    const f = after; after = null;
+    if (f) f(); else openBtn.focus();
+  });
+  // The link to the swollen battery answer closes the dialog, then opens and scrolls to the answer.
+  $$('a[href^="#q-"]', dlg).forEach((a) => a.addEventListener('click', (e) => {
+    e.preventDefault();
+    const id = a.getAttribute('href');
+    closeDialog(() => {
+      if (location.hash === id) openFromHash(true); else location.hash = id;
+      const q = $(id); btnOf(q).focus({ preventScroll: true });
+    });
+  }));
+
+  if (!lib) return;
+
+  /* ---------- Motion ---------- */
+  gsap.registerPlugin(ScrollTrigger);
+  const fontsReady = Promise.race([
+    Promise.all([document.fonts.ready, document.fonts.load('700 80px "Handjet"')]).then(() => 'fonts', () => 'fonts'),
+    new Promise((r) => setTimeout(() => r('timeout'), 1500))
+  ]);
+  // Start the load only on a visible page: with lagSmoothing(0), a timeline started in a background tab
+  // would jump to its end on return, and the visitor would miss the screen switching on.
+  const visible = new Promise((r) => {
+    if (document.visibilityState === 'visible') return r();
+    const f = () => { if (document.visibilityState === 'visible') { document.removeEventListener('visibilitychange', f); r(); } };
+    document.addEventListener('visibilitychange', f);
+  });
+  // And after the window's load event, so the power-on is not spent while the page is still arriving.
+  const loaded = new Promise((r) => { if (document.readyState === 'complete') r(); else window.addEventListener('load', () => r(), { once: true }); });
+  let played = false;
+  const lines = $$('.h2 .ln'), cuts = $$('[data-cut]'), swatches = $$('.sw-in');
+  const filled = new Set(); // swatches that have already filled on phones
+
+  const mm = gsap.matchMedia();
+  mm.add({
+    motion: '(prefers-reduced-motion: no-preference)',
+    reduce: '(prefers-reduced-motion: reduce)',
+    fine: '(hover: hover) and (pointer: fine)',
+    wide: '(min-width: 960px)'
+  }, (ctx) => {
+    const { motion, wide } = ctx.conditions;
+    let dead = false;
+    const off = [];
+    const on = (el, type, fn, opt) => { el.addEventListener(type, fn, opt); off.push(() => el.removeEventListener(type, fn, opt)); };
+    const heads = $$('.grp-h');
+
+    // The screen follows the reading: a group heading crossing the middle of the viewport puts its test on the
+    // glass and turns the wheel one notch. Under reduced motion the change is a cut.
+    const follow = () => heads.forEach((h, i) => ScrollTrigger.create({
+      trigger: h, start: 'top 50%',
+      onEnter: () => { if (!dead) { showOnScreen(h.closest('.grp').dataset.g); turn(1); } },
+      onLeaveBack: () => {
+        if (dead) return;
+        const prev = heads.slice(0, i).reverse().find((x) => !x.closest('.grp').hidden);
+        showOnScreen((prev || heads[0]).closest('.grp').dataset.g); turn(-1);
+      }
+    }));
+
+    if (!motion) {
+      // Reduced motion: final states, native scroll, no load sequence, every change a cut.
+      root.classList.add('go');
+      if (main.name === 'off') { main.set(live); readTest.textContent = LABEL[live]; }
+      if (wide) follow();
+      const lay = () => ScrollTrigger.refresh();
+      fx = null;
+      on(window, 'faq:layout', lay);
+      return () => { dead = true; off.forEach((f) => f()); };
+    }
+
+    const T = Object.fromEntries(['dither', 'dissolve', 'power', 'line', 'ring', 'hold', 'link', 'link-hold', 'field', 'recover', 'pass']
+      .map((k) => [k, parseFloat(read(`--d-${k}`)) * 1000]));
+    root.classList.add('fx');
+
+    // Lenis on GSAP's clock. Touch keeps native scrolling.
+    lenis = new Lenis({ lerp: .1, smoothWheel: true, autoRaf: false, anchors: false });
+    lenis.on('scroll', ScrollTrigger.update);
+    const tick = (t) => lenis.raf(t * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
+
+    // Hard steps: a list of values applied one per gap, as delayed calls. One running list per owner.
+    const runs = new Map();
+    const steps = (owner, list, gap, fn, end) => ctx.add(() => {
+      runs.get(owner)?.kill();
+      const tl = gsap.timeline({ onComplete: () => { runs.delete(owner); end?.(); } });
+      list.forEach((v, i) => tl.call(fn, [v], i * gap / 1000));
+      tl.call(() => {}, null, list.length * gap / 1000);
+      runs.set(owner, tl);
+    });
+    const stop = (owner) => { runs.get(owner)?.kill(); runs.delete(owner); };
+    const dm = (el, l) => { if (l >= 16) el.removeAttribute('data-dm'); else el.setAttribute('data-dm', l); };
+    const levelOf = (el) => el.hidden ? 0 : el.hasAttribute('data-dm') ? +el.dataset.dm : 16;
+
+    /* ---------- Pressing the glass: a dithered pool of up to two shades darker, recovering in three steps ---------- */
+    const R = 9, CORE = 4.5;
+    let ptr = null, awake = false, inView = true, accT = 0, lastSum = -1, moved = false;
+    const stamp = (cx, cy) => {
+      const pr = main.press;
+      for (let y = Math.max(0, Math.floor(cy - R)); y <= Math.min(H - 1, Math.ceil(cy + R)); y++) {
+        for (let x = Math.max(0, Math.floor(cx - R)); x <= Math.min(W - 1, Math.ceil(cx + R)); x++) {
+          const dd = Math.hypot(x + .5 - cx, y + .5 - cy), v = dd <= CORE ? 2 : dd < R ? 2 * (R - dd) / (R - CORE) : 0;
+          const i = y * W + x;
+          if (v > pr[i]) pr[i] = v;
+        }
+      }
+    };
+    const frame = (t, dms) => {
+      const pr = main.press;
+      accT += dms;
+      let sum = 0;
+      if (accT >= T.recover) { // one recovery step: every pressed pixel comes back two thirds of a shade
+        accT = 0;
+        for (let i = 0; i < pr.length; i++) if (pr[i]) { pr[i] = pr[i] > .7 ? pr[i] - 2 / 3 : 0; }
+        if (ptr) stamp(ptr[0], ptr[1]);
+        for (let i = 0; i < pr.length; i++) sum += pr[i];
+        if (!moved && sum === lastSum) sleep(); // a still finger on the glass: the pool holds, nothing moves
+        lastSum = sum; moved = false;
+      } else if (ptr && moved) stamp(ptr[0], ptr[1]);
+      main.draw();
+      if (!ptr && accT === 0 && !sum) sleep();
+    };
+    const wake = () => { if (awake || !inView || dead) return; awake = true; accT = 0; gsap.ticker.add(frame); };
+    const sleep = () => { if (!awake) return; awake = false; gsap.ticker.remove(frame); };
+    const io = new IntersectionObserver(([e]) => { inView = e.isIntersecting; if (!inView) sleep(); else if (ptr || main.press.some((v) => v)) wake(); });
+    io.observe(lcd);
+    off.push(() => io.disconnect());
+    const at = (e) => { const r = lcd.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * W, (e.clientY - r.top) / r.height * H]; };
+    const press = (e) => { ptr = at(e); moved = true; stamp(ptr[0], ptr[1]); wake(); };
+    const lift = () => { ptr = null; moved = true; wake(); };
+    let touching = false;
+    on(lcd, 'pointermove', (e) => { if (e.pointerType === 'mouse' || touching) press(e); });
+    on(lcd, 'pointerdown', (e) => { if (e.pointerType !== 'mouse') touching = true; press(e); });
+    on(lcd, 'pointerleave', lift);
+    ['pointerup', 'pointercancel'].forEach((t) => on(lcd, t, (e) => { if (e.pointerType !== 'mouse') { touching = false; lift(); } }));
+
+    /* ---------- Keys: the membrane steps in, the key bottoms out ---------- */
+    const keys = $$('.key');
+    keys.forEach((el) => {
+      let hover = false, focus = false, downAt = 0, down = false;
+      const ring = (n) => { if (n) el.dataset.ring = n; else el.removeAttribute('data-ring'); };
+      const stepIn = () => { if (el.dataset.ring === '3') return; steps(el, [1, 2, 3], T.ring, ring); };
+      const out = () => { if (hover || focus || down) return; stop(el); ring(0); };
+      const pressDown = () => { down = true; downAt = performance.now(); stop(el); ring(3); el.classList.add('is-down'); };
+      const release = () => {
+        if (!down) return;
+        down = false;
+        const wait = Math.max(0, T.hold - (performance.now() - downAt));
+        ctx.add(() => gsap.delayedCall(wait / 1000, () => {
+          el.classList.remove('is-down');
+          steps(el, [2, hover || focus ? 3 : 0], T.ring, ring); // the inner frame steps back out once
+        }));
+      };
+      on(el, 'pointerenter', (e) => { if (e.pointerType === 'touch') return; hover = true; stepIn(); });
+      on(el, 'pointerleave', (e) => { hover = false; if (down && e.pointerType !== 'touch') release(); else out(); });
+      on(el, 'focus', () => { if (!el.matches(':focus-visible')) return; focus = true; stepIn(); });
+      on(el, 'blur', () => { focus = false; out(); });
+      on(el, 'pointerdown', (e) => { if (e.button === 0) pressDown(); });
+      on(el, 'pointerup', release);
+      on(el, 'pointercancel', release);
+      on(el, 'keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) pressDown(); });
+      on(el, 'keyup', (e) => { if (e.key === 'Enter' || e.key === ' ') release(); });
+      off.push(() => { el.classList.remove('is-down'); ring(0); });
+    });
+
+    /* ---------- Text links: the underline steps 50%, 75%, solid ---------- */
+    $$('.lnk').forEach((el) => {
+      let hover = false, focus = false, held = 0;
+      const ul = (l) => { if (l === 16) { el.removeAttribute('data-ul'); el.classList.add('is-hot'); } else if (l === 12) { el.dataset.ul = 12; el.classList.add('is-hot'); } else { el.removeAttribute('data-ul'); el.classList.remove('is-hot'); } };
+      const lit = () => { if (el.classList.contains('is-hot') && !el.dataset.ul) return; steps(el, [12, 16], T.link, ul); };
+      const rest = () => { if (hover || focus || performance.now() < held) return; stop(el); ul(8); };
+      on(el, 'pointerenter', (e) => { if (e.pointerType === 'touch') return; hover = true; lit(); });
+      on(el, 'pointerleave', (e) => { if (e.pointerType === 'touch') return; hover = false; rest(); });
+      on(el, 'focus', () => { if (!el.matches(':focus-visible')) return; focus = true; lit(); });
+      on(el, 'blur', () => { focus = false; rest(); });
+      on(el, 'pointerdown', (e) => {
+        if (e.pointerType !== 'touch') return;
+        held = performance.now() + T['link-hold'];
+        lit();
+        ctx.add(() => gsap.delayedCall(T['link-hold'] / 1000 + .01, rest));
+      });
+      off.push(() => ul(8));
+    });
+
+    /* ---------- Fields: the ground steps up one shade through a 50% frame ---------- */
+    $$('.fld').forEach((f) => {
+      const input = $('input, textarea', f);
+      on(input, 'focus', () => steps(f, ['f1', 'f2'], T.field, (c) => { f.classList.remove('is-f1', 'is-f2'); f.classList.add(`is-${c}`); }));
+      on(input, 'blur', () => { stop(f); f.classList.remove('is-f1', 'is-f2'); });
+      off.push(() => f.classList.remove('is-f1', 'is-f2'));
+    });
+
+    /* ---------- Phones: each group heading's swatch fills 0, 4, 8, 12, 16 as it enters ---------- */
+    if (!wide) {
+      swatches.forEach((s) => {
+        if (filled.has(s)) return;
+        dm(s, 0);
+        ScrollTrigger.create({ trigger: s, start: 'top 88%', once: true, onEnter: () => { filled.add(s); steps(s, [4, 8, 12, 16], T.dither, (l) => dm(s, l)); } });
+      });
+    } else follow();
+
+    /* ---------- Hooks for the plain-JS flows ---------- */
+    const panel = $('.pk', dlg);
+    let refreshDue = null;
+    fx = {
+      // An answer reserves its height in one cut, then its mask steps 0, 4, 8, 12, 16. It closes in reverse.
+      answer(ans, open) {
+        const from = levelOf(ans);
+        if (open) {
+          ans.hidden = false;
+          steps(ans, [0, 4, 8, 12, 16].filter((l) => l >= Math.min(from, 12) && (l > from || l === 0)), T.dither, (l) => dm(ans, l), () => fx?.layout());
+          fx.layout();
+        } else {
+          steps(ans, [12, 8, 4, 0].filter((l) => l < from), T.dither, (l) => dm(ans, l), () => { ans.hidden = true; ans.removeAttribute('data-dm'); fx?.layout(); });
+        }
+      },
+      // The screen cross-dissolves through the same thresholds: 4, 8, 12, then 16 of 16 pixels show the new test.
+      dissolve(scr, name, then) {
+        scr.to(name);
+        steps(scr, [4, 8, 12, 16], T.dissolve, (l) => scr.level(l), then);
+      },
+      pressCentre() { stamp(W / 2, H / 2); moved = true; wake(); },
+      layout() { clearTimeout(refreshDue); refreshDue = setTimeout(() => { if (!dead) ScrollTrigger.refresh(); }, 120); },
+      dialogReset() { stop(panel); panel.removeAttribute('data-dm'); },
+      dialogIn() { steps(panel, [4, 8, 12, 16], T.dither, (l) => dm(panel, l)); },
+      dialogOut(end) { steps(panel, [12, 8, 4, 0], T.dither, (l) => dm(panel, l), () => { end(); panel.removeAttribute('data-dm'); }); },
+      // Screen test passes: four shade bars, then a large tick arrives through the dither steps.
+      success() {
+        readTest.textContent = LABEL.pass;
+        [main, small].forEach((scr) => fx.dissolve(scr, 'bars', () => ctx.add(() => gsap.delayedCall(T.pass / 1000, () => fx?.dissolve(scr, 'pass')))));
+        main.name = 'pass';
+      }
+    };
+
+    /* ---------- Load: the screen powers on, then the headline, one line at a time; the rest cuts in ---------- */
+    Promise.all([fontsReady, visible, loaded]).then(() => ctx.add(() => {
+      if (dead) return;
+      if (played) { root.classList.add('go'); if (main.name === 'off') { main.set(live); readTest.textContent = LABEL[live]; } return; }
+      played = true;
+      lines.forEach((l) => dm(l, 0));
+      cuts.forEach((c) => { c.style.visibility = 'hidden'; });
+      root.classList.add('go');
+      const powerLevels = [0, 2, 4, 6, 8, 10, 12, 14, 16];
+      if (main.name === 'off') { main.to(live); readTest.textContent = LABEL[live]; }
+      const tl = gsap.timeline();
+      powerLevels.forEach((l, i) => tl.call(() => main.level(l), null, .3 + i * T.power / 1000 / (powerLevels.length - 1)));
+      let t0 = .3 + T.power / 1000 + .08;
+      lines.forEach((ln) => {
+        [4, 8, 12, 16].forEach((l, i) => tl.call(() => dm(ln, l), null, t0 + i * T.line / 1000));
+        t0 += 4 * T.line / 1000;
+      });
+      tl.call(() => cuts.forEach((c) => { c.style.visibility = ''; }), null, t0 + .04);
+    }));
+
+    return () => {
+      dead = true;
+      off.forEach((f) => f());
+      sleep();
+      runs.forEach((tl) => tl.kill()); runs.clear();
+      fx = null;
+      gsap.ticker.remove(tick);
+      gsap.ticker.lagSmoothing(500, 33);
+      lenis.destroy(); lenis = null;
+      main.press.fill(0);
+      if (main.name === 'off' || main.name === 'bars') main.set(main.name === 'bars' ? 'pass' : live); else main.set(main.name);
+      $$('[data-dm]').forEach((el) => el.removeAttribute('data-dm'));
+      $$('.ans').forEach((a) => { a.hidden = a.closest('.q').querySelector('.k-q').getAttribute('aria-expanded') !== 'true'; });
+      lines.forEach((l) => l.removeAttribute('data-dm'));
+      cuts.forEach((c) => { c.style.visibility = ''; });
+      root.classList.remove('fx');
+    };
+  });
+  // The reduced-motion branch refreshes trigger positions through this event; the motion branch calls fx.layout.
+  const _layout = () => window.dispatchEvent(new Event('faq:layout'));
+  search.addEventListener('input', () => { if (!fx) _layout(); });
+  qs.forEach((q) => btnOf(q).addEventListener('click', () => { if (!fx) _layout(); }));
+})();
+</script>
+</body>
+</html>
