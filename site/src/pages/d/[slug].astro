@@ -42,7 +42,7 @@ const widths = [
         </label>
       ))}
     </fieldset>
-    <button type="button" class="pill fs-open" hidden>Fullscreen</button>
+    <button type="button" class="pill fs-open" aria-keyshortcuts="F" hidden>Fullscreen (F)</button>
     </div>
     <div class="frame-wrap">
       <button type="button" class="pill fs-quit">Quit fullscreen</button>
@@ -108,6 +108,12 @@ const widths = [
     fsOpen.hidden = false;
     fsOpen.addEventListener('click', () => wrap.requestFullscreen().catch(() => {}));
     fsQuit.addEventListener('click', () => document.exitFullscreen());
+    // F opens fullscreen while focus is on the page (keys typed inside the preview iframe stay with the design).
+    document.addEventListener('keydown', (e) => {
+      if (e.key.toLowerCase() !== 'f' || e.repeat || e.ctrlKey || e.metaKey || e.altKey || document.fullscreenElement) return;
+      if ((e.target as HTMLElement).closest('input, textarea, select, [contenteditable]')) return;
+      wrap.requestFullscreen().catch(() => {});
+    });
     // Esc is handled by the browser, even with focus inside the iframe; this keeps focus in sync.
     document.addEventListener('fullscreenchange', () => (document.fullscreenElement === wrap ? fsQuit : fsOpen).focus());
   }

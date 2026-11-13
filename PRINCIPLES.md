@@ -75,7 +75,7 @@ Every design meets this without announcing it:
 
 ## The catalogue's fullscreen control is not part of any design
 
-The catalogue's view pages (`/d/<slug>/`) wrap every live preview with a **Fullscreen** button and, while in fullscreen, a floating **Quit fullscreen** button. That control belongs to the site, not to the design.
+The catalogue's view pages (`/d/<slug>/`) wrap every live preview with a **Fullscreen (F)** button (the F key does the same) and, while in fullscreen, a floating **Quit fullscreen** button. That control belongs to the site, not to the design.
 
 - When porting or building a design, do not copy it, reference it, or count it as part of the design.
 - Do not add a fullscreen control to a design for this purpose. A design's `index.html` and `design.md` never mention it.
